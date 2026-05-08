@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Project specific
+cache/
+experience_kb/archive/
+methodology_kb/paperinsight/.git/
+
+# Logs
+*.log

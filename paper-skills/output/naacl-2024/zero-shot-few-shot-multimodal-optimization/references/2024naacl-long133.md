@@ -1,0 +1,18 @@
+---
+title: "SumTra: A Differentiable Pipeline for Few-Shot Cross-Lingual Summarization"
+source: "https://aclanthology.org/2024.naacl-long.133/"
+categories: ['llm-evaluation-summarization-argument-extraction', 'zero-shot-few-shot-multimodal-optimization', 'knowledge-conflict-diagnostic-temporal-reasoning']
+tags: ['summarization', 'cross-lingual', 'few-shot', 'differentiable']
+venue: "NAACL 2024"
+tldr: "Introduces a differentiable pipeline for few-shot cross-lingual summarization."
+---
+
+# SumTra: A Differentiable Pipeline for Few-Shot Cross-Lingual Summarization
+
+**Source**: [https://aclanthology.org/2024.naacl-long.133/](https://aclanthology.org/2024.naacl-long.133/)
+
+**TLDR**: Introduces a differentiable pipeline for few-shot cross-lingual summarization.
+
+## Abstract
+
+AbstractCross-lingual summarization (XLS) generates summaries in a language different from that of the input documents (e.g., English to Spanish), allowing speakers of the target language to gain a concise view of their content. In the present day, the predominant approach to this task is to take a performing, pretrained multilingual language model (LM) and fine-tune it for XLS on the language pairs of interest. However, the scarcity of fine-tuning samples makes this approach challenging in some cases. For this reason, in this paper we propose revisiting the summarize-and-translate pipeline, where the summarization and translation tasks are performed in a sequence. This approach allows reusing the many, publicly-available resources for monolingual summarization and translation, obtaining a very competitive zero-shot performance. In addition, the proposed pipeline is completely differentiable end-to-end, allowing it to take advantage of few-shot fine-tuning, where available. Experiments over two contemporary and widely adopted XLS datasets (CrossSum and WikiLingua) have shown the remarkable zero-shot performance of the proposed approach, and also its strong few-shot performance compared to an equivalent multilingual LM baseline, that the proposed approach has been able to outperform in many languages with only 10% of the fine-tuning samples.

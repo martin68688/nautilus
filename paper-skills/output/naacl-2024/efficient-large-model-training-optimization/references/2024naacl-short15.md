@@ -1,0 +1,18 @@
+---
+title: "How does Multi-Task Training Affect Transformer In-Context Capabilities? Investigations with Function Classes"
+source: "https://aclanthology.org/2024.naacl-short.15/"
+categories: ['efficient-large-model-training-optimization', 'efficient-transformer-optimization-techniques']
+tags: ['in-context-learning', 'multi-task-training', 'transformer-analysis']
+venue: "NAACL 2024"
+tldr: "Investigates how multi-task training affects transformer in-context learning capabilities using function classes."
+---
+
+# How does Multi-Task Training Affect Transformer In-Context Capabilities? Investigations with Function Classes
+
+**Source**: [https://aclanthology.org/2024.naacl-short.15/](https://aclanthology.org/2024.naacl-short.15/)
+
+**TLDR**: Investigates how multi-task training affects transformer in-context learning capabilities using function classes.
+
+## Abstract
+
+AbstractLarge language models (LLM) have recently shown the extraordinary ability to perform unseen tasks based on few-shot examples provided as text, also known as in-context learning (ICL). While recent works have attempted to understand the mechanisms driving ICL, few have explored training strategies that incentivize these models to generalize to multiple tasks. Multi-task learning (MTL) for generalist models is a promising direction that offers transfer learning potential, enabling large parameterized models to be trained from simpler, related tasks. In this work, we investigate the combination of MTL with ICL to build models that efficiently learn tasks while being robust to out-of-distribution examples. We propose several effective curriculum learning strategies that allow ICL models to achieve higher data efficiency and more stable convergence. Our experiments reveal that ICL models can effectively learn difficult tasks by training on progressively harder tasks while mixing in prior tasks, denoted as mixed curriculum in this work.

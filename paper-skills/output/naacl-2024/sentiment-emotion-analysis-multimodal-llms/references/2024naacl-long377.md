@@ -1,0 +1,18 @@
+---
+title: "Divergent Token Metrics: Measuring degradation to prune away LLM components – and optimize quantization"
+source: "https://aclanthology.org/2024.naacl-long.377/"
+categories: ['efficient-transformer-optimization-techniques', 'sentiment-emotion-analysis-multimodal-llms']
+tags: ['model-compression', 'pruning', 'quantization', 'diagnostics']
+venue: "NAACL 2024"
+tldr: "Introduces Divergent Token Metrics to measure component degradation for pruning LLMs and optimizing quantization."
+---
+
+# Divergent Token Metrics: Measuring degradation to prune away LLM components – and optimize quantization
+
+**Source**: [https://aclanthology.org/2024.naacl-long.377/](https://aclanthology.org/2024.naacl-long.377/)
+
+**TLDR**: Introduces Divergent Token Metrics to measure component degradation for pruning LLMs and optimizing quantization.
+
+## Abstract
+
+AbstractLarge Language Models (LLMs) have reshaped natural language processing with their impressive capabilities. However, their ever-increasing size has raised concerns about their effective deployment and the need for LLM compression. This study introduces the Divergent Token Metrics (DTMs), a novel approach to assessing compressed LLMs, addressing the limitations of traditional perplexity or accuracy measures that fail to accurately reflect text generation quality. DTMs measure token divergences that allow deeper insights into the subtleties of model compression, in particular, when evaluating components’ impacts individually. Utilizing the First Divergent Token Metric (FDTM) in model sparsification reveals that 25% of all attention components can be pruned beyond 90% on the Llama-2 model family, still keeping SOTA performance. For quantization, FDTM suggests that more than 80% of parameters can be naively transformed to int8 without special outlier management. These evaluations indicate the necessity of choosing appropriate compressions for parameters individually—and that FDTM can identify those—while standard metrics result in deteriorated outcomes.

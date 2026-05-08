@@ -1,0 +1,21 @@
+---
+title: "V2Xum-LLM: Cross-Modal Video Summarization with Temporal Prompt Instruction Tuning"
+source: "https://www.semanticscholar.org/paper/454eda5b7dde5e6f24c3ee6f1c5e06c7deef7ba1"
+categories: ['llm-visual-report-generation-analysis', 'multimodal-time-series-foundation-models']
+tags: ['video-summarization', 'multimodal', 'llm', 'instruction-tuning']
+venue: "AAAI 2024"
+tldr: "A cross-modal video summarization method using large language models with temporal prompt instruction tuning."
+---
+
+# V2Xum-LLM: Cross-Modal Video Summarization with Temporal Prompt Instruction Tuning
+
+**Source**: [https://www.semanticscholar.org/paper/454eda5b7dde5e6f24c3ee6f1c5e06c7deef7ba1](https://www.semanticscholar.org/paper/454eda5b7dde5e6f24c3ee6f1c5e06c7deef7ba1)
+
+**TLDR**: A cross-modal video summarization method using large language models with temporal prompt instruction tuning.
+
+## Abstract
+
+Video summarization aims to create short, accurate, and cohesive summaries of longer videos. Despite the existence of various video summarization datasets, a notable limitation is their limited amount of source videos, which hampers the effective training of advanced large vision-language models (VLMs). Additionally, most existing datasets are created for video-to-video summarization, overlooking the contemporary need for multimodal video content summarization. Recent efforts have been made to expand from unimodal to multimodal video summarization, categorizing the task into three sub-tasks based on the summary's modality: video-to-video (V2V), video-to-text (V2T), and a combination of video and text summarization (V2VT). However, the textual summaries in previous multimodal datasets are inadequate. 
+To address these issues, we introduce Instruct-V2Xum, a cross-modal video summarization dataset featuring 30,000 diverse videos sourced from YouTube, with lengths ranging from 40 to 940 seconds and an average summarization ratio of 16.39%. Each video summary in Instruct-V2Xum is paired with a textual summary that references specific frame indexes, facilitating the generation of aligned video and textual summaries.
+In addition, we propose a new video summarization framework named V2Xum-LLM. V2Xum-LLM, specifically V2Xum-LLaMA in this study, is the first framework that unifies different video summarization tasks into one large language model's (LLM) text decoder and achieves task-controllable video summarization with temporal prompts and task instructions. Experiments show that V2Xum-LLaMA outperforms strong baseline models on multiple video summarization tasks. 
+Furthermore, we propose an enhanced evaluation metric for V2V and V2VT summarization tasks.

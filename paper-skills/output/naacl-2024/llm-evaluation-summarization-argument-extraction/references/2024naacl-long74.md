@@ -1,0 +1,18 @@
+---
+title: "SEMQA: Semi-Extractive Multi-Source Question Answering"
+source: "https://aclanthology.org/2024.naacl-long.74/"
+categories: ['llm-knowledge-reasoning-retrieval', 'llm-evaluation-summarization-argument-extraction']
+tags: ['question-answering', 'multi-source', 'semi-extractive']
+venue: "NAACL 2024"
+tldr: "Introduces a semi-extractive, multi-source question answering framework to improve answer attribution and verification for long-form QA."
+---
+
+# SEMQA: Semi-Extractive Multi-Source Question Answering
+
+**Source**: [https://aclanthology.org/2024.naacl-long.74/](https://aclanthology.org/2024.naacl-long.74/)
+
+**TLDR**: Introduces a semi-extractive, multi-source question answering framework to improve answer attribution and verification for long-form QA.
+
+## Abstract
+
+AbstractRecently proposed long-form question answering (QA) systems, supported by large language models (LLMs), have shown promising capabilities. Yet, attributing and verifying their generated abstractive answers can be difficult, and automatically evaluating their accuracy remains an ongoing challenge.In this work, we introduce a new QA task for answering multi-answer questions by summarizing multiple diverse sources in a semi-extractive fashion. Specifically, Semi-extractive Multi-source QA (SEMQA) requires models to output a comprehensive answer, while mixing factual quoted spans—copied verbatim from given input sources—and non-factual free-text connectors that glue these spans together into a single cohesive passage. This setting bridges the gap between the outputs of well-grounded but constrained extractive QA systems and more fluent but harder to attribute fully abstractive answers. Particularly, it enables a new mode for language models that leverages their advanced language generation capabilities, while also producing fine in-line attributions by-design that are easy to verify, interpret, and evaluate. To study this task, we create the first dataset of this kind, QuoteSum, with human-written semi-extractive answers to natural and generated questions, and define text-based evaluation metrics. Experimenting with several LLMs in various settings, we find this task to be surprisingly challenging, demonstrating the importance of QuoteSum for developing and studying such consolidation capabilities.

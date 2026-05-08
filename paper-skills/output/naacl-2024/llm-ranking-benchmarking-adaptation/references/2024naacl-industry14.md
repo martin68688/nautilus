@@ -1,0 +1,18 @@
+---
+title: "Leveraging Natural Language Processing and Large Language Models for Assisting Due Diligence in the Legal Domain"
+source: "https://aclanthology.org/2024.naacl-industry.14/"
+categories: ['llm-ranking-benchmarking-adaptation', 'legal-ai-nlp-applications']
+tags: ['legal-ai', 'due-diligence', 'information-retrieval']
+venue: "NAACL 2024"
+tldr: "Explores using NLP and LLMs to assist in the legal due diligence process for mergers and acquisitions."
+---
+
+# Leveraging Natural Language Processing and Large Language Models for Assisting Due Diligence in the Legal Domain
+
+**Source**: [https://aclanthology.org/2024.naacl-industry.14/](https://aclanthology.org/2024.naacl-industry.14/)
+
+**TLDR**: Explores using NLP and LLMs to assist in the legal due diligence process for mergers and acquisitions.
+
+## Abstract
+
+AbstractDue diligence is a crucial legal process that mitigates potential risks of mergers and acquisitions (M&A). However, despite its prominent importance, there has been a lack of research regarding leveraging NLP techniques for due diligence. In this study, our aim is to explore the most efficient deep-learning model architecture for due diligence in terms of performance and latency, and evaluate the potential of large language models (LLMs) as an efficient due diligence assistant. To our knowledge, this is the first study that employs pre-trained language models (PLMs) and LLMs for the due diligence problem. Our experimental results suggest that methodologies that have demonstrated promising performance in the general domain encounter challenges when applied in due diligence due to the inherent lengthy nature of legal documents. We also ascertain that LLMs can be a useful tool for helping lawyers who perform due diligence.

@@ -1,0 +1,18 @@
+---
+title: "Do Multilingual Language Models Think Better in English?"
+source: "https://aclanthology.org/2024.naacl-short.46/"
+categories: ['zero-shot-few-shot-multimodal-optimization', 'speech-language-processing-multilingual']
+tags: ['multilingual', 'reasoning', 'translation', 'language-thought']
+venue: "NAACL 2024"
+tldr: "Investigates whether multilingual LMs perform better when thinking in English via translate-test."
+---
+
+# Do Multilingual Language Models Think Better in English?
+
+**Source**: [https://aclanthology.org/2024.naacl-short.46/](https://aclanthology.org/2024.naacl-short.46/)
+
+**TLDR**: Investigates whether multilingual LMs perform better when thinking in English via translate-test.
+
+## Abstract
+
+AbstractTranslate-test is a popular technique to improve the performance of multilingual language models. This approach works by translating the input into English using an external machine translation system before running inference. However, these improvements can be attributed to the use of a separate translation system, which is typically trained on large amounts of parallel data not seen by the language model. In this work, we introduce a new approach called self-translate that leverages the few-shot translation capabilities of multilingual language models. This allows us to analyze the effect of translation in isolation. Experiments over 5 tasks show that self-translate consistently outperforms direct inference, demonstrating that language models are unable to leverage their full multilingual potential when prompted in non-English languages. Our code is available at https://github.com/juletx/self-translate.

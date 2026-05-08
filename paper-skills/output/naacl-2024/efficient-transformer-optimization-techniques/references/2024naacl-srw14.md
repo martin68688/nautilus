@@ -1,0 +1,18 @@
+---
+title: "Unknown Script: Impact of Script on Cross-Lingual Transfer"
+source: "https://aclanthology.org/2024.naacl-srw.14/"
+categories: ['efficient-transformer-optimization-techniques', 'speech-language-processing-multilingual']
+tags: ['cross-lingual', 'script', 'transfer-learning', 'multilingual']
+venue: "NAACL 2024"
+tldr: "Investigates the impact of source language script on cross-lingual transfer performance, especially for unseen scripts."
+---
+
+# Unknown Script: Impact of Script on Cross-Lingual Transfer
+
+**Source**: [https://aclanthology.org/2024.naacl-srw.14/](https://aclanthology.org/2024.naacl-srw.14/)
+
+**TLDR**: Investigates the impact of source language script on cross-lingual transfer performance, especially for unseen scripts.
+
+## Abstract
+
+AbstractCross-lingual transfer has become an effective way of transferring knowledge between languages. In this paper, we explore an often overlooked aspect in this domain: the influence of the source language of a language model on language transfer performance. We consider a case where the target language and its script are not part of the pre-trained model. We conduct a series of experiments on monolingual and multilingual models that are pre-trained on different tokenization methods to determine factors that affect cross-lingual transfer to a new language with a unique script. Our findings reveal the importance of the tokenizer as a stronger factor than the shared script, language similarity, and model size.

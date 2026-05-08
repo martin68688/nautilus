@@ -1,0 +1,18 @@
+---
+title: "A Likelihood Ratio Test of Genetic Relationship among Languages"
+source: "https://aclanthology.org/2024.naacl-long.141/"
+categories: ['language-genetic-relationship-testing']
+tags: ['historical-linguistics', 'genetic-relationship', 'statistical-test']
+venue: "NAACL 2024"
+tldr: "Proposes a likelihood ratio test to statistically evaluate genetic relationships among languages based on lexical resemblances."
+---
+
+# A Likelihood Ratio Test of Genetic Relationship among Languages
+
+**Source**: [https://aclanthology.org/2024.naacl-long.141/](https://aclanthology.org/2024.naacl-long.141/)
+
+**TLDR**: Proposes a likelihood ratio test to statistically evaluate genetic relationships among languages based on lexical resemblances.
+
+## Abstract
+
+AbstractLexical resemblances among a group of languages indicate that the languages could be genetically related, i.e., they could have descended from a common ancestral language. However, such resemblances can arise by chance and, hence, need not always imply an underlying genetic relationship. Many tests of significance based on permutation of wordlists and word similarity measures appeared in the past to determine the statistical significance of such relationships. We demonstrate that although existing tests may work well for bilateral comparisons, i.e., on pairs of languages, they are either infeasible by design or are prone to yield false positives when applied to groups of languages or language families. To this end, inspired by molecular phylogenetics, we propose a likelihood ratio test to determine if given languages are related based on the proportion of invariant character sites in the aligned wordlists applied during tree inference. Further, we evaluate some language families and show that the proposed test solves the problem of false positives. Finally, we demonstrate that the test supports the existence of macro language families such as Nostratic and Macro-Mayan.

@@ -1,0 +1,18 @@
+---
+title: "Ungrammatical-syntax-based In-context Example Selection for Grammatical Error Correction"
+source: "https://aclanthology.org/2024.naacl-long.99/"
+categories: ['sentiment-emotion-analysis-multimodal-llms', 'bpe-subword-parsing-evaluation']
+tags: ['grammatical-error-correction', 'in-context-learning']
+venue: "NAACL 2024"
+tldr: "Ungrammatical syntax guides in-context example selection for better grammatical error correction with LLMs."
+---
+
+# Ungrammatical-syntax-based In-context Example Selection for Grammatical Error Correction
+
+**Source**: [https://aclanthology.org/2024.naacl-long.99/](https://aclanthology.org/2024.naacl-long.99/)
+
+**TLDR**: Ungrammatical syntax guides in-context example selection for better grammatical error correction with LLMs.
+
+## Abstract
+
+AbstractIn the era of large language models (LLMs), in-context learning (ICL) stands out as an effective prompting strategy that explores LLMs’ potency across various tasks. However, applying LLMs to grammatical error correction (GEC) is still a challenging task. In this paper, we propose a novel ungrammatical-syntax-based in-context example selection strategy for GEC. Specifically, we measure similarity of sentences based on their syntactic structures with diverse algorithms, and identify optimal ICL examples sharing the most similar ill-formed syntax to the test input. Additionally, we carry out a two-stage process to further improve the quality of selection results. On benchmark English GEC datasets, empirical results show that our proposed ungrammatical-syntax-based strategies outperform commonly-used word-matching or semantics-based methods with multiple LLMs. This indicates that for a syntax-oriented task like GEC, paying more attention to syntactic information can effectively boost LLMs’ performance. Our code is available at https://github.com/JamyDon/SynICL4GEC.

@@ -1,0 +1,18 @@
+---
+title: "Unified Examination of Entity Linking in Absence of Candidate Sets"
+source: "https://aclanthology.org/2024.naacl-short.11/"
+categories: ['legal-ai-nlp-applications', 'information-extraction-knowledge-graph-methods']
+tags: ['entity_linking', 'benchmark', 'black_box', 'evaluation']
+venue: "NAACL 2024"
+tldr: "Introduces a black-box benchmark for a comprehensive comparative analysis of entity linking systems without candidate sets."
+---
+
+# Unified Examination of Entity Linking in Absence of Candidate Sets
+
+**Source**: [https://aclanthology.org/2024.naacl-short.11/](https://aclanthology.org/2024.naacl-short.11/)
+
+**TLDR**: Introduces a black-box benchmark for a comprehensive comparative analysis of entity linking systems without candidate sets.
+
+## Abstract
+
+AbstractDespite remarkable strides made in the development of entity linking systems in recent years, a comprehensive comparative analysis of these systems using a unified framework is notably absent. This paper addresses this oversight by introducing a new black-box benchmark and conducting a comprehensive evaluation of all state-of-the-art entity linking methods. We use an ablation study to investigate the impact of candidate sets on the performance of entity linking. Our findings uncover exactly how much such entity linking systems depend on candidate sets, and how much this limits the general applicability of each system. We present an alternative approach to candidate sets, demonstrating that leveraging the entire in-domain candidate set can serve as a viable substitute for certain models. We show the trade-off between less restrictive candidate sets, increased inference time and memory footprint for some models.

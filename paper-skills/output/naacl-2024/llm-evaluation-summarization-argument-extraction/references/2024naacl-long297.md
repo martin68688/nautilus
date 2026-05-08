@@ -1,0 +1,18 @@
+---
+title: "MacGyver: Are Large Language Models Creative Problem Solvers?"
+source: "https://aclanthology.org/2024.naacl-long.297/"
+categories: ['llm-evaluation-summarization-argument-extraction', 'zero-shot-few-shot-multimodal-optimization']
+tags: ['creative-problem-solving', 'constrained-reasoning', 'benchmark']
+venue: "NAACL 2024"
+tldr: "Evaluates LLMs' creative problem-solving on a new dataset of real-world problems requiring innovative object use, finding they struggle with physical constraints."
+---
+
+# MacGyver: Are Large Language Models Creative Problem Solvers?
+
+**Source**: [https://aclanthology.org/2024.naacl-long.297/](https://aclanthology.org/2024.naacl-long.297/)
+
+**TLDR**: Evaluates LLMs' creative problem-solving on a new dataset of real-world problems requiring innovative object use, finding they struggle with physical constraints.
+
+## Abstract
+
+AbstractWe explore the creative problem-solving capabilities of modern LLMs in a novel constrained setting. To this end, we create MACGYVER, an automatically generated dataset consisting of over 1,600 real-world problems deliberately designed to trigger innovative usage of objects and necessitate out-of-the-box thinking. We then present our collection to both LLMs and humans to compare and contrast their problem-solving abilities. MACGYVER is challenging for both groups, but in unique and complementary ways. For instance, humans excel in tasks they are familiar with but struggle with domain-specific knowledge, leading to a higher variance. In contrast, LLMs, exposed to a variety of specialized knowledge, attempt broader problems but fail by proposing physically-infeasible actions. Finally, we provide a detailed error analysis of LLMs, and demonstrate the potential of enhancing their problem-solving ability with novel prompting techniques such as iterative step-wise reflection and divergent-convergent thinking.This work (1) introduces a fresh arena for intelligent agents focusing on intricate aspects of physical reasoning, planning, and unconventional thinking, which supplements the existing spectrum of machine intelligence; and (2) provides insight into the constrained problem-solving capabilities of both humans and AI.

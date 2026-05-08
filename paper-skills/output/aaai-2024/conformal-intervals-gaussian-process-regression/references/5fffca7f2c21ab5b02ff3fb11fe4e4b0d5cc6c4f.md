@@ -1,0 +1,27 @@
+---
+title: "Adaptive Sampling to Reduce Epistemic Uncertainty Using Prediction Interval-Generation Neural Networks"
+source: "https://www.semanticscholar.org/paper/5fffca7f2c21ab5b02ff3fb11fe4e4b0d5cc6c4f"
+categories: ['machine-learning-optimization-generalization', 'conformal-intervals-gaussian-process-regression']
+tags: ['adaptive-sampling', 'uncertainty-quantification', 'prediction-intervals']
+venue: "AAAI 2024"
+tldr: "Proposes an adaptive sampling method using prediction interval-generation neural networks to efficiently reduce epistemic uncertainty in predictive models."
+---
+
+# Adaptive Sampling to Reduce Epistemic Uncertainty Using Prediction Interval-Generation Neural Networks
+
+**Source**: [https://www.semanticscholar.org/paper/5fffca7f2c21ab5b02ff3fb11fe4e4b0d5cc6c4f](https://www.semanticscholar.org/paper/5fffca7f2c21ab5b02ff3fb11fe4e4b0d5cc6c4f)
+
+**TLDR**: Proposes an adaptive sampling method using prediction interval-generation neural networks to efficiently reduce epistemic uncertainty in predictive models.
+
+## Abstract
+
+Obtaining high certainty in predictive models is crucial for making informed and trustworthy decisions in many scientific and engineering domains. 
+However, extensive experimentation required for model accuracy can be both costly and time-consuming. 
+This paper presents an adaptive sampling approach designed to reduce epistemic uncertainty in predictive models. 
+Our primary contribution is the development of a metric that estimates potential epistemic uncertainty leveraging prediction interval-generation neural networks.
+This estimation relies on the distance between the predicted upper and lower bounds and the observed data at the tested positions and their neighboring points. 
+Our second contribution is the proposal of a batch sampling strategy based on Gaussian processes (GPs). 
+A GP is used as a surrogate model of the networks trained at each iteration of the adaptive sampling process. 
+Using this GP, we design an acquisition function that selects a combination of sampling locations to maximize the reduction of epistemic uncertainty across the domain.
+We test our approach on three unidimensional synthetic problems and a multi-dimensional dataset based on an agricultural field for selecting experimental fertilizer rates.
+The results demonstrate that our method consistently converges faster to minimum epistemic uncertainty levels compared to Normalizing Flows Ensembles, MC-Dropout, and simple GPs.

@@ -1,0 +1,18 @@
+---
+title: "NondBREM: Nondeterministic Offline Reinforcement Learning for Large-Scale Order Dispatching"
+source: "https://www.semanticscholar.org/paper/90895a914b4df1aabd7a5dacbd7bc72fbdc25cd9"
+categories: ['reinforcement-learning-bandits-planning-optimization', 'public-safety-ml-prediction-intervention', 'autonomous-driving-multi-agent-navigation']
+tags: ['reinforcement-learning', 'order-dispatching', 'ride-hailing', 'offline-rl']
+venue: "AAAI 2024"
+tldr: "A nondeterministic offline reinforcement learning approach for large-scale order dispatching in ride-hailing platforms."
+---
+
+# NondBREM: Nondeterministic Offline Reinforcement Learning for Large-Scale Order Dispatching
+
+**Source**: [https://www.semanticscholar.org/paper/90895a914b4df1aabd7a5dacbd7bc72fbdc25cd9](https://www.semanticscholar.org/paper/90895a914b4df1aabd7a5dacbd7bc72fbdc25cd9)
+
+**TLDR**: A nondeterministic offline reinforcement learning approach for large-scale order dispatching in ride-hailing platforms.
+
+## Abstract
+
+One of the most important tasks in ride-hailing is order dispatching, i.e., assigning unserved orders to available drivers. Recent order dispatching has achieved a significant improvement due to the advance of reinforcement learning, which has been approved to be able to effectively address sequential decision-making problems like order dispatching. However, most existing reinforcement learning methods require agents to learn the optimal policy by interacting with environments online, which is challenging or impractical for real-world deployment due to high costs or safety concerns. For example, due to the spatiotemporally unbalanced supply and demand, online reinforcement learning-based order dispatching may significantly impact the revenue of the ride-hailing platform and passenger experience during the policy learning period. Hence, in this work, we develop an offline deep reinforcement learning framework called NondBREM for large-scale order dispatching, which learns policy from only the accumulated logged data to avoid costly and unsafe interactions with the environment. In NondBREM, a Nondeterministic Batch-Constrained Q-learning (NondBCQ) module is developed to reduce the algorithm extrapolation error and a Random Ensemble Mixture (REM) module that integrates multiple value networks with multi-head networks is utilized to improve the model generalization and robustness. Extensive experiments on large-scale real-world ride-hailing datasets show the superiority of our design.

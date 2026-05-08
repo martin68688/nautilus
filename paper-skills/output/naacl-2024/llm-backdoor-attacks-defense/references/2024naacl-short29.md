@@ -1,0 +1,18 @@
+---
+title: "Selective Perception: Learning Concise State Descriptions for Language Model Actors"
+source: "https://aclanthology.org/2024.naacl-short.29/"
+categories: ['llm-backdoor-attacks-defense']
+tags: ['selective-perception', 'state-description', 'efficiency', 'long-context']
+venue: "NAACL 2024"
+tldr: "Learns to generate concise state descriptions for LM actors to reduce processing of redundant long-context data."
+---
+
+# Selective Perception: Learning Concise State Descriptions for Language Model Actors
+
+**Source**: [https://aclanthology.org/2024.naacl-short.29/](https://aclanthology.org/2024.naacl-short.29/)
+
+**TLDR**: Learns to generate concise state descriptions for LM actors to reduce processing of redundant long-context data.
+
+## Abstract
+
+AbstractThe latest large language models (LMs) support increasingly longer contexts. While this trend permits using substantial amounts of text with SOTA LMs, requiring these large LMs to process potentially redundant or irrelevant data needlessly increases inference time and cost. To remedy this problem, we propose BLINDER, a method that leverages a small finetuned LM to sample the minimal set of input features that maximizes the performance of a downstream LM. BLINDER trains an LM with a value head to estimate the likelihood of optimal outputs from a downstream LM given an input. We evaluate BLINDER on embodied decision making tasks with notoriously verbose state descriptions: NetHack and robot planning. BLINDER reduces the length of LM actor input by 87% and 99% while improving task success rates by 158% and 54% on NetHack and robot planning respectively which represents substantial inference cost savings while actually increasing performance.

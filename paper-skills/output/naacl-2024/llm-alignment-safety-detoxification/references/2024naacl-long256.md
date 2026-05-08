@@ -1,0 +1,18 @@
+---
+title: "Flames: Benchmarking Value Alignment of LLMs in Chinese"
+source: "https://aclanthology.org/2024.naacl-long.256/"
+categories: ['llm-backdoor-attacks-defense', 'llm-alignment-safety-detoxification']
+tags: ['alignment', 'safety', 'evaluation', 'chinese-llm']
+venue: "NAACL 2024"
+tldr: "A benchmark (Flames) for evaluating value alignment and safety vulnerabilities of LLMs in Chinese."
+---
+
+# Flames: Benchmarking Value Alignment of LLMs in Chinese
+
+**Source**: [https://aclanthology.org/2024.naacl-long.256/](https://aclanthology.org/2024.naacl-long.256/)
+
+**TLDR**: A benchmark (Flames) for evaluating value alignment and safety vulnerabilities of LLMs in Chinese.
+
+## Abstract
+
+AbstractThe widespread adoption of large language models (LLMs) across various regions underscores the urgent need to evaluate their alignment with human values. Current benchmarks, however, fall short of effectively uncovering safety vulnerabilities in LLMs. Despite numerous models achieving high scores and ‘topping the chart’ in these evaluations, there is still a significant gap in LLMs’ deeper alignment with human values and achieving genuine harmlessness. To this end, this paper proposes a value alignment benchmark named Flames, which encompasses both common harmlessness principles and a unique morality dimension that integrates specific Chinese values such as harmony. Accordingly, we carefully design adversarial prompts that incorporate complex scenarios and jailbreaking methods, mostly with implicit malice. By prompting 17 mainstream LLMs, we obtain model responses and rigorously annotate them for detailed evaluation. Our findings indicate that all the evaluated LLMs demonstrate relatively poor performance on Flames, particularly in the safety and fairness dimensions. We also develop a lightweight specified scorer capable of scoring LLMs across multiple dimensions to efficiently evaluate new models on the benchmark. The complexity of Flames has far exceeded existing benchmarks, setting a new challenge for contemporary LLMs and highlighting the need for further alignment of LLMs. Our benchmark is publicly available at https://github.com/AIFlames/Flames.

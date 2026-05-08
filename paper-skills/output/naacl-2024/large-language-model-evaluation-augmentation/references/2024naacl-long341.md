@@ -1,0 +1,18 @@
+---
+title: "DialogBench: Evaluating LLMs as Human-like Dialogue Systems"
+source: "https://aclanthology.org/2024.naacl-long.341/"
+categories: ['large-language-model-evaluation-augmentation', 'legal-ai-nlp-applications']
+tags: ['dialogue-evaluation', 'human-likeness', 'llm-benchmark']
+venue: "NAACL 2024"
+tldr: "DialogBench is a benchmark for evaluating LLMs as human-like dialogue systems to assess long-term connection ability."
+---
+
+# DialogBench: Evaluating LLMs as Human-like Dialogue Systems
+
+**Source**: [https://aclanthology.org/2024.naacl-long.341/](https://aclanthology.org/2024.naacl-long.341/)
+
+**TLDR**: DialogBench is a benchmark for evaluating LLMs as human-like dialogue systems to assess long-term connection ability.
+
+## Abstract
+
+AbstractLarge language models (LLMs) have achieved remarkable breakthroughs in new dialogue capabilities by leveraging instruction tuning,which refreshes human impressions of dialogue systems. The long-standing goal of dialogue systems is to be human-like enough to establish long-term connections with users. Therefore, there has been an urgent need to evaluate LLMs as human-like dialogue systems. In this paper, we propose DialogBench, a dialogue evaluation benchmark that contains 12 dialogue tasks to probe the capabilities of LLMs as human-like dialogue systems should have. Specifically, we prompt GPT-4 to generate evaluation instances for each task. We first design the basic prompt based on widely used design principles and further mitigate the existing biases to generate higher-quality evaluation instances. Our extensive tests on English and Chinese DialogBench of 26 LLMs show that instruction tuning improves the human likeness of LLMs to a certain extent, but most LLMs still have much room for improvement as human-like dialogue systems. Interestingly, results also show that the positioning of assistant AI can make instruction tuning weaken the human emotional perception of LLMs and their mastery of information about human daily life.

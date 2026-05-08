@@ -1,0 +1,18 @@
+---
+title: "ReTA: Recursively Thinking Ahead to Improve the Strategic Reasoning of Large Language Models"
+source: "https://aclanthology.org/2024.naacl-long.123/"
+categories: ['contrastive-and-generative-representation-learning', 'strategic-reasoning-and-interactive-agents']
+tags: ['strategic-reasoning', 'multi-turn', 'recursive']
+venue: "NAACL 2024"
+tldr: "Analyzes and improves multi-turn strategic reasoning in LLMs with a recursive thinking-ahead method."
+---
+
+# ReTA: Recursively Thinking Ahead to Improve the Strategic Reasoning of Large Language Models
+
+**Source**: [https://aclanthology.org/2024.naacl-long.123/](https://aclanthology.org/2024.naacl-long.123/)
+
+**TLDR**: Analyzes and improves multi-turn strategic reasoning in LLMs with a recursive thinking-ahead method.
+
+## Abstract
+
+AbstractCurrent logical reasoning evaluations of Large Language Models (LLMs) primarily focus on single-turn and static environments, such as arithmetic problems. The crucial problem of multi-turn, strategic reasoning is under-explored. In this work, we analyze the multi-turn strategic reasoning of LLMs through text-driven complete- and incomplete-information gaming, e.g., board games (Tic-Tac-Toe, Connect-4) and poker games (Texas Hold’em Poker). Specifically, we consider two distinct scenarios: 1) Online Racing, featuring multiple LLMs/agents to facilitate direct competition and comparison; 2) Offline Probing, constructing targeted questions with verified ground truth to evaluate LLMs’ strategic behaviors. Experimental results demonstrate that existing state-of-the-art LLMs and reasoning schemes are largely ineffective for strategic reasoning tasks. To mitigate these limitations, we propose a simple yet effective Recursively Thinking-Ahead (ReTA) agent, incorporating a recursive prompting mechanism that automatically analyzes the opponents’ future moves/actions and assigns reward signals for these situations, to strengthen the strategic reasoning of LLMs. We hope our work could spur further research and exploration in the multi-turn strategic reasoning of LLMs. The code is available at https://github.com/jinhaoduan/ReTA.

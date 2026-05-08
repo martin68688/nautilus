@@ -1,0 +1,18 @@
+---
+title: "Head-to-Tail: How Knowledgeable are Large Language Models (LLMs)? A.K.A. Will LLMs Replace Knowledge Graphs?"
+source: "https://aclanthology.org/2024.naacl-long.18/"
+categories: ['llm-reasoning-retrieval-evaluation', 'large-language-model-evaluation-augmentation']
+tags: ['knowledge_graphs', 'hallucination', 'reasoning', 'retrieval']
+venue: "NAACL 2024"
+tldr: "This paper evaluates LLM factual knowledge against knowledge graphs, questioning if LLMs can replace KGs and how to reduce hallucinations."
+---
+
+# Head-to-Tail: How Knowledgeable are Large Language Models (LLMs)? A.K.A. Will LLMs Replace Knowledge Graphs?
+
+**Source**: [https://aclanthology.org/2024.naacl-long.18/](https://aclanthology.org/2024.naacl-long.18/)
+
+**TLDR**: This paper evaluates LLM factual knowledge against knowledge graphs, questioning if LLMs can replace KGs and how to reduce hallucinations.
+
+## Abstract
+
+AbstractSince the recent prosperity of Large Language Models (LLMs), there have been interleaved discussions regarding how to reduce hallucinations from LLM responses, how to increase the factuality of LLMs, and whether Knowledge Graphs (KGs), which store the world knowledge in a symbolic form, will be replaced with LLMs. In this paper, we try to answer these questions from a new angle: How knowledgeable are LLMs?To answer this question, we constructed Head-to-Tail, a benchmark that consists of 18K question-answer (QA) pairs regarding head, torso, and tail facts in terms of popularity. We designed an automated evaluation method and a set of metrics that closely approximate the knowledge an LLM confidently internalizes. Through a comprehensive evaluation of 16 publicly available LLMs, we show that existing LLMs are still far from being perfect in terms of their grasp of factual knowledge, especially for facts of torso-to-tail entities.

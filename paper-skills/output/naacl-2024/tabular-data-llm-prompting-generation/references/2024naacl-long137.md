@@ -1,0 +1,18 @@
+---
+title: "FREB-TQA: A Fine-Grained Robustness Evaluation Benchmark for Table Question Answering"
+source: "https://aclanthology.org/2024.naacl-long.137/"
+categories: ['continual-learning-memory-transfer-llms', 'tabular-data-llm-prompting-generation']
+tags: ['robustness', 'table-qa', 'benchmark']
+venue: "NAACL 2024"
+tldr: "FREB-TQA is a fine-grained robustness evaluation benchmark for table question answering."
+---
+
+# FREB-TQA: A Fine-Grained Robustness Evaluation Benchmark for Table Question Answering
+
+**Source**: [https://aclanthology.org/2024.naacl-long.137/](https://aclanthology.org/2024.naacl-long.137/)
+
+**TLDR**: FREB-TQA is a fine-grained robustness evaluation benchmark for table question answering.
+
+## Abstract
+
+AbstractTable Question Answering (TQA) aims at composing an answer to a question based on tabular data. While prior research has shown that TQA models lack robustness, understanding the underlying cause and nature of this issue remains predominantly unclear, posing a significant obstacle to the development of robust TQA systems. In this paper, we formalize three major desiderata for a fine-grained evaluation of robustness of TQA systems. They should (i) answer questions regardless of alterations in table structure, (ii) base their responses on the content of relevant cells rather than on biases, and (iii) demonstrate robust numerical reasoning capabilities. To investigate these aspects, we create and publish a novel TQA evaluation benchmark in English. Our extensive experimental analysis reveals that none of the examined state-of-the-art TQA systems consistently excels in these three aspects. Our benchmark is a crucial instrument for monitoring the behavior of TQA systems and paves the way for the development of robust TQA systems. We release our benchmark publicly.

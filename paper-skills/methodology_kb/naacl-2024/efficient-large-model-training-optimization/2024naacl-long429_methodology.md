@@ -1,0 +1,107 @@
+# Learning to Compress Prompt in Natural Language Formats
+
+**Source**: https://aclanthology.org/2024.naacl-long.429/
+
+## [POSITIVE] Natural Language Prompt Encapsulation (Nano-Capsulator)
+A framework that compresses long prompts into shorter natural language (NL) formatted 'Capsule Prompts' while preserving utility and transferability across different LLMs.
+
+**Delta**: Reduces original length by 81.4%, decreases inference latency up to 4.5×, saves 80.1% budget overheads
+**Condition**: Applicable to both few-shot demonstration chain-of-thought (CoT) prompts and passage prompts of reading comprehension.
+
+**Evidence**: "Experimental results demonstrate that the Capsule Prompt can reduce 81.4% of the original length, decrease inference latency up to 4.5×, and save 80.1% of budget overheads while providing transferability across diverse LLMs and different datasets."
+
+## [POSITIVE] Semantics-Preserving Loss (L_Comp)
+An unsupervised training approach that measures similarity between hidden state embeddings of the original long prompt and the compressed Capsule Prompt using mean square error, ensuring maximal semantic preservation.
+
+**Delta**: Outperforms zero-shot summarization baselines across all scenarios
+**Condition**: Used during training of the Nano-Capsulator framework; applicable to both CoT and reading comprehension tasks.
+
+**Evidence**: "We observe that Capsule Prompt yielded by Nano-Capsulator outperforms in all scenarios, which means that our Nano-Capsulator can significantly preserve more semantic information and preserve prompt utility."
+
+## [POSITIVE] Reward Function with Length Constraint (R_cap)
+A reward function that calculates score changes of downstream task questions using original and compressed prompts, with a truncation mechanism to enforce strict length constraints on the generated Capsule Prompt.
+
+**Delta**: Performance degrades without reward function (ablation study shows degradation on TriviaQA-Long dataset)
+**Condition**: Applied during training; uses a frozen pre-trained LLM and sampled downstream task questions to compute reward scores.
+
+**Evidence**: "The results indicate a degradation in performance for downstream tasks when the reward function is not utilized."
+
+## [POSITIVE] Combined Objective Function (L_Nano)
+Integrates the semantics-preserving loss and the reward function, penalizing Capsule Prompts that receive low reward scores by increasing their semantic loss value during training.
+
+**Delta**: Enables high utility preservation and transferability
+**Condition**: Used during optimization of Nano-Capsulator; aligns semantic preservation with utility preservation.
+
+**Evidence**: "The fundamental principle of L_Nano(·) is to impose penalties when shorter versions of Capsule Prompt exhibit inferior performance."
+
+## [POSITIVE] Unsupervised Training with Replicating and Summarizing Instructions
+Uses two instructions: T_Rep (replicating instruction) to obtain hidden state embeddings of the original prompt, and T_Summ (summarizing instruction) to generate compressed Capsule Prompt embeddings, enabling unsupervised learning without labeled data.
+
+**Delta**: Enables effective compression without requiring labeled training data
+**Condition**: Applied during training of Nano-Capsulator; instructions are listed in Table 6 of the paper.
+
+**Evidence**: "We adopt an unsupervised training approach featuring semantic preservation loss, motivating the model to compress contexts while retaining similar semantic content."
+
+## [POSITIVE] Transferability Across Different LLMs
+Capsule Prompts are generated in natural language format, allowing them to be used with various LLMs (Vicuna-13B, PaLM, Claude2) without retraining the compressor for each model.
+
+**Delta**: Maintains almost identical performance to non-compressed prompts on MultiRC; retains original performance on CSQA, GSM8K, and TriviaQA-Long mostly across three LLMs
+**Condition**: Evaluated on Vicuna-13B, PaLM, and Claude2; compressor trained on Vicuna-7B.
+
+**Evidence**: "Nano-Capsulator retains the original performance on the CSQA, GSM8k, and TriviaQA-Long datasets mostly among three LLMs. Remarkably, Nano-Capsulator maintains almost identical performance to that achieved with non-compressed prompts in MultiRC datasets."
+
+## [POSITIVE] Transferability Across Unseen Datasets
+Nano-Capsulator trained on one dataset (e.g., MultiRC) can be applied to unseen datasets (e.g., BoolQ) with similar downstream tasks without further training.
+
+**Delta**: Competitive performance with only slight accuracy drop compared to training version
+**Condition**: Tested on BoolQ (unseen) after training on MultiRC; applicable to reading comprehension tasks with similar domains.
+
+**Evidence**: "We see a competitive performance with only a slight accuracy drop compared to the training version of Capsule Prompt."
+
+## [POSITIVE] Comparison with Zero-shot Summarization
+Nano-Capsulator is compared against in-context zero-shot summarization generated by Vicuna-7B and GPT-3.5-Turbo, showing superior performance in preserving prompt utility.
+
+**Delta**: Outperforms zero-shot summarization in all scenarios; maintains higher utility than GPT-3.5-Turbo summarization
+**Condition**: Evaluated on CSQA, GSM8K, and MultiRC datasets with Vicuna-13B and Claude2.
+
+**Evidence**: "We observe that Capsule Prompt yielded by Nano-Capsulator outperforms in all scenarios... Nano-Capsulator maintains a higher level of prompt utility compared to GPT-3.5-Turbo, resulting in enhanced performance on both the CSQA and GSM8K tasks."
+
+## [POSITIVE] Comparison with Text Dropping Methods
+Nano-Capsulator is compared against random demonstration elimination and Selective Context (word elimination based on self-information), showing better performance at similar lengths.
+
+**Delta**: Capsule Prompt outperforms both baselines at similar lengths
+**Condition**: Tested on CSQA and MultiRC datasets under Claude2.
+
+**Evidence**: "We observe that Capsule Prompt outperforms the other two baselines. Particularly, Capsule Prompt achieves better performance when the length is similar to the baselines."
+
+## [NEUTRAL] Impact of Capsule Prompt Length
+The length of the Capsule Prompt affects utility; longer prompts may capture more information but can also introduce noise, leading to suboptimal performance depending on the LLM.
+
+**Delta**: Length of 150 outperforms other settings under Claude2; length of 200 outperforms others under Vicuna-13B on TriviaQA
+**Condition**: Observed on TriviaQA dataset with Vicuna-13B and Claude2; optimal length varies by LLM.
+
+**Evidence**: "We observe that the length of Capsule Prompt can impact its utility on different LLMs. While longer prompts might capture more useful information for downstream tasks, they can also introduce certain noise or misinformation to the LLMs."
+
+## [POSITIVE] Inference Latency Reduction
+Capsule Prompts reduce inference latency by 2.1× to 4.5× compared to original prompts, and allow larger batch sizes without out-of-memory issues.
+
+**Delta**: Reduces latency up to 4.5× under OPT-2.7B and 4.1× under Vicuna-13B
+**Condition**: Tested on OPT-2.7B and Vicuna-13B with CSQA and TriviaQA-Long datasets; batch sizes up to 16.
+
+**Evidence**: "Capsule Prompt obtains mostly of its original performance while reducing 2.1× ∼ 4.5× of execution latency... Capsule Prompt accelerates the process by up to 4.5×, and under Vicuna-13B, it achieves a speed increase of 4.1× compared to the original input prompt."
+
+## [POSITIVE] API Cost Savings
+Capsule Prompts reduce API call costs by up to 80.1% compared to original prompts when using Claude2 and PaLM APIs.
+
+**Delta**: Saves up to 80.1% of original cost on Claude2 and PaLM
+**Condition**: Evaluated on CSQA, GSM8K, MultiRC, and TriviaQA-Long datasets with Claude2 and PaLM APIs.
+
+**Evidence**: "Capsule Prompt save up to 80.1% of the original cost."
+
+## [POSITIVE] Comparison with Soft Prompt Compression (AutoCompressors)
+Nano-Capsulator is compared against AutoCompressors (soft prompt method) on GSM8K, showing significantly better performance.
+
+**Delta**: Accuracy: AutoCompressors 3.79 vs Ours 19.7 on GSM8K
+**Condition**: Tested on GSM8K dataset using Llama-2-7B model.
+
+**Evidence**: "AutoCompressor does not preserve essential information in the compressed soft prompts, leading to a considerable performance drop in the GSM8K task."

@@ -1,0 +1,18 @@
+---
+title: "Advancing the Robustness of Large Language Models through Self-Denoised Smoothing"
+source: "https://aclanthology.org/2024.naacl-short.23/"
+categories: ['llm-backdoor-attacks-defense', 'code-search-clone-detection']
+tags: ['robustness', 'adversarial-attack', 'denoising']
+venue: "NAACL 2024"
+tldr: "Advances LLM robustness against adversarial attacks using a self-denoised smoothing technique."
+---
+
+# Advancing the Robustness of Large Language Models through Self-Denoised Smoothing
+
+**Source**: [https://aclanthology.org/2024.naacl-short.23/](https://aclanthology.org/2024.naacl-short.23/)
+
+**TLDR**: Advances LLM robustness against adversarial attacks using a self-denoised smoothing technique.
+
+## Abstract
+
+AbstractAlthough large language models (LLMs) have achieved significant success, their vulnerability to adversarial perturbations, including recent jailbreak attacks, has raised considerable concerns. However, the increasing size of these models and their limited access make improving their robustness a challenging task. Among various defense strategies, randomized smoothing has shown great potential for LLMs, as it does not require full access to the model’s parameters or fine-tuning via adversarial training. However, randomized smoothing involves adding noise to the input before model prediction, and the final model’s robustness largely depends on the model’s performance on these noise-corrupted data. Its effectiveness is often limited by the model’s sub-optimal performance on noisy data. To address this issue, we propose to leverage the multitasking nature of LLMs to first denoise the noisy inputs and then to make predictions based on these denoised versions. We call this procedure self-denoised smoothing. Unlike previous denoised smoothing techniques in computer vision, which require training a separate model to enhance the robustness of LLMs, our method offers significantly better efficiency and flexibility. Our experimental results indicate that our method surpasses existing methods in both empirical and certified robustness in defending against adversarial attacks for both downstream tasks and human alignments (i.e., jailbreak attacks). Our code is publicly available at https://github.com/UCSB-NLP-Chang/SelfDenoise.

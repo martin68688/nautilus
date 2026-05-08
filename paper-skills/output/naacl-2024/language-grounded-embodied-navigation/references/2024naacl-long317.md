@@ -1,0 +1,18 @@
+---
+title: "Code Models are Zero-shot Precondition Reasoners"
+source: "https://aclanthology.org/2024.naacl-long.317/"
+categories: ['legal-ai-nlp-applications', 'language-grounded-embodied-navigation']
+tags: ['code', 'precondition', 'reasoning', 'zero-shot', 'embodied']
+venue: "NAACL 2024"
+tldr: "Shows code models can reason about action preconditions for sequential decision making in a zero-shot manner."
+---
+
+# Code Models are Zero-shot Precondition Reasoners
+
+**Source**: [https://aclanthology.org/2024.naacl-long.317/](https://aclanthology.org/2024.naacl-long.317/)
+
+**TLDR**: Shows code models can reason about action preconditions for sequential decision making in a zero-shot manner.
+
+## Abstract
+
+AbstractOne of the fundamental skills required for an agent acting in an environment to complete tasks is the ability to understand what actions are plausible at any given point. This work explores a novel use of code representations to reason about action preconditions for sequential decision making tasks. Code representations offer the flexibility to model procedural activities and associated constraints as well as the ability to execute and verify constraint satisfaction. Leveraging code representations, we extract action preconditions from demonstration trajectories in a zero-shot manner using pre-trained code models. Given these extracted preconditions, we propose a precondition-aware action sampling strategy that ensures actions predicted by a policy are consistent with preconditions. We demonstrate that the proposed approach enhances the performance of few-shot policy learning approaches across task-oriented dialog and embodied textworld benchmarks.

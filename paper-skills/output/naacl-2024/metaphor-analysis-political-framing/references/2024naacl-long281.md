@@ -1,0 +1,18 @@
+---
+title: "Language Models Implement Simple Word2Vec-style Vector Arithmetic"
+source: "https://aclanthology.org/2024.naacl-long.281/"
+categories: ['metaphor-analysis-political-framing', 'transformer-language-model-probing']
+tags: ['interpretability', 'vector-arithmetic', 'relational-reasoning']
+venue: "NAACL 2024"
+tldr: "Presents evidence that language models sometimes solve relational tasks using a simple Word2Vec-style vector arithmetic mechanism in their hidden spaces."
+---
+
+# Language Models Implement Simple Word2Vec-style Vector Arithmetic
+
+**Source**: [https://aclanthology.org/2024.naacl-long.281/](https://aclanthology.org/2024.naacl-long.281/)
+
+**TLDR**: Presents evidence that language models sometimes solve relational tasks using a simple Word2Vec-style vector arithmetic mechanism in their hidden spaces.
+
+## Abstract
+
+AbstractA primary criticism towards language models (LMs) is their inscrutability. This paper presents evidence that, despite their size and complexity, LMs sometimes exploit a simple vector arithmetic style mechanism to solve some relational tasks using regularities encoded in the hidden space of the model (e.g., Poland:Warsaw::China:Beijing). We investigate a range of language model sizes (from 124M parameters to 176B parameters) in an in-context learning setting, and find that for a variety of tasks (involving capital cities, uppercasing, and past-tensing) a key part of the mechanism reduces to a simple additive update typically applied by the feedforward (FFN) networks. We further show that this mechanism is specific to tasks that require retrieval from pretraining memory, rather than retrieval from local context. Our results contribute to a growing body of work on the interpretability of LMs, and offer reason to be optimistic that, despite the massive and non-linear nature of the models, the strategies they ultimately use to solve tasks can sometimes reduce to familiar and even intuitive algorithms.

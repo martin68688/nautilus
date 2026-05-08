@@ -1,0 +1,18 @@
+---
+title: "Zero-Shot vs. Translation-Based Cross-Lingual Transfer: The Case of Lexical Gaps"
+source: "https://aclanthology.org/2024.naacl-short.37/"
+categories: ['zero-shot-few-shot-multimodal-optimization', 'code-search-clone-detection']
+tags: ['cross-lingual', 'zero-shot', 'machine-translation', 'lexical-gaps']
+venue: "NAACL 2024"
+tldr: "Compares zero-shot and translation-based cross-lingual transfer, focusing on handling lexical gaps."
+---
+
+# Zero-Shot vs. Translation-Based Cross-Lingual Transfer: The Case of Lexical Gaps
+
+**Source**: [https://aclanthology.org/2024.naacl-short.37/](https://aclanthology.org/2024.naacl-short.37/)
+
+**TLDR**: Compares zero-shot and translation-based cross-lingual transfer, focusing on handling lexical gaps.
+
+## Abstract
+
+AbstractCross-lingual transfer can be achieved through two main approaches: zero-shot transfer or machine translation (MT). While the former has been the dominant approach, both have been shown to be competitive. In this work, we compare the current performance and long-term viability of these methods. We leverage lexical gaps to create a multilingual question answering dataset, which provides a difficult domain for evaluation. Both approaches struggle in this setting, though zero-shot transfer performs better, as current MT outputs are not specific enough for the task. Using oracle translation offers the best performance, showing that this approach can perform well long-term, however current MT quality is a bottleneck. We also conduct an exploratory study to see if humans produce translations sufficient for the task with only general instructions. We find this to be true for the majority of translators, but not all. This indicates that while translation has the potential to outperform zero-shot approaches, creating MT models that generate accurate task-specific translations may not be straightforward.

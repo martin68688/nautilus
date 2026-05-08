@@ -1,0 +1,18 @@
+---
+title: "A Multi-Aspect Framework for Counter Narrative Evaluation using Large Language Models"
+source: "https://aclanthology.org/2024.naacl-short.14/"
+categories: ['human-llm-opinion-dynamics-moderation']
+tags: ['hate-speech', 'counter-narrative', 'evaluation']
+venue: "NAACL 2024"
+tldr: "Introduces a multi-aspect framework using LLMs to evaluate the quality of automatically generated counter-narratives against hate speech."
+---
+
+# A Multi-Aspect Framework for Counter Narrative Evaluation using Large Language Models
+
+**Source**: [https://aclanthology.org/2024.naacl-short.14/](https://aclanthology.org/2024.naacl-short.14/)
+
+**TLDR**: Introduces a multi-aspect framework using LLMs to evaluate the quality of automatically generated counter-narratives against hate speech.
+
+## Abstract
+
+AbstractCounter narratives - informed responses to hate speech contexts designed to refute hateful claims and de-escalate encounters - have emerged as an effective hate speech intervention strategy. While previous work has proposed automatic counter narrative generation methods to aid manual interventions, the evaluation of these approaches remains underdeveloped. Previous automatic metrics for counter narrative evaluation lack alignment with human judgment as they rely on superficial reference comparisons instead of incorporating key aspects of counter narrative quality as evaluation criteria. To address prior evaluation limitations, we propose a novel evaluation framework prompting LLMs to provide scores and feedback for generated counter narrative candidates using 5 defined aspects derived from guidelines from counter narrative specialized NGOs. We found that LLM evaluators achieve strong alignment to human-annotated scores and feedback and outperform alternative metrics, indicating their potential as multi-aspect, reference-free and interpretable evaluators for counter narrative evaluation.

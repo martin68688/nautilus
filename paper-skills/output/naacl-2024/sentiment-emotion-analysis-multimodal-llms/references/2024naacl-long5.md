@@ -1,0 +1,18 @@
+---
+title: "TelME: Teacher-leading Multimodal Fusion Network for Emotion Recognition in Conversation"
+source: "https://aclanthology.org/2024.naacl-long.5/"
+categories: ['sentiment-emotion-analysis-multimodal-llms']
+tags: ['emotion-recognition', 'multimodal', 'conversation']
+venue: "NAACL 2024"
+tldr: "Presents a teacher-leading multimodal fusion network to improve emotion recognition in conversation by better integrating audio, visual, and text."
+---
+
+# TelME: Teacher-leading Multimodal Fusion Network for Emotion Recognition in Conversation
+
+**Source**: [https://aclanthology.org/2024.naacl-long.5/](https://aclanthology.org/2024.naacl-long.5/)
+
+**TLDR**: Presents a teacher-leading multimodal fusion network to improve emotion recognition in conversation by better integrating audio, visual, and text.
+
+## Abstract
+
+AbstractEmotion Recognition in Conversation (ERC) plays a crucial role in enabling dialogue sys- tems to effectively respond to user requests. The emotions in a conversation can be identi- fied by the representations from various modal- ities, such as audio, visual, and text. How- ever, due to the weak contribution of non-verbal modalities to recognize emotions, multimodal ERC has always been considered a challenging task. In this paper, we propose Teacher-leading Multimodal fusion network for ERC (TelME). TelME incorporates cross-modal knowledge distillation to transfer information from a lan- guage model acting as the teacher to the non- verbal students, thereby optimizing the efficacy of the weak modalities. We then combine multi- modal features using a shifting fusion approach in which student networks support the teacher. TelME achieves state-of-the-art performance in MELD, a multi-speaker conversation dataset for ERC. Finally, we demonstrate the effec- tiveness of our components through additional experiments.

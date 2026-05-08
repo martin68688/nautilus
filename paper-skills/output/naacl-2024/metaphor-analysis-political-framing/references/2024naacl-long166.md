@@ -1,0 +1,18 @@
+---
+title: "Social Meme-ing: Measuring Linguistic Variation in Memes"
+source: "https://aclanthology.org/2024.naacl-long.166/"
+categories: ['metaphor-analysis-political-framing', 'social-media-linguistic-variation']
+tags: ['memes', 'sociolinguistics', 'linguistic-variation', 'multimodal']
+venue: "NAACL 2024"
+tldr: "A computational pipeline measures linguistic variation in memes, showing they exhibit meaningful social variation like text."
+---
+
+# Social Meme-ing: Measuring Linguistic Variation in Memes
+
+**Source**: [https://aclanthology.org/2024.naacl-long.166/](https://aclanthology.org/2024.naacl-long.166/)
+
+**TLDR**: A computational pipeline measures linguistic variation in memes, showing they exhibit meaningful social variation like text.
+
+## Abstract
+
+AbstractMuch work in the space of NLP has used computational methods to explore sociolinguistic variation in text. In this paper, we argue that memes, as multimodal forms of language comprised of visual templates and text, also exhibit meaningful social variation. We construct a computational pipeline to cluster individual instances of memes into templates and semantic variables, taking advantage of their multimodal structure in doing so. We apply this method to a large collection of meme images from Reddit and make available the resulting SemanticMemes dataset of 3.8M images clustered by their semantic function. We use these clusters to analyze linguistic variation in memes, discovering not only that socially meaningful variation in meme usage exists between subreddits, but that patterns of meme innovation and acculturation within these communities align with previous findings on written language.

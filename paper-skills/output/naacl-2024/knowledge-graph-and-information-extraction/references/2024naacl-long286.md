@@ -1,0 +1,18 @@
+---
+title: "Where are you from? Geolocating Speech and Applications to Language Identification"
+source: "https://aclanthology.org/2024.naacl-long.286/"
+categories: ['knowledge-graph-and-information-extraction', 'speech-language-processing-multilingual']
+tags: ['speech-geolocation', 'language-identification']
+venue: "NAACL 2024"
+tldr: "Models trained for speech geolocation can be repurposed for language identification."
+---
+
+# Where are you from? Geolocating Speech and Applications to Language Identification
+
+**Source**: [https://aclanthology.org/2024.naacl-long.286/](https://aclanthology.org/2024.naacl-long.286/)
+
+**TLDR**: Models trained for speech geolocation can be repurposed for language identification.
+
+## Abstract
+
+AbstractWe train models to answer the question, Where are you from? and show how such models can be repurposed for language identification (LID). To our knowledge, this paper is the first to introduce data sources, methods and models to tackle the task of geolocation of speech at a global scale, and the first to explore using geolocation as a proxy-task for LID. Specifically, we explore whether radio broadcasts with known origin can be used to train regression and classification-based models for geolocating speech. We build models on top of self-supervised pretrained models, using attention pooling to qualitatively verify that the model geolocates the speech itself, and not other channel artifacts.The best geolocation models localize speaker origin to around 650km. We confirm the value of speech geolocation as a proxy task by using speech geolocation models for zero-shot LID. Finally, we show that fine-tuning geolocation models for LID outperforms fine-tuning pretrained Wav2Vec2.0 models, and achieves state-of-the-art performance on the FLEURS benchmark.

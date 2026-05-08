@@ -1,0 +1,18 @@
+---
+title: "XSTest: A Test Suite for Identifying Exaggerated Safety Behaviours in Large Language Models"
+source: "https://aclanthology.org/2024.naacl-long.301/"
+categories: ['llm-evaluation-summarization-argument-extraction', 'llm-alignment-safety-detoxification']
+tags: ['safety-evaluation', 'red-teaming']
+venue: "NAACL 2024"
+tldr: "XSTest is a test suite for identifying exaggerated safety behaviors in LLMs."
+---
+
+# XSTest: A Test Suite for Identifying Exaggerated Safety Behaviours in Large Language Models
+
+**Source**: [https://aclanthology.org/2024.naacl-long.301/](https://aclanthology.org/2024.naacl-long.301/)
+
+**TLDR**: XSTest is a test suite for identifying exaggerated safety behaviors in LLMs.
+
+## Abstract
+
+AbstractWithout proper safeguards, large language models will readily follow malicious instructions and generate toxic content. This risk motivates safety efforts such as red-teaming and large-scale feedback learning, which aim to make models both helpful and harmless. However, there is a tension between these two objectives, since harmlessness requires models to refuse to comply with unsafe prompts, and thus not be helpful. Recent anecdotal evidence suggests that some models may have struck a poor balance, so that even clearly safe prompts are refused if they use similar language to unsafe prompts or mention sensitive topics. In this paper, we introduce a new test suite called XSTest to identify such eXaggerated Safety behaviours in a systematic way. XSTest comprises 250 safe prompts across ten prompt types that well-calibrated models should not refuse to comply with, and 200 unsafe prompts as contrasts that models, for most applications, should refuse. We describe XSTest’s creation and composition, and then use the test suite to highlight systematic failure modes in state-of-the-art language models as well as more general challenges in building safer language models.

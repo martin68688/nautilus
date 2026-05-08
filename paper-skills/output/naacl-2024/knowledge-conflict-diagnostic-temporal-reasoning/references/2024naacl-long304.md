@@ -1,0 +1,18 @@
+---
+title: "DialogVCS: Robust Natural Language Understanding in Dialogue System Upgrade"
+source: "https://aclanthology.org/2024.naacl-long.304/"
+categories: ['contrastive-and-generative-representation-learning', 'knowledge-conflict-diagnostic-temporal-reasoning']
+tags: ['dialogue', 'nlu', 'robustness', 'data-drift']
+venue: "NAACL 2024"
+tldr: "A framework (DialogVCS) for robust natural language understanding in dialogue systems during updates with new intents and data."
+---
+
+# DialogVCS: Robust Natural Language Understanding in Dialogue System Upgrade
+
+**Source**: [https://aclanthology.org/2024.naacl-long.304/](https://aclanthology.org/2024.naacl-long.304/)
+
+**TLDR**: A framework (DialogVCS) for robust natural language understanding in dialogue systems during updates with new intents and data.
+
+## Abstract
+
+AbstractIn the constant updates of the product dialogue systems, we need to retrain the natural language understanding (NLU) model as new data from the real users would be merged into the existing data accumulated in the last updates. Within the newly added data, new intents would emerge and might have semantic entanglement with the existing intents, e.g. new intents that are semantically too specific or generic are actually a subset or superset of some existing intents in the semantic space, thus impairing the robustness of the NLU model.As the first attempt to solve this problem, we setup a new benchmark consisting of 4 Dialogue Version Control dataSets (DialogVCS). We formulate the intent detection with imperfect data in the system update as a multi-label classification task with positive but unlabeled intents, which asks the models to recognize all the proper intents, including the ones with semantic entanglement, in the inference.We also propose comprehensive baseline models and conduct in-depth analyses for the benchmark, showing that the semantically entangled intents can be effectively recognized with an automatic workflow. Our code and dataset are available at https://github.com/Zefan-Cai/DialogVCS.

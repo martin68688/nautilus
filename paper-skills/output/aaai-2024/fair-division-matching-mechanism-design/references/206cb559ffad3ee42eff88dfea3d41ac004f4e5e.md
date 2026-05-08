@@ -1,0 +1,34 @@
+---
+title: "The Complexity of Computing Robust Mediated Equilibria in Ordinal Games"
+source: "https://www.semanticscholar.org/paper/206cb559ffad3ee42eff88dfea3d41ac004f4e5e"
+categories: ['fair-division-matching-mechanism-design']
+tags: ['game-theory', 'ordinal-games', 'robust-equilibria', 'complexity']
+venue: "AAAI 2024"
+tldr: "Analyzes the complexity of computing robust mediated equilibria in ordinal games."
+---
+
+# The Complexity of Computing Robust Mediated Equilibria in Ordinal Games
+
+**Source**: [https://www.semanticscholar.org/paper/206cb559ffad3ee42eff88dfea3d41ac004f4e5e](https://www.semanticscholar.org/paper/206cb559ffad3ee42eff88dfea3d41ac004f4e5e)
+
+**TLDR**: Analyzes the complexity of computing robust mediated equilibria in ordinal games.
+
+## Abstract
+
+Usually, to apply game-theoretic methods, we must specify utilities
+precisely, and we run the risk that the solutions we compute are not
+robust to errors in this specification. Ordinal games provide an
+attractive alternative: they require specifying only which outcomes
+are preferred to which other ones. Unfortunately, they provide little
+guidance for how to play unless there are pure Nash equilibria;
+evaluating mixed strategies appears to fundamentally require cardinal
+utilities.
+
+In this paper, we observe that we can in fact make good use of mixed
+strategies in ordinal games if we consider settings that allow for
+folk theorems. These allow us to find equilibria that are robust, in
+the sense that they remain equilibria no matter which cardinal
+utilities are the correct ones -- as long as they are consistent with
+the specified ordinal preferences. We analyze this concept and study
+the computational complexity of finding such equilibria in a range of
+settings.

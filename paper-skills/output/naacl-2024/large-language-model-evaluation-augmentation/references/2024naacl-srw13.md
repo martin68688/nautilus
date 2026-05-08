@@ -1,0 +1,18 @@
+---
+title: "Detecting Response Generation Not Requiring Factual Judgment"
+source: "https://aclanthology.org/2024.naacl-srw.13/"
+categories: ['large-language-model-evaluation-augmentation', 'llm-evaluation-summarization-argument-extraction']
+tags: ['factuality', 'dialogue', 'evaluation']
+venue: "NAACL 2024"
+tldr: "It aims to detect when a dialogue response does not require factual judgment, balancing attractiveness and factuality in LLM outputs."
+---
+
+# Detecting Response Generation Not Requiring Factual Judgment
+
+**Source**: [https://aclanthology.org/2024.naacl-srw.13/](https://aclanthology.org/2024.naacl-srw.13/)
+
+**TLDR**: It aims to detect when a dialogue response does not require factual judgment, balancing attractiveness and factuality in LLM outputs.
+
+## Abstract
+
+AbstractWith the remarkable development of large language models (LLMs), ensuring the factuality of output has become a challenge.However, having all the contents of the response with given knowledge or facts is not necessarily a good thing in dialogues.This study aimed to achieve both attractiveness and factuality in a dialogue response for which a task was set to predict sentences that do not require factual correctness judgment such as agreeing, or personal opinions/feelings.We created a dataset, dialogue dataset annotated with fact-check-needed label (DDFC), for this task via crowdsourcing, and classification tasks were performed on several models using this dataset.The model with the highest classification accuracy could yield about 88% accurate classification results.

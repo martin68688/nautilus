@@ -1,0 +1,18 @@
+---
+title: "PEMA: An Offsite-Tunable Plug-in External Memory Adaptation for Language Models"
+source: "https://aclanthology.org/2024.naacl-long.336/"
+categories: ['human-llm-opinion-dynamics-moderation', 'efficient-large-model-training-optimization']
+tags: ['external-memory', 'parameter-efficient', 'adaptation']
+venue: "NAACL 2024"
+tldr: "Proposes a plug-in external memory adaptation method for language models that is tunable offsite without modifying the original model weights."
+---
+
+# PEMA: An Offsite-Tunable Plug-in External Memory Adaptation for Language Models
+
+**Source**: [https://aclanthology.org/2024.naacl-long.336/](https://aclanthology.org/2024.naacl-long.336/)
+
+**TLDR**: Proposes a plug-in external memory adaptation method for language models that is tunable offsite without modifying the original model weights.
+
+## Abstract
+
+AbstractPre-trained language models (PLMs) show impressive performance in various downstream NLP tasks. However, pre-training large language models demands substantial memory and training compute. Furthermore, due to the substantial resources required, many PLM weights are confidential. Consequently, users are compelled to share their data with model owners for fine-tuning specific tasks. To overcome the limitations, we introduce Plug-in External Memory Adaptation (PEMA), a Parameter-Efficient Fine-Tuning (PEFT) method, enabling PLM fine-tuning without requiring access to all the weights. PEMA integrates with context representations from test data during inference to perform downstream tasks. It uses external memory to store PLM-generated context representations mapped with target tokens. Our method utilizes weight matrices of LoRA-like bottlenecked adapter in the PLM’s final layer to enhance efficiency. Our approach also includes Gradual Unrolling, a novel interpolation strategy to improve generation quality. We validate PEMA’s effectiveness through experiments on syntactic and real datasets for machine translation and style transfer. Our findings show that PEMA outperforms other PEFT approaches in memory and latency efficiency for training, and also excels in maintaining sentence meaning and generating appropriate language and styles.

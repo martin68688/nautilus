@@ -1,0 +1,18 @@
+---
+title: "Elastic Weight Removal for Faithful and Abstractive Dialogue Generation"
+source: "https://aclanthology.org/2024.naacl-long.393/"
+categories: ['contrastive-and-generative-representation-learning', 'knowledge-graph-hallucination-reduction']
+tags: ['dialogue', 'hallucination', 'faithful-generation']
+venue: "NAACL 2024"
+tldr: "Proposes elastic weight removal to improve faithfulness in document-grounded dialogue generation by reducing hallucination."
+---
+
+# Elastic Weight Removal for Faithful and Abstractive Dialogue Generation
+
+**Source**: [https://aclanthology.org/2024.naacl-long.393/](https://aclanthology.org/2024.naacl-long.393/)
+
+**TLDR**: Proposes elastic weight removal to improve faithfulness in document-grounded dialogue generation by reducing hallucination.
+
+## Abstract
+
+AbstractGenerating factual responses is a crucial requirement for dialogue systems. To promotemore factual responses, a common strategyis to ground their responses in relevant documents that inform response generation. However, common dialogue models still often hallucinate information that was not containedin these documents and is therefore unfaithful. In this work, we propose to alleviate suchhallucinations by ‘subtracting’ the parametersof a model trained to hallucinate from a dialogue response generation model in order to‘negate’ the contribution of such hallucinatedexamples from it. Extensive automatic and human evaluation shows favourable results whencompared to state-of-the-art methods that combine the distributions of multiple models, suchas DExperts (Liu et al., 2021), and others thatchange the training procedure, such as Quark(Lu et al., 2022a). Finally, we show how wecan not only reduce hallucinations but also discourage extractive responses, which are oftena consequence of reducing hallucinations byencouraging copy-pasting of document spans.We publicly release our code for reproducibilityand facilitating further research.

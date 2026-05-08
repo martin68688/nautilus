@@ -1,0 +1,18 @@
+---
+title: "Rationale-based Opinion Summarization"
+source: "https://aclanthology.org/2024.naacl-long.458/"
+categories: ['llm-evaluation-summarization-argument-extraction', 'sentiment-emotion-analysis-multimodal-llms']
+tags: ['opinion-summarization', 'rationale', 'explanation']
+venue: "NAACL 2024"
+tldr: "Proposes a new rationale-based paradigm for opinion summarization that generates summaries with supporting evidence."
+---
+
+# Rationale-based Opinion Summarization
+
+**Source**: [https://aclanthology.org/2024.naacl-long.458/](https://aclanthology.org/2024.naacl-long.458/)
+
+**TLDR**: Proposes a new rationale-based paradigm for opinion summarization that generates summaries with supporting evidence.
+
+## Abstract
+
+AbstractOpinion summarization aims to generate concise summaries that present popular opinions of a large group of reviews. However, these summaries can be too generic and lack supporting details. To address these issues, we propose a new paradigm for summarizing reviews, rationale-based opinion summarization. Rationale-based opinion summaries output the representative opinions as well as one or more corresponding rationales. To extract good rationales, we define four desirable properties: relatedness, specificity, popularity, and diversity and present a Gibbs-sampling-based method to extract rationales. Overall, we propose RATION, an unsupervised extractive system that has two components: an Opinion Extractor (to extract representative opinions) and Rationales Extractor (to extract corresponding rationales). We conduct automatic and human evaluations to show that rationales extracted by RATION have the proposed properties and its summaries are more useful than conventional summaries. The implementation of our work is available at https://github.com/leehaoyuan/RATION.

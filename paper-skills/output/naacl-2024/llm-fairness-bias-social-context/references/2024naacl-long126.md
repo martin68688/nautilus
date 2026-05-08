@@ -1,0 +1,18 @@
+---
+title: "The Perspectivist Paradigm Shift: Assumptions and Challenges of Capturing Human Labels"
+source: "https://aclanthology.org/2024.naacl-long.126/"
+categories: ['efficient-transformer-optimization-techniques', 'llm-fairness-bias-social-context']
+tags: ['annotation', 'human-judgment', 'perspectivism']
+venue: "NAACL 2024"
+tldr: "Challenges the practice of minimizing annotator disagreement, advocating for a perspectivist paradigm that treats disagreement as meaningful signal."
+---
+
+# The Perspectivist Paradigm Shift: Assumptions and Challenges of Capturing Human Labels
+
+**Source**: [https://aclanthology.org/2024.naacl-long.126/](https://aclanthology.org/2024.naacl-long.126/)
+
+**TLDR**: Challenges the practice of minimizing annotator disagreement, advocating for a perspectivist paradigm that treats disagreement as meaningful signal.
+
+## Abstract
+
+AbstractLongstanding data labeling practices in machine learning involve collecting and aggregating labels from multiple annotators. But what should we do when annotators disagree? Though annotator disagreement has long been seen as a problem to minimize, new perspectivist approaches challenge this assumption by treating disagreement as a valuable source of information. In this position paper, we examine practices and assumptions surrounding the causes of disagreement–some challenged by perspectivist approaches, and some that remain to be addressed–as well as practical and normative challenges for work operating under these assumptions. We conclude with recommendations for the data labeling pipeline and avenues for future research engaging with subjectivity and disagreement.

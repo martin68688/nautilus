@@ -1,0 +1,18 @@
+---
+title: "MMC: Advancing Multimodal Chart Understanding with Large-scale Instruction Tuning"
+source: "https://aclanthology.org/2024.naacl-long.70/"
+categories: ['llm-knowledge-reasoning-retrieval', 'multimodal-chart-retrieval-comparison']
+tags: ['multimodal', 'chart-understanding', 'instruction-tuning']
+venue: "NAACL 2024"
+tldr: "MMC advances multimodal chart understanding through large-scale instruction tuning of large multimodal models."
+---
+
+# MMC: Advancing Multimodal Chart Understanding with Large-scale Instruction Tuning
+
+**Source**: [https://aclanthology.org/2024.naacl-long.70/](https://aclanthology.org/2024.naacl-long.70/)
+
+**TLDR**: MMC advances multimodal chart understanding through large-scale instruction tuning of large multimodal models.
+
+## Abstract
+
+AbstractWith the rapid development of large language models (LLMs) and their integration into large multimodal models (LMMs), there has beenimpressive progress in zero-shot completion of user-oriented vision-language tasks. However, a gap remains in the domain of chartimage understanding due to the distinct abstract components in charts. To address this, we introduce a large-scale MultiModal ChartInstruction (MMC-Instruction) dataset comprising 600k instances supporting diverse tasks and chart types. Leveraging this data, we de-velop MultiModal Chart Assistant (MMCA), an LMM that achieves state-of-the-art performance on existing chart QA benchmarks. Recognizing the need for a comprehensive evaluation of LMM chart understanding, we also propose a MultiModal Chart Benchmark (MMC-Benchmark), a comprehensive human-annotated benchmark with nine distinct tasks evaluating reasoning capabilities over charts.Extensive experiments on MMC-Benchmark reveal the limitations of existing LMMs on correctly interpreting charts, even for the mostrecent GPT-4V model. Our work provides an instruction-tuning methodology and benchmark to advance multimodal understanding ofcharts. Code and data are available at https://github.com/FuxiaoLiu/MMC.

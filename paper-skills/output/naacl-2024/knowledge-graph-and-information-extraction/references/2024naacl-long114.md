@@ -1,0 +1,18 @@
+---
+title: "IPED: An Implicit Perspective for Relational Triple Extraction based on Diffusion Model"
+source: "https://aclanthology.org/2024.naacl-long.114/"
+categories: ['knowledge-graph-and-information-extraction']
+tags: ['relation-extraction', 'diffusion-models', 'information-extraction']
+venue: "NAACL 2024"
+tldr: "Introduces IPED, an implicit perspective framework for relational triple extraction using a diffusion model to address table-filling shortcomings."
+---
+
+# IPED: An Implicit Perspective for Relational Triple Extraction based on Diffusion Model
+
+**Source**: [https://aclanthology.org/2024.naacl-long.114/](https://aclanthology.org/2024.naacl-long.114/)
+
+**TLDR**: Introduces IPED, an implicit perspective framework for relational triple extraction using a diffusion model to address table-filling shortcomings.
+
+## Abstract
+
+AbstractRelational triple extraction is a fundamental task in the field of information extraction, and a promising framework based on table filling has recently gained attention as a potential baseline for entity relation extraction. However, inherent shortcomings such as redundant information and incomplete triple recognition remain problematic. To address these challenges, we propose an Implicit Perspective for relational triple Extraction based on Diffusion model (IPED), an innovative approach for extracting relational triples. Our classifier-free solution adopts an implicit strategy using block coverage to complete the tables, avoiding the limitations of explicit tagging methods. Additionally, we introduce a generative model structure, the block-denoising diffusion model, to collaborate with our implicit perspective and effectively circumvent redundant information disruptions. Experimental results on two popular datasets demonstrate that IPED achieves state-of-the-art performance while gaining superior inference speed and low computational complexity. To support future research, we have made our source code publicly available online.

@@ -1,0 +1,18 @@
+---
+title: "S3Eval: A Synthetic, Scalable, Systematic Evaluation Suite for Large Language Model"
+source: "https://aclanthology.org/2024.naacl-long.69/"
+categories: ['large-language-model-evaluation-augmentation', 'legal-ai-nlp-applications', 'language-evaluation-benchmarks-foundation-models']
+tags: ['evaluation-benchmark', 'long-context', 'synthetic-data', 'scalable']
+venue: "NAACL 2024"
+tldr: "Introduces a synthetic, scalable, and systematic evaluation suite (S3Eval) to assess LLM capabilities like long-context understanding."
+---
+
+# S3Eval: A Synthetic, Scalable, Systematic Evaluation Suite for Large Language Model
+
+**Source**: [https://aclanthology.org/2024.naacl-long.69/](https://aclanthology.org/2024.naacl-long.69/)
+
+**TLDR**: Introduces a synthetic, scalable, and systematic evaluation suite (S3Eval) to assess LLM capabilities like long-context understanding.
+
+## Abstract
+
+AbstractThe rapid development of Large Language Models (LLMs) has led to great strides in model capabilities like long-context understanding and reasoning.However, as LLMs are able to process longer contexts, it becomes more challenging to evaluate whether they have acquired certain capabilities, since the length of text (e.g., 200K tokens) they can process far exceeds what humans can reliably assess in a reasonable duration.In this paper, we propose using complex synthetic tasks as a proxy evaluation method, and present S3Eval, a Synthetic, Scalable, Systematic evaluation suite for LLMs evaluation.The synthetic nature of S3Eval provides users full control over the dataset, allowing them to systematically probe LLM capabilities by scaling text length and varying task difficulty across diverse scenarios.The strong correlation between S3Eval and real-world benchmarks demonstrates the soundness of using S3Eval for evaluation of LLMs.S3Eval provides a flexible and infinite long-context data generation method. We have generated a comprehensive dataset called S3Eval-Standard, and experimental results have shown that it poses significant challenges for all existing LLMs.

@@ -1,0 +1,18 @@
+---
+title: "DEMO: A Statistical Perspective for Efficient Image-Text Matching"
+source: "https://aclanthology.org/2024.naacl-long.21/"
+categories: ['zero-shot-few-shot-multimodal-optimization', 'legal-ai-nlp-applications']
+tags: ['image-text-matching', 'hashing', 'unsupervised', 'statistical']
+venue: "NAACL 2024"
+tldr: "Presents a statistical perspective for efficient unsupervised hashing-based image-text matching by constructing semantic similarity matrices."
+---
+
+# DEMO: A Statistical Perspective for Efficient Image-Text Matching
+
+**Source**: [https://aclanthology.org/2024.naacl-long.21/](https://aclanthology.org/2024.naacl-long.21/)
+
+**TLDR**: Presents a statistical perspective for efficient unsupervised hashing-based image-text matching by constructing semantic similarity matrices.
+
+## Abstract
+
+AbstractImage-text matching has been a long-standing problem, which seeks to connect vision and language through semantic understanding. Due to the capability to manage large-scale raw data, unsupervised hashing-based approaches have gained prominence recently. They typically construct a semantic similarity structure using the natural distance, which subsequently guides the optimization of the hashing network. However, the similarity structure could be biased at the boundaries of semantic distributions, causing error accumulation during sequential optimization. To tackle this, we introduce a novel hashing approach termed Distribution-based Structure Mining with Consistency Learning (DEMO) for efficient image-text matching. From a statistical view, DEMO characterizes each image using multiple augmented views, which are considered as samples drawn from its intrinsic semantic distribution. Then, we employ a non-parametric distribution divergence to ensure a robust and precise similarity structure. In addition, we introduce collaborative consistency learning which not only preserves the similarity structure in the Hamming space but also encourages consistency between retrieval distribution from different directions in a self-supervised manner. Extensive experiments on several widely used datasets demonstrate that DEMO achieves superior performance compared with various state-of-the-art methods.

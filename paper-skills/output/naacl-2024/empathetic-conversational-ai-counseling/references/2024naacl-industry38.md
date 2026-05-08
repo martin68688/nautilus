@@ -1,0 +1,18 @@
+---
+title: "Leveraging Interesting Facts to Enhance User Engagement with Conversational Interfaces"
+source: "https://aclanthology.org/2024.naacl-industry.38/"
+categories: ['llm-knowledge-reasoning-retrieval', 'empathetic-conversational-ai-counseling']
+tags: ['conversational-ai', 'user-engagement', 'interesting-facts']
+venue: "NAACL 2024"
+tldr: "Explores using interesting facts to enhance user engagement with conversational task assistants."
+---
+
+# Leveraging Interesting Facts to Enhance User Engagement with Conversational Interfaces
+
+**Source**: [https://aclanthology.org/2024.naacl-industry.38/](https://aclanthology.org/2024.naacl-industry.38/)
+
+**TLDR**: Explores using interesting facts to enhance user engagement with conversational task assistants.
+
+## Abstract
+
+AbstractConversational Task Assistants (CTAs) guide users in performing a multitude of activities, such as making recipes. However, ensuring that interactions remain engaging, interesting, and enjoyable for CTA users is not trivial, especially for time-consuming or challenging tasks. Grounded in psychological theories of human interest, we propose to engage users with contextual and interesting statements or facts during interactions with a multi-modal CTA, to reduce fatigue and task abandonment before a task is complete. To operationalize this idea, we train a high-performing classifier (82% F1-score) to automatically identify relevant and interesting facts for users. We use it to create an annotated dataset of task-specific interesting facts for the domain of cooking. Finally, we design and validate a dialogue policy to incorporate the identified relevant and interesting facts into a conversation, to improve user engagement and task completion. Live testing on a leading multi-modal voice assistant shows that 66% of the presented facts were received positively, leading to a 40% gain in the user satisfaction rating, and a 37% increase in conversation length. These findings emphasize that strategically incorporating interesting facts into the CTA experience can promote real-world user participation for guided task interactions.

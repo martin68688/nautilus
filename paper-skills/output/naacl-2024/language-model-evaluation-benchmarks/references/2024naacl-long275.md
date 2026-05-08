@@ -1,0 +1,18 @@
+---
+title: "Finding Replicable Human Evaluations via Stable Ranking Probability"
+source: "https://aclanthology.org/2024.naacl-long.275/"
+categories: ['efficient-transformer-optimization-techniques', 'language-model-evaluation-benchmarks']
+tags: ['human-evaluation', 'reliability']
+venue: "NAACL 2024"
+tldr: "A method finds replicable human evaluations by measuring the stability of system rankings."
+---
+
+# Finding Replicable Human Evaluations via Stable Ranking Probability
+
+**Source**: [https://aclanthology.org/2024.naacl-long.275/](https://aclanthology.org/2024.naacl-long.275/)
+
+**TLDR**: A method finds replicable human evaluations by measuring the stability of system rankings.
+
+## Abstract
+
+AbstractReliable human evaluation is critical to the development of successful natural language generation models, but achieving it is notoriously difficult. Stability is a crucial requirement when ranking systems by quality: consistent ranking of systems across repeated evaluations is not just desirable, but essential. Without it, there is no reliable foundation for hill-climbing or product launch decisions. In this paper, we use machine translation and its state-of-the-art human evaluation framework, MQM, as a case study to understand how to set up reliable human evaluations that yield stable conclusions. We investigate the optimal configurations for item allocation to raters, number of ratings per item, and score normalization. Our study on two language pairs provides concrete recommendations for designing replicable human evaluation studies. We also collect and release the largest publicly available dataset of multi-segment translations rated by multiple professional translators, consisting of nearly 140,000 segment annotations across two language pairs.

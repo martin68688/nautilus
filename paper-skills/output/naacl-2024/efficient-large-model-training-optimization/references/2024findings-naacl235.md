@@ -1,0 +1,18 @@
+---
+title: "CodecLM: Aligning Language Models with Tailored Synthetic Data"
+source: "https://aclanthology.org/2024.findings-naacl.235/"
+categories: ['zero-shot-few-shot-multimodal-optimization', 'efficient-large-model-training-optimization']
+tags: ['instruction-tuning', 'synthetic-data', 'alignment']
+venue: "NAACL 2024"
+tldr: "CodecLM aligns language models with task instructions by generating tailored synthetic data, reducing the need for human-annotated data."
+---
+
+# CodecLM: Aligning Language Models with Tailored Synthetic Data
+
+**Source**: [https://aclanthology.org/2024.findings-naacl.235/](https://aclanthology.org/2024.findings-naacl.235/)
+
+**TLDR**: CodecLM aligns language models with task instructions by generating tailored synthetic data, reducing the need for human-annotated data.
+
+## Abstract
+
+AbstractInstruction tuning has emerged as the key in aligning large language models (LLMs) with specific task instructions, thereby mitigating the discrepancy between the next-token prediction objective and users’ actual goals. To reduce the labor and time cost to collect or annotate data by humans, researchers start to explore the use of LLMs to generate instruction-aligned synthetic data. Recent works focus on generating diverse instructions and applying LLM to increase instruction complexity, often neglecting downstream use cases. It remains unclear how to tailor high-quality data to elicit better instruction-following abilities in different target instruction distributions and LLMs. To this end, we introduce CodecLM, a general framework for adaptively generating high-quality synthetic data for LLM alignment with different downstream instruction distributions and LLMs. Drawing on the Encode-Decode principles, we use LLMs as codecs to guide the data generation process. We first encode seed instructions into metadata, which are concise keywords generated on-the-fly to capture the target instruction distribution, and then decode metadata to create tailored instructions. We also introduce Self-Rubrics and Contrastive Filtering during decoding to tailor data-efficient samples. Extensive experiments on four open-domain instruction following benchmarks validate the effectiveness of CodecLM over the current state-of-the-arts.

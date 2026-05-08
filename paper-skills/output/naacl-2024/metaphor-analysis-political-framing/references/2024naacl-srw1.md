@@ -1,0 +1,18 @@
+---
+title: "Systematic Analysis for Pretrained Language Model Priming for Parameter-Efficient Fine-tuning"
+source: "https://aclanthology.org/2024.naacl-srw.1/"
+categories: ['metaphor-analysis-political-framing', 'continual-learning-memory-transfer-llms']
+tags: ['parameter-efficient-tuning', 'few-shot']
+venue: "NAACL 2024"
+tldr: "Analyzes priming strategies to improve parameter-efficient fine-tuning of PLMs in few-shot settings."
+---
+
+# Systematic Analysis for Pretrained Language Model Priming for Parameter-Efficient Fine-tuning
+
+**Source**: [https://aclanthology.org/2024.naacl-srw.1/](https://aclanthology.org/2024.naacl-srw.1/)
+
+**TLDR**: Analyzes priming strategies to improve parameter-efficient fine-tuning of PLMs in few-shot settings.
+
+## Abstract
+
+AbstractParameter-efficient (PE) methods (like Prompts or Adapters) for adapting pre-trained language models (PLM) to downstream tasks have been popular recently. However, hindrances still prevent these methods from reaching their full potential. For example, two significant challenges are few-shot adaptation and cross-task generalization. To tackle these issues, we propose a general PE priming framework to enhance and explore the few-shot adaptation and generalization ability of PE methods. In this framework, PLMs are primed with PE methods for rapidly adapting to various target tasks. To evaluate the generalization ability of these PE methods, we conduct experiments on a few-shot cross-domain benchmark containing 160 diverse NLP tasks. Our experiment not only reveals the best priming strategy but also verifies that priming facilitates the adaptation to target tasks.

@@ -1,0 +1,18 @@
+---
+title: "On the True Distribution Approximation of Minimum Bayes-Risk Decoding"
+source: "https://aclanthology.org/2024.naacl-short.38/"
+categories: ['bayes-risk-decoding-and-data-drift', 'llm-alignment-safety-detoxification']
+tags: ['decoding', 'bayes-risk', 'text-generation', 'sampling']
+venue: "NAACL 2024"
+tldr: "Analyzes the true distribution approximation in minimum Bayes-risk decoding for text generation."
+---
+
+# On the True Distribution Approximation of Minimum Bayes-Risk Decoding
+
+**Source**: [https://aclanthology.org/2024.naacl-short.38/](https://aclanthology.org/2024.naacl-short.38/)
+
+**TLDR**: Analyzes the true distribution approximation in minimum Bayes-risk decoding for text generation.
+
+## Abstract
+
+AbstractMinimum Bayes-risk (MBR) decoding has recently gained renewed attention in text generation.MBR decoding considers texts sampled from a model as pseudo-references and selects the text with the highest similarity to the others.Therefore, sampling is one of the key elements of MBR decoding, and previous studies reported that the performance varies by sampling methods.From a theoretical standpoint, this performance variation is likely tied to how closely the samples approximate the true distribution of references.However, this approximation has not been the subject of in-depth study.In this study, we propose using anomaly detection to measure the degree of approximation.We first closely examine the performance variation and then show that previous hypotheses about samples do not correlate well with the variation, but our introduced anomaly scores do.The results are the first to empirically support the link between the performance and the core assumption of MBR decoding.

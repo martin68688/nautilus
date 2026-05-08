@@ -1,0 +1,18 @@
+---
+title: "No Context Needed: Contextual Quandary In Idiomatic Reasoning With Pre-Trained Language Models"
+source: "https://aclanthology.org/2024.naacl-long.272/"
+categories: ['transformer-language-model-probing']
+tags: ['idiomatic-reasoning', 'context', 'language-understanding']
+venue: "NAACL 2024"
+tldr: "Studies the challenge of idiomatic reasoning for pre-trained language models, finding context is often not needed or helpful."
+---
+
+# No Context Needed: Contextual Quandary In Idiomatic Reasoning With Pre-Trained Language Models
+
+**Source**: [https://aclanthology.org/2024.naacl-long.272/](https://aclanthology.org/2024.naacl-long.272/)
+
+**TLDR**: Studies the challenge of idiomatic reasoning for pre-trained language models, finding context is often not needed or helpful.
+
+## Abstract
+
+AbstractReasoning in the presence of idiomatic expressions (IEs) remains a challenging frontier in natural language understanding (NLU). Unlike standard text, the non-compositional nature of an IE makes it difficult for model comprehension, as their figurative or non-literal mean- ing usually cannot be inferred from the constituent words alone. It stands to reason that in these challenging circumstances, pre-trained language models (PTLMs) should make use of the surrounding context to infer additional in- formation about the IE. In this paper, we investigate the utilization of said context for idiomatic reasoning tasks, which is under-explored relative to arithmetic or commonsense reason- ing (Liu et al., 2022; Yu et al., 2023). Preliminary findings point to a surprising observation: general purpose PTLMs are actually negatively affected by the context, as performance almost always increases with its removal. In these scenarios, models may see gains of up to 3.89%. As a result, we argue that only IE-aware models remain suitable for idiomatic reasoning tasks, given the unexpected and unexplainable manner in which general purpose PTLMs reason over IEs. Additionally, we conduct studies to examine how models utilize the context in various situations, as well as an in-depth analysis on dataset formation and quality. Finally, we provide some explanations and insights into the reasoning process itself based on our results.

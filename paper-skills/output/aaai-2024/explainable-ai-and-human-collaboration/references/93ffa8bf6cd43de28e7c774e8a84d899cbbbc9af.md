@@ -1,0 +1,18 @@
+---
+title: "Deep Generative Model for Mechanical System Configuration Design"
+source: "https://www.semanticscholar.org/paper/93ffa8bf6cd43de28e7c774e8a84d899cbbbc9af"
+categories: ['explainable-ai-and-human-collaboration', 'protein-molecule-ai-design-models']
+tags: ['generative-ai', 'mechanical-design', 'configuration', 'engineering']
+venue: "AAAI 2024"
+tldr: "Deep generative model for selecting optimal components and interfaces to meet mechanical system design requirements."
+---
+
+# Deep Generative Model for Mechanical System Configuration Design
+
+**Source**: [https://www.semanticscholar.org/paper/93ffa8bf6cd43de28e7c774e8a84d899cbbbc9af](https://www.semanticscholar.org/paper/93ffa8bf6cd43de28e7c774e8a84d899cbbbc9af)
+
+**TLDR**: Deep generative model for selecting optimal components and interfaces to meet mechanical system design requirements.
+
+## Abstract
+
+Generative AI has made remarkable progress in addressing various design challenges. One prominent area where generative AI could bring significant value is in engineering design. In particular, selecting an optimal set of components and their interfaces to create a mechanical system that meets design requirements is one of the most challenging and time-consuming tasks for engineers. This configuration design task is inherently challenging due to its categorical nature, multiple design requirements a solution must satisfy, and the reliance on physics simulations for evaluating potential solutions. These characteristics entail solving a combinatorial optimization problem with multiple constraints involving black-box functions. To address this challenge, we propose a deep generative model to predict the optimal combination of components and interfaces for a given design problem. To demonstrate our approach, we solve a gear train synthesis problem by first creating a synthetic dataset using a domain-specific language, a parts catalogue, and a physics simulator. We then train a Transformer-based model using this dataset, named GearFormer, which can not only generate quality solutions on its own, but also augment traditional search methods such as an evolutionary algorithm and Monte Carlo tree search. We show that GearFormer outperforms such search methods on their own in terms of satisfying the specified design requirements with orders of magnitude faster generation time. Additionally, we showcase the benefit of hybrid methods that leverage both GearFormer and search methods, which further improve the quality of the solutions.

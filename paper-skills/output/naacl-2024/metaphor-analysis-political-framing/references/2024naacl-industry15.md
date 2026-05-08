@@ -1,0 +1,18 @@
+---
+title: "AnnoLLM: Making Large Language Models to Be Better Crowdsourced Annotators"
+source: "https://aclanthology.org/2024.naacl-industry.15/"
+categories: ['metaphor-analysis-political-framing', 'large-language-model-evaluation-augmentation', 'pdf-document-annotation-platform']
+tags: ['data-annotation', 'llm-as-annotator', 'crowdsourcing']
+venue: "NAACL 2024"
+tldr: "Makes large language models better crowdsourced annotators for data labeling."
+---
+
+# AnnoLLM: Making Large Language Models to Be Better Crowdsourced Annotators
+
+**Source**: [https://aclanthology.org/2024.naacl-industry.15/](https://aclanthology.org/2024.naacl-industry.15/)
+
+**TLDR**: Makes large language models better crowdsourced annotators for data labeling.
+
+## Abstract
+
+AbstractMany natural language processing (NLP) tasks rely on labeled data to train machine learning models with high performance. However, data annotation is time-consuming and expensive, especially when the task involves a large amount of data or requires specialized domains. Recently, GPT-3.5 series models have demonstrated remarkable few-shot and zero-shot ability across various NLP tasks. In this paper, we first claim that large language models (LLMs), such as GPT-3.5, can serve as an excellent crowdsourced annotator when provided with sufficient guidance and demonstrated examples. Accordingly, we propose AnnoLLM, an annotation system powered by LLMs, which adopts a two-step approach, explain-then-annotate. Concretely, we first prompt LLMs to provide explanations for why the specific ground truth answer/label was assigned for a given example. Then, we construct the few-shot chain-of-thought prompt with the self-generated explanation and employ it to annotate the unlabeled data with LLMs. Our experiment results on three tasks, including user input and keyword relevance assessment, BoolQ, and WiC, demonstrate that AnnoLLM surpasses or performs on par with crowdsourced annotators. Furthermore, we build the first conversation-based information retrieval dataset employing AnnoLLM. This dataset is designed to facilitate the development of retrieval models capable of retrieving pertinent documents for conversational text. Human evaluation has validated the dataset’s high quality.

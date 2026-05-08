@@ -1,0 +1,18 @@
+---
+title: "ContraDoc: Understanding Self-Contradictions in Documents with Large Language Models"
+source: "https://aclanthology.org/2024.naacl-long.362/"
+categories: ['llm-evaluation-summarization-argument-extraction']
+tags: ['self-contradiction', 'document-understanding', 'llm-evaluation']
+venue: "NAACL 2024"
+tldr: "Explores LLM capabilities for detecting self-contradictions in long documents."
+---
+
+# ContraDoc: Understanding Self-Contradictions in Documents with Large Language Models
+
+**Source**: [https://aclanthology.org/2024.naacl-long.362/](https://aclanthology.org/2024.naacl-long.362/)
+
+**TLDR**: Explores LLM capabilities for detecting self-contradictions in long documents.
+
+## Abstract
+
+AbstractIn recent times, large language models (LLMs) have shown impressive performance on various document-level tasks such as document classification, summarization, and question-answering. However, research on understanding their capabilities on the task of self-contradictions in long documents has been very limited. In this work, we introduce ContraDoc, the first human-annotated dataset to study self-contradictions in long documents across multiple domains, varying document lengths, self-contradiction types, and appearance scope. We then analyze the current capabilities of four state-of-the-art open-source and commercially available LLMs: GPT3.5, GPT4, PaLM2, and LLaMAv2 on this dataset. While GPT4 performs the best and can outperform humans on this task, we find that it is still unreliable and struggles with self-contradictions that require more nuance and context. We release the dataset and all the code associated with the experiments.
