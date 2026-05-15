@@ -1,0 +1,41 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+*.egg
+
+# ===== Environments =====
+.env
+.venv
+venv/
+
+# ===== IDE / Editor =====
+.vscode/
+.idea/
+*.swp
+*~
+
+# ===== Claude Code =====
+.claude/
+
+# ===== Backup / scratch files =====
+*.backup
+*.backup_*
+
+# ===== Logs & temp =====
+*.log
+*.pid
+*.out
+runs/
+cache/
+
+# ===== Model weights =====
+*.pth
+*.pt
+*.pkl
+*.bin
+
+# ===== Large data (keep prepared/ dirs) =====
+*.zip
+mlevolve/data/mlsp-2013-bird/

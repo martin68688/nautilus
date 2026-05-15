@@ -17,7 +17,7 @@ copy_data: False
 
 # Resource
 start_cpu_id: 0
-cpu_number: 21
+cpu_number: 9
 
 # Model paths
 torch_hub_dir: ""       # path to torch hub cache, e.g. /data/pretrain_models/torch_models
@@ -29,7 +29,7 @@ methodology_dynamic: True   # True=LLM dynamic search, False=static methodology_
 #  Code execution
 # ============================================================
 exec:
-  timeout: 3600
+  timeout: 21600
   agent_file_name: runfile.py
 
 # ============================================================
@@ -38,23 +38,23 @@ exec:
 agent:
 
   # --- Basic run params ---
-  steps: 50
-  time_limit: 7200           # 2h
+  steps: 80
+  time_limit: 21600          # 6h
   initial_drafts: 3
   seed: 42
   data_preview: True
 
   # --- LLM models ---
   code:
-    model: google/gemini-3.1-flash-lite-preview
+    model: deepseek-chat
     temp: 1
-    base_url: "https://openrouter.ai/api/v1"
-    api_key: "your-openrouter-api-key-here"
+    base_url: "https://api.deepseek.com"
+    api_key: "YOUR_API_KEY_HERE"
   feedback:
-    model: google/gemini-3.1-flash-lite-preview
+    model: deepseek-chat
     temp: 1
-    base_url: "https://openrouter.ai/api/v1"
-    api_key: "your-openrouter-api-key-here"
+    base_url: "https://api.deepseek.com"
+    api_key: "YOUR_API_KEY_HERE"
 
   # --- Submission check ---
   check_data_leakage: True
@@ -78,8 +78,11 @@ agent:
   # --------------------------------------------------------
   search:
     # Parallel & resources
-    parallel_search_num: 3
-    num_gpus: 1
+    parallel_search_num: 4
+    num_gpus: 4
+  
+
+  
 
     # Node expansion limits
     num_drafts: 5

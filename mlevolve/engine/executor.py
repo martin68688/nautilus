@@ -60,6 +60,7 @@ class Interpreter:
         self.working_dir = Path(working_dir).resolve()
         assert self.working_dir.exists(), f"Working directory {self.working_dir} does not exist"
         self.timeout = timeout
+        self.cfg = cfg
         self.max_parallel_run = (
             cfg.agent.search.parallel_search_num if (cfg and getattr(cfg.agent.search, "parallel_search_num", None)) else max_parallel_run
         )
@@ -204,7 +205,13 @@ class Interpreter:
             if not cpu_set:
                 cpu_set = set(avail_cpus)
             logger.info(f"has set process_id:{process_id} to use cpu: {cpu_set}")
-            pre_code = "import os\nos.sched_setaffinity(0, {cpu_set})\n".format(cpu_set=cpu_set)
+
+            # GPU allocation for multi-GPU support
+            num_gpus = getattr(self.cfg.agent.search, 'num_gpus', 1) if self.cfg else 1
+            gpu_id = process_id % num_gpus
+            logger.info(f"has set process_id:{process_id} to use GPU: {gpu_id}")
+
+            pre_code = "import os\nos.sched_setaffinity(0, {cpu_set})\nos.environ['CUDA_VISIBLE_DEVICES'] = '{gpu_id}'\n".format(cpu_set=cpu_set, gpu_id=gpu_id)
 
             code = self.isolate_submission_path(code=code, _id=id)
             code = self.isolate_model_path(code=code, _id=id)

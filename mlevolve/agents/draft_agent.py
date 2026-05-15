@@ -137,6 +137,9 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
 
             **CRITICAL: When using any recommended pretrained model (Option A), you MUST copy the Code template EXACTLY as provided — including model variant names, file paths, and checkpoint filenames. Only the listed weights are available locally; other variants will fail to load.**
 
+            **🔴 MANDATORY — EXACT COPY BRANCH RULE:**
+            When multiple initial drafts/branches are generated, at least ONE branch MUST use the Code template VERBATIM — copy the ENTIRE code as-is, character for character, ZERO modifications. Do NOT rename classes, do NOT add/remove layers, do NOT change hyperparameters, do NOT "improve" the architecture, do NOT add feature fusion or gating mechanisms. This verbatim branch serves as a proven baseline (the Code template already achieved the best recorded score). Other branches are free to explore alternatives, but the verbatim-copy branch is MANDATORY.
+
             **Key Techniques**:
             1. **Feature Extractor Pattern**: If dataset is small or domain mismatch exists → Freeze backbone + train only final layers (or feed to XGBoost/SVM).
 

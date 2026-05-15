@@ -1,12 +1,5 @@
 {
   "spooky-author-identification": [
-    "acl-2024/dynamic-navigation-text-classification",
-    "acl-2024/few-shot-clustering-language-models-text-similarit",
-    "acl-2024/lexical-semantic-change-detection-analysis",
-    "acl-2024/llm-paraphrasing-text-simplification-discourse-pat",
-    "acl-2024/moral-emotions-language-models-figurative-expressi",
-    "acl-2024/probing-word-embeddings-cross-lingual-alignment-se",
-    "acl-2024/topic-modeling-llm-analysis-tools",
-    "acl-2024/transformer-analysis-architecture-search-learning"
+    "paperinsight/experience-kb/small-data-transformer-finetuning"
   ]
 }
