@@ -41,7 +41,7 @@ fi
 MEMORY_INDEX=0
 start_cpu=0
 CPUS_PER_TASK=21
-TIME_LIMIT_SECS=43200           # 12 hours
+TIME_LIMIT_SECS=172800          # 48 hours
 
 export MEMORY_INDEX
 format_time() {

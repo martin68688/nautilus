@@ -10,6 +10,7 @@ from utils.response import wrap_code
 from agents.triggers import get_patience_counter, register_node
 from agents.prompts import (
     ROBUSTNESS_GENERALIZATION_STRATEGY,
+    MODEL_ARCHITECTURE_SAFETY,
     prompt_leakage_prevention,
     prompt_resp_fmt,
     get_internet_clarification,
@@ -215,6 +216,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
 
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
     prompt["Instructions"] |= prompt_leakage_prevention()
+    prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
     internet_clarification = get_internet_clarification(getattr(agent.cfg, "pretrain_model_dir", ""))
     prompt["Instructions"]["Implementation guideline"].extend(internet_clarification)
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY

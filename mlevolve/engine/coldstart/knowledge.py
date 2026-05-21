@@ -86,11 +86,7 @@ def _build_methodology_text(task_name: str, methodology_kb_path: str) -> str:
     kb_base = Path(methodology_kb_path)
     all_entries = []
     for folder in folders:
-        parts = folder.split("/", 1)
-        if len(parts) != 2:
-            continue
-        venue_year, category = parts
-        cat_dir = kb_base / venue_year / category
+        cat_dir = kb_base / folder
         if not cat_dir.exists():
             continue
         for md_file in sorted(cat_dir.glob("*_methodology.md")):

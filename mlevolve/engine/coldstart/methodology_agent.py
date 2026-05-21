@@ -1,6 +1,6 @@
 """Dynamic methodology search agent.
 
-Reads the task description, scans paperinsight/ category folders,
+Reads the task description, scans experience_kb category folders,
 uses LLM to find relevant categories, then reads HIGH-confidence
 references to build detailed methodology guidance.
 """
@@ -12,17 +12,27 @@ from typing import Any, List
 logger = logging.getLogger("MLEvolve")
 
 
-def _scan_categories(paperinsight_path: Path) -> List[str]:
-    """Return list of 'venue-year/category' strings under paperinsight/."""
+def _scan_categories(kb_base: Path) -> List[str]:
+    """Return list of category path strings (relative to kb_base).
+
+    Supports two layouts:
+    - Flat: kb_base/category/  (e.g. experience_kb/small-data-transformer-finetuning/)
+    - Nested: kb_base/venue-year/category/  (e.g. paperinsight/naacl-2024/efficient-training/)
+    """
     categories = []
-    for venue_dir in sorted(paperinsight_path.iterdir()):
-        if not venue_dir.is_dir() or venue_dir.name.startswith("."):
+    for entry in sorted(kb_base.iterdir()):
+        if not entry.is_dir() or entry.name.startswith("."):
             continue
-        for cat_dir in sorted(venue_dir.iterdir()):
-            if not cat_dir.is_dir() or cat_dir.name.startswith("."):
+        # Flat layout: entry itself contains insight.md
+        if (entry / "insight.md").exists():
+            categories.append(entry.name)
+            continue
+        # Nested layout: entry is a venue-year dir containing category subdirs
+        for sub in sorted(entry.iterdir()):
+            if not sub.is_dir() or sub.name.startswith("."):
                 continue
-            if (cat_dir / "insight.md").exists():
-                categories.append(f"{venue_dir.name}/{cat_dir.name}")
+            if (sub / "insight.md").exists():
+                categories.append(f"{entry.name}/{sub.name}")
     return categories
 
 
@@ -118,14 +128,13 @@ def _read_high_confidence_references(cat_dir: Path) -> str:
 
 
 def build_methodology_guidance(task_desc: str, methodology_kb_path: str, cfg: Any) -> str:
-    """Scan paperinsight → LLM match → read HIGH-confidence references → return guidance."""
+    """Scan methodology_kb_path → LLM match → read HIGH-confidence references → return guidance."""
     kb_base = Path(methodology_kb_path)
-    paperinsight = kb_base / "paperinsight"
-    if not paperinsight.exists():
-        logger.info("[MethodologyAgent] paperinsight/ not found, skipping")
+    if not kb_base.exists():
+        logger.info("[MethodologyAgent] methodology_kb_path not found, skipping")
         return ""
 
-    categories = _scan_categories(paperinsight)
+    categories = _scan_categories(kb_base)
     if not categories:
         logger.info("[MethodologyAgent] No categories found")
         return ""
@@ -138,7 +147,7 @@ def build_methodology_guidance(task_desc: str, methodology_kb_path: str, cfg: An
 
     all_sections = []
     for cat_path in matched:
-        cat_dir = paperinsight / cat_path
+        cat_dir = kb_base / cat_path
         content = _read_high_confidence_references(cat_dir)
         if content:
             all_sections.append(f"### [{cat_path}]\n\n{content}")

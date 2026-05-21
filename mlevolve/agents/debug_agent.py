@@ -7,6 +7,7 @@ from agents.coder import plan_and_code_query
 from utils.response import extract_plan_from_diff_response, wrap_code
 from agents.prompts import (
     ROBUSTNESS_GENERALIZATION_STRATEGY,
+    MODEL_ARCHITECTURE_SAFETY,
     get_internet_clarification,
     get_impl_guideline_from_agent,
 )
@@ -110,6 +111,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     }
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY
+    prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
 
     internet_clarification = get_internet_clarification(getattr(agent.cfg, "pretrain_model_dir", ""))
     prompt["Instructions"]["Implementation guideline"].extend(internet_clarification)

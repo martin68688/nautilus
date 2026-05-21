@@ -113,6 +113,24 @@ class SearchReplacePatcher:
         clean_diff = [ln for ln in diff_lines if not (ln.startswith("---") or ln.startswith("+++") or ln.startswith("@@"))]
         return best_match, best_start_line, clean_diff
 
+    _RESIDUAL_MARKER_RE = re.compile(
+        r"^[ \t]*<{5,}\s*SEARCH\b.*?^[ \t]*={5,}\s*.*?^[ \t]*>{5,}\s*\w*\s*$",
+        re.MULTILINE | re.DOTALL,
+    )
+    _RESIDUAL_SINGLE_RE = re.compile(
+        r"^[ \t]*(<{5,}\s*\w*|={5,}|>{5,}\s*\w*)\s*$",
+        re.MULTILINE,
+    )
+
+    @classmethod
+    def _strip_residual_markers(cls, text: str) -> str:
+        """Remove any leftover SEARCH/REPLACE diff markers from code."""
+        text = cls._RESIDUAL_MARKER_RE.sub("", text)
+        text = cls._RESIDUAL_SINGLE_RE.sub("", text)
+        # Collapse excessive blank lines left behind
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        return text.strip() + "\n"
+
     def apply_patch(self, patch_text: str, original_text: str, strict: bool = True) -> Tuple[str, int]:
         """Apply SEARCH/REPLACE blocks to original_text."""
         new_text = original_text
@@ -156,4 +174,6 @@ class SearchReplacePatcher:
 
             new_text = new_text.replace(matched_search, replace, 1)
             num_applied += 1
+
+        new_text = self._strip_residual_markers(new_text)
         return new_text, num_applied

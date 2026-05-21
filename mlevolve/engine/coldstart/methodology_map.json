@@ -1,5 +1,7 @@
 {
   "spooky-author-identification": [
-    "paperinsight/experience-kb/small-data-transformer-finetuning"
+    "winning-recipe-nlp-classification",
+    "ensemble-diversity-vs-validation-gap",
+    "small-data-transformer-finetuning"
   ]
 }

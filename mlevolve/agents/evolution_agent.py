@@ -11,6 +11,7 @@ from utils.response import wrap_code
 from agents.triggers import get_patience_counter
 from agents.prompts import (
     ROBUSTNESS_GENERALIZATION_STRATEGY,
+    MODEL_ARCHITECTURE_SAFETY,
     prompt_resp_fmt,
     get_impl_guideline_from_agent,
 )
@@ -184,6 +185,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         ],
     }
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY
+    prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
     output = wrap_code(parent_node.term_out, lang="")
 

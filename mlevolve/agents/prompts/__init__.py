@@ -2,6 +2,7 @@
 
 from .shared import (
     ROBUSTNESS_GENERALIZATION_STRATEGY,
+    MODEL_ARCHITECTURE_SAFETY,
     prompt_leakage_prevention,
     prompt_resp_fmt,
     get_internet_clarification,
@@ -11,6 +12,7 @@ from .impl_guideline import get_impl_guideline, get_impl_guideline_from_agent
 
 __all__ = [
     "ROBUSTNESS_GENERALIZATION_STRATEGY",
+    "MODEL_ARCHITECTURE_SAFETY",
     "prompt_leakage_prevention",
     "prompt_resp_fmt",
     "get_internet_clarification",

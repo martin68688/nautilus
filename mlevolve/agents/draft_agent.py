@@ -11,6 +11,7 @@ from agents.coder import plan_and_code_query, stepwise_plan_and_code_query
 from agents.triggers import register_node
 from agents.prompts import (
     ROBUSTNESS_GENERALIZATION_STRATEGY,
+    MODEL_ARCHITECTURE_SAFETY,
     prompt_leakage_prevention,
     prompt_resp_fmt,
     get_prompt_environment,
@@ -156,6 +157,7 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
     prompt["Instructions"]["Implementation guideline"].extend(coldstart_guideline)
     prompt["Instructions"] |= get_prompt_environment()
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY
+    prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
 
     instructions = f"\n# Instructions\n\n"
     instructions += compile_prompt_to_md(prompt["Instructions"], 2)

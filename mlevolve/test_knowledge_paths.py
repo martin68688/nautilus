@@ -20,7 +20,7 @@ cfg = SimpleNamespace(
         task_json_path="engine/coldstart/competition_tag_classified.json",
         model_json_path="engine/coldstart/models_guidance_classified.json",
     ),
-    methodology_kb_path="/workspace/nautilus/paper-skills/methodology_kb",
+    methodology_kb_path="/workspace/nautilus/paper-skills/experience_kb",
     methodology_dynamic=True,
     torch_hub_dir="",
     agent=SimpleNamespace(
@@ -103,9 +103,8 @@ print("=" * 80)
 
 from engine.coldstart.methodology_agent import _scan_categories, build_methodology_guidance
 
-paperinsight_path = Path(cfg.methodology_kb_path) / "paperinsight"
-categories = _scan_categories(paperinsight_path)
-print(f"\nAvailable categories under paperinsight/:")
+categories = _scan_categories(Path(cfg.methodology_kb_path))
+print(f"\nAvailable categories under experience_kb/:")
 for cat in categories:
     print(f"  - {cat}")
 

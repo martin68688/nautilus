@@ -39,3 +39,13 @@ cache/
 # ===== Large data (keep prepared/ dirs) =====
 *.zip
 mlevolve/data/mlsp-2013-bird/
+
+# ===== Private / local-only =====
+claude_config/
+claudecode-memory/
+npm_global/
+
+# ===== Working outputs =====
+mlevolve/inference/working_*/
+mlevolve/submissions/
+*.bakup*
