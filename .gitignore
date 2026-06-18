@@ -27,14 +27,17 @@ venv/
 *.log
 *.pid
 *.out
-runs/
 cache/
 
-# ===== Model weights =====
+# ===== Model weights & large binary arrays =====
 *.pth
 *.pt
 *.pkl
 *.bin
+*.npy
+*.npz
+*.parquet
+*.model
 
 # ===== Large data (keep prepared/ dirs) =====
 *.zip

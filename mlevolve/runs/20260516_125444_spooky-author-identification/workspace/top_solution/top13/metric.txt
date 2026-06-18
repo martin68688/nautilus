@@ -1,0 +1,7 @@
+Metric: 0.4275
+Maximize: False
+Branch ID: 6
+Stage: fusion (cross-branch fusion)
+From Top-K: False
+Execution Time(s): 3613.83
+Created Time: 2026-05-16T18:17:21

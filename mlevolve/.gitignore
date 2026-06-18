@@ -57,6 +57,10 @@ dmypy.json
 *.pt
 *.pkl
 *.bin
+*.npy
+*.npz
+*.parquet
+*.model
 checkpoints/
 
 # ===== Logs =====
@@ -71,7 +75,21 @@ scripts/
 workspace/
 workspaces/
 test_workspace/
-runs/
+# ===== runs/: trace gold-mine ONLY (overrides logs/ & workspace/ above) =====
+# Keep only trace-relevant files (structured trajectory + distilled skill +
+# per-iteration code/metrics); exclude ~25G logs and binary arrays.
+runs/**
+!runs/**/
+!runs/**/journal.json
+!runs/**/filtered_journal.json
+!runs/**/records.json
+!runs/**/evolution_tree.txt
+!runs/**/runfile_*.py
+!runs/**/solution.py
+!runs/**/metric.txt
+!runs/**/node_id.txt
+!runs/**/best_solution.py
+!runs/**/config.yaml
 runs_backup/
 dataset/
 mle-bench/

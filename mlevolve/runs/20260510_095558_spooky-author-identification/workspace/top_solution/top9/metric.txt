@@ -1,0 +1,7 @@
+Metric: 0.4118452618910506
+Maximize: False
+Branch ID: 5
+Stage: debug (bug fixing)
+From Top-K: False
+Execution Time(s): 954.28
+Created Time: 2026-05-10T14:22:28

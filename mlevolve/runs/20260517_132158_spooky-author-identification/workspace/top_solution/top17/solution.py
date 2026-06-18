@@ -1,0 +1,745 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import StratifiedKFold
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.metrics import log_loss
+from sklearn.linear_model import LogisticRegression
+import re
+import string
+import os
+import warnings
+import torch
+import torch.nn as nn
+from transformers import (
+    AutoTokenizer,
+    ModernBertForSequenceClassification,
+    get_linear_schedule_with_warmup,
+)
+from torch.optim import AdamW
+from torch.utils.data import DataLoader, Dataset
+from scipy.sparse import hstack, csr_matrix, save_npz
+import joblib
+
+warnings.filterwarnings("ignore")
+
+# Load data
+train_df = pd.read_csv("./input/train.csv")
+test_df = pd.read_csv("./input/test.csv")
+sample_sub = pd.read_csv("./input/sample_submission.csv")
+
+print(f"Train shape: {train_df.shape}")
+print(f"Test shape: {test_df.shape}")
+
+# Encode target
+le = LabelEncoder()
+train_df["author_encoded"] = le.fit_transform(train_df["author"])
+num_classes = 3
+
+# ---- Feature Engineering ----
+def extract_statistical_features(text_series):
+    features = pd.DataFrame()
+    features["char_count"] = text_series.str.len()
+    features["word_count"] = text_series.str.split().str.len()
+    features["avg_word_len"] = features["char_count"] / (features["word_count"] + 1)
+    punct_counts = text_series.apply(
+        lambda x: sum(1 for c in str(x) if c in string.punctuation)
+    )
+    features["punct_count"] = punct_counts
+    features["punct_ratio"] = punct_counts / (features["char_count"] + 1)
+    features["exclamation_count"] = text_series.str.count("!")
+    features["question_count"] = text_series.str.count(r"\?")
+    features["comma_count"] = text_series.str.count(",")
+    features["semicolon_count"] = text_series.str.count(";")
+    features["colon_count"] = text_series.str.count(":")
+    features["quote_count"] = text_series.str.count('"') + text_series.str.count("'")
+    features["dash_count"] = text_series.str.count("-")
+    features["period_count"] = text_series.str.count(r"\.")
+    features["upper_count"] = text_series.apply(
+        lambda x: sum(1 for c in str(x) if c.isupper())
+    )
+    features["upper_ratio"] = features["upper_count"] / (features["char_count"] + 1)
+    features["title_word_count"] = text_series.apply(
+        lambda x: sum(1 for w in str(x).split() if w.istitle())
+    )
+    features["sent_count"] = text_series.str.count(r"[.!?]+")
+    features["avg_sent_len"] = features["word_count"] / (features["sent_count"] + 1)
+    features["space_count"] = text_series.str.count(" ")
+    features["newline_count"] = text_series.str.count("\n")
+    features["digit_count"] = text_series.apply(
+        lambda x: sum(1 for c in str(x) if c.isdigit())
+    )
+    features["digit_ratio"] = features["digit_count"] / (features["char_count"] + 1)
+    return features
+
+def extract_lexical_features(text_series):
+    features = pd.DataFrame()
+    stop_words = set(
+        [
+            "a",
+            "an",
+            "the",
+            "and",
+            "or",
+            "but",
+            "if",
+            "because",
+            "as",
+            "until",
+            "while",
+            "of",
+            "at",
+            "by",
+            "for",
+            "with",
+            "about",
+            "against",
+            "between",
+            "into",
+            "through",
+            "during",
+            "before",
+            "after",
+            "above",
+            "below",
+            "to",
+            "from",
+            "up",
+            "down",
+            "in",
+            "out",
+            "on",
+            "off",
+            "over",
+            "under",
+            "again",
+            "further",
+            "then",
+            "once",
+            "here",
+            "there",
+            "when",
+            "where",
+            "why",
+            "how",
+            "all",
+            "any",
+            "both",
+            "each",
+            "few",
+            "more",
+            "most",
+            "other",
+            "some",
+            "such",
+            "no",
+            "nor",
+            "not",
+            "only",
+            "own",
+            "same",
+            "so",
+            "than",
+            "too",
+            "very",
+            "just",
+            "it",
+            "its",
+            "that",
+            "this",
+            "these",
+            "those",
+            "i",
+            "me",
+            "my",
+            "myself",
+            "we",
+            "our",
+            "ours",
+            "ourselves",
+            "you",
+            "your",
+            "yours",
+            "yourself",
+            "yourselves",
+            "he",
+            "him",
+            "his",
+            "himself",
+            "she",
+            "her",
+            "hers",
+            "herself",
+            "they",
+            "them",
+            "their",
+            "theirs",
+            "themselves",
+            "what",
+            "which",
+            "who",
+            "whom",
+            "this",
+            "that",
+            "these",
+            "those",
+            "am",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "having",
+            "do",
+            "does",
+            "did",
+            "doing",
+            "would",
+            "should",
+            "could",
+            "might",
+            "must",
+            "shall",
+            "will",
+            "may",
+            "can",
+            "need",
+            "dare",
+            "ought",
+            "used",
+            "isn't",
+            "aren't",
+            "wasn't",
+            "weren't",
+            "hasn't",
+            "haven't",
+            "hadn't",
+            "doesn't",
+            "don't",
+            "didn't",
+            "won't",
+            "wouldn't",
+            "shan't",
+            "shouldn't",
+            "can't",
+            "cannot",
+            "couldn't",
+            "mustn't",
+            "let",
+            "like",
+        ]
+    )
+    features["stopword_count"] = text_series.apply(
+        lambda x: sum(
+            1
+            for w in str(x).lower().split()
+            if w.strip(string.punctuation) in stop_words
+        )
+    )
+    features["stopword_ratio"] = features["stopword_count"] / (
+        text_series.str.split().str.len() + 1
+    )
+    features["unique_word_ratio"] = text_series.apply(
+        lambda x: len(set(w.lower() for w in str(x).split()))
+        / (len(str(x).split()) + 1)
+    )
+    features["the_ratio"] = text_series.str.count(r"\b[Tt]he\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["and_ratio"] = text_series.str.count(r"\b[Aa]nd\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["of_ratio"] = text_series.str.count(r"\b[Oo]f\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["i_ratio"] = text_series.str.count(r"\b[Ii]\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["my_ratio"] = text_series.str.count(r"\b[Mm]y\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["was_ratio"] = text_series.str.count(r"\b[Ww]as\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["had_ratio"] = text_series.str.count(r"\b[Hh]ad\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["which_ratio"] = text_series.str.count(r"\b[Ww]hich\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["that_ratio"] = text_series.str.count(r"\b[Tt]hat\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["with_ratio"] = text_series.str.count(r"\b[Ww]ith\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["not_ratio"] = text_series.str.count(r"\b[Nn]ot\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["but_ratio"] = text_series.str.count(r"\b[Bb]ut\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    features["as_ratio"] = text_series.str.count(r"\b[Aa]s\b") / (
+        text_series.str.split().str.len() + 1
+    )
+    return features
+
+def extract_stylistic_features(text_series):
+    features = pd.DataFrame()
+    features["starts_with_i"] = text_series.str.match(r"^[Ii]\b").astype(int)
+    features["starts_with_the"] = text_series.str.match(r"^[Tt]he\b").astype(int)
+    features["starts_with_quote"] = text_series.str.match(r'^["\']').astype(int)
+    features["ends_period"] = text_series.str.endswith(".").astype(int)
+    features["ends_exclamation"] = text_series.str.endswith("!").astype(int)
+    features["ends_question"] = text_series.str.endswith("?").astype(int)
+    features["ends_ellipsis"] = text_series.str.contains(r"\.\.\.$").astype(int)
+    contractions = ["'t", "'s", "'d", "'ve", "'ll", "'re", "'m", "n't"]
+    features["contraction_count"] = text_series.apply(
+        lambda x: sum(1 for c in contractions if c in str(x).lower())
+    )
+    features["long_word_count"] = text_series.apply(
+        lambda x: sum(1 for w in str(x).split() if len(w) > 8)
+    )
+    features["short_word_count"] = text_series.apply(
+        lambda x: sum(1 for w in str(x).split() if len(w) <= 3)
+    )
+    features["double_space"] = text_series.str.contains(r"  ").astype(int)
+    features["repeated_punct"] = text_series.apply(
+        lambda x: len(re.findall(r"([!?.,;:])\1+", str(x)))
+    )
+    return features
+
+print("Extracting statistical features...")
+train_stats = extract_statistical_features(train_df["text"])
+test_stats = extract_statistical_features(test_df["text"])
+
+print("Extracting lexical features...")
+train_lex = extract_lexical_features(train_df["text"])
+test_lex = extract_lexical_features(test_df["text"])
+
+print("Extracting stylistic features...")
+train_style = extract_stylistic_features(train_df["text"])
+test_style = extract_stylistic_features(test_df["text"])
+
+train_features = pd.concat([train_stats, train_lex, train_style], axis=1)
+test_features = pd.concat([test_stats, test_lex, test_style], axis=1)
+
+print(f"Handcrafted features shape: {train_features.shape}")
+
+print("Extracting TF-IDF features...")
+tfidf = TfidfVectorizer(
+    max_features=5000,
+    ngram_range=(1, 3),
+    sublinear_tf=True,
+    stop_words="english",
+    min_df=5,
+    max_df=0.95,
+)
+train_tfidf = tfidf.fit_transform(train_df["text"])
+test_tfidf = tfidf.transform(test_df["text"])
+
+print(f"TF-IDF features shape: {train_tfidf.shape}")
+
+scaler = StandardScaler()
+train_scaled = scaler.fit_transform(train_features)
+test_scaled = scaler.transform(test_features)
+
+train_combined = hstack([csr_matrix(train_scaled), train_tfidf])
+test_combined = hstack([csr_matrix(test_scaled), test_tfidf])
+
+print(f"Combined features shape: {train_combined.shape}")
+
+# Create 5-fold stratified cross-validation splits
+skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+fold_splits = list(skf.split(train_combined, train_df["author_encoded"]))
+
+# We'll store all fold indices and use them later
+all_train_indices = []
+all_val_indices = []
+for fold_idx, (train_idx, val_idx) in enumerate(fold_splits):
+    all_train_indices.append(train_idx)
+    all_val_indices.append(val_idx)
+
+print("\nQuick validation with Logistic Regression...")
+# Use first fold for quick validation
+train_idx_0, val_idx_0 = fold_splits[0]
+train_X_0 = train_combined[train_idx_0]
+val_X_0 = train_combined[val_idx_0]
+train_y_0 = train_df["author_encoded"].values[train_idx_0]
+val_y_0 = train_df["author_encoded"].values[val_idx_0]
+
+lr = LogisticRegression(
+    multi_class="multinomial", max_iter=1000, C=1.0, random_state=42
+)
+lr.fit(train_X_0, train_y_0)
+val_preds_0 = lr.predict_proba(val_X_0)
+val_score_0 = log_loss(val_y_0, val_preds_0)
+print(f"Quick validation log loss (fold 0): {val_score_0:.4f}")
+
+os.makedirs("./working", exist_ok=True)
+joblib.dump(le, "./working/label_encoder.pkl")
+joblib.dump(tfidf, "./working/tfidf_vectorizer.pkl")
+joblib.dump(scaler, "./working/feature_scaler.pkl")
+
+# ModernBERT Setup
+MODEL_NAME = "answerdotai/ModernBERT-large"
+NUM_LABELS = 3
+MAX_LENGTH = 512
+LEARNING_RATE = 2e-5  # Reduced from 3e-5 to mitigate overfitting
+WEIGHT_DECAY = 0.1
+WARMUP_RATIO = 0.15  # Increased from 0.1 to improve training stability
+NUM_EPOCHS = 8
+ACCUMULATION_STEPS = 4
+NUM_FOLDS = 5
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"\nUsing device: {device}")
+
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+
+config = ModernBertForSequenceClassification.config_class.from_pretrained(MODEL_NAME)
+config.num_labels = NUM_LABELS
+config.hidden_dropout_prob = 0.3
+config.attention_probs_dropout_prob = 0.2
+
+model = ModernBertForSequenceClassification.from_pretrained(
+    MODEL_NAME,
+    config=config,
+)
+model.to(device)
+
+criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+
+# Layer-wise learning rate decay: three tiers based on layer index
+def get_layer_wise_param_groups(model, base_lr, weight_decay):
+    """
+    Group parameters into three tiers:
+    - Lower layers (0-10): 0.5x base LR
+    - Middle layers (11-21): 0.8x base LR
+    - Upper layers (22-31) + classifier: 1.0x base LR
+    """
+    no_decay = ["bias", "LayerNorm", "layer_norm"]
+
+    # Organize parameters by layer index
+    lower_params = []
+    middle_params = []
+    upper_params = []
+    lower_no_decay = []
+    middle_no_decay = []
+    upper_no_decay = []
+
+    for name, param in model.named_parameters():
+        if not param.requires_grad:
+            continue
+
+        # Extract layer index from parameter name (e.g., "encoder.layer.3.attention.self.query.weight")
+        layer_idx = -1
+        if "encoder.layer." in name:
+            # Extract the layer number after "encoder.layer."
+            parts = name.split("encoder.layer.")
+            if len(parts) > 1:
+                layer_part = parts[1].split(".")[0]
+                try:
+                    layer_idx = int(layer_part)
+                except ValueError:
+                    pass
+
+        is_no_decay = any(nd in name for nd in no_decay)
+
+        if layer_idx >= 0 and layer_idx <= 10:
+            # Lower layers: 0.5x LR
+            if is_no_decay:
+                lower_no_decay.append(param)
+            else:
+                lower_params.append(param)
+        elif layer_idx >= 11 and layer_idx <= 21:
+            # Middle layers: 0.8x LR
+            if is_no_decay:
+                middle_no_decay.append(param)
+            else:
+                middle_params.append(param)
+        else:
+            # Upper layers (22-31) + classifier and embeddings: 1.0x LR
+            if is_no_decay:
+                upper_no_decay.append(param)
+            else:
+                upper_params.append(param)
+
+    optimizer_grouped_params = [
+        {"params": lower_params, "weight_decay": weight_decay, "lr": base_lr * 0.5},
+        {"params": lower_no_decay, "weight_decay": 0.0, "lr": base_lr * 0.5},
+        {"params": middle_params, "weight_decay": weight_decay, "lr": base_lr * 0.8},
+        {"params": middle_no_decay, "weight_decay": 0.0, "lr": base_lr * 0.8},
+        {"params": upper_params, "weight_decay": weight_decay, "lr": base_lr},
+        {"params": upper_no_decay, "weight_decay": 0.0, "lr": base_lr},
+    ]
+
+    return optimizer_grouped_params
+
+optimizer_grouped_params = get_layer_wise_param_groups(model, LEARNING_RATE, WEIGHT_DECAY)
+optimizer = AdamW(optimizer_grouped_params, lr=LEARNING_RATE, eps=1e-8)
+
+print(f"Model initialized: {MODEL_NAME}")
+print(f"Number of parameters: {sum(p.numel() for p in model.parameters()):,}")
+
+# Dataset and DataLoaders
+class TextDataset(Dataset):
+    def __init__(self, texts, labels=None, tokenizer=None, max_length=512):
+        self.texts = texts
+        self.labels = labels
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+
+    def __len__(self):
+        return len(self.texts)
+
+    def __getitem__(self, idx):
+        text = str(self.texts[idx])
+        encoded = self.tokenizer(
+            text,
+            truncation=True,
+            padding="max_length",
+            max_length=self.max_length,
+            return_tensors="pt",
+        )
+        item = {
+            "input_ids": encoded["input_ids"].squeeze(0),
+            "attention_mask": encoded["attention_mask"].squeeze(0),
+        }
+        if self.labels is not None:
+            item["labels"] = torch.tensor(self.labels[idx], dtype=torch.long)
+        return item
+
+# Extract all data
+train_texts_all = train_df["text"].values
+train_labels_all = train_df["author_encoded"].values
+test_texts = test_df["text"].values
+
+test_dataset = TextDataset(
+    test_texts, labels=None, tokenizer=tokenizer, max_length=MAX_LENGTH
+)
+test_loader = DataLoader(
+    test_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
+)
+
+# Initialize arrays for OOF predictions and test predictions
+oof_predictions = np.zeros((len(train_df), NUM_LABELS), dtype=np.float64)
+test_predictions = np.zeros((len(test_df), NUM_LABELS), dtype=np.float64)
+
+# 5-fold Cross-Validation Ensemble Training
+print(f"\n=== Starting {NUM_FOLDS}-fold Cross-Validation Ensemble Training ===")
+
+for fold_idx in range(NUM_FOLDS):
+    print(f"\n{'='*60}")
+    print(f"Fold {fold_idx + 1}/{NUM_FOLDS}")
+    print(f"{'='*60}")
+
+    train_idx = all_train_indices[fold_idx]
+    val_idx = all_val_indices[fold_idx]
+
+    # Extract fold data
+    train_texts = train_texts_all[train_idx]
+    train_labels = train_labels_all[train_idx]
+    val_texts = train_texts_all[val_idx]
+    val_labels = train_labels_all[val_idx]
+
+    print(f"Train samples: {len(train_texts)}, Val samples: {len(val_texts)}")
+
+    # Reinitialize model for each fold
+    model = ModernBertForSequenceClassification.from_pretrained(
+        MODEL_NAME,
+        config=config,
+    )
+    model.to(device)
+
+    # Reinitialize optimizer
+    optimizer_grouped_params = get_layer_wise_param_groups(model, LEARNING_RATE, WEIGHT_DECAY)
+    optimizer = AdamW(optimizer_grouped_params, lr=LEARNING_RATE, eps=1e-8)
+
+    # Create datasets and dataloaders for this fold
+    train_dataset = TextDataset(train_texts, train_labels, tokenizer, MAX_LENGTH)
+    val_dataset = TextDataset(val_texts, val_labels, tokenizer, MAX_LENGTH)
+
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=16,
+        shuffle=True,
+        num_workers=4,
+        pin_memory=True,
+        drop_last=False,
+    )
+    val_loader = DataLoader(
+        val_dataset, batch_size=32, shuffle=False, num_workers=4, pin_memory=True
+    )
+
+    total_steps = len(train_loader) * NUM_EPOCHS
+    num_warmup_steps = int(total_steps * WARMUP_RATIO)
+    scheduler = get_linear_schedule_with_warmup(
+        optimizer, num_warmup_steps=num_warmup_steps, num_training_steps=total_steps
+    )
+
+    amp_scaler = torch.cuda.amp.GradScaler()
+
+    # Training loop for this fold
+    best_val_logloss = float("inf")
+    patience = 3
+    epochs_no_improve = 0
+
+    for epoch in range(NUM_EPOCHS):
+        model.train()
+        total_train_loss = 0
+        optimizer.zero_grad()
+
+        for step, batch in enumerate(train_loader):
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            labels = batch["labels"].to(device)
+
+            with torch.cuda.amp.autocast():
+                outputs = model(
+                    input_ids=input_ids, attention_mask=attention_mask, labels=labels
+                )
+                loss = outputs.loss
+
+            # Scale loss for gradient accumulation
+            loss = loss / ACCUMULATION_STEPS
+            amp_scaler.scale(loss).backward()
+
+            if (step + 1) % ACCUMULATION_STEPS == 0:
+                amp_scaler.step(optimizer)
+                amp_scaler.update()
+                scheduler.step()
+                optimizer.zero_grad()
+
+            total_train_loss += loss.item() * ACCUMULATION_STEPS
+
+        avg_train_loss = total_train_loss / len(train_loader)
+
+        model.eval()
+        val_loss_total = 0
+        all_val_preds = []
+        all_val_labels = []
+
+        with torch.no_grad():
+            for batch in val_loader:
+                input_ids = batch["input_ids"].to(device)
+                attention_mask = batch["attention_mask"].to(device)
+                labels = batch["labels"].to(device)
+
+                with torch.cuda.amp.autocast():
+                    outputs = model(
+                        input_ids=input_ids, attention_mask=attention_mask, labels=labels
+                    )
+                    val_loss_total += outputs.loss.item()
+                    logits = outputs.logits
+                    probs = torch.softmax(logits, dim=-1)
+                    all_val_preds.append(probs.cpu().numpy())
+                    all_val_labels.append(labels.cpu().numpy())
+
+        avg_val_loss = val_loss_total / len(val_loader)
+        all_val_preds = np.concatenate(all_val_preds, axis=0)
+        all_val_labels = np.concatenate(all_val_labels, axis=0)
+        # Ensure 1D integer labels
+        if all_val_labels.ndim > 1:
+            all_val_labels = all_val_labels.argmax(axis=1)
+
+        val_logloss = log_loss(all_val_labels, all_val_preds)
+
+        print(
+            f"Fold {fold_idx+1} Epoch {epoch+1}/{NUM_EPOCHS} - Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}, Val LogLoss: {val_logloss:.4f}"
+        )
+
+        if val_logloss < best_val_logloss:
+            best_val_logloss = val_logloss
+            torch.save(model.state_dict(), f"./working/best_model_fold_{fold_idx}.pt")
+            print(f"  -> New best model saved (LogLoss: {val_logloss:.4f})")
+            epochs_no_improve = 0
+        else:
+            epochs_no_improve += 1
+            if epochs_no_improve >= patience:
+                print(f"Early stopping triggered after {epoch+1} epochs")
+                break
+
+    # Load best model for this fold and generate predictions
+    print(f"\nLoading best model for fold {fold_idx+1}...")
+    model.load_state_dict(torch.load(f"./working/best_model_fold_{fold_idx}.pt", map_location=device))
+    model.eval()
+
+    # OOF predictions for validation samples
+    fold_val_preds = []
+    with torch.no_grad():
+        for batch in val_loader:
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            with torch.cuda.amp.autocast():
+                outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+                logits = outputs.logits
+                probs = torch.softmax(logits, dim=-1)
+            fold_val_preds.append(probs.cpu().numpy())
+
+    fold_val_preds = np.concatenate(fold_val_preds, axis=0)
+
+    # Store OOF predictions
+    for i, idx in enumerate(val_idx):
+        oof_predictions[idx] = fold_val_preds[i]
+
+    # Test predictions for this fold
+    fold_test_preds = []
+    with torch.no_grad():
+        for batch in test_loader:
+            input_ids = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            with torch.cuda.amp.autocast():
+                outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+                logits = outputs.logits
+                probs = torch.softmax(logits, dim=-1)
+            fold_test_preds.append(probs.cpu().numpy())
+
+    fold_test_preds = np.concatenate(fold_test_preds, axis=0)
+    test_predictions += fold_test_preds / NUM_FOLDS
+
+    print(f"Fold {fold_idx+1} completed. Best Val LogLoss: {best_val_logloss:.4f}")
+
+# Average test predictions across all folds
+test_predictions = test_predictions
+
+# Compute OOF validation score
+print(f"\n{'='*60}")
+print("Cross-Validation Results")
+print(f"{'='*60}")
+epsilon = 1e-15
+oof_predictions_clipped = np.clip(oof_predictions, epsilon, 1 - epsilon)
+oof_labels = train_labels_all
+
+# Normalize OOF predictions
+row_sums = oof_predictions_clipped.sum(axis=1)
+for j in range(NUM_LABELS):
+    oof_predictions_clipped[:, j] = oof_predictions_clipped[:, j] / row_sums
+
+oof_logloss = log_loss(oof_labels, oof_predictions_clipped)
+print(f"OOF Validation LogLoss: {oof_logloss:.6f}")
+
+# Create submission file with ensemble predictions
+print("\nGenerating final test predictions...")
+os.makedirs("./submission", exist_ok=True)
+submission = pd.DataFrame()
+submission["id"] = test_df["id"].values
+submission["EAP"] = test_predictions[:, 0]
+submission["HPL"] = test_predictions[:, 1]
+submission["MWS"] = test_predictions[:, 2]
+
+# Normalize ensemble predictions
+row_sums = submission[["EAP", "HPL", "MWS"]].sum(axis=1)
+submission["EAP"] = submission["EAP"] / row_sums
+submission["HPL"] = submission["HPL"] / row_sums
+submission["MWS"] = submission["MWS"] / row_sums
+
+submission.to_csv("./submission/submission.csv", index=False)
+print(f"Submission saved to ./submission/submission.csv")
+print(f"Test predictions shape: {test_predictions.shape}")
+print(f"OOF Validation Score: {oof_logloss:.6f}")
