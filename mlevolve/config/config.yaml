@@ -50,12 +50,12 @@ agent:
     model: deepseek-chat
     temp: 1
     base_url: "https://api.deepseek.com"
-    api_key: "sk-36ed4904871f4632a8400283d96b6bbd"
+    api_key: "${oc.env:DEEPSEEK_API_KEY}"
   feedback:
     model: deepseek-chat
     temp: 1
     base_url: "https://api.deepseek.com"
-    api_key: "sk-36ed4904871f4632a8400283d96b6bbd"
+    api_key: "${oc.env:DEEPSEEK_API_KEY}"
 
   # --- Submission check ---
   check_data_leakage: True

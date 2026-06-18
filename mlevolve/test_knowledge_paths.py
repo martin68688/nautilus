@@ -26,7 +26,7 @@ cfg = SimpleNamespace(
     agent=SimpleNamespace(
         code=SimpleNamespace(
             model="deepseek-chat",
-            api_key="sk-36ed4904871f4632a8400283d96b6bbd",
+            api_key=os.environ.get("DEEPSEEK_API_KEY", ""),
             base_url="https://api.deepseek.com",
         )
     ),

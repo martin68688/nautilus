@@ -167,6 +167,9 @@ def _get_next_logindex(dir: Path) -> int:
 def _load_cfg(
     path: Path = Path(__file__).parent / "config.yaml", use_cli_args=True
 ) -> Config:
+    # Load secrets (e.g. DEEPSEEK_API_KEY) from mlevolve/.env so they stay out of git.
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
     cfg = OmegaConf.load(path)
     if use_cli_args:
         cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
