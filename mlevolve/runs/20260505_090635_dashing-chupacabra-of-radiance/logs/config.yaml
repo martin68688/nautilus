@@ -1,0 +1,686 @@
+data_dir: !!python/object/apply:pathlib.PosixPath
+- /
+- app
+- MLEvolve-main
+- data
+dataset_dir: !!python/object/apply:pathlib.PosixPath
+- data
+desc_file: !!python/object/apply:pathlib.PosixPath
+- /
+- app
+- MLEvolve-main
+- data
+- spooky-author-identification
+- prepared
+- public
+- description.md
+goal: null
+eval: null
+log_dir: !!python/object/apply:pathlib.PosixPath
+- /
+- app
+- MLEvolve-main
+- runs
+- 20260505_090635_dashing-chupacabra-of-radiance
+- logs
+log_level: INFO
+workspace_dir: !!python/object/apply:pathlib.PosixPath
+- /
+- app
+- MLEvolve-main
+- runs
+- 20260505_090635_dashing-chupacabra-of-radiance
+- workspace
+preprocess_data: true
+copy_data: false
+exp_name: 20260505_090635_dashing-chupacabra-of-radiance
+exp_id: spooky-author-identification
+torch_hub_dir: ''
+pretrain_model_dir: ''
+exec:
+  timeout: 3600
+  agent_file_name: runfile.py
+agent:
+  steps: 50
+  time_limit: 7200
+  initial_drafts: 3
+  seed: 42
+  data_preview: true
+  code:
+    model: deepseek/deepseek-chat
+    temp: 1.0
+    base_url: https://openrouter.ai/api/v1
+    api_key: <REDACTED_OPENROUTER_KEY>
+  feedback:
+    model: deepseek/deepseek-chat
+    temp: 1.0
+    base_url: https://openrouter.ai/api/v1
+    api_key: <REDACTED_OPENROUTER_KEY>
+  check_data_leakage: true
+  fusion_vs_evolution_prob: 0.3
+  branch_fusion_trigger_prob: 1.0
+  max_fusion_drafts: 2
+  use_global_memory: true
+  memory_similarity_threshold: 0.7
+  memory_embedding_device: cuda
+  memory_embedding_model_path: BAAI/bge-base-en-v1.5
+  search:
+    max_debug_depth: 20
+    debug_prob: 1.0
+    num_drafts: 5
+    metric_improvement_threshold: 0.0001
+    back_debug_depth: 3
+    num_bugs: 1
+    num_improves: 3
+    topk_max_improves: 10
+    max_improve_failure: 3
+    parallel_search_num: 3
+    branch_stagnation_threshold: 3
+    topk_stagnation_threshold: 6
+    top_candidates_size: 20
+    stagnation_window: 4
+    num_gpus: 1
+    explore_switch_start: 0.5
+    explore_switch_end: 0.7
+    min_exploration_weight: 0.2
+    topk_early_k: 5
+    topk_early_max_per_branch: 3
+    topk_late_k: 3
+    topk_late_max_per_branch: 2
+    force_backprop_late_threshold: 0.8
+    force_backprop_late_prob: 0.5
+    force_backprop_mid_threshold: 0.4
+    force_backprop_mid_modulo: 3
+    recent_best_window: 4
+    fusion_min_time_hours: 6.0
+    fusion_max_time_hours: 10.0
+    fusion_min_successful_nodes: 2
+    fusion_min_branches: 2
+  decay:
+    exploration_constant: 1.414
+    lower_bound: 0.5
+    alpha: 0.01
+    phase_ratios:
+    - 0.3
+    - 0.7
+  use_diff_mode: true
+start_cpu_id: '0'
+cpu_number: '21'
+coldstart:
+  use_coldstart: true
+  task_json_path: engine/coldstart/competition_tag_classified.json
+  model_json_path: engine/coldstart/models_guidance_classified.json
+  description: "\nModel1: ModernBERT\n\nDescription:ModernBERT is a modernized bidirectional\
+    \ encoder-only Transformer model pre-trained on 2 trillion tokens of English and\
+    \ code data. It significantly improves upon the original BERT with extended context\
+    \ length to 8k tokens (compared to just 512 for most encoders), making it faster\
+    \ and more accurate. The model features architectural innovations including improved\
+    \ efficiency enhancements and hardware-aware design. Unlike earlier BERT models,\
+    \ ModernBERT does not use token type IDs, simplifying its usage while maintaining\
+    \ compatibility as a drop-in replacement for BERT-like models. It excels at various\
+    \ NLP tasks including classification, token classification, question answering,\
+    \ and masked language modeling.\n\nCode template (MUST copy exactly — do NOT change\
+    \ model variant names or file paths):\n```python\nfrom transformers import AutoTokenizer,\
+    \ ModernBertForSequenceClassification, ModernBertForMaskedLM, ModernBertForTokenClassification,\
+    \ ModernBertForQuestionAnswering, ModernBertForMultipleChoice\nfrom torch.optim\
+    \ import AdamW\n\nmodel_id = \"answerdotai/ModernBERT-large\"\ntokenizer = AutoTokenizer.from_pretrained(model_id)\n\
+    # Choose one model class according to your task:\n# model = ModernBertForSequenceClassification.from_pretrained(model_id)\
+    \  # for classification\n# model = ModernBertForMaskedLM.from_pretrained(model_id)\
+    \  # for masked language modeling\n# model = ModernBertForTokenClassification.from_pretrained(model_id)\
+    \  # for token classification/NER\n# model = ModernBertForQuestionAnswering.from_pretrained(model_id)\
+    \  # for question answering\n# model = ModernBertForMultipleChoice.from_pretrained(model_id)\
+    \  # for multiple choice tasks\n\ntext = \"Your input text here\"\nencoded_input\
+    \ = tokenizer(text, return_tensors='pt')\n# Note: ModernBERT does not use token_type_ids\
+    \ parameter\noutput = model(**encoded_input)\n# Extract features: output.last_hidden_state\
+    \ for token-level features, output.pooler_output for sentence-level features\n\
+    ```\n\nModel2: DeBERTa-v3-large\n\nDescription:DeBERTa-v3-large is a large-scale\
+    \ pretrained language model developed by Microsoft for natural language processing\
+    \ tasks. Domain: natural language text. It is designed to handle a wide range\
+    \ of language understanding applications, including text classification, sentiment\
+    \ analysis, natural language inference, question answering, and sequence labeling.\
+    \ The architecture is based on the Transformer encoder with 24 layers, hidden\
+    \ size of 1024, 40 attention heads, and approximately 435 million parameters.\
+    \ Compared to earlier BERT and RoBERTa models, DeBERTa introduces disentangled\
+    \ attention mechanisms, improved mask decoders, and enhanced training efficiency.\
+    \ Input: tokenized text sequences of shape (batch_size, seq_len). Output: contextual\
+    \ embeddings of shape (batch_size, seq_len, hidden_dim) or classification logits\
+    \ when a task-specific head is attached. The model is typically fine-tuned by\
+    \ adding a linear classification or regression head on top of the [CLS] embedding\
+    \ or pooled features.\n\nCode template (MUST copy exactly — do NOT change model\
+    \ variant names or file paths):\n```python\nimport torch\nfrom transformers import\
+    \ AutoTokenizer, AutoModelForSequenceClassification\n\n\"\"\"\nDeBERTa-v3-large\
+    \ Usage Example\nBase model: microsoft/deberta-v3-large (~435M parameters)\nDomain:\
+    \ Natural Language Processing (text classification, NLI, QA, etc.)\nInput: Tokenized\
+    \ text sequences\nOutput: Classification logits or hidden embeddings\n\nReference:\
+    \ https://huggingface.co/microsoft/deberta-v3-large\n\"\"\"\n\n# Load tokenizer\
+    \ and model\ntokenizer = AutoTokenizer.from_pretrained(\"microsoft/deberta-v3-large\"\
+    )\nmodel = AutoModelForSequenceClassification.from_pretrained(\"microsoft/deberta-v3-large\"\
+    , num_labels=2)\n\n# Prepare input text\ninputs = tokenizer(\"Hello, my dog is\
+    \ cute\", return_tensors=\"pt\")\n\n# Inference without gradient computation\n\
+    with torch.no_grad():\n    logits = model(**inputs).logits\n\n# Get predicted\
+    \ class\npredicted_class_id = logits.argmax().item()\nprint(model.config.id2label[predicted_class_id])\n\
+    \n# To train on `num_labels` classes, set num_labels when loading the model\n\
+    num_labels = len(model.config.id2label)\nmodel = AutoModelForSequenceClassification.from_pretrained(\"\
+    microsoft/deberta-v3-large\", num_labels=num_labels)\n\n# Prepare labels for training\n\
+    labels = torch.tensor([1])\n\n# Calculate training loss\nloss = model(**inputs,\
+    \ labels=labels).loss\nprint(round(loss.item(), 2))\n\n```\n\n---\n## Methodology\
+    \ Insights from Literature\nThe following synthesized insights from recent papers\
+    \ are relevant to this task:\n\n### [acl-2024/dynamic-navigation-text-classification]\n\
+    \n**Summary Index:**\n---\ncategory: dynamic-navigation-text-classification\n\
+    venue: acl-2024\npapers_analyzed: 1\n---\n\n# Insights: dynamic-navigation-text-classification\n\
+    **Venue**: acl-2024 | **Papers analyzed**: 1\n\n| # | Insight | Papers | Confidence\
+    \ | File |\n|---|---------|--------|------------|------|\n| 1 | Instruction Tuning\
+    \ for Zero-Shot Generalization | 2024acl-long796 | HIGH | references/instruction-tuning.md\
+    \ |\n| 2 | Multi-Phase Tuning for Task-Specific Performance | 2024acl-long796\
+    \ | HIGH | references/multi-phase-tuning.md |\n| 3 | Vocabulary Adaptation for\
+    \ Token Efficiency | 2024acl-long796 | HIGH | references/vocabulary-adaptation.md\
+    \ |\n| 4 | LoRA for Language Adaptation | 2024acl-long796 | MEDIUM | references/lora-adaptation.md\
+    \ |\n| 5 | Human-Centric Prompts for Improved Interaction | 2024acl-long796 |\
+    \ HIGH | references/human-centric-prompts.md |\n| 6 | Safety Transferability from\
+    \ English to Indonesian | 2024acl-long796 | HIGH | references/safety-transferability.md\
+    \ |\n| 7 | Generalization to Unseen Tasks | 2024acl-long796 | MEDIUM | references/unseen-tasks-generalization.md\
+    \ |\n| 8 | Generalization to Unseen Languages | 2024acl-long796 | LOW | references/unseen-languages-generalization.md\
+    \ |\n\n#### Instruction Tuning for Zero-Shot Generalization\n---\ntitle: Instruction\
+    \ Tuning for Zero-Shot Generalization\nconfidence: HIGH\npapers: [2024acl-long796]\n\
+    ---\n\n# Instruction Tuning for Zero-Shot Generalization\nFine-tuning LLMs using\
+    \ instruction-and-response pairs to enable zero-shot task generalization.\n\n\
+    **Delta**: ~20% improvement in NLU and NLG tasks\n**Condition**: Across various\
+    \ model sizes and architectures\n\n## Papers & Evidence\n `2024acl-long796` (Cendol):\
+    \ \"Cendol models significantly outperform all existing LLMs both multilingual,\
+    \ SEA languages, and Indonesian LLMs on the comparable size by ~20% weighted F1-score.\"\
+    \ — Demonstrates substantial improvement across multiple task types.\n\n## Actionable\
+    \ Guidance\nUse instruction-response pairs during fine-tuning to enhance zero-shot\
+    \ capabilities, particularly for NLU and NLG tasks. This approach is effective\
+    \ across different model architectures and sizes.\n\n#### Multi-Phase Tuning for\
+    \ Task-Specific Performance\n---\ntitle: Multi-Phase Tuning for Task-Specific\
+    \ Performance\nconfidence: HIGH\npapers: [2024acl-long796]\n---\n\n# Multi-Phase\
+    \ Tuning for Task-Specific Performance\nDividing instruction tuning into two phases:\
+    \ first for NLP task-based prompts, then for general knowledge and human-centric\
+    \ prompts.\n\n**Delta**: Improved task-specific and conversational performance\n\
+    **Condition**: Applied to all backbone models\n\n## Papers & Evidence\n `2024acl-long796`\
+    \ (Cendol): \"Cendol models show significant improvements in both task-specific\
+    \ and general conversational abilities.\" — Highlights the benefits of phased\
+    \ tuning.\n\n## Actionable Guidance\nImplement a two-phase tuning strategy: first\
+    \ focus on task-based prompts, then expand to general knowledge and human-centric\
+    \ interactions for balanced performance.\n\n#### Vocabulary Adaptation for Token\
+    \ Efficiency\n---\ntitle: Vocabulary Adaptation for Token Efficiency\nconfidence:\
+    \ HIGH\npapers: [2024acl-long796]\n---\n\n# Vocabulary Adaptation for Token Efficiency\n\
+    Using a subword vocabulary developed from Indonesian corpora to improve token\
+    \ efficiency.\n\n**Delta**: 21.28% token efficiency improvement for Indonesian\
+    \ text\n**Condition**: Applied to LLaMA2-7b model\n\n## Papers & Evidence\n `2024acl-long796`\
+    \ (Cendol): \"The vocabulary adapted model steadily improves the token efficiency\
+    \ by 21.28% for Indonesian text and 14.79% for other local language text.\" —\
+    \ Shows clear efficiency gains.\n\n## Actionable Guidance\nDevelop subword vocabularies\
+    \ from target language corpora to enhance token efficiency, especially for languages\
+    \ with unique morphological structures.\n\n#### Human-Centric Prompts for Improved\
+    \ Interaction\n---\ntitle: Human-Centric Prompts for Improved Interaction\nconfidence:\
+    \ HIGH\npapers: [2024acl-long796]\n---\n\n# Human-Centric Prompts for Improved\
+    \ Interaction\nIncorporating identity, safety, and computational creativity prompts\
+    \ to improve human-computer interaction.\n\n**Delta**: Improved human favorability\n\
+    **Condition**: Applied during the second phase of instruction tuning\n\n## Papers\
+    \ & Evidence\n `2024acl-long796` (Cendol): \"Cendol models showcase improved human\
+    \ favorability despite their limitations in capturing indigenous knowledge and\
+    \ cultural values in Indonesia.\" — Demonstrates enhanced user interaction.\n\n\
+    ## Actionable Guidance\nIntegrate human-centric prompts (identity, safety, creativity)\
+    \ in the later phases of tuning to boost user engagement and favorability.\n\n\
+    #### Safety Transferability from English to Indonesian\n---\ntitle: Safety Transferability\
+    \ from English to Indonesian\nconfidence: HIGH\npapers: [2024acl-long796]\n---\n\
+    \n# Safety Transferability from English to Indonesian\nLeveraging safety pre-training\
+    \ in English to transfer safety to low-resource languages like Indonesian.\n\n\
+    **Delta**: On par with other multilingual and regional LLMs in safety\n**Condition**:\
+    \ Applied to LLaMA2-based models\n\n## Papers & Evidence\n `2024acl-long796` (Cendol):\
+    \ \"LLaMA2-based Cendol yields a much better safety score than mT5-based Cendol,\
+    \ suggesting the transferability of LLaMA2’s safety pre-training to Cendol.\"\
+    \ — Highlights effective safety transfer.\n\n## Actionable Guidance\nUtilize safety\
+    \ pre-trained models (e.g., LLaMA2) as backbones for safer low-resource language\
+    \ applications.\n\n---\n\n### [acl-2024/few-shot-clustering-language-models-text-similarit]\n\
+    \n**Summary Index:**\n---\ncategory: few-shot-clustering-language-models-text-similarit\n\
+    venue: acl-2024\npapers_analyzed: 2\n---\n\n# Insights: few-shot-clustering-language-models-text-similarit\n\
+    **Venue**: acl-2024 | **Papers analyzed**: 2\n\n| # | Insight | Papers | Confidence\
+    \ | File |\n|---|---------|--------|------------|------|\n| 1 | Language-Guided\
+    \ Data Augmentation Improves Robustness Against Spurious Correlations | 2024acl-long600,\
+    \ 2024findings-acl22 | HIGH | references/language-guided-data-augmentation.md\
+    \ |\n| 2 | SentenceBERT Embeddings Enhance Semantic Similarity Analysis | 2024acl-long600,\
+    \ 2024findings-acl22 | HIGH | references/sentencebert-embeddings.md |\n\n####\
+    \ Language-Guided Data Augmentation Improves Robustness Against Spurious Correlations\n\
+    ---\ntitle: Language-Guided Data Augmentation Improves Robustness Against Spurious\
+    \ Correlations\nconfidence: HIGH\npapers: [2024acl-long600, 2024findings-acl22]\n\
+    ---\n\n# Language-Guided Data Augmentation Improves Robustness Against Spurious\
+    \ Correlations\n\nBoth papers demonstrate the effectiveness of language-guided\
+    \ data augmentation techniques in identifying and mitigating spurious correlations\
+    \ in ML models. The 2024acl-long600 paper uses LLMs to extract foreground and\
+    \ background features, while the 2024findings-acl22 paper leverages LLM-guided\
+    \ feature extraction and personalized text-to-image generation to create non-spurious\
+    \ training data.\n\n## Papers & Evidence\n- `2024acl-long600` (Measuring Political\
+    \ Bias in Large Language Models): \"LLMs to extract foreground and background\
+    \ features from textual descriptions\" — Demonstrates the use of LLMs for feature\
+    \ extraction.\n- `2024findings-acl22` (ASPIRE: Language-Guided Data Augmentation):\
+    \ \"ASPIRE improves the worst-group classification accuracy of prior methods by\
+    \ 1% - 38%\" — Shows significant improvement in model robustness.\n\n## Actionable\
+    \ Guidance\nUse LLM-guided data augmentation (e.g., ASPIRE) to generate non-spurious\
+    \ training data, improving model robustness against spurious correlations.\n\n\
+    **Condition**: Applied to datasets with potential spurious correlations.\n**Confidence**:\
+    \ HIGH — Both papers provide strong evidence of effectiveness.\n\n#### SentenceBERT\
+    \ Embeddings Enhance Semantic Similarity Analysis\n---\ntitle: SentenceBERT Embeddings\
+    \ Enhance Semantic Similarity Analysis\nconfidence: HIGH\npapers: [2024acl-long600,\
+    \ 2024findings-acl22]\n---\n\n# SentenceBERT Embeddings Enhance Semantic Similarity\
+    \ Analysis\n\nBoth papers highlight the advantages of using SentenceBERT (SBERT)\
+    \ embeddings for semantic similarity analysis. The 2024acl-long600 paper employs\
+    \ SBERT to measure semantic similarity between model outputs and reference distributions,\
+    \ while the 2024findings-acl22 paper uses SBERT for feature extraction in language-guided\
+    \ data augmentation.\n\n## Papers & Evidence\n- `2024acl-long600` (Measuring Political\
+    \ Bias in Large Language Models): \"We employ SBERT to analyze semantic similarities\
+    \ at a conceptual level rather than at the word level\" — Demonstrates SBERT's\
+    \ effectiveness in semantic analysis.\n- `2024findings-acl22` (ASPIRE: Language-Guided\
+    \ Data Augmentation): \"LLMs to deal better with anomalies and out-of-distribution\
+    \ text scenarios\" — SBERT aids in robust feature extraction.\n\n## Actionable\
+    \ Guidance\nIncorporate SBERT embeddings for semantic similarity analysis and\
+    \ feature extraction in NLP tasks to improve robustness and interpretability.\n\
+    \n**Condition**: Tasks requiring semantic similarity or feature extraction.\n\
+    **Confidence**: HIGH — Both papers provide strong evidence of SBERT's effectiveness.\n\
+    \n---\n\n### [acl-2024/lexical-semantic-change-detection-analysis]\n\n**Summary\
+    \ Index:**\n---\ncategory: lexical-semantic-change-detection-analysis\nvenue:\
+    \ acl-2024\npapers_analyzed: 3\n---\n\n# Insights: lexical-semantic-change-detection-analysis\n\
+    **Venue**: acl-2024 | **Papers analyzed**: 3\n\n| # | Insight | Papers | Confidence\
+    \ | File |\n|---|---------|--------|------------|------|\n| 1 | Fine-tuned language\
+    \ models outperform large language models in detecting dialect-specific offensive\
+    \ language | 2024findings-acl713, 2024findings-acl360 | HIGH | references/fine-tuned-models-outperform-llms.md\
+    \ |\n| 2 | Transformer models trained on phonemic representations excel for French-involving\
+    \ language pairs | 2024findings-acl360, 2024findings-acl713 | MEDIUM | references/transformer-phonemic-french.md\
+    \ |\n| 3 | Token-level annotations improve model interpretability and accuracy\
+    \ in offensive language detection | 2024findings-acl713, 2024acl-long384 | HIGH\
+    \ | references/token-level-annotations.md |\n\n#### Fine-tuned language models\
+    \ outperform large language models in detecting dialect-specific offensive language\n\
+    ---\ntitle: Fine-tuned language models outperform large language models in detecting\
+    \ dialect-specific offensive language\nconfidence: HIGH\npapers: [2024findings-acl713,\
+    \ 2024findings-acl360]\n---\n\n# Fine-tuned language models outperform large language\
+    \ models in detecting dialect-specific offensive language\n\nFine-tuned smaller\
+    \ models like German BERT and ELECTRA demonstrate superior performance in detecting\
+    \ dialect-specific offensive language compared to large language models (LLMs)\
+    \ like GPT-3.5 and GPT-4, especially in scenarios requiring nuanced understanding\
+    \ of linguistic peculiarities such as vulgar dialect.\n\n## Papers & Evidence\n\
+    - `2024findings-acl713` (AustroTox): \"The results indicate that while fine-tuned\
+    \ models excel in detecting linguistic peculiarities such as vulgar dialect.\"\
+    \ — Highlights the effectiveness of fine-tuned models for dialect-specific tasks.\n\
+    - `2024findings-acl360` (It takes two to borrow): \"The graphical transformer\
+    \ generates in these cases perfect predictions on the test set, obtaining an F1-score\
+    \ of 1.\" — Shows the potential of fine-tuned models in specific linguistic contexts.\n\
+    \n## Actionable Guidance\nUse fine-tuned models like German BERT or ELECTRA for\
+    \ tasks involving dialect-specific offensive language detection, as they outperform\
+    \ LLMs in nuanced scenarios.\n\n**Condition**: Tasks requiring detection of dialect-specific\
+    \ or nuanced linguistic features.\n**Confidence**: HIGH — Both papers provide\
+    \ direct evidence of fine-tuned models outperforming LLMs in specific linguistic\
+    \ contexts.\n\n#### Token-level annotations improve model interpretability and\
+    \ accuracy in offensive language detection\n---\ntitle: Token-level annotations\
+    \ improve model interpretability and accuracy in offensive language detection\n\
+    confidence: HIGH\npapers: [2024findings-acl713, 2024acl-long384]\n---\n\n# Token-level\
+    \ annotations improve model interpretability and accuracy in offensive language\
+    \ detection\n\nToken-level annotations, which label spans within comments for\
+    \ vulgarities and targets of offensive statements, significantly enhance model\
+    \ interpretability and detection accuracy in offensive language tasks.\n\n## Papers\
+    \ & Evidence\n- `2024findings-acl713` (AustroTox): \"Model interpretability in\
+    \ toxicity detection greatly profits from token-level annotations.\" — Highlights\
+    \ the benefits of token-level annotations for interpretability.\n- `2024acl-long384`\
+    \ (Large Language Models Are No Longer Shallow Parsers): \"CoT improves system\
+    \ performance across the board, which confirms the benefits of providing step-by-step\
+    \ guidance.\" — Supports the idea that detailed annotations (like token-level)\
+    \ improve model performance.\n\n## Actionable Guidance\nIncorporate token-level\
+    \ annotations in datasets for offensive language detection to improve both model\
+    \ accuracy and interpretability.\n\n**Condition**: Tasks requiring detailed understanding\
+    \ of offensive language, such as vulgarity and target extraction.\n**Confidence**:\
+    \ HIGH — Both papers provide strong evidence for the benefits of token-level annotations.\n\
+    \n---\n\n### [acl-2024/llm-paraphrasing-text-simplification-discourse-pat]\n\n\
+    **Summary Index:**\n---\ncategory: llm-paraphrasing-text-simplification-discourse-pat\n\
+    venue: acl-2024\npapers_analyzed: 3\n---\n\n# Insights: llm-paraphrasing-text-simplification-discourse-pat\n\
+    **Venue**: acl-2024 | **Papers analyzed**: 3\n\n| # | Insight | Papers | Confidence\
+    \ | File |\n|---|---------|--------|------------|------|\n| 1 | Taboo words increase\
+    \ lexical diversity in LLM-based paraphrasing | 2024acl-long710, 2024findings-acl188\
+    \ | HIGH | references/taboo-words-lexical-diversity.md |\n| 2 | Two-stage noise-tolerant\
+    \ training improves model performance on synthetic data | 2024findings-acl188,\
+    \ 2024findings-acl640 | HIGH | references/two-stage-noise-tolerant-training.md\
+    \ |\n| 3 | LLM-guided VLMs outperform LLM+caption for visual commonsense understanding\
+    \ | 2024findings-acl640, 2024acl-long710 | HIGH | references/llm-guided-vlms.md\
+    \ |\n\n#### Taboo words increase lexical diversity in LLM-based paraphrasing\n\
+    ---\ntitle: Taboo words increase lexical diversity in LLM-based paraphrasing\n\
+    confidence: HIGH\npapers: [2024acl-long710, 2024findings-acl188]\n---\n\n# Taboo\
+    \ words increase lexical diversity in LLM-based paraphrasing\n\nInstructing LLMs\
+    \ to avoid specific words (taboo words) during paraphrasing significantly increases\
+    \ lexical diversity. This method is particularly effective when the goal is to\
+    \ enhance lexical variation in generated texts.\n\n## Papers & Evidence\n- `2024acl-long710`\
+    \ (Effects of diversity incentives): \"the taboo method yielded a higher-than-baseline\
+    \ number of unique words and 3-grams\" — Demonstrates that avoiding specific words\
+    \ increases lexical diversity.\n- `2024findings-acl188` (GENDEX): \"We filter\
+    \ short texts containing person names from D and obtain NER-filtered texts\" —\
+    \ Shows that targeted filtering (akin to taboo words) improves data quality.\n\
+    \n## Actionable Guidance\n**Model**: GPT-3.5 or similar LLMs\n**Condition**: When\
+    \ aiming to increase lexical diversity in paraphrased texts\n**Configuration**:\
+    \ Define a list of taboo words based on previous paraphrases or domain-specific\
+    \ requirements.\n\n**Confidence**: HIGH — Both papers provide direct evidence\
+    \ of lexical diversity improvements through targeted word avoidance.\n\n#### Two-stage\
+    \ noise-tolerant training improves model performance on synthetic data\n---\n\
+    title: Two-stage noise-tolerant training improves model performance on synthetic\
+    \ data\nconfidence: HIGH\npapers: [2024findings-acl188, 2024findings-acl640]\n\
+    ---\n\n# Two-stage noise-tolerant training improves model performance on synthetic\
+    \ data\n\nTraining models in two stages—first on synthetic data with early stopping,\
+    \ then on original data—prevents overfitting and improves performance on noisy\
+    \ synthetic datasets.\n\n## Papers & Evidence\n- `2024findings-acl188` (GENDEX):\
+    \ \"To effectively train the model on such noisy data, we train our summarization\
+    \ model using early stopping based two-stage noise-tolerant training setting.\"\
+    \ — Shows that two-stage training mitigates noise impact.\n- `2024findings-acl640`\
+    \ (ViCor): \"Our method ViCor, without any training on the dataset, can achieve\
+    \ results close to the best supervised methods.\" — Highlights the effectiveness\
+    \ of staged training approaches.\n\n## Actionable Guidance\n**Model**: BART or\
+    \ similar sequence-to-sequence models\n**Condition**: When using synthetic data\
+    \ for training\n**Configuration**: First train on synthetic data with early stopping,\
+    \ then fine-tune on original data.\n\n**Confidence**: HIGH — Both papers demonstrate\
+    \ significant performance improvements with this approach.\n\n#### LLM-guided\
+    \ VLMs outperform LLM+caption for visual commonsense understanding\n---\ntitle:\
+    \ LLM-guided VLMs outperform LLM+caption for visual commonsense understanding\n\
+    confidence: HIGH\npapers: [2024findings-acl640, 2024acl-long710]\n---\n\n# LLM-guided\
+    \ VLMs outperform LLM+caption for visual commonsense understanding\n\nLLMs can\
+    \ guide Vision-Language Models (VLMs) to focus on specific visual factors, improving\
+    \ accuracy in visual commonsense understanding tasks compared to LLM+caption pipelines.\n\
+    \n## Papers & Evidence\n- `2024findings-acl640` (ViCor): \"In VCU problems, the\
+    \ VLMs perform significantly better than LLM reasoning based on the caption on\
+    \ both datasets, with an average accuracy of 63.6% vs. 56.0%.\" — Demonstrates\
+    \ VLM superiority under LLM guidance.\n- `2024acl-long710` (Effects of diversity\
+    \ incentives): \"The hints method increases the performance of classification\
+    \ models trained on such data compared to the baseline.\" — Supports the idea\
+    \ that guided methods enhance model performance.\n\n## Actionable Guidance\n**Model**:\
+    \ BLIP2 for VLMs, GPT-4 for LLM guidance\n**Condition**: When solving Visual Commonsense\
+    \ Understanding (VCU) problems\n**Configuration**: Use LLMs to classify problems\
+    \ and guide VLMs to focus on relevant visual factors.\n\n**Confidence**: HIGH\
+    \ — Both papers provide quantitative evidence of performance improvements.\n\n\
+    ---\n\n### [acl-2024/moral-emotions-language-models-figurative-expressi]\n\n**Summary\
+    \ Index:**\n---\ncategory: moral-emotions-language-models-figurative-expressi\n\
+    venue: acl-2024\npapers_analyzed: 1\n---\n\n# Insights: moral-emotions-language-models-figurative-expressi\n\
+    **Venue**: acl-2024 | **Papers analyzed**: 1\n\n| # | Insight | Papers | Confidence\
+    \ | File |\n|---|---------|--------|------------|------|\n| 1 | PRewrite improves\
+    \ prompt effectiveness via reinforcement learning | 2024acl-short54 | HIGH | references/prompt-rewriting-rl.md\
+    \ |\n| 2 | Combining perplexity and F1 as RL rewards yields best performance on\
+    \ NQ | 2024acl-short54 | HIGH | references/combined-rewards.md |\n| 3 | KL-divergence\
+    \ penalty in PPO ensures interpretable prompts | 2024acl-short54 | HIGH | references/kl-divergence-penalty.md\
+    \ |\n| 4 | PRewrite-S outperforms PRewrite-I by searching multiple prompts | 2024acl-short54\
+    \ | HIGH | references/prompt-search.md |\n\n#### PRewrite improves prompt effectiveness\
+    \ via reinforcement learning\n---\ntitle: PRewrite improves prompt effectiveness\
+    \ via reinforcement learning\nconfidence: HIGH\npapers: [2024acl-short54]\n---\n\
+    \n# PRewrite improves prompt effectiveness via reinforcement learning\n\nPRewrite\
+    \ leverages reinforcement learning (RL) to rewrite under-optimized prompts into\
+    \ more effective ones, achieving consistent improvements over initial prompts.\
+    \ The approach utilizes a rewriter model (PaLM 2-S) trained with RL (using Proximal\
+    \ Policy Optimization with KL-divergence penalty) to generate interpretable prompts.\
+    \ Performance metrics (e.g., accuracy, F1) are used as task-specific rewards during\
+    \ RL training.\n\n## Papers & Evidence\n- `2024acl-short54` (PRewrite): \"PRewrite\
+    \ consistently improves over the initial prompts, demonstrating the effectiveness\
+    \ of the proposed method.\" — Introduces RL-based prompt rewriting for improved\
+    \ task performance.\n\n## Actionable Guidance\n**Model**: PaLM 2-S trained with\
+    \ PPO and KL-divergence penalty.\n**Condition**: Requires task-specific rewards\
+    \ (e.g., accuracy, F1) for RL fine-tuning.\n**Confidence**: HIGH — Supported by\
+    \ direct evidence of consistent improvements over baseline prompts.\n\n#### Combining\
+    \ perplexity and F1 as RL rewards yields best performance on NQ\n---\ntitle: Combining\
+    \ perplexity and F1 as RL rewards yields best performance on NQ\nconfidence: HIGH\n\
+    papers: [2024acl-short54]\n---\n\n# Combining perplexity and F1 as RL rewards\
+    \ yields best performance on NQ\n\nUsing a combination of perplexity and F1 as\
+    \ the reward signal for RL fine-tuning achieves the best performance on the Natural\
+    \ Questions (NQ) benchmark. This approach balances fluency (perplexity) and task-specific\
+    \ accuracy (F1), leading to superior results compared to single-metric rewards.\n\
+    \n## Papers & Evidence\n- `2024acl-short54` (PRewrite): \"Combining perplexity\
+    \ with F1 gives the best performance on NQ.\" — Demonstrates the effectiveness\
+    \ of multi-metric rewards for RL training.\n\n## Actionable Guidance\n**Model**:\
+    \ PaLM 2-S with combined perplexity and F1 rewards.\n**Condition**: Effective\
+    \ for benchmarks requiring both fluency and accuracy (e.g., NQ).\n**Confidence**:\
+    \ HIGH — Direct evidence supports the claim with specific performance improvements.\n\
+    \n#### KL-divergence penalty in PPO ensures interpretable prompts\n---\ntitle:\
+    \ KL-divergence penalty in PPO ensures interpretable prompts\nconfidence: HIGH\n\
+    papers: [2024acl-short54]\n---\n\n# KL-divergence penalty in PPO ensures interpretable\
+    \ prompts\n\nThe inclusion of a KL-divergence penalty in Proximal Policy Optimization\
+    \ (PPO) during RL training ensures that the generated prompts remain interpretable.\
+    \ This penalty prevents the model from deviating too far from the initial prompt\
+    \ distribution, avoiding uninterpretable outputs.\n\n## Papers & Evidence\n- `2024acl-short54`\
+    \ (PRewrite): \"This can be also attributed to the KL penalty in PPO.\" — Highlights\
+    \ the role of KL-divergence in maintaining prompt interpretability.\n\n## Actionable\
+    \ Guidance\n**Model**: PPO with KL-divergence penalty.\n**Condition**: Necessary\
+    \ for generating interpretable prompts during RL training.\n**Confidence**: HIGH\
+    \ — Supported by direct evidence in the paper.\n\n#### PRewrite-S outperforms\
+    \ PRewrite-I by searching multiple prompts\n---\ntitle: PRewrite-S outperforms\
+    \ PRewrite-I by searching multiple prompts\nconfidence: HIGH\npapers: [2024acl-short54]\n\
+    ---\n\n# PRewrite-S outperforms PRewrite-I by searching multiple prompts\n\nPRewrite-S\
+    \ employs a search strategy by generating multiple rewritten prompts (temperature=1)\
+    \ and selecting the best-performing one, outperforming PRewrite-I (greedy decoding).\
+    \ This approach leverages the variability in prompt generation to identify higher-quality\
+    \ prompts for the downstream task.\n\n## Papers & Evidence\n- `2024acl-short54`\
+    \ (PRewrite): \"PRewrite-S consistently shows improvement over PRewrite-I, suggesting\
+    \ that search strategy can be more helpful.\" — Validates the superiority of search-based\
+    \ prompt rewriting.\n\n## Actionable Guidance\n**Model**: PaLM 2-S with temperature=1\
+    \ for prompt generation.\n**Condition**: Effective when computational resources\
+    \ allow for multiple prompt generations.\n**Confidence**: HIGH — Direct evidence\
+    \ supports the claim with consistent improvements.\n\n---\n\n### [acl-2024/probing-word-embeddings-cross-lingual-alignment-se]\n\
+    \n**Summary Index:**\n---\ncategory: probing-word-embeddings-cross-lingual-alignment-se\n\
+    venue: acl-2024\npapers_analyzed: 17\n---\n\n# Insights: probing-word-embeddings-cross-lingual-alignment-se\n\
+    **Venue**: acl-2024 | **Papers analyzed**: 17\n\n| # | Insight | Papers | Confidence\
+    \ | File |\n|---|---------|--------|------------|------|\n| 1 | Fine-tuning LLMs\
+    \ with LoRA improves performance in cross-lingual tasks | 2024acl-long622, 2024findings-acl393\
+    \ | HIGH | references/fine-tuning-llms-with-lora.md |\n| 2 | Batch-ICL enhances\
+    \ in-context learning efficiency and order-agnostic performance | 2024findings-acl638,\
+    \ 2024findings-acl690 | HIGH | references/batch-icl-enhances-in-context-learning.md\
+    \ |\n| 3 | Cross-lingual alignment benefits from large vocabulary models | 2024acl-long44,\
+    \ 2024findings-acl393 | HIGH | references/cross-lingual-alignment-large-vocabulary.md\
+    \ |\n| 4 | Hierarchical annotation improves dataset quality for low-resource languages\
+    \ | 2024acl-long44, 2024findings-acl393 | HIGH | references/hierarchical-annotation-improves-quality.md\
+    \ |\n| 5 | Contrastive learning enhances idiomatic expression representation |\
+    \ 2024findings-acl741, 2024acl-long857 | HIGH | references/contrastive-learning-idiomatic-representation.md\
+    \ |\n\n#### Fine-tuning LLMs with LoRA improves performance in cross-lingual tasks\n\
+    ---\ntitle: Fine-tuning LLMs with LoRA improves performance in cross-lingual tasks\n\
+    confidence: HIGH\npapers: [2024acl-long622, 2024findings-acl393]\n---\n\n# Fine-tuning\
+    \ LLMs with LoRA improves performance in cross-lingual tasks\n\nLLMs fine-tuned\
+    \ using Low-Rank Adaptation (LoRA) demonstrate superior performance in cross-lingual\
+    \ tasks compared to standard fine-tuning methods. LoRA reduces computational overhead\
+    \ while maintaining or improving accuracy, particularly in low-resource language\
+    \ settings.\n\n## Papers & Evidence\n- `2024acl-long622` (Split and Rephrase with\
+    \ Large Language Models): \"LoRA adaptation with our hand-crafted simple prompt\
+    \ achieved the best results overall.\"\n- `2024findings-acl393` (Multi-level multi-label\
+    \ text classification): \"Llama-2-7b fine-tuned with LoRA outperformed other models\
+    \ in Russian datasets.\"\n\n## Actionable Guidance\nUse LoRA for efficient fine-tuning\
+    \ of LLMs in cross-lingual tasks, especially when computational resources are\
+    \ limited.\n\n**Condition**: When training datasets of sufficient size are available\n\
+    **Confidence**: HIGH - Supported by multiple papers demonstrating consistent performance\
+    \ improvements\n\n#### Batch-ICL enhances in-context learning efficiency and order-agnostic\
+    \ performance\n---\ntitle: Batch-ICL enhances in-context learning efficiency and\
+    \ order-agnostic performance\nconfidence: HIGH\npapers: [2024findings-acl638,\
+    \ 2024findings-acl690]\n---\n\n# Batch-ICL enhances in-context learning efficiency\
+    \ and order-agnostic performance\n\nBatch-ICL processes in-context learning examples\
+    \ in batches, aggregating their meta-gradients for more efficient and order-agnostic\
+    \ performance. This method reduces computational overhead while maintaining or\
+    \ improving accuracy compared to standard ICL approaches.\n\n## Papers & Evidence\n\
+    - `2024findings-acl638` (Batch-ICL): \"Batch-ICL consistently exhibits improved\
+    \ accuracy compared to the average accuracy achieved through all permutations\
+    \ of ICL examples.\"\n- `2024findings-acl690` (Poor-Supervised Evaluation): \"\
+    The EM-based optimization achieves perfect alignment with true labels (0.971 rp\
+    \ and 0.989 rs).\"\n\n## Actionable Guidance\nImplement Batch-ICL for order-agnostic\
+    \ and computationally efficient in-context learning, particularly when dealing\
+    \ with multiple demonstration examples.\n\n**Condition**: Across various tasks\
+    \ and model sizes\n**Confidence**: HIGH - Demonstrated effectiveness in multiple\
+    \ evaluation scenarios\n\n#### Cross-lingual alignment benefits from large vocabulary\
+    \ models\n---\ntitle: Cross-lingual alignment benefits from large vocabulary models\n\
+    confidence: HIGH\npapers: [2024acl-long44, 2024findings-acl393]\n---\n\n# Cross-lingual\
+    \ alignment benefits from large vocabulary models\n\nModels with large vocabulary\
+    \ sizes (e.g., XLM-V with 900k tokens) significantly outperform smaller vocabulary\
+    \ models in cross-lingual alignment tasks, particularly for low-resource languages.\n\
+    \n## Papers & Evidence\n- `2024acl-long44` (Belebele Benchmark): \"XLM-V has a\
+    \ massive 900k-token vocabulary that allocates capacity for each individual language.\"\
+    \n- `2024findings-acl393` (Multi-level multi-label text classification): \"Large\
+    \ vocabulary models handle Ottoman Turkish character encoding challenges better\
+    \ than smaller models.\"\n\n## Actionable Guidance\nPrefer models with large,\
+    \ language-specific vocabularies for cross-lingual tasks, especially when working\
+    \ with low-resource languages.\n\n**Condition**: When evaluating models on diverse\
+    \ language families\n**Confidence**: HIGH - Consistent findings across different\
+    \ evaluation frameworks\n\n#### Hierarchical annotation improves dataset quality\
+    \ for low-resource languages\n---\ntitle: Hierarchical annotation improves dataset\
+    \ quality for low-resource languages\nconfidence: HIGH\npapers: [2024acl-long44,\
+    \ 2024findings-acl393]\n---\n\n# Hierarchical annotation improves dataset quality\
+    \ for low-resource languages\n\nHierarchical annotation processes involving multiple\
+    \ review stages significantly improve dataset quality, particularly for low-resource\
+    \ languages where annotation complexity is high.\n\n## Papers & Evidence\n- `2024acl-long44`\
+    \ (Belebele Benchmark): \"We implement an iterative procedure with Language Service\
+    \ Providers for high-quality MCQ creation.\"\n- `2024findings-acl393` (Multi-level\
+    \ text classification): \"Hierarchical cross-check annotation ensures high-quality\
+    \ annotations and renders traditional IAA metrics less meaningful.\"\n\n## Actionable\
+    \ Guidance\nFor low-resource language datasets, implement multi-stage hierarchical\
+    \ annotation with expert review to ensure quality.\n\n**Condition**: Expert-driven\
+    \ annotation tasks requiring specialized knowledge\n**Confidence**: HIGH - Proven\
+    \ effective across multiple dataset creation efforts\n\n#### Contrastive learning\
+    \ enhances idiomatic expression representation\n---\ntitle: Contrastive learning\
+    \ enhances idiomatic expression representation\nconfidence: HIGH\npapers: [2024findings-acl741,\
+    \ 2024acl-long857]\n---\n\n# Contrastive learning enhances idiomatic expression\
+    \ representation\n\nAdaptive contrastive triplet loss methods significantly improve\
+    \ representation of idiomatic expressions by distinguishing between literal and\
+    \ figurative meanings through carefully constructed positive-anchor-negative triplets.\n\
+    \n## Papers & Evidence\n- `2024findings-acl741` (Enhanced Idiomatic Representation):\
+    \ \"Our proposed method outperforms previous alternatives significantly in many\
+    \ metrics.\"\n- `2024acl-long857` (NounAtlas): \"The quality assessment showed\
+    \ 77.11% of role spans remained unchanged after propagation.\"\n\n## Actionable\
+    \ Guidance\nUse contrastive triplet loss with carefully mined examples to improve\
+    \ representation of idiomatic expressions across languages.\n\n**Condition**:\
+    \ When training language models for idiomatic expression representation\n**Confidence**:\
+    \ HIGH - Demonstrates substantial improvements across evaluation metrics\n\n---\n\
+    \n### [acl-2024/topic-modeling-llm-analysis-tools]\n\n**Summary Index:**\n---\n\
+    category: topic-modeling-llm-analysis-tools\nvenue: acl-2024\npapers_analyzed:\
+    \ 1\n---\n\n# Insights: topic-modeling-llm-analysis-tools\n**Venue**: acl-2024\
+    \ | **Papers analyzed**: 1\n\n| # | Insight | Papers | Confidence | File |\n|---|---------|--------|------------|------|\n\
+    | 1 | Temporal Topic Quality (TTQ) evaluation | 2024acl-long11 | HIGH | references/temporal-topic-quality.md\
+    \ |\n| 2 | Dynamic Topic Quality (DTQ) aggregation | 2024acl-long11 | HIGH | references/dynamic-topic-quality.md\
+    \ |\n| 3 | Temporal Topic Coherence (TTC) measure | 2024acl-long11 | HIGH | references/temporal-topic-coherence.md\
+    \ |\n| 4 | Temporal Topic Smoothness (TTS) evaluation | 2024acl-long11 | HIGH\
+    \ | references/temporal-topic-smoothness.md |\n| 5 | Human Evaluation Tasks validation\
+    \ | 2024acl-long11 | HIGH | references/human-evaluation-tasks.md |\n| 6 | Word\
+    \ Intrusion Assessment sensitivity | 2024acl-long11 | HIGH | references/word-intrusion-assessment.md\
+    \ |\n| 7 | Dynamic LLM (D-LLM) consistency | 2024acl-long11 | MEDIUM | references/dynamic-llm-consistency.md\
+    \ |\n\n#### Temporal Topic Quality (TTQ) evaluation\n---\ntitle: Temporal Topic\
+    \ Quality (TTQ) evaluation\nconfidence: HIGH\npapers: [2024acl-long11]\n---\n\n\
+    # Temporal Topic Quality (TTQ) evaluation\n\nA novel evaluation measure for Dynamic\
+    \ Topic Models (DTMs) that incorporates changes in topic quality over time, capturing\
+    \ temporal characteristics.\n\n**Evidence**: \"The results demonstrate a positive\
+    \ correlation between human ratings and the individual components of the TTQ measure.\"\
+    \n\n## Actionable Guidance\nUse TTQ when evaluating DTMs on synthetic and real-world\
+    \ datasets to ensure temporal characteristics are captured.\n\n**Condition**:\
+    \ Evaluating DTMs on synthetic and real-world datasets.\n\n**Confidence**: HIGH\
+    \ — Supported by strong empirical evidence and human evaluation alignment.\n\n\
+    #### Dynamic Topic Quality (DTQ) aggregation\n---\ntitle: Dynamic Topic Quality\
+    \ (DTQ) aggregation\nconfidence: HIGH\npapers: [2024acl-long11]\n---\n\n# Dynamic\
+    \ Topic Quality (DTQ) aggregation\n\nAn aggregated measure combining TTQ with\
+    \ static topic quality scores to evaluate both year-wise and temporal topic quality.\n\
+    \n**Evidence**: \"The DTQ measure effectively indicates the smoothness of topics\
+    \ in trained DTMs compared to previously employed measures.\"\n\n## Actionable\
+    \ Guidance\nUse DTQ for comprehensive evaluation of DTMs, including LLM-based\
+    \ topic models, to assess both static and temporal quality.\n\n**Condition**:\
+    \ Comparing DTMs, including LLM-based topic models.\n\n**Confidence**: HIGH —\
+    \ Clear empirical validation and outperformance of baseline measures.\n\n####\
+    \ Temporal Topic Coherence (TTC) measure\n---\ntitle: Temporal Topic Coherence\
+    \ (TTC) measure\nconfidence: HIGH\npapers: [2024acl-long11]\n---\n\n# Temporal\
+    \ Topic Coherence (TTC) measure\n\nA measure that evaluates the coherence of word\
+    \ pairs across consecutive timestamps of a topic.\n\n**Evidence**: \"TTC correlates\
+    \ better with human perception of word relatedness than baseline TC.\"\n\n## Actionable\
+    \ Guidance\nAdopt TTC for evaluating temporal coherence in DTMs, especially when\
+    \ human-like perception alignment is critical.\n\n**Condition**: Assessing temporal\
+    \ topic coherence in DTMs.\n\n**Confidence**: HIGH — Strong correlation with human\
+    \ evaluation.\n\n#### Temporal Topic Smoothness (TTS) evaluation\n---\ntitle:\
+    \ Temporal Topic Smoothness (TTS) evaluation\nconfidence: HIGH\npapers: [2024acl-long11]\n\
+    ---\n\n# Temporal Topic Smoothness (TTS) evaluation\n\nA measure that evaluates\
+    \ the smoothness of topic transitions over time by applying diversity measures\
+    \ horizontally.\n\n**Evidence\": \"TTS correlates well with human-perceived smoothness,\
+    \ often outperforming baseline measures.\"\n\n## Actionable Guidance\nApply TTS\
+    \ when evaluating topic smoothness in DTMs to ensure transitions align with human\
+    \ perception.\n\n**Condition**: Evaluating topic smoothness in DTMs.\n\n**Confidence**:\
+    \ HIGH — Validated by human evaluation and outperformance of baselines.\n\n####\
+    \ Human Evaluation Tasks validation\n---\ntitle: Human Evaluation Tasks validation\n\
+    confidence: HIGH\npapers: [2024acl-long11]\n---\n\n# Human Evaluation Tasks validation\n\
+    \nAdapted tasks (temporal word intrusion and temporal topic rating) for human\
+    \ evaluation of DTMs.\n\n**Evidence\": \"Human ratings align with proposed temporal\
+    \ measures, confirming their validity.\"\n\n## Actionable Guidance\nUse these\
+    \ tasks to validate automated evaluation measures for DTMs.\n\n**Condition**:\
+    \ Validating automated evaluation measures for DTMs.\n\n**Confidence**: HIGH —\
+    \ Direct alignment with human ratings.\n\n#### Word Intrusion Assessment sensitivity\n\
+    ---\ntitle: Word Intrusion Assessment sensitivity\nconfidence: HIGH\npapers: [2024acl-long11]\n\
+    ---\n\n# Word Intrusion Assessment sensitivity\n\nA task to assess the effect\
+    \ of noise intrusion on temporal topic quality.\n\n**Evidence\": \"The proposed\
+    \ measures decrease as the noise level increases, confirming their sensitivity\
+    \ to topic quality.\"\n\n## Actionable Guidance\nEmploy this assessment to test\
+    \ the robustness of TTQ to noise in DTMs.\n\n**Condition\": Evaluating the robustness\
+    \ of TTQ to noise.\n\n**Confidence**: HIGH — Shows clear sensitivity to noise\
+    \ levels.\n\n---\n\n### [acl-2024/transformer-analysis-architecture-search-learning]\n\
+    \n**Summary Index:**\n---\ncategory: transformer-analysis-architecture-search-learning\n\
+    venue: acl-2024\npapers_analyzed: 6\n---\n\n# Insights: transformer-analysis-architecture-search-learning\n\
+    **Venue**: acl-2024 | **Papers analyzed**: 6\n\n| # | Insight | Papers | Confidence\
+    \ | File |\n|---|---------|--------|------------|------|\n| 1 | Layer Normalization\
+    \ stabilizes transformer training by breaking Lipschitz assumptions | 2024acl-long800,\
+    \ 2024findings-acl695 | HIGH | references/layer-normalization-stabilizes-training.md\
+    \ |\n| 2 | Dynamic rescaling techniques like BranchNorm improve convergence in\
+    \ deep transformers | 2024findings-acl695, 2024findings-acl922 | HIGH | references/dynamic-rescaling-improves-convergence.md\
+    \ |\n| 3 | Multi-task instruction tuning enhances generalization across biological\
+    \ domains | 2024findings-acl71, 2024findings-acl922 | MEDIUM | references/multi-task-tuning-enhances-generalization.md\
+    \ |\n| 4 | Error-type prompting significantly improves mathematical reasoning\
+    \ correction accuracy | 2024findings-acl673, 2024findings-acl922 | HIGH | references/error-type-prompting-improves-correction.md\
+    \ |\n\n#### Layer Normalization stabilizes transformer training by breaking Lipschitz\
+    \ assumptions\n---\ntitle: Layer Normalization stabilizes transformer training\
+    \ by breaking Lipschitz assumptions\nconfidence: HIGH\npapers: [2024acl-long800,\
+    \ 2024findings-acl695]\n---\n\n# Layer Normalization stabilizes transformer training\
+    \ by breaking Lipschitz assumptions\n\nLayer normalization (LayerNorm) is a critical\
+    \ component in transformer architectures that stabilizes training by normalizing\
+    \ activations. It enables transformers to express sensitive functions like PARITY\
+    \ by breaking the Lipschitz assumption used in theoretical proofs. BranchNorm\
+    \ extends this by dynamically rescaling non-residual branches based on training\
+    \ period.\n\n## Papers & Evidence\n- `2024acl-long800` (Why are Sensitive Functions\
+    \ Hard for Transformers?): \"Layer norm, by breaking the Lipschitz assumption\
+    \ used in Hahn (2020)'s Theorem 2, allows expressing PARITY in principle.\"\n\
+    - `2024findings-acl695` (BranchNorm: Robustly Scaling Extremely Deep Transformers):\
+    \ \"BranchNorm progressively degenerates into a vanilla Post-LayerNorm to promote\
+    \ better convergence.\"\n\n## Actionable Guidance\nUse LayerNorm in transformer\
+    \ architectures when training on tasks requiring sensitivity to input changes.\
+    \ For deep architectures (>100 layers), consider BranchNorm's dynamic rescaling\
+    \ approach.\n\n**Condition**: Training transformers on sensitive functions or\
+    \ deep architectures\n**Confidence**: HIGH - Supported by theoretical proofs and\
+    \ empirical results across multiple papers\n\n#### Dynamic rescaling techniques\
+    \ like BranchNorm improve convergence in deep transformers\n---\ntitle: Dynamic\
+    \ rescaling techniques like BranchNorm improve convergence in deep transformers\n\
+    confidence: HIGH\npapers: [2024findings-acl695, 2024findings-acl922]\n---\n\n\
+    # Dynamic rescaling techniques like BranchNorm improve convergence in deep transformers\n\
+    \nDynamic rescaling methods adapt normalization strategies based on training progress.\
+    \ BranchNorm dynamically rescales non-residual branches in transformers, smoothing\
+    \ gradient norms early and promoting better convergence later. This approach outperforms\
+    \ DeepNorm, especially in extremely deep architectures (>100 layers).\n\n## Papers\
+    \ & Evidence\n- `2024findings-acl695` (BranchNorm: Robustly Scaling Extremely\
+    \ Deep Transformers): \"BranchNorm not only theoretically stabilizes the training\
+    \ with smooth gradient norms at the early stage, but also encourages better convergence\
+    \ in the subsequent training stage.\"\n- `2024findings-acl922` (A Meta-Learning\
+    \ Perspective on Transformers for Causal Language Modeling): \"The approximate\
+    \ inner optimization loss shows a decreasing trend in larger models, mirroring\
+    \ an optimization process.\"\n\n## Actionable Guidance\nUse BranchNorm for training\
+    \ extremely deep transformers (>100 layers). Implement dynamic alpha growth with\
+    \ a linear strategy for robust performance across training stages.\n\n**Condition**:\
+    \ Training extremely deep transformer architectures\n**Confidence**: HIGH - Supported\
+    \ by empirical results and theoretical analysis across multiple papers\n\n####\
+    \ Error-type prompting significantly improves mathematical reasoning correction\
+    \ accuracy\n---\ntitle: Error-type prompting significantly improves mathematical\
+    \ reasoning correction accuracy\nconfidence: HIGH\npapers: [2024findings-acl673,\
+    \ 2024findings-acl922]\n---\n\n# Error-type prompting significantly improves mathematical\
+    \ reasoning correction accuracy\n\nProviding error type information in prompts\
+    \ significantly improves transformer models' ability to identify and correct mathematical\
+    \ reasoning errors. GPT-4 demonstrates outstanding performance in error-presence\
+    \ identification (EP), error-step identification (ES), error-type identification\
+    \ (ET), and error correction (EC). The meta-learning perspective on transformers\
+    \ supports this by showing decreasing trends in approximate inner optimization\
+    \ loss.\n\n## Papers & Evidence\n- `2024findings-acl673` (Evaluating Mathematical\
+    \ Reasoning of Large Language Models: A Focus on Error Identification and Correction):\
+    \ \"Prompting LLMs with the error types can improve the average correction accuracy\
+    \ by 47.9%.\"\n- `2024findings-acl922` (A Meta-Learning Perspective on Transformers\
+    \ for Causal Language Modeling): \"The approximate inner optimization loss shows\
+    \ a decreasing trend in larger models, mirroring an optimization process.\"\n\n\
+    ## Actionable Guidance\nUse error-type prompting for mathematical reasoning tasks.\
+    \ Include specific error types (e.g., calculation errors) in prompts to improve\
+    \ correction accuracy.\n\n**Condition**: Mathematical reasoning tasks with transformer\
+    \ models\n**Confidence**: HIGH - Supported by significant accuracy improvements\
+    \ and theoretical analysis"
+methodology_kb_path: /app/paper-skills/methodology_kb
+use_grading_server: true
+init_solution:
+  use: false

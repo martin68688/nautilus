@@ -1,0 +1,7 @@
+Metric: 0.0002
+Maximize: False
+Branch ID: 5
+Stage: evolution (intra-branch evolution)
+From Top-K: True
+Execution Time(s): 119.96
+Created Time: 2026-05-02T23:49:23

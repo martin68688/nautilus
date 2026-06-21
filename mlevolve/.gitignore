@@ -82,6 +82,12 @@ runs/**
 !runs/**/
 !runs/**/journal.json
 !runs/**/filtered_journal.json
+# Exclude oversized journal.json (>50MB, would exceed GitHub's 100MB hard limit).
+# The openadmet-expansionrx molecular runs produce huge journals (~90-180MB).
+# filtered_journal.json preserves the same trajectory in a compact form.
+runs/20260501_184944_openadmet-expansionrx/logs/journal.json
+runs/20260502_030117_openadmet-expansionrx/logs/journal.json
+runs/20260502_041127_openadmet-expansionrx/logs/journal.json
 !runs/**/records.json
 !runs/**/evolution_tree.txt
 !runs/**/runfile_*.py
