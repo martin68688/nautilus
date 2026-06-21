@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Agent Memory 综述 + Skill Graph 研究方向 — 2026·06</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #ffffff;
+    --ink: #0f172a;
+    --muted: #475569;
+    --line: #cbd5e1;
+
+    --q1: #f1f5f9;  --q1b: #94a3b8;
+    --q2: #dbeafe;  --q2b: #3b82f6;
+    --q3: #dcfce7;  --q3b: #16a34a;
+    --q4: #fee2e2;  --q4b: #dc2626;
+
+    --good: #16a34a;
+    --warn: #f59e0b;
+    --bad:  #dc2626;
+    --gold: #ca8a04;
+    --purple: #7c3aed;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+                 "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    overflow: hidden;
+  }
+  .deck { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  .slide {
+    position: absolute; inset: 0;
+    display: none;
+    padding: 34px 56px 30px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    overflow: auto;
+  }
+  .slide.active { display: block; }
+  .slide h1 { margin: 0 0 8px 0; font-size: 29px; letter-spacing: 0.3px; }
+  .slide h2 { margin: 0 0 16px 0; font-size: 17px; color: var(--muted); font-weight: 500; }
+  .footer {
+    position: absolute; left: 56px; right: 56px; bottom: 14px;
+    display: flex; justify-content: space-between;
+    color: var(--muted); font-size: 12px;
+    border-top: 1px solid var(--line); padding-top: 8px;
+  }
+  .pill {
+    display: inline-block; padding: 2px 10px; border-radius: 999px;
+    font-size: 12px; margin-right: 6px; border: 1px solid var(--line); background: #fff;
+  }
+  code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:0.92em; }
+
+  /* ---------- Title slide ---------- */
+  .title-slide {
+    background: radial-gradient(1200px 800px at 30% 30%, #1e293b 0%, #0f172a 60%, #020617 100%);
+    color: #f8fafc; display: none; padding: 64px 80px;
+  }
+  .title-slide.active { display: flex; flex-direction: column; justify-content: center; }
+  .title-slide .eyebrow { color: #94a3b8; font-size: 14px; letter-spacing: 4px; text-transform: uppercase; }
+  .title-slide h1 { font-size: 50px; line-height: 1.14; margin: 16px 0 12px; }
+  .title-slide .sub { color: #cbd5e1; font-size: 21px; max-width: 940px; line-height:1.5; }
+  .thesis {
+    margin-top: 22px; padding: 16px 20px; border-radius: 12px;
+    background: rgba(124,58,237,0.16); border: 1px solid rgba(167,139,250,0.5);
+    color: #ede9fe; font-size: 17px; line-height: 1.6; max-width: 960px;
+  }
+  .thesis b { color: #c4b5fd; }
+  .asks { margin-top: 20px; max-width: 960px; }
+  .asks .alabel { color:#94a3b8; font-size:13px; letter-spacing:2px; text-transform:uppercase; margin-bottom:8px; }
+  .asks ol { margin:0; padding-left:22px; color:#e2e8f0; font-size:15px; line-height:1.7; }
+  .title-slide .meta { margin-top: 28px; color: #94a3b8; font-size: 13px; }
+  .title-slide .footer { color: #64748b; border-top-color: #1e293b; }
+
+  /* ---------- generic cards ---------- */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 16px; }
+  .stat-card {
+    border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 14px;
+    background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+  }
+  .stat-card .name { font-weight: 600; font-size: 16px; }
+  .stat-card .name .tag {
+    font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    background: #f1f5f9; color: var(--muted); margin-left: 6px;
+  }
+  .stat-card .big { font-size: 34px; font-weight: 700; margin-top: 8px; color: var(--bad); }
+  .stat-card .desc { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
+
+  .takeaway {
+    margin-top: 18px; padding: 14px 18px; border-left: 4px solid var(--bad);
+    background: #fff7ed; border-radius: 0 10px 10px 0; font-size: 15px; line-height:1.6;
+  }
+  .takeaway b { color: var(--bad); }
+  .takeaway.good { border-left-color: var(--q3b); background:#f0fdf4; }
+  .takeaway.good b { color: var(--q3b); }
+  .takeaway.purple { border-left-color: var(--purple); background:#f5f3ff; }
+  .takeaway.purple b { color: var(--purple); }
+
+  /* ---------- four-dim framework ---------- */
+  .dims { display:grid; grid-template-columns: repeat(4,1fr); gap:14px; margin-top:18px; }
+  .dim {
+    border:1.5px solid var(--line); border-radius:14px; padding:16px 16px 12px; background:#fff;
+  }
+  .dim .dh { font-weight:700; font-size:15px; margin-bottom:6px; }
+  .dim .dq { font-size:12.5px; color:var(--muted); margin-bottom:10px; line-height:1.5; min-height:54px; }
+  .dim .df { font-size:12.5px; color:var(--bad); line-height:1.5; }
+  .dim .df b { color:var(--bad); }
+  .dim.d1 { border-top:4px solid var(--q1b); }
+  .dim.d2 { border-top:4px solid var(--q2b); }
+  .dim.d3 { border-top:4px solid var(--q3b); }
+  .dim.d4 { border-top:4px solid var(--q4b); }
+
+  /* ---------- 2x2 matrix ---------- */
+  .matrix-wrap {
+    display: grid; grid-template-columns: 36px 1fr; grid-template-rows: 1fr 32px;
+    gap: 6px; height: calc(100% - 150px); margin-top: 6px;
+  }
+  .y-axis {
+    writing-mode: vertical-rl; transform: rotate(180deg); text-align: center;
+    color: var(--muted); font-size: 13px; letter-spacing: 1px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .x-axis { grid-column: 2 / 3; text-align: center; color: var(--muted); font-size: 13px; letter-spacing: 1px; }
+  .axis-spacer { grid-column: 1 / 2; grid-row: 2 / 3; }
+  .matrix {
+    grid-column: 2 / 3; grid-row: 1 / 2; display: grid;
+    grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1.4fr; gap: 12px;
+  }
+  .quad { border-radius: 14px; padding: 14px 16px 12px; border: 1.5px solid var(--line); position: relative; overflow: hidden; }
+  .quad .qhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .quad .qname { font-weight: 700; font-size: 14px; color: var(--ink); }
+  .quad .qcode { font-size: 11px; color: var(--muted); }
+  .quad ul { margin: 0; padding-left: 16px; }
+  .quad li { font-size: 12.5px; line-height: 1.55; margin-bottom: 3px; }
+  .quad li .meta { color: var(--muted); }
+  .q-q1 { background: var(--q1); border-color: var(--q1b); }
+  .q-q2 { background: var(--q2); border-color: var(--q2b); }
+  .q-q3 { background: var(--q3); border-color: var(--q3b); }
+  .q-q4 { background: var(--q4); border-color: var(--q4b); border-width: 2.5px; box-shadow: 0 0 0 4px rgba(220,38,38,0.10); }
+  .q-q4::after {
+    content: "★ 空白象限 1"; position: absolute; top: 10px; right: 12px;
+    background: var(--q4b); color: #fff; font-size: 11px; padding: 3px 9px; border-radius: 999px; letter-spacing: 1px;
+  }
+  .g {
+    display: inline-block; width: 16px; height: 16px; border-radius: 50%;
+    text-align: center; line-height: 16px; font-size: 11px; font-weight: 700;
+    color: #fff; margin-right: 4px; vertical-align: -2px;
+  }
+  .g-no { background: var(--bad); }
+  .g-llm { background: var(--warn); }
+  .g-obj { background: var(--good); }
+  .g-star { background: var(--gold); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; font-size: 12px; color: var(--muted); }
+  .legend .item { display: flex; align-items: center; gap: 4px; }
+
+  /* ---------- crosscut / two-col ---------- */
+  .cross { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 12px; }
+  .cross .panel { border: 1.5px solid var(--line); border-radius: 14px; padding: 18px 20px; background: #fff; }
+  .cross .panel h3 { margin: 0 0 8px 0; font-size: 17px; color: var(--bad); }
+  .cross .panel .lead { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+  .cross .panel ul { margin: 0; padding-left: 18px; }
+  .cross .panel li { font-size: 13.5px; line-height: 1.6; margin-bottom:3px; }
+
+  /* ---------- pipeline flow ---------- */
+  .flow { display:grid; grid-template-columns: 1fr 28px 1fr 28px 1fr 28px 1fr; align-items:stretch; gap:8px; margin-top:18px; }
+  .flow .fbox { border:2px solid var(--line); border-radius:13px; padding:14px 14px 12px; background:#fff; }
+  .flow .fbox.f1 { border-color:var(--q2b); background:#eff6ff; }
+  .flow .fbox.f2 { border-color:var(--purple); background:#f5f3ff; }
+  .flow .fbox.f3 { border-color:var(--gold); background:#fefce8; }
+  .flow .fbox.f4 { border-color:var(--q4b); background:#fef2f2; }
+  .flow .fbox .ft { font-weight:700; font-size:14px; margin-bottom:5px; }
+  .flow .fbox .fs { font-size:11.5px; color:var(--muted); line-height:1.5; }
+  .flow .farrow { display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--muted); font-weight:700; }
+  .nodechips { margin-top:16px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .nodechip { font-size:12px; padding:4px 11px; border-radius:999px; border:1px solid var(--purple); color:var(--purple); background:#f5f3ff; font-weight:600; }
+  .edgechips { margin-top:8px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .edgechip { font-size:11.5px; padding:3px 10px; border-radius:6px; border:1px solid var(--q4b); color:var(--q4b); background:#fef2f2; font-family:ui-monospace,Menlo,monospace; }
+
+  /* ---------- layer A/B ---------- */
+  .layers { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:14px; }
+  .layer { border:2px solid var(--line); border-radius:14px; padding:16px 18px; background:#fff; }
+  .layer.la { border-color:var(--q3b); background:#f0fdf4; }
+  .layer.lb { border-color:var(--purple); background:#f5f3ff; }
+  .layer h3 { margin:0 0 4px; font-size:16px; }
+  .layer .sub { font-size:12px; color:var(--muted); margin-bottom:10px; }
+  .layer table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .layer td { padding:4px 2px; border-bottom:1px solid rgba(0,0,0,0.06); vertical-align:top; line-height:1.45; }
+  .layer td:first-child { color:var(--muted); width:74px; }
+
+  /* ---------- compare (vector vs graph) ---------- */
+  .hop-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px; }
+  .hop-side { border: 2px solid var(--line); border-radius: 14px; padding: 14px 16px 12px; background: #fff; }
+  .hop-vec { border-color: var(--q1b); background: #f8fafc; }
+  .hop-graph { border-color: var(--q4b); background: #fef2f2; }
+  .hop-title { font-weight: 700; font-size: 15px; margin-bottom: 10px; }
+  .hop-tag { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px; margin-right: 6px; color: #fff; }
+  .tag-vec { background: var(--q1b); } .tag-graph { background: var(--q4b); }
+  .react-trace { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; line-height: 1.6; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .react-trace.vec { border-color: var(--q1b); }
+  .react-trace.graph { border-color: var(--q4b); }
+  .tline { padding: 1px 0; }
+  .tline .lbl { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 700; margin-right: 5px; background: #e2e8f0; color: #334155; }
+  .tline .lbl.act { background: #dbeafe; color: #1e3a8a; }
+  .tline .lbl.obs { background: #fef3c7; color: #78350f; }
+  .tline.tdiv { border-top: 1px dashed var(--line); margin: 3px 0; padding: 0; height: 0; }
+  .hop-note { margin-top:10px; font-size:12.5px; line-height:1.55; }
+
+  /* ---------- table ---------- */
+  .dtable { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12.5px; }
+  .dtable th, .dtable td { padding: 6px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align:top; line-height:1.5; }
+  .dtable th { background: #e2e8f0; font-weight: 600; font-size: 12px; }
+  .dtable tbody tr:nth-child(odd) td { background: #fafafa; }
+  .dtable .me { color:var(--purple); font-weight:700; }
+  .dtable .hi { color:var(--bad); font-weight:600; }
+
+  /* ---------- experiment / steps ---------- */
+  .exp3 { display:grid; grid-template-columns: repeat(3,1fr); gap:14px; margin-top:14px; }
+  .expcard { border:1.5px solid var(--line); border-radius:13px; padding:14px 16px; background:#fff; }
+  .expcard.star { border-color:var(--q4b); background:#fef2f2; box-shadow:0 0 0 3px rgba(220,38,38,0.08); }
+  .expcard h3 { margin:0 0 6px; font-size:15px; }
+  .expcard ul { margin:0; padding-left:16px; }
+  .expcard li { font-size:12.5px; line-height:1.55; margin-bottom:3px; }
+  .expcard .badge { font-size:10px; background:var(--q4b); color:#fff; padding:2px 8px; border-radius:999px; margin-left:6px; letter-spacing:1px; }
+
+  .risk { display:grid; grid-template-columns: repeat(3,1fr); gap:14px; margin-top:8px; }
+  .rcard { border:1px solid var(--line); border-radius:12px; padding:14px 16px; background:#fff; }
+  .rcard .rh { font-weight:700; font-size:14px; color:var(--warn); margin-bottom:6px; }
+  .rcard p { margin:0; font-size:12.5px; color:var(--muted); line-height:1.55; }
+  .kill { margin-top:16px; padding:14px 18px; border:2px dashed var(--q4b); border-radius:12px; background:#fef2f2; font-size:14.5px; line-height:1.6; }
+  .kill b { color:var(--q4b); }
+
+  /* ---------- discussion ---------- */
+  .disc-asks { margin-top:14px; display:grid; gap:12px; }
+  .disc { display:grid; grid-template-columns:48px 1fr; gap:14px; border:1px solid var(--line); border-radius:12px; padding:14px 18px; background:#fff; }
+  .disc .num { font-size:26px; font-weight:700; color:var(--purple); text-align:center; }
+  .disc h3 { margin:0 0 3px; font-size:15.5px; }
+  .disc p { margin:0; font-size:13px; color:var(--muted); line-height:1.55; }
+
+  /* ---------- nav ---------- */
+  .nav { position: fixed; bottom: 12px; right: 16px; display: flex; gap: 6px; align-items: center; z-index: 100; }
+  .nav button { width: 28px; height: 28px; border-radius: 50%; border: 1px solid #475569; background: rgba(15,23,42,0.6); color: #f8fafc; cursor: pointer; font-size: 14px; }
+  .nav .ind { color: #f8fafc; font-size: 12px; background: rgba(15,23,42,0.6); padding: 4px 10px; border-radius: 999px; border: 1px solid #475569; }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ============== 1 : Title ============== -->
+  <section class="slide title-slide active">
+    <div class="eyebrow">PhD Group Review · 2026·06</div>
+    <h1>Agent 长期记忆综述 ×<br/>Skill Graph 研究方向</h1>
+    <div class="sub">
+      从 MemGPT / Mem0 / A-MEM / EXG / SAGE 到 Trace2Skill ——
+      四维拆解 19 个代表性工作，定位 3 个文献空白，
+      并基于 MLEvolve 提出可落地的研究路线。
+    </div>
+    <div class="thesis">
+      <b>一句话 thesis：</b>现有图记忆的节点全是<b>事实 / 事件 / 实体 / case</b>；
+      我做的是第一个 <b>procedural knowledge（skill）</b>的图，
+      让 agent <b>多跳遍历方法学关系</b>，发现向量检索看不见的联系
+      —— 尤其在冲突处理时识别"表面矛盾、实则互补"的 SOP。
+    </div>
+    <div class="asks">
+      <div class="alabel">今天最想要你帮我攻击的三点</div>
+      <ol>
+        <li>Novelty 够不够 —— vs A-MEM / EXG / Trace2Skill，我真的不一样吗？</li>
+        <li>"图比向量强"这个 claim，我的专项实验能不能证出来？</li>
+        <li>MLE 的"双真冲突"是真问题，还是我硬造的？</li>
+      </ol>
+    </div>
+    <div class="meta">汇报人：Haoming &nbsp;·&nbsp; 综述 + 路线图(v3) + 3 项目代码 &nbsp;·&nbsp; ←/→ 翻页 · F 全屏</div>
+    <div class="footer"><span>Agent Memory Survey → Skill Graph</span><span>1 / 13</span></div>
+  </section>
+
+  <!-- ============== 2 : Motivation ============== -->
+  <section class="slide">
+    <h1>动机：瓶颈不是单步推理，是<span style="color:var(--bad)">记忆</span></h1>
+    <h2>agent 从"单次执行器"升级为"持续学习者"卡在哪</h2>
+
+    <div class="cross">
+      <div class="panel">
+        <h3 style="color:var(--ink)">真实部署的 agent 是长周期、多任务的</h3>
+        <ul>
+          <li>它需要记住：上次<u>怎么失败</u>的、哪个方法<u>有效</u>、哪些<u>条件变了</u></li>
+          <li>单步推理已足够强 —— 缺的是跨任务 / 跨会话 / 跨失败的<b>经验积累、组织与复用</b></li>
+          <li>2025–2026 涌现大量记忆工作，但高度碎片化，无一通吃</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3 style="color:var(--ink)">记忆问题的本质（MemConflict）</h3>
+        <div class="takeaway purple" style="margin-top:4px">
+          <b>Memory validity is a "query-conditioned fitness-for-use" problem.</b><br/>
+          <span style="color:var(--muted);font-size:13.5px">记忆有效性 = "在当前查询下能否提供正确、有效、适用的信息"</span>
+        </div>
+        <p style="font-size:13.5px;color:var(--muted);line-height:1.6;margin-top:10px">
+          这把记忆从<b>存储问题</b>抬成<b>推理问题</b> ——
+          不是"存了就行"，而是"找到矛盾时<u>该信谁</u>"。
+        </p>
+      </div>
+    </div>
+
+    <div class="takeaway">
+      <b>与普通 RAG 的边界：</b> RAG 解决"找得到"；本研究关心的是
+      "找到了若干相关甚至矛盾的经验，<b>怎么组织、怎么判定、怎么多跳追溯</b>"。
+    </div>
+    <div class="footer"><span>Motivation</span><span>2 / 13</span></div>
+  </section>
+
+  <!-- ============== 3 : Evidence / pain points ============== -->
+  <section class="slide">
+    <h1>证据：检索不是瓶颈，<span style="color:var(--bad)">判定</span>与 <span style="color:var(--bad)">scale</span> 才是</h1>
+    <h2>三组评估基准 ⟹ 现有记忆系统的真实天花板</h2>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="name">MemConflict <span class="tag">本地代码已跑通</span></div>
+        <div class="big">0.44 / 0.50</div>
+        <div class="desc">
+          6 个真实系统在 static / dynamic 冲突上的平均 AA。<br/>
+          <b style="color:var(--ink)">SEH@3 比 AA 高 0.10–0.16</b> ⟶ 检索命中、判定失败。
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="name">STALE <span class="tag">arXiv 2605.06527</span></div>
+        <div class="big">55.2%</div>
+        <div class="desc">
+          implicit 冲突（无关键词重叠的语义矛盾）<br/>
+          前沿模型最高仅 55.2%，比 explicit 低一档。
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="name">LongMemEval-V2 <span class="tag">arXiv 2605.12493</span></div>
+        <div class="big">25M–115M tok</div>
+        <div class="desc">
+          超长 haystack；只有 <b>coding-agent 翻文件式</b> 基线 (AgentRunbook-C 72.5%) 能 scale，<br/>
+          单次向量 top-k 撑不住。
+        </div>
+      </div>
+    </div>
+
+    <div class="takeaway">
+      <b>共同结论：</b> 当前瓶颈不是"找不到相关记忆"，而是
+      ① 找到后<b>判定不了该信哪条</b>（冲突处理弱）
+      ② 上量后<b>必须让 LLM 主动检索</b>（agent tool）。
+    </div>
+    <div class="footer"><span>Evidence · three benchmarks</span><span>3 / 13</span></div>
+  </section>
+
+  <!-- ============== 4 : Four-dimension framework ============== -->
+  <section class="slide">
+    <h1>分析框架：把记忆拆成<span style="color:var(--purple)">四个维度</span></h1>
+    <h2>这是综述的骨架，也是判断"读得全不全"的标尺</h2>
+
+    <div class="dims">
+      <div class="dim d1">
+        <div class="dh">① 结构化</div>
+        <div class="dq">记忆以什么形式组织？平面 / 分层 / 图？</div>
+        <div class="df"><b>典型失败：</b>平面向量库无法表达因果关系</div>
+      </div>
+      <div class="dim d2">
+        <div class="dh">② 写入</div>
+        <div class="dq">谁决定记什么、怎么连、何时更新？固定 / agent / 训练？</div>
+        <div class="df"><b>典型失败：</b>固定管道写入缺乏自适应</div>
+      </div>
+      <div class="dim d3">
+        <div class="dh">③ 检索</div>
+        <div class="dq">检索由谁触发、如何构造查询、几跳？固定向量 / agent / 训练？</div>
+        <div class="df"><b>典型失败：</b>固定向量检索做不了多跳因果追溯</div>
+      </div>
+      <div class="dim d4">
+        <div class="dh">④ 冲突处理</div>
+        <div class="dq">矛盾记忆如何解决？覆盖 / 消除 / 预防 / 保留？</div>
+        <div class="df"><b>典型失败：</b>LLM 主观判定 static/dynamic 仅 0.44/0.50</div>
+      </div>
+    </div>
+
+    <div class="takeaway purple">
+      <b>核心断言：</b> 没有任何一个系统同时做到
+      <b>图结构 + 真 agent 自主检索 + 基于客观信号的冲突判定</b>。
+      下面两页把工作钉进这个坐标系，空白象限就是研究落点。
+    </div>
+    <div class="footer"><span>Four-dimension framework</span><span>4 / 13</span></div>
+  </section>
+
+  <!-- ============== 5 : 2x2 Matrix ============== -->
+  <section class="slide">
+    <h1>2×2 定位矩阵 + 空白象限</h1>
+    <h2>横轴 = 结构丰富度 &nbsp;|&nbsp; 纵轴 = 检索自主程度 &nbsp;|&nbsp; glyph = 冲突处理档位</h2>
+
+    <div class="matrix-wrap">
+      <div class="y-axis">← 固定向量检索 &nbsp;&nbsp; 检索自主度 &nbsp;&nbsp; LLM 运行时 tool →</div>
+      <div class="matrix">
+        <div class="quad q-q2">
+          <div class="qhead"><div class="qname">Q2 · 无图 + agent 检索</div><div class="qcode">block / file · LLM 主动读</div></div>
+          <ul>
+            <li><b>MemGPT</b> (ICLR'24) <span class="g g-llm">⚠</span><span class="meta">分层块, LLM 自行 replace</span></li>
+            <li><b>LongMemEval-V2</b> AgentRunbook-C <span class="g g-no">⊘</span><span class="meta">翻文件; 72.5%</span></li>
+          </ul>
+        </div>
+        <div class="quad q-q4">
+          <div class="qhead"><div class="qname">Q4 · 图结构 + agent 检索</div><div class="qcode">无人做</div></div>
+          <ul style="margin-top:18px">
+            <li>A-MEM 有图，但检索是纯向量（§3.4）</li>
+            <li>MemGPT 有 agent 检索，但无图</li>
+            <li>Mem0ᵍ 有图，但 tool 只用于<u>写入</u></li>
+            <li>EXG 有图，但固定三通道注入</li>
+          </ul>
+          <div style="margin-top:10px;font-size:13px;color:var(--bad);font-weight:600">★ 本研究落点（节点是 skill）</div>
+        </div>
+        <div class="quad q-q1">
+          <div class="qhead"><div class="qname">Q1 · 无图 + 固定向量</div><div class="qcode">NL list · 后端读写</div></div>
+          <ul>
+            <li><b>Mem0</b> <span class="g g-llm">⚠</span><span class="meta">LLM 输出 ADD/UPD/DEL</span></li>
+            <li><b>TMMA</b> <span class="g g-llm">⚠</span><span class="meta">预防式写入</span></li>
+            <li><b>mlevolve 现状</b> <span class="g g-no">⊘</span><span class="meta">BM25+FAISS+RRF, 不处理冲突</span></li>
+          </ul>
+        </div>
+        <div class="quad q-q3">
+          <div class="qhead"><div class="qname">Q3 · 图结构 + 固定向量</div><div class="qcode">关系图 / 参数 · 后端读写</div></div>
+          <ul>
+            <li><b>A-MEM</b> (NeurIPS'25) <span class="g g-llm">⚠</span><span class="meta">Zettelkasten 笔记图; 演化 link-update</span></li>
+            <li><b>Mem0ᵍ</b> <span class="g g-llm">⚠</span><span class="meta">三元组 + 一跳遍历</span></li>
+            <li><b>EXG</b> <span class="g g-no">⊘</span><span class="meta">案例图 (golden/warning + similar/fix)</span></li>
+            <li><b>SAGE</b> <span class="g g-no">⊘</span><span class="meta">异构图 + 训练 GFM reader</span></li>
+            <li><b>Zep / Graphiti</b> <span class="g g-obj">✓</span><span class="meta">双时序 KG; 客观仲裁<sup>(仅时序)</sup></span></li>
+            <li><b>Trace2Skill</b> <span class="g g-llm">⚠</span><span class="meta">多 trace 消除合并 → SKILL.md（<u>无图</u>）</span></li>
+          </ul>
+          <div style="margin-top:6px;font-size:12.5px;color:var(--q3b);font-weight:600">★ 最接近本研究的一批竞品</div>
+        </div>
+      </div>
+      <div class="x-axis">无结构 / NL / 块 &nbsp;&nbsp; ⟵&nbsp;结构丰富度&nbsp;⟶ &nbsp;&nbsp; 图 / 关系 / 参数</div>
+      <div class="axis-spacer"></div>
+    </div>
+
+    <div class="legend">
+      <div class="item"><span class="g g-no">⊘</span> 不处理冲突</div>
+      <div class="item"><span class="g g-llm">⚠</span> LLM 主观判定</div>
+      <div class="item"><span class="g g-obj">✓</span> 客观信号判定</div>
+      <div class="item" style="margin-left:auto">Benchmark (MemConflict / STALE / LongMemEval) 不进象限</div>
+    </div>
+    <div class="footer"><span>2×2 Positioning Matrix</span><span>5 / 13</span></div>
+  </section>
+
+  <!-- ============== 6 : Why MLE ============== -->
+  <section class="slide">
+    <h1>为什么 <span style="color:var(--purple)">MLE 场景</span>是天选切入点</h1>
+    <h2>MLE 经验记忆 vs 对话记忆的四个本质差异 —— 每个都逼出新机制</h2>
+
+    <table class="dtable">
+      <thead>
+        <tr><th>差异</th><th>对话场景</th><th>MLE 场景（mlevolve）</th><th>逼出的机制</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><b>因果关系</b></td><td>语义相似（similar_to 够用）</td><td>执行派生（B 改进 A，metric 变化）</td><td class="me">异构因果边</td></tr>
+        <tr><td><b>可验证性</b></td><td>无法验证对错</td><td>code 可重跑、metric 是 ground truth</td><td class="me">客观质量信号</td></tr>
+        <tr><td><b>冲突性质</b></td><td>一真一假</td><td class="hi">双真（两次执行都真实但矛盾）</td><td class="me">基于条件的判定</td></tr>
+        <tr><td><b>内容类型</b></td><td>文本事实</td><td>可执行代码 + metric</td><td class="me">verifiable code memory</td></tr>
+      </tbody>
+    </table>
+
+    <div class="takeaway purple">
+      <b>不可替代的核心：</b> 对话的 static 冲突是"真值 vs 错误"，LLM 多少能靠语义猜；
+      MLE 的 static 冲突是"<b>两次真实执行结果矛盾</b>" —— LLM 没有先验知道信谁，
+      <b>只有 metric 和执行条件能判定</b>。
+    </div>
+    <div class="takeaway good">
+      <b>现成资产：</b> Spooky 任务 60+ 个 run、手工 15 条 ground-truth insight，
+      双真冲突案例<u>已经在硬盘上</u>，离线验证不依赖新算力。
+    </div>
+    <div class="footer"><span>Why MLE is the sweet spot</span><span>6 / 13</span></div>
+  </section>
+
+  <!-- ============== 7 : Approach pipeline ============== -->
+  <section class="slide">
+    <h1>方案：<span style="color:var(--purple)">trace → skill → graph → agent 检索</span></h1>
+    <h2>核心定位：图节点是<b>蒸馏产物</b>，<u>不是 SearchNode 本身</u>；蒸馏离线、与在线搜索解耦</h2>
+
+    <div class="flow">
+      <div class="fbox f1">
+        <div class="ft">① 蒸馏</div>
+        <div class="fs">改进版 Trace2Skill：从 runs/ 抽 root→leaf trace，多 analyst 并行提结构化 patch（带 metric_delta + 适用条件）</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fbox f2">
+        <div class="ft">② 建图</div>
+        <div class="fs">patch → Skill Graph；自动检测共享 FailureMode / Condition，推导 SOP 间冲突与细化关系</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fbox f3">
+        <div class="ft">③ 检索</div>
+        <div class="fs">improve agent 在搜索中通过 tool 主动多跳查询图，发现"语义外"的方法学联系</div>
+      </div>
+      <div class="farrow">→</div>
+      <div class="fbox f4">
+        <div class="ft">④ 演化</div>
+        <div class="fs">新 trace 周期性蒸馏、写回图（可选，future work 优先级）</div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:6px">节点 6 类（方法学多粒度，procedural knowledge）：</div>
+      <div class="nodechips">
+        <span class="nodechip">Skill</span><span class="nodechip">SOP</span><span class="nodechip">Condition</span>
+        <span class="nodechip">FailureMode</span><span class="nodechip">Evidence (metric_delta)</span><span class="nodechip">Implementation</span>
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin:12px 0 6px">边 7 类（核心是方法学关系，非语义相似）：</div>
+      <div class="edgechips">
+        <span class="edgechip">contains</span><span class="edgechip">has_implementation</span>
+        <span class="edgechip">applies_when</span><span class="edgechip">prevents ⭐</span>
+        <span class="edgechip">refines</span><span class="edgechip">supported_by</span><span class="edgechip">conflicts_with</span>
+      </div>
+    </div>
+
+    <div class="takeaway purple">
+      <b>双重 novelty：</b> ① 节点是 <b>skill（procedural）</b>，文献全是事实/事件/实体；
+      ② 用 <b>方法学关系边</b>（applies_when / prevents / refines）发现向量检索做不到的间接联系。
+    </div>
+    <div class="footer"><span>Approach · 3-layer pipeline</span><span>7 / 13</span></div>
+  </section>
+
+  <!-- ============== 8 : Dual-layer memory ============== -->
+  <section class="slide">
+    <h1>双层记忆协调：Layer A + Layer B <span style="color:var(--bad)">绝不合并</span></h1>
+    <h2>两层回答根本不同的问题，不能互相替代</h2>
+
+    <div class="layers">
+      <div class="layer la">
+        <h3>Layer A · Trace 记忆（保留现状）</h3>
+        <div class="sub">GlobalMemoryLayer + SearchNode 树</div>
+        <table>
+          <tr><td>回答</td><td>"这个分支<b>已经试过</b>什么？结果如何？"</td></tr>
+          <tr><td>语气</td><td>描述性（事实陈述）</td></tr>
+          <tr><td>时间尺度</td><td>当前 run（小时级）</td></tr>
+          <tr><td>粒度</td><td>具体 code + 具体 metric</td></tr>
+          <tr><td>呈现</td><td><b>强制注入</b> prompt（agent 必看）</td></tr>
+        </table>
+      </div>
+      <div class="layer lb">
+        <h3>Layer B · Skill Graph（新增）</h3>
+        <div class="sub">蒸馏产物的图 + agent 多跳 tool</div>
+        <table>
+          <tr><td>回答</td><td>"这种情况下<b>方法学</b>告诉我该怎么做？"</td></tr>
+          <tr><td>语气</td><td>规范性（方法建议）</td></tr>
+          <tr><td>时间尺度</td><td>跨 run（周/月级）</td></tr>
+          <tr><td>粒度</td><td>抽象 SOP + 适用条件</td></tr>
+          <tr><td>呈现</td><td><b>按需 tool 查</b>（agent 自主决定）</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="takeaway">
+      <b>互补性证明：</b>
+      只信 Layer B → agent 不知道"刚才这个分支试 DeBERTa-large 已失败"，<b>重复犯错</b>；
+      只信 Layer A → agent 只看到当前分支 5–10 次尝试，<b>永远局部探索</b>。
+      当前 run 内 Layer B <u>只读不写</u>，保证图稳定、不被单次实验污染。
+    </div>
+    <div class="footer"><span>Dual-layer coordination</span><span>8 / 13</span></div>
+  </section>
+
+  <!-- ============== 9 : Novelty boundary ============== -->
+  <section class="slide">
+    <h1>Novelty 边界自检 <span style="color:var(--purple)">（请攻击我）</span></h1>
+    <h2>把最像的系统全列出来 —— 节点是 procedural skill 这件事，文献空白</h2>
+
+    <table class="dtable">
+      <thead>
+        <tr><th>系统</th><th>节点是什么</th><th>知识类型</th><th>边的语义来源</th><th>检索</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><b>A-MEM</b> (NeurIPS'25)</td><td>Zettelkasten 笔记</td><td>declarative 事实</td><td>语义相似</td><td>纯向量</td></tr>
+        <tr><td><b>EXG</b></td><td>case（轨迹快照）</td><td>episodic 经验</td><td>同任务 fixed_by + 相似</td><td>固定三通道</td></tr>
+        <tr><td><b>SAGE</b></td><td>entity + fragment</td><td>conceptual 概念</td><td>训练学到的结构角色</td><td>训练式 GFM</td></tr>
+        <tr><td><b>Mem0ᵍ</b></td><td>entity 三元组</td><td>declarative 事实</td><td>关系抽取</td><td>向量+一跳</td></tr>
+        <tr><td><b>Zep</b></td><td>entity + event</td><td>declarative + 时序</td><td>时间戳</td><td>向量+BFS</td></tr>
+        <tr><td><b>Trace2Skill</b></td><td>单一 Markdown 文档</td><td>procedural（但<u>无图</u>）</td><td>—（线性）</td><td>反检索拼 prompt</td></tr>
+        <tr style="background:#f5f3ff !important">
+          <td class="me">本研究 Skill Graph</td>
+          <td class="me">Skill / SOP / Condition / FailureMode</td>
+          <td class="me">procedural 程序性</td>
+          <td class="me">方法学关系（applies_when / prevents / refines）</td>
+          <td class="me">agent 运行时多跳</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="cross" style="margin-top:14px">
+      <div class="panel"><h3 style="color:var(--ink);font-size:15px">命门三问 · 预备回答</h3>
+        <ul style="font-size:12.5px">
+          <li><b>vs EXG：</b>EXG 节点是 case（episodic），我是蒸馏出的 SOP（procedural，高一抽象层级）；它固定三通道，我 agent 运行时构造路径</li>
+          <li><b>vs A-MEM：</b>A-MEM agency 在写入/演化（§2.2 自承），检索是纯向量；我补的正是"图 + agent 检索"</li>
+        </ul>
+      </div>
+      <div class="panel"><h3 style="color:var(--ink);font-size:15px">为什么没人做 procedural 图</h3>
+        <ul style="font-size:12.5px">
+          <li>主流场景是对话 → 天然 declarative，KG 够用</li>
+          <li>procedural 难抽取 → 需任务执行 + 客观信号</li>
+          <li>Trace2Skill 蒸馏了但写成 Markdown，丢了 SOP 间隐含联系</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer"><span>Novelty boundary self-check</span><span>9 / 13</span></div>
+  </section>
+
+  <!-- ============== 10 : vector vs graph multi-hop ============== -->
+  <section class="slide">
+    <h1>图存在的理由：<span style="color:var(--bad)">发现"语义外"联系</span></h1>
+    <h2>同一个 improve 场景 · 向量检索 vs 图多跳 —— 这是图不可替代的硬核场景</h2>
+
+    <div class="hop-compare">
+      <div class="hop-side hop-vec">
+        <div class="hop-title"><span class="hop-tag tag-vec">向量检索</span> 返回"同一类思路的变体"</div>
+        <div class="react-trace vec">
+          <div class="tline"><span class="lbl">Query</span> "reduce overfitting on small NLP dataset"</div>
+          <div class="tline tdiv"></div>
+          <div class="tline"><span class="lbl obs">Top-3</span> use stronger dropout</div>
+          <div class="tline"><span class="lbl obs">Top-3</span> use weight decay</div>
+          <div class="tline"><span class="lbl obs">Top-3</span> use early stopping</div>
+        </div>
+        <div class="hop-note">
+          三条都和 query 语义近，但<b>互相之间也近</b> ——
+          agent 拿到的是<u>同一思路的不同变体</u>，信息冗余。
+        </div>
+      </div>
+
+      <div class="hop-side hop-graph">
+        <div class="hop-title"><span class="hop-tag tag-graph">图多跳</span> 沿 PREVENTS 追同一 failure mode</div>
+        <div class="react-trace graph">
+          <div class="tline"><span class="lbl">Start</span> 当前 SOP = "partial unfreezing"</div>
+          <div class="tline"><span class="lbl act">Walk</span> SOP →PREVENTS→ FailureMode "small-data overfitting"</div>
+          <div class="tline"><span class="lbl act">Walk</span> ←PREVENTS← 其他 SOP</div>
+          <div class="tline tdiv"></div>
+          <div class="tline"><span class="lbl obs">Hit</span> label smoothing &nbsp;<span style="color:var(--muted)">(文本不近)</span></div>
+          <div class="tline"><span class="lbl obs">Hit</span> longer epochs + warmup &nbsp;<span style="color:var(--muted)">(文本不近)</span></div>
+          <div class="tline"><span class="lbl obs">Hit</span> stratified k-fold CV &nbsp;<span style="color:var(--muted)">(文本不近)</span></div>
+        </div>
+        <div class="hop-note">
+          三个 SOP 解决<b>同一 failure mode</b> 但是<b>不同路径</b> ——
+          agent 看懂"是组合用，不是替代"。
+        </div>
+      </div>
+    </div>
+
+    <div class="takeaway purple">
+      <b>冲突处理同理：</b> SOP_A "用 label smoothing" vs SOP_B "别用" —— 沿各自 PREVENTS 发现
+      解决的是<u>不同问题</u> → 不是真冲突，是适用条件不同 → 加 <code>refines</code> 边（条件分支保留），
+      <b>不是覆盖</b>。
+    </div>
+    <div class="footer"><span>Vector vs graph multi-hop</span><span>10 / 13</span></div>
+  </section>
+
+  <!-- ============== 11 : Experiments ============== -->
+  <section class="slide">
+    <h1>实验设计：不赌端到端，先证<span style="color:var(--bad)">机制</span></h1>
+    <h2>专项实验比"比最终 metric"更直接、更有说服力</h2>
+
+    <div class="exp3">
+      <div class="expcard">
+        <h3>主实验</h3>
+        <ul>
+          <li>3 条件对照：No-Mem / 平面+固定向量（现状）/ Skill Graph + agent 多跳</li>
+          <li>指标：最终 metric、收敛速度、重复错误率</li>
+          <li>约 12 GPU·h，先在 Spooky 出信号</li>
+        </ul>
+      </div>
+      <div class="expcard star">
+        <h3>★ 专项实验<span class="badge">差异化</span></h3>
+        <ul>
+          <li><b>Path Diversity@K</b>：图检索 SOP 的文本方差是否更大</li>
+          <li><b>Hidden Link Recall</b>：能否召回向量找不到的"语义远但相关"SOP</li>
+          <li><b>冲突分类正确率</b>：图证据是否把 LLM 判定从 ~60% 提到 ~80%</li>
+        </ul>
+      </div>
+      <div class="expcard">
+        <h3>消融</h3>
+        <ul>
+          <li>w/o 因果边</li>
+          <li>w/o 多跳（退化成一跳）</li>
+          <li>w/o agent 自主（固定注入）</li>
+          <li>w/o metric 判定</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="takeaway good">
+      <b>P1 验证锚点（离线、不烧算力）：</b> 自动蒸馏产 ≥30 patch，
+      对比手工 15 条 ground-truth insight，召回 ≥10/15、新发现 1–2 条、条件标注 100%。
+    </div>
+    <div style="margin-top:10px;font-size:13px;color:var(--muted)">
+      投稿目标：对标 A-MEM（NeurIPS'25 poster）→ <b>NeurIPS / ICML / ICLR poster</b>；每层贡献可独立验证，避免"全有或全无"。
+    </div>
+    <div class="footer"><span>Experiment design</span><span>11 / 13</span></div>
+  </section>
+
+  <!-- ============== 12 : Risks + kill criteria ============== -->
+  <section class="slide">
+    <h1>风险 + "<span style="color:var(--bad)">什么会让我放弃</span>"</h1>
+    <h2>主动暴露弱点 —— 这是我最想听你意见的地方</h2>
+
+    <div class="risk">
+      <div class="rcard">
+        <div class="rh">风险 1 · novelty 被质疑增量</div>
+        <p>"图 + agent 检索"会被说成 EXG/A-MEM 的拼接。<br/><b>对策：</b>用消融证明组合效应 &gt; 各部分之和；锚定"节点是 procedural"这条文献空白。</p>
+      </div>
+      <div class="rcard">
+        <div class="rh">风险 2 · agent 检索延迟</div>
+        <p>每跳 +1 LLM call，单次更贵。<br/><b>对策：</b>报告 p50/p95 延迟与 token 成本，论证"减少试错步数、端到端更快"。</p>
+      </div>
+      <div class="rcard">
+        <div class="rh">风险 3 · 条件抽取质量</div>
+        <p>applies_when / failure mode 依赖 LLM 归因，可能噪声大。<br/><b>对策：</b>用 metric_delta 反向校准；多人标注 ground truth。</p>
+      </div>
+    </div>
+
+    <div class="kill">
+      <b>Kill criteria：</b> 如果专项实验里图多跳的 <b>Hidden Link Recall 不显著高于向量检索</b>，
+      核心 claim 就不成立 —— 我会回去检查节点/边 schema，而<u>不是硬写论文</u>。
+    </div>
+    <div class="footer"><span>Risks &amp; kill criteria</span><span>12 / 13</span></div>
+  </section>
+
+  <!-- ============== 13 : Discussion ============== -->
+  <section class="slide">
+    <h1>讨论：回锚<span style="color:var(--purple)">三个反馈点</span></h1>
+    <h2>讲述结束 —— 现在请帮我把它打穿</h2>
+
+    <div class="disc-asks">
+      <div class="disc">
+        <div class="num">1</div>
+        <div>
+          <h3>Novelty 够不够？</h3>
+          <p>"节点是 procedural skill + 方法学关系边"这条边界，站得住吗？哪一栏对比你觉得太勉强？（见 P9 自检表）</p>
+        </div>
+      </div>
+      <div class="disc">
+        <div class="num">2</div>
+        <div>
+          <h3>"图比向量强"能证出来吗？</h3>
+          <p>Hidden Link Recall 的 ground truth 我人工标 20 个 case —— 会不会循环论证？还有什么更干净的证法？（见 P11）</p>
+        </div>
+      </div>
+      <div class="disc">
+        <div class="num">3</div>
+        <div>
+          <h3>"双真冲突"是真问题吗？</h3>
+          <p>MLE 的两次真实执行矛盾，值不值得单独立为一类冲突？还是我把对话场景的概念硬搬过来了？（见 P6）</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="takeaway purple" style="margin-top:18px">
+      <b>一句话收尾：</b> 第一个 procedural knowledge 的图 + agent 多跳遍历方法学关系
+      —— 当前论文只聚焦这一件事，其余（Adoption 闭环 / 跨任务迁移 / 流式演化）写进 future work。
+    </div>
+    <div class="footer"><span>Discussion</span><span>13 / 13</span></div>
+  </section>
+
+</div>
+
+<div class="nav">
+  <button id="prev" title="上一页 (←)">‹</button>
+  <div class="ind"><span id="cur">1</span> / <span id="total">13</span></div>
+  <button id="next" title="下一页 (→)">›</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  document.getElementById('total').textContent = total;
+  let idx = 0;
+  function show(i) {
+    idx = (i + total) % total;
+    slides.forEach((s, k) => s.classList.toggle('active', k === idx));
+    document.getElementById('cur').textContent = idx + 1;
+  }
+  document.getElementById('prev').onclick = () => show(idx - 1);
+  document.getElementById('next').onclick = () => show(idx + 1);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') show(idx + 1);
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') show(idx - 1);
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(total - 1);
+    else if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+</script>
+</body>
+</html>

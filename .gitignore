@@ -52,3 +52,12 @@ npm_global/
 mlevolve/inference/working_*/
 mlevolve/submissions/
 *.bakup*
+
+# ===== 文献/ (research planning docs) =====
+# Keep markdown/html research docs in-repo; exclude large PDFs and the nested
+# MemConflict benchmark repo (it is its own git repo, would need submodule).
+文献/*.pdf
+文献/**/*.pdf
+文献/MemConflict/
+文献/.DS_Store
+文献/**/.DS_Store
