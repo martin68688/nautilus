@@ -3,18 +3,14 @@ import json
 import os
 import re
 import argparse
-from openai import OpenAI
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-load_dotenv("/Users/haoming/Downloads/paper-skills/.env")
+from _llm import chat
+
+load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
 
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "../cache")
-
-client = OpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url=os.getenv("DEEPSEEK_BASE_URL"),
-)
 
 
 def slugify(text):
@@ -23,16 +19,13 @@ def slugify(text):
 
 def generate_description(category, papers):
     titles = "\n".join(f"- {p['title']}" for p in papers[:15])
-    resp = client.chat.completions.create(
-        model="deepseek-chat",
+    text = chat(
+        f"Given these paper titles from the '{category}' research area, "
+        f"write a 1-2 sentence description of what this skill covers. "
+        f"Be specific about methods, tasks, and applications. No fluff:\n{titles}",
         max_tokens=80,
-        messages=[{"role": "user", "content": (
-            f"Given these paper titles from the '{category}' research area, "
-            f"write a 1-2 sentence description of what this skill covers. "
-            f"Be specific about methods, tasks, and applications. No fluff:\n{titles}"
-        )}]
     )
-    return resp.choices[0].message.content.strip()
+    return text.strip()
 
 
 def make_reference(paper):

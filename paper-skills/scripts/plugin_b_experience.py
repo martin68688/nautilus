@@ -1,12 +1,8 @@
 """Plugin B: Analyze training run logs, extract wins/failures/hypotheses into experience_kb/"""
 import os, json, argparse, subprocess
 from pathlib import Path
-from openai import OpenAI
 
-client = OpenAI(
-    api_key=os.environ["DEEPSEEK_API_KEY"],
-    base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
-)
+from _llm import chat
 
 SYSTEM = """You are analyzing ML training run logs from an automated AI agent system.
 Extract structured knowledge from judge evaluations and designer plans.
@@ -102,15 +98,7 @@ def load_logs(run_dir: Path) -> dict:
 
 
 def call_llm(prompt: str) -> dict:
-    resp = client.chat.completions.create(
-        model="deepseek-chat",
-        messages=[
-            {"role": "system", "content": SYSTEM},
-            {"role": "user", "content": prompt},
-        ],
-        temperature=0,
-    )
-    raw = resp.choices[0].message.content.strip()
+    raw = chat(prompt, system=SYSTEM, temperature=0).strip()
     if raw.startswith("```"):
         raw = "\n".join(raw.split("\n")[1:-1])
     return json.loads(raw)

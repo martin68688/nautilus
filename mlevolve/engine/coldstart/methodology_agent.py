@@ -38,8 +38,6 @@ def _scan_categories(kb_base: Path) -> List[str]:
 
 def _match_categories_with_llm(task_desc: str, categories: List[str], cfg: Any) -> List[str]:
     """Ask LLM which categories are relevant. Returns up to 5 matches."""
-    from openai import OpenAI
-
     cat_list = "\n".join(f"- {c}" for c in categories)
     user_msg = (
         f"Task description (first 1500 chars):\n{task_desc[:1500]}\n\n"
@@ -48,17 +46,31 @@ def _match_categories_with_llm(task_desc: str, categories: List[str], cfg: Any) 
         "Output ONLY the selected category names, one per line, exactly as shown. No explanation."
     )
     try:
-        client = OpenAI(api_key=cfg.api_key, base_url=cfg.base_url or None)
-        resp = client.chat.completions.create(
-            model=cfg.model,
-            temperature=0,
-            max_tokens=256,
-            messages=[
-                {"role": "system", "content": "You are a research category selector. Output only category names, one per line."},
-                {"role": "user", "content": user_msg},
-            ],
-        )
-        response = resp.choices[0].message.content or ""
+        if (cfg.model or "").lower().startswith("glm"):
+            # GLM via the Anthropic-compatible endpoint (Zhipu Coding Plan).
+            import anthropic
+            client = anthropic.Anthropic(api_key=cfg.api_key, base_url=cfg.base_url or None, timeout=1200.0)
+            resp = client.messages.create(
+                model=cfg.model,
+                temperature=0,
+                max_tokens=256,
+                system="You are a research category selector. Output only category names, one per line.",
+                messages=[{"role": "user", "content": user_msg}],
+            )
+            response = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text") or ""
+        else:
+            from openai import OpenAI
+            client = OpenAI(api_key=cfg.api_key, base_url=cfg.base_url or None)
+            resp = client.chat.completions.create(
+                model=cfg.model,
+                temperature=0,
+                max_tokens=256,
+                messages=[
+                    {"role": "system", "content": "You are a research category selector. Output only category names, one per line."},
+                    {"role": "user", "content": user_msg},
+                ],
+            )
+            response = resp.choices[0].message.content or ""
         matched = []
         for line in response.strip().splitlines():
             line = line.strip().lstrip("- ")

@@ -42,6 +42,20 @@ _PROFILES: dict[str, dict] = {
         },
     },
 
+    # ── GLM series (Zhipu) via Anthropic-compatible endpoint ───
+    # Only temperature/top_p apply — extra_body Qwen flags are ignored by the
+    # Anthropic backend. JSON-schema is enforced via system instruction there.
+    "glm": {
+        "thinking": {
+            # Coding / generation
+            "temperature": 0.6, "top_p": 0.95,
+        },
+        "non_thinking": {
+            # Structured output / function-calling calls
+            "temperature": 0.7, "top_p": 0.8,
+        },
+    },
+
     # ── Fallback for any unrecognised model ──────────────────────────────────
     "default": {
         "thinking":     {},

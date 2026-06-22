@@ -1,14 +1,21 @@
 import logging
 from . import gemini as _gemini
 from . import openai as _openai
+from . import anthropic as _anthropic
 from .gemini import FunctionSpec, OutputType, PromptType, compile_prompt_to_md
 from config import Config
 logger = logging.getLogger("MLEvolve")
 
 
 def _provider(model: str) -> str:
-    """Use Gemini backend for model names starting with 'gemini', else OpenAI-compatible (e.g. Qwen)."""
-    return "gemini" if (model or "").lower().startswith("gemini") else "openai"
+    """Route by model-name prefix: 'gemini' -> Gemini, 'glm' -> Anthropic (Messages API),
+    else OpenAI-compatible (e.g. Qwen, DeepSeek)."""
+    name = (model or "").lower()
+    if name.startswith("gemini"):
+        return "gemini"
+    if name.startswith("glm"):
+        return "anthropic"
+    return "openai"
 
 
 def query(
@@ -68,6 +75,14 @@ def query(
             cfg=cfg,
             **model_kwargs,
         )
+    elif provider == "anthropic":
+        output, req_time, in_tok_count, out_tok_count, info = _anthropic.query(
+            system_message=system_message,
+            user_message=user_message,
+            func_spec=func_spec,
+            cfg=cfg,
+            **model_kwargs,
+        )
     else:
         output, req_time, in_tok_count, out_tok_count, info = _gemini.query(
             system_message=system_message,
@@ -91,10 +106,22 @@ def generate(
     max_retries=20,
     retry_delay=3,
 ):
-    """Streaming text generation. Dispatches to Gemini or OpenAI-compatible backend by cfg.agent.code.model."""
+    """Streaming text generation. Dispatches by cfg.agent.code.model: Gemini / Anthropic (glm) / OpenAI-compatible."""
     model = getattr(cfg.agent.code, "model", "") or ""
-    if _provider(model) == "openai":
+    provider = _provider(model)
+    if provider == "openai":
         return _openai.generate(
+            prompt=prompt,
+            cfg=cfg,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            stop_tokens=stop_tokens,
+            json_schema=json_schema,
+            max_retries=max_retries,
+            retry_delay=retry_delay,
+        )
+    if provider == "anthropic":
+        return _anthropic.generate(
             prompt=prompt,
             cfg=cfg,
             temperature=temperature,

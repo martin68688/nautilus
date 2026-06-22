@@ -2,13 +2,9 @@
 import os, re, time, json, argparse
 import urllib.request
 import pymupdf4llm
-from openai import OpenAI
 from pathlib import Path
 
-client = OpenAI(
-    api_key=os.environ["DEEPSEEK_API_KEY"],
-    base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
-)
+from _llm import chat
 
 PROMPT = """Extract techniques from this ML/NLP paper. For each technique or design choice, identify whether it had a positive, negative, or neutral effect on results.
 
@@ -64,12 +60,7 @@ def render_methodology(title: str, source: str, techniques: list) -> str:
 
 
 def extract_methodology(text: str) -> list:
-    resp = client.chat.completions.create(
-        model="deepseek-chat",
-        messages=[{"role": "user", "content": PROMPT.format(text=text)}],
-        temperature=0,
-    )
-    raw = resp.choices[0].message.content
+    raw = chat(PROMPT.format(text=text), temperature=0)
     raw = re.sub(r"^```json\s*|```$", "", raw.strip(), flags=re.MULTILINE)
     return json.loads(raw).get("techniques", [])
 

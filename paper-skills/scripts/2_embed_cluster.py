@@ -9,11 +9,10 @@ import os
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 from sentence_transformers import SentenceTransformer
-from openai import OpenAI
 from dotenv import load_dotenv
 from tqdm import tqdm
 
-load_dotenv("/Users/haoming/Downloads/paper-skills/.env")
+from _llm import chat
 
 CACHE_DIR = os.path.join(os.path.dirname(__file__), "../cache")
 
@@ -33,18 +32,15 @@ def cluster(embeddings):
     return labels
 
 
-def name_cluster(client, titles):
+def name_cluster(titles):
     sample = "\n".join(f"- {t}" for t in titles[:20])
-    resp = client.chat.completions.create(
-        model="deepseek-chat",
+    text = chat(
+        "Given these paper titles from the same research cluster, "
+        "give a concise category name (3-7 words, lowercase, hyphen-separated):\n"
+        f"{sample}\n\nCategory name:",
         max_tokens=64,
-        messages=[{"role": "user", "content": (
-            "Given these paper titles from the same research cluster, "
-            "give a concise category name (3-7 words, lowercase, hyphen-separated):\n"
-            f"{sample}\n\nCategory name:"
-        )}]
     )
-    return resp.choices[0].message.content.strip().strip('"`').lower().replace(" ", "-")
+    return text.strip().strip('"`').lower().replace(" ", "-")
 
 
 def main():
@@ -68,14 +64,10 @@ def main():
     for i, (paper, label) in enumerate(zip(papers, labels)):
         clusters.setdefault(label, []).append(i)
 
-    client = OpenAI(
-        api_key=os.getenv("DEEPSEEK_API_KEY"),
-        base_url=os.getenv("DEEPSEEK_BASE_URL"),
-    )
     named = {}
     for label, indices in tqdm(clusters.items(), desc="Naming clusters"):
         titles = [papers[i]["title"] for i in indices]
-        name = name_cluster(client, titles)
+        name = name_cluster(titles)
         named[name] = indices
 
     with open(clusters_path, "w") as f:

@@ -5,9 +5,10 @@ Saves to cache/classified_papers.json
 import json
 import os
 import time
-from openai import OpenAI
 from dotenv import load_dotenv
 from tqdm import tqdm
+
+from _llm import chat
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
 
@@ -15,22 +16,12 @@ CACHE_DIR = os.path.join(os.path.dirname(__file__), "../cache")
 
 BATCH_SIZE = 20
 
-client = OpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url=os.getenv("DEEPSEEK_BASE_URL"),
-)
-
 
 def llm(prompt, max_tokens=512):
     for attempt in range(3):
         try:
-            resp = client.chat.completions.create(
-                model="deepseek-chat",
-                max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return resp.choices[0].message.content
-        except Exception as e:
+            return chat(prompt, max_tokens=max_tokens)
+        except Exception:
             if attempt == 2:
                 raise
             time.sleep(5 * (attempt + 1))

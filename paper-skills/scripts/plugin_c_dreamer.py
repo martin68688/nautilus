@@ -2,12 +2,8 @@
 import os, re, json, argparse, subprocess
 from pathlib import Path
 from datetime import datetime
-from openai import OpenAI
 
-client = OpenAI(
-    api_key=os.environ["DEEPSEEK_API_KEY"],
-    base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
-)
+from _llm import chat
 
 MAX_FORGET_PER_RUN = 3
 FORGET_SEEN_THRESHOLD = 1
@@ -43,12 +39,7 @@ Return JSON: {{"decisions": [{{"name": "...", "action": "archive"|"keep", "reaso
 
 
 def call_llm(prompt: str) -> dict:
-    resp = client.chat.completions.create(
-        model="deepseek-chat",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0,
-    )
-    raw = resp.choices[0].message.content.strip()
+    raw = chat(prompt, temperature=0).strip()
     if raw.startswith("```"):
         raw = "\n".join(raw.split("\n")[1:-1])
     return json.loads(raw)

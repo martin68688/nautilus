@@ -1,12 +1,8 @@
 """Plugin D — Insighter: cross-paper methodology synthesis agent with tool use."""
 import os, json, subprocess
 from pathlib import Path
-from openai import OpenAI
 
-client = OpenAI(
-    api_key=os.environ["DEEPSEEK_API_KEY"],
-    base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
-)
+from _llm import run_tool_loop
 
 SYSTEM = """You are a research synthesis agent building a knowledge base for an ML training agent. Your job is to read methodology files from ML/NLP papers and produce actionable, specific cross-paper insights.
 
@@ -176,34 +172,12 @@ def run_agent(category_dir: Path, output_path: Path, venue: str, year: int, cate
 
 Complete the full task: list files, read all, synthesize, write index file + one references/{{slug}}.md per insight, git commit."""
 
-    messages = [{"role": "user", "content": user_msg}]
-
     print(f"  Agent starting for {venue}-{year}/{category}...")
-    while True:
-        resp = client.chat.completions.create(
-            model="deepseek-chat",
-            messages=[{"role": "system", "content": SYSTEM}] + messages,
-            tools=TOOLS,
-            tool_choice="auto",
-            temperature=0,
-        )
-        msg = resp.choices[0].message
-        messages.append({"role": "assistant", "content": msg.content, "tool_calls": msg.tool_calls})
-
-        if not msg.tool_calls:
-            print(f"  Agent done.")
-            break
-
-        for tc in msg.tool_calls:
-            fn_name = tc.function.name
-            args = json.loads(tc.function.arguments)
-            print(f"    Tool: {fn_name}({list(args.keys())})")
-            result = TOOL_FNS[fn_name](args)
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tc.id,
-                "content": str(result)[:64000],
-            })
+    run_tool_loop(
+        SYSTEM, user_msg, TOOLS, TOOL_FNS,
+        on_tool_call=lambda name, keys: print(f"    Tool: {name}({keys})"),
+    )
+    print(f"  Agent done.")
 
 
 if __name__ == "__main__":

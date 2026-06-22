@@ -43,6 +43,13 @@ cache/
 *.zip
 mlevolve/data/mlsp-2013-bird/
 
+# ===== Vendored external repos (clone, don't commit) =====
+# e.g. third_party/Trace2Skill — see paper-skills/distillation/README for clone step
+third_party/
+
+# ===== Trace2Skill baseline generated artifacts (analysis outputs, evolved skills, backups) =====
+paper-skills/trace2skill_baseline/workspace*/
+
 # ===== Private / local-only =====
 claude_config/
 claudecode-memory/
