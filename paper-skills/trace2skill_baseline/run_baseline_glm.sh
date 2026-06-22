@@ -42,6 +42,10 @@ export OPENAI_API_KEY="glm-proxy"
 export DEEPSEEK_API_KEY="glm-proxy"
 export DEEPSEEK_BASE_URL="$OPENAI_BASE_URL"
 export MODEL="${MODEL:-glm-5.2}"
+# Cap analyst parallelism at 3 (the evolver is already --max-workers 3 in
+# run_baseline.sh). The Coding Plan rate-limits; 3 concurrent long-output calls
+# stays under the limit, 6-8 triggers 429 -> retry storms. Override: MAX_WORKERS=N.
+export MAX_WORKERS="${MAX_WORKERS:-3}"
 
 echo "[glm] MODEL=$MODEL  OPENAI_BASE_URL=$OPENAI_BASE_URL"
 exec "$HERE/run_baseline.sh" "$@"
