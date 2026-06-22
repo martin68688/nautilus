@@ -13,6 +13,12 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 PY="${PYTHON:-/opt/anaconda3/bin/python}"
 PORT="${GLM_PROXY_PORT:-18211}"
 
+# The evolver's OpenAI client (httpx) honors HTTP_PROXY/HTTPS_PROXY. If a local
+# proxy (Clash/V2Ray/etc.) is set, httpx would route the localhost request to it
+# and fail with 502. Force localhost to be reached directly.
+export NO_PROXY="127.0.0.1,localhost,${NO_PROXY:-}"
+export no_proxy="$NO_PROXY"
+
 # Start the proxy if it isn't already answering.
 if ! curl -s --max-time 2 "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1; then
   echo "[glm] starting OpenAI->Anthropic proxy on port $PORT ..."

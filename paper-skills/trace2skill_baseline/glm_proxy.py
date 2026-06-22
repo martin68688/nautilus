@@ -34,8 +34,9 @@ from urllib.parse import urlparse
 import anthropic
 from dotenv import load_dotenv
 
-# paper-skills/.env holds GLM_* (parents[1] of this file == paper-skills/).
+# GLM creds live in the gitignored mlevolve/.env; paper-skills/.env for the rest.
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+load_dotenv(Path(__file__).resolve().parents[2] / "mlevolve" / ".env")
 
 GLM_API_KEY = os.getenv("GLM_API_KEY") or os.getenv("DEEPSEEK_API_KEY")
 GLM_BASE_URL = os.getenv("GLM_BASE_URL", "https://open.bigmodel.cn/api/anthropic")
@@ -84,7 +85,9 @@ def _translate_request(body: dict) -> dict:
     params: dict = {
         "model": body.get("model") or DEFAULT_MODEL,
         "messages": out,
-        "max_tokens": body.get("max_tokens") or 4096,
+        # Default 8192 (not 4096) so callers that omit max_tokens (e.g. the
+        # analysts) don't hit the old DeepSeek-style ~4k truncation.
+        "max_tokens": body.get("max_tokens") or 8192,
     }
     if system_parts:
         params["system"] = "\n\n".join(system_parts)
@@ -105,8 +108,15 @@ def _translate_request(body: dict) -> dict:
 
 
 def _call_anthropic(params: dict) -> dict:
-    resp = _CLIENT.messages.create(**params)
-    text = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text")
+    # STREAM on the backend even though Trace2Skill sends non-streaming OpenAI
+    # requests: GLM's Anthropic endpoint drops non-streaming connections for long
+    # generations (~3 min), but streaming stays alive. We accumulate the stream
+    # and return a normal (non-streamed) OpenAI chat.completion response.
+    with _CLIENT.messages.stream(**params) as stream:
+        text = ""
+        for chunk in stream.text_stream:
+            text += chunk
+        resp = stream.get_final_message()
     if "</think>" in text:
         text = text[text.find("</think>") + 8:]
     finish = _FINISH_MAP.get(getattr(resp, "stop_reason", None), "stop")

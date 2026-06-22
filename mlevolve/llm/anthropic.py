@@ -232,8 +232,13 @@ def generate(
     logger.info(f"generate messages: {len(msgs)} turns", extra={"verbose": True})
     for attempt in range(max_retries):
         try:
-            resp = client.messages.create(**params)
-            full_text = _extract_text(resp.content)
+            # STREAM: GLM's Anthropic endpoint drops non-streaming connections for
+            # long generations (~3 min); code generation routinely exceeds that.
+            # query() (structured/short) stays non-streaming below the drop threshold.
+            with client.messages.stream(**params) as stream:
+                full_text = ""
+                for chunk in stream.text_stream:
+                    full_text += chunk
             if "</think>" in full_text:
                 full_text = full_text[full_text.find("</think>") + 8:]
             logger.info(f"generate response: {full_text}", extra={"verbose": True})
