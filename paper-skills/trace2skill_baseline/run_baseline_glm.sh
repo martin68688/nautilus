@@ -47,5 +47,9 @@ export MODEL="${MODEL:-glm-5.2}"
 # stays under the limit, 6-8 triggers 429 -> retry storms. Override: MAX_WORKERS=N.
 export MAX_WORKERS="${MAX_WORKERS:-3}"
 
+# GLM-5.2 supports up to 131072 output tokens (DeepSeek caps at 8192). 16384
+# gives ~2.5x headroom over the ~6k-token merge outputs, 8x under the cap.
+export MAX_TOKENS="${MAX_TOKENS:-16384}"
+
 echo "[glm] MODEL=$MODEL  OPENAI_BASE_URL=$OPENAI_BASE_URL"
 exec "$HERE/run_baseline.sh" "$@"
