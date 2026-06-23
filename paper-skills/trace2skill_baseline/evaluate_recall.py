@@ -19,6 +19,7 @@ import json
 import os
 import re
 import sys
+import time
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -125,13 +126,26 @@ def main():
     def judge(gt):
         msg = JUDGE_USER_TMPL.format(skill=skill, num=gt["num"], conf=gt["confidence"],
                                      insight=gt["insight"], evidence=gt["evidence"])
-        resp = client.messages.create(
-            model=args.model,
-            system=JUDGE_SYSTEM,
-            messages=[{"role": "user", "content": msg}],
-            temperature=0.0,
-            max_tokens=300,
-        )
+        # Retry through GLM overload (529) — the SDK's 2 internal retries aren't
+        # enough during heavy load. Backoff 10/20/30/40/50s, up to 6 attempts.
+        resp = None
+        for attempt in range(6):
+            try:
+                resp = client.messages.create(
+                    model=args.model,
+                    system=JUDGE_SYSTEM,
+                    messages=[{"role": "user", "content": msg}],
+                    temperature=0.0,
+                    max_tokens=300,
+                )
+                break
+            except Exception as e:
+                if attempt == 5:
+                    raise
+                wait = 10 * (attempt + 1)
+                print(f"  [judge #{gt['num']}] {type(e).__name__}; retry {attempt + 1}/5 after {wait}s",
+                      file=sys.stderr, flush=True)
+                time.sleep(wait)
         raw = "".join(b.text for b in resp.content if getattr(b, "type", None) == "text").strip()
         raw = re.sub(r"^```(?:json)?|```$", "", raw, flags=re.MULTILINE).strip()
         try:
