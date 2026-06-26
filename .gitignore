@@ -68,3 +68,7 @@ mlevolve/submissions/
 文献/MemConflict/
 文献/.DS_Store
 文献/**/.DS_Store
+
+# leakage cleanup 2026-06-27: quarantined contaminated artifacts (local-only)
+mlevolve/runs/_quarantine_leaked/
+paper-skills/_quarantine_contaminated_kb/

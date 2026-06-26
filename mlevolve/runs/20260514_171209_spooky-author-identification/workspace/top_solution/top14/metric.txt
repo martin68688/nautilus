@@ -1,7 +1,0 @@
-Metric: 1.0853
-Maximize: False
-Branch ID: 6
-Stage: fusion_draft (multi-branch aggregation)
-From Top-K: False
-Execution Time(s): 2874.55
-Created Time: 2026-05-15T01:59:03
