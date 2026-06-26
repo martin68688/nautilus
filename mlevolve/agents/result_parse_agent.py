@@ -330,7 +330,7 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
         return
 
     logger.warning(
-        f"Node {node.id} triggers data leakage check due to extreme metric value: {node.metric.value}"
+        f"Node {node.id} running data leakage check (metric={node.metric.value})"
     )
 
     leakage_result = data_leakage_agent.run(agent, node)
