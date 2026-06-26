@@ -66,7 +66,12 @@ def select(agent, node: SearchNode):
             if agent.is_root(node) and should_trigger_branch_fusion(agent) and random.random() < agent.acfg.branch_fusion_trigger_prob:
                 logger.info(f"Root node {node.id} is fully expanded for regular drafts, aggregation conditions met (including probability), returning root")
                 return node
-            node = _best_child(node)
+            next_node = _best_child(node)
+            if next_node.id == node.id:
+                # All children locked (e.g. root drafts all locked); cannot descend, return current node
+                logger.info(f"[select] → node {node.id} (method=forced_return, all children locked)")
+                return node
+            node = next_node
     logger.info(f"[select] → node {node.id} (method=uct)")
     return node
 
