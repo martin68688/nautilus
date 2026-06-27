@@ -1,0 +1,2376 @@
+SKILL-DISCO: Distilling and Compiling Agent Traces into Reusable
+Procedural Skills
+Zhongxin Guo1
+Danrui Qi1
+Hanwen Gu2
+Peng Cheng1
+Yongqiang Xiong1
+1Microsoft Research
+2Beijing Foreign Studies University
+{zhongxin.guo, danruiqi}@microsoft.com
+Abstract
+Agents often repeatedly solve similar task in-
+stances from scratch, leading to unnecessary
+reasoning cost and long execution traces. Prior
+work has explored workflow reuse and exe-
+cutable skill induction, but it remains unclear
+which task scenarios admit procedural skills
+and how the shared procedural structure should
+be represented across successful traces. We
+study this problem in FSM-defined scenarios,
+where successful traces can be viewed as paths
+in an unknown transition graph, and formu-
+late procedural skills as reusable parameterized
+control-flow subgraphs. Based on this view,
+we introduce SKILL-DISCO, a distillation-and-
+compilation framework that distills reusable
+PFSM subgraphs from successful traces and
+compiles them into callable, executable, and
+verifiable procedural skills. Experiments on
+ALFWorld and WebArena show that SKILL-
+DISCO improves success rates and reduces
+agent turns across benchmarks and model
+scales, demonstrating the benefits of represent-
+ing shared experience as reusable execution
+structures.
+1
+Introduction
+LLM agents are increasingly used for interac-
+tive tasks that require many reasoning and act-
+ing steps (Yao et al., 2023; Shinn et al., 2023;
+Wang et al., 2024b; Yang et al., 2024). Yet even
+with stronger action representations such as Code-
+Act (Wang et al., 2024b), agents often solve each
+task independently, repeatedly rediscovering low-
+level action patterns shared across related tasks
+(Figure 1). This increases reasoning cost, execution
+length, and generalization brittleness (Wang et al.,
+2024c, 2025). Recent work on experience reuse ad-
+dresses this issue by extracting reusable workflows
+from trajectories (Wang et al., 2024c) or induc-
+ing executable skills that improve verifiability and
+composability (Wang et al., 2025). These results
+suggest that agents should accumulate reusable pro-
+cedures rather than solve each task from scratch.
+However, the foundations of procedural skill
+discovery remain under-specified. Reusable skills
+are meaningful when tasks share stable execution
+patterns, but become ill-defined for open-ended,
+instance-specific generation. Existing methods of-
+ten synthesize skills directly from successful traces
+using LLMs. Without an explicit notion of shared
+structure, the resulting libraries can become frag-
+mented and redundant toward trace-specific surface
+patterns rather than reusable procedural logic.
+We make the scope of procedural skill discov-
+ery explicit by focusing on FSM-defined scenarios,
+where execution dynamics are described by finite
+states, admissible actions, and deterministic tran-
+sitions. In such scenarios, successful traces are
+paths in an unknown transition graph, and proce-
+dural skills correspond to repeated transition struc-
+tures that help reach goal states. If this graph were
+known, task completion would reduce to graph
+search. In realistic agent settings, however, the
+graph is unavailable, and the agent only observes
+successful traces.
+To capture shared structure across traces, we
+formalize procedural skills through a Parameter-
+ized Finite-State Machine (PFSM) view. A PFSM
+abstracts concrete states and actions into parame-
+terized states and operators, so traces with different
+objects, states, or lengths can instantiate the same
+execution pattern. Under this view, each success-
+ful trace can be lifted into a parameterized trace
+graph, and a procedural skill is a reusable PFSM
+subgraph matched across traces under parameter
+binding. Thus, a skill is not merely a textual rou-
+tine or an LLM-generated script, but a structurally
+grounded abstraction of shared execution logic.
+This formulation does not assume that the latent
+PFSM is directly observable. In realistic agent en-
+vironments, neither the full transition graph nor the
+lifting function from raw traces to PFSM subgraphs
+1
+arXiv:2606.26669v1  [cs.AI]  25 Jun 2026
+
+Alfworld
+Traces
+EP 1
+goto d1 open d1
+→
+goto d2 open d2
+→· · ·→
+goto bed
+take book
+⋆
+→· · ·
+EP 2
+goto sh1 goto sh2
+→· · ·→
+goto d3 open d3
+take mug
+⋆
+goto mic open mic heat mug
+→· · ·
+⋆: observed target
+NL experience
+abstracted task summary
+Prior skill induction
+macro-action templates
+SKILL-DISCO
+compiled PFSM skills with environment adaptation
+“To heat an object, find
+the target, then take it
+and heat it in the mi-
+crowave.”
+e.g. goto l1 →open
+l1 →· · · →take o →goto
+mic →heat o
+check(l):
+goto(l)→open(l)
+heat(o, mic):
+goto(mic)→open(mic)→
+heat(o)
+Start
+S1
+S2
+S3
+End
+go_to(l)
+if open valid:
+open(l)
+if o found:
+take(o)
+if o not found: go_to(next l)
+search
+([locs], obj)
+Start
+S1
+S2
+S3
+End
+go_to(mic)
+if open valid:
+open(mic)
+heat(o)
+if already open: skip
+heat
+(obj, mic)
+can abstract, no guarantee
+fixed templates, non-adaptive
+executable programs, adaptive to environment
+Figure 1: SKILL-DISCO distills environment-adaptive PFSM skills that branch on observations, transfer across
+episodes and model scales without re-induction.
+is given. SKILL-DISCO therefore approximates
+PFSM-based skill discovery by recovering reusable
+parameterized control-flow patterns from success-
+ful traces and validating them through skill compi-
+lation. This yields a distillation-and-compilation
+framework. Distillation discovers compact, high-
+coverage PFSM subgraphs that favor reusable struc-
+tures over trace-specific routines.
+Compilation
+turns each discovered structure into a callable, exe-
+cutable, and verifiable skill through explicit specifi-
+cation and execution-grounded verification.
+Our contributions are as follows:
+(C1) We make explicit the scope of procedu-
+ral skill discovery by focusing on FSM-defined
+scenarios, where successful traces are paths in an
+unknown transition graph and reusable skills have
+well-defined transition semantics.
+(C2) We formulate procedural skills as reusable
+parameterized control-flow subgraphs that can
+match multiple successful traces under parameter
+binding. This provides structural targets for skill
+discovery, rather than treating each successful trace
+as an independent routine.
+(C3) We introduce SKILL-DISCO, a distillation-
+and-compilation framework that approximates
+these structural targets and compiles them into ver-
+ified and executable procedural skills.
+(C4) Extensive experiments show that SKILL-
+DISCO improves both success rate and efficiency
+across different benchmarks and model scales. Fur-
+ther analysis shows that compact compiled skills
+reduce library redundancy, improve execution reli-
+ability, and transfer procedural knowledge from
+stronger induction models to smaller execution
+models.
+2
+Preliminaries
+2.1
+FSM-Defined Scenarios
+In this paper, we focus on scenarios whose exe-
+cution dynamics can be formulated as finite-state
+machines. Such scenarios have a finite state space,
+a finite action space, and deterministic transitions:
+given a state s ∈S and an action a ∈A, the next
+state is uniquely determined by δ(s, a). We refer
+to such scenarios as FSM-defined scenarios.
+Definition 1 (FSM-Defined Scenario) A
+sce-
+nario is called an FSM-defined scenario if its
+execution dynamics can be represented as a
+finite-state machine
+M = (S, A, δ, S0, Sgoal),
+where S is a finite set of states, A is a finite set
+of actions, δ : S × A →S is a deterministic
+transition function, S0 ⊆S is the set of possible
+initial states, and Sgoal ⊆S is the set of goal
+states. The corresponding transition graph is de-
+fined as G∗= (V ∗, E∗), where V ∗= S and
+E∗= {(s, a, s′) | s, s′ ∈S, a ∈A, δ(s, a) = s′}.
+For an FSM-defined scenario, if the complete
+transition graph G∗and the goal states are known,
+task completion can be reduced to finding a path
+from an initial state to a goal state on G∗. How-
+ever, the complete transition graph is unavailable in
+many agent settings. Thus, we aim to infer reusable
+transition structures from past successful traces.
+Definition 2 (Primitive Operator) A
+primitive
+operator is a tuple
+op = (X, Y, Pre, Post),
+, where X is the input space, Y is the output
+space, Pre : X →{0, 1} is a pre-condition pred-
+2
+
+icate, and Post : X × Y →{0, 1} is a post-
+evaluation predicate. For any input x ∈X satis-
+fying Pre(x) = 1, executing op produces a unique
+output y = op(x) ∈Y such that Post(x, y) = 1.
+Definition 3 (Successful Trace) Given an FSM-
+defined scenario M = (S, A, δ, S0, Sgoal), an
+agent trace is a finite execution record τ
+=
+(o0, a0, o1, a1, . . . , aT−1, oT ), where ot denotes
+the observation received by the agent at step t and
+at ∈A is the action executed by the agent.
+The trace is induced by an underlying state
+trajectory (s0, a0, s1, a1, . . . , aT−1, sT ), such that
+st+1 = δ(st, at), and each observation ot is gen-
+erated from the underlying state st. We call τ a
+successful agent trace if the underlying execution
+starts from a valid initial state and reaches a goal
+state, i.e. s0 ∈S0 and sT ∈Sgoal.
+Note that every action a ∈A in an FSM-defined
+scenario is treated as a Primitive Operator, i.e. ac-
+tions in a Successful Trace are all primitive op-
+erators. For clarity, we will simply refer to such
+primitive operators as actions throughout the paper.
+2.2
+PFSM-Based Procedural Skill Discovery
+A standard FSM represents task completion as a
+concrete path from an initial state to a goal state.
+Such a path precisely records one execution, but
+is often too instance-specific because each transi-
+tion is grounded in concrete states and actions. As
+a result, executions with the same control logic
+may appear as different paths when they involve
+different objects, locations, or intermediate states.
+To capture reusable execution patterns, we intro-
+duce the notion of a Parameterized Finite State Ma-
+chine (PFSM). A PFSM abstracts concrete states
+and actions with parameters, allowing multiple con-
+crete FSM paths to be represented by the same
+parameterized control-flow structure.
+Definition 4 (Parameterized FSM (PFSM)) A
+Parameterized Finite State Machine is defined as
+f
+M = ( eS, e
+A, Θ, eδ, eS0, eSgoal),
+where eS is a finite set of parameterized states, e
+A
+is a finite set of parameterized actions, Θ is the
+parameter space, and eδ : eS × e
+A × Θ →eS is
+a deterministic parameterized transition function.
+Each parameter assignment θ ∈Θ instantiates
+a parameterized transition into a concrete FSM
+transition. Here, a parameterized state ˜s ∈eS
+represents an abstract execution state rather than a
+fully grounded environment state. A parameterized
+action ˜a ∈e
+A represents an action schema whose
+arguments are instantiated by parameters.
+Example 1.
+Consider two successful traces for
+finding and taking a target object:
+τ1: go_to(drawer1) →open(drawer1) →
+go_to(drawer2) →open(drawer2) →
+go_to(desk1) →go_to(bed) →
+take(book) →end.
+τ2: go_to(shelf1) →go_to(shelf2) →
+go_to(drawer1) →open(drawer1) →
+go_to(drawer2) →open(drawer2) →
+take(mug) →end.
+In a standard FSM, these two traces correspond to
+different concrete paths, because they visit different
+numbers of locations. However, they share the
+same parameterized control-flow pattern:
+repeat
+go_to(l)
+if can_open(l) then open(l)
+check_target(l, o)
+until
+found(o)
+then
+take(o).
+This pattern can be represented as a PFSM
+with parameterized actions such as go_to(l) and
+take(o), where l is a location parameter and o is
+an object parameter. The loop over candidate lo-
+cations abstracts away the number and identity of
+concrete locations, while preserving the reusable
+control logic needed to complete the task.
+Given a set of successful traces, each trace can
+be lifted from a concrete FSM path to a subgraph
+of the PFSM transition graph. Such a subgraph
+captures the parameterized execution structure of
+a successful trace, including its abstract states, pa-
+rameterized actions, and control-flow relations. We
+refer to this lifted subgraph as a parameterized
+trace graph. Since the underlying PFSM is unavail-
+able, the lifting function ϕ : τi 7→eGi does not
+admit a closed-form definition. We approximate it
+via a multi-stage pipeline described in Section 3.
+Our goal is to discover procedural skills from
+successful traces. Intuitively, a procedural skill
+corresponds to a PFSM subgraph that is shared by
+many successful traces. Such a subgraph captures a
+recurring control-flow structure that helps the agent
+reach a goal across different concrete instantiations.
+Problem 1 (Procedural Skill Discovery) Given
+a set of successful traces T + = {τ1, τ2, . . . , τN}
+and a lifting function ϕ : τi 7→eGi that maps
+each trace to a parameterized trace graph, the
+goal is to discover a set of procedural skills
+3
+
+K = {K1, K2, . . . , Km}, where each skill Kj is a
+parameterized control-flow subgraph that matches
+a subset of { eGi}N
+i=1 under parameter binding, i.e.
+Kj ⪯eGi for i in some index set.
+Intuitively, a desirable skill set K should satisfy
+three properties: (i) Coverage, where each skill
+is supported by multiple successful traces rather
+than a single execution, (ii) Utility, where skills
+capture control-flow structures that help reach goal
+states, and (iii) Compactness, where skills are nei-
+ther overly specific nor trivially generic. In realistic
+agent settings, neither the full PFSM f
+M nor the
+lifting function ϕ is analytically available. SKILL-
+DISCO approximates both from successful traces
+through the pipeline in Section 3.
+3
+The SKILL-DISCO Framework
+Section 2 formulates procedural skill discovery as
+identifying reusable PFSM subgraphs from suc-
+cessful agent traces. Solving this problem directly
+is challenging because the complete PFSM f
+M is
+unavailable, the lifting function ϕ from raw traces
+to parameterized trace graphs must be inferred, and
+exact subgraph matching under parameter binding
+is costly and noise-sensitive. To address these chal-
+lenges, SKILL-DISCO discovers procedural skills
+through distillation and compilation.
+3.1
+Framework Overview
+Figure 2 shows an overview of the SKILL-DISCO
+framework. The input to SKILL-DISCO is a set of
+successful traces T + = {τ1, τ2, . . . , τN}, where
+N denotes the number of successful traces. The
+output is a skill library K = {K1, K2, . . . , Km},
+which contains the m procedural skills.
+SKILL-DISCO contains two phases. The distilla-
+tion phase approximates the latent lifting function
+from traces to reusable PFSM subgraphs. It first
+normalizes each raw trace into an executable in-
+termediate program, then segments the program
+into subgoal-level operations, and finally clusters
+fragments that share parameterized control-flow
+structure. Each cluster is treated as an approximate
+PFSM subgraph and becomes a skill candidate.
+The compilation phase turns each candidate
+structure into an executable artifact. It first con-
+structs a skill specification with a signature, de-
+scription, behavioral requirements, and metadata.
+It then synthesizes Python code and verifies it on
+held-out tasks; only skills that pass verification are
+included in the final callable library.
+3.2
+The Distillation Phase
+The distillation phase consists of three stages that
+jointly approximate the latent lifting function ϕ :
+τi 7→eGi and discover reusable PFSM subgraphs
+from successful traces. As described in Section 2,
+each raw execution trace is first abstracted into
+a concrete trace graph over the FSM. This con-
+crete trace graph is then lifted into a PFSM graph,
+where repeated action patterns are represented as
+parameterized, code-like control-flow structures
+with branches. Finally, reusable subgraphs are
+identified from the resulting PFSM graphs and ex-
+tracted as procedural skills. Therefore, the lifting
+function ϕ is not implemented as a single mono-
+lithic step. Instead, it is decomposed into three
+successive transformations, each corresponding to
+one stage of the distillation phase.
+Stage 1: Trace Normalization. Trace normal-
+ization converts each successful raw trace into a
+structured, executable intermediate representation.
+Raw agent logs interleave reasoning text, tool calls,
+observations, and action histories, but do not ex-
+pose the control-flow structure needed for PFSM-
+based skill discovery. SKILL-DISCO therefore nor-
+malizes each trace into a program pi that preserves
+primitive operators and observations while mak-
+ing loops, branches, and parameterized entities ex-
+plicit.
+Each normalized program has three components:
+primitive environment calls paired with observa-
+tions, symbolic variables for task-specific enti-
+ties such as objects or web elements, and code-
+level control flow for repeated action patterns and
+observation-conditioned decisions. For example, a
+trace that visits candidate locations until an object
+is found can become a loop whose guard depends
+on the current observation.
+In our implementation, an LLM extracts all ex-
+ecuted actions and observations, preserves their
+order, replaces concrete entities with typed vari-
+ables when possible, and emits a Python-like pro-
+gram. This program is not the final skill; it is an
+intermediate representation from which reusable
+subgoal-level operations are extracted.
+Stage 2: Subgoal-level Operation Extraction.
+The goal of Stage 2 is to decompose each normal-
+ized program into subgoal-level operations that can
+serve as candidate procedural skills. A complete
+trace often contains multiple reusable parts. For ex-
+ample, a single household task may include search-
+ing for an object, retrieving it, navigating to an
+4
+
+Successful
+Traces
+Trace
+Normalization
+S
+S1
+S2
+S3
+S4
+S5
+S6
+S7
+S8
+E
+1
+Operation
+Extraction
+Op1
+S
+S1
+S2
+S3
+E
+Op2
+S
+S5
+S6
+S7
+S8
+E
+2
+Procedural
+Skill Consolidation
+S
+S1
+S2
+S3
+E
+S
+S1
+S2
+Sn
+S3
+E
+S
+S1
+S2
+Sn
+S3
+E
+3
+Distillation
+Skill
+Specification
+Name
+Desc
+Pre
+Param
+skill_spec.json
+4
+Synthesis &
+Verification
+5
+Synthesize &
+Refine
+Verify
+Compilation
+Skill
+Library
+Figure 2: Overview of SKILL-DISCO. Distillation phase turns successful traces into reusable PFSM subgraphs;
+Compilation phase converts them into executable and verified skills.
+appliance, and applying the appliance. Treating the
+whole trace as one skill would make the induced
+routine too specific, while treating each primitive
+operator as a skill would lose the benefit of pro-
+cedural reuse. SKILL-DISCO therefore extracts
+intermediate-granularity operators that correspond
+to coherent subgoals.
+Given a normalized program pi, the operator ex-
+tractor emits Oi = {o(i)
+1 , . . . , o(i)
+mi}, where each
+operator is represented as o = (ν, σ, u, c). Here,
+ν is an action-oriented identifier, σ is a natural-
+language summary, u = (u1, . . . , u|o|) is the prim-
+itive operator sequence, and c is the corresponding
+code fragment. We discard unit-length fragments
+with |o| = 1, since they correspond to primitive
+operators rather than reusable procedural structure.
+The remaining multi-step operators are collected
+as Omulti = S
+i{o ∈Oi : |o| ≥2}.
+Stage 3:
+Procedural Skill Consolidation.
+Stage 3 consolidates procedural skills by cluster-
+ing subgoal-level operations that approximate the
+same reusable PFSM subgraph. Intuitively, a useful
+procedural skill should be supported by multiple
+successful traces, rather than being an incidental
+pattern that appears in only one execution.
+In SKILL-DISCO, subgoal-level operations are
+grouped together when they share the same underly-
+ing parameterized execution structure, even if their
+concrete objects, locations, or action lengths differ.
+For example, the two traces in Example 1 differ in
+their concrete locations, objects, and path lengths,
+but share the same parameterized search-and-take
+control flow.
+Each cluster approximates a reusable PFSM sub-
+graph and receives a reusability score:
+rk ≈1
+N
+N
+X
+i=1
+I[Kk ⪯eGi],
+where Kk ⪯eGi indicates that the PFSM subgraph
+approximated by cluster ck can be matched to the
+lifted trace graph eGi under some parameter binding.
+The score is estimated from trace coverage and
+operation statistics. For each high-coverage cluster,
+SKILL-DISCO abstracts the shared subgoal-level
+operation as a procedural skill.
+3.3
+The Compilation Phase
+The distillation phase abstracts high-coverage clus-
+ters into procedural skills representing reusable
+PFSM subgraphs. However, a PFSM subgraph is
+only a structural artifact, i.e. it does not define
+a callable interface, runtime grounding rules, re-
+turn protocol, or failure handling. The compilation
+phase turns each procedural skill into a callable, ex-
+ecutable, and verifiable version. In SKILL-DISCO,
+the compilation phase consists of two stages: skill
+specification and skill synthesis and verification.
+Stage 4: Skill Specification. Stage 4 augments
+discovered procedural skills with explicit speci-
+fications. For each skill abstracted from a high-
+coverage cluster, SKILL-DISCO creates a skill defi-
+nition that captures how the skill should be invoked
+and what behavior it should satisfy before any con-
+crete implementation is generated. Each skill defi-
+nition contains: (i) a signature, including an action-
+oriented skill name, typed parameters with default
+values, and a structured return type (ii) a descrip-
+tion, serving as both a machine-readable docstring
+and LLM-facing guidance (iii) behavioral require-
+ments, including preconditions, postconditions, and
+declared side effects and (iv) metadata, including
+the skill abstraction level, expected primitive ac-
+tions amortized per invocation, and a confidence
+score inherited from rk.
+The explicit specification guides implementation
+synthesis and provides concrete criteria for verifi-
+cation, while giving the deployed agent a domain-
+agnostic vocabulary for selecting skills during task
+5
+
+execution.
+Stage 5: Synthesis and Verification. Stage 5
+turns each skill specification into a verified exe-
+cutable skill through a synthesis and verification
+loop. Given a skill definition, SKILL-DISCO first
+synthesizes a Python program that realizes the spec-
+ified behavior using the primitive actions. During
+execution, fk interacts with the workload environ-
+ment and returns a structured output that provides
+execution information to the caller.
+On a held-out set, verification checks runtime
+correctness, postcondition satisfaction, and action
+savings. Skills that fail are re-synthesized with
+feedback for up to R retries; any remaining failures
+are discarded.
+The result is a verified executable skill library:
+each skill exposes a documented signature that
+agents can inspect, select, and call during task exe-
+cution.
+4
+Experiments
+We evaluate whether SKILL-DISCO can distill
+reusable procedural skills from successful traces
+and deploy them as reliable skills for interactive
+agents. Our experiments are organized around four
+questions: RQ1. Does SKILL-DISCO improve end-
+to-end task success rate and turn efficiency com-
+pared with base agents and prior skill-induction
+methods? (§4.2) RQ2. Do the procedural skills
+transfer across model families, scales, and reason-
+ing modes? (§4.3) RQ3. How are the learned skills
+invoked and executed at inference time? (§4.4)
+RQ4. Do all components of SKILL-DISCO con-
+tribute to the observed gains? (§4.5)
+4.1
+Experimental Setup
+Datasets. We evaluate on two interactive agent
+datasets with different execution structures: (1)
+ALFWorld (Shridhar et al., 2021) consists of
+text-based household tasks that require naviga-
+tion, search, and object manipulation.
+(2) We-
+bArena (Zhou et al., 2024) consists of realistic
+web-navigation tasks over self-hosted websites.
+Splits. For each dataset, we use a strict induc-
+tion/evaluation split: skills are derived only from
+the induction split and evaluated only on held-out
+tasks. For ALFWorld, the induction split consists of
+200 tasks sampled from the official train set, and
+the evaluation split is the official unseen split with
+134 tasks. For WebArena, which has no canonical
+induction split, we split the 812 tasks in half: the
+Table 1: End-to-end results on ALFWorld and We-
+bArena. Parentheses show relative changes over the
+base agent; bold marks the best result and underlining
+marks the second-best.
+Method
+SR (%) ↑
+Avg. Turns ↓
+(a) ALFWorld
+ReAct
+82.0
+19.3
+CodeAct
+96.3
+3.6
+AWMoffline
+54.5
+11.3
+ASIoffline
+47.0
+11.4
+SKILL-DISCO + ReAct
+92.4 (+12.7%)
+8.8 (−54.5%)
+SKILL-DISCO + CodeAct
+99.3 (+3.1%)
+3.2 (−11.3%)
+(b) WebArena
+ReAct
+23.9
+5.9
+CodeAct
+20.0
+10.9
+AWMoffline
+21.2
+5.9
+ASIoffline
+24.6
+5.7
+SKILL-DISCO + ReAct
+29.1 (+21.6%)
+5.1 (−13.1%)
+SKILL-DISCO + CodeAct 22.9 (+14.8%)
+8.5 (−22.0%)
+first 406 tasks for induction and the remaining 406
+for evaluation. All baselines use the same splits as
+SKILL-DISCO.
+Baselines. We compare against two categories
+of baselines.
+The first category contains base
+agents without skill augmentation: ReAct (Yao
+et al., 2023) using the AgentBench implemen-
+tation (Liu et al., 2023), and CodeAct (Wang
+et al., 2024b).
+The second group consists of
+offline workflow- and skill-induction methods:
+AWMoffline (Wang et al., 2024c) and the offline
+variant of ASI, ASIoffline (Wang et al., 2025). For
+all skill-augmented variants, each skill’s signature
+and description are appended in agents’ prompts to
+instruct LLMs to decide whether and how to invoke
+a skill or emit a primitive action.
+Metrics. We report success rate (SR) and av-
+erage agent turns (Avg. Turns) per episode. Full
+per-episode token usage and inference cost are re-
+ported in Appendix A.3.
+4.2
+End-to-End Performance
+We first evaluate whether SKILL-DISCO improves
+complete task execution when added to existing in-
+teractive agents. Table 1 compares SKILL-DISCO
+with base agents and prior offline skill-induction
+methods using GPT-4o. SKILL-DISCO also uses
+GPT-4o to induce the skill library.
+Higher task success rate.
+SKILL-DISCO
+achieves the highest SR on all benchmarks un-
+der our evaluation setting. On ALFWorld, SKILL-
+DISCO + CodeAct improves over the strong Code-
+6
+
+Table 2: Skill transfer across target models on ALF-
+World and WebArena. ∆denotes relative change over
+the vanilla setting; bold marks the best result.
+SR (%) ↑
+Avg. Turns ↓
+Model
+Van.
++Sk. (∆)
+Van.
++Sk. (∆)
+(a) ALFWorld
+Qwen3.5-4B
+61.2 91.0 (+48.8%)
+9.0 5.0 (−44.4%)
+Qwen3.5-9B
+54.5 98.5 (+80.8%) 10.8 3.4 (−68.2%)
+GPT-4o
+96.3
+99.3 (+3.1%)
+3.6 3.2 (−11.3%)
+GPT-4o-mini 71.6 94.8 (+32.3%)
+7.1 4.4 (−38.0%)
+GPT-5-chat
+91.0
+98.5 (+8.2%)
+4.7 3.0 (−34.6%)
+GPT-5-mini
+91.8
+98.5 (+7.3%)
+4.9 3.3 (−33.3%)
+(b) WebArena
+Qwen3.5-4B
+10.1 18.7 (+85.3%)
+8.6
+6.8 (−20.4%)
+Qwen3.5-9B
+21.2 23.9 (+12.8%)
+6.8
+6.0 (−12.0%)
+GPT-4o
+23.9 29.1 (+21.6%)
+5.9
+5.1 (−13.1%)
+GPT-4o-mini 18.0
+18.0 (±0.0%)
+7.7
+7.1 (−7.7%)
+GPT-5-chat
+32.5 37.0 (+13.7%)
+5.3
+4.8 (−8.6%)
+GPT-5-mini
+32.5
+33.7 (+3.8%)
+5.4
+4.8 (−10.1%)
+Act from 96.3% to 99.3%. On WebArena, SKILL-
+DISCO + ReAct improves ReAct from 23.9% to
+29.1%, outperforming ASIoffline by 4.5 absolute
+points. Since all offline skill-induction methods
+use the same induction and evaluation splits, these
+gains reflect the quality of the induced skills by
+SKILL-DISCO.
+Consistent reduction in agent turns. SKILL-
+DISCO also reduces average turns across all set-
+tings: −54.5%/−11.3% (ReAct/CodeAct) on ALF-
+World and −13.1%/−22.0% on WebArena. By
+delegating repeated low-level action sequences to
+the reliable procedural skills, agents solve each task
+with fewer decisions.
+Complementary to different agents. Table 1
+shows that the same library improves both ReAct
+(natural-language reasoning) and CodeAct (code-
+emitting) across all benchmarks, indicating that
+SKILL-DISCO acts as an agent-agnostic augmenta-
+tion layer by providing reusable procedural skills,
+rather than being tied to a specific agent.
+4.3
+Cross-Model Skill Transferability
+We next test whether the skill library induced by
+SKILL-DISCO with GPT-4o can transfer to other
+models. We deploy the same skill library with-
+out modification across multiple target models:
+Qwen3.5-4B, Qwen3.5-9B, GPT-4o, GPT-4o-mini,
+GPT-5-chat, and GPT-5-mini. Based on Table 1,
+we use the skill library induced from the stronger
+SKILL-DISCO configuration on each benchmark:
+CodeAct for ALFWorld and ReAct for WebArena.
+Skills transfer across target models. With the
+same skill library, every target model benefits: av-
+erage turns drop in every cell (−7.7% to −68.2%),
+while SR improves by +3.1% to +80.8% on ALF-
+World and by up to +85.3% on WebArena with
+no decreases. These results show that the induced
+skills are robust across model families and scales.
+Weaker models can benefit substantially from
+skill transfer.
+Although gains are not strictly
+monotone in capacity, the largest jumps occur
+on the smaller open-source backbones: Qwen3.5-
+9B gains +80.8% on ALFWorld and Qwen3.5-
+4B gains +85.3% on WebArena, versus only
++3.1%–+7.3% for GPT-4o/GPT-5-mini.
+Strik-
+ingly, Qwen3.5-9B with the GPT-4o-induced li-
+brary reaches 98.5% on ALFWorld, surpassing its
+inducer (96.3%) at a fraction of the cost. This
+shows that SKILL-DISCO serves as a form of
+procedural-knowledge distillation and transfer, al-
+lowing smaller models to benefit from skills com-
+piled by a stronger inducer.
+4.4
+Skill Usage and Execution Reliability
+We analyze how much of an episode the agent dele-
+gates to its skill library and how reliably those skill
+calls execute. Following the settings in Table 1
+(CodeAct on ALFWorld and ReAct on WebArena),
+we report aggregate skill-usage statistics in Table 3
+and compare SKILL-DISCO with ASIoffline.
+SKILL-DISCO learns compact, high-coverage
+skills. SKILL-DISCO uses far fewer skills than ASI
+(5 vs. 110 on ALFWorld; 20 vs. 146 on WebArena)
+while each call covers more prim. steps (5.6 vs. 0.2
+on ALFWorld; 2.8 vs. 2.5 on WebArena) and larger
+maximum step compression (33/36 vs. 10/8). Thus,
+SKILL-DISCO distills compact skills that encode
+reusable procedures rather than shallow fragments.
+Verified skills execute more reliably. SKILL-
+DISCO makes skill calls less error-prone, reducing
+execution errors from 75.3% to 0.0% on ALFWorld
+and from 33.9% to 21.5% on WebArena. Thus, its
+gains come not only from invoking skills, but from
+invoking skills that execute reliably; together with
+higher step compression, this explains the SR and
+turn improvements in Table 1.
+4.5
+Ablation Study
+We evaluate the contribution of the two main phases
+of SKILL-DISCO, distillation and compilation,
+through ablations on ALFWorld using CodeAct
+with GPT-4o (Table 4).
+Distillation is the main driver of success. Re-
+moving distillation and inducing skills per success-
+7
+
+Table 3: Skill-usage statistics. #Sk is the number of induced skills; Turns and Sk. turns are average total and
+skill-invoking turns; Avg./Max prim. steps are primitive steps collapsed per skill call; Err. is execution-error rate.
+Bench
+Method
+#Sk
+Turns ↓
+Sk. turns
+Avg. prim. steps
+Max prim. steps
+Err. (%) ↓
+ALFWorld
+ASIoffline
+110
+11.4
+1.4
+0.2
+10
+75.3
+SKILL-DISCO
+5
+3.2
+2.6
+5.6
+33
+0.0
+WebArena
+ASIoffline
+146
+5.5
+1.3
+2.5
+8
+33.9
+SKILL-DISCO
+20
+5.1
+1.0
+2.8
+36
+21.5
+Table 4: Pipeline ablations. #Sk = skill library size;
+Relative SR ∆vs. the full pipeline in parentheses.
+Configuration
+#Sk
+SR (%)
+Turns
+A1: no distill
+43
+53.0 (−46.6%)
+11.5
+A2: no compile
+NA
+97.0 (−2.3%)
+3.6
+Full SKILL-DISCO
+5
+99.3
+3.2
+ful trace yields a larger 43-skill library but reduces
+SR from 99.3% to 53.0% and increases turns from
+3.2 to 11.5. Without cross-trace consolidation the
+library is dominated by overlapping, trace-specific
+variants, making skill selection harder and caus-
+ing wrong-variant invocations or fallback to long
+open-loop executions.
+Compilation mainly improves execution com-
+pactness. Removing compilation and shipping
+the output of Stage 3 as natural-language pro-
+cedure descriptions only modestly reduces SR
+(99.3 →97.0%), but each episode must keep the
+full procedure text in context, inflating tokens (Ap-
+pendix A.3). Compiling skills into callable code
+externalizes procedural execution from the prompt,
+yielding both efficiency and a small additional reli-
+ability gain.
+5
+Related Work
+LLM-Based Agents. ReAct (Yao et al., 2023)
+interleaves reasoning with actions; CodeAct (Wang
+et al., 2024b), PAL (Gao et al., 2023), and Code
+as Policies (Liang et al., 2023) show executable
+code improves compositional reasoning (Wei et al.,
+2022). Yet procedural knowledge in successful
+traces remains ephemeral and rarely reused.
+Reusing Agent Experience as Behavioral Im-
+itation. A common line keeps the model fixed
+and reuses experience as token-level context: Re-
+flexion (Shinn et al., 2023) prompts self-reflection;
+AWM (Wang et al., 2024c) induces textual work-
+flows; Trace2Skill (Ni et al., 2026) writes struc-
+tured skill documents. All store knowledge in natu-
+ral language—unverifiable before deployment and
+re-interpreted at inference. SKILL-DISCO instead
+compiles procedural knowledge into external exe-
+cutable code, verifiable offline and reusable across
+models.
+Synthesizing Executable Tools, Workflows,
+and Skills.
+(1) Tool and workflow generation.
+LATM (Cai et al., 2023), CREATOR (Qian et al.,
+2023), and ToolGen (Wang et al., 2024a) synthe-
+size or unify tools per task; AgentDistill (Qiu
+et al., 2025) produces MCP modules for training-
+free transfer.
+At the system level, ADAS (Hu
+et al., 2024), AgentSquare (Shang et al., 2024),
+AFlow (Zhang et al., 2024), and MaAS (Zhang
+et al., 2025) automate agentic-system or workflow
+design. All start from explicit task specifications;
+SKILL-DISCO mines a corpus of execution traces,
+grounding skills in recurring behavior. (2) Skill
+induction from agent experience. Voyager (Wang
+et al., 2023) commits one JavaScript function per
+successful task, leaving near-duplicate variants un-
+consolidated. SkillWeaver (Zheng et al., 2025) de-
+rives APIs from website affordances, not workload
+traces. ASI (Wang et al., 2025) shows programs
+beat free-form text as skill representations but still
+operates per-trajectory. SKILL-DISCO is an offline
+corpus-level compiler: semantic clustering merges
+equivalent operations into verified executable skills,
+so library size scales with distinct behaviors, not
+episode count.
+6
+Conclusion
+This paper studies procedural skill discovery by
+making shared execution structure across success-
+ful traces explicit. We formulate skills as reusable
+PFSM subgraphs under parameter binding, and
+introduce SKILL-DISCO which distills compact,
+high-coverage structures from traces and compiles
+them into executable, and verifiable skills. Experi-
+ments on ALFWorld and WebArena show that these
+structurally grounded skills improve success rate
+and turn efficiency, supporting more reliable and
+transferable agent experience reuse.
+8
+
+Limitations
+Procedural tasks only. SkillDisCo compiles pro-
+grammatic skills from interaction traces and is ef-
+fective for tasks with reusable procedural structure
+(navigation, web automation, tool use). It offers no
+benefit for pure NLP tasks such as text generation
+or reading comprehension, where success depends
+on linguistic understanding rather than executable
+procedures.
+Pipeline quality depends on model capability.
+SkillDisCo’s pipeline relies on the compiler LLM’s
+reasoning and code-generation ability. Insufficient
+model capability yields incorrect or overly specific
+skills, and output quality degrades as model capa-
+bility decreases..
+Requires successful traces. Only successful
+episodes contribute distillation signal. In domains
+where even frontier models succeed rarely, the cor-
+pus may be too sparse for reliable corpus-level skill
+extraction.
+References
+Tianle Cai, Xuezhi Wang, Tengyu Ma, Xinyun Chen,
+and Denny Zhou. 2023. Large language models as
+tool makers. arXiv preprint arXiv:2305.17126.
+Luyu Gao, Aman Madaan, Shuyan Zhou, Uri Alon,
+Pengfei Liu, Yiming Yang, Jamie Callan, and Gra-
+ham Neubig. 2023. PAL: Program-aided language
+models. arXiv preprint arXiv:2211.10435.
+Shengran Hu, Cong Lu, and Jeff Clune. 2024. Auto-
+mated design of agentic systems (ADAS). arXiv
+preprint arXiv:2408.08435.
+Jacky Liang, Wenlong Huang, Fei Xia, Peng Xu, Karol
+Hausman, Brian Ichter, Pete Florence, and Andy
+Zeng. 2023. Code as policies: Language model pro-
+grams for embodied control. In IEEE International
+Conference on Robotics and Automation (ICRA),
+pages 9493–9500.
+Xiao Liu, Hao Yu, Hanchen Zhang, Yifan Xu, Xuanyu
+Lei, Hanyu Lai, Yu Gu, Hangliang Ding, Kaiwen
+Men, Kejuan Yang, Shudan Zhang, Xiang Deng, Ao-
+han Zeng, Zhengxiao Du, Chenhui Zhang, Sheng
+Shen, Tianjun Zhang, Yu Su, Huan Sun, and 3 oth-
+ers. 2023. AgentBench: Evaluating LLMs as agents.
+arXiv preprint arXiv:2308.03688.
+Jingwei Ni, Yihao Liu, Xinpeng Liu, Yutao Sun,
+Mengyu Zhou, Pengyu Cheng, Dexin Wang, Er-
+chao Zhao, Xiaoxi Jiang, and Guanjun Jiang.
+2026. Trace2Skill: Distill trajectory-local lessons
+into transferable agent skills.
+arXiv preprint
+arXiv:2603.25158. Work in progress.
+Cheng Qian, Chi Han, Yi R. Fung, Yujia Qin, Zhiyuan
+Liu, and Heng Ji. 2023. CREATOR: Tool creation for
+disentangling abstract and concrete reasoning of large
+language models. arXiv preprint arXiv:2305.14318.
+Jieyi Qiu, Xiang Juan, Yan Wang, Lei Yang, Xin Qi,
+Tao Zhang, Jun Guo, Yun Lu, Zheng Yao, Mei Wang,
+and 1 others. 2025. AgentDistill: Training-free agent
+distillation with generalizable MCP boxes. arXiv
+preprint arXiv:2506.14728.
+Yu Shang, Yu Li, Keyu Zhao, Likai Ma, Jiahe Liu,
+Fengli Xu, and Yong Li. 2024. AgentSquare: Au-
+tomatic LLM agent search in modular design space.
+arXiv preprint arXiv:2410.06153.
+Noah Shinn, Federico Cassano, Ashwin Gopinath,
+Karthik Narasimhan, and Shunyu Yao. 2023. Re-
+flexion: Language agents with verbal reinforcement
+learning. Advances in Neural Information Process-
+ing Systems, 36.
+Mohit Shridhar, Xingdi Yuan, Marc-Alexandre Côté,
+Yonatan Bisk,
+Adam Trischler,
+and Matthew
+Hausknecht. 2021. ALFWorld: Aligning text and
+embodied environments for interactive learning. In
+International Conference on Learning Representa-
+tions.
+Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Man-
+dlekar, Chaowei Xiao, Yuke Zhu, Linxi Fan, and
+Anima Anandkumar. 2023. Voyager: An open-ended
+embodied agent with large language models. arXiv
+preprint arXiv:2305.16291.
+Renxi Wang, Xudong Han, Lei Ji, Shu Wang, Timothy
+Baldwin, and Haonan Li. 2024a.
+ToolGen: Uni-
+fied tool retrieval and calling via generation. arXiv
+preprint arXiv:2410.03439.
+Xingyao Wang, Yangyi Chen, Lifan Yuan, Yizhe Zhang,
+Yunzhu Li, Hao Peng, and Heng Ji. 2024b. Exe-
+cutable code actions elicit better llm agents. In ICML.
+Zora Zhiruo Wang, Apurva Gandhi, Graham Neu-
+big, and Daniel Fried. 2025.
+Inducing program-
+matic skills for agentic tasks.
+arXiv preprint
+arXiv:2504.06821.
+Zora Zhiruo Wang, Jiayuan Mao, Daniel Fried, and
+Graham Neubig. 2024c. Agent workflow memory.
+arXiv preprint arXiv:2409.07429.
+Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten
+Bosma, Brian Ichter, Fei Xia, Ed Chi, Quoc Le, and
+Denny Zhou. 2022. Chain-of-thought prompting elic-
+its reasoning in large language models. Advances in
+Neural Information Processing Systems, 35.
+John Yang, Carlos E Jimenez, Alexander Wettig, Kil-
+ian Lieret, Shunyu Yao, Karthik R Narasimhan, and
+Ofir Press. 2024. SWE-agent: Agent-computer inter-
+faces enable automated software engineering. In The
+Thirty-eighth Annual Conference on Neural Informa-
+tion Processing Systems.
+9
+
+Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak
+Shafran, Karthik Narasimhan, and Yuan Cao. 2023.
+ReAct: Synergizing reasoning and acting in language
+models. In International Conference on Learning
+Representations.
+Guibin Zhang, Luyang Niu, Junfeng Fang, Kun Wang,
+Lei Bai, and Xiang Wang. 2025. Multi-agent archi-
+tecture search via agentic supernet. arXiv preprint
+arXiv:2502.04180.
+Jiayi Zhang, Jinyu Xiang, Zhaoyang Yu, Fengwei Teng,
+Xionghui Chen, Jiaqi Chen, Mingchen Zhuge, Xin
+Cheng, Sirui Hong, and 1 others. 2024.
+AFlow:
+Automating agentic workflow generation.
+arXiv
+preprint arXiv:2410.10762.
+Boyuan Zheng, Michael Y. Fatemi, Xiaolong Jin,
+Zora Zhiruo Wang, Apurva Gandhi, Yueqi Song,
+Yu Gu, Jayanth Srinivasa, and 1 others. 2025. Skill-
+Weaver: Web agents can self-improve by discovering
+and honing skills. arXiv preprint arXiv:2504.07079.
+Shuyan Zhou, Frank F. Xu, Hao Zhu, Xuhui Zhou,
+Robert Lo, Abishek Sridhar, Xianyi Cheng, Tianyue
+Ou, Yonatan Bisk, Daniel Fried, Uri Alon, and Gra-
+ham Neubig. 2024. WebArena: A realistic web envi-
+ronment for building autonomous agents. In Interna-
+tional Conference on Learning Representations.
+A
+Full Results: Token Usage and
+Inference Cost
+A.1
+API Pricing Assumptions
+All per-episode inference costs reported in the pa-
+per are computed from provider-published token
+prices, retrieved from Artificial Analysis1 on 23
+May 2026 (on-demand rates). Cached input to-
+kens (returned inside a context-caching session)
+are billed at 1/10 of the regular input rate; output to-
+kens are billed at the full output rate. No batch-API
+discounts are applied.
+A.2
+Full Baseline Comparison with Token
+and Cost Statistics
+Table 5 reproduces Table 1 from the main paper
+with the three token/cost columns restored.
+A.3
+Per-Episode Token and Cost Breakdown
+Tables 6 expand the aggregate “Avg. In-Tok.
+(Cached) / Avg. Out-Tok. / Avg. Cost” figures from
+Table 2 with the full numerical detail for every
+model-setting pair.
+A.4
+Full Ablation Breakdown
+Table 7 expands the two-row ablation summary in
+Table 4 (§4.5) with the no-skill baseline and per-
+episode token and cost statistics.
+1https://artificialanalysis.ai/models#pricing
+B
+Pipeline Stage Prompts
+We
+summarize
+the
+LLM
+prompts
+that
+drive
+each
+pipeline
+stage
+(latest_pipeline/skill_mining/).
+For
+brevity each listing keeps the system message’s
+role, key directives, and the JSON output schema;
+long motivating examples, repeated rationale, and
+formatting boilerplate from the source files are
+elided with “...”. Placeholders in {braces} are
+Python f-string slots filled at runtime. A few slots
+in Stages 4 and 5 are specialized per benchmark
+(benchmark_prompts.py) – we leave them as
+placeholders here and omit the benchmark-specific
+fills for brevity.
+B.1
+Stage 1 — Trace →Program
+Transpilation
+Listing 1: Stage 1 prompt (trace normalization, from
+prompt/trace_converter.md).
+1
+[System]
+2
+You are a Senior AI Systems Architect
+. Convert a raw ReAct trace
+3
+(alternating THOUGHT / ACTION
+messages and environment
+observations)
+4
+into a structured Python program that
+preserves the reasoning while
+5
+making control flow explicit and
+logically stable.
+6
+7
+Each reasoning block must follow the
+Unified Reasoning Template:
+8
+# A. Deterministic (logic -
+controlled)
+9
+if "<condition >" in observation:
+10
+action = "<derived action >"
+11
+context.append (( observation ,
+None , action))
+12
+observation , available_actions
+= env.step(action)
+13
+# B. Cognitive (LLM -driven , for
+adaptive / uncertain steps)
+14
+thinking , action = llm(task ,
+context , observation ,
+available_actions)
+15
+context.append (( observation ,
+thinking , action))
+16
+observation , available_actions =
+env.step(action)
+17
+18
+Rules: (i) use deterministic control
+flow (if/for/while) for
+repetitive
+19
+or stabilized reasoning; (ii) reserve
+llm() for adaptive decisions;
+20
+(iii) update `context ` and call `env.
+step()` after every action;
+21
+(iv) preserve every ACTION from the
+trace -- never drop mistakes or
+22
+recovery steps; (v) copy real
+observation/thinking/action
+strings as
+10
+
+Table 5: Full comparison against prior baselines with a GPT-4o backbone, including per-episode token usage and
+inference cost. “In-Tok. (Cached)” = avg. input tokens per episode with the prompt-cached portion in parentheses
+(cached tokens are billed at 1/10 of the regular input rate). Same convention used in all subsequent tables.
+Method
+SR (%) ↑
+Avg. Turns ↓
+In-Tok. (Cached)
+Out-Tok.
+Cost ($)
+(a) ALFWorld
+ReAct
+82.00
+19.29
+35,600 (22,200)
+626
+0.0450
+CodeAct
+96.27
+3.63
+7,721 (6,232)
+562
+0.0109
+AWMoffline
+54.48
+11.34
+38,908 (22,923)
+275
+0.0484
+ASIoffline
+47.01
+11.43
+68,945 (54,175)
+286
+0.0533
+SKILL-DISCO + ReAct
+92.40 (+12.7%)
+8.78 (−54.5%)
+22,100 (11,300) (−37.9%)
+607 (−3.0%)
+0.0360 (−20.0%)
+SKILL-DISCO + CodeAct
+99.25 (+3.1%)
+3.22 (−11.3%)
+8,468 (6,303) (+9.7%)
+368 (−34.5%)
+0.0107 (−1.8%)
+(b) WebArena
+ReAct
+23.89
+5.88
+50,914 (8,605)
+728
+0.1152
+CodeAct
+19.95
+10.86
+75,962 (24,202)
+806
+0.1435
+AWMoffline
+21.18
+5.92
+49,025 (11,748)
+564
+0.1018
+ASIoffline
+24.63
+5.71
+56,662 (9,247)
+603
+0.1269
+SKILL-DISCO + ReAct
+29.06 (+21.6%)
+5.11 (−13.1%)
+51,068 (8,582) (+0.3%)
+561 (−22.9%)
+0.1215 (+5.5%)
+SKILL-DISCO + CodeAct
+22.91 (+14.8%)
+8.47 (−22.0%)
+85,649 (27,078) (+12.8%)
+736 (−8.7%)
+0.1606 (+11.9%)
+Parenthesized values give relative ∆vs. the matching base agent (ReAct or CodeAct). Best and second-best per column
+highlighted; our rows in bold.
+Table 6: Per-episode token usage and inference cost on ALFWorld (CodeAct backbone, 134 unseen tasks). “∆” is
+the relative change vs. the same model’s Vanilla setting (applied to In-Tok.).
+In-Tok. (Cached)
+Out-Tok.
+Cost ($)
+Model
+Vanilla
++Skill
+∆
+Vanilla +Skill
+∆
+Vanilla
++Skill
+∆
+Qwen3.5-4B
+28,010 (24,566) 19,608 (14,505)
+−30.0%
+2,095
+1,391
+−33.6% 0.00049 0.00041
+−16.3%
+Qwen3.5-9B
+27,754 (24,939) 10,152 ( 7,292)
+−63.4%
+1,382
+610
+−55.9% 0.00061 0.00036
+−41.0%
+GPT-4o
+7,721 ( 6,232)
+8,468 ( 6,303)
++9.7%
+562
+368
+−34.5% 0.01090 0.01067
+−2.1%
+GPT-4o-mini 17,620 (16,020) 13,686 (11,271)
+−22.3%
+891
+485
+−45.6% 0.00102 0.00082
+−19.6%
+GPT-5-chat
+10,606 ( 8,517)
+7,728 ( 5,496)
+−27.1%
+677
+391
+−42.2% 0.01040 0.00739
+−28.9%
+GPT-5-mini
+11,046 ( 6,979)
+8,561 ( 6,189)
+−22.5%
+871
+492
+−43.5% 0.00293 0.00173
+−41.0%
+23
+inline `# ...` comments.
+24
+25
+[User]
+26
+Please convert the following agent
+trace history to Python code:
+27
+{raw_history}
+B.2
+Stage 2 — Semantic Operation Extraction
+Listing 2: Stage 2 prompt.
+1
+[System]
+2
+You are an expert at analyzing agent
+traces represented as Python code
+.
+3
+Extract semantic operations: groups
+of consecutive steps that
+together
+4
+accomplish one coherent sub -goal and
+whose internal relationship can
+5
+be expressed as control flow (if/for/
+while or fixed sequence).
+6
+A good operation has clear boundaries
+, locality , and reusability.
+7
+8
+For each operation emit:
+9
+name
+: snake_case verb_noun
+10
+description
+: the sub -goal
+11
+env_steps
+: every (action ,
+observation) pair -- prefer the
+12
+authoritative env -
+step log over
+the code , which
+may
+13
+have dropped actions
+during
+conversion
+14
+code_snippet : the complete code
+block (no truncation)
+15
+succeeded
+: true iff the final
+observation confirms the sub -
+goal
+16
+(e.g., "Nothing
+happens ." =>
+false)
+17
+18
+Output JSON: {" task_summary ": "..." ,
+"operations ": [ ... ]}
+19
+20
+[User]
+21
+## Code to Analyze
+22
+```python
+23
+{trace.code}
+24
+```
+25
+{env_log_section}
+11
+
+Table 7: Full ablation breakdown on ALFWorld (CodeAct + GPT-4o).
+Configuration
+#Sk
+SR (%)
+Turns
+In-Tok. (Cached)
+Out-Tok.
+Cost ($)
+Vanilla (no skills)
+0
+96.27
+3.63
+7,720 ( 6,231)
+561
+0.01090
+A1: no distill
+43
+52.99
+11.51
+107,528 (97,901)
+994
+0.05849
+A2: no compile
+0
+97.01
+3.59
+19,083 (17,393)
+559
+0.01417
+Full SKILL-DISCO
+5
+99.25
+3.22
+8,468 ( 6,302)
+368
+0.01067
+26
+Please extract all semantic
+operations. The env -step log is
+27
+authoritative -- group its entries by
+the code 's structure but
+28
+include ALL actions from the log.
+B.3
+Stage 3 — Operation Clustering (Two
+Passes)
+Stage 3 first runs a grouping pass over mini-batches
+that proposes candidate reusable patterns, then a
+consolidation pass that merges overlapping propos-
+als into a minimal cluster set.
+Listing 3: Stage 3a prompt – grouping.
+1
+[System]
+2
+You are identifying reusable
+operation patterns. Partition the
+input
+3
+operations into non -overlapping
+groups whose members share the
+largest
+4
+reusable action/observation pattern
+and semantic goal -- transferring
+5
+across different objects , locations ,
+pages , or task instances.
+6
+7
+Rules: use `env_steps ` to decide
+membership (not names); ignore
+8
+incidental differences; split only
+when the action pattern or goal
+9
+differs; ignore operations that did
+not change state; prefer fewer ,
+10
+larger , uniform groups -- when in
+doubt , MERGE.
+11
+12
+Output JSON: {" groups ": [{" group_name
+", "description",
+13
+"representative_operations ": [{"
+operation_id ","name "}]}]}
+14
+15
+[User]
+16
+## Operations to Analyze ({len(batch)
+} operations)
+17
+```json
+18
+{json.dumps(batch , indent =2)}
+19
+```
+Listing 4: Stage 3b prompt – consolidation.
+1
+[System]
+2
+Merge the candidate operation groups
+into a minimal , non -redundant
+3
+skill set. Assign every input group `
+index ` to exactly one final
+4
+cluster (no overlap , no missing index
+).
+5
+6
+Merge groups whose reusable skill ,
+goal , or induced state change is
+7
+similar , even if the wording , objects
+, locations , or appliances
+8
+differ. Proceed in three steps: (1)
+draft candidate clusters ,
+9
+(2) merge duplicates/overlaps , (3)
+emit the final JSON as the LAST
+10
+fenced `json ` block in your response.
+11
+12
+Output JSON: {" clusters ": [{" name", "
+description",
+13
+"indices ": [0,3,7]}, ...]}
+14
+15
+[User]
+16
+## Groups to Consolidate ({len(groups
+)} groups)
+17
+```json
+18
+{json.dumps(group_summaries , indent
+=2)}
+19
+```
+B.4
+Stage 4 — Skill Contract Definition
+Stage
+4
+turns
+each
+cluster
+into
+a
+typed
+skill contract.
+The base prompt is built
+by
+build_stage4_prompt(bench_cfg)
+and
+contains
+two
+benchmark
+slots,
+{action_construction_note}
+and
+{action_seq_example},
+that
+are
+filled
+per
+benchmark.
+Listing 5: Stage 4 prompt (benchmark slots left as place-
+holders).
+1
+[System]
+2
+You design reusable skill APIs for
+LLM agents. Skills are Python
+3
+functions of the form
+4
+def skill_name(param1 , param2 ,
+...):
+5
+`env ` is a global -- never a
+parameter -- and is used as
+6
+observation , available_actions =
+env.step(action: str)
+7
+After a skill returns , the caller LLM
+sees ONLY the returned Dict;
+8
+it must always include at least `
+success `, the latest `observation
+`
+9
+and `available_actions `, and a
+process trace of (action ,
+observation).
+12
+
+10
+11
+Design principles: (1) generalize --
+parameterize object names ,
+12
+location lists , and action templates;
+(2) single responsibility --
+13
+one goal per skill; (3) action
+SELECTION not construction --
+14
+{action_construction_note}
+15
+(4) declare every state change in `
+side_effects ` and reflect it in
+16
+`canonical_action_sequence `; (5)
+compose freely -- assume no
+17
+prerequisite from the caller.
+18
+19
+Output JSON contract:
+20
+{" skill_name", "description", "
+docstring",
+21
+"parameters ": [{" name","type","
+description ","required","
+default "}],
+22
+"return_type ": "Dict",
+23
+"preconditions", "postconditions",
+"side_effects",
+24
+"canonical_action_sequence ": [
+25
+"Ordered action templates with
+{param} placeholders .",
+26
+{action_seq_example}
+27
+"Derive ONLY from SUCCEEDED
+traces; prefer the
+shortest
+28
+successful sequence; copy the
+exact action syntax ."
+29
+],
+30
+"abstraction_level ": "primitive|
+composite|workflow",
+31
+"estimated_actions_saved ": <int >,
+"confidence_score ": <float >}
+32
+33
+[User]
+34
+## Operation Group
+35
+- Name / Description / #operations /
+#traces / avg_actions /
+36
+reusability_score: {cluster fields}
+37
+38
+## Representative Operations (real
+env.step() patterns)
+39
+```json
+40
+{json.dumps(examples , indent =2)}
+41
+```
+42
+Define a general , reusable skill that
+abstracts this pattern.
+B.5
+Stage 5 — Skill Synthesis
+Stage
+5
+synthesises
+a
+self-contained
+Python
+implementation
+from
+the
+Stage
+4
+contract.
+The
+base
+prompt
+is
+built
+by
+build_stage5_prompt(bench_cfg)
+and
+con-
+tains two benchmark slots, {first_action_rule}
+(how to obtain the first vs. later actions) and
+{identifier_note} (an env-specific gotcha).
+Listing 6: Stage 5 prompt (benchmark slots left as place-
+holders).
+1
+[System]
+2
+You synthesise the Python body of a
+skill defined by the Stage 4
+3
+contract. `env ` is global; signature
+contains only domain parameters.
+4
+5
+Critical rules:
+6
+1. Use ONLY `env.step()` and the
+Python stdlib -- no helper
+7
+functions , no simulation , no
+fabricated observations.
+8
+2. {first_action_rule}
+9
+3. Match the trace 's action syntax
+exactly; when constructing ,
+10
+reproduce the verb / preposition /
+argument pattern from the
+11
+reference traces.
+12
+4. Branch on the LATEST `observation
+`, not on a self -computed flag.
+13
+5. Honour every parameter; implement
+every step in
+14
+`canonical_action_sequence ` and
+only those plus declared
+15
+side effects.
+16
+6. Append every (action , observation)
+pair to `process_trace `.
+17
+7. Return a Dict including at least `
+success `, latest `observation `,
+18
+latest `available_actions `, and `
+process_trace ` (plus any extra
+19
+keys the caller needs).
+20
+21
+Environment note: {identifier_note}
+22
+23
+Output JSON: {" implementation ": "def
+skill_name (...): \\n
+...",
+24
+"example_usage ":
+"
+result = skill_name
+(...) ..."}
+25
+26
+[User]
+27
+## Skill Definition
+28
+{skill.skill_name / description /
+parameters / pre & postconditions
+}
+29
+30
+## Representative Code Examples (
+ground truth env.step() patterns)
+31
+```json
+32
+{json.dumps(examples , indent =2)}
+33
+```
+34
+Synthesise the implementation. Select
+actions from
+35
+`available_actions `, follow the
+code_snippet patterns exactly ,
+and
+36
+return the Dict so the caller can
+continue without blind spots.
+C
+Skill Library Examples
+We show one representative skill for each bench-
+mark, reproduced verbatim from the final compiled
+skill catalogs. Listing 7 is the highest-coverage
+skill in the ALFWorld library: it iterates over a list
+of candidate locations, opens any closed containers,
+and returns as soon as the target item is observed.
+Listing 8 is a representative WebArena skill that
+drives the multi-step submission workflow on a
+13
+
+Reddit clone (open form →fill URL / title / body
+→select forum →submit), with every action se-
+lected by content-based matching against the live
+admissible-action set via find_bid(...).
+Listing
+7:
+ALFWorld
+skill:
+systematic_search_locations.
+1
+def systematic_search_locations(
+locations , target):
+2
+"""Systematically search through
+a list of locations to find a
+3
+specific target item. The skill
+navigates to each location ,
+opens
+4
+it if necessary , and examines its
+contents to locate the
+target.
+5
+6
+Args:
+7
+locations: A list of location
+names to search through.
+8
+target: The name of the item
+to search for.
+9
+"""
+10
+process_trace = []
+11
+found_in = None
+12
+13
+for location in locations:
+14
+# Step 1: Go to the location
+15
+action = f"go to {location}"
+16
+observation ,
+available_actions = env.
+step(action)
+17
+process_trace.append ((action ,
+observation))
+18
+19
+# Step 2: Check if the
+location is closed and
+open it if necessary
+20
+if "closed" in observation:
+21
+action = next(
+22
+(a for a in
+available_actions
+23
+if "open" in a.lower
+() and location
+in a.lower()),
+24
+f"open {location}",
+25
+)
+26
+observation ,
+available_actions =
+env.step(action)
+27
+process_trace.append ((
+action , observation))
+28
+29
+# Step 3: Inspect the
+contents of the location
+30
+if target in observation:
+31
+found_in = location
+32
+return {
+33
+"success": True ,
+34
+"found_in": found_in ,
+35
+"observation":
+observation ,
+36
+"available_actions":
+available_actions
+,
+37
+"process_trace":
+process_trace ,
+38
+}
+39
+40
+# If the target is not found in
+any location
+41
+return {
+42
+"success": False ,
+43
+"found_in": None ,
+44
+"observation": observation ,
+45
+"available_actions":
+available_actions ,
+46
+"process_trace":
+process_trace ,
+47
+}
+Listing
+8:
+WebArena
+skill:
+create_submission_workflow (Reddit site).
+1
+def create_submission_workflow(
+2
+title: str ,
+3
+body: str ,
+4
+forum_name: str ,
+5
+url: Optional[str] = None):
+6
+7
+"""Complete workflow for creating
+a new submission/post.
+Navigates
+8
+to the submission form , fills in
+required fields (URL if
+present ,
+9
+title , body), selects the target
+forum , and submits the form.
+10
+Flow: click Submit -> fill fields
+-> select forum -> click
+Create.
+11
+12
+Args:
+13
+title: Title of the
+submission to post.
+14
+body: Main content/body of
+the submission.
+15
+forum_name: Target forum/
+subreddit label to select
+.
+16
+url: Optional URL to include
+if the form has a URL
+field.
+17
+"""
+18
+process_trace = []
+19
+matched_elements = []
+20
+failure_reason = None
+21
+22
+observation = env.step('noop (0)')
+23
+24
+# Step 1: Click "Submit" to open
+the submission form
+25
+submit_bid = find_bid('Submit ',
+observation)
+26
+if not submit_bid:
+27
+return {'success ': False , '
+observation ': observation
+,
+28
+'process_trace ':
+process_trace ,
+29
+'matched_elements ':
+matched_elements ,
+30
+'failure_reason ': "
+Submit button not
+found."}
+31
+observation = env.step(f"click('{
+submit_bid }')")
+14
+
+32
+process_trace.append ((f"click('{
+submit_bid }')", observation))
+33
+matched_elements.append('Submit ')
+34
+35
+# Step 2: Optionally fill URL
+field
+36
+if url:
+37
+url_bid = find_bid('URL',
+observation)
+38
+if url_bid:
+39
+act = f"fill({ url_bid!r},
+{str(url)!r})"
+40
+observation = env.step(
+act)
+41
+process_trace.append ((act
+, observation))
+42
+matched_elements.append('
+URL')
+43
+44
+# Step 3: Fill Title field
+45
+title_bid = find_bid('Title',
+observation)
+46
+if not title_bid:
+47
+return {'success ': False , '
+observation ': observation
+,
+48
+'process_trace ':
+process_trace ,
+49
+'matched_elements ':
+matched_elements ,
+50
+'failure_reason ': "
+Title field not
+found."}
+51
+act = f"fill({ title_bid!r}, {str(
+title)!r})"
+52
+observation = env.step(act)
+53
+process_trace.append ((act ,
+observation))
+54
+matched_elements.append('Title ')
+55
+56
+# Step 4: Open forum -selection
+dropdown and pick the target
+forum
+57
+combobox_bid = find_bid('Choose
+one', observation) \
+58
+or find_bid('Forum
+', observation
+)
+59
+if not combobox_bid:
+60
+return {'success ': False , '
+observation ': observation
+,
+61
+'process_trace ':
+process_trace ,
+62
+'matched_elements ':
+matched_elements ,
+63
+'failure_reason ': "
+Forum selection
+combobox not
+found."}
+64
+observation = env.step(f"click('{
+combobox_bid }')")
+65
+process_trace.append ((f"click('{
+combobox_bid }')", observation
+))
+66
+forum_bid = find_bid(forum_name ,
+observation)
+67
+if not forum_bid:
+68
+return {'success ': False , '
+observation ': observation
+,
+69
+'process_trace ':
+process_trace ,
+70
+'matched_elements ':
+matched_elements ,
+71
+'failure_reason ': f"
+Forum '{
+forum_name}' not
+found."}
+72
+observation = env.step(f"click('{
+forum_bid }')")
+73
+process_trace.append ((f"click('{
+forum_bid }')", observation))
+74
+matched_elements.append(
+forum_name)
+75
+76
+# Step 5: Fill Body field
+77
+body_bid = find_bid('Body',
+observation)
+78
+if not body_bid:
+79
+return {'success ': False , '
+observation ': observation
+,
+80
+'process_trace ':
+process_trace ,
+81
+'matched_elements ':
+matched_elements ,
+82
+'failure_reason ': "
+Body field not
+found."}
+83
+act = f"fill({ body_bid!r}, {str(
+body)!r})"
+84
+observation = env.step(act)
+85
+process_trace.append ((act ,
+observation))
+86
+matched_elements.append('Body')
+87
+88
+# Step 6: Click "Create
+submission" to finalize
+89
+create_bid = find_bid('Create
+submission ', observation) \
+90
+or find_bid('Submit '
+, observation)
+91
+if not create_bid:
+92
+return {'success ': False , '
+observation ': observation
+,
+93
+'process_trace ':
+process_trace ,
+94
+'matched_elements ':
+matched_elements ,
+95
+'failure_reason ': "
+Create -submission
+button not found
+."}
+96
+observation = env.step(f"click('{
+create_bid }')")
+97
+process_trace.append ((f"click('{
+create_bid }')", observation))
+98
+matched_elements.append('Create
+submission ')
+99
+100
+success = 'submitted ' in
+observation.lower () \
+101
+or 'created ' in
+observation.lower ()
+102
+return {
+103
+'success ': success ,
+104
+'observation ': observation ,
+105
+'process_trace ':
+15
+
+process_trace ,
+106
+'matched_elements ':
+matched_elements ,
+107
+'failure_reason ': None
+108
+if success
+109
+else 'No success
+confirmation detected
+.',
+110
+}
+16

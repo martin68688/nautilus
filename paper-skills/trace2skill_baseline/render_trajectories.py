@@ -273,6 +273,8 @@ def main():
     ap.add_argument("--max-failed-per-run", type=int, default=8)
     ap.add_argument("--min-signal-len", type=int, default=40,
                     help="skip nodes whose plan+analysis+code_summary are all shorter than this")
+    ap.add_argument("--branch-ids", nargs="*", type=int, default=None,
+                    help="only render nodes whose branch_id is in this list (per-branch distillation)")
     args = ap.parse_args()
 
     # default description
@@ -297,6 +299,9 @@ def main():
             print(f"[skip] {e}")
             continue
         nodes = journal.get("nodes", [])
+
+        if args.branch_ids is not None:
+            nodes = [n for n in nodes if n.get("branch_id") in set(args.branch_ids)]
 
         def has_signal(n):
             sig = (n.get("plan") or "") + (n.get("analysis") or "") + (n.get("code_summary") or "")
