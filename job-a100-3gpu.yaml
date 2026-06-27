@@ -1,0 +1,82 @@
+# =============================================================================
+# NRP batch Job — mlevolve baseline, 3x A100 (80GB).
+#   namespace : ecepxie ; image : haomingwang22/mlevolve:v1
+#   storage   : PVC haoming-storage -> /workspace  (repo + .env persist here)
+#
+# Pure training Job. Push run logs to GitHub ON DEMAND via the `pod-push-runs`
+# skill after the Job finishes (not baked in here).
+#
+# HARD RULE: run.py is foreground and EXITS (no sleep). CONFIG LAYERING: run.py
+# overrides ONLY num_gpus + cpu_number; steps/time_limit/exec.timeout/
+# use_grading_server come from config.yaml defaults (80 steps / 6h).
+#
+# Coupled trio (change together): resources GPU/cpu  +  agent.search.num_gpus
+#                                          + cpu_number
+# =============================================================================
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-spooky              # change per run
+  namespace: ecepxie
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      affinity:
+        # Pin to 80GB A100 variants (excludes the 40GB PCIe cards). A100 nodes
+        # are scarce; if this stays Pending, remove this affinity block OR add
+        # "NVIDIA-A100-PCIE-40GB" to widen the search. Check availability with:
+        #   kubectl get nodes -L nvidia.com/gpu.product | grep -i a100
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: nvidia.com/gpu.product
+                operator: In
+                values:
+                - NVIDIA-A100-SXM4-80GB
+                - NVIDIA-A100-80GB-PCIe
+      containers:
+      - name: mlevolve
+        image: haomingwang22/mlevolve:v1
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            set -euo pipefail
+            export PATH="/opt/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+            # Sync latest engine code + distilled skill KB from origin/trace2skill-baseline to PVC
+            # (PAT in remote URL; fetch+checkout survives force-pushes, never touches runs/).
+            cd /workspace/nautilus
+            rm -f .git/shallow.lock 2>/dev/null; git fetch origin trace2skill-baseline --depth=1 2>/dev/null || true
+            git checkout origin/trace2skill-baseline -- mlevolve/engine/ paper-skills/experience_kb/ 2>/dev/null || echo "sync skipped"
+            cd /workspace/nautilus/mlevolve
+            set -a; . ./.env; set +a
+            export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+            # num_gpus + parallel_search_num + cpu_number -- match resources below.
+            python run.py \
+              exp_id=spooky-author-identification \
+              dataset_dir=./data \
+              data_dir=./data/spooky-author-identification/prepared/public \
+              desc_file=./data/spooky-author-identification/prepared/public/description.md \
+              agent.search.num_gpus=3 \
+              agent.search.parallel_search_num=3 \
+              cpu_number=8
+            # <- run.py returns -> PID 1 exits -> pod Completes. NEVER append sleep/bash.
+        resources:
+          limits:
+            nvidia.com/a100: 3
+            cpu: "8"
+            memory: "32Gi"
+          requests:
+            nvidia.com/a100: 3
+            cpu: "8"
+            memory: "32Gi"
+        volumeMounts:
+        - name: my-storage
+          mountPath: /workspace
+      volumes:
+      - name: my-storage
+        persistentVolumeClaim:
+          claimName: haoming-storage
