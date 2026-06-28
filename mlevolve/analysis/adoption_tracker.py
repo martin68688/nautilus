@@ -74,17 +74,122 @@ def _extract_keywords(text: str) -> list:
     return [k for k in kws if k.lower() not in _STOP]
 
 
-def _code_reflects(code: str, memory_text: str, judge_fn: Optional[Callable] = None) -> bool:
-    """Does code reflect this memory entry? LLM judge if provided, else keyword match."""
+def _build_idf(code_corpus: list) -> dict:
+    """Background corpus = all node code in the run. Returns {token: idf}.
+
+    A token present in every code (torch, model, Dataset, AdamW) gets IDF≈0 — no
+    discriminative power, filtered out. A token in only a few codes
+    (StratifiedShuffleSplit, XGBClassifier, label_smoothing) gets high IDF and is kept.
+    This learns what is generic per-run, so no hand-maintained stoplist is needed.
+    """
+    import math
+    N = max(len(code_corpus), 1)
+    df: dict = {}
+    for code in code_corpus:
+        for tok in set(re.findall(r"\b[A-Za-z_][A-Za-z0-9_]{2,}\b", code or "")):
+            df[tok] = df.get(tok, 0) + 1
+    return {t: math.log(N / (1 + d)) for t, d in df.items()}
+
+
+def _code_reflects(code: str, memory_text: str, judge_fn: Optional[Callable] = None,
+                   idf: Optional[dict] = None, min_hits: int = 2, idf_floor: float = 1.0) -> bool:
+    """Does code reflect this memory entry? LLM judge if provided, else keyword match.
+
+    Keyword match is tightened three ways vs naive `any(kw in code)`:
+      (a) drop low-IDF generic tokens via `idf` (torch/model/Dataset → ~0 IDF),
+      (b) word-boundary regex instead of substring ('model' won't match 'model_'),
+      (c) require >= min_hits distinct high-IDF keywords (a single generic token
+          can never count as adoption). min_hits is clamped to len(kws) so a memory
+          with only one truly-specific keyword still can match on it.
+    """
     if judge_fn is not None:
         try:
             return bool(judge_fn(code, memory_text))
         except Exception:
             return False
     kws = _extract_keywords(memory_text)
+    if idf:
+        kws = [k for k in kws if idf.get(k, float("inf")) >= idf_floor]
     if not kws:
         return False
-    return any(kw in code for kw in kws)
+    hits = [k for k in kws if re.search(r"\b" + re.escape(k) + r"\b", code or "")]
+    return len(hits) >= min(min_hits, len(kws))
+
+
+def _llm_judge(code: str, memory_text: str, cfg) -> bool:
+    """Second-stage semantic confirmation: does code genuinely IMPLEMENT the memory's
+    SPECIFIC technique, vs merely sharing generic ML boilerplate (torch/nn.Module/loop)?
+
+    Called only on keyword hits (judge_mode=llm) to cut false positives cheaply. Uses
+    DeepSeek (OpenAI-compatible) — cheap/fast and keeps the GLM quota free for the solver.
+    Credentials come from os.environ DEEPSEEK_* (loaded from mlevolve/.env at run start);
+    `cfg` is accepted only for signature uniformity / fallback. Failure is non-fatal.
+    """
+    import os
+    api_key = os.environ.get("DEEPSEEK_API_KEY") or getattr(cfg, "api_key", "")
+    base_url = os.environ.get("DEEPSEEK_BASE_URL") or getattr(cfg, "base_url", "") or None
+    model = os.environ.get("DEEPSEEK_MODEL") or "deepseek-chat"
+    user = (
+        f"Memory entry (a distilled skill describing specific techniques/APIs/patterns):\n"
+        f"```\n{memory_text[:2000]}\n```\n\n"
+        f"Generated code (first 8000 chars):\n```\n{code[:8000]}\n```\n\n"
+        "Does the code actually USE any specific technique/API/pattern the memory entry describes "
+        "— meaning there is a real call or application of it (not merely an import, and not just "
+        "generic ML boilerplate like torch/nn.Module/a training loop)? An unused import or a "
+        "coincidental shared word is NOT adoption; but a partial or variant implementation of any "
+        "ONE technique the memory lists DOES count. Output ONLY 'YES' or 'NO'."
+    )
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key, base_url=base_url)
+        resp = client.chat.completions.create(
+            model=model, temperature=0, max_tokens=8,
+            messages=[{"role": "system", "content": "Output only YES or NO."},
+                      {"role": "user", "content": user}],
+        )
+        ans = resp.choices[0].message.content or ""
+        return ans.strip().upper().startswith("YES")
+    except Exception as e:
+        logger.warning(f"[adoption_tracker] LLM judge failed: {e}")
+        return False
+
+
+_EMB_MODEL = None
+_EMB_CACHE: dict = {}
+
+
+def _get_emb_model(cfg):
+    """Lazy-load the bge embedding model (reuses the project's EmbeddingModel). Cached.
+
+    Only invoked in judge_mode='hybrid'. Falls back to cfg.memory_embedding_* if the
+    adoption_tracking block doesn't carry its own device/path.
+    """
+    global _EMB_MODEL
+    if _EMB_MODEL is None:
+        from agents.memory.embedding_models import EmbeddingModel
+        at = getattr(cfg, "adoption_tracking", None)
+        dev = getattr(at, "embedding_device", None) or getattr(cfg, "memory_embedding_device", None) or "cpu"
+        name = getattr(at, "embedding_model", None) or getattr(cfg, "memory_embedding_model_path", None) \
+               or "BAAI/bge-base-en-v1.5"
+        _EMB_MODEL = EmbeddingModel(model_type="local", model_name=name, device=dev)
+    return _EMB_MODEL
+
+
+def _embedding_sim(code: str, memory_text: str, emb_model) -> float:
+    """Cosine similarity of code vs memory embeddings. bge caps ~512 tokens, so texts are
+    truncated to 2000 chars. Each unique text embedded once (cached). Returns 0.0 if no model."""
+    if emb_model is None:
+        return 0.0
+    import numpy as np
+
+    def _vec(t: str):
+        t = t[:2000]
+        if t not in _EMB_CACHE:
+            _EMB_CACHE[t] = emb_model.encode([t])[0]
+        return _EMB_CACHE[t]
+
+    a, b = _vec(code), _vec(memory_text)
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-9))
 
 
 def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> dict:
@@ -92,6 +197,17 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
     nodes = journal.nodes if hasattr(journal, "nodes") else (journal if isinstance(journal, list) else [])
     methodology_kb_path = getattr(cfg, "methodology_kb_path", "") or ""
     workspace_dir = getattr(cfg, "workspace_dir", "")
+
+    # IDF over the run's own code corpus: generic tokens (torch/model/Dataset) get ~0 IDF.
+    idf = _build_idf([getattr(n, "code", "") or "" for n in nodes])
+    mode = getattr(getattr(cfg, "adoption_tracking", None), "judge_mode", "keyword")
+    use_llm = mode in ("llm", "hybrid")
+    use_emb = mode == "hybrid"
+    emb_model = _get_emb_model(cfg) if use_emb else None
+    logger.info(f"[adoption_tracker] judge_mode={mode}"
+                + (": LLM judges every pair (crosses lexical gap)" if mode == "llm"
+                   else ": embedding+keyword screen, LLM arbitrates the uncertain middle" if use_emb
+                   else ": IDF keyword only"))
 
     by_ref = {}
     for node in nodes:
@@ -102,14 +218,42 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
             src = rec.get("source", "?")
             if rid not in by_ref:
                 by_ref[rid] = {"ref_id": rid, "source": src, "injected_count": 0,
-                               "adopted_count": 0, "node_ids": []}
+                               "keyword_hit_count": 0, "emb_signal_count": 0,
+                               "llm_judged_count": 0, "adopted_count": 0, "node_ids": []}
             by_ref[rid]["injected_count"] += 1
             by_ref[rid]["node_ids"].append(node.id)
-            if src == "global_memory":
-                mem_text = _fetch_global_memory_text(rid, workspace_dir)
-            else:
-                mem_text = _fetch_methodology_text(rid, methodology_kb_path)
-            if mem_text and _code_reflects(code, mem_text, judge_fn):
+            mem_text = (_fetch_global_memory_text(rid, workspace_dir) if src == "global_memory"
+                        else _fetch_methodology_text(rid, methodology_kb_path))
+            if not mem_text:
+                continue
+
+            # Cheap signal (all modes): IDF keyword hit at min_hits=1 (a logged evidence signal).
+            if _code_reflects(code, mem_text, judge_fn, idf=idf, min_hits=1):
+                by_ref[rid]["keyword_hit_count"] += 1
+            kw_strict = _code_reflects(code, mem_text, judge_fn, idf=idf, min_hits=2)
+
+            # Adoption decision by mode.
+            if mode == "keyword":
+                adopted = kw_strict
+            elif mode == "llm":
+                # LLM judges EVERY pair — no keyword gate. The LLM crosses the lexical gap
+                # (XGBoost↔XGBClassifier) that keyword cannot; keyword stays a logged signal only.
+                adopted = _llm_judge(code, mem_text, cfg)
+                by_ref[rid]["llm_judged_count"] += 1
+            else:  # hybrid
+                emb_sim = _embedding_sim(code, mem_text, emb_model)
+                emb_norm = max(0.0, min(1.0, (emb_sim - 0.35) / 0.4))
+                combined = 0.7 * emb_norm + 0.3 * (1.0 if kw_strict else 0.0)
+                if combined >= 0.6:
+                    adopted = True
+                elif combined <= 0.25:
+                    adopted = False
+                else:
+                    adopted = _llm_judge(code, mem_text, cfg)
+                    by_ref[rid]["llm_judged_count"] += 1
+                by_ref[rid]["emb_signal_count"] += 1
+
+            if adopted:
                 by_ref[rid]["adopted_count"] += 1
 
     per_memory = list(by_ref.values())
@@ -118,20 +262,34 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
     per_memory.sort(key=lambda x: -x["adoption_rate"])
 
     total_inj = sum(m["injected_count"] for m in per_memory)
+    total_kw = sum(m["keyword_hit_count"] for m in per_memory)
+    total_emb = sum(m["emb_signal_count"] for m in per_memory)
+    total_llm = sum(m["llm_judged_count"] for m in per_memory)
     total_adopt = sum(m["adopted_count"] for m in per_memory)
     by_src = {}
     for m in per_memory:
-        d = by_src.setdefault(m["source"], {"injected": 0, "adopted": 0})
+        d = by_src.setdefault(m["source"], {"injected": 0, "keyword_hit": 0,
+                                            "emb_signal": 0, "llm_judged": 0, "adopted": 0})
         d["injected"] += m["injected_count"]
+        d["keyword_hit"] += m["keyword_hit_count"]
+        d["emb_signal"] += m["emb_signal_count"]
+        d["llm_judged"] += m["llm_judged_count"]
         d["adopted"] += m["adopted_count"]
 
     report = {
         "summary": {
             "total_memories": len(per_memory),
             "total_injections": total_inj,
+            "total_keyword_hits": total_kw,
+            "total_emb_signals": total_emb,
+            "total_llm_judged": total_llm,
             "total_adopted": total_adopt,
             "overall_adoption_rate": round(total_adopt / total_inj, 3) if total_inj else 0.0,
-            "by_source": {s: {"injected": v["injected"], "adopted": v["adopted"],
+            "keyword_hit_rate": round(total_kw / total_inj, 3) if total_inj else 0.0,
+            "judge_mode": mode,
+            "by_source": {s: {"injected": v["injected"], "keyword_hit": v["keyword_hit"],
+                              "emb_signal": v["emb_signal"], "llm_judged": v["llm_judged"],
+                              "adopted": v["adopted"],
                               "rate": round(v["adopted"] / v["injected"], 3) if v["injected"] else 0.0}
                           for s, v in by_src.items()},
         },
@@ -156,7 +314,8 @@ def _write_md_report(path: Path, report: dict) -> None:
     for src, v in s["by_source"].items():
         lines.append(f"- {src}: {v['adopted']}/{v['injected']} = {v['rate']:.1%}")
     lines += ["", "## per memory (sorted by adoption rate)", "",
-              "| ref_id | source | injected | adopted | rate |", "|---|---|---|---|---|"]
+              "kw_hit = stage-1 IDF keyword hits; adopted = final (after LLM judge if judge_mode=llm)", "",
+              "| ref_id | source | injected | kw_hit | adopted | rate |", "|---|---|---|---|---|---|"]
     for m in report["per_memory"]:
-        lines.append(f"| {m['ref_id']} | {m['source']} | {m['injected_count']} | {m['adopted_count']} | {m['adoption_rate']:.1%} |")
+        lines.append(f"| {m['ref_id']} | {m['source']} | {m['injected_count']} | {m['keyword_hit_count']} | {m['adopted_count']} | {m['adoption_rate']:.1%} |")
     path.write_text("\n".join(lines), encoding="utf-8")
