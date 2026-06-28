@@ -45,12 +45,15 @@ spec:
           - |
             set -euo pipefail
             export PATH="/opt/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
-            # Sync latest engine code + distilled skill KB from origin/trace2skill-baseline to PVC
-            # (PAT in remote URL; fetch+checkout survives force-pushes, never touches runs/).
-            cd /workspace/nautilus
-            rm -f .git/shallow.lock 2>/dev/null; git fetch origin trace2skill-baseline --depth=1 2>/dev/null || true
-            git checkout origin/trace2skill-baseline -- mlevolve/engine/ paper-skills/experience_kb/ 2>/dev/null || echo "sync skipped"
-            cd /workspace/nautilus/mlevolve
+            # Run from the ISOLATED working copy /workspace/trace2skill-baseline (pre-cloned,
+            # branch trace2skill-baseline). Does NOT touch shared /workspace/nautilus (the beta1
+            # job uses that). Optional tolerant code update (isolated .git, no stale lock).
+            cd /workspace/trace2skill-baseline
+            rm -f .git/shallow.lock 2>/dev/null
+            timeout 90 git fetch origin trace2skill-baseline --depth=1 2>/dev/null && \
+              git checkout origin/trace2skill-baseline -- mlevolve/engine/ paper-skills/experience_kb/ 2>/dev/null || \
+              echo "update skipped, using pre-cloned copy"
+            cd /workspace/trace2skill-baseline/mlevolve
             set -a; . ./.env; set +a
             export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
             # num_gpus + parallel_search_num + cpu_number -- match resources below.
