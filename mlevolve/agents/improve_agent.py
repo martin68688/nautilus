@@ -255,6 +255,9 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
                         local_best_node=parent_node.local_best_node, from_topk=from_topk)
     register_node(agent, new_node, prompt_complete, parent_node=parent_node)
 
+    from agents.adoption import log_adoption
+    log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "improve")
+
     if hasattr(parent_node, '_topk_triggered'):
         parent_node._topk_triggered = False
 

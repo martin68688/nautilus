@@ -174,6 +174,15 @@ def run():
 
     interpreter.cleanup_session(-1)
 
+    # Adoption tracking: post-run analysis (side-channel, never affects the run itself).
+    # Only runs if adoption_tracking.enable + enable_analysis; failure is non-fatal.
+    try:
+        if getattr(cfg, "adoption_tracking", None) and cfg.adoption_tracking.enable and cfg.adoption_tracking.enable_analysis:
+            from analysis.adoption_tracker import run_adoption_analysis
+            run_adoption_analysis(cfg, journal)
+    except Exception as e:
+        logger.warning(f"[adoption_tracker] analysis skipped: {e}")
+
 
 if __name__ == "__main__":    
     run()

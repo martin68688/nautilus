@@ -117,6 +117,13 @@ class InitSolutionConfig:
 
 
 @dataclass
+class AdoptionTrackingConfig:
+    enable: bool = False          # 默认关：记账与分析全 no-op，run 行为与今天一致
+    enable_analysis: bool = True  # enable=True 时是否在 run 末尾跑分析
+    judge_mode: str = "keyword"   # "keyword" | "llm"
+
+
+@dataclass
 class Config(Hashable):
     data_dir: Path
     dataset_dir: Path
@@ -149,6 +156,7 @@ class Config(Hashable):
     methodology_dynamic: bool = False
     use_grading_server: bool = True
     init_solution: InitSolutionConfig = field(default_factory=InitSolutionConfig)
+    adoption_tracking: AdoptionTrackingConfig = field(default_factory=AdoptionTrackingConfig)
 
 
 def _get_next_logindex(dir: Path) -> int:
