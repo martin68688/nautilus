@@ -302,5 +302,13 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
                         local_best_node=parent_node.local_best_node, from_topk=from_topk)
     register_node(agent, new_node, prompt_complete, parent_node=parent_node)
 
+    from agents.adoption import log_adoption
+    try:
+        _mem_ids = [r.record_id for r, _ in similar_fixes] if (agent.global_memory and similar_fixes) else []
+    except NameError:
+        _mem_ids = []
+    log_adoption(new_node, agent, "global_memory", _mem_ids, "debug")
+    log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "debug")
+
     logger.info(f"[debug] {parent_node.id} → node {new_node.id}")
     return new_node

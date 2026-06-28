@@ -189,5 +189,8 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
                         local_best_node=agent.virtual_root)
     register_node(agent, new_node, prompt_complete, new_branch=True)
 
+    from agents.adoption import log_adoption
+    log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "draft")
+
     logger.info(f"[draft] → node {new_node.id} (branch={new_node.branch_id})")
     return new_node

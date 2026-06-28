@@ -94,15 +94,20 @@ def _strip_ref_noise(text: str) -> str:
     return text.strip()
 
 
-def _read_high_confidence_references(cat_dir: Path) -> str:
-    """Read insight.md, find HIGH-confidence rows, read their reference files."""
+def _read_high_confidence_references(cat_dir: Path) -> tuple[str, list[str]]:
+    """Read insight.md, find HIGH-confidence rows, read their reference files.
+
+    Returns (joined_text, ref_ids). ref_ids are side-channel ids ("{category}/{stem}")
+    for adoption tracking only — NEVER injected into the prompt text.
+    """
     insight_file = cat_dir / "insight.md"
     if not insight_file.exists():
-        return ""
+        return "", []
 
     insight_text = insight_file.read_text(encoding="utf-8")
     refs_dir = cat_dir / "references"
     ref_contents = []
+    ref_ids = []  # side-channel: stable id per reference, NOT added to prompt text
 
     in_table = False
     for line in insight_text.splitlines():
@@ -133,43 +138,51 @@ def _read_high_confidence_references(cat_dir: Path) -> str:
                 try:
                     raw = Path(ref_path).read_text(encoding="utf-8")
                     ref_contents.append(_strip_ref_noise(raw))
+                    ref_ids.append(f"{cat_dir.name}/{Path(ref_path).stem}")
                 except Exception:
                     continue
 
-    return "\n\n---\n\n".join(ref_contents)
+    return "\n\n---\n\n".join(ref_contents), ref_ids
 
 
-def build_methodology_guidance(task_desc: str, methodology_kb_path: str, cfg: Any) -> str:
-    """Scan methodology_kb_path → LLM match → read HIGH-confidence references → return guidance."""
+def build_methodology_guidance(task_desc: str, methodology_kb_path: str, cfg: Any) -> tuple[str, list[str]]:
+    """Scan methodology_kb_path → LLM match → read HIGH-confidence references.
+
+    Returns (guidance_text, ref_ids). guidance_text is byte-for-byte identical to before
+    (goes into the prompt). ref_ids is a side-channel list for adoption tracking only.
+    """
     kb_base = Path(methodology_kb_path)
     if not kb_base.exists():
         logger.info("[MethodologyAgent] methodology_kb_path not found, skipping")
-        return ""
+        return "", []
 
     categories = _scan_categories(kb_base)
     if not categories:
         logger.info("[MethodologyAgent] No categories found")
-        return ""
+        return "", []
 
     logger.info(f"[MethodologyAgent] Scanning {len(categories)} categories...")
     matched = _match_categories_with_llm(task_desc, categories, cfg)
     if not matched:
         logger.info("[MethodologyAgent] No relevant categories matched")
-        return ""
+        return "", []
 
     all_sections = []
+    all_ref_ids = []  # side-channel
     for cat_path in matched:
         cat_dir = kb_base / cat_path
-        content = _read_high_confidence_references(cat_dir)
+        content, ref_ids = _read_high_confidence_references(cat_dir)
         if content:
             all_sections.append(f"### [{cat_path}]\n\n{content}")
+            all_ref_ids.extend(ref_ids)
             logger.info(f"[MethodologyAgent] Added references from {cat_path}")
 
     if not all_sections:
-        return ""
+        return "", []
 
-    return (
+    guidance_text = (
         "\n\n---\n## Methodology Insights from Literature\n"
         "The following detailed techniques from recent papers are relevant to this task:\n\n"
         + "\n\n---\n\n".join(all_sections)
     )
+    return guidance_text, all_ref_ids
