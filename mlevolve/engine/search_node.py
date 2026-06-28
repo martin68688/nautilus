@@ -73,6 +73,8 @@ class SearchNode(DataClassJsonMixin):
     from_topk: bool = field(default=False, kw_only=True)
     code_summary: Optional[str] = field(default=None, kw_only=True)
     work_dir: Optional[str] = field(default=None, kw_only=True)
+    # ---- adoption tracking (side-channel: 记录 prompt 注入了哪些记忆条目 id，绝不进 prompt) ----
+    adoption_log: list = field(default_factory=list, kw_only=True)
 
     def __post_init__(self) -> None:
         if self.parent is not None:

@@ -62,6 +62,10 @@ class AgentSearch:
         self.branch_node_count: Dict[int, int] = {}
         self.use_coldstart = cfg.coldstart.use_coldstart
         self.coldstart_description = cfg.coldstart.description
+        # Adoption tracking: side-channel snapshot of methodology ref_ids (never in prompt)
+        from engine.coldstart import knowledge as _kb
+        self.methodology_ref_ids: list[str] = list(_kb._LAST_REF_IDS)
+        self.adoption_tracking_enabled: bool = cfg.adoption_tracking.enable
 
         # Top-N candidates
         self.top_k = self.scfg.top_candidates_size
