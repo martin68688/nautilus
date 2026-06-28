@@ -7,6 +7,10 @@ from typing import Dict, List, Any
 INIT_SOLUTION_JSON = Path(__file__).resolve().parent / "init_solution_paths.json"
 METHODOLOGY_MAP_JSON = Path(__file__).resolve().parent / "methodology_map.json"
 
+# Side-channel: most recent methodology ref_ids (set by build_guidance_description,
+# read by AgentSearch.__init__ for adoption tracking). NEVER injected into prompts.
+_LAST_REF_IDS: list[str] = []
+
 
 def _load_json(path: str) -> Dict:
     with open(path, "r", encoding="utf-8") as f:
@@ -70,21 +74,25 @@ def _extract_positive_sections(text: str) -> list[str]:
     return sections
 
 
-def _build_methodology_text(task_name: str, methodology_kb_path: str) -> str:
-    """Extract only [POSITIVE] entries from original methodology files."""
+def _build_methodology_text(task_name: str, methodology_kb_path: str) -> tuple[str, list[str]]:
+    """Extract only [POSITIVE] entries from original methodology files.
+
+    Returns (text, ref_ids). ref_ids are side-channel ids for adoption tracking.
+    """
     if not METHODOLOGY_MAP_JSON.exists():
-        return ""
+        return "", []
     try:
         mapping = _load_json(str(METHODOLOGY_MAP_JSON))
     except Exception:
-        return ""
+        return "", []
 
     folders = mapping.get(task_name, [])
     if not folders:
-        return ""
+        return "", []
 
     kb_base = Path(methodology_kb_path)
     all_entries = []
+    ref_ids = []  # side-channel
     for folder in folders:
         cat_dir = kb_base / folder
         if not cat_dir.exists():
@@ -96,15 +104,17 @@ def _build_methodology_text(task_name: str, methodology_kb_path: str) -> str:
                 continue
             entries = _extract_positive_sections(text)
             all_entries.extend(entries)
+            ref_ids.append(f"static:{folder}/{md_file.stem}")
 
     if not all_entries:
-        return ""
+        return "", []
 
-    return (
+    text = (
         "\n\n---\n## Methodology Insights from Literature\n"
         "The following actionable techniques from recent papers are relevant to this task:\n\n"
         + "\n\n---\n\n".join(all_entries)
     )
+    return text, ref_ids
 
 
 def build_guidance_description(cfg: Any, task_desc: str = "") -> str:
@@ -117,14 +127,17 @@ def build_guidance_description(cfg: Any, task_desc: str = "") -> str:
         text = text.replace("{TORCH_HUB_DIR}", torch_hub_dir.rstrip("/"))
 
     methodology_kb_path = getattr(cfg, "methodology_kb_path", "") or ""
+    ref_ids: list[str] = []
     if methodology_kb_path:
         use_dynamic = getattr(cfg, "methodology_dynamic", False)
         if use_dynamic and task_desc:
             from engine.coldstart.methodology_agent import build_methodology_guidance
-            methodology_text = build_methodology_guidance(task_desc, methodology_kb_path, cfg.agent.code)
+            methodology_text, ref_ids = build_methodology_guidance(task_desc, methodology_kb_path, cfg.agent.code)
         else:
-            methodology_text = _build_methodology_text(cfg.exp_id, methodology_kb_path)
+            methodology_text, ref_ids = _build_methodology_text(cfg.exp_id, methodology_kb_path)
         if methodology_text:
             text += methodology_text
 
+    global _LAST_REF_IDS
+    _LAST_REF_IDS = ref_ids  # side-channel snapshot for adoption tracking
     return text
