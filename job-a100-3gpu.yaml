@@ -16,7 +16,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mlevolve-spooky              # change per run
+  name: mlevolve-spooky-t2s          # trace2skill-baseline clean baseline (change per run)
   namespace: ecepxie
 spec:
   backoffLimit: 2
