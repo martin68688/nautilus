@@ -24,6 +24,10 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      tolerations:
+        # Tolerate the GPU taint on Nautilus L40 nodes (nvidia.com/gpu=Exists).
+      - key: nvidia.com/gpu
+        operator: Exists
       affinity:
         # Pin to L40 / L40S. Resource key is generic nvidia.com/gpu (pinned via
         # product label). L40 is NOT under ecepxie's a100 quota -> runs alongside
