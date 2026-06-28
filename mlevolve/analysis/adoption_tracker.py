@@ -154,6 +154,54 @@ def _llm_judge(code: str, memory_text: str, cfg) -> bool:
         return False
 
 
+def _llm_judge_batch(memory_text: str, codes: list, cfg, max_chars: int = 4000) -> list:
+    """Judge ONE memory against MANY codes in a single LLM call (judge_mode='batch').
+
+    This is the real cost saver: instead of N_pairs DeepSeek calls (one per code), it makes
+    one call per memory (or per small chunk), asking which codes genuinely implement the
+    technique. Cross-comparing codes in one context also tends to improve precision. Returns
+    a list of bool (one per code, aligned to input order). Failure → all False.
+
+    Keep chunks small (<=5): long contexts make the LLM skim and miss implementations.
+    """
+    import os
+    n = len(codes)
+    if n == 0:
+        return []
+    if n == 1:
+        return [_llm_judge(codes[0], memory_text, cfg)]
+    api_key = os.environ.get("DEEPSEEK_API_KEY") or getattr(cfg, "api_key", "")
+    base_url = os.environ.get("DEEPSEEK_BASE_URL") or getattr(cfg, "base_url", "") or None
+    model = os.environ.get("DEEPSEEK_MODEL") or "deepseek-chat"
+    parts = "\n\n".join(f"=== CODE {i + 1} ===\n{c[:max_chars]}" for i, c in enumerate(codes))
+    user = (
+        f"Memory entry (a distilled skill describing specific techniques/APIs/patterns):\n"
+        f"```\n{memory_text[:2000]}\n```\n\n"
+        f"Below are {n} code snippets. Judge EACH independently: does it actually USE a specific "
+        f"technique/API/pattern from the memory (real application, not just import/boilerplate)? "
+        f"Output exactly {n} lines, one per code in order, each '<number> YES' or '<number> NO'.\n\n{parts}"
+    )
+    try:
+        from openai import OpenAI
+        client = OpenAI(api_key=api_key, base_url=base_url)
+        resp = client.chat.completions.create(
+            model=model, temperature=0, max_tokens=8 * n + 16,
+            messages=[{"role": "system",
+                       "content": f"Output exactly {n} lines, each '<number> YES' or '<number> NO', in order 1..{n}."},
+                      {"role": "user", "content": user}],
+        )
+        ans = resp.choices[0].message.content or ""
+        yes = set()
+        for m in re.finditer(r"(\d+)\s*[:.\)]?\s*(YES|NO)", ans, re.I):
+            i = int(m.group(1))
+            if 1 <= i <= n and m.group(2).upper() == "YES":
+                yes.add(i - 1)
+        return [i in yes for i in range(n)]
+    except Exception as e:
+        logger.warning(f"[adoption_tracker] batch judge failed: {e}")
+        return [False] * n
+
+
 _EMB_MODEL = None
 _EMB_CACHE: dict = {}
 
@@ -241,13 +289,15 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
                 adopted = _llm_judge(code, mem_text, cfg)
                 by_ref[rid]["llm_judged_count"] += 1
             else:  # hybrid
+                # KEY FIX: embedding similarity is a RECALL signal, not an adoption signal.
+                # Same-domain code/memory are always cosine-similar (both ML text), so a high
+                # emb score does NOT mean the code implements the technique. Use embedding only
+                # to REJECT clearly-unrelated pairs (saves LLM); everything else MUST go to the
+                # LLM, which is what actually judges implementation.
                 emb_sim = _embedding_sim(code, mem_text, emb_model)
                 emb_norm = max(0.0, min(1.0, (emb_sim - 0.35) / 0.4))
-                combined = 0.7 * emb_norm + 0.3 * (1.0 if kw_strict else 0.0)
-                if combined >= 0.6:
-                    adopted = True
-                elif combined <= 0.25:
-                    adopted = False
+                if emb_norm <= 0.20 and not kw_strict:
+                    adopted = False  # semantically unrelated AND no lexical hit → reject, save LLM
                 else:
                     adopted = _llm_judge(code, mem_text, cfg)
                     by_ref[rid]["llm_judged_count"] += 1
