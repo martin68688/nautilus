@@ -28,8 +28,14 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "$ROOT"
 
+# Solver needs DEEPSEEK_* (in-pod mlevolve/.env). Source if present.
+if [ -f .env ]; then set -a; . ./.env; set +a; fi
+
 DATASET_DIR="${DATASET_DIR:-./data}"
-GPU="${GPU:-0}"
+GPU="${GPU:-0}"             # CUDA_VISIBLE_DEVICES mask
+NUM_GPUS="${NUM_GPUS:-1}"   # MUST equal pod GPU count -> drives num_gpus + parallel_search_num
+                            # (config defaults 3/6 would stack 6 workers on 1 GPU -> OOM)
+CPUS="${CPUS:-8}"           # MUST equal pod CPU limit
 TIME_LIMIT_SECS="${TIME_LIMIT_SECS:-3600}"
 STEPS="${STEPS:-8}"
 
@@ -49,7 +55,7 @@ fmt_time() { local t=$1; echo "$((t/3600))h $(((t%3600)/60))m $((t%60))s"; }
 echo "################################################################"
 echo "# beta3 Lite sanity sweep"
 echo "#   dataset_dir = ${DATASET_DIR}"
-echo "#   GPU=${GPU}  budget=$(fmt_time ${TIME_LIMIT_SECS})  steps=${STEPS}"
+echo "#   GPU=${GPU}  num_gpus=${NUM_GPUS}  cpus=${CPUS}  budget=$(fmt_time ${TIME_LIMIT_SECS})  steps=${STEPS}"
 echo "#   tasks (${#TASK_ARR[@]}): ${TASK_ARR[*]}"
 echo "################################################################"
 
@@ -80,10 +86,12 @@ for EXP_ID in "${TASK_ARR[@]}"; do
       data_dir="${DATA_DIR}" \
       desc_file="${DESC}" \
       exp_name="${EXP_ID}" \
+      agent.search.num_gpus="${NUM_GPUS}" \
+      agent.search.parallel_search_num="${NUM_GPUS}" \
       agent.time_limit="${TIME_LIMIT_SECS}" \
       agent.steps="${STEPS}" \
       start_cpu_id=0 \
-      cpu_number=8
+      cpu_number="${CPUS}"
   rc=$?
   case $rc in
     0)  STATUS+=("${EXP_ID}:ok") ;;
