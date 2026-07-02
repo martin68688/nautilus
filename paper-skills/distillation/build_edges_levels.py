@@ -36,12 +36,21 @@ def load_journal(run_ts):
         _JCACHE[run_ts] = J["nodes"] if isinstance(J, dict) and "nodes" in J else J
     return _JCACHE[run_ts]
 
+def run_maximize(run_ts):
+    for n in load_journal(run_ts):
+        m = n.get("metric")
+        if isinstance(m, dict) and m.get("maximize") is not None:
+            return bool(m["maximize"])
+    return False
+
 def branch_best(run_ts, bid):
     ns = [n for n in load_journal(run_ts) if str(n.get("branch_id")) == str(bid)]
     def mv(n):
         m = n.get("metric"); return m.get("value") if isinstance(m, dict) else m
     vals = [mv(n) for n in ns if mv(n) is not None and not n.get("is_buggy")]
-    return min(vals) if vals else None
+    if not vals:
+        return None
+    return max(vals) if run_maximize(run_ts) else min(vals)
 
 def run_median_best(run_ts):
     bids = sorted({str(n.get("branch_id")) for n in load_journal(run_ts) if n.get("branch_id") is not None}, key=int)
@@ -108,8 +117,9 @@ def compute_stats(nodes):
         for r, b in sbr:
             bm = branch_best(r, b)
             med = run_med.get(r)
-            if bm is not None and med is not None and bm < med:
-                n_succ += 1
+            if bm is not None and med is not None:
+                if (bm > med) if run_maximize(r) else (bm < med):
+                    n_succ += 1
         n["n_use"] = n_use
         n["n_succ"] = n_succ
         n["p_hat"] = round(n_succ / n_use, 3) if n_use else 0.0

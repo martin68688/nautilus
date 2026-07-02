@@ -16,12 +16,17 @@ REPO = Path(__file__).resolve().parents[2]
 RUNS = REPO / "mlevolve" / "runs"
 OUT  = REPO / "paper-skills" / "distillation" / "traces"
 
-# 17 verifiably-clean runs (leakage-run-boundary allowlist) — only distill from these
+# Multi-task clean-run allowlist (leakage-run-boundary). spooky = 17 deep-audited runs;
+# the 5 new tasks (2026-07-01) are INDEX_BUG-clean + post-0521 (image-task leaks not fully
+# audited — accept for pilot, audit per-task before any paper claim).
 CLEAN = ["20260509_154039","20260509_185008","20260510_025317","20260510_095558","20260510_162636",
          "20260511_014836","20260511_102550","20260513_165253","20260514_023457","20260514_052334",
          "20260515_173948","20260516_104127","20260516_125444","20260517_132158","20260517_151325",
-         "20260509_042918",
-         "20260627_135133"]  # A100 baseline mlevolve-spooky (elite-peach-mayfly); INDEX_BUG-clean, best 0.1007
+         "20260509_042918","20260627_135133",  # spooky (17)
+         "20260701_180146","20260701_155016",  # leaf-classification
+         "20260701_180038",  # new-york-city-taxi-fare-prediction (RMSE, lower)
+         "20260701_145250",  # aerial-cactus-identification (accuracy, higher)
+         "20260701_145201"]  # denoising-dirty-documents (MSE, lower)
 
 
 def load_nodes(jf: Path):
@@ -45,16 +50,26 @@ def _trunc(s, n=600):
     return s if len(s) <= n else s[:n] + " …"
 
 
-def render_branch(run_ts: str, branch_id, nodes) -> str:
+def _read_exp_id(run_dir: Path) -> str:
+    cfg = run_dir / "logs" / "config.yaml"
+    if cfg.exists():
+        for line in cfg.read_text(encoding="utf-8", errors="ignore").splitlines():
+            if "exp_id" in line and ":" in line:
+                return line.split(":", 1)[1].strip().strip('"').strip("'")
+    return "unknown"
+
+
+def render_branch(run_ts: str, branch_id, nodes, task: str, maximize: bool) -> str:
     nodes = sorted(nodes, key=lambda n: n.get("step", 0))
-    best = min((metric_val(n) for n in nodes if metric_val(n) is not None and not n.get("is_buggy")),
-               default=None)
+    vals = [metric_val(n) for n in nodes if metric_val(n) is not None and not n.get("is_buggy")]
+    best = (max(vals) if maximize else min(vals)) if vals else None
+    direction = "higher=better" if maximize else "lower=better"
     n_succ = sum(1 for n in nodes if not n.get("is_buggy") and metric_val(n) is not None)
     n_bug = sum(1 for n in nodes if n.get("is_buggy"))
     out = [f"# Chat History",
            f"",
-           f"**Task**: spooky-author-identification   **Run**: {run_ts}   **Branch**: {branch_id}",
-           f"**Turns**: {len(nodes)}   **Success**: {n_succ}   **Buggy**: {n_bug}   **Best metric (val log_loss)**: {best}",
+           f"**Task**: {task}   **Run**: {run_ts}   **Branch**: {branch_id}",
+           f"**Turns**: {len(nodes)}   **Success**: {n_succ}   **Buggy**: {n_bug}   **Best metric ({direction})**: {best}",
            f"",
            f"---",
            f""]
@@ -74,7 +89,7 @@ def render_branch(run_ts: str, branch_id, nodes) -> str:
         out.append("")
     out.append("---")
     out.append("## RESULT")
-    out.append(f"Best validation log_loss in this branch: {best}")
+    out.append(f"Best metric in this branch: {best}")
     out.append(f"Success nodes: {n_succ} / Buggy nodes: {n_bug}")
     return "\n".join(out)
 
@@ -89,6 +104,11 @@ def main():
             print(f"[skip] {run}: no journal.json")
             continue
         nodes = load_nodes(Path(jfs[0]))
+        run_dir_path = Path(jfs[0]).parents[1]
+        task = _read_exp_id(run_dir_path)
+        run_maxes = [n["metric"]["maximize"] for n in nodes
+                     if isinstance(n.get("metric"), dict) and n["metric"].get("maximize") is not None]
+        maximize = bool(run_maxes[0]) if run_maxes else False
         by_branch = {}
         for n in nodes:
             bid = n.get("branch_id")
@@ -98,7 +118,7 @@ def main():
         run_dir = OUT / run
         run_dir.mkdir(exist_ok=True)
         for bid, bnodes in sorted(by_branch.items()):
-            md = render_branch(run, bid, bnodes)
+            md = render_branch(run, bid, bnodes, task, maximize)
             (run_dir / f"branch_{bid}.md").write_text(md)
             total += 1
         summary.append((run, len(by_branch)))

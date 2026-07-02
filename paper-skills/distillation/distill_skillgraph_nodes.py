@@ -41,9 +41,9 @@ MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")  # aliases to v4-flash
 
 SYSTEM_PROMPT = textwrap.dedent("""\
     You are a skill-graph distiller for an automated ML-solver agent (mlevolve). You read execution
-    trajectories — attempts on a Kaggle-style ML task (spooky-author-identification: small-text
-    multi-class author attribution, judged by validation log_loss, lower=better) — and distill them
-    into procedural SKILL NODES that future solver runs can retrieve and follow.
+    trajectories — attempts on a Kaggle-style ML competition task — and distill them into procedural
+    SKILL NODES. The specific task id and its metric direction (higher- or lower-better) are given in
+    the pool below; interpret "improvement" strictly per that direction.
 
     Operate exactly as the SkillGraph teacher does: you are given a POOL of successful (T+) and a
     POOL of failed (T-) attempts (from several search branches), and emit skills of two classes.
@@ -55,14 +55,14 @@ SYSTEM_PROMPT = textwrap.dedent("""\
                    a change", "define every variable/function before it is called", "fix a typo with
                    global search-and-replace", "fit any scaler/vectorizer on the TRAIN FOLD ONLY to
                    avoid leakage", "read the full traceback and fix the root cause".
-      - "text-classification" (the task_type): ANY strategy tied to this task. The following are ALWAYS
-                   task-specific, NEVER general: optimizer / LR-schedule (AdamW, cosine annealing, linear
-                   warmup), training mechanics (AMP / mixed precision, gradient clipping, gradient
-                   accumulation), loss functions (label smoothing), model architecture (DeBERTa, pooling
-                   head), feature engineering (stylometric, TF-IDF n-grams, readability), ensemble
-                   methods (learned weights, stacking), early stopping, num_workers, CV fold count.
+      - "<task_type>": use the EXACT task id given in the pool below (e.g. "leaf-classification",
+                   "aerial-cactus-identification") for ANY strategy tied to that task. The following are
+                   ALWAYS task-specific, NEVER general: optimizer / LR-schedule (AdamW, cosine annealing,
+                   linear warmup), training mechanics (AMP / mixed precision, gradient clipping, gradient
+                   accumulation), loss functions (label smoothing), model architecture, feature
+                   engineering, ensemble methods, early stopping, num_workers, CV fold count.
     Never use a descriptive label like "debugging" or "loss_function". A training technique or model/
-    feature choice is NEVER general. When unsure, label task-specific.
+    feature choice is NEVER general. When unsure, label task-specific with the pool's task id.
 
     Rules:
       - Yield a FEW general skills (pure process/reasoning/debugging/validation) and the rest
@@ -81,11 +81,12 @@ USER_TEMPLATE = textwrap.dedent("""\
     {EXISTING_TITLES}
 
     ## Trajectory pool — {NB} search branches from run {RUN_TS}
+    Task: **{TASK}**   Metric direction: **{DIRECTION}** (a metric move in this direction = improvement).
     {BRANCH_META}
 
     Each attempt is labeled "B<branch>.T<turn>". buggy=True means it crashed (Failure line shows the
-    exception); buggy=False with a metric means it ran and scored. A DROP in log_loss between two
-    successful attempts = the later strategy improved the objective.
+    exception); buggy=False with a metric means it ran and scored. A metric move in the {DIRECTION}
+    direction between two successful attempts = the later strategy improved the objective.
 
     ### T+ (successful attempts — what worked)
     {SUCCESS_TURNS}
@@ -94,9 +95,10 @@ USER_TEMPLATE = textwrap.dedent("""\
     {FAILED_TURNS}
 
     ## Your task
-    Distill the pool into skill nodes following the system rules. A strategy present in T+ whose
-    absence/violation in T- caused a crash -> strong task-specific candidate. A process/reasoning
-    pattern common to T+ and T- -> general candidate. A success that LOWERED log_loss -> high-value;
+    Distill the pool into skill nodes following the system rules. Use the task id "{TASK}" as the
+    task_type for every task-specific skill. A strategy present in T+ whose absence/violation in T-
+    caused a crash -> strong task-specific candidate. A process/reasoning pattern common to T+ and T-
+    -> general candidate. A success that IMPROVED the metric (per the direction above) -> high-value;
     preserve its params in `principle`. Emit the ```json object now.
 """)
 
@@ -119,12 +121,11 @@ def parse_branch(md_path):
         label = f"B{branch_id}.T{tnum}"
         block = f"**[{label}]** (stage={tm.group(2)}, metric={tm.group(4)})\n" + p.strip()
         (fail if buggy else succ).append((label, block))
-    metric_series = []
-    for label, _ in succ:
-        mt = re.search(r"metric=(\S+)", _.split("\n", 1)[0])
-        # rebuild minimal series from header
+    task_m = re.search(r"\*\*Task\*\*:\s*(\S+)", text)
+    direction = "higher=better" if "higher=better" in text else "lower=better"
     return {
         "run_ts": run_ts, "branch_id": branch_id,
+        "task": task_m.group(1) if task_m else "unknown", "direction": direction,
         "n_turns": int(m.group(1)) if m else 0,
         "n_succ": int(m.group(2)) if m else 0,
         "n_bug": int(m.group(3)) if m else 0,
@@ -135,13 +136,13 @@ def parse_branch(md_path):
 
 def render_user(batch, existing_titles):
     meta = "\n".join(f"- B{b['branch_id']}: turns={b['n_turns']} succ={b['n_succ']} bug={b['n_bug']} "
-                     f"best_log_loss={b['best_metric']}" for b in batch)
+                     f"best_metric={b['best_metric']}" for b in batch)
     succ = "\n\n".join(blk for _, blk in sum((b["success"] for b in batch), [])) or "(none)"
     fail = "\n\n".join(blk for _, blk in sum((b["failed"] for b in batch), [])) or "(none)"
     return USER_TEMPLATE.format(
         EXISTING_TITLES=("\n".join(f"- {t}" for t in existing_titles) if existing_titles else "(none yet)"),
-        NB=len(batch), RUN_TS=batch[0]["run_ts"], BRANCH_META=meta,
-        SUCCESS_TURNS=succ, FAILED_TURNS=fail)
+        NB=len(batch), RUN_TS=batch[0]["run_ts"], TASK=batch[0]["task"], DIRECTION=batch[0]["direction"],
+        BRANCH_META=meta, SUCCESS_TURNS=succ, FAILED_TURNS=fail)
 
 
 def extract_json(text):
@@ -173,9 +174,13 @@ def call_teacher(system, user, retries=2):
     return [], getattr(resp, "usage", None)
 
 
-def normalize_category(cat):
+def normalize_category(cat, task):
     c = (cat or "").strip().lower().replace("_", "-")
-    return "general" if c == "general" else (cat.strip() if cat and cat.strip().lower() != "task-specific" else "text-classification")
+    if c == "general":
+        return "general"
+    if cat and cat.strip().lower() not in ("task-specific", "task_specific", ""):
+        return cat.strip()
+    return task  # default task_type = the batch's task id
 
 
 def parse_evidence(ev, batch_branch_ids):
@@ -232,6 +237,7 @@ def main():
               f"T+={sum(len(b['success']) for b in batch)}, T-={sum(len(b['failed']) for b in batch)}) ===")
         user = render_user(batch, existing_titles)
         skills, usage = call_teacher(SYSTEM_PROMPT, user)
+        btask = batch[0]["task"]
         for s in skills:
             t = s["title"].strip()
             if any(t.lower() == e.lower() for e in existing_titles):
@@ -243,12 +249,12 @@ def main():
                 "title": t,
                 "principle": (s.get("principle") or "").strip(),
                 "condition": (s.get("condition") or "").strip(),
-                "category": normalize_category(s.get("category")),
+                "category": normalize_category(s.get("category"), btask),
                 "evidence_turns": labels,
                 "source_branches": [[batch[0]["run_ts"], b] for b in (sbr or [bids[0]])],
             })
             cat = nodes[-1]["category"]
-            print(f"  [{cat:18s}] {t}  ev={labels}")
+            print(f"  [{cat:24s}] {t}  ev={labels}")
         uk = f"in={usage.prompt_tokens} out={usage.completion_tokens}" if usage else "?"
         print(f"  -- {len(skills)} skills ({uk})")
 
