@@ -16,11 +16,12 @@ REPO = Path(__file__).resolve().parents[2]
 RUNS = REPO / "mlevolve" / "runs"
 OUT  = REPO / "paper-skills" / "distillation" / "traces"
 
-# 16 verifiably-clean runs (leakage-run-boundary allowlist) — only distill from these
+# 17 verifiably-clean runs (leakage-run-boundary allowlist) — only distill from these
 CLEAN = ["20260509_154039","20260509_185008","20260510_025317","20260510_095558","20260510_162636",
          "20260511_014836","20260511_102550","20260513_165253","20260514_023457","20260514_052334",
          "20260515_173948","20260516_104127","20260516_125444","20260517_132158","20260517_151325",
-         "20260509_042918"]
+         "20260509_042918",
+         "20260627_135133"]  # A100 baseline mlevolve-spooky (elite-peach-mayfly); INDEX_BUG-clean, best 0.1007
 
 
 def load_nodes(jf: Path):

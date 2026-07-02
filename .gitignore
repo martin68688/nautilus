@@ -10,6 +10,16 @@ __pycache__/
 .venv
 venv/
 
+# ===== Credentials (never commit) =====
+*kaggle*.json
+kaggle*.json
+*kaggle*.csv
+
+# ===== Distillation bulky outputs (regenerable; do not commit) =====
+paper-skills/distillation/traces/
+paper-skills/distillation/graph_build/
+paper-skills/distillation/distill_branch3_demo/
+
 # ===== IDE / Editor =====
 .vscode/
 .idea/
