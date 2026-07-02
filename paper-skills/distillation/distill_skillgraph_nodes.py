@@ -65,15 +65,19 @@ SYSTEM_PROMPT = textwrap.dedent("""\
     feature choice is NEVER general. When unsure, label task-specific with the pool's task id.
 
     Rules:
-      - Yield a FEW general skills (pure process/reasoning/debugging/validation) and the rest
-        task-specific. Do NOT pad "general" with training techniques or model choices.
+      - **At most 1 general skill per batch.** Mark a skill `general` ONLY if it is a domain-
+        independent process habit that appears across multiple branches or is clearly applicable
+        across multiple task types. Single-library / single-model / single-API / single-framework
+        issues are NEVER general — assign them to the task id with scope=api_warning or
+        implementation_note.
+      - `scope` (REQUIRED field): one of "universal_general" (true cross-task process SOP),
+        "api_warning" (a specific library/API/model gotcha), "implementation_note" (a task-scoped
+        implementation detail), or "task_specific" (default for task techniques).
       - principle = HOW (include key params / code intent); condition = WHEN it applies.
       - Do NOT duplicate any title in the existing-skill list below.
-      - Prefer many small single-purpose skills (SkillGraph grows ~20->140 nodes).
-      - evidence_turns: for each skill cite the 1-3 attempt labels from T+/T- that most directly
-        evidence it. Labels look like "B<branch>.T<turn>" (e.g. ["B1.T4", "B4.T20"]). Pick a success
-        that used it and/or a failure that violated it.
-      - Emit a single ```json block: {"skills":[{title, principle, condition, category, evidence_turns}]}.
+      - Prefer many small single-purpose skills.
+      - evidence_turns: cite the 1-3 attempt labels "B<branch>.T<turn>" that most directly evidence it.
+      - Emit a single ```json block: {"skills":[{title, principle, condition, category, scope, evidence_turns}]}.
 """)
 
 USER_TEMPLATE = textwrap.dedent("""\
@@ -244,12 +248,14 @@ def main():
                 continue
             existing_titles.append(t)
             labels, sbr = parse_evidence(s.get("evidence_turns"), bids)
+            cat = normalize_category(s.get("category"), btask)
             nodes.append({
                 "id": f"sg_{len(nodes)+1:04d}",
                 "title": t,
                 "principle": (s.get("principle") or "").strip(),
                 "condition": (s.get("condition") or "").strip(),
-                "category": normalize_category(s.get("category"), btask),
+                "category": cat,
+                "scope": (s.get("scope") or ("universal_general" if cat == "general" else "task_specific")).strip(),
                 "evidence_turns": labels,
                 "source_branches": [[batch[0]["run_ts"], b] for b in (sbr or [bids[0]])],
             })

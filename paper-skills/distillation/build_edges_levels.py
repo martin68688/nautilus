@@ -58,14 +58,17 @@ def run_median_best(run_ts):
     return statistics.median(vals) if vals else None
 
 
-def build_init_edges(nodes):
+def build_init_edges(nodes, selective=False):
+    """InitGraph (A.2). If selective, only universal_general nodes get broad enhance (optimized
+    baseline); demoted api_warning/implementation_note do NOT enhance every task."""
     edges = []
-    generals = [n for n in nodes if n["category"] == "general"]
+    all_generals = [n for n in nodes if n["category"] == "general"]
+    generals = [g for g in all_generals if (not selective) or g.get("scope") == "universal_general"]
     by_cat = {}
     for n in nodes:
         if n["category"] != "general":
             by_cat.setdefault(n["category"], []).append(n)
-    # enhance: every general -> every task-specific (A.2)
+    # enhance: (universal) general -> every task-specific (A.2; selective = universal only)
     for g in generals:
         for cat, ts in by_cat.items():
             for t in ts:
@@ -126,9 +129,14 @@ def compute_stats(nodes):
 
 
 def main():
-    data = json.load(open(IN))
+    import sys
+    args = sys.argv[1:]
+    in_path = args[args.index("--input") + 1] if "--input" in args else str(IN)
+    out_path = args[args.index("--output") + 1] if "--output" in args else str(OUT)
+    selective = "--selective-general-enhance" in args
+    data = json.load(open(in_path))
     nodes = data["nodes"]
-    edges = build_init_edges(nodes)
+    edges = build_init_edges(nodes, selective)
     level = compute_levels(nodes, edges)
     for n in nodes:
         n["level"] = level[n["id"]]
@@ -141,18 +149,20 @@ def main():
     # condition, category} + framework {level, n_use, n_succ, p_hat}.
     clean = [{"id": n["id"], "title": n["title"], "principle": n.get("principle", ""),
               "condition": n.get("condition", ""), "category": n["category"],
+              "scope": n.get("scope", "universal_general" if n["category"] == "general" else "task_specific"),
               "level": n["level"], "n_use": n["n_use"], "n_succ": n["n_succ"],
               "p_hat": n["p_hat"]} for n in nodes]
     graph = {
         "meta": {"schema": "skillgraph-static-v1", "teacher": data.get("meta", {}).get("teacher"),
-                 "n_nodes": len(clean), "n_edges": len(edges),
-                 "note": "paper-faithful static init graph (w/o Graph Evolution); compact-card nodes "
-                         "(no references/evidence_turns — those are non-baseline extensions); "
-                         "stats are trace-evidence proxy (no RL rollout)"},
+                 "n_nodes": len(clean), "n_edges": len(edges), "selective_general_enhance": selective,
+                 "note": ("OPTIMIZED baseline: only universal_general enhance broadly; "
+                          "demoted api_warning/implementation_note are task-scoped. " if selective else
+                         "paper-faithful static init graph (w/o Graph Evolution). ")
+                         + "compact-card nodes; stats are trace-evidence proxy (no RL rollout)"},
         "nodes": clean,
         "edges": edges,
     }
-    pathlib.Path(OUT).write_text(json.dumps(graph, ensure_ascii=False, indent=2), encoding="utf-8")
+    pathlib.Path(out_path).write_text(json.dumps(graph, ensure_ascii=False, indent=2), encoding="utf-8")
 
     # ---- sanity report ----
     g = sum(1 for n in nodes if n["category"] == "general")
@@ -160,7 +170,7 @@ def main():
     ek = Counter(e["kind"] for e in edges)
     lv = Counter(n["level"] for n in nodes)
     cats = Counter(n["category"] for n in nodes)
-    print(f"=== graph.json -> {OUT} ===")
+    print(f"=== graph -> {out_path} (selective={selective}) ===")
     print(f"nodes: {len(nodes)}  (general={g}, task-specific={len(nodes)-g})")
     print(f"edges: {len(edges)}  by kind: {dict(ek)}")
     print(f"level distribution: {dict(sorted(lv.items()))}")
