@@ -18,12 +18,13 @@ Usage:
   python distill_skillgraph_nodes.py --batch 5 --run 20260627_135133
   python distill_skillgraph_nodes.py <branch.md> ...   # explicit, one batch
 """
-import os, re, json, sys, pathlib, textwrap, glob
+import os, re, json, sys, pathlib, textwrap, glob, time
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 TRACES = REPO / "paper-skills" / "distillation" / "traces"
 OUT = REPO / "paper-skills" / "distillation" / "graph_build"
 ENV_FILE = REPO / "mlevolve" / ".env"
+PARTIAL_OUT = OUT / "raw_nodes.partial.json"
 
 def load_env():
     if not ENV_FILE.exists():
@@ -38,6 +39,36 @@ load_env()
 BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
 MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")  # aliases to v4-flash
+VALID_SCOPES = {"universal_general", "api_warning", "implementation_note", "task_specific"}
+GENERAL_DEMOTE_RE = re.compile(
+    r"\bAPI\b|parameter name|import path|correct (?:import|parameter|API|method|argument|flag|keyword)|"
+    r"timm|torchvision|huggingface|transformers|sentence ?transformer|sentence-bert|sbert|"
+    r"calibratedclassifiercv|"
+    r"xgboost|lightgbm|catboost|scikit-learn|sklearn|nltk|randaugment|"
+    r"pandas|dataframe|pd\.|\.loc|\.iloc|boolean indexing|str\.count|regex|regular expression|"
+    r"numpy|np\.|sparse matrix|dense array|pd\.cut|bin edges|"
+    r"stylometric|tf-idf|tfidf|cuda|leaf classification|tabular feature engineering|"
+    r"multi-branch mlp|cross-attention|margin/shape/texture|margin|texture|"
+    r"allow_pickle|weights_only|dataloader|dataset|collate|iterator|num_workers|pin_memory|drop_last|batchnorm|"
+    r"adamw|optimizer|learning rate|lr schedule|warmup|cosine|"
+    r"amp|mixed precision|gradient accumulation|gradient checkpoint|label smoothing|"
+    r"bcewithlogitsloss|loss function|log loss|one-hot|probabilit|"
+    r"deberta|modernbert|transformer model|transformer models|truncation|pytorch|torch\.",
+    flags=re.I,
+)
+GENERAL_ALLOW_RE = re.compile(
+    r"merge conflict|merge marker|stray .*code|generated code|"
+    r"define .*before|variable.*before use|function.*before|class.*before|helper.*before|"
+    r"script order|definition order|nameerror|"
+    r"fit .*train|train fold|train only|avoid leakage|data leakage|"
+    r"smoke|one fold|one batch|few rows|minimal repro|sanity check|"
+    r"data[- ]flow|pipeline stage|row count|feature dimension|input/output|file.*exist|"
+    r"forward output|model interface|tensor.*shape|shape mismatch|shapes? match|"
+    r"same device|dtype|scalar loss|head dimension|"
+    r"gpu memory|oom|resource budget|memory budget|"
+    r"one major component|one change|ablation|incremental",
+    flags=re.I,
+)
 
 SYSTEM_PROMPT = textwrap.dedent("""\
     You are a skill-graph distiller for an automated ML-solver agent (mlevolve). You read execution
@@ -101,9 +132,10 @@ USER_TEMPLATE = textwrap.dedent("""\
     ## Your task
     Distill the pool into skill nodes following the system rules. Use the task id "{TASK}" as the
     task_type for every task-specific skill. A strategy present in T+ whose absence/violation in T-
-    caused a crash -> strong task-specific candidate. A process/reasoning pattern common to T+ and T-
-    -> general candidate. A success that IMPROVED the metric (per the direction above) -> high-value;
-    preserve its params in `principle`. Emit the ```json object now.
+    caused a crash -> strong task-specific candidate. A process/reasoning pattern is a `general`
+    candidate ONLY if it is domain-independent and reusable beyond this task/model/library. If no
+    such pattern exists, emit zero `general` skills. A success that IMPROVED the metric (per the
+    direction above) -> high-value; preserve its params in `principle`. Emit the ```json object now.
 """)
 
 
@@ -161,14 +193,24 @@ def extract_json(text):
     return None
 
 
-def call_teacher(system, user, retries=2):
+def call_teacher(system, user, retries=2, network_retries=4):
     from openai import OpenAI
-    client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+    client = OpenAI(api_key=API_KEY, base_url=BASE_URL, timeout=180, max_retries=2)
     msgs = [{"role": "system", "content": system}, {"role": "user", "content": user}]
     for _ in range(retries + 1):
-        resp = client.chat.completions.create(
-            model=MODEL, messages=msgs, temperature=0.3, max_tokens=8192,
-            response_format={"type": "json_object"})
+        resp = None
+        for attempt in range(network_retries + 1):
+            try:
+                resp = client.chat.completions.create(
+                    model=MODEL, messages=msgs, temperature=0.3, max_tokens=8192,
+                    response_format={"type": "json_object"})
+                break
+            except Exception as e:
+                if attempt >= network_retries:
+                    raise
+                wait = min(60, 5 * (attempt + 1))
+                print(f"  !! teacher API error: {type(e).__name__}: {e}; retrying in {wait}s", flush=True)
+                time.sleep(wait)
         text = resp.choices[0].message.content or ""
         skills = extract_json(text)
         if skills is not None:
@@ -185,6 +227,15 @@ def normalize_category(cat, task):
     if cat and cat.strip().lower() not in ("task-specific", "task_specific", ""):
         return cat.strip()
     return task  # default task_type = the batch's task id
+
+
+def normalize_scope(scope, cat):
+    s = (scope or "").strip().lower().replace("-", "_")
+    if s not in VALID_SCOPES:
+        return "universal_general" if cat == "general" else "task_specific"
+    if cat == "general":
+        return "universal_general" if s == "universal_general" else s
+    return "task_specific" if s == "universal_general" else s
 
 
 def parse_evidence(ev, batch_branch_ids):
@@ -205,8 +256,18 @@ def chunk(xs, n):
     return [xs[i:i + n] for i in range(0, len(xs), n)]
 
 
+def write_nodes(path, nodes, batches, completed_batches, complete):
+    path.write_text(json.dumps(
+        {"meta": {"teacher": MODEL, "batches": completed_batches, "n_batches_total": len(batches),
+                  "n_nodes": len(nodes), "complete": complete,
+                  "branches": [pathlib.Path(p).stem for grp in batches for p in grp]},
+         "nodes": nodes}, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
 def main():
     raw = sys.argv[1:]
+    resume = "--resume" in raw
+    raw = [a for a in raw if a != "--resume"]
     batch_size = 5
     if "--batch" in raw:
         batch_size = int(raw[raw.index("--batch") + 1])
@@ -232,8 +293,16 @@ def main():
         print("ERROR: DEEPSEEK_API_KEY not set"); sys.exit(1)
 
     OUT.mkdir(parents=True, exist_ok=True)
-    existing_titles, nodes = [], []
+    existing_titles, nodes, start_batch = [], [], 1
+    if resume and PARTIAL_OUT.exists():
+        partial = json.load(open(PARTIAL_OUT, encoding="utf-8"))
+        nodes = partial.get("nodes", [])
+        existing_titles = [n.get("title", "") for n in nodes if n.get("title")]
+        start_batch = int(partial.get("meta", {}).get("batches", 0)) + 1
+        print(f"=== resume from {PARTIAL_OUT}: completed={start_batch - 1}, nodes={len(nodes)} ===")
     for bi, bpaths in enumerate(batches, 1):
+        if bi < start_batch:
+            continue
         batch = [parse_branch(p) for p in bpaths]
         bids = [b["branch_id"] for b in batch]
         print(f"\n=== batch {bi}: branches {bids} "
@@ -242,32 +311,65 @@ def main():
         user = render_user(batch, existing_titles)
         skills, usage = call_teacher(SYSTEM_PROMPT, user)
         btask = batch[0]["task"]
+        batch_general_seen = False
         for s in skills:
             t = s["title"].strip()
             if any(t.lower() == e.lower() for e in existing_titles):
                 continue
-            existing_titles.append(t)
             labels, sbr = parse_evidence(s.get("evidence_turns"), bids)
             cat = normalize_category(s.get("category"), btask)
+            scope = normalize_scope(s.get("scope"), cat)
+            blob = " ".join([t, s.get("principle") or "", s.get("condition") or ""])
+            can_be_general = bool(GENERAL_ALLOW_RE.search(blob)) and not GENERAL_DEMOTE_RE.search(blob)
+            demoted_general = False
+            promoted_general = False
+            if cat != "general" and scope != "api_warning" and can_be_general and not batch_general_seen:
+                cat = "general"
+                scope = "universal_general"
+                promoted_general = True
+            if cat == "general" and (
+                scope != "universal_general"
+                or GENERAL_DEMOTE_RE.search(blob)
+                or not can_be_general
+            ):
+                cat = btask
+                scope = "api_warning" if GENERAL_DEMOTE_RE.search(blob) else "implementation_note"
+                demoted_general = True
+            if cat == "general":
+                if batch_general_seen:
+                    cat = btask
+                    scope = "implementation_note"
+                    demoted_general = True
+                else:
+                    scope = "universal_general"
+                    batch_general_seen = True
+            elif scope == "universal_general":
+                scope = "task_specific"
+            existing_titles.append(t)
             nodes.append({
                 "id": f"sg_{len(nodes)+1:04d}",
                 "title": t,
                 "principle": (s.get("principle") or "").strip(),
                 "condition": (s.get("condition") or "").strip(),
                 "category": cat,
-                "scope": (s.get("scope") or ("universal_general" if cat == "general" else "task_specific")).strip(),
+                "scope": scope,
                 "evidence_turns": labels,
                 "source_branches": [[batch[0]["run_ts"], b] for b in (sbr or [bids[0]])],
             })
+            if demoted_general:
+                nodes[-1]["distill_scope_action"] = "demoted_from_general_by_guardrail"
+            if promoted_general:
+                nodes[-1]["distill_scope_action"] = "promoted_to_general_by_guardrail"
             cat = nodes[-1]["category"]
-            print(f"  [{cat:24s}] {t}  ev={labels}")
+            print(f"  [{cat:24s} {scope:19s}] {t}  ev={labels}")
         uk = f"in={usage.prompt_tokens} out={usage.completion_tokens}" if usage else "?"
         print(f"  -- {len(skills)} skills ({uk})")
+        write_nodes(PARTIAL_OUT, nodes, batches, bi, complete=False)
 
-    (OUT / "raw_nodes.json").write_text(json.dumps(
-        {"meta": {"teacher": MODEL, "batches": bi, "n_nodes": len(nodes),
-                  "branches": [pathlib.Path(p).stem for grp in batches for p in grp]},
-         "nodes": nodes}, ensure_ascii=False, indent=2), encoding="utf-8")
+    completed = len(batches)
+    write_nodes(OUT / "raw_nodes.json", nodes, batches, completed, complete=True)
+    if PARTIAL_OUT.exists():
+        PARTIAL_OUT.unlink()
     g = sum(1 for n in nodes if n["category"] == "general")
     print(f"\n=== {len(nodes)} nodes -> {OUT/'raw_nodes.json'}  (general={g}, task-specific={len(nodes)-g}) ===")
 

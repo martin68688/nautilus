@@ -19,6 +19,7 @@ focused subset (multi-task filtering) — the key behavior single-task lacked.
 Usage:
   python skillgraph_retrieve.py graph.json <task_type> [--K 8] [--D 2] [--B 3]
   python skillgraph_retrieve.py graph.json --demo
+  python skillgraph_retrieve.py graph.json --demo --task-seed-limit 6
 """
 import json, sys, collections
 
@@ -31,9 +32,17 @@ def build_adj(graph):
         in_edges[e["dst"]].append((e["src"], e["kind"], e.get("weight", 1.0)))
     return nodes, out_edges, in_edges
 
-def seed_select(nodes, task_type):
-    return sorted(nid for nid, n in nodes.items()
-                  if n["category"] == "general" or n["category"] == task_type)
+def seed_select(nodes, task_type, task_seed_limit=None):
+    generals = sorted(nid for nid, n in nodes.items() if n["category"] == "general")
+    task_nodes = [nid for nid, n in nodes.items() if n["category"] == task_type]
+    if task_seed_limit is not None:
+        task_nodes = sorted(
+            task_nodes,
+            key=lambda nid: (-nodes[nid].get("p_hat", 0.0), -nodes[nid].get("n_use", 0),
+                             nodes[nid].get("level", 0), nodes[nid].get("title", "")))[:task_seed_limit]
+    else:
+        task_nodes = sorted(task_nodes)
+    return generals + task_nodes
 
 def backward_bfs(seeds, in_edges, D=2):
     """Follow INCOMING prereq edges backward from seeds, depth D. Returns non-seed prereq ancestors."""
@@ -49,7 +58,7 @@ def backward_bfs(seeds, in_edges, D=2):
         frontier = nxt
     return R
 
-def forward_beam(seeds, out_edges, B=3, max_steps=3):
+def forward_beam(seeds, out_edges, nodes, task_type, B=3, max_steps=3):
     """Beam over OUTGOING edges. σ(v)=max_parent σ(u)·w; seeds σ=1. Returns non-seed reached + σ map."""
     sigma = {s: 1.0 for s in seeds}
     R, frontier = set(), list(seeds)
@@ -57,6 +66,8 @@ def forward_beam(seeds, out_edges, B=3, max_steps=3):
         candidates = []
         for u in frontier:
             for dst, kind, w in out_edges.get(u, []):
+                if nodes[dst].get("category") not in ("general", task_type):
+                    continue
                 prop = sigma.get(u, 0.0) * w
                 if prop > sigma.get(dst, 0.0):
                     sigma[dst] = prop
@@ -83,11 +94,11 @@ def topo_cap(union, nodes, sigma, K=8, general_cap=None):
     ng = min(general_cap, len(gens))
     return gens[:ng] + tasks[:max(0, K - ng)]
 
-def retrieve(graph, task_type, K=8, D=2, B=3, general_cap=None):
+def retrieve(graph, task_type, K=8, D=2, B=3, general_cap=None, task_seed_limit=None):
     nodes, out_edges, in_edges = build_adj(graph)
-    seeds = seed_select(nodes, task_type)
+    seeds = seed_select(nodes, task_type, task_seed_limit)
     r_bfs = backward_bfs(seeds, in_edges, D)
-    r_beam, sigma = forward_beam(seeds, out_edges, B)
+    r_beam, sigma = forward_beam(seeds, out_edges, nodes, task_type, B)
     sigma.update({s: 1.0 for s in seeds})
     union = set(seeds) | r_bfs | r_beam
     chain = topo_cap(union, nodes, sigma, K, general_cap)
@@ -101,11 +112,12 @@ def main():
     D = int(sys.argv[sys.argv.index("--D")+1]) if "--D" in sys.argv else 2
     B = int(sys.argv[sys.argv.index("--B")+1]) if "--B" in sys.argv else 3
     gcap = int(sys.argv[sys.argv.index("--general-cap")+1]) if "--general-cap" in sys.argv else None
+    seed_limit = int(sys.argv[sys.argv.index("--task-seed-limit")+1]) if "--task-seed-limit" in sys.argv else None
     task_types = sorted({n["category"] for n in graph["nodes"] if n["category"] != "general"})
     targets = task_types if "--demo" in sys.argv else [sys.argv[2]]
     for t in targets:
-        r = retrieve(graph, t, K, D, B, general_cap=gcap)
-        print(f"\n=== retrieve(task={t})  general_cap={gcap} ===")
+        r = retrieve(graph, t, K, D, B, general_cap=gcap, task_seed_limit=seed_limit)
+        print(f"\n=== retrieve(task={t})  general_cap={gcap} task_seed_limit={seed_limit} ===")
         print(f"  graph={r['n_graph']}  seed={r['n_seed']}  backward_bfs={r['n_bfs']}  "
               f"forward_beam={r['n_beam']}  union={r['n_union']}  -> cap {K}")
         g_in_chain = sum(1 for _, c, _ in r["chain"] if c == "general")

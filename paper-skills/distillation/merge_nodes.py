@@ -11,7 +11,7 @@ Appendix E merge prompt). Clusters form WITHIN category so a process skill never
 
 Pipeline: distill -> [this] merge_nodes -> build_edges_levels -> build_references.
 """
-import os, re, json, sys, pathlib, textwrap
+import os, re, json, sys, pathlib, textwrap, time
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 GB = REPO / "paper-skills" / "distillation" / "graph_build"
@@ -50,21 +50,33 @@ MERGE_SYS = textwrap.dedent("""\
     You merge redundant ML-skill nodes (same idea, different wording) into ONE concise skill.
     Synthesize a single unified skill that preserves the most CONCRETE details (parameters,
     conditions, mechanisms) from all inputs. Keep `category` identical to the inputs.
-    Output ONLY a JSON object {"title","principle","condition","category"}.
+    Output ONLY a JSON object {"title","principle","condition","category","scope"}.
       - title: short imperative, <=12 words.
       - principle: HOW — merge the most specific params/mechanisms from all inputs.
-      - condition: WHEN — union of the inputs' applicability.""")
+      - condition: WHEN — union of the inputs' applicability.
+      - scope: preserve the narrowest useful scope from the inputs.""")
 
 def merge_call(skills):
     from openai import OpenAI
-    client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+    client = OpenAI(api_key=API_KEY, base_url=BASE_URL, timeout=120, max_retries=2)
     blob = "\n\n".join(f"({i+1}) title: {s['title']}\n    principle: {s.get('principle','')}\n    "
-                       f"condition: {s.get('condition','')}\n    category: {s.get('category','')}"
+                       f"condition: {s.get('condition','')}\n    category: {s.get('category','')}\n    "
+                       f"scope: {s.get('scope','')}"
                        for i, s in enumerate(skills))
-    resp = client.chat.completions.create(
-        model=MODEL, temperature=0.2, max_tokens=600, response_format={"type": "json_object"},
-        messages=[{"role": "system", "content": MERGE_SYS},
-                  {"role": "user", "content": f"Skills to merge:\n{blob}\n\nOutput the merged skill JSON now."}])
+    resp = None
+    for attempt in range(5):
+        try:
+            resp = client.chat.completions.create(
+                model=MODEL, temperature=0.2, max_tokens=600, response_format={"type": "json_object"},
+                messages=[{"role": "system", "content": MERGE_SYS},
+                          {"role": "user", "content": f"Skills to merge:\n{blob}\n\nOutput the merged skill JSON now."}])
+            break
+        except Exception as e:
+            if attempt == 4:
+                raise
+            wait = min(45, 5 * (attempt + 1))
+            print(f"    !! merge API error: {type(e).__name__}: {e}; retrying in {wait}s", flush=True)
+            time.sleep(wait)
     t = resp.choices[0].message.content or ""
     for c in re.findall(r"\{.*\}", t, flags=re.DOTALL) + [t]:
         try:
@@ -84,11 +96,29 @@ def union_meta(cluster):
             if e not in seen_ev: seen_ev.add(e); ev.append(e)
     return sb, ev
 
+
+def default_scope(category):
+    return "universal_general" if category == "general" else "task_specific"
+
+
+def merged_scope(cluster, category):
+    """Keep merged scope deterministic; never let merging widen a warning into a global SOP."""
+    if category == "general":
+        return "universal_general"
+    scopes = [n.get("scope") or default_scope(category) for n in cluster]
+    for s in ("api_warning", "implementation_note", "task_specific"):
+        if s in scopes:
+            return s
+    return default_scope(category)
+
+
 def main():
     if not API_KEY:
         print("ERROR: DEEPSEEK_API_KEY not set"); sys.exit(1)
     data = json.load(open(IN))
     nodes = data["nodes"]
+    for n in nodes:
+        n.setdefault("scope", default_scope(n.get("category", "")))
     by_cat = {}
     for n in nodes:
         by_cat.setdefault(n["category"], []).append(n)
@@ -104,15 +134,18 @@ def main():
             o = merge_call(c)
             if o:
                 sb, ev = union_meta(c)
+                mcat = (o.get("category") or cat).strip() or cat
                 merged.append({"id": "", "title": o["title"].strip(),
                                "principle": (o.get("principle") or "").strip(),
                                "condition": (o.get("condition") or "").strip(),
-                               "category": (o.get("category") or cat).strip() or cat,
+                               "category": mcat,
+                               "scope": merged_scope(c, mcat),
                                "evidence_turns": ev, "source_branches": sb})
             else:  # fallback: keep richest, union metadata
                 rich = max(c, key=lambda n: len(n.get("evidence_turns", [])))
                 sb, ev = union_meta(c)
                 rich["evidence_turns"], rich["source_branches"] = ev, sb
+                rich["scope"] = merged_scope(c, rich.get("category", cat))
                 merged.append(rich)
     for i, n in enumerate(merged, 1):
         n["id"] = f"sg_{i:04d}"
