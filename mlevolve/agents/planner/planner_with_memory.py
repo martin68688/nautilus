@@ -69,10 +69,18 @@ def generate_initial_plan(
     )
 
     memory_section = f"# Memory\n{prompt_base.get('Memory', '')}"
+    external_skill_section = ""
+    if prompt_base.get("External Skill Memory", "").strip():
+        external_skill_section = (
+            "# External Skill Memory\n"
+            "Persistent SOP memories retrieved before planning:\n"
+            f"{prompt_base['External Skill Memory']}\n\n"
+        )
 
     user_prompt = (
         f"\n# Task description\n{prompt_base.get('Task description', '')}\n\n"
         f"{memory_section}\n\n"
+        f"{external_skill_section}"
         f"{instructions}\n"
     )
 
@@ -309,6 +317,14 @@ def _build_refine_user_prompt(
         initial_plan_text,
         "",
     ]
+
+    if prompt_base.get("External Skill Memory", "").strip():
+        parts.extend([
+            "# External Skill Memory",
+            "Persistent SOP memories retrieved before refining the plan:",
+            prompt_base["External Skill Memory"],
+            "",
+        ])
 
     if refinement_guidance:
         parts.extend([refinement_guidance, ""])

@@ -124,6 +124,24 @@ class AdoptionTrackingConfig:
 
 
 @dataclass
+class ExternalSkillMemoryConfig:
+    enable: bool = False
+    graph_path: str = "../paper-skills/distillation/graph_build/graph_optimized_skillgraph.json"
+    source_name: str = "skillgraph"
+    top_k: int = 8
+    depth: int = 2
+    beam_width: int = 3
+    general_cap: int = 2
+    task_seed_limit: int = 6
+    max_chars: int = 5000
+    include_draft: bool = True
+    include_improve: bool = True
+    include_evolution: bool = True
+    include_debug: bool = True
+    include_fusion: bool = True
+
+
+@dataclass
 class Config(Hashable):
     data_dir: Path
     dataset_dir: Path
@@ -157,6 +175,7 @@ class Config(Hashable):
     use_grading_server: bool = True
     init_solution: InitSolutionConfig = field(default_factory=InitSolutionConfig)
     adoption_tracking: AdoptionTrackingConfig = field(default_factory=AdoptionTrackingConfig)
+    external_skill_memory: ExternalSkillMemoryConfig = field(default_factory=ExternalSkillMemoryConfig)
 
 
 def _get_next_logindex(dir: Path) -> int:

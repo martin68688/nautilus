@@ -316,9 +316,19 @@ def run_planner(
     if memory_text and str(memory_text).strip():
         memory_section = f"# Memory\nBelow is a record of previous improvement attempts and their outcomes:\n {memory_text}"
 
+    external_skill_section = ""
+    external_skill_text = planning_prompt_dict.get("External Skill Memory", "")
+    if external_skill_text and str(external_skill_text).strip():
+        external_skill_section = (
+            "# External Skill Memory\n"
+            "Persistent SOP memories retrieved before planning this node:\n"
+            f"{external_skill_text}"
+        )
+
     user_prompt_parts = [
         f"\n# Task description\n{planning_prompt_dict['Task description']}\n",
         f"{memory_section}\n" if memory_section else "",
+        f"{external_skill_section}\n" if external_skill_section else "",
     ]
     if extra_prompt_sections:
         for section_text in extra_prompt_sections.values():

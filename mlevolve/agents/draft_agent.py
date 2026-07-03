@@ -9,6 +9,7 @@ from llm import compile_prompt_to_md
 from engine.search_node import SearchNode
 from agents.coder import plan_and_code_query, stepwise_plan_and_code_query
 from agents.triggers import register_node
+from agents.memory.external_skill_memory import fetch_external_skill_memory
 from agents.prompts import (
     ROBUSTNESS_GENERALIZATION_STRATEGY,
     MODEL_ARCHITECTURE_SAFETY,
@@ -159,6 +160,16 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY
     prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
 
+    external_skill_text, external_skill_ref_ids, external_skill_source = fetch_external_skill_memory(
+        agent,
+        "draft",
+        run_memory=prompt.get("Memory", ""),
+        data_preview=agent.data_preview or "",
+        coldstart=getattr(agent, "coldstart_description", ""),
+    )
+    if external_skill_text:
+        prompt["External Skill Memory"] = external_skill_text
+
     instructions = f"\n# Instructions\n\n"
     instructions += compile_prompt_to_md(prompt["Instructions"], 2)
 
@@ -166,7 +177,15 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
     if prompt.get("Memory", "").strip():
         memory_section = f"\n# Memory\nBelow is a record of previous solution attempts and their outcomes:\n {prompt['Memory']}\n"
 
-    user_prompt = f"\n# Task description\n{prompt['Task description']}{memory_section}\n{instructions}"
+    external_skill_section = ""
+    if prompt.get("External Skill Memory", "").strip():
+        external_skill_section = (
+            "\n# External Skill Memory\n"
+            "Below are persistent SOP memories retrieved before designing this node:\n"
+            f"{prompt['External Skill Memory']}\n"
+        )
+
+    user_prompt = f"\n# Task description\n{prompt['Task description']}{memory_section}{external_skill_section}\n{instructions}"
     assistant_prefix = f"Let me approach this systematically.\nFirst, I'll examine the dataset:\n{agent.data_preview}"
     prompt_complete = build_chat_prompt_for_model(
         agent.acfg.code.model, introduction, user_prompt, assistant_prefix
@@ -191,6 +210,7 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
 
     from agents.adoption import log_adoption
     log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "draft")
+    log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "draft")
 
     logger.info(f"[draft] → node {new_node.id} (branch={new_node.branch_id})")
     return new_node

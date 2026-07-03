@@ -13,6 +13,7 @@ from agents.coder import plan_and_code_query
 from agents.coder.diff_coder import diff_generate_and_apply
 from engine import solution_manager
 from agents.triggers import register_node
+from agents.memory.external_skill_memory import fetch_external_skill_memory
 
 logger = logging.getLogger("MLEvolve")
 
@@ -130,10 +131,28 @@ def fuse_two_nodes(agent, source_node: SearchNode, target_node: SearchNode) -> S
     if not agent.acfg.use_diff_mode:
         prompt["Instructions"] |= prompt_resp_fmt()
 
+    external_skill_text, external_skill_ref_ids, external_skill_source = fetch_external_skill_memory(
+        agent,
+        "fusion",
+        current_plan=source_node.plan or "",
+        current_analysis=source_node.analysis or "",
+        reference_solution=reference_trajectory,
+    )
+    if external_skill_text:
+        prompt["External Skill Memory"] = external_skill_text
+
     instructions = "\n# Instructions\n\n"
     instructions += compile_prompt_to_md(prompt["Instructions"], 2)
 
-    user_prompt = f"\n# Task description\n{prompt['Task description']}\n\n# Reference Solution\n{prompt['Reference Solution']}\n\n{instructions}"
+    external_skill_section = ""
+    if prompt.get("External Skill Memory", "").strip():
+        external_skill_section = (
+            "\n# External Skill Memory\n"
+            "Below are persistent SOP memories retrieved before this fusion step:\n"
+            f"{prompt['External Skill Memory']}\n"
+        )
+
+    user_prompt = f"\n# Task description\n{prompt['Task description']}\n{external_skill_section}\n\n# Reference Solution\n{prompt['Reference Solution']}\n\n{instructions}"
     assistant_prefix = f"Let me approach this systematically.\nFirst, I'll review the dataset:\n{agent.data_preview}\nMy current solution:\nPlan: {prompt['Current Solution']['Plan']}\nCode: {prompt['Current Solution']['Code']}\nPerformance: {prompt['Current Solution']['Performance']}\nAnalysis: {prompt['Current Solution']['Analysis']}\nI'll now analyze the reference solution and selectively incorporate its best ideas."
     prompt_complete = build_chat_prompt_for_model(agent.acfg.code.model, introduction, user_prompt, assistant_prefix)
 
@@ -158,6 +177,9 @@ def fuse_two_nodes(agent, source_node: SearchNode, target_node: SearchNode) -> S
         from_topk=from_topk
     )
     register_node(agent, fused_node, prompt_complete, parent_node=source_node)
+
+    from agents.adoption import log_adoption
+    log_adoption(fused_node, agent, external_skill_source, external_skill_ref_ids, "fusion")
 
     if hasattr(source_node, '_topk_triggered'):
         source_node._topk_triggered = False
@@ -272,10 +294,28 @@ def _fuse_with_multiple_references(
     if not agent.acfg.use_diff_mode:
         prompt["Instructions"] |= prompt_resp_fmt()
 
+    external_skill_text, external_skill_ref_ids, external_skill_source = fetch_external_skill_memory(
+        agent,
+        "multi_fusion",
+        current_plan=parent_node.plan or "",
+        current_analysis=parent_node.analysis or "",
+        reference_solutions=reference_memory,
+    )
+    if external_skill_text:
+        prompt["External Skill Memory"] = external_skill_text
+
     instructions = "\n# Instructions\n\n"
     instructions += compile_prompt_to_md(prompt["Instructions"], 2)
 
-    user_prompt = f"\n# Task description\n{prompt['Task description']}\n\n# Reference Solutions\n{prompt['Reference Solutions']}\n\n{instructions}"
+    external_skill_section = ""
+    if prompt.get("External Skill Memory", "").strip():
+        external_skill_section = (
+            "\n# External Skill Memory\n"
+            "Below are persistent SOP memories retrieved before this multi-fusion step:\n"
+            f"{prompt['External Skill Memory']}\n"
+        )
+
+    user_prompt = f"\n# Task description\n{prompt['Task description']}\n{external_skill_section}\n\n# Reference Solutions\n{prompt['Reference Solutions']}\n\n{instructions}"
     assistant_prefix = f"Let me approach this systematically.\nFirst, I'll review the dataset:\n{agent.data_preview}\nMy current solution:\nPlan: {prompt['Current Solution']['Plan']}\nCode: {prompt['Current Solution']['Code']}\nPerformance: {prompt['Current Solution']['Performance']}\nAnalysis: {prompt['Current Solution']['Analysis']}\nI'll now analyze the reference solutions and selectively incorporate the best ideas."
     prompt_complete = build_chat_prompt_for_model(agent.acfg.code.model, introduction, user_prompt, assistant_prefix)
 
@@ -300,6 +340,9 @@ def _fuse_with_multiple_references(
         from_topk=from_topk
     )
     register_node(agent, fused_node, prompt_complete, parent_node=parent_node)
+
+    from agents.adoption import log_adoption
+    log_adoption(fused_node, agent, external_skill_source, external_skill_ref_ids, "fusion")
 
     if hasattr(parent_node, '_topk_triggered'):
         parent_node._topk_triggered = False
@@ -439,6 +482,14 @@ def _diff_fusion(agent, prompt_base, data_preview, source_node):
             f"I will selectively incorporate the best ideas from this reference."
         )
 
+    extra_user_sections = ""
+    if prompt_base.get("External Skill Memory", "").strip():
+        extra_user_sections = (
+            "# External Skill Memory\n"
+            "Use these persistent SOP memories as constraints while implementing the fusion diff:\n"
+            f"{prompt_base['External Skill Memory']}\n"
+        )
+
     return diff_generate_and_apply(
         agent_instance=agent,
         planning_result=planning_result,
@@ -447,6 +498,7 @@ def _diff_fusion(agent, prompt_base, data_preview, source_node):
         execution_output="",
         introduction=_FUSION_DIFF_INTRODUCTION,
         extra_context=extra_context,
+        extra_user_sections=extra_user_sections,
     )
 
 
@@ -489,6 +541,14 @@ def _diff_multi_fusion(agent, prompt_base, data_preview, parent_node):
             f"I will compare them and selectively incorporate the best ideas from the most relevant reference."
         )
 
+    extra_user_sections = ""
+    if prompt_base.get("External Skill Memory", "").strip():
+        extra_user_sections = (
+            "# External Skill Memory\n"
+            "Use these persistent SOP memories as constraints while implementing the multi-fusion diff:\n"
+            f"{prompt_base['External Skill Memory']}\n"
+        )
+
     return diff_generate_and_apply(
         agent_instance=agent,
         planning_result=planning_result,
@@ -497,4 +557,5 @@ def _diff_multi_fusion(agent, prompt_base, data_preview, parent_node):
         execution_output="",
         introduction=_MULTI_FUSION_DIFF_INTRODUCTION,
         extra_context=extra_context,
+        extra_user_sections=extra_user_sections,
     )

@@ -147,3 +147,30 @@ coldstart:
   task_json_path: "engine/coldstart/competition_tag_classified.json"
   model_json_path: "engine/coldstart/models_guidance_classified.json"
   description: ""
+
+# ============================================================
+#  Adoption tracking
+# ============================================================
+adoption_tracking:
+  enable: False
+  enable_analysis: True
+  judge_mode: keyword    # keyword | llm | hybrid
+
+# ============================================================
+#  External persistent skill memory
+# ============================================================
+external_skill_memory:
+  enable: False
+  graph_path: "../paper-skills/distillation/graph_build/graph_optimized_skillgraph.json"
+  source_name: "skillgraph"   # e.g. skillgraph | hyperbolic_skillgraph | flat_external_memory
+  top_k: 8
+  depth: 2
+  beam_width: 3
+  general_cap: 2
+  task_seed_limit: 6
+  max_chars: 5000
+  include_draft: True
+  include_improve: True
+  include_evolution: True
+  include_debug: True
+  include_fusion: True

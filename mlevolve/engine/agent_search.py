@@ -108,6 +108,40 @@ class AgentSearch:
         else:
             logger.info("[AgentSearch] Global memory is disabled by config")
 
+        # External persistent SkillGraph memory
+        self.external_skill_memory = None
+        ext_cfg = getattr(self.cfg, "external_skill_memory", None)
+        if ext_cfg is not None and getattr(ext_cfg, "enable", False):
+            try:
+                from agents.memory.external_skill_memory import ExternalSkillMemoryLayer
+                self.external_skill_memory = ExternalSkillMemoryLayer(
+                    graph_path=getattr(ext_cfg, "graph_path", ""),
+                    source_name=getattr(ext_cfg, "source_name", "skillgraph"),
+                    top_k=getattr(ext_cfg, "top_k", 8),
+                    depth=getattr(ext_cfg, "depth", 2),
+                    beam_width=getattr(ext_cfg, "beam_width", 3),
+                    general_cap=getattr(ext_cfg, "general_cap", 2),
+                    task_seed_limit=getattr(ext_cfg, "task_seed_limit", 6),
+                    max_chars=getattr(ext_cfg, "max_chars", 5000),
+                    include_draft=getattr(ext_cfg, "include_draft", True),
+                    include_improve=getattr(ext_cfg, "include_improve", True),
+                    include_evolution=getattr(ext_cfg, "include_evolution", True),
+                    include_debug=getattr(ext_cfg, "include_debug", True),
+                    include_fusion=getattr(ext_cfg, "include_fusion", True),
+                )
+                logger.info(
+                    "[AgentSearch] External skill memory enabled: source=%s graph=%s",
+                    self.external_skill_memory.source_name,
+                    self.external_skill_memory.graph_path,
+                )
+            except Exception as e:
+                import traceback
+                logger.warning(f"[AgentSearch] Failed to initialize external skill memory: {e}")
+                logger.debug(f"[AgentSearch] External skill memory traceback: {traceback.format_exc()}")
+                self.external_skill_memory = None
+        else:
+            logger.info("[AgentSearch] External skill memory is disabled by config")
+
     def _serialize_prompt(self, prompt_complete) -> str | None:
         """Serialize prompt (str or dict) to string for saving in node."""
         if prompt_complete is None:

@@ -55,6 +55,32 @@ def _fetch_global_memory_text(record_id: str, workspace_dir) -> str:
     return ""
 
 
+def _fetch_skillgraph_text(ref_id: str, cfg) -> str:
+    """Re-read a SkillGraph node by id from cfg.external_skill_memory.graph_path."""
+    ext_cfg = getattr(cfg, "external_skill_memory", None)
+    graph_path = getattr(ext_cfg, "graph_path", "") if ext_cfg is not None else ""
+    if not graph_path:
+        return ""
+    try:
+        from agents.memory.external_skill_memory import read_skillgraph_node_text
+        return read_skillgraph_node_text(ref_id, graph_path)
+    except Exception:
+        return ""
+
+
+def _is_external_skill_source(source: str, cfg=None) -> bool:
+    source = source or ""
+    ext_cfg = getattr(cfg, "external_skill_memory", None) if cfg is not None else None
+    configured = getattr(ext_cfg, "source_name", "") if ext_cfg is not None else ""
+    if configured and source == configured:
+        return True
+    return (
+        "skillgraph" in source
+        or source.startswith("external_")
+        or source in {"flat_external_memory", "hyperbolic_skillgraph"}
+    )
+
+
 _STOP = {"the", "this", "that", "when", "should", "must", "never", "always",
          "first", "second", "model", "validation", "training", "methodology",
          "memory", "using", "value", "values", "false", "true", "none"}
@@ -264,20 +290,25 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
         for rec in log:
             rid = rec.get("ref_id")
             src = rec.get("source", "?")
-            if rid not in by_ref:
-                by_ref[rid] = {"ref_id": rid, "source": src, "injected_count": 0,
-                               "keyword_hit_count": 0, "emb_signal_count": 0,
-                               "llm_judged_count": 0, "adopted_count": 0, "node_ids": []}
-            by_ref[rid]["injected_count"] += 1
-            by_ref[rid]["node_ids"].append(node.id)
-            mem_text = (_fetch_global_memory_text(rid, workspace_dir) if src == "global_memory"
-                        else _fetch_methodology_text(rid, methodology_kb_path))
+            ref_key = f"{src}:{rid}"
+            if ref_key not in by_ref:
+                by_ref[ref_key] = {"ref_id": rid, "source": src, "injected_count": 0,
+                                   "keyword_hit_count": 0, "emb_signal_count": 0,
+                                   "llm_judged_count": 0, "adopted_count": 0, "node_ids": []}
+            by_ref[ref_key]["injected_count"] += 1
+            by_ref[ref_key]["node_ids"].append(node.id)
+            if src == "global_memory":
+                mem_text = _fetch_global_memory_text(rid, workspace_dir)
+            elif _is_external_skill_source(src, cfg):
+                mem_text = _fetch_skillgraph_text(rid, cfg)
+            else:
+                mem_text = _fetch_methodology_text(rid, methodology_kb_path)
             if not mem_text:
                 continue
 
             # Cheap signal (all modes): IDF keyword hit at min_hits=1 (a logged evidence signal).
             if _code_reflects(code, mem_text, judge_fn, idf=idf, min_hits=1):
-                by_ref[rid]["keyword_hit_count"] += 1
+                by_ref[ref_key]["keyword_hit_count"] += 1
             kw_strict = _code_reflects(code, mem_text, judge_fn, idf=idf, min_hits=2)
 
             # Adoption decision by mode.
@@ -287,7 +318,7 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
                 # LLM judges EVERY pair — no keyword gate. The LLM crosses the lexical gap
                 # (XGBoost↔XGBClassifier) that keyword cannot; keyword stays a logged signal only.
                 adopted = _llm_judge(code, mem_text, cfg)
-                by_ref[rid]["llm_judged_count"] += 1
+                by_ref[ref_key]["llm_judged_count"] += 1
             else:  # hybrid
                 # KEY FIX: embedding similarity is a RECALL signal, not an adoption signal.
                 # Same-domain code/memory are always cosine-similar (both ML text), so a high
@@ -300,11 +331,11 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
                     adopted = False  # semantically unrelated AND no lexical hit → reject, save LLM
                 else:
                     adopted = _llm_judge(code, mem_text, cfg)
-                    by_ref[rid]["llm_judged_count"] += 1
-                by_ref[rid]["emb_signal_count"] += 1
+                    by_ref[ref_key]["llm_judged_count"] += 1
+                by_ref[ref_key]["emb_signal_count"] += 1
 
             if adopted:
-                by_ref[rid]["adopted_count"] += 1
+                by_ref[ref_key]["adopted_count"] += 1
 
     per_memory = list(by_ref.values())
     for m in per_memory:
@@ -317,6 +348,7 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
     total_llm = sum(m["llm_judged_count"] for m in per_memory)
     total_adopt = sum(m["adopted_count"] for m in per_memory)
     by_src = {}
+    external_inj = external_kw = external_emb = external_llm = external_adopt = 0
     for m in per_memory:
         d = by_src.setdefault(m["source"], {"injected": 0, "keyword_hit": 0,
                                             "emb_signal": 0, "llm_judged": 0, "adopted": 0})
@@ -325,6 +357,12 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
         d["emb_signal"] += m["emb_signal_count"]
         d["llm_judged"] += m["llm_judged_count"]
         d["adopted"] += m["adopted_count"]
+        if _is_external_skill_source(m["source"], cfg):
+            external_inj += m["injected_count"]
+            external_kw += m["keyword_hit_count"]
+            external_emb += m["emb_signal_count"]
+            external_llm += m["llm_judged_count"]
+            external_adopt += m["adopted_count"]
 
     report = {
         "summary": {
@@ -337,6 +375,14 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
             "overall_adoption_rate": round(total_adopt / total_inj, 3) if total_inj else 0.0,
             "keyword_hit_rate": round(total_kw / total_inj, 3) if total_inj else 0.0,
             "judge_mode": mode,
+            "external_memory": {
+                "injected": external_inj,
+                "keyword_hit": external_kw,
+                "emb_signal": external_emb,
+                "llm_judged": external_llm,
+                "adopted": external_adopt,
+                "rate": round(external_adopt / external_inj, 3) if external_inj else 0.0,
+            },
             "by_source": {s: {"injected": v["injected"], "keyword_hit": v["keyword_hit"],
                               "emb_signal": v["emb_signal"], "llm_judged": v["llm_judged"],
                               "adopted": v["adopted"],
@@ -360,6 +406,7 @@ def _write_md_report(path: Path, report: dict) -> None:
     lines = ["# Memory Adoption Report", "",
              f"- total memories: {s['total_memories']}",
              f"- overall adoption: {s['total_adopted']}/{s['total_injections']} = **{s['overall_adoption_rate']:.1%}**",
+             f"- external memory adoption: {s['external_memory']['adopted']}/{s['external_memory']['injected']} = **{s['external_memory']['rate']:.1%}**",
              "", "## by source"]
     for src, v in s["by_source"].items():
         lines.append(f"- {src}: {v['adopted']}/{v['injected']} = {v['rate']:.1%}")

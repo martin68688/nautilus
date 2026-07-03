@@ -6,6 +6,7 @@ from engine.search_node import SearchNode
 from agents.prompts import prompt_resp_fmt, get_impl_guideline_from_agent
 from agents.planner import build_chat_prompt_for_model
 from agents.coder import plan_and_code_query
+from agents.memory.external_skill_memory import fetch_external_skill_memory
 
 from engine.conditions import should_trigger_branch_fusion  # noqa: F401
 from agents.triggers import register_node
@@ -153,6 +154,14 @@ def run(
         }
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
 
+    external_skill_text, external_skill_ref_ids, external_skill_source = fetch_external_skill_memory(
+        agent,
+        "fusion_draft",
+        branch_experiences=reference_experiences,
+    )
+    if external_skill_text:
+        prompt["External Skill Memory"] = external_skill_text
+
     instructions = "\n# Instructions\n\n"
     instructions += compile_prompt_to_md(prompt["Instructions"], 2)
 
@@ -165,8 +174,17 @@ def run(
         "that combines the best ideas in an innovative way."
     )
 
+    external_skill_section = ""
+    if prompt.get("External Skill Memory", "").strip():
+        external_skill_section = (
+            "\n# External Skill Memory\n"
+            "Below are persistent SOP memories retrieved before this multi-branch synthesis:\n"
+            f"{prompt['External Skill Memory']}\n"
+        )
+
     user_prompt = (
         f"\n# Task description\n{prompt['Task description']}\n\n"
+        f"{external_skill_section}\n\n"
         f"# Branch Experiences\n{prompt['Branch Experiences']}\n\n{instructions}"
     )
     prompt_complete = build_chat_prompt_for_model(agent.acfg.code.model, introduction, user_prompt, assistant_prefix)
@@ -181,6 +199,10 @@ def run(
         local_best_node=agent.virtual_root,
     )
     register_node(agent, aggregation_node, prompt_complete, new_branch=True)
+
+    from agents.adoption import log_adoption
+    log_adoption(aggregation_node, agent, external_skill_source, external_skill_ref_ids, "fusion_draft")
+
     agent.fusion_draft_count += 1
 
     logger.info(f"[aggregation] → node {aggregation_node.id} (branch={aggregation_node.branch_id})")

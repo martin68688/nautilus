@@ -244,6 +244,14 @@ class StepAgent:
             else:
                 memory_section = f"\n# Memory\nBelow is a record of previous solution attempts and their outcomes:\n {prompt['Memory']}\n"
 
+        external_skill_section = ""
+        if prompt_base.get("External Skill Memory", "").strip():
+            external_skill_section = (
+                "\n# External Skill Memory\n"
+                "Below are persistent SOP memories retrieved before this code-generation step:\n"
+                f"{prompt_base['External Skill Memory']}\n"
+            )
+
         previous_solution_section = ""
         if context.stage == "improve" and "Previous solution" in prompt:
             previous_solution_section = f"\n# Previous solution\n{prompt['Previous solution']['Code']}\n"
@@ -251,6 +259,7 @@ class StepAgent:
         user_prompt = (
             f"\n# Task description\n{prompt['Task description']}\n\n"
             f"{memory_section}\n"
+            f"{external_skill_section}\n"
             f"{previous_solution_section}"
             f"# Previous steps\n{prompt['Previous steps']}\n\n"
             f"# Current step: {prompt['Current step']['Name']}\n{prompt['Current step']['Description']}\n\n"
@@ -388,9 +397,18 @@ class MetaAgent:
             okay_text = "Let me approach this systematically.\nFirst, I'll examine the dataset:"
             assistant_suffix = ""
 
+        external_skill_section = ""
+        if prompt_base.get("External Skill Memory", "").strip():
+            external_skill_section = (
+                "\n# External Skill Memory\n"
+                "Below are persistent SOP memories retrieved before merging the solution:\n"
+                f"{prompt_base['External Skill Memory']}\n"
+            )
+
         user_prompt = (
             f"\n# Task description\n{prompt['Task description']}\n\n"
             f"{memory_section}\n\n"
+            f"{external_skill_section}\n\n"
             f"# Step results\n{prompt['Step results']}\n\n"
             f"{instructions}"
         )

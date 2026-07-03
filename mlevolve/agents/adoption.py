@@ -25,7 +25,7 @@ def log_adoption(node: "SearchNode", agent, source: str, ref_ids, stage: str) ->
     Args:
         node: the SearchNode whose prompt had memory injected.
         agent: AgentSearch instance (reads adoption_tracking_enabled).
-        source: "methodology" | "global_memory" | "coldstart_model_template".
+        source: "methodology" | "global_memory" | "skillgraph" | custom external-memory source.
         ref_ids: list of memory entry ids injected into this node's prompt.
         stage: "draft" | "improve" | "debug".
     """

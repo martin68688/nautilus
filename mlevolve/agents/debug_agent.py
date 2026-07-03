@@ -15,6 +15,7 @@ from agents.prompts import (
 from agents.coder.diff_coder import SearchReplacePatcher, DIFF_SYS_FORMAT
 from agents.planner import build_chat_prompt_for_model
 from agents.triggers import register_node
+from agents.memory.external_skill_memory import fetch_external_skill_memory
 
 logger = logging.getLogger("MLEvolve")
 
@@ -145,12 +146,30 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     if debug_memory_guidance:
         prompt["Instructions"]["Historical Debug Experience"] = [debug_memory_guidance]
 
+    external_skill_text, external_skill_ref_ids, external_skill_source = fetch_external_skill_memory(
+        agent,
+        "debug",
+        parent_plan=parent_node.plan or "",
+        parent_analysis=parent_node.analysis or "",
+        execution_output=parent_node.term_out or "",
+        error_type=getattr(parent_node, "exc_type", "") or "",
+    )
+    if external_skill_text:
+        prompt["External Skill Memory"] = external_skill_text
+
     base_instructions = "\n# Instructions\n\n"
     base_instructions += compile_prompt_to_md(prompt["Instructions"], 2)
 
     def build_prompt_complete(instructions_with_format, use_full_code_requirement=False):
         current_introduction = introduction_base + (full_code_requirement if use_full_code_requirement else "")
-        user_prompt = f"\n# Task description\n{prompt['Task description']}\n{instructions_with_format}"
+        external_skill_section = ""
+        if prompt.get("External Skill Memory", "").strip():
+            external_skill_section = (
+                "\n# External Skill Memory\n"
+                "Below are persistent SOP memories retrieved before fixing this bug:\n"
+                f"{prompt['External Skill Memory']}\n"
+            )
+        user_prompt = f"\n# Task description\n{prompt['Task description']}\n{external_skill_section}\n{instructions_with_format}"
         assistant_prefix = f"Let me approach this systematically.\nFirst, I'll review the dataset:\n{agent.data_preview}\nThe code that needs fixing:\n{prompt['Previous (buggy) implementation']}\nThe error/issue encountered:\n{prompt['Execution output']}\nAnalyzing the root cause: {parent_node.analysis}\nI'll now fix this issue."
         return build_chat_prompt_for_model(agent.acfg.code.model, current_introduction, user_prompt, assistant_prefix)
 
@@ -309,6 +328,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         _mem_ids = []
     log_adoption(new_node, agent, "global_memory", _mem_ids, "debug")
     log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "debug")
+    log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "debug")
 
     logger.info(f"[debug] {parent_node.id} → node {new_node.id}")
     return new_node

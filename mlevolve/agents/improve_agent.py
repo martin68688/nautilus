@@ -19,6 +19,7 @@ from agents.prompts import (
 from agents.planner import run_planner, generate_initial_plan, refine_plan_to_json, build_planner_task, build_planner_suffix, build_chat_prompt_for_model
 from agents.coder import plan_and_code_query
 from agents.coder.diff_coder import diff_generate_and_apply
+from agents.memory.external_skill_memory import fetch_external_skill_memory
 
 logger = logging.getLogger("MLEvolve")
 
@@ -226,6 +227,17 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     if not agent.acfg.use_diff_mode:
         prompt["Instructions"] |= prompt_resp_fmt()
 
+    external_skill_text, external_skill_ref_ids, external_skill_source = fetch_external_skill_memory(
+        agent,
+        "improve",
+        run_memory=prompt.get("Memory", ""),
+        parent_plan=parent_node.plan or "",
+        parent_code_summary=getattr(parent_node, "code_summary", "") or "",
+        execution_output=parent_node.term_out or "",
+    )
+    if external_skill_text:
+        prompt["External Skill Memory"] = external_skill_text
+
     instructions = "\n# Instructions\n\n"
     instructions += compile_prompt_to_md(prompt["Instructions"], 2)
 
@@ -233,7 +245,15 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     if prompt.get("Memory", "").strip():
         memory_section = f"\n# Memory\nBelow is a record of previous improvement attempts and their outcomes:\n {prompt['Memory']}\n"
 
-    user_prompt = f"\n# Task description\n{prompt['Task description']}{memory_section}\n{instructions}"
+    external_skill_section = ""
+    if prompt.get("External Skill Memory", "").strip():
+        external_skill_section = (
+            "\n# External Skill Memory\n"
+            "Below are persistent SOP memories retrieved before proposing this improvement:\n"
+            f"{prompt['External Skill Memory']}\n"
+        )
+
+    user_prompt = f"\n# Task description\n{prompt['Task description']}{memory_section}{external_skill_section}\n{instructions}"
     assistant_prefix = f"Let me approach this systematically.\nFirst, I'll review the dataset:\n{agent.data_preview}\nThe current solution uses the following code:\n{prompt['Previous solution']['Code']}\nIts output was:\n{output}\nBuilding on this, I'll develop an improved approach."
     prompt_complete = build_chat_prompt_for_model(agent.acfg.code.model, introduction, user_prompt, assistant_prefix)
 
@@ -257,6 +277,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
 
     from agents.adoption import log_adoption
     log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "improve")
+    log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "improve")
 
     if hasattr(parent_node, '_topk_triggered'):
         parent_node._topk_triggered = False
@@ -332,6 +353,14 @@ def _diff_improve(agent, prompt_base, data_preview, parent_node):
     if not modules and plans:
         planning_result['module'] = list(plans.keys())
 
+    extra_user_sections = ""
+    if prompt_base.get("External Skill Memory", "").strip():
+        extra_user_sections = (
+            "# External Skill Memory\n"
+            "Use these persistent SOP memories as constraints while implementing the diff:\n"
+            f"{prompt_base['External Skill Memory']}\n"
+        )
+
     return diff_generate_and_apply(
         agent_instance=agent,
         planning_result=planning_result,
@@ -339,4 +368,5 @@ def _diff_improve(agent, prompt_base, data_preview, parent_node):
         data_preview=data_preview,
         execution_output=context["execution_output"],
         introduction=_IMPROVE_DIFF_INTRODUCTION,
+        extra_user_sections=extra_user_sections,
     )
