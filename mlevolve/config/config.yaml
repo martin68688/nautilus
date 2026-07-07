@@ -154,7 +154,7 @@ coldstart:
 adoption_tracking:
   enable: False
   enable_analysis: True
-  judge_mode: keyword    # keyword | llm | hybrid
+  judge_mode: keyword    # keyword | llm | llm-all | hybrid
 
 # ============================================================
 #  External persistent skill memory
@@ -162,7 +162,14 @@ adoption_tracking:
 external_skill_memory:
   enable: False
   graph_path: "../paper-skills/distillation/graph_build/graph_optimized_skillgraph.json"
-  source_name: "skillgraph"   # e.g. skillgraph | hyperbolic_skillgraph | flat_external_memory
+  index_path: ""
+  text_model_path: ""
+  source_name: "skillgraph"   # e.g. skillgraph | hyperbolic_agentic_memory | flat_twin_agentic_memory
+  mode: "skillgraph"          # skillgraph | agentic_hyperbolic | flat_twin_agentic
+  scoring_mode: "lexical"     # lexical | poincare | flat_twin
+  enable_agentic: False
+  navigator_max_steps: 3
+  navigator_reference_budget: 1200
   top_k: 8
   depth: 2
   beam_width: 3

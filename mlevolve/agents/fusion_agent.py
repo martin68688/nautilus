@@ -146,8 +146,9 @@ def fuse_two_nodes(agent, source_node: SearchNode, target_node: SearchNode) -> S
 
     external_skill_section = ""
     if prompt.get("External Skill Memory", "").strip():
+        section_title = "Agentic Hyperbolic Memory Navigation" if "agentic" in external_skill_source else "External Skill Memory"
         external_skill_section = (
-            "\n# External Skill Memory\n"
+            f"\n# {section_title}\n"
             "Below are persistent SOP memories retrieved before this fusion step:\n"
             f"{prompt['External Skill Memory']}\n"
         )
@@ -309,8 +310,9 @@ def _fuse_with_multiple_references(
 
     external_skill_section = ""
     if prompt.get("External Skill Memory", "").strip():
+        section_title = "Agentic Hyperbolic Memory Navigation" if "agentic" in external_skill_source else "External Skill Memory"
         external_skill_section = (
-            "\n# External Skill Memory\n"
+            f"\n# {section_title}\n"
             "Below are persistent SOP memories retrieved before this multi-fusion step:\n"
             f"{prompt['External Skill Memory']}\n"
         )

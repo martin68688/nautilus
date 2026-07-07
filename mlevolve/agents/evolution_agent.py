@@ -213,8 +213,9 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
 
     external_skill_section = ""
     if prompt.get("External Skill Memory", "").strip():
+        section_title = "Agentic Hyperbolic Memory Navigation" if "agentic" in external_skill_source else "External Skill Memory"
         external_skill_section = (
-            "\n# External Skill Memory\n"
+            f"\n# {section_title}\n"
             "Below are persistent SOP memories retrieved before this evolution step:\n"
             f"{prompt['External Skill Memory']}\n"
         )

@@ -8,34 +8,18 @@ logger = logging.getLogger("MLEvolve")
 
 
 def should_check_data_leakage(agent, node: SearchNode) -> bool:
+    # Every node that successfully produced a validation metric is checked.
+    # The old extreme-metric heuristic missed moderate train/validation leaks
+    # that still looked plausible, so leakage detection now fails open on all
+    # metric-bearing nodes except known-buggy WorstMetricValue nodes.
     if node.metric is None or node.metric.is_worst:
         return False
 
-    metric_value = node.metric.value
-    maximize = agent.metric_maximize
-
-    # Use best-known metric as reference to detect suspiciously extreme values.
-    # For minimize tasks (e.g. log_loss): trigger when metric < best * 0.5 or < 0.1
-    # For maximize tasks (e.g. accuracy): trigger when metric > best + 0.5*(1-best) or > 0.9
-    # Rationale: INDEX_BUG / train-test leakage in Spooky Author produced log_loss 0.008-0.05
-    # vs legitimate best ~0.07-0.20. A 0.1 threshold catches these while allowing real gains.
-    if maximize:
-        is_extreme = (metric_value >= 0.9)
-        if not is_extreme and agent.best_node and agent.best_node.metric and agent.best_node.metric.value is not None:
-            best_val = agent.best_node.metric.value
-            is_extreme = (metric_value > best_val + 0.5 * (1.0 - best_val))
-    else:
-        is_extreme = (metric_value <= 0.1)
-        if not is_extreme and agent.best_node and agent.best_node.metric and agent.best_node.metric.value is not None:
-            best_val = agent.best_node.metric.value
-            is_extreme = (metric_value < best_val * 0.5)
-
-    if is_extreme:
-        logger.info(
-            f"Node {node.id} triggers data leakage check: "
-            f"extreme value {metric_value} (maximize={maximize})"
-        )
-    return is_extreme
+    logger.info(
+        f"Node {node.id} queued for data leakage check "
+        f"(metric={node.metric.value}, maximize={agent.metric_maximize})."
+    )
+    return True
 
 
 def get_patience_counter(agent, parent_node: SearchNode) -> tuple:

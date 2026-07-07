@@ -1,0 +1,186 @@
+{
+  "input": "paper-skills/distillation/graph_build/graph_skillgraph_c_trace_prereq.json",
+  "outputs": {
+    "hyper_graph": "paper-skills/hyper_memory/hyper_graph.json",
+    "hyper_index": "paper-skills/hyper_memory/hyper_index.npz",
+    "hyper_text_model": "paper-skills/hyper_memory/hyper_text_model.joblib",
+    "graph_builder_report": "paper-skills/hyper_memory/graph_builder_report.json",
+    "coordinate_quality_report": "paper-skills/hyper_memory/coordinate_quality_report.json"
+  },
+  "provenance": {
+    "status": "uncertified_bootstrap",
+    "paper_grade": false,
+    "missing_meta_fields": [
+      "source_runs",
+      "allowlist",
+      "leak_verified"
+    ],
+    "nodes_with_source_evidence": 0,
+    "nodes_total": 281,
+    "source_runs": [],
+    "allowlist": [],
+    "leak_verified": false,
+    "note": "Current artifact is paper-grade only when every SOP has source evidence and the graph meta records clean-run provenance."
+  },
+  "source": {
+    "nodes": 281,
+    "edges": 1926,
+    "edge_kinds": {
+      "enhance": 558,
+      "co_occur": 1001,
+      "prereq": 367
+    }
+  },
+  "hyper_graph": {
+    "nodes": 865,
+    "edges": 3580,
+    "node_type_counts": {
+      "SOP": 281,
+      "Skill": 6,
+      "Condition": 281,
+      "FailureMode": 16,
+      "Evidence": 281
+    },
+    "edge_kind_counts": {
+      "enhance": 558,
+      "co_occur": 1001,
+      "prereq": 367,
+      "contains": 281,
+      "applies_when": 281,
+      "prevents": 411,
+      "supported_by": 281,
+      "refines": 309,
+      "conflicts_with": 91
+    }
+  },
+  "coordinates": {
+    "direction": {
+      "method": "tfidf_truncated_svd",
+      "dims": 16,
+      "actual_components": 16,
+      "n_terms": 4096,
+      "explained_variance_ratio": [
+        0.008640539375403336,
+        0.01860179695126402,
+        0.014121279626990599,
+        0.015747167472801287,
+        0.014545858402867233,
+        0.012964469076418354,
+        0.012287472204311797,
+        0.011640001646749972,
+        0.010830640104229313,
+        0.010464465468860965,
+        0.010182092360228042,
+        0.009999504718045555,
+        0.00968745802576719,
+        0.009282352068990564,
+        0.008944443226098029,
+        0.008499598197703745
+      ]
+    },
+    "angle": {
+      "theta": "azimuth atan2(y, x), normalized to [0, 2*pi)",
+      "phi": "polar angle arccos(z / ||direction||)"
+    },
+    "radius": {
+      "formula": "radius=clamp(0.08+0.84*(1-(0.65*p_hat+0.25*support+0.10*(1-level_norm)+general_bonus)))",
+      "max_n_use": 15.0,
+      "max_level": 10.0
+    },
+    "radius_min": 0.21518947184085846,
+    "radius_max": 0.8675000071525574,
+    "radius_mean": 0.5140494598718724,
+    "radius_bands": {
+      "core": 122,
+      "edge": 110,
+      "middle": 49
+    },
+    "poincare_max_norm": 0.8674999475479126,
+    "lorentz_minkowski_error_max": 7.62939453125e-06,
+    "flat_twin_identity": true,
+    "quality_report": {
+      "status": "passed",
+      "passed": true,
+      "thresholds": {
+        "effective_rank_min": 6.0,
+        "top2_bin_mass_max": 0.55,
+        "neighbor_coherence_lift_min": 0.1
+      },
+      "direction_effective_rank": 14.783039093017578,
+      "singular_values": [
+        5.058102130889893,
+        4.566443920135498,
+        4.418580532073975,
+        4.2019548416137695,
+        4.103518486022949,
+        3.9818129539489746,
+        3.9200100898742676,
+        3.7895102500915527,
+        3.6721529960632324,
+        3.587205171585083,
+        3.515577554702759,
+        3.4513416290283203,
+        3.2743985652923584,
+        3.1251907348632812,
+        2.8674490451812744,
+        1.4344110488891602
+      ],
+      "theta_bin_count": 16,
+      "theta_bin_counts": {
+        "0": 56,
+        "1": 31,
+        "2": 20,
+        "13": 24,
+        "14": 88,
+        "15": 62
+      },
+      "theta_top2_bin_mass": 0.5338078291814946,
+      "neighbor_top_k": 10,
+      "neighbor_category_or_failure_coherence": 0.8658362989323843,
+      "random_category_or_failure_coherence": 0.5825622775800712,
+      "neighbor_coherence_lift": 0.28327402135231317,
+      "note": "Geometry ablation is not claim-grade unless this report passes."
+    }
+  },
+  "graph_builder_agent": {
+    "patches_proposed": 2633,
+    "patches_applied": 2238,
+    "patches_rejected": 0,
+    "patches_skipped": 395,
+    "applied_by_kind": {
+      "Skill": 6,
+      "contains": 281,
+      "Condition": 281,
+      "applies_when": 281,
+      "FailureMode": 16,
+      "prevents": 411,
+      "Evidence": 281,
+      "supported_by": 281,
+      "refines": 309,
+      "conflicts_with": 91
+    },
+    "rejected_by_reason": {},
+    "skipped_by_reason": {
+      "duplicate node id": 395
+    },
+    "sample_rejections": []
+  },
+  "validation": {
+    "source_sop_ids_preserved": true,
+    "all_node_ids_unique": true,
+    "all_edge_endpoints_exist": true,
+    "all_base_edge_endpoints_exist": true,
+    "all_edge_kinds_allowed": true,
+    "patch_edges_have_reason_or_evidence": true,
+    "every_sop_has_skill_region": true,
+    "every_sop_has_condition_edge": true,
+    "every_sop_has_failure_edge": true,
+    "every_sop_has_evidence_edge": true,
+    "conflicts_have_reason_and_evidence": true,
+    "conflicts_have_opposition_terms": true,
+    "conflicts_have_condition_or_failure_context": true,
+    "flat_twin_same_coordinates_as_poincare": true,
+    "coordinate_quality_gate_passed": true,
+    "paper_grade_provenance": false
+  }
+}

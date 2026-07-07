@@ -117,6 +117,13 @@ class AgentSearch:
                 self.external_skill_memory = ExternalSkillMemoryLayer(
                     graph_path=getattr(ext_cfg, "graph_path", ""),
                     source_name=getattr(ext_cfg, "source_name", "skillgraph"),
+                    mode=getattr(ext_cfg, "mode", "skillgraph"),
+                    index_path=getattr(ext_cfg, "index_path", ""),
+                    text_model_path=getattr(ext_cfg, "text_model_path", ""),
+                    scoring_mode=getattr(ext_cfg, "scoring_mode", "lexical"),
+                    enable_agentic=getattr(ext_cfg, "enable_agentic", False),
+                    navigator_max_steps=getattr(ext_cfg, "navigator_max_steps", 3),
+                    navigator_reference_budget=getattr(ext_cfg, "navigator_reference_budget", 1200),
                     top_k=getattr(ext_cfg, "top_k", 8),
                     depth=getattr(ext_cfg, "depth", 2),
                     beam_width=getattr(ext_cfg, "beam_width", 3),
@@ -128,6 +135,7 @@ class AgentSearch:
                     include_evolution=getattr(ext_cfg, "include_evolution", True),
                     include_debug=getattr(ext_cfg, "include_debug", True),
                     include_fusion=getattr(ext_cfg, "include_fusion", True),
+                    cfg=self.cfg,
                 )
                 logger.info(
                     "[AgentSearch] External skill memory enabled: source=%s graph=%s",

@@ -1,0 +1,43 @@
+{
+  "status": "passed",
+  "passed": true,
+  "thresholds": {
+    "effective_rank_min": 6.0,
+    "top2_bin_mass_max": 0.55,
+    "neighbor_coherence_lift_min": 0.1
+  },
+  "direction_effective_rank": 14.783039093017578,
+  "singular_values": [
+    5.058102130889893,
+    4.566443920135498,
+    4.418580532073975,
+    4.2019548416137695,
+    4.103518486022949,
+    3.9818129539489746,
+    3.9200100898742676,
+    3.7895102500915527,
+    3.6721529960632324,
+    3.587205171585083,
+    3.515577554702759,
+    3.4513416290283203,
+    3.2743985652923584,
+    3.1251907348632812,
+    2.8674490451812744,
+    1.4344110488891602
+  ],
+  "theta_bin_count": 16,
+  "theta_bin_counts": {
+    "0": 56,
+    "1": 31,
+    "2": 20,
+    "13": 24,
+    "14": 88,
+    "15": 62
+  },
+  "theta_top2_bin_mass": 0.5338078291814946,
+  "neighbor_top_k": 10,
+  "neighbor_category_or_failure_coherence": 0.8658362989323843,
+  "random_category_or_failure_coherence": 0.5825622775800712,
+  "neighbor_coherence_lift": 0.28327402135231317,
+  "note": "Geometry ablation is not claim-grade unless this report passes."
+}

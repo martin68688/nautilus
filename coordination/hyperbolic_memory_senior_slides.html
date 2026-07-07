@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agentic Hyperbolic SOP Memory 汇报</title>
+  <style>
+    :root {
+      --bg: #f7f8fb;
+      --ink: #172033;
+      --muted: #607089;
+      --line: #d9e0ea;
+      --panel: #ffffff;
+      --blue: #2563eb;
+      --green: #0f8f6b;
+      --red: #c2410c;
+      --violet: #6d28d9;
+      --gold: #a16207;
+      --shadow: 0 18px 50px rgba(19, 33, 68, 0.13);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      overflow: hidden;
+    }
+
+    .deck {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      padding: 5.2vh 6.2vw;
+      background: linear-gradient(180deg, #ffffff 0%, #f7f8fb 100%);
+    }
+
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .slide h1 {
+      font-size: 54px;
+      line-height: 1.08;
+      letter-spacing: 0;
+      margin: 0 0 22px;
+      color: #111827;
+      max-width: 1100px;
+    }
+
+    .slide h2 {
+      font-size: 38px;
+      line-height: 1.14;
+      margin: 0 0 26px;
+      color: #111827;
+      letter-spacing: 0;
+    }
+
+    .slide h3 {
+      font-size: 23px;
+      margin: 0 0 10px;
+      letter-spacing: 0;
+      color: #14213d;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 24px;
+      line-height: 1.45;
+      max-width: 1100px;
+    }
+
+    .meta {
+      margin-top: 34px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px 24px;
+      box-shadow: var(--shadow);
+      min-height: 120px;
+    }
+
+    .card p, .card li {
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.55;
+      margin: 0;
+    }
+
+    .card ul {
+      padding-left: 20px;
+      margin: 8px 0 0;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 15px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      margin-bottom: 12px;
+      background: #f8fafc;
+    }
+
+    .accent-blue { border-top: 5px solid var(--blue); }
+    .accent-green { border-top: 5px solid var(--green); }
+    .accent-red { border-top: 5px solid var(--red); }
+    .accent-violet { border-top: 5px solid var(--violet); }
+    .accent-gold { border-top: 5px solid var(--gold); }
+
+    .big-number {
+      display: block;
+      font-size: 42px;
+      line-height: 1;
+      color: var(--blue);
+      font-weight: 760;
+      margin-bottom: 10px;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: 1.1fr 0.25fr 1.2fr 0.25fr 1.2fr 0.25fr 1.3fr;
+      align-items: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .node {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      min-height: 112px;
+      box-shadow: var(--shadow);
+    }
+
+    .node strong {
+      display: block;
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .node span {
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .arrow {
+      text-align: center;
+      color: var(--blue);
+      font-size: 30px;
+      font-weight: 700;
+    }
+
+    .matrix {
+      display: grid;
+      grid-template-columns: 1.2fr repeat(3, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .cell {
+      padding: 17px 18px;
+      border-right: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      min-height: 82px;
+      font-size: 17px;
+      line-height: 1.42;
+    }
+
+    .cell.head {
+      background: #eef4ff;
+      font-weight: 740;
+      color: #1e3a8a;
+    }
+
+    .cell.ours {
+      background: #ecfdf5;
+      color: #064e3b;
+      font-weight: 730;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: var(--shadow);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .table th, .table td {
+      border-bottom: 1px solid var(--line);
+      padding: 13px 16px;
+      text-align: left;
+      font-size: 16px;
+      line-height: 1.35;
+      vertical-align: top;
+    }
+
+    .table th {
+      background: #eef4ff;
+      color: #1e3a8a;
+    }
+
+    .table tr:last-child td { border-bottom: none; }
+
+    .map {
+      height: 430px;
+      position: relative;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .ring {
+      position: absolute;
+      border: 1px solid #d6deea;
+      border-radius: 50%;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .ring.r1 { width: 150px; height: 150px; }
+    .ring.r2 { width: 280px; height: 280px; }
+    .ring.r3 { width: 410px; height: 410px; }
+
+    .dot {
+      position: absolute;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: var(--blue);
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.11);
+    }
+
+    .dot.green { background: var(--green); box-shadow: 0 0 0 4px rgba(15,143,107,0.12); }
+    .dot.red { background: var(--red); box-shadow: 0 0 0 4px rgba(194,65,12,0.12); }
+    .dot.violet { background: var(--violet); box-shadow: 0 0 0 4px rgba(109,40,217,0.12); }
+
+    .label {
+      position: absolute;
+      font-size: 15px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.82);
+      padding: 4px 7px;
+      border-radius: 6px;
+      border: 1px solid #edf1f7;
+      white-space: nowrap;
+    }
+
+    .note {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    .footer {
+      position: absolute;
+      left: 6.2vw;
+      right: 6.2vw;
+      bottom: 2.4vh;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #7a8799;
+      font-size: 14px;
+    }
+
+    .progress {
+      width: 220px;
+      height: 5px;
+      background: #dbe3ee;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress > span {
+      display: block;
+      height: 100%;
+      width: 0;
+      background: var(--blue);
+      transition: width 160ms ease;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #f1f5f9;
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: #1e3a8a;
+    }
+
+    .small {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    @media (max-width: 900px) {
+      body { overflow: auto; }
+      .deck { height: auto; }
+      .slide {
+        position: relative;
+        min-height: 100vh;
+        display: flex;
+        padding: 34px 20px 70px;
+      }
+      .slide:not(.active) { display: none; }
+      .slide h1 { font-size: 36px; }
+      .slide h2 { font-size: 28px; }
+      .subtitle { font-size: 19px; }
+      .grid, .grid.two, .grid.four { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: 1fr; }
+      .arrow { transform: rotate(90deg); }
+      .matrix { grid-template-columns: 1fr; }
+      .cell { border-right: none; }
+      .map { height: 340px; }
+      .footer { left: 20px; right: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <section class="slide active">
+      <h1>Agentic Hyperbolic SOP Memory</h1>
+      <p class="subtitle">面向 MLEvolve 的可导航双曲程序性记忆：把 skill card 升级成 SOP 地图，让 agent 在代码生成前主动找方法、查条件、看冲突。</p>
+      <div class="meta">
+        阶段性汇报：v0 bootstrap hyperbolic graph + online V1 MemoryNavigator<br>
+        当前口径：已完成结构构建与 runtime 接入；几何有效性仍需 Flat-Twin 对照实验验证。
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>问题：经验不是“搜到文本”就够了</h2>
+      <div class="grid">
+        <div class="card accent-blue">
+          <h3>条件化</h3>
+          <p>同一 SOP 只在特定数据、模型、错误状态下适用；缺少条件判断会造成负迁移。</p>
+        </div>
+        <div class="card accent-red">
+          <h3>冲突与风险</h3>
+          <p>两个历史上有效的方法，在当前条件下可能互相矛盾，需要显式检查。</p>
+        </div>
+        <div class="card accent-green">
+          <h3>低频关键经验</h3>
+          <p>普通 top-k 容易偏向高频泛化建议，把窄条件、低频但关键的技巧挤掉。</p>
+        </div>
+      </div>
+      <p class="note">目标：把搜索轨迹里的 procedural experience 变成可检索、可验证、可冲突检查的 SOP 记忆。</p>
+    </section>
+
+    <section class="slide">
+      <h2>相关工作定位</h2>
+      <div class="matrix">
+        <div class="cell head">方向</div>
+        <div class="cell head">代表工作</div>
+        <div class="cell head">已经解决</div>
+        <div class="cell head">留下的空白</div>
+
+        <div class="cell">轨迹蒸馏</div>
+        <div class="cell">Trace2Skill</div>
+        <div class="cell">把 raw trace 总结成 skill 文档</div>
+        <div class="cell">线性文档偏粗，条件/冲突/低频经验容易被合并</div>
+
+        <div class="cell">Skill 图</div>
+        <div class="cell">SkillGraph</div>
+        <div class="cell">skill 节点 + prereq/enhance/co_occur + 图遍历检索</div>
+        <div class="cell">没有显式 FailureMode / conflicts_with，也不是 agentic/双曲</div>
+
+        <div class="cell">双曲 RAG</div>
+        <div class="cell">HyperbolicRAG / HyperRAG</div>
+        <div class="cell">用半径表达层级、角度表达语义</div>
+        <div class="cell">载体多为文档/实体，不是 procedural SOP</div>
+
+        <div class="cell ours">本工作</div>
+        <div class="cell ours">Agentic Hyperbolic SOP Memory</div>
+        <div class="cell ours">SOP 地图 + 条件/失败/证据/冲突 + agentic navigation</div>
+        <div class="cell ours">下一步证明 geometry 本身带来的增益</div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>核心表示：不是“存 Skill”，而是“存 SOP 地图”</h2>
+      <div class="grid two">
+        <div class="card accent-violet">
+          <h3>地图层级</h3>
+          <ul>
+            <li><strong>Skill</strong>：区域/路牌，用于粗路由。</li>
+            <li><strong>SOP</strong>：最终可执行的方法点。</li>
+            <li><strong>Reference</strong>：代码、证据、实现细节。</li>
+          </ul>
+        </div>
+        <div class="card accent-green">
+          <h3>导航锚点</h3>
+          <ul>
+            <li><strong>Condition</strong>：这个 SOP 什么时候适用。</li>
+            <li><strong>FailureMode</strong>：这个 SOP 防止什么失败。</li>
+            <li><strong>Evidence</strong>：这个 SOP 的历史支持信号。</li>
+          </ul>
+        </div>
+      </div>
+      <p class="note">一句话：Skill 是区域，SOP 是点，Condition/FailureMode 是路标，Evidence/Reference 是证据附件。</p>
+    </section>
+
+    <section class="slide">
+      <h2>离线构建流程</h2>
+      <div class="flow">
+        <div class="node">
+          <strong>SkillGraph-C</strong>
+          <span>281 compact cards<br>1926 base edges</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node">
+          <strong>SOP-like nodes</strong>
+          <span>title / action / condition<br>p_hat / n_use / level</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node">
+          <strong>Hyperbolic coords</strong>
+          <span>theta / phi / radius<br>Poincare / Lorentz</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node">
+          <strong>GraphBuilderAgent</strong>
+          <span>Condition / FailureMode<br>refines / conflicts_with</span>
+        </div>
+      </div>
+      <p class="note">输出：<code>hyper_graph.json</code>、<code>hyper_index.npz</code>、<code>graph_builder_report.json</code>。</p>
+    </section>
+
+    <section class="slide">
+      <h2>双曲地图的直觉</h2>
+      <div class="grid two">
+        <div class="map">
+          <div class="ring r1"></div>
+          <div class="ring r2"></div>
+          <div class="ring r3"></div>
+          <div class="dot green" style="left:49%;top:48%;"></div>
+          <div class="label" style="left:53%;top:47%;">核心：高支持/通用 SOP</div>
+          <div class="dot" style="left:66%;top:35%;"></div>
+          <div class="label" style="left:69%;top:32%;">文本 finetuning</div>
+          <div class="dot violet" style="left:28%;top:39%;"></div>
+          <div class="label" style="left:8%;top:35%;">CV augmentation</div>
+          <div class="dot red" style="left:75%;top:72%;"></div>
+          <div class="label" style="left:61%;top:77%;">边缘：低频但条件关键</div>
+          <div class="dot" style="left:39%;top:74%;"></div>
+          <div class="label" style="left:22%;top:78%;">data leakage fixes</div>
+        </div>
+        <div class="card accent-blue">
+          <h3>坐标定义</h3>
+          <ul>
+            <li><strong>角度</strong>：由 <code>title + principle + condition</code> 的 TF-IDF-SVD 方向得到。</li>
+            <li><strong>半径</strong>：由 <code>p_hat + n_use + level</code> 近似得到。</li>
+            <li><strong>中心</strong>：更通用、更高支持、更高置信。</li>
+            <li><strong>外圈</strong>：低频、窄条件、但保留可达性。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>Graph Builder Agent：补边但不乱写图</h2>
+      <div class="grid">
+        <div class="card accent-blue">
+          <h3>提 patch</h3>
+          <p>从 SOP card 中抽 Condition、FailureMode、Evidence，并提出 applies_when / prevents / refines / conflicts_with。</p>
+        </div>
+        <div class="card accent-gold">
+          <h3>程序验证</h3>
+          <p>检查 node id、edge kind、文本 evidence；冲突边必须有 opposition terms 和 condition/failure context。</p>
+        </div>
+        <div class="card accent-green">
+          <h3>安全落图</h3>
+          <p>Agent 只建议，validator 决定是否写入。当前实现可复现，未来可换成 LLM builder。</p>
+        </div>
+      </div>
+      <p class="note">这一步避免了“LLM 看起来合理就改图”的风险。</p>
+    </section>
+
+    <section class="slide">
+      <h2>当前构建结果</h2>
+      <div class="grid four">
+        <div class="card">
+          <span class="big-number">865</span>
+          <p>总节点数</p>
+        </div>
+        <div class="card">
+          <span class="big-number">3580</span>
+          <p>总边数</p>
+        </div>
+        <div class="card">
+          <span class="big-number">281</span>
+          <p>SOP 节点</p>
+        </div>
+        <div class="card">
+          <span class="big-number">91</span>
+          <p>conflicts_with 边</p>
+        </div>
+      </div>
+      <table class="table" style="margin-top:24px;">
+        <tr><th>节点类型</th><td>SOP 281, Skill 6, Condition 281, FailureMode 16, Evidence 281</td></tr>
+        <tr><th>新增关系</th><td>contains, applies_when, prevents, supported_by, refines, conflicts_with</td></tr>
+        <tr><th>坐标文件</th><td>node_ids, poincare, lorentz, flat_twin, radius, theta, phi, angle, direction</td></tr>
+        <tr><th>验证结果</th><td>edge endpoints、edge kinds、SOP coverage、conflict guard 全部通过</td></tr>
+      </table>
+    </section>
+
+    <section class="slide">
+      <h2>在线 V1：MemoryNavigator 主动查地图</h2>
+      <div class="flow">
+        <div class="node">
+          <strong>inspect_map</strong>
+          <span>看 Skill 区域<br>Condition/Failure 热点</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node">
+          <strong>navigate / expand</strong>
+          <span>按区域、条件、失败模式<br>多跳找 SOP</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node">
+          <strong>check_conflicts</strong>
+          <span>true conflict<br>condition branch<br>risk warning</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="node">
+          <strong>memory pack</strong>
+          <span>Selected SOPs<br>risk warnings<br>navigation trace</span>
+        </div>
+      </div>
+      <p class="note">V1 最多 3 轮工具调用；无 cfg 时走 deterministic fallback：inspect_map → navigate → check_conflicts。</p>
+    </section>
+
+    <section class="slide">
+      <h2>和 SkillGraph 的差异</h2>
+      <table class="table">
+        <tr>
+          <th>维度</th>
+          <th>SkillGraph</th>
+          <th>本工作</th>
+        </tr>
+        <tr>
+          <td>记忆结构</td>
+          <td>compact skill card + 3 类正向边</td>
+          <td>SOP-centered graph + Condition/Failure/Evidence/Conflict</td>
+        </tr>
+        <tr>
+          <td>检索方式</td>
+          <td>程序化 BFS / beam / topo sort</td>
+          <td>MemoryNavigator 主动 inspect/navigate/expand/check_conflicts</td>
+        </tr>
+        <tr>
+          <td>冲突处理</td>
+          <td>无显式冲突边</td>
+          <td>conflicts_with 必须有 opposition + context</td>
+        </tr>
+        <tr>
+          <td>几何结构</td>
+          <td>普通图 level</td>
+          <td>Poincare / Lorentz 坐标；半径和角向分解</td>
+        </tr>
+        <tr>
+          <td>工程接入</td>
+          <td>偏 RL co-evolution</td>
+          <td>External memory layer，prompt injection，不改 policy 权重</td>
+        </tr>
+      </table>
+    </section>
+
+    <section class="slide">
+      <h2>当前边界：哪些还不能夸大</h2>
+      <div class="grid">
+        <div class="card accent-red">
+          <h3>不是最终蒸馏</h3>
+          <p>当前来自 SkillGraph-C compact cards；还不是 transition-level SOP distillation。</p>
+        </div>
+        <div class="card accent-gold">
+          <h3>半径仍是 proxy</h3>
+          <p>当前用 <code>p_hat / n_use / level</code>；最终应替换为真实 <code>metric_delta</code>。</p>
+        </div>
+        <div class="card accent-violet">
+          <h3>几何还未证明</h3>
+          <p>已生成双曲坐标；但还要 Hyperbolic vs Flat-Twin 对照证明几何本身有效。</p>
+        </div>
+      </div>
+      <p class="note">所以当前最准确的表述是：完成了 v0 双曲 SOP 记忆结构和 V1 agentic runtime，而不是完成了最终论文级系统证明。</p>
+    </section>
+
+    <section class="slide">
+      <h2>下一步实验</h2>
+      <div class="grid two">
+        <div class="card accent-blue">
+          <h3>Offline evaluation</h3>
+          <ul>
+            <li>Flat retrieval</li>
+            <li>SkillGraph-C</li>
+            <li>Hyperbolic top-k</li>
+            <li>Agentic Hyperbolic Navigator</li>
+            <li>Flat-Twin Agentic Navigator</li>
+          </ul>
+        </div>
+        <div class="card accent-green">
+          <h3>Online pilot</h3>
+          <ul>
+            <li>保留 GlobalMemory，避免混淆变量</li>
+            <li>比较 SkillGraph-C external memory vs Agentic Hyperbolic memory</li>
+            <li>看 best metric、bug rate、rare-SOP adoption、time/token cost</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide">
+      <h2>可以向师兄强调的贡献</h2>
+      <div class="grid">
+        <div class="card accent-blue">
+          <h3>结构贡献</h3>
+          <p>从 compact skill card 扩展到 SOP / Condition / FailureMode / Evidence 的多类型方法图。</p>
+        </div>
+        <div class="card accent-green">
+          <h3>检索贡献</h3>
+          <p>从被动 top-k 检索升级为 MemoryNavigator 主动地图导航和冲突检查。</p>
+        </div>
+        <div class="card accent-violet">
+          <h3>几何贡献</h3>
+          <p>把 SOP 放入 Poincare/Lorentz 空间，为“通用核心 vs 低频外圈”提供统一坐标。</p>
+        </div>
+      </div>
+      <p class="note">更稳妥的论文叙事：我们不是单纯说“双曲优雅”，而是用几何组织程序性 SOP，并用 Flat-Twin 消融证明它是否真的有用。</p>
+    </section>
+
+    <section class="slide">
+      <h2>结论</h2>
+      <div class="card accent-green">
+        <h3>阶段性结论</h3>
+        <p style="font-size:22px;color:#172033;">
+          本阶段已经把 MLEvolve 的外部长期记忆，从“文本/普通图检索”推进到“可导航、可验证、可冲突检查的双曲 SOP 方法地图”。
+        </p>
+      </div>
+      <div class="grid two" style="margin-top:22px;">
+        <div class="card">
+          <h3>已经完成</h3>
+          <p>v0 hyper graph 构建、Poincare/Lorentz 坐标、GraphBuilderAgent patch + validator、V1 MemoryNavigator runtime。</p>
+        </div>
+        <div class="card">
+          <h3>下一步关键</h3>
+          <p>transition-level metric_delta SOP 蒸馏、真实双曲距离检索、Flat-Twin 对照、在线 A/B pilot。</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">
+      <div>Agentic Hyperbolic SOP Memory</div>
+      <div class="progress"><span id="bar"></span></div>
+      <div><span id="page">1</span> / <span id="total">14</span></div>
+    </div>
+  </main>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const page = document.getElementById("page");
+    const total = document.getElementById("total");
+    const bar = document.getElementById("bar");
+    let idx = 0;
+    total.textContent = slides.length;
+
+    function show(next) {
+      idx = Math.max(0, Math.min(slides.length - 1, next));
+      slides.forEach((s, i) => s.classList.toggle("active", i === idx));
+      page.textContent = idx + 1;
+      bar.style.width = ((idx + 1) / slides.length * 100).toFixed(1) + "%";
+      location.hash = String(idx + 1);
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (["ArrowRight", "PageDown", " "].includes(event.key)) {
+        event.preventDefault();
+        show(idx + 1);
+      } else if (["ArrowLeft", "PageUp"].includes(event.key)) {
+        event.preventDefault();
+        show(idx - 1);
+      } else if (event.key === "Home") {
+        show(0);
+      } else if (event.key === "End") {
+        show(slides.length - 1);
+      }
+    });
+
+    const initial = Number(location.hash.replace("#", ""));
+    if (Number.isFinite(initial) && initial >= 1 && initial <= slides.length) {
+      show(initial - 1);
+    } else {
+      show(0);
+    }
+  </script>
+</body>
+</html>

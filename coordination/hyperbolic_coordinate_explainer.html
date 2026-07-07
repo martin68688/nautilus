@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>双曲 SOP 记忆坐标图解</title>
+  <style>
+    :root {
+      --ink: #17212b;
+      --muted: #5f6b78;
+      --line: #d7dee6;
+      --paper: #fbfcfe;
+      --panel: #ffffff;
+      --blue: #2563eb;
+      --green: #0f8a6a;
+      --orange: #c65a1e;
+      --red: #b42318;
+      --violet: #6d3fc4;
+      --teal: #0e7490;
+      --yellow: #b7791f;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    main {
+      width: min(1180px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 32px 0 56px;
+    }
+
+    header {
+      padding: 8px 0 24px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 24px;
+      line-height: 1.2;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    .lead {
+      max-width: 900px;
+      color: var(--muted);
+      font-size: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+      margin: 20px 0;
+    }
+
+    .panel {
+      grid-column: span 12;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    }
+
+    .half {
+      grid-column: span 6;
+    }
+
+    .third {
+      grid-column: span 4;
+    }
+
+    .two-third {
+      grid-column: span 8;
+    }
+
+    .caption {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .formula {
+      display: block;
+      background: #f3f6fa;
+      border: 1px solid #dfe6ee;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #243447;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 14px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #f8fafc;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.15;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .key {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.18);
+      flex: 0 0 12px;
+    }
+
+    .note {
+      border-left: 4px solid var(--orange);
+      background: #fff7ed;
+      padding: 12px 14px;
+      border-radius: 6px;
+      color: #65320f;
+    }
+
+    .ok {
+      border-left-color: var(--green);
+      background: #eefbf6;
+      color: #0d4d3d;
+    }
+
+    .bad {
+      border-left-color: var(--red);
+      background: #fff1f0;
+      color: #7a271a;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: 1fr 44px 1fr 44px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-top: 14px;
+    }
+
+    .box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #f8fafc;
+      padding: 14px;
+      min-height: 110px;
+    }
+
+    .box strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .arrow {
+      color: var(--muted);
+      text-align: center;
+      font-size: 26px;
+    }
+
+    .tiny {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .split-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    ul {
+      margin: 8px 0 0 18px;
+      padding: 0;
+    }
+
+    li {
+      margin: 6px 0;
+    }
+
+    @media (max-width: 860px) {
+      main {
+        width: min(100vw - 20px, 680px);
+        padding-top: 20px;
+      }
+
+      .half, .third, .two-third {
+        grid-column: span 12;
+      }
+
+      .stat-row, .split-list {
+        grid-template-columns: 1fr;
+      }
+
+      .flow {
+        grid-template-columns: 1fr;
+      }
+
+      .arrow {
+        transform: rotate(90deg);
+      }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>双曲 SOP 记忆坐标到底在表达什么</h1>
+    <p class="lead">
+      这张图解把当前 v0 产物拆成三件事：SOP 点被放进 Poincare 球，Poincare 点可转换成 Lorentz 双曲面点，runtime 现在还没有用这些坐标做检索。
+    </p>
+  </header>
+
+  <section class="grid">
+    <article class="panel third">
+      <h2>先抓住一个比喻</h2>
+      <p>
+        普通向量检索像把所有方法卡片摊在一张平桌上。双曲结构像把它们放进一座向外扩张很快的城市：中心放通用方法，外圈容纳大量细条件分支。
+      </p>
+      <p>
+        当前 v0 已经把卡片放到了这座城市的坐标里，但检索员还没有按城市里的距离开车。
+      </p>
+      <div class="note">
+        关键词：坐标已生成；坐标还没主导检索；Flat-Twin 还不是独立地图。
+      </div>
+    </article>
+
+    <article class="panel two-third">
+      <h2>当前 v0 产物的真实数字</h2>
+      <div class="stat-row">
+        <div class="stat"><strong>281</strong><span>SOP 点</span></div>
+        <div class="stat"><strong>0.215-0.868</strong><span>Poincare 半径范围</span></div>
+        <div class="stat"><strong>122 / 49 / 110</strong><span>core / middle / edge</span></div>
+        <div class="stat"><strong>110</strong><span>p_hat=0 且全在 edge</span></div>
+      </div>
+      <p class="caption">
+        这些数字来自 `paper-skills/hyper_memory/hyper_index.npz` 与 `hyper_graph.json`。它们说明坐标存在，但半径语义仍是 proxy。
+      </p>
+    </article>
+  </section>
+
+  <section class="grid">
+    <article class="panel half">
+      <h2>1. Poincare 球：像一张压缩进圆里的地图</h2>
+      <svg viewBox="0 0 560 430" role="img" aria-label="Poincare ball projection diagram">
+        <rect x="0" y="0" width="560" height="430" fill="#ffffff"/>
+        <circle cx="240" cy="205" r="165" fill="#f8fafc" stroke="#9aa8b6" stroke-width="2"/>
+        <circle cx="240" cy="205" r="58" fill="none" stroke="#0f8a6a" stroke-width="2"/>
+        <circle cx="240" cy="205" r="116" fill="none" stroke="#c65a1e" stroke-width="2" stroke-dasharray="7 7"/>
+        <circle cx="240" cy="205" r="165" fill="none" stroke="#b42318" stroke-width="3"/>
+        <line x1="240" y1="205" x2="385" y2="126" stroke="#2563eb" stroke-width="3"/>
+        <path d="M 288 205 A 48 48 0 0 0 282 182" fill="none" stroke="#2563eb" stroke-width="2"/>
+        <text x="296" y="188" fill="#2563eb" font-size="16">theta</text>
+        <circle cx="385" cy="126" r="7" fill="#2563eb" stroke="#123f9c" stroke-width="2"/>
+        <text x="395" y="122" fill="#17212b" font-size="15">一个 SOP 点 p=(x,y,z)</text>
+        <text x="342" y="150" fill="#2563eb" font-size="15">r = ||p||</text>
+        <text x="222" y="200" fill="#0f8a6a" font-size="14">core</text>
+        <text x="328" y="100" fill="#c65a1e" font-size="14">middle</text>
+        <text x="390" y="52" fill="#b42318" font-size="14">edge</text>
+        <text x="52" y="386" fill="#5f6b78" font-size="14">图中只画 x-y 投影；真实点在 3D 球内，还有 z 方向。</text>
+        <g fill="#0f8a6a" opacity="0.86">
+          <circle cx="224" cy="179" r="4"/><circle cx="262" cy="189" r="4"/><circle cx="214" cy="230" r="4"/>
+          <circle cx="250" cy="242" r="4"/><circle cx="202" cy="205" r="4"/><circle cx="274" cy="218" r="4"/>
+        </g>
+        <g fill="#c65a1e" opacity="0.82">
+          <circle cx="330" cy="158" r="4"/><circle cx="151" cy="168" r="4"/><circle cx="346" cy="247" r="4"/>
+          <circle cx="141" cy="238" r="4"/><circle cx="288" cy="101" r="4"/>
+        </g>
+        <g fill="#b42318" opacity="0.78">
+          <circle cx="394" cy="98" r="4"/><circle cx="94" cy="135" r="4"/><circle cx="391" cy="297" r="4"/>
+          <circle cx="94" cy="285" r="4"/><circle cx="246" cy="43" r="4"/><circle cx="237" cy="363" r="4"/>
+          <circle cx="112" cy="95" r="4"/><circle cx="372" cy="333" r="4"/>
+        </g>
+      </svg>
+      <div class="legend">
+        <span class="key"><span class="swatch" style="background:#0f8a6a"></span>core: 更中心</span>
+        <span class="key"><span class="swatch" style="background:#c65a1e"></span>middle: 中层</span>
+        <span class="key"><span class="swatch" style="background:#b42318"></span>edge: 外圈</span>
+      </div>
+      <p class="caption">
+        Poincare 球的边界永远到不了。越靠边，双曲距离膨胀越快，所以外圈能容纳很多细分方法。
+      </p>
+    </article>
+
+    <article class="panel half">
+      <h2>坐标字段逐个翻译成人话</h2>
+      <p><strong>direction = 方向。</strong> 当前由 `title + principle + condition + category + scope` 做 TF-IDF-SVD 得到。它像指南针，决定这个 SOP 放在哪个扇区。</p>
+      <p><strong>theta = 平面方位角。</strong> 在 x-y 投影里，绕中心转了多少度。相近 theta 的 SOP 大致在同一方向。</p>
+      <p><strong>phi = 上下倾角。</strong> 因为实际是 H3 / 3D 球，不只是圆盘。phi 表示它偏向 z 轴上方还是下方。</p>
+      <p><strong>radius = 离中心多远。</strong> 当前由 `p_hat / n_use / level` 近似。越可靠、越常用、越通用，越应该靠中心；越窄、越低支持，越靠外。</p>
+      <p><strong>poincare = 球内坐标。</strong> 真实形式是 `(x,y,z)`，满足 `||p|| < 1`。当前最大 norm 约 0.867，合法在球内。</p>
+      <span class="formula">poincare = direction * radius</span>
+      <p class="caption">
+        注意：这里的 direction 质量还弱，半径也是 proxy。所以它是一张 v0 草图，不是最终学出来的城市地图。
+      </p>
+    </article>
+  </section>
+
+  <section class="grid">
+    <article class="panel half">
+      <h2>2. Lorentz 双曲面：同一个点的另一种坐标写法</h2>
+      <svg viewBox="0 0 560 430" role="img" aria-label="Lorentz hyperboloid diagram">
+        <rect width="560" height="430" fill="#ffffff"/>
+        <line x1="280" y1="378" x2="280" y2="48" stroke="#5f6b78" stroke-width="2"/>
+        <line x1="92" y1="350" x2="468" y2="350" stroke="#5f6b78" stroke-width="2"/>
+        <text x="292" y="60" fill="#5f6b78" font-size="15">t</text>
+        <text x="452" y="342" fill="#5f6b78" font-size="15">space</text>
+        <path d="M 280 350 C 234 302 212 247 220 185 C 228 122 252 83 280 66" fill="none" stroke="#2563eb" stroke-width="4"/>
+        <path d="M 280 350 C 326 302 348 247 340 185 C 332 122 308 83 280 66" fill="none" stroke="#2563eb" stroke-width="4"/>
+        <path d="M 210 246 C 245 230 315 230 350 246" fill="none" stroke="#7c8da0" stroke-width="1.5" stroke-dasharray="6 6"/>
+        <path d="M 222 184 C 250 169 310 169 338 184" fill="none" stroke="#7c8da0" stroke-width="1.5" stroke-dasharray="6 6"/>
+        <circle cx="336" cy="184" r="7" fill="#0e7490" stroke="#0a5266" stroke-width="2"/>
+        <text x="348" y="180" fill="#17212b" font-size="15">同一个 SOP 的 Lorentz 点</text>
+        <line x1="280" y1="350" x2="336" y2="184" stroke="#0e7490" stroke-width="2" stroke-dasharray="5 5"/>
+        <text x="320" y="285" fill="#0e7490" font-size="15">t 越大，越接近 Poincare 边界</text>
+        <text x="62" y="396" fill="#5f6b78" font-size="14">Lorentz 不是另一张地图，而是同一张双曲地图的另一种坐标系。</text>
+      </svg>
+      <p class="caption">
+        Poincare 球适合可视化；Lorentz 双曲面适合稳定计算距离。两者可以互相转换。
+      </p>
+    </article>
+
+    <article class="panel half">
+      <h2>Lorentz 公式的直觉</h2>
+      <p>
+        Poincare 点 `p=(x,y,z)` 在球里。Lorentz 把它抬到一个四维点：
+      </p>
+      <span class="formula">t = (1 + ||p||^2) / (1 - ||p||^2)</span>
+      <span class="formula">space = 2p / (1 - ||p||^2)</span>
+      <p>
+        这个点满足：
+      </p>
+      <span class="formula">t^2 - ||space||^2 = 1</span>
+      <p>
+        直觉是：Poincare 越靠边，分母 `1-r^2` 越小，Lorentz 的 `t` 会迅速变大。也就是外圈在双曲空间里其实离中心很远。
+      </p>
+      <div class="note ok">
+        当前 builder 的 Lorentz 约束最大误差约 1.14e-5，所以数学转换本身是成立的。
+      </div>
+    </article>
+  </section>
+
+  <section class="grid">
+    <article class="panel">
+      <h2>3. 真正的双曲检索应该怎么用这些坐标</h2>
+      <div class="flow">
+        <div class="box">
+          <strong>任务上下文</strong>
+          <span class="tiny">比如 small data、overfitting、CUDA OOM、Transformer fine-tuning。</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="box">
+          <strong>投到地图上</strong>
+          <span class="tiny">把 query 也变成一个 Poincare 或 Lorentz 点。</span>
+        </div>
+        <div class="arrow">→</div>
+        <div class="box">
+          <strong>按双曲距离找 SOP</strong>
+          <span class="tiny">近的先看，再结合 condition、evidence、conflict 过滤。</span>
+        </div>
+      </div>
+      <p class="caption">
+        这才是“坐标成为检索决策核心”的含义：不是只展示坐标，而是让距离参与排序。
+      </p>
+      <div class="split-list">
+        <div class="note ok">
+          <h3>应该发生的事</h3>
+          <ul>
+            <li>加载 `hyper_index.npz`。</li>
+            <li>建立 `sop_id -> poincare/lorentz`。</li>
+            <li>query 也映射成地图点。</li>
+            <li>用 Poincare 或 Lorentz distance 排序。</li>
+          </ul>
+        </div>
+        <div class="note bad">
+          <h3>现在发生的事</h3>
+          <ul>
+            <li>runtime 没加载坐标索引。</li>
+            <li>没有 Poincare/Lorentz 距离计算。</li>
+            <li>`navigate` 主要用 token 匹配和规则 bonus。</li>
+            <li>prompt 名字里有 hyperbolic，但检索器还没看坐标。</li>
+          </ul>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="grid">
+    <article class="panel half">
+      <h2>4. Flat-Twin 为什么现在不成立</h2>
+      <svg viewBox="0 0 560 350" role="img" aria-label="Flat twin equals Poincare comparison">
+        <rect width="560" height="350" fill="#ffffff"/>
+        <circle cx="170" cy="175" r="110" fill="#f8fafc" stroke="#2563eb" stroke-width="3"/>
+        <circle cx="390" cy="175" r="110" fill="#f8fafc" stroke="#6d3fc4" stroke-width="3"/>
+        <text x="106" y="52" fill="#2563eb" font-size="17">Poincare</text>
+        <text x="333" y="52" fill="#6d3fc4" font-size="17">Flat-Twin</text>
+        <g fill="#2563eb">
+          <circle cx="144" cy="142" r="5"/><circle cx="214" cy="134" r="5"/><circle cx="103" cy="202" r="5"/>
+          <circle cx="223" cy="231" r="5"/><circle cx="171" cy="88" r="5"/><circle cx="170" cy="260" r="5"/>
+        </g>
+        <g fill="#6d3fc4">
+          <circle cx="364" cy="142" r="5"/><circle cx="434" cy="134" r="5"/><circle cx="323" cy="202" r="5"/>
+          <circle cx="443" cy="231" r="5"/><circle cx="391" cy="88" r="5"/><circle cx="390" cy="260" r="5"/>
+        </g>
+        <path d="M 281 175 L 279 175" stroke="#17212b" stroke-width="2"/>
+        <text x="205" y="318" fill="#5f6b78" font-size="15">当前二者点位完全相同，只是名字不同。</text>
+      </svg>
+      <p>
+        Flat-Twin 应该是证明“双曲本身有效”的对照组。但现在：
+      </p>
+      <span class="formula">flat_twin = directions * radii[:, None]</span>
+      <span class="formula">poincare = directions * radii[:, None]</span>
+      <p class="caption">
+        所以它目前只是同一份坐标的另一个 key。未来可以用同一点位但不同距离度量做初步对照，也可以重建真正 Euclidean-only 坐标。
+      </p>
+    </article>
+
+    <article class="panel half">
+      <h2>5. 为什么 p_hat=0 的外圈要小心解释</h2>
+      <svg viewBox="0 0 560 350" role="img" aria-label="edge band p_hat zero explanation">
+        <rect width="560" height="350" fill="#ffffff"/>
+        <circle cx="280" cy="175" r="130" fill="#f8fafc" stroke="#9aa8b6" stroke-width="2"/>
+        <circle cx="280" cy="175" r="52" fill="none" stroke="#0f8a6a" stroke-width="3"/>
+        <circle cx="280" cy="175" r="92" fill="none" stroke="#c65a1e" stroke-width="3" stroke-dasharray="7 7"/>
+        <circle cx="280" cy="175" r="130" fill="none" stroke="#b42318" stroke-width="4"/>
+        <path d="M 150 175 A 130 130 0 0 1 410 175" fill="none" stroke="#b42318" stroke-width="14" opacity="0.22"/>
+        <text x="235" y="170" fill="#0f8a6a" font-size="15">core 122</text>
+        <text x="333" y="116" fill="#c65a1e" font-size="15">middle 49</text>
+        <text x="365" y="255" fill="#b42318" font-size="15">edge 110</text>
+        <text x="96" y="54" fill="#b42318" font-size="16">110 个 p_hat=0 全在 edge</text>
+        <g fill="#b42318" opacity="0.8">
+          <circle cx="160" cy="142" r="4"/><circle cx="399" cy="144" r="4"/><circle cx="164" cy="230" r="4"/>
+          <circle cx="394" cy="232" r="4"/><circle cx="280" cy="46" r="4"/><circle cx="280" cy="304" r="4"/>
+          <circle cx="186" cy="85" r="4"/><circle cx="374" cy="86" r="4"/><circle cx="108" cy="176" r="4"/>
+        </g>
+      </svg>
+      <p>
+        设计理想里，外圈应该装很多“条件窄但有用”的 SOP。当前 v0 里，外圈还混入了“没有成功证据”的 SOP。
+      </p>
+      <div class="note">
+        外圈现在更准确的含义：低支持、低成功率、深层级、细条件节点的混合区。不能直接等同于“稀有宝藏”。
+      </div>
+    </article>
+  </section>
+
+  <section class="grid">
+    <article class="panel">
+      <h2>一句话收束</h2>
+      <p>
+        当前双曲结构像一张已经画好经纬度的城市地图：Poincare 是城市平面投影，Lorentz 是更适合算距离的数学坐标，radius/theta/phi 描述每个 SOP 在地图上的位置。
+      </p>
+      <p>
+        但当前 runtime 还没有真正按这些坐标导航。它仍主要按文字相似度找 SOP，所以现在应该叫“带双曲坐标的 v0 SOP 图 + agentic navigator 外壳”，不能叫“已经完成的双曲检索系统”。
+      </p>
+    </article>
+  </section>
+</main>
+</body>
+</html>

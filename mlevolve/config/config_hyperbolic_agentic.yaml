@@ -1,0 +1,19 @@
+extends: config.yaml
+
+adoption_tracking:
+  enable: True
+  enable_analysis: True
+  judge_mode: llm-all
+
+external_skill_memory:
+  enable: True
+  graph_path: "../paper-skills/hyper_memory/hyper_graph.json"
+  index_path: "../paper-skills/hyper_memory/hyper_index.npz"
+  text_model_path: "../paper-skills/hyper_memory/hyper_text_model.joblib"
+  source_name: "hyperbolic_agentic_memory"
+  mode: "agentic_hyperbolic"
+  scoring_mode: "poincare"
+  enable_agentic: True
+  navigator_max_steps: 3
+  navigator_reference_budget: 1200
+  top_k: 8

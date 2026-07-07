@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 import json
+import os
 from pathlib import Path
 from typing import Hashable, cast
 import datetime
@@ -120,14 +121,21 @@ class InitSolutionConfig:
 class AdoptionTrackingConfig:
     enable: bool = False          # 默认关：记账与分析全 no-op，run 行为与今天一致
     enable_analysis: bool = True  # enable=True 时是否在 run 末尾跑分析
-    judge_mode: str = "keyword"   # "keyword" | "llm"
+    judge_mode: str = "keyword"   # "keyword" | "llm" | "llm-all" | "hybrid"
 
 
 @dataclass
 class ExternalSkillMemoryConfig:
     enable: bool = False
     graph_path: str = "../paper-skills/distillation/graph_build/graph_optimized_skillgraph.json"
+    index_path: str = ""
+    text_model_path: str = ""
     source_name: str = "skillgraph"
+    mode: str = "skillgraph"  # skillgraph | agentic_hyperbolic | flat_twin_agentic
+    scoring_mode: str = "lexical"  # lexical | poincare | flat_twin
+    enable_agentic: bool = False
+    navigator_max_steps: int = 3
+    navigator_reference_budget: int = 1200
     top_k: int = 8
     depth: int = 2
     beam_width: int = 3
@@ -191,18 +199,29 @@ def _get_next_logindex(dir: Path) -> int:
     return max_index + 1
 
 
+def _default_config_path() -> Path:
+    return Path(os.environ.get("MLEVOLVE_CONFIG", Path(__file__).parent / "config.yaml"))
+
+
 def _load_cfg(
-    path: Path = Path(__file__).parent / "config.yaml", use_cli_args=True
+    path: Path | None = None, use_cli_args=True
 ) -> Config:
     # Load secrets (e.g. DEEPSEEK_API_KEY) from mlevolve/.env so they stay out of git.
     from dotenv import load_dotenv
     load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+    path = Path(path) if path is not None else _default_config_path()
     cfg = OmegaConf.load(path)
+    extends = cfg.pop("extends", None)
+    if extends:
+        base_path = Path(extends)
+        if not base_path.is_absolute():
+            base_path = path.parent / base_path
+        cfg = OmegaConf.merge(OmegaConf.load(base_path), cfg)
     if use_cli_args:
         cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
     return cfg
 
-def load_cfg(path: Path = Path(__file__).parent / "config.yaml") -> Config:
+def load_cfg(path: Path | None = None) -> Config:
     """Load config from .yaml file and CLI args, and set up logging directory."""
     return prep_cfg(_load_cfg(path))
 

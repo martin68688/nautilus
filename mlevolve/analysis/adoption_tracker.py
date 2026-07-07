@@ -77,7 +77,7 @@ def _is_external_skill_source(source: str, cfg=None) -> bool:
     return (
         "skillgraph" in source
         or source.startswith("external_")
-        or source in {"flat_external_memory", "hyperbolic_skillgraph"}
+        or source in {"flat_external_memory", "hyperbolic_skillgraph", "hyperbolic_agentic_memory", "flat_twin_agentic_memory"}
     )
 
 
@@ -275,6 +275,8 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
     # IDF over the run's own code corpus: generic tokens (torch/model/Dataset) get ~0 IDF.
     idf = _build_idf([getattr(n, "code", "") or "" for n in nodes])
     mode = getattr(getattr(cfg, "adoption_tracking", None), "judge_mode", "keyword")
+    if mode == "llm-all":
+        mode = "llm"
     use_llm = mode in ("llm", "hybrid")
     use_emb = mode == "hybrid"
     emb_model = _get_emb_model(cfg) if use_emb else None
