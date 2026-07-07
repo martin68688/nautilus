@@ -1,10 +1,60 @@
 {
   "meta": {
     "schema": "hyperbolic-sop-memory-v0",
-    "source_graph": "paper-skills/distillation/graph_build/graph_skillgraph_c_trace_prereq.json",
+    "source_graph": "paper-skills/eval_skill_memory/artifacts/graph_skillgraph_c_trace_prereq_certified.json",
     "source_schema": "skillgraph-static-v1",
-    "provenance_status": "uncertified_bootstrap",
-    "paper_grade": false,
+    "source_runs": [
+      "20260509_042918",
+      "20260509_154039",
+      "20260509_185008",
+      "20260510_025317",
+      "20260510_095558",
+      "20260510_162636",
+      "20260511_014836",
+      "20260511_102550",
+      "20260513_165253",
+      "20260514_023457",
+      "20260514_052334",
+      "20260515_173948",
+      "20260516_104127",
+      "20260516_125444",
+      "20260517_132158",
+      "20260517_151325",
+      "20260627_135133",
+      "20260701_145201",
+      "20260701_145250",
+      "20260701_155016",
+      "20260701_180038",
+      "20260701_180146"
+    ],
+    "allowlist": [
+      "20260509_042918",
+      "20260509_154039",
+      "20260509_185008",
+      "20260510_025317",
+      "20260510_095558",
+      "20260510_162636",
+      "20260511_014836",
+      "20260511_102550",
+      "20260513_165253",
+      "20260514_023457",
+      "20260514_052334",
+      "20260515_173948",
+      "20260516_104127",
+      "20260516_125444",
+      "20260517_132158",
+      "20260517_151325",
+      "20260627_135133",
+      "20260701_145201",
+      "20260701_145250",
+      "20260701_155016",
+      "20260701_180038",
+      "20260701_180146"
+    ],
+    "allowlist_hash": "5bffcfcdd61fb3d64ccf9cccb5c124a27f8c8b8cd72d3ac9f808ada1a988f57e",
+    "leak_verified": true,
+    "provenance_status": "clean_certified",
+    "paper_grade": true,
     "builder": "GraphBuilderAgent(heuristic_patch_v1)+programmatic_validation",
     "coordinate_model": "Poincare ball + Lorentz hyperboloid, curvature=1, dims=16",
     "angle_model": "theta/phi spherical angles over TF-IDF-SVD direction; radius from p_hat/n_use/level",
@@ -28,6 +78,107 @@
       "scope": "universal_general",
       "skill_id": "skill_general-universal-general",
       "source_node_id": "sg_0001",
+      "source_branches": [
+        [
+          "20260509_042918",
+          "2"
+        ],
+        [
+          "20260509_042918",
+          "3"
+        ],
+        [
+          "20260509_042918",
+          "4"
+        ],
+        [
+          "20260509_042918",
+          "5"
+        ],
+        [
+          "20260509_154039",
+          "1"
+        ],
+        [
+          "20260509_154039",
+          "3"
+        ],
+        [
+          "20260509_154039",
+          "5"
+        ],
+        [
+          "20260509_185008",
+          "3"
+        ],
+        [
+          "20260509_185008",
+          "5"
+        ],
+        [
+          "20260517_132158",
+          "2"
+        ],
+        [
+          "20260517_132158",
+          "3"
+        ],
+        [
+          "20260517_132158",
+          "4"
+        ],
+        [
+          "20260517_132158",
+          "5"
+        ],
+        [
+          "20260627_135133",
+          "1"
+        ],
+        [
+          "20260701_145250",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T5",
+        "B2.T6",
+        "B2.T7",
+        "B2.T8",
+        "B2.T14",
+        "B2.T15",
+        "B3.T7",
+        "B3.T8",
+        "B3.T9",
+        "B3.T10",
+        "B4.T2",
+        "B4.T3",
+        "B4.T4",
+        "B4.T5",
+        "B5.T2",
+        "B5.T3",
+        "B5.T4",
+        "B5.T5",
+        "B1.T8",
+        "B1.T17",
+        "B3.T2",
+        "B3.T3",
+        "B3.T4",
+        "B3.T5",
+        "B3.T6",
+        "B5.T8",
+        "B3.T11",
+        "B5.T9",
+        "B5.T10",
+        "B5.T11",
+        "B3.T12",
+        "B4.T31",
+        "B1.T2",
+        "B1.T3",
+        "B3.T13"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.533,
         "n_use": 15,
@@ -110,6 +261,47 @@
       "scope": "universal_general",
       "skill_id": "skill_general-universal-general",
       "source_node_id": "sg_0002",
+      "source_branches": [
+        [
+          "20260511_014836",
+          "5"
+        ],
+        [
+          "20260516_125444",
+          "1"
+        ],
+        [
+          "20260516_125444",
+          "2"
+        ],
+        [
+          "20260516_125444",
+          "4"
+        ],
+        [
+          "20260701_145201",
+          "1"
+        ],
+        [
+          "20260701_180038",
+          "1"
+        ],
+        [
+          "20260701_180038",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T1",
+        "B1.T21",
+        "B2.T6",
+        "B4.T11",
+        "B4.T13",
+        "B1.T20",
+        "B1.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.571,
         "n_use": 7,
@@ -192,6 +384,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0003",
+      "source_branches": [
+        [
+          "20260513_165253",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T1",
+        "B2.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -274,6 +478,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0004",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -356,6 +571,23 @@
       "scope": "task_specific",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0005",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "2"
+        ],
+        [
+          "20260701_145250",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T6",
+        "B2.T8",
+        "B5.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -438,6 +670,23 @@
       "scope": "task_specific",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0010",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "2"
+        ],
+        [
+          "20260701_145250",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T5",
+        "B5.T4",
+        "B5.T11"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -520,6 +769,17 @@
       "scope": "task_specific",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0012",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -602,6 +862,19 @@
       "scope": "api_warning",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0015",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T1",
+        "B3.T2",
+        "B3.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -684,6 +957,18 @@
       "scope": "api_warning",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0024",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2",
+        "B1.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -766,6 +1051,23 @@
       "scope": "task_specific",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0027",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "1"
+        ],
+        [
+          "20260701_145201",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2",
+        "B1.T4",
+        "B4.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -848,6 +1150,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0031",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T3",
+        "B4.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -930,6 +1244,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0032",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T3",
+        "B4.T14"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -1012,6 +1338,18 @@
       "scope": "api_warning",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0035",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T2",
+        "B2.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -1094,6 +1432,18 @@
       "scope": "api_warning",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0036",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T3",
+        "B5.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -1176,6 +1526,18 @@
       "scope": "api_warning",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0045",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T2",
+        "B2.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -1258,6 +1620,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0050",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T2",
+        "B4.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -1340,6 +1714,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0053",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T3",
+        "B1.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -1422,6 +1808,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0054",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T1",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -1504,6 +1902,23 @@
       "scope": "task_specific",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0060",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "4"
+        ],
+        [
+          "20260701_180146",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T16",
+        "B5.T6",
+        "B4.T24"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -1586,6 +2001,23 @@
       "scope": "task_specific",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0061",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "4"
+        ],
+        [
+          "20260701_180146",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T16",
+        "B5.T6",
+        "B4.T24"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -1668,6 +2100,22 @@
       "scope": "task_specific",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0062",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "4"
+        ],
+        [
+          "20260701_180146",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T16",
+        "B5.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -1750,6 +2198,27 @@
       "scope": "implementation_note",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0064",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "3"
+        ],
+        [
+          "20260701_180146",
+          "4"
+        ],
+        [
+          "20260701_180146",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T5",
+        "B5.T4",
+        "B4.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.667,
         "n_use": 3,
@@ -1832,6 +2301,17 @@
       "scope": "api_warning",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0065",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -1914,6 +2394,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0069",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T1",
+        "B1.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -1996,6 +2488,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0070",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T1",
+        "B4.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -2078,6 +2582,23 @@
       "scope": "implementation_note",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0071",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "2"
+        ],
+        [
+          "20260701_180038",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T1",
+        "B5.T1",
+        "B2.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -2160,6 +2681,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0073",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T5",
+        "B2.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -2242,6 +2775,18 @@
       "scope": "api_warning",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0075",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T1",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -2324,6 +2869,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0076",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T1",
+        "B4.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -2406,6 +2963,18 @@
       "scope": "task_specific",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0081",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T1",
+        "B1.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -2488,6 +3057,27 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0086",
+      "source_branches": [
+        [
+          "20260509_042918",
+          "2"
+        ],
+        [
+          "20260509_042918",
+          "3"
+        ],
+        [
+          "20260509_042918",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T20",
+        "B3.T4",
+        "B5.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.667,
         "n_use": 3,
@@ -2570,6 +3160,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0088",
+      "source_branches": [
+        [
+          "20260509_042918",
+          "2"
+        ],
+        [
+          "20260509_042918",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T1",
+        "B3.T5",
+        "B3.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -2652,6 +3259,22 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0095",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "1"
+        ],
+        [
+          "20260509_154039",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T15",
+        "B5.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -2734,6 +3357,38 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0096",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "1"
+        ],
+        [
+          "20260509_154039",
+          "2"
+        ],
+        [
+          "20260509_154039",
+          "3"
+        ],
+        [
+          "20260509_185008",
+          "1"
+        ],
+        [
+          "20260509_185008",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2",
+        "B2.T4",
+        "B3.T1",
+        "B1.T1",
+        "B3.T2",
+        "B3.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.2,
         "n_use": 5,
@@ -2816,6 +3471,19 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0097",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T2",
+        "B2.T3",
+        "B2.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -2898,6 +3566,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0108",
+      "source_branches": [
+        [
+          "20260509_185008",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -2980,6 +3659,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0112",
+      "source_branches": [
+        [
+          "20260509_185008",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T3",
+        "B5.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -3062,6 +3753,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0115",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T1",
+        "B1.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -3144,6 +3847,27 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0120",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "3"
+        ],
+        [
+          "20260510_025317",
+          "4"
+        ],
+        [
+          "20260510_025317",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T2",
+        "B4.T17",
+        "B5.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.667,
         "n_use": 3,
@@ -3226,6 +3950,27 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0124",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "1"
+        ],
+        [
+          "20260510_025317",
+          "2"
+        ],
+        [
+          "20260510_025317",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2",
+        "B2.T6",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.333,
         "n_use": 3,
@@ -3308,6 +4053,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0127",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "1"
+        ],
+        [
+          "20260510_025317",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T14",
+        "B4.T6",
+        "B4.T11"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -3390,6 +4152,22 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0130",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "1"
+        ],
+        [
+          "20260510_095558",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T1",
+        "B2.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -3472,6 +4250,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0133",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -3554,6 +4343,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0134",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T2",
+        "B3.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -3636,6 +4437,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0136",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T2",
+        "B4.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -3718,6 +4531,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0137",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T1",
+        "B5.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -3800,6 +4625,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0140",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T3",
+        "B3.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -3882,6 +4719,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0144",
+      "source_branches": [
+        [
+          "20260510_162636",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -3964,6 +4812,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0149",
+      "source_branches": [
+        [
+          "20260510_162636",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T1",
+        "B2.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -4046,6 +4906,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0152",
+      "source_branches": [
+        [
+          "20260510_162636",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T1",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -4128,6 +5000,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0156",
+      "source_branches": [
+        [
+          "20260511_014836",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T2",
+        "B4.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -4210,6 +5094,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0159",
+      "source_branches": [
+        [
+          "20260511_014836",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2",
+        "B1.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -4292,6 +5188,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0160",
+      "source_branches": [
+        [
+          "20260511_014836",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T1",
+        "B2.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -4374,6 +5282,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0161",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T2",
+        "B4.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -4456,6 +5376,27 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0164",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "1"
+        ],
+        [
+          "20260511_102550",
+          "2"
+        ],
+        [
+          "20260511_102550",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T4",
+        "B2.T1",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.333,
         "n_use": 3,
@@ -4538,6 +5479,22 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0170",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "6"
+        ],
+        [
+          "20260511_102550",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T3",
+        "B7.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 2,
@@ -4620,6 +5577,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0171",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T1",
+        "B6.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -4702,6 +5671,22 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0172",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "6"
+        ],
+        [
+          "20260511_102550",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T1",
+        "B7.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 2,
@@ -4784,6 +5769,22 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0174",
+      "source_branches": [
+        [
+          "20260513_165253",
+          "1"
+        ],
+        [
+          "20260513_165253",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2",
+        "B3.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -4866,6 +5867,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0176",
+      "source_branches": [
+        [
+          "20260513_165253",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T17",
+        "B3.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -4948,6 +5961,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0182",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -5030,6 +6054,17 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0184",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -5112,6 +6147,19 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0187",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T2",
+        "B5.T3",
+        "B5.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -5194,6 +6242,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0188",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T1",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -5276,6 +6336,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0194",
+      "source_branches": [
+        [
+          "20260514_052334",
+          "4"
+        ],
+        [
+          "20260514_052334",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T1",
+        "B5.T21",
+        "B5.T26"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -5358,6 +6435,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0195",
+      "source_branches": [
+        [
+          "20260514_052334",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T17",
+        "B5.T18",
+        "B5.T20"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -5440,6 +6530,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0197",
+      "source_branches": [
+        [
+          "20260514_052334",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T17",
+        "B5.T18",
+        "B5.T20"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -5522,6 +6625,22 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0198",
+      "source_branches": [
+        [
+          "20260514_052334",
+          "2"
+        ],
+        [
+          "20260514_052334",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T2",
+        "B4.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -5604,6 +6723,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0200",
+      "source_branches": [
+        [
+          "20260515_173948",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -5686,6 +6816,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0203",
+      "source_branches": [
+        [
+          "20260515_173948",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T6",
+        "B5.T13"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -5768,6 +6910,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0205",
+      "source_branches": [
+        [
+          "20260515_173948",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B7.T1",
+        "B7.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -5850,6 +7004,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0208",
+      "source_branches": [
+        [
+          "20260515_173948",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B7.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -5932,6 +7097,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0209",
+      "source_branches": [
+        [
+          "20260515_173948",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B7.T1",
+        "B7.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -6014,6 +7191,32 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0210",
+      "source_branches": [
+        [
+          "20260516_104127",
+          "1"
+        ],
+        [
+          "20260516_104127",
+          "2"
+        ],
+        [
+          "20260516_104127",
+          "3"
+        ],
+        [
+          "20260516_104127",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T1",
+        "B2.T1",
+        "B3.T1",
+        "B4.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 4,
@@ -6096,6 +7299,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0220",
+      "source_branches": [
+        [
+          "20260516_104127",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -6178,6 +7392,28 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0222",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ],
+        [
+          "20260516_125444",
+          "4"
+        ],
+        [
+          "20260516_125444",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T1",
+        "B1.T5",
+        "B4.T1",
+        "B5.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.667,
         "n_use": 3,
@@ -6260,6 +7496,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0228",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T26",
+        "B1.T27"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -6342,6 +7590,19 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0232",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T1",
+        "B2.T3",
+        "B2.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -6424,6 +7685,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0237",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T3",
+        "B1.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -6506,6 +7779,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0242",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B7.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -6588,6 +7872,19 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0246",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T2",
+        "B6.T3",
+        "B6.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -6670,6 +7967,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0250",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B7.T1",
+        "B7.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -6752,6 +8061,27 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0264",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "1"
+        ],
+        [
+          "20260517_132158",
+          "2"
+        ],
+        [
+          "20260517_132158",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T1",
+        "B2.T4",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.333,
         "n_use": 3,
@@ -6834,6 +8164,27 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0266",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "2"
+        ],
+        [
+          "20260517_132158",
+          "4"
+        ],
+        [
+          "20260517_132158",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T4",
+        "B4.T4",
+        "B5.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.333,
         "n_use": 3,
@@ -6916,6 +8267,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0270",
+      "source_branches": [
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T1",
+        "B6.T4",
+        "B6.T10"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -6998,6 +8362,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0271",
+      "source_branches": [
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T1",
+        "B6.T4",
+        "B6.T10"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -7080,6 +8457,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0272",
+      "source_branches": [
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T2",
+        "B6.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -7162,6 +8551,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0280",
+      "source_branches": [
+        [
+          "20260627_135133",
+          "1"
+        ],
+        [
+          "20260627_135133",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T1",
+        "B1.T4",
+        "B4.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -7244,6 +8650,18 @@
       "scope": "api_warning",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0016",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T4",
+        "B3.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -7326,6 +8744,19 @@
       "scope": "implementation_note",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0019",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T9",
+        "B2.T10",
+        "B2.T11"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -7408,6 +8839,18 @@
       "scope": "api_warning",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0021",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T4",
+        "B4.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -7490,6 +8933,19 @@
       "scope": "api_warning",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0025",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T4",
+        "B1.T5",
+        "B1.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -7572,6 +9028,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0030",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T10",
+        "B1.T12"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -7654,6 +9122,18 @@
       "scope": "api_warning",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0034",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T3",
+        "B2.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -7736,6 +9216,19 @@
       "scope": "task_specific",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0040",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T4",
+        "B4.T6",
+        "B4.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -7818,6 +9311,23 @@
       "scope": "api_warning",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0042",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "1"
+        ],
+        [
+          "20260701_155016",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T4",
+        "B1.T18",
+        "B4.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -7900,6 +9410,18 @@
       "scope": "task_specific",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0044",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T4",
+        "B3.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -7982,6 +9504,18 @@
       "scope": "api_warning",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0049",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T5",
+        "B1.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -8064,6 +9598,18 @@
       "scope": "api_warning",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0055",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T4",
+        "B2.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -8146,6 +9692,18 @@
       "scope": "task_specific",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0058",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T16",
+        "B4.T20"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -8228,6 +9786,22 @@
       "scope": "task_specific",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0059",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "4"
+        ],
+        [
+          "20260701_180146",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T16",
+        "B5.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -8310,6 +9884,23 @@
       "scope": "implementation_note",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0063",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "3"
+        ],
+        [
+          "20260701_180146",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T5",
+        "B3.T14",
+        "B4.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -8392,6 +9983,19 @@
       "scope": "implementation_note",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0067",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T3",
+        "B4.T4",
+        "B4.T10"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -8474,6 +10078,18 @@
       "scope": "api_warning",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0072",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T2",
+        "B2.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -8556,6 +10172,18 @@
       "scope": "api_warning",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0074",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T5",
+        "B1.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -8638,6 +10266,18 @@
       "scope": "api_warning",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0082",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T2",
+        "B5.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -8720,6 +10360,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0083",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T2",
+        "B3.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -8802,6 +10454,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0093",
+      "source_branches": [
+        [
+          "20260509_042918",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T11",
+        "B2.T12"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -8884,6 +10548,19 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0094",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T7",
+        "B1.T12",
+        "B1.T14"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -8966,6 +10643,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0099",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T22",
+        "B1.T23"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -9048,6 +10737,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0106",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T5",
+        "B2.T6",
+        "B2.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -9130,6 +10832,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0109",
+      "source_branches": [
+        [
+          "20260509_185008",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T5",
+        "B3.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -9212,6 +10926,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0110",
+      "source_branches": [
+        [
+          "20260509_185008",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T4",
+        "B3.T12"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -9294,6 +11020,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0111",
+      "source_branches": [
+        [
+          "20260509_185008",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -9376,6 +11113,22 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0114",
+      "source_branches": [
+        [
+          "20260509_185008",
+          "1"
+        ],
+        [
+          "20260509_185008",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T5",
+        "B5.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -9458,6 +11211,27 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0121",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "1"
+        ],
+        [
+          "20260510_025317",
+          "2"
+        ],
+        [
+          "20260510_025317",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2",
+        "B2.T7",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.333,
         "n_use": 3,
@@ -9540,6 +11314,27 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0122",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "1"
+        ],
+        [
+          "20260510_025317",
+          "2"
+        ],
+        [
+          "20260510_025317",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2",
+        "B2.T6",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.333,
         "n_use": 3,
@@ -9622,6 +11417,39 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0123",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "1"
+        ],
+        [
+          "20260510_025317",
+          "2"
+        ],
+        [
+          "20260510_025317",
+          "3"
+        ],
+        [
+          "20260516_125444",
+          "1"
+        ],
+        [
+          "20260516_125444",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2",
+        "B2.T6",
+        "B3.T2",
+        "B1.T20",
+        "B2.T3",
+        "B2.T4",
+        "B2.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.2,
         "n_use": 5,
@@ -9704,6 +11532,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0125",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -9786,6 +11625,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0131",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T9"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -9868,6 +11718,17 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0143",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T9"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -9950,6 +11811,22 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0147",
+      "source_branches": [
+        [
+          "20260510_162636",
+          "3"
+        ],
+        [
+          "20260510_162636",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T2",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -10032,6 +11909,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0151",
+      "source_branches": [
+        [
+          "20260510_162636",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T5",
+        "B1.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -10114,6 +12003,22 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0155",
+      "source_branches": [
+        [
+          "20260511_014836",
+          "2"
+        ],
+        [
+          "20260511_014836",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T4",
+        "B5.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -10196,6 +12101,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0157",
+      "source_branches": [
+        [
+          "20260511_014836",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T3",
+        "B4.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -10278,6 +12195,28 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0165",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "2"
+        ],
+        [
+          "20260511_102550",
+          "3"
+        ],
+        [
+          "20260511_102550",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T2",
+        "B3.T2",
+        "B4.T3",
+        "B4.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.667,
         "n_use": 3,
@@ -10360,6 +12299,24 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0168",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "6"
+        ],
+        [
+          "20260511_102550",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T1",
+        "B6.T2",
+        "B6.T3",
+        "B7.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 2,
@@ -10442,6 +12399,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0169",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T2",
+        "B6.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -10524,6 +12493,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0173",
+      "source_branches": [
+        [
+          "20260513_165253",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T4",
+        "B1.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -10606,6 +12587,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0178",
+      "source_branches": [
+        [
+          "20260513_165253",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T4",
+        "B2.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -10688,6 +12681,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0180",
+      "source_branches": [
+        [
+          "20260513_165253",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T13",
+        "B3.T15"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -10770,6 +12775,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0183",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T4",
+        "B4.T9"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -10852,6 +12869,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0185",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -10934,6 +12962,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0189",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -11016,6 +13055,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0193",
+      "source_branches": [
+        [
+          "20260514_052334",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T22",
+        "B5.T23",
+        "B5.T24"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -11098,6 +13150,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0196",
+      "source_branches": [
+        [
+          "20260514_052334",
+          "2"
+        ],
+        [
+          "20260514_052334",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T2",
+        "B4.T1",
+        "B4.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -11180,6 +13249,37 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0204",
+      "source_branches": [
+        [
+          "20260515_173948",
+          "1"
+        ],
+        [
+          "20260515_173948",
+          "2"
+        ],
+        [
+          "20260515_173948",
+          "4"
+        ],
+        [
+          "20260516_125444",
+          "4"
+        ],
+        [
+          "20260516_125444",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2",
+        "B2.T1",
+        "B4.T1",
+        "B5.T1",
+        "B5.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.8,
         "n_use": 5,
@@ -11262,6 +13362,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0206",
+      "source_branches": [
+        [
+          "20260515_173948",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B7.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -11344,6 +13455,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0207",
+      "source_branches": [
+        [
+          "20260515_173948",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B7.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -11426,6 +13548,28 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0214",
+      "source_branches": [
+        [
+          "20260516_104127",
+          "2"
+        ],
+        [
+          "20260516_104127",
+          "3"
+        ],
+        [
+          "20260516_104127",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T7",
+        "B3.T7",
+        "B3.T15",
+        "B5.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.333,
         "n_use": 3,
@@ -11508,6 +13652,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0219",
+      "source_branches": [
+        [
+          "20260516_104127",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -11590,6 +13745,21 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0230",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T1",
+        "B1.T5",
+        "B1.T6",
+        "B1.T26",
+        "B1.T27"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -11672,6 +13842,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0233",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T5",
+        "B2.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -11754,6 +13936,17 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0236",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -11836,6 +14029,22 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0245",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "6"
+        ],
+        [
+          "20260516_125444",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T12",
+        "B7.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -11918,6 +14127,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0253",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B7.T3",
+        "B7.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -12000,6 +14221,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0261",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "2"
+        ],
+        [
+          "20260517_132158",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T4",
+        "B2.T6",
+        "B4.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -12082,6 +14320,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0262",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "3"
+        ],
+        [
+          "20260517_132158",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T2",
+        "B3.T5",
+        "B4.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -12164,6 +14419,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0265",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "2"
+        ],
+        [
+          "20260517_132158",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T4",
+        "B2.T6",
+        "B4.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -12246,6 +14518,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0268",
+      "source_branches": [
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T2",
+        "B6.T6",
+        "B6.T10"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -12328,6 +14613,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0274",
+      "source_branches": [
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T8",
+        "B6.T13"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -12410,6 +14707,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0277",
+      "source_branches": [
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T5",
+        "B6.T13"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -12492,6 +14801,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0279",
+      "source_branches": [
+        [
+          "20260627_135133",
+          "1"
+        ],
+        [
+          "20260627_135133",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T4",
+        "B1.T17",
+        "B4.T1"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -12574,6 +14900,17 @@
       "scope": "task_specific",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0007",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T15"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -12656,6 +14993,22 @@
       "scope": "api_warning",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0017",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "3"
+        ],
+        [
+          "20260701_145250",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T6",
+        "B5.T9"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -12738,6 +15091,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0022",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T5",
+        "B4.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -12820,6 +15185,23 @@
       "scope": "implementation_note",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0028",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "1"
+        ],
+        [
+          "20260701_145201",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T22",
+        "B1.T26",
+        "B4.T14"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -12902,6 +15284,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0029",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T22",
+        "B1.T26"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -12984,6 +15378,18 @@
       "scope": "api_warning",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0037",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T25",
+        "B1.T26"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -13066,6 +15472,22 @@
       "scope": "implementation_note",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0038",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "2"
+        ],
+        [
+          "20260701_145201",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T10",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 2,
@@ -13148,6 +15570,18 @@
       "scope": "task_specific",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0043",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T7",
+        "B1.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -13230,6 +15664,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0052",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T9",
+        "B4.T10"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -13312,6 +15758,18 @@
       "scope": "api_warning",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0066",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T21",
+        "B4.T22"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -13394,6 +15852,18 @@
       "scope": "api_warning",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0068",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T6",
+        "B4.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -13476,6 +15946,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0077",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T4",
+        "B5.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -13558,6 +16040,19 @@
       "scope": "task_specific",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0078",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T3",
+        "B2.T7",
+        "B2.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -13640,6 +16135,19 @@
       "scope": "implementation_note",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0079",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T3",
+        "B2.T7",
+        "B2.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -13722,6 +16230,19 @@
       "scope": "task_specific",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0080",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T4",
+        "B2.T5",
+        "B2.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -13804,6 +16325,44 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0085",
+      "source_branches": [
+        [
+          "20260509_042918",
+          "2"
+        ],
+        [
+          "20260509_042918",
+          "4"
+        ],
+        [
+          "20260509_042918",
+          "5"
+        ],
+        [
+          "20260509_185008",
+          "5"
+        ],
+        [
+          "20260511_102550",
+          "4"
+        ],
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T21",
+        "B4.T1",
+        "B5.T6",
+        "B5.T1",
+        "B5.T2",
+        "B5.T3",
+        "B4.T2",
+        "B6.T26"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.667,
         "n_use": 6,
@@ -13886,6 +16445,20 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0101",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T15",
+        "B1.T16",
+        "B1.T25",
+        "B1.T28"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -13968,6 +16541,25 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0102",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "2"
+        ],
+        [
+          "20260509_154039",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T10",
+        "B5.T13",
+        "B5.T14",
+        "B5.T15",
+        "B5.T16"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 2,
@@ -14050,6 +16642,25 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0117",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "3"
+        ],
+        [
+          "20260510_025317",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T2",
+        "B3.T8",
+        "B3.T12",
+        "B4.T6",
+        "B4.T11"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -14132,6 +16743,30 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0126",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "2"
+        ],
+        [
+          "20260510_025317",
+          "3"
+        ],
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T6",
+        "B2.T7",
+        "B3.T2",
+        "B1.T22",
+        "B1.T23",
+        "B1.T27"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.333,
         "n_use": 3,
@@ -14214,6 +16849,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0132",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T12"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -14296,6 +16942,22 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0135",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "3"
+        ],
+        [
+          "20260510_095558",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T13",
+        "B5.T16"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -14378,6 +17040,23 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0139",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "3"
+        ],
+        [
+          "20260510_162636",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T1",
+        "B1.T9",
+        "B1.T16"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 2,
@@ -14460,6 +17139,23 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0141",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "4"
+        ],
+        [
+          "20260511_014836",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T3",
+        "B4.T5",
+        "B4.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -14542,6 +17238,43 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0148",
+      "source_branches": [
+        [
+          "20260510_162636",
+          "1"
+        ],
+        [
+          "20260510_162636",
+          "2"
+        ],
+        [
+          "20260510_162636",
+          "5"
+        ],
+        [
+          "20260516_104127",
+          "2"
+        ],
+        [
+          "20260627_135133",
+          "1"
+        ],
+        [
+          "20260627_135133",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T1",
+        "B2.T11",
+        "B5.T1",
+        "B2.T3",
+        "B1.T12",
+        "B1.T24",
+        "B4.T27"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 6,
@@ -14624,6 +17357,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0153",
+      "source_branches": [
+        [
+          "20260510_162636",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -14706,6 +17450,17 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0158",
+      "source_branches": [
+        [
+          "20260511_014836",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -14788,6 +17543,32 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0162",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "1"
+        ],
+        [
+          "20260511_102550",
+          "2"
+        ],
+        [
+          "20260511_102550",
+          "3"
+        ],
+        [
+          "20260511_102550",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T5",
+        "B2.T2",
+        "B3.T2",
+        "B4.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 4,
@@ -14870,6 +17651,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0163",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -14952,6 +17744,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0175",
+      "source_branches": [
+        [
+          "20260513_165253",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T14",
+        "B3.T16",
+        "B3.T17"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -15034,6 +17839,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0177",
+      "source_branches": [
+        [
+          "20260513_165253",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T6",
+        "B1.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -15116,6 +17933,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0179",
+      "source_branches": [
+        [
+          "20260513_165253",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T5",
+        "B2.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -15198,6 +18027,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0186",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T3",
+        "B1.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -15280,6 +18121,22 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0190",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "2"
+        ],
+        [
+          "20260514_023457",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T4",
+        "B4.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 2,
@@ -15362,6 +18219,47 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0202",
+      "source_branches": [
+        [
+          "20260515_173948",
+          "1"
+        ],
+        [
+          "20260515_173948",
+          "2"
+        ],
+        [
+          "20260515_173948",
+          "4"
+        ],
+        [
+          "20260516_104127",
+          "3"
+        ],
+        [
+          "20260516_104127",
+          "4"
+        ],
+        [
+          "20260516_125444",
+          "4"
+        ],
+        [
+          "20260516_125444",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T2",
+        "B2.T1",
+        "B4.T1",
+        "B3.T9",
+        "B3.T24",
+        "B5.T1",
+        "B5.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.857,
         "n_use": 7,
@@ -15444,6 +18342,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0235",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T3",
+        "B4.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -15526,6 +18436,19 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0238",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T4",
+        "B1.T10",
+        "B1.T11"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -15608,6 +18531,17 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0251",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B7.T5"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -15690,6 +18624,22 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0254",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "6"
+        ],
+        [
+          "20260516_125444",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T15",
+        "B7.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -15772,6 +18722,19 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0257",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T7",
+        "B2.T8",
+        "B2.T9"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -15854,6 +18817,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0259",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T10",
+        "B4.T11"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -15936,6 +18911,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0273",
+      "source_branches": [
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T8",
+        "B6.T16"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -16018,6 +19005,19 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0276",
+      "source_branches": [
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T6",
+        "B6.T15",
+        "B6.T18"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -16100,6 +19100,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0278",
+      "source_branches": [
+        [
+          "20260627_135133",
+          "1"
+        ],
+        [
+          "20260627_135133",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T4",
+        "B1.T20",
+        "B4.T14"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -16182,6 +19199,17 @@
       "scope": "task_specific",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0011",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T10"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -16264,6 +19292,37 @@
       "scope": "api_warning",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0013",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "1"
+        ],
+        [
+          "20260701_145250",
+          "2"
+        ],
+        [
+          "20260701_145250",
+          "3"
+        ],
+        [
+          "20260701_145250",
+          "4"
+        ],
+        [
+          "20260701_145250",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T3",
+        "B2.T18",
+        "B3.T23",
+        "B4.T9",
+        "B5.T3"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.4,
         "n_use": 5,
@@ -16346,6 +19405,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0018",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T8",
+        "B3.T9"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -16428,6 +19499,18 @@
       "scope": "api_warning",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0020",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T16",
+        "B2.T17"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -16510,6 +19593,24 @@
       "scope": "implementation_note",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0023",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "4"
+        ],
+        [
+          "20260701_145250",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T6",
+        "B4.T7",
+        "B5.T16",
+        "B5.T17"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -16592,6 +19693,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0033",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T15",
+        "B2.T19"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -16674,6 +19787,18 @@
       "scope": "api_warning",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0047",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T9",
+        "B1.T10"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -16756,6 +19881,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0051",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T10",
+        "B4.T11"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -16838,6 +19975,23 @@
       "scope": "task_specific",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0056",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "4"
+        ],
+        [
+          "20260701_180146",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T16",
+        "B5.T6",
+        "B4.T24"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -16920,6 +20074,23 @@
       "scope": "api_warning",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0057",
+      "source_branches": [
+        [
+          "20260701_180146",
+          "4"
+        ],
+        [
+          "20260701_180146",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T16",
+        "B5.T6",
+        "B4.T24"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -17002,6 +20173,18 @@
       "scope": "api_warning",
       "skill_id": "skill_new-york-city-taxi-fare-prediction",
       "source_node_id": "sg_0084",
+      "source_branches": [
+        [
+          "20260701_180038",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T10",
+        "B2.T11"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -17084,6 +20267,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0087",
+      "source_branches": [
+        [
+          "20260509_042918",
+          "2"
+        ],
+        [
+          "20260509_042918",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T13",
+        "B5.T8",
+        "B5.T9"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -17166,6 +20366,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0091",
+      "source_branches": [
+        [
+          "20260509_042918",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T3",
+        "B2.T22"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -17248,6 +20460,23 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0098",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "1"
+        ],
+        [
+          "20260509_185008",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T32",
+        "B1.T33",
+        "B1.T9"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -17330,6 +20559,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0107",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T20"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -17412,6 +20652,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0113",
+      "source_branches": [
+        [
+          "20260509_185008",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T5",
+        "B5.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -17494,6 +20746,34 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0116",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "1"
+        ],
+        [
+          "20260510_025317",
+          "2"
+        ],
+        [
+          "20260517_132158",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T3",
+        "B1.T4",
+        "B1.T8",
+        "B1.T9",
+        "B1.T10",
+        "B1.T11",
+        "B2.T11",
+        "B2.T18",
+        "B2.T19",
+        "B2.T20"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 3,
@@ -17576,6 +20856,23 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0129",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "3"
+        ],
+        [
+          "20260510_025317",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T12",
+        "B4.T13",
+        "B4.T14"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -17658,6 +20955,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0138",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T17"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -17740,6 +21048,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0142",
+      "source_branches": [
+        [
+          "20260510_095558",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T13"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -17822,6 +21141,19 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0150",
+      "source_branches": [
+        [
+          "20260510_162636",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T12",
+        "B1.T13",
+        "B1.T14"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -17904,6 +21236,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0154",
+      "source_branches": [
+        [
+          "20260510_162636",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T14"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -17986,6 +21329,22 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0166",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "2"
+        ],
+        [
+          "20260511_102550",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T4",
+        "B4.T9"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -18068,6 +21427,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0167",
+      "source_branches": [
+        [
+          "20260511_102550",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T9"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -18150,6 +21520,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0181",
+      "source_branches": [
+        [
+          "20260513_165253",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T19"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -18232,6 +21613,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0192",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -18314,6 +21706,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0199",
+      "source_branches": [
+        [
+          "20260515_173948",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T10"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -18396,6 +21799,23 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0201",
+      "source_branches": [
+        [
+          "20260515_173948",
+          "4"
+        ],
+        [
+          "20260515_173948",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T2",
+        "B5.T7",
+        "B5.T9"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 2,
@@ -18478,6 +21898,30 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0211",
+      "source_branches": [
+        [
+          "20260516_104127",
+          "2"
+        ],
+        [
+          "20260516_104127",
+          "4"
+        ],
+        [
+          "20260516_125444",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T1",
+        "B4.T2",
+        "B4.T12",
+        "B6.T5",
+        "B6.T6",
+        "B6.T12"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.333,
         "n_use": 3,
@@ -18560,6 +22004,24 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0212",
+      "source_branches": [
+        [
+          "20260516_104127",
+          "3"
+        ],
+        [
+          "20260516_104127",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T14",
+        "B3.T19",
+        "B4.T2",
+        "B4.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -18642,6 +22104,24 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0234",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "3"
+        ],
+        [
+          "20260516_125444",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T3",
+        "B4.T2",
+        "B4.T6",
+        "B4.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -18724,6 +22204,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0239",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T13",
+        "B1.T14"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -18806,6 +22298,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0255",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T11",
+        "B4.T12"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -18888,6 +22392,19 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0275",
+      "source_branches": [
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T9",
+        "B6.T11",
+        "B6.T17"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -18970,6 +22487,23 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0281",
+      "source_branches": [
+        [
+          "20260627_135133",
+          "1"
+        ],
+        [
+          "20260627_135133",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T9",
+        "B1.T12",
+        "B4.T27"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -19052,6 +22586,18 @@
       "scope": "task_specific",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0006",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T14",
+        "B3.T17"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -19134,6 +22680,17 @@
       "scope": "task_specific",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0008",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B5.T15"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -19216,6 +22773,23 @@
       "scope": "api_warning",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0014",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "2"
+        ],
+        [
+          "20260701_145250",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T7",
+        "B2.T25",
+        "B3.T15"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -19298,6 +22872,18 @@
       "scope": "api_warning",
       "skill_id": "skill_denoising-dirty-documents",
       "source_node_id": "sg_0039",
+      "source_branches": [
+        [
+          "20260701_145201",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T18",
+        "B2.T19"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -19380,6 +22966,19 @@
       "scope": "implementation_note",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0048",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T13",
+        "B1.T14",
+        "B1.T17"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -19462,6 +23061,23 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0090",
+      "source_branches": [
+        [
+          "20260509_042918",
+          "2"
+        ],
+        [
+          "20260509_042918",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T16",
+        "B2.T17",
+        "B3.T4"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -19544,6 +23160,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0103",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T35",
+        "B1.T36"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -19626,6 +23254,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0104",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T34",
+        "B1.T35",
+        "B1.T38"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -19708,6 +23349,23 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0128",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "4"
+        ],
+        [
+          "20260516_104127",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T6",
+        "B4.T11",
+        "B4.T15"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -19790,6 +23448,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0145",
+      "source_branches": [
+        [
+          "20260510_162636",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T17",
+        "B1.T22"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -19872,6 +23542,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0146",
+      "source_branches": [
+        [
+          "20260510_162636",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T19"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -19954,6 +23635,17 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0191",
+      "source_branches": [
+        [
+          "20260514_023457",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -20036,6 +23728,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0217",
+      "source_branches": [
+        [
+          "20260516_104127",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T19",
+        "B3.T21"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -20118,6 +23822,22 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0218",
+      "source_branches": [
+        [
+          "20260516_104127",
+          "2"
+        ],
+        [
+          "20260516_104127",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T3",
+        "B4.T17"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -20200,6 +23920,28 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0227",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ],
+        [
+          "20260516_125444",
+          "4"
+        ],
+        [
+          "20260516_125444",
+          "5"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T24",
+        "B1.T26",
+        "B4.T12",
+        "B5.T7"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.667,
         "n_use": 3,
@@ -20282,6 +24024,21 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0231",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T16",
+        "B1.T22",
+        "B1.T23",
+        "B1.T26",
+        "B1.T27"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -20364,6 +24121,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0240",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T17",
+        "B1.T18"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -20446,6 +24215,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0243",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T6",
+        "B6.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -20528,6 +24309,19 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0258",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T13",
+        "B4.T14",
+        "B4.T15"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -20610,6 +24404,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0263",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T12",
+        "B4.T17"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -20692,6 +24498,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0267",
+      "source_branches": [
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T9",
+        "B6.T14",
+        "B6.T19"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -20774,6 +24593,23 @@
       "scope": "api_warning",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0026",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "2"
+        ],
+        [
+          "20260701_145250",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T22",
+        "B3.T16",
+        "B3.T18"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -20856,6 +24692,19 @@
       "scope": "task_specific",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0041",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T12",
+        "B1.T18",
+        "B1.T20"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -20938,6 +24787,26 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0092",
+      "source_branches": [
+        [
+          "20260509_042918",
+          "2"
+        ],
+        [
+          "20260509_042918",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T12",
+        "B2.T18",
+        "B2.T19",
+        "B2.T23",
+        "B3.T1",
+        "B3.T2"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -21020,6 +24889,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0105",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T36"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -21102,6 +24982,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0118",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T17",
+        "B4.T25"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -21184,6 +25076,23 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0215",
+      "source_branches": [
+        [
+          "20260516_104127",
+          "2"
+        ],
+        [
+          "20260516_104127",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T4",
+        "B2.T5",
+        "B3.T28"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -21266,6 +25175,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0216",
+      "source_branches": [
+        [
+          "20260516_104127",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T4",
+        "B4.T20"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -21348,6 +25269,20 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0229",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T22",
+        "B1.T23",
+        "B1.T24",
+        "B1.T27"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -21430,6 +25365,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0241",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T18",
+        "B1.T19"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -21512,6 +25459,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0244",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T8"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -21594,6 +25552,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0252",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T8",
+        "B6.T12"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -21676,6 +25646,20 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0256",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T5",
+        "B4.T6",
+        "B4.T26",
+        "B4.T28"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -21758,6 +25742,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0260",
+      "source_branches": [
+        [
+          "20260517_132158",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T16",
+        "B4.T17"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -21840,6 +25836,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0269",
+      "source_branches": [
+        [
+          "20260517_151325",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T10",
+        "B6.T16",
+        "B6.T23"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -21922,6 +25931,17 @@
       "scope": "task_specific",
       "skill_id": "skill_aerial-cactus-identification",
       "source_node_id": "sg_0009",
+      "source_branches": [
+        [
+          "20260701_145250",
+          "3"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T23"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -22004,6 +26024,18 @@
       "scope": "api_warning",
       "skill_id": "skill_leaf-classification",
       "source_node_id": "sg_0046",
+      "source_branches": [
+        [
+          "20260701_155016",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T22",
+        "B1.T21"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -22086,6 +26118,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0089",
+      "source_branches": [
+        [
+          "20260509_042918",
+          "2"
+        ]
+      ],
+      "evidence_turns": [
+        "B2.T20"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -22168,6 +26211,18 @@
       "scope": "implementation_note",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0100",
+      "source_branches": [
+        [
+          "20260509_154039",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T37",
+        "B1.T39"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -22250,6 +26305,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0119",
+      "source_branches": [
+        [
+          "20260510_025317",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B4.T25"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 1,
@@ -22332,6 +26398,24 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0213",
+      "source_branches": [
+        [
+          "20260516_104127",
+          "3"
+        ],
+        [
+          "20260516_104127",
+          "4"
+        ]
+      ],
+      "evidence_turns": [
+        "B3.T9",
+        "B3.T24",
+        "B4.T7",
+        "B4.T11"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 1.0,
         "n_use": 2,
@@ -22414,6 +26498,19 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0225",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T22",
+        "B1.T23",
+        "B1.T27"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -22496,6 +26593,25 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0226",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ],
+        [
+          "20260516_125444",
+          "7"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T19",
+        "B1.T23",
+        "B1.T26",
+        "B1.T27",
+        "B7.T6"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.5,
         "n_use": 2,
@@ -22578,6 +26694,17 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0248",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T10"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -22660,6 +26787,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0223",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T24"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -22742,6 +26880,18 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0247",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T11",
+        "B6.T14"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -22824,6 +26974,17 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0224",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T25"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -22906,6 +27067,17 @@
       "scope": "api_warning",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0249",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "6"
+        ]
+      ],
+      "evidence_turns": [
+        "B6.T15"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,
@@ -22988,6 +27160,18 @@
       "scope": "task_specific",
       "skill_id": "skill_spooky-author-identification",
       "source_node_id": "sg_0221",
+      "source_branches": [
+        [
+          "20260516_125444",
+          "1"
+        ]
+      ],
+      "evidence_turns": [
+        "B1.T27",
+        "B1.T26"
+      ],
+      "reference_ids": [],
+      "evidence_ids": [],
       "metric": {
         "p_hat": 0.0,
         "n_use": 1,

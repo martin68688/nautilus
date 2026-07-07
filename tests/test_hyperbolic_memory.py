@@ -21,6 +21,8 @@ def load_module(name: str, path: Path):
 
 builder = load_module("build_hyperbolic_memory", REPO / "paper-skills" / "hyper_memory" / "build_hyperbolic_memory.py")
 ablation = load_module("evaluate_hyperbolic_ablation", REPO / "paper-skills" / "hyper_memory" / "evaluate_hyperbolic_ablation.py")
+certifier = load_module("certify_skillgraph_provenance", REPO / "paper-skills" / "eval_skill_memory" / "certify_skillgraph_provenance.py")
+validator = load_module("validate_hyperbolic_benchmark", REPO / "paper-skills" / "eval_skill_memory" / "validate_hyperbolic_benchmark.py")
 sys.path.insert(0, str(REPO / "mlevolve"))
 from agents.memory.external_skill_memory import ExternalSkillMemoryLayer, euclidean_distance, poincare_distance  # noqa: E402
 
@@ -108,6 +110,49 @@ def test_builder_flat_twin_identity_and_quality_report(tmp_path):
     assert report["coordinates"]["quality_report"]["status"] == "coordinate_quality_null"
 
 
+def test_builder_requires_clean_provenance_fails_closed(tmp_path):
+    input_path = tmp_path / "graph.json"
+    synthetic_graph(input_path)
+    graph = json.loads(input_path.read_text(encoding="utf-8"))
+    graph["meta"].pop("source_runs")
+    graph["nodes"][0].pop("source_branches")
+    input_path.write_text(json.dumps(graph), encoding="utf-8")
+    with pytest.raises(ValueError, match="clean provenance"):
+        builder.build(input_path, tmp_path / "out", dims=3, require_clean_provenance=True)
+
+
+def test_certifier_attaches_source_provenance(tmp_path):
+    graph_path = tmp_path / "compact.json"
+    source_path = tmp_path / "source_nodes.json"
+    allowlist_path = tmp_path / "allowlist.json"
+    output_path = tmp_path / "certified.json"
+    graph_path.write_text(json.dumps({
+        "meta": {"schema": "skillgraph-static-v1"},
+        "nodes": [{"id": "sg_a", "title": "A", "principle": "Do A", "condition": "when A", "category": "task"}],
+        "edges": [],
+    }), encoding="utf-8")
+    source_path.write_text(json.dumps({
+        "nodes": [{
+            "id": "sg_a",
+            "source_branches": [["run_good", "1"]],
+            "evidence_turns": ["B1.T1"],
+        }]
+    }), encoding="utf-8")
+    allowlist_path.write_text(json.dumps({
+        "entries": [{"run_id": "run_good", "task": "task", "path": "runs/run_good", "audit_status": "clean", "allowed": True, "notes": ""}]
+    }), encoding="utf-8")
+    report = certifier.certify(
+        graph_path=graph_path,
+        source_nodes_path=source_path,
+        allowlist_path=allowlist_path,
+        output_path=output_path,
+    )
+    certified = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["status"] == "clean_certified"
+    assert certified["meta"]["leak_verified"] is True
+    assert certified["nodes"][0]["source_branches"] == [["run_good", "1"]]
+
+
 def test_geometry_runtime_same_coordinates_two_distances(tmp_path):
     input_path = tmp_path / "graph.json"
     out_dir = tmp_path / "out"
@@ -188,3 +233,74 @@ def test_paired_bootstrap_gate_requires_p_value_and_precision():
     assert report["rare_recall_at_5"]["observed_mean_diff"] >= 0.05
     assert report["rare_recall_at_5"]["p_value"] < 0.05
     assert report["passed"] is True
+
+
+def test_benchmark_validator_accepts_certified_gold(tmp_path):
+    input_path = tmp_path / "graph.json"
+    out_dir = tmp_path / "out"
+    synthetic_graph(input_path)
+    builder.build(input_path, out_dir, dims=8, require_clean_provenance=True)
+    benchmark = tmp_path / "bench.jsonl"
+    gold = tmp_path / "gold.jsonl"
+    allowlist = tmp_path / "allowlist.json"
+    benchmark.write_text(json.dumps({
+        "query_id": "q1",
+        "task_type": "spooky-author-identification",
+        "stage": "debug",
+        "context": "small text classification overconfident transformer",
+        "condition": ["small text classification dataset with overconfident predictions"],
+        "failure_mode": ["poor calibration"],
+        "source_trace": "",
+        "query_kind": "rare_condition",
+    }) + "\n", encoding="utf-8")
+    gold.write_text(json.dumps({
+        "query_id": "q1",
+        "gold_sops": [{
+            "sop_id": "sg_a",
+            "relevance": "required",
+            "condition_match": True,
+            "is_rare": True,
+            "rarity_count": 1,
+            "rationale": "fixture",
+        }],
+    }) + "\n", encoding="utf-8")
+    allowlist.write_text(json.dumps({
+        "entries": [
+            {"run_id": "run_clean_a", "task": "task", "path": "", "audit_status": "clean", "allowed": True, "notes": ""},
+            {"run_id": "run_clean_b", "task": "task", "path": "", "audit_status": "clean", "allowed": True, "notes": ""},
+            {"run_id": "run_clean_c", "task": "task", "path": "", "audit_status": "clean", "allowed": True, "notes": ""},
+        ]
+    }), encoding="utf-8")
+    report = validator.validate(
+        graph_path=out_dir / "hyper_graph.json",
+        benchmark_path=benchmark,
+        gold_path=gold,
+        allowlist_path=allowlist,
+        require_certified_graph=True,
+    )
+    assert report["passed"] is True
+
+
+def test_runner_evaluator_reports_not_claim_grade_when_uncertified():
+    graph = {
+        "meta": {"paper_grade": False},
+        "nodes": [
+            {
+                "id": "sg_a",
+                "type": "SOP",
+                "title": "Use label smoothing",
+                "condition": "small data overconfident predictions",
+                "source_branches": [["run_clean", "1"]],
+                "evidence_turns": ["B1.T1"],
+            }
+        ],
+    }
+    gold = {"q1": [{"sop_id": "sg_a", "relevance": "required", "condition_match": True, "is_rare": True}]}
+    rows = [
+        {"query_id": "q1", "system": "agentic_poincare", "selected_sops": ["sg_a"], "navigation_trace": ["a"], "risk_warnings": []},
+        {"query_id": "q1", "system": "agentic_flat_twin", "selected_sops": [], "navigation_trace": ["a"], "risk_warnings": []},
+    ]
+    report = ablation.evaluate_runner_results(result_rows=rows, gold_by_query=gold, graph=graph, n_resamples=200, seed=1)
+    assert report["status"] == "not_claim_grade"
+    assert report["passed"] is False
+    assert "paper_grade_provenance" in report["claim_blockers"]

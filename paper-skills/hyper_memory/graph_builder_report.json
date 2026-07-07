@@ -1,5 +1,5 @@
 {
-  "input": "paper-skills/distillation/graph_build/graph_skillgraph_c_trace_prereq.json",
+  "input": "paper-skills/eval_skill_memory/artifacts/graph_skillgraph_c_trace_prereq_certified.json",
   "outputs": {
     "hyper_graph": "paper-skills/hyper_memory/hyper_graph.json",
     "hyper_index": "paper-skills/hyper_memory/hyper_index.npz",
@@ -8,18 +8,60 @@
     "coordinate_quality_report": "paper-skills/hyper_memory/coordinate_quality_report.json"
   },
   "provenance": {
-    "status": "uncertified_bootstrap",
-    "paper_grade": false,
-    "missing_meta_fields": [
-      "source_runs",
-      "allowlist",
-      "leak_verified"
-    ],
-    "nodes_with_source_evidence": 0,
+    "status": "clean_certified",
+    "paper_grade": true,
+    "missing_meta_fields": [],
+    "nodes_with_source_evidence": 281,
     "nodes_total": 281,
-    "source_runs": [],
-    "allowlist": [],
-    "leak_verified": false,
+    "source_runs": [
+      "20260509_042918",
+      "20260509_154039",
+      "20260509_185008",
+      "20260510_025317",
+      "20260510_095558",
+      "20260510_162636",
+      "20260511_014836",
+      "20260511_102550",
+      "20260513_165253",
+      "20260514_023457",
+      "20260514_052334",
+      "20260515_173948",
+      "20260516_104127",
+      "20260516_125444",
+      "20260517_132158",
+      "20260517_151325",
+      "20260627_135133",
+      "20260701_145201",
+      "20260701_145250",
+      "20260701_155016",
+      "20260701_180038",
+      "20260701_180146"
+    ],
+    "allowlist": [
+      "20260509_042918",
+      "20260509_154039",
+      "20260509_185008",
+      "20260510_025317",
+      "20260510_095558",
+      "20260510_162636",
+      "20260511_014836",
+      "20260511_102550",
+      "20260513_165253",
+      "20260514_023457",
+      "20260514_052334",
+      "20260515_173948",
+      "20260516_104127",
+      "20260516_125444",
+      "20260517_132158",
+      "20260517_151325",
+      "20260627_135133",
+      "20260701_145201",
+      "20260701_145250",
+      "20260701_155016",
+      "20260701_180038",
+      "20260701_180146"
+    ],
+    "leak_verified": true,
     "note": "Current artifact is paper-grade only when every SOP has source evidence and the graph meta records clean-run provenance."
   },
   "source": {
@@ -181,6 +223,6 @@
     "conflicts_have_condition_or_failure_context": true,
     "flat_twin_same_coordinates_as_poincare": true,
     "coordinate_quality_gate_passed": true,
-    "paper_grade_provenance": false
+    "paper_grade_provenance": true
   }
 }

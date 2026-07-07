@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "passed": true,
+  "queries": 40,
+  "gold_rows": 40,
+  "by_kind": {
+    "rare_condition": 10,
+    "debug_failure": 10,
+    "conflict_risk": 10,
+    "method_set": 10
+  },
+  "require_certified_graph": true,
+  "graph_paper_grade": true,
+  "errors": [],
+  "warnings": []
+}
