@@ -13,7 +13,7 @@ from agents.coder import plan_and_code_query
 from agents.coder.diff_coder import diff_generate_and_apply
 from engine import solution_manager
 from agents.triggers import register_node
-from agents.memory.external_skill_memory import fetch_external_skill_memory
+from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
 
 logger = logging.getLogger("MLEvolve")
 
@@ -146,10 +146,11 @@ def fuse_two_nodes(agent, source_node: SearchNode, target_node: SearchNode) -> S
 
     external_skill_section = ""
     if prompt.get("External Skill Memory", "").strip():
-        section_title = "Agentic Hyperbolic Memory Navigation" if "agentic" in external_skill_source else "External Skill Memory"
+        section_title = external_memory_section_title(external_skill_source)
+        section_intro = external_memory_section_intro(external_skill_source, "this fusion step")
         external_skill_section = (
             f"\n# {section_title}\n"
-            "Below are persistent SOP memories retrieved before this fusion step:\n"
+            f"{section_intro}\n"
             f"{prompt['External Skill Memory']}\n"
         )
 
@@ -310,10 +311,11 @@ def _fuse_with_multiple_references(
 
     external_skill_section = ""
     if prompt.get("External Skill Memory", "").strip():
-        section_title = "Agentic Hyperbolic Memory Navigation" if "agentic" in external_skill_source else "External Skill Memory"
+        section_title = external_memory_section_title(external_skill_source)
+        section_intro = external_memory_section_intro(external_skill_source, "this multi-fusion step")
         external_skill_section = (
             f"\n# {section_title}\n"
-            "Below are persistent SOP memories retrieved before this multi-fusion step:\n"
+            f"{section_intro}\n"
             f"{prompt['External Skill Memory']}\n"
         )
 

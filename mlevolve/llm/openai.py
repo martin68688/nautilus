@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import re
 import time
 from typing import Any
@@ -99,10 +100,11 @@ def query(
     filtered = {k: v for k, v in model_kwargs.items() if v is not None}
     model = filtered.get("model", "")
     stage = _stage_config_for_model(cfg, model)
+    timeout = float(os.environ.get("OPENAI_COMPAT_TIMEOUT", "1200"))
     client = OpenAI(
         api_key=stage.api_key,
         base_url=stage.base_url or None,
-        timeout=1200.0,
+        timeout=timeout,
     )
     messages = _build_messages(system_message, user_message)
     if not messages:

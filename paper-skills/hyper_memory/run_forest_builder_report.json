@@ -1,0 +1,41 @@
+{
+  "schema": "run_forest_builder_report_v1",
+  "journal_count": 45,
+  "node_count": 6666,
+  "edge_count": 15040,
+  "node_type_counts": {
+    "Evidence": 1985,
+    "Run": 45,
+    "RunNode": 2200,
+    "SOP": 281,
+    "Transition": 2155
+  },
+  "edge_kind_counts": {
+    "contains": 2200,
+    "distills_to": 2773,
+    "has_transition": 2155,
+    "parent_of": 2155,
+    "points_to_local_best": 1617,
+    "supported_by": 1985,
+    "transition_to": 2155
+  },
+  "sop_count": 281,
+  "sops_with_attached_transitions": 264,
+  "transition_count": 2155,
+  "transitions_with_sop_attachments": 1229,
+  "attachment_quality_counts": {
+    "branch_lexical_match": 2304,
+    "evidence_turn_match": 469
+  },
+  "evidence_count": 1985,
+  "local_best_coordinate_attractions": 0,
+  "local_best_attraction_weight": 0.0,
+  "poincare_max_norm": 0.9878803970168318,
+  "flat_twin_same_as_poincare": true,
+  "euclidean_shape": [
+    6666,
+    16
+  ],
+  "run_node_topology_preserved": true,
+  "sop_attachment_rule": "match SOP source_branches [run_short, branch_id], prefer evidence_turn B{branch}.T{step} alignment, fallback to at most two branch-local lexical matches"
+}

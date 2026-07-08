@@ -6,7 +6,7 @@ from engine.search_node import SearchNode
 from agents.prompts import prompt_resp_fmt, get_impl_guideline_from_agent
 from agents.planner import build_chat_prompt_for_model
 from agents.coder import plan_and_code_query
-from agents.memory.external_skill_memory import fetch_external_skill_memory
+from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
 
 from engine.conditions import should_trigger_branch_fusion  # noqa: F401
 from agents.triggers import register_node
@@ -176,10 +176,11 @@ def run(
 
     external_skill_section = ""
     if prompt.get("External Skill Memory", "").strip():
-        section_title = "Agentic Hyperbolic Memory Navigation" if "agentic" in external_skill_source else "External Skill Memory"
+        section_title = external_memory_section_title(external_skill_source)
+        section_intro = external_memory_section_intro(external_skill_source, "this multi-branch synthesis")
         external_skill_section = (
             f"\n# {section_title}\n"
-            "Below are persistent SOP memories retrieved before this multi-branch synthesis:\n"
+            f"{section_intro}\n"
             f"{prompt['External Skill Memory']}\n"
         )
 

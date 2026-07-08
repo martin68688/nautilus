@@ -164,9 +164,23 @@ external_skill_memory:
   graph_path: "../paper-skills/distillation/graph_build/graph_optimized_skillgraph.json"
   index_path: ""
   text_model_path: ""
-  source_name: "skillgraph"   # e.g. skillgraph | hyperbolic_agentic_memory | flat_twin_agentic_memory
-  mode: "skillgraph"          # skillgraph | agentic_hyperbolic | flat_twin_agentic
-  scoring_mode: "lexical"     # lexical | poincare | flat_twin
+  source_name: "skillgraph"   # e.g. skillgraph | hyperbolic_agentic_memory | flat_twin_agentic_memory | euclidean_agentic_memory
+  mode: "skillgraph"          # skillgraph | agentic_hyperbolic | flat_twin_agentic | agentic_euclidean
+  scoring_mode: "lexical"     # lexical | poincare | flat_twin | euclidean
+  geometry_distance_weight: 0.30
+  geometry_semantic_weight: 0.20
+  geometry_constraint_weight: 0.05
+  geometry_condition_weight: 0.18
+  geometry_failure_weight: 0.14
+  geometry_evidence_weight: 0.08
+  geometry_reliability_weight: 0.08
+  geometry_conflict_weight: 0.10
+  geometry_distance_norm: "none"  # none | minmax | zscore
+  geometry_query_radius_quantile: 0.5
+  geometry_query_radius_mode: "predicted_distribution"  # quantile | predicted_distribution
+  geometry_query_radius_bands: ["core", "middle", "edge"]
+  geometry_query_radius_top_bands: 2
+  geometry_radius_fusion: "weighted_max"  # weighted_max | weighted_mean
   enable_agentic: False
   navigator_max_steps: 3
   navigator_reference_budget: 1200

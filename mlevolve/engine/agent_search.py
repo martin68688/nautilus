@@ -65,6 +65,9 @@ class AgentSearch:
         # Adoption tracking: side-channel snapshot of methodology ref_ids (never in prompt)
         from engine.coldstart import knowledge as _kb
         self.methodology_ref_ids: list[str] = list(_kb._LAST_REF_IDS)
+        self.coldstart_external_ref_ids: list[str] = list(getattr(_kb, "_LAST_RUN_FOREST_REF_IDS", []))
+        self.coldstart_external_source: str = str(getattr(_kb, "_LAST_RUN_FOREST_SOURCE", "") or "")
+        self.coldstart_external_memory_text: str = str(getattr(_kb, "_LAST_RUN_FOREST_TEXT", "") or "")
         self.adoption_tracking_enabled: bool = cfg.adoption_tracking.enable
 
         # Top-N candidates
@@ -113,14 +116,38 @@ class AgentSearch:
         ext_cfg = getattr(self.cfg, "external_skill_memory", None)
         if ext_cfg is not None and getattr(ext_cfg, "enable", False):
             try:
-                from agents.memory.external_skill_memory import ExternalSkillMemoryLayer
-                self.external_skill_memory = ExternalSkillMemoryLayer(
+                from agents.memory.external_skill_memory import ExternalSkillMemoryLayer, RunForestMemoryLayer
+                ext_mode = getattr(ext_cfg, "mode", "skillgraph")
+                ext_source = getattr(ext_cfg, "source_name", "skillgraph")
+                ext_graph_path = getattr(ext_cfg, "graph_path", "")
+                memory_layer_cls = (
+                    RunForestMemoryLayer
+                    if "run_forest" in str(ext_mode).lower()
+                    or "run_forest" in str(ext_source).lower()
+                    or "run_forest" in str(ext_graph_path).lower()
+                    else ExternalSkillMemoryLayer
+                )
+                self.external_skill_memory = memory_layer_cls(
                     graph_path=getattr(ext_cfg, "graph_path", ""),
-                    source_name=getattr(ext_cfg, "source_name", "skillgraph"),
-                    mode=getattr(ext_cfg, "mode", "skillgraph"),
+                    source_name=ext_source,
+                    mode=ext_mode,
                     index_path=getattr(ext_cfg, "index_path", ""),
                     text_model_path=getattr(ext_cfg, "text_model_path", ""),
                     scoring_mode=getattr(ext_cfg, "scoring_mode", "lexical"),
+                    geometry_distance_weight=getattr(ext_cfg, "geometry_distance_weight", 0.30),
+                    geometry_semantic_weight=getattr(ext_cfg, "geometry_semantic_weight", 0.20),
+                    geometry_constraint_weight=getattr(ext_cfg, "geometry_constraint_weight", 0.05),
+                    geometry_condition_weight=getattr(ext_cfg, "geometry_condition_weight", 0.18),
+                    geometry_failure_weight=getattr(ext_cfg, "geometry_failure_weight", 0.14),
+                    geometry_evidence_weight=getattr(ext_cfg, "geometry_evidence_weight", 0.08),
+                    geometry_reliability_weight=getattr(ext_cfg, "geometry_reliability_weight", 0.08),
+                    geometry_conflict_weight=getattr(ext_cfg, "geometry_conflict_weight", 0.10),
+                    geometry_distance_norm=getattr(ext_cfg, "geometry_distance_norm", "none"),
+                    geometry_query_radius_quantile=getattr(ext_cfg, "geometry_query_radius_quantile", 0.5),
+                    geometry_query_radius_mode=getattr(ext_cfg, "geometry_query_radius_mode", "predicted_distribution"),
+                    geometry_query_radius_bands=getattr(ext_cfg, "geometry_query_radius_bands", ["core", "middle", "edge"]),
+                    geometry_query_radius_top_bands=getattr(ext_cfg, "geometry_query_radius_top_bands", 2),
+                    geometry_radius_fusion=getattr(ext_cfg, "geometry_radius_fusion", "weighted_max"),
                     enable_agentic=getattr(ext_cfg, "enable_agentic", False),
                     navigator_max_steps=getattr(ext_cfg, "navigator_max_steps", 3),
                     navigator_reference_budget=getattr(ext_cfg, "navigator_reference_budget", 1200),

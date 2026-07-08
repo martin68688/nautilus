@@ -102,6 +102,28 @@ def read_skillgraph_node_text(ref_id: str, graph_path: str | Path) -> str:
     return ""
 
 
+def external_memory_section_title(source_name: str) -> str:
+    source = (source_name or "").lower()
+    if "run_forest" in source:
+        return "Agentic Run-Forest Memory Navigation"
+    if "agentic" in source:
+        return "Agentic Hyperbolic Memory Navigation"
+    return "External Skill Memory"
+
+
+def external_memory_section_intro(source_name: str, context: str) -> str:
+    source = (source_name or "").lower()
+    if "run_forest" in source:
+        return (
+            f"Below is a read-only run-forest map path pack retrieved before {context}: "
+            "use matched paths, selected transitions, attached SOP signposts, risk warnings, "
+            "and evidence refs only when they match the current code/data/error state."
+        )
+    if "agentic" in source:
+        return f"Below is the navigator-selected SOP memory pack retrieved before {context}:"
+    return f"Below are persistent SOP memories retrieved before {context}:"
+
+
 def _tokenize(text: str) -> set[str]:
     return {m.group(0).lower() for m in _TOKEN_RE.finditer(text or "")}
 
@@ -117,6 +139,29 @@ def _node_text_for_scoring(node: dict[str, Any]) -> str:
 
 
 def _node_to_text(node: dict[str, Any], include_stats: bool = True) -> str:
+    node_type = str(node.get("type", ""))
+    if node_type in {"Run", "RunNode", "Transition", "Evidence"}:
+        fields = [
+            ("Type", node_type),
+            ("Task", node.get("task")),
+            ("Stage", node.get("stage") or node.get("stage_pair")),
+            ("Outcome", node.get("outcome")),
+            ("Metric", node.get("metric")),
+            ("Metric delta", node.get("metric_delta")),
+            ("Metric improvement", node.get("metric_improvement")),
+            ("Parent buggy", node.get("parent_buggy")),
+            ("Child buggy", node.get("child_buggy")),
+            ("Plan", node.get("plan")),
+            ("Code summary", node.get("code_summary")),
+            ("Analysis", node.get("analysis")),
+            ("Terminal/Error", node.get("terminal_excerpt") or node.get("error") or node.get("traceback")),
+            ("Evidence", node.get("text")),
+        ]
+        lines = [f"{label}: {value}" for label, value in fields if value not in (None, "", [])]
+        if node.get("attached_sop_ids"):
+            lines.append(f"Attached SOPs: {', '.join(_as_list(node.get('attached_sop_ids'))[:8])}")
+        return "\n".join(lines)
+
     when = node.get("condition") or "; ".join(_as_list(node.get("applies_when")) + _as_list(node.get("conditions")))
     how = node.get("principle") or node.get("action") or node.get("sop") or ""
     prevents = "; ".join(_as_list(node.get("prevents")) + _as_list(node.get("failure_modes")) + _as_list(node.get("failure_mode")))
@@ -182,6 +227,20 @@ class ExternalSkillMemoryLayer:
         index_path: str = "",
         text_model_path: str = "",
         scoring_mode: str = "lexical",
+        geometry_distance_weight: float = 0.30,
+        geometry_semantic_weight: float = 0.20,
+        geometry_constraint_weight: float = 0.05,
+        geometry_condition_weight: float = 0.18,
+        geometry_failure_weight: float = 0.14,
+        geometry_evidence_weight: float = 0.08,
+        geometry_reliability_weight: float = 0.08,
+        geometry_conflict_weight: float = 0.10,
+        geometry_distance_norm: str = "none",
+        geometry_query_radius_quantile: float = 0.5,
+        geometry_query_radius_mode: str = "predicted_distribution",
+        geometry_query_radius_bands: list[str] | tuple[str, ...] | str | None = None,
+        geometry_query_radius_top_bands: int = 2,
+        geometry_radius_fusion: str = "weighted_max",
         enable_agentic: bool = False,
         navigator_max_steps: int = 3,
         navigator_reference_budget: int = 1200,
@@ -206,15 +265,48 @@ class ExternalSkillMemoryLayer:
             self.scoring_mode = "poincare"
         if self.mode == "flat_twin_agentic" and self.scoring_mode == "lexical":
             self.scoring_mode = "flat_twin"
-        if self.scoring_mode not in {"lexical", "poincare", "flat_twin"}:
+        if self.mode == "agentic_euclidean" and self.scoring_mode == "lexical":
+            self.scoring_mode = "euclidean"
+        if self.scoring_mode not in {"lexical", "poincare", "flat_twin", "euclidean"}:
             raise ValueError(f"Unsupported external skill memory scoring_mode: {self.scoring_mode}")
+        self.geometry_distance_weight = float(geometry_distance_weight)
+        self.geometry_semantic_weight = float(geometry_semantic_weight)
+        self.geometry_constraint_weight = float(geometry_constraint_weight)
+        self.geometry_condition_weight = float(geometry_condition_weight)
+        self.geometry_failure_weight = float(geometry_failure_weight)
+        self.geometry_evidence_weight = float(geometry_evidence_weight)
+        self.geometry_reliability_weight = float(geometry_reliability_weight)
+        self.geometry_conflict_weight = float(geometry_conflict_weight)
+        self.geometry_distance_norm = (geometry_distance_norm or "none").lower()
+        if self.geometry_distance_norm not in {"none", "minmax", "zscore"}:
+            raise ValueError(f"Unsupported geometry_distance_norm: {self.geometry_distance_norm}")
+        self.geometry_query_radius_quantile = min(0.95, max(0.05, float(geometry_query_radius_quantile)))
+        self.geometry_query_radius_mode = (geometry_query_radius_mode or "predicted_distribution").lower()
+        if self.geometry_query_radius_mode not in {"quantile", "predicted_distribution"}:
+            raise ValueError(f"Unsupported geometry_query_radius_mode: {self.geometry_query_radius_mode}")
+        if geometry_query_radius_bands is None:
+            self.geometry_query_radius_bands = ["core", "middle", "edge"]
+        elif isinstance(geometry_query_radius_bands, str):
+            self.geometry_query_radius_bands = [b.strip().lower() for b in geometry_query_radius_bands.split(",") if b.strip()]
+        else:
+            self.geometry_query_radius_bands = [str(b).strip().lower() for b in geometry_query_radius_bands if str(b).strip()]
+        self.geometry_query_radius_bands = [b for b in self.geometry_query_radius_bands if b in {"core", "middle", "edge"}] or ["core", "middle", "edge"]
+        self.geometry_query_radius_top_bands = max(1, min(3, int(geometry_query_radius_top_bands or 2)))
+        self.geometry_radius_fusion = (geometry_radius_fusion or "weighted_max").lower()
+        if self.geometry_radius_fusion not in {"weighted_max", "weighted_mean"}:
+            raise ValueError(f"Unsupported geometry_radius_fusion: {self.geometry_radius_fusion}")
         self.agentic_enabled = bool(
             enable_agentic
-            or self.mode in {"agentic_hyperbolic", "flat_twin_agentic"}
+            or self.mode in {"agentic_hyperbolic", "flat_twin_agentic", "agentic_euclidean"}
             or "agentic" in self.source_name
         )
         if self.agentic_enabled and self.source_name == "skillgraph":
-            self.source_name = "flat_twin_agentic_memory" if self.mode == "flat_twin_agentic" else "hyperbolic_agentic_memory"
+            if self.mode == "flat_twin_agentic":
+                self.source_name = "flat_twin_agentic_memory"
+            elif self.mode == "agentic_euclidean":
+                self.source_name = "euclidean_agentic_memory"
+            else:
+                self.source_name = "hyperbolic_agentic_memory"
         self.navigator_max_steps = max(1, min(3, int(navigator_max_steps or 3)))
         self.navigator_reference_budget = max(200, int(navigator_reference_budget or 1200))
         self.top_k = top_k
@@ -245,8 +337,12 @@ class ExternalSkillMemoryLayer:
         self._index_node_ids: list[str] = []
         self._poincare_coords: dict[str, np.ndarray] = {}
         self._flat_twin_coords: dict[str, np.ndarray] = {}
+        self._euclidean_coords: dict[str, np.ndarray] = {}
         self._radius_by_id: dict[str, float] = {}
+        self._reliability_by_id: dict[str, float] = {}
+        self._sentence_embedder: Any | None = None
         self._text_model: dict[str, Any] | None = None
+        self._last_agentic_pack: dict[str, Any] = {}
         self._load()
 
     def _load(self) -> None:
@@ -266,7 +362,7 @@ class ExternalSkillMemoryLayer:
             nid: _tokenize(_node_text_for_scoring(node))
             for nid, node in self.nodes.items()
         }
-        if self.scoring_mode in {"poincare", "flat_twin"}:
+        if self.scoring_mode in {"poincare", "flat_twin", "euclidean"}:
             self._load_geometric_index()
         logger.info(
             "[ExternalSkillMemory] loaded %s nodes / %s edges from %s (mode=%s scoring=%s)",
@@ -286,14 +382,34 @@ class ExternalSkillMemoryLayer:
         node_ids = [str(x) for x in data["node_ids"].tolist()]
         poincare = np.asarray(data["poincare"], dtype=np.float32)
         flat_twin = np.asarray(data["flat_twin"] if "flat_twin" in data.files else poincare, dtype=np.float32)
+        if "euclidean" in data.files:
+            euclidean = np.asarray(data["euclidean"], dtype=np.float32)
+        elif "direction" in data.files:
+            euclidean = np.asarray(data["direction"], dtype=np.float32)
+        else:
+            raise ValueError("Agentic Euclidean Memory requires euclidean or direction coordinates in the index")
         if poincare.shape != flat_twin.shape or not np.array_equal(poincare, flat_twin):
             raise ValueError("Flat-Twin main control must use the exact same coordinates as Poincare")
+        if euclidean.shape != poincare.shape:
+            raise ValueError("Euclidean memory coordinates must have the same dimensionality as Poincare coordinates")
+        if np.array_equal(euclidean, poincare):
+            raise ValueError("Agentic Euclidean Memory must use independent flat coordinates, not Poincare coordinates")
         self._index_node_ids = node_ids
         self._poincare_coords = {nid: poincare[i] for i, nid in enumerate(node_ids) if nid in self.nodes}
         self._flat_twin_coords = {nid: flat_twin[i] for i, nid in enumerate(node_ids) if nid in self.nodes}
+        self._euclidean_coords = {nid: euclidean[i] for i, nid in enumerate(node_ids) if nid in self.nodes}
         if "radius" in data.files:
             radii = np.asarray(data["radius"], dtype=np.float32)
             self._radius_by_id = {nid: float(radii[i]) for i, nid in enumerate(node_ids) if nid in self.nodes}
+        if "reliability_score" in data.files:
+            reliability = np.asarray(data["reliability_score"], dtype=np.float32)
+            self._reliability_by_id = {nid: float(reliability[i]) for i, nid in enumerate(node_ids) if nid in self.nodes}
+        else:
+            self._reliability_by_id = {
+                nid: self._node_reliability_score(self.nodes[nid])
+                for nid in node_ids
+                if nid in self.nodes
+            }
         self._text_model = joblib.load(self.text_model_path)
         if not self._poincare_coords:
             raise ValueError(f"No graph SOP ids matched hyperbolic index ids in {self.index_path}")
@@ -399,16 +515,56 @@ class ExternalSkillMemoryLayer:
         )
         return lexical + title_boost + stats
 
+    def _node_reliability_score(self, node: dict[str, Any]) -> float:
+        if node.get("reliability_score") is not None:
+            try:
+                return max(0.0, min(1.0, float(node.get("reliability_score"))))
+            except Exception:
+                pass
+        metric = node.get("metric") if isinstance(node.get("metric"), dict) else {}
+        p_hat = float(node.get("p_hat", metric.get("p_hat", 0.0)) or 0.0)
+        n_use = float(node.get("n_use", metric.get("n_use", 0.0)) or 0.0)
+        support = math.log1p(max(0.0, n_use)) / math.log1p(10.0)
+        has_source = bool(node.get("source_branches") or node.get("evidence_turns") or node.get("reference_ids") or node.get("evidence_ids"))
+        return max(0.0, min(1.0, 0.65 * p_hat + 0.25 * support + 0.10 * float(has_source)))
+
+    def _node_evidence_score(self, node: dict[str, Any]) -> float:
+        if node.get("evidence_confidence") == "high":
+            return 1.0
+        if node.get("evidence_confidence") == "medium":
+            return 0.65
+        if node.get("source_branches") or node.get("evidence_turns") or node.get("reference_ids") or node.get("evidence_ids") or node.get("metric"):
+            return 0.45
+        return 0.0
+
     def _project_query_direction(self, text: str) -> np.ndarray:
         if not self._text_model:
             raise RuntimeError("hyperbolic text model is not loaded")
-        vectorizer = self._text_model.get("vectorizer")
-        svd = self._text_model.get("svd")
+        method = str(self._text_model.get("method") or "tfidf_truncated_svd")
         dims = int(self._text_model.get("dims") or 0)
-        if vectorizer is None or dims <= 0:
+        if dims <= 0:
             raise RuntimeError("invalid hyperbolic text model")
-        tfidf = vectorizer.transform([text or ""])
-        dense = svd.transform(tfidf) if svd is not None else tfidf.toarray()[:, :1]
+        if method in {"sentence_embedding_svd", "contrastive_projection"}:
+            projection = self._text_model.get("projection")
+            model_name = str(self._text_model.get("embedding_model") or "")
+            if projection is None or not model_name:
+                raise RuntimeError("invalid sentence embedding hyperbolic text model")
+            if self._sentence_embedder is None:
+                from sentence_transformers import SentenceTransformer
+
+                self._sentence_embedder = SentenceTransformer(model_name, local_files_only=True)
+            embedding = np.asarray(
+                self._sentence_embedder.encode([text or ""], normalize_embeddings=False, show_progress_bar=False),
+                dtype=np.float32,
+            )
+            dense = projection.transform(embedding)
+        else:
+            vectorizer = self._text_model.get("vectorizer")
+            svd = self._text_model.get("svd")
+            if vectorizer is None:
+                raise RuntimeError("invalid TF-IDF hyperbolic text model")
+            tfidf = vectorizer.transform([text or ""])
+            dense = svd.transform(tfidf) if svd is not None else tfidf.toarray()[:, :1]
         if dense.shape[1] < dims:
             dense = np.pad(dense, ((0, 0), (0, dims - dense.shape[1])), constant_values=0.0)
         direction = dense[0].astype(np.float32)
@@ -419,6 +575,81 @@ class ExternalSkillMemoryLayer:
             direction = rng.normal(size=dims).astype(np.float32)
             norm = float(np.linalg.norm(direction))
         return direction / max(norm, 1e-8)
+
+    def _band_center_radius(self, band: str) -> float:
+        selected = [
+            r for nid, r in self._radius_by_id.items()
+            if self._radius_band(self.nodes.get(nid, {})).lower() == band
+        ]
+        if selected:
+            return float(np.quantile(selected, self.geometry_query_radius_quantile))
+        return {"core": 0.24, "middle": 0.52, "edge": 0.82}.get(band, 0.52)
+
+    def _normalize_radius_weights(self, weights: dict[str, float]) -> list[tuple[str, float]]:
+        filtered = {b: max(0.0, float(weights.get(b, 0.0))) for b in self.geometry_query_radius_bands}
+        total = sum(filtered.values())
+        if total <= 0:
+            filtered = {"middle": 1.0}
+            total = 1.0
+        ranked = sorted(filtered.items(), key=lambda item: (-item[1], item[0]))[: self.geometry_query_radius_top_bands]
+        subtotal = sum(v for _, v in ranked) or 1.0
+        return [(band, weight / subtotal) for band, weight in ranked if weight > 0]
+
+    def _predict_query_radius_distribution(self, query_text: str, radius_band: str = "") -> list[dict[str, float | str]]:
+        if self.geometry_query_radius_mode == "quantile":
+            return [{
+                "band": radius_band or "quantile",
+                "radius": self._query_radius(radius_band),
+                "weight": 1.0,
+                "source": "quantile",
+            }]
+
+        explicit_bands = [b.strip().lower() for b in (radius_band or "").split(",") if b.strip()]
+        explicit_bands = [b for b in explicit_bands if b in {"core", "middle", "edge"}]
+        if explicit_bands:
+            weights = {b: 1.0 for b in explicit_bands}
+            source = "radius_band_hint"
+        else:
+            text = (query_text or "").lower()
+            weights = {"core": 0.20, "middle": 0.50, "edge": 0.30}
+            source = "deterministic_query_radius_v1"
+            if "minimal_context" in text or "minimal context" in text:
+                weights = {"core": 0.10, "middle": 0.35, "edge": 0.55}
+            elif "abstract_failure" in text or "abstract failure" in text:
+                weights = {"core": 0.10, "middle": 0.40, "edge": 0.50}
+            elif "rare_partial_clue" in text or "rare partial clue" in text or "partial clue" in text:
+                weights = {"core": 0.10, "middle": 0.30, "edge": 0.60}
+            elif "debug" in text or "failure" in text or "traceback" in text or "error" in text:
+                weights = {"core": 0.10, "middle": 0.25, "edge": 0.65}
+            elif "method_set" in text or "method set" in text or "draft" in text or "broad" in text:
+                weights = {"core": 0.30, "middle": 0.55, "edge": 0.15}
+
+            edge_needles = (
+                "api", "exception", "traceback", "error", "shape mismatch", "shape", "dimension",
+                "dtype", "cuda", "device", "path", "file not found", "checkpoint", "attribute",
+                "unexpected keyword", "base_estimator", "estimator", "version", "undefined",
+                "column", "sample_submission",
+            )
+            if any(n in text for n in edge_needles) or re.search(r"\b[A-Za-z]+Error\b", query_text or ""):
+                weights["edge"] += 0.25
+                weights["middle"] += 0.05
+                weights["core"] = max(0.05, weights["core"] - 0.15)
+
+            broad_needles = ("strategy", "model family", "ensemble", "feature pipeline", "pipeline", "cross validation", "cv", "regularization")
+            if any(n in text for n in broad_needles):
+                weights["middle"] += 0.20
+                weights["core"] += 0.10
+                weights["edge"] = max(0.05, weights["edge"] - 0.15)
+
+        return [
+            {
+                "band": band,
+                "radius": self._band_center_radius(band),
+                "weight": weight,
+                "source": source,
+            }
+            for band, weight in self._normalize_radius_weights(weights)
+        ]
 
     def _query_radius(self, radius_band: str = "") -> float:
         radii = list(self._radius_by_id.values())
@@ -431,8 +662,8 @@ class ExternalSkillMemoryLayer:
                 if self._radius_band(self.nodes.get(nid, {})).lower() in bands
             ]
             if selected:
-                return float(np.median(selected))
-        return float(np.median(radii))
+                return float(np.quantile(selected, self.geometry_query_radius_quantile))
+        return float(np.quantile(radii, self.geometry_query_radius_quantile))
 
     def _geometry_distance(self, query_point: np.ndarray, nid: str) -> float:
         if self.scoring_mode == "poincare":
@@ -445,7 +676,86 @@ class ExternalSkillMemoryLayer:
             if coord is None:
                 return float("inf")
             return euclidean_distance(query_point, coord)
+        if self.scoring_mode == "euclidean":
+            coord = self._euclidean_coords.get(nid)
+            if coord is None:
+                return float("inf")
+            return euclidean_distance(query_point, coord)
         return float("inf")
+
+    def _geometry_similarity(
+        self,
+        *,
+        query_direction: np.ndarray,
+        nid: str,
+        query_text: str,
+        radius_band: str = "",
+    ) -> tuple[float, list[dict[str, float | str]]]:
+        if self.scoring_mode == "euclidean":
+            distance = self._geometry_distance(query_direction, nid)
+            if not math.isfinite(distance):
+                return 0.0, []
+            return 1.0 / (1.0 + distance), [{"band": "euclidean_direction", "distance": distance, "weight": 1.0}]
+
+        distribution = self._predict_query_radius_distribution(query_text, radius_band)
+        pieces: list[tuple[float, dict[str, float | str]]] = []
+        for item in distribution:
+            radius = float(item["radius"])
+            weight = float(item["weight"])
+            query_point = query_direction * radius
+            distance = self._geometry_distance(query_point, nid)
+            if not math.isfinite(distance):
+                continue
+            similarity = 1.0 / (1.0 + distance)
+            pieces.append((weight * similarity, {
+                "band": str(item["band"]),
+                "radius": radius,
+                "weight": weight,
+                "distance": distance,
+            }))
+        if not pieces:
+            return 0.0, []
+        if self.geometry_radius_fusion == "weighted_mean":
+            return float(sum(score for score, _ in pieces)), [detail for _, detail in pieces]
+        best_score, _best_detail = max(pieces, key=lambda x: x[0])
+        return float(best_score), [detail for _, detail in pieces]
+
+    def _token_overlap_score(self, left: set[str], right: set[str]) -> float:
+        if not left or not right:
+            return 0.0
+        return min(1.0, len(left & right) / math.sqrt(max(1, min(len(left), len(right)))))
+
+    def _combined_candidate_score(
+        self,
+        *,
+        nid: str,
+        query_tokens: set[str],
+        condition_tokens: set[str],
+        failure_tokens: set[str],
+        geometry_similarity: float | None = None,
+    ) -> float:
+        node = self.nodes[nid]
+        text_tokens = self._node_tokens.get(nid, set())
+        cond_tokens = _tokenize(self._node_condition_text(node))
+        fail_tokens = _tokenize(self._node_failure_text(node))
+        semantic = self._token_overlap_score(query_tokens, text_tokens)
+        condition = self._token_overlap_score(condition_tokens, cond_tokens | text_tokens) if condition_tokens else 0.0
+        failure = self._token_overlap_score(failure_tokens, fail_tokens | text_tokens) if failure_tokens else 0.0
+        evidence = self._node_evidence_score(node)
+        reliability = self._reliability_by_id.get(nid, self._node_reliability_score(node))
+        if geometry_similarity is None:
+            return semantic + condition + failure + 0.25 * reliability + 0.10 * evidence
+        score = (
+            self.geometry_distance_weight * geometry_similarity
+            + self.geometry_semantic_weight * semantic
+            + self.geometry_condition_weight * condition
+            + self.geometry_failure_weight * failure
+            + self.geometry_evidence_weight * evidence
+            + self.geometry_reliability_weight * reliability
+        )
+        if condition_tokens and condition <= 0.0:
+            score -= 0.15 * self.geometry_conflict_weight
+        return score
 
     def _shared_constraint_bonus(
         self,
@@ -466,16 +776,25 @@ class ExternalSkillMemoryLayer:
         )
         return cond_bonus + fail_bonus + evidence
 
-    def _sort_known_sops(self, ids: list[str], query_text: str) -> list[str]:
+    def _sort_known_sops(self, ids: list[str], query_text: str, radius_band: str = "") -> list[str]:
         q_tokens = _tokenize(query_text)
-        if self.scoring_mode in {"poincare", "flat_twin"}:
+        if self.scoring_mode in {"poincare", "flat_twin", "euclidean"}:
             query_direction = self._project_query_direction(query_text)
-            query_point = query_direction * self._query_radius("")
             return sorted(
                 [nid for nid in ids if nid in self.nodes],
                 key=lambda nid: (
-                    self._geometry_distance(query_point, nid),
-                    -self._node_score(nid, q_tokens),
+                    -self._combined_candidate_score(
+                        nid=nid,
+                        query_tokens=q_tokens,
+                        condition_tokens=set(),
+                        failure_tokens=set(),
+                        geometry_similarity=self._geometry_similarity(
+                            query_direction=query_direction,
+                            nid=nid,
+                            query_text=query_text,
+                            radius_band=radius_band,
+                        )[0],
+                    ),
                     self.nodes[nid].get("title", ""),
                 ),
             )
@@ -640,7 +959,7 @@ class ExternalSkillMemoryLayer:
                 r = float(radius)
                 if r <= 0.35:
                     return "core"
-                if r <= 0.70:
+                if r <= 0.60:
                     return "middle"
                 return "edge"
             except Exception:
@@ -698,11 +1017,10 @@ class ExternalSkillMemoryLayer:
         condition_tokens = _tokenize(condition)
         failure_tokens = _tokenize(failure_mode)
         bands = {b.strip().lower() for b in (radius_band or "").split(",") if b.strip()}
-        geometric = self.scoring_mode in {"poincare", "flat_twin"}
-        query_point: np.ndarray | None = None
+        geometric = self.scoring_mode in {"poincare", "flat_twin", "euclidean"}
+        query_direction: np.ndarray | None = None
         if geometric:
             query_direction = self._project_query_direction(" ".join([query_text, region, condition, failure_mode]))
-            query_point = query_direction * self._query_radius(radius_band)
 
         scored: list[tuple[float, str]] = []
         for nid, node in self.nodes.items():
@@ -716,34 +1034,23 @@ class ExternalSkillMemoryLayer:
             if bands and self._radius_band(node).lower() not in bands:
                 continue
 
-            text = _node_text_for_scoring(node)
-            cond_text = self._node_condition_text(node)
-            fail_text = self._node_failure_text(node)
-            text_tokens = _tokenize(text)
-            cond_tokens = _tokenize(cond_text)
-            fail_tokens = _tokenize(fail_text)
-            semantic = len(q_tokens & text_tokens) / math.sqrt(max(1, len(text_tokens)))
-            cond_bonus = 0.40 * len(condition_tokens & cond_tokens) if condition_tokens else 0.0
-            fail_bonus = 0.45 * len(failure_tokens & fail_tokens) if failure_tokens else 0.0
-            if condition_tokens and not (condition_tokens & (cond_tokens | text_tokens)):
-                cond_bonus -= 0.15
-            evidence = (
-                0.18 * float(node.get("p_hat", 0.0) or 0.0)
-                + 0.04 * math.log1p(float(node.get("n_use", 0.0) or 0.0))
-            )
-            # Edge-band preservation: low-frequency, condition-matched SOPs should
-            # remain reachable rather than disappearing behind high-support tips.
-            rare_bonus = 0.10 if self._radius_band(node) == "edge" and condition_tokens & (cond_tokens | text_tokens) else 0.0
-            if geometric and query_point is not None:
-                distance = self._geometry_distance(query_point, nid)
-                if not math.isfinite(distance):
+            geometry_similarity = None
+            if geometric and query_direction is not None:
+                geometry_similarity = self._geometry_similarity(
+                    query_direction=query_direction,
+                    nid=nid,
+                    query_text=" ".join([query_text, region, condition, failure_mode]),
+                    radius_band=radius_band,
+                )[0]
+                if geometry_similarity <= 0.0:
                     continue
-                # The distance is the only geometry-specific term. Condition,
-                # failure, evidence, and rare bonuses are shared constraints
-                # used identically by Poincare and same-coordinate Flat-Twin.
-                score = -distance + 0.05 * (cond_bonus + fail_bonus + evidence + rare_bonus)
-            else:
-                score = semantic + cond_bonus + fail_bonus + evidence + rare_bonus
+            score = self._combined_candidate_score(
+                nid=nid,
+                query_tokens=q_tokens,
+                condition_tokens=condition_tokens,
+                failure_tokens=failure_tokens,
+                geometry_similarity=geometry_similarity,
+            )
             scored.append((score, nid))
 
         scored.sort(key=lambda x: (-x[0], self.nodes[x[1]].get("title", "")))
@@ -792,6 +1099,7 @@ class ExternalSkillMemoryLayer:
             "scoring_mode": self.scoring_mode,
             "regions": region_cards,
             "radius_bands": {band: len(ids) for band, ids in sorted(by_band.items())},
+            "query_radius_distribution": self._predict_query_radius_distribution(query_text + " " + context),
             "condition_hotspots": cond_counter.most_common(8),
             "failure_hotspots": fail_counter.most_common(8),
             "navigation_suggestions": [
@@ -830,6 +1138,10 @@ class ExternalSkillMemoryLayer:
                 "failure_mode": failure_mode,
                 "radius_band": radius_band,
             },
+            "query_radius_distribution": self._predict_query_radius_distribution(
+                " ".join([query_text, region, condition, failure_mode]),
+                radius_band,
+            ),
             "sops": [self._node_summary(nid) for nid in ids],
         }
 
@@ -1088,7 +1400,7 @@ class ExternalSkillMemoryLayer:
             "Task description": task_desc[:2000],
             "Current query/context": query_text[-5000:],
             "Previous map observations": obs_text,
-            "Known candidate SOPs": known_cards,
+            "Known candidate SOPs": json.dumps(known_cards, ensure_ascii=False, indent=2),
             "Tool policy": [
                 "If no candidate SOP has been inspected yet, call navigate.",
                 "If candidates are risky or opposed, call check_conflicts.",
@@ -1125,6 +1437,7 @@ class ExternalSkillMemoryLayer:
             "map_summary": map_obs,
             "mode": "deterministic_fallback",
             "stage": stage,
+            "llm_tool_calls": 0,
         }
         return pack, ids
 
@@ -1140,6 +1453,7 @@ class ExternalSkillMemoryLayer:
             pack, ids = self._deterministic_agentic_pack(
                 task_type=task_type, stage=stage, task_desc=task_desc, query_text=query_text
             )
+            self._last_agentic_pack = pack
             return self._format_agentic_context(pack, ids, task_type=task_type), ids
 
         started = time.time()
@@ -1149,6 +1463,8 @@ class ExternalSkillMemoryLayer:
         risk_warnings: list[str] = []
         implementation_hints: list[str] = []
         rejected_sops: list[dict[str, str]] = []
+        llm_tool_calls = 0
+        last_radius_band = ""
 
         first_obs = self.inspect_map(task_type=task_type, query_text=query_text, context=task_desc)
         observations.append(first_obs)
@@ -1163,8 +1479,11 @@ class ExternalSkillMemoryLayer:
                 observations=observations,
                 known_ids=known_ids,
             )
+            llm_tool_calls += 1
             action_name = str(action.get("action", "finish"))
             trace.append(f"{action_name}({action.get('reason', '')[:120]})")
+            if action_name == "navigate":
+                last_radius_band = str(action.get("radius_band", "") or last_radius_band)
             if action_name == "finish":
                 for nid in action.get("selected_sops") or []:
                     if nid in self.nodes and nid not in known_ids:
@@ -1192,10 +1511,12 @@ class ExternalSkillMemoryLayer:
                 task_type=task_type, stage=stage, task_desc=task_desc, query_text=query_text
             )
             pack["mode"] = "llm_empty_fallback"
+            pack["llm_tool_calls"] = llm_tool_calls
+            self._last_agentic_pack = pack
             return self._format_agentic_context(pack, ids, task_type=task_type), ids
 
         q_tokens = _tokenize(query_text)
-        selected = self._sort_known_sops(known_ids, query_text)[: self.top_k]
+        selected = self._sort_known_sops(known_ids, query_text, radius_band=last_radius_band)[: self.top_k]
         conflicts = self.check_conflicts(sop_ids=selected[:4], context=query_text)
         risk_warnings += [str(x) for x in conflicts.get("risk_warnings") or []]
         pack = {
@@ -1208,7 +1529,9 @@ class ExternalSkillMemoryLayer:
             "mode": self.mode,
             "stage": stage,
             "elapsed_sec": round(time.time() - started, 3),
+            "llm_tool_calls": llm_tool_calls,
         }
+        self._last_agentic_pack = pack
         return self._format_agentic_context(pack, selected, task_type=task_type), selected
 
     def _format_agentic_context(self, pack: dict[str, Any], ids: list[str], *, task_type: str) -> str:
@@ -1281,6 +1604,594 @@ class ExternalSkillMemoryLayer:
             lines.append(_node_to_text(node, include_stats=True))
             lines.append("")
         return "\n".join(lines).strip()
+
+
+class RunForestMemoryLayer:
+    """Read-only navigator over Hyperbolic Run-Forest Memory.
+
+    The layer turns run/journal history into a "map path pack":
+    matched run paths, selected transitions, attached SOP signposts, risk
+    warnings, and evidence refs. It intentionally keeps the artifact read-only.
+    """
+
+    def __init__(
+        self,
+        graph_path: str,
+        source_name: str = "run_forest_agentic_memory",
+        mode: str = "run_forest_agentic",
+        index_path: str = "",
+        scoring_mode: str = "poincare",
+        enable_agentic: bool = False,
+        navigator_max_steps: int = 3,
+        navigator_reference_budget: int = 1200,
+        top_k: int = 6,
+        max_chars: int = 6000,
+        include_draft: bool = True,
+        include_improve: bool = True,
+        include_evolution: bool = True,
+        include_debug: bool = True,
+        include_fusion: bool = True,
+        cfg: Any | None = None,
+        **_: Any,
+    ) -> None:
+        self.graph_path = resolve_graph_path(graph_path)
+        self.index_path = resolve_memory_path(index_path, base_dir=self.graph_path.parent) if index_path else self.graph_path.parent / "run_forest_index.npz"
+        self.source_name = source_name or "run_forest_agentic_memory"
+        self.mode = mode or "run_forest_agentic"
+        if self.mode == "run_forest_flat_twin" and scoring_mode == "lexical":
+            scoring_mode = "flat_twin"
+        elif self.mode == "run_forest_euclidean" and scoring_mode == "lexical":
+            scoring_mode = "euclidean"
+        elif self.mode.startswith("run_forest") and scoring_mode == "lexical":
+            scoring_mode = "poincare"
+        self.scoring_mode = (scoring_mode or "poincare").lower()
+        if self.scoring_mode not in {"poincare", "flat_twin", "euclidean"}:
+            raise ValueError(f"Unsupported run-forest scoring_mode: {self.scoring_mode}")
+        self.agentic_enabled = bool(enable_agentic or "agentic" in self.mode or "agentic" in self.source_name)
+        if "run_forest" not in self.source_name:
+            self.source_name = "run_forest_agentic_memory" if self.agentic_enabled else "run_forest_memory"
+        self.navigator_max_steps = max(1, min(3, int(navigator_max_steps or 3)))
+        self.navigator_reference_budget = max(200, int(navigator_reference_budget or 1200))
+        self.top_k = max(1, int(top_k or 6))
+        self.max_chars = max_chars
+        self.cfg = cfg
+        self.enabled_stages = {
+            "draft": include_draft,
+            "improve": include_improve,
+            "evolution": include_evolution,
+            "debug": include_debug,
+            "fusion": include_fusion,
+            "multi_fusion": include_fusion,
+            "fusion_draft": include_fusion,
+            "aggregation": include_fusion,
+        }
+
+        self.graph: dict[str, Any] = {}
+        self.nodes: dict[str, dict[str, Any]] = {}
+        self.out_edges: dict[str, list[tuple[str, str, float, dict[str, Any]]]] = collections.defaultdict(list)
+        self.in_edges: dict[str, list[tuple[str, str, float, dict[str, Any]]]] = collections.defaultdict(list)
+        self._node_tokens: dict[str, set[str]] = {}
+        self._index_node_ids: list[str] = []
+        self._poincare_coords: dict[str, np.ndarray] = {}
+        self._euclidean_coords: dict[str, np.ndarray] = {}
+        self._run_nodes: list[str] = []
+        self._transitions: list[str] = []
+        self._sops: list[str] = []
+        self._evidence: list[str] = []
+        self._run_nodes_by_run: dict[str, list[str]] = collections.defaultdict(list)
+        self._children_by_node: dict[str, list[str]] = collections.defaultdict(list)
+        self._transitions_by_parent: dict[str, list[str]] = collections.defaultdict(list)
+        self._transitions_by_child: dict[str, list[str]] = collections.defaultdict(list)
+        self._evidence_by_transition: dict[str, list[str]] = collections.defaultdict(list)
+        self._last_agentic_pack: dict[str, Any] = {}
+        self._load()
+
+    def _load(self) -> None:
+        if not self.graph_path.exists():
+            raise FileNotFoundError(f"Run-forest graph not found: {self.graph_path}")
+        if not self.index_path.exists():
+            raise FileNotFoundError(f"Run-forest index not found: {self.index_path}")
+        self.graph = json.loads(self.graph_path.read_text(encoding="utf-8"))
+        if (self.graph.get("meta") or {}).get("schema") != "hyperbolic_run_forest_memory_v1":
+            raise ValueError(f"Not a run-forest memory graph: {self.graph_path}")
+        self.nodes = {str(n["id"]): n for n in self.graph.get("nodes", []) if n.get("id")}
+        for edge in self.graph.get("edges", []):
+            src, dst = str(edge.get("src")), str(edge.get("dst"))
+            if src not in self.nodes or dst not in self.nodes:
+                continue
+            kind = _edge_kind(edge)
+            weight = float(edge.get("weight", 1.0))
+            self.out_edges[src].append((dst, kind, weight, edge))
+            self.in_edges[dst].append((src, kind, weight, edge))
+
+        data = np.load(self.index_path, allow_pickle=True)
+        node_ids = [str(x) for x in data["node_ids"].tolist()]
+        poincare = np.asarray(data["poincare"], dtype=np.float32)
+        flat_twin = np.asarray(data["flat_twin"] if "flat_twin" in data.files else poincare, dtype=np.float32)
+        euclidean = np.asarray(data["euclidean"], dtype=np.float32)
+        if not np.array_equal(poincare, flat_twin):
+            raise ValueError("Run-Forest Flat-Twin must use exact same coordinates as Poincare")
+        self._index_node_ids = node_ids
+        self._poincare_coords = {nid: poincare[i] for i, nid in enumerate(node_ids) if nid in self.nodes}
+        self._euclidean_coords = {nid: euclidean[i] for i, nid in enumerate(node_ids) if nid in self.nodes}
+
+        for nid, node in self.nodes.items():
+            node_type = str(node.get("type", ""))
+            self._node_tokens[nid] = _tokenize(self._node_text(node))
+            if node_type == "RunNode":
+                self._run_nodes.append(nid)
+                self._run_nodes_by_run[str(node.get("run_id"))].append(nid)
+                parent_id = node.get("parent_id")
+                if parent_id:
+                    self._children_by_node[str(parent_id)].append(nid)
+            elif node_type == "Transition":
+                self._transitions.append(nid)
+                self._transitions_by_parent[str(node.get("parent_node_id"))].append(nid)
+                self._transitions_by_child[str(node.get("child_node_id"))].append(nid)
+            elif node_type == "SOP":
+                self._sops.append(nid)
+            elif node_type == "Evidence":
+                self._evidence.append(nid)
+                self._evidence_by_transition[str(node.get("transition_id"))].append(nid)
+        for values in self._run_nodes_by_run.values():
+            values.sort(key=lambda nid: (self.nodes[nid].get("step") or 0, nid))
+        for values in self._children_by_node.values():
+            values.sort(key=lambda nid: (self.nodes[nid].get("step") or 0, nid))
+        logger.info(
+            "[RunForestMemory] loaded %s nodes / %s edges from %s (scoring=%s agentic=%s)",
+            len(self.nodes),
+            len(self.graph.get("edges", [])),
+            self.graph_path,
+            self.scoring_mode,
+            self.agentic_enabled,
+        )
+
+    def stage_enabled(self, stage: str) -> bool:
+        return bool(self.enabled_stages.get(stage, False))
+
+    def _node_text(self, node: dict[str, Any]) -> str:
+        fields = [
+            node.get("task"),
+            node.get("stage"),
+            node.get("stage_pair"),
+            node.get("outcome"),
+            node.get("plan"),
+            node.get("code_summary"),
+            node.get("analysis"),
+            node.get("terminal_excerpt"),
+            node.get("title"),
+            node.get("action"),
+            node.get("text"),
+        ]
+        return " ".join(str(v) for v in fields if v)
+
+    def _token_overlap(self, left: set[str], right: set[str]) -> float:
+        if not left or not right:
+            return 0.0
+        return len(left & right) / math.sqrt(max(1, min(len(left), len(right))))
+
+    def _coords(self) -> dict[str, np.ndarray]:
+        return self._euclidean_coords if self.scoring_mode == "euclidean" else self._poincare_coords
+
+    def _distance(self, query: np.ndarray, candidate: np.ndarray) -> float:
+        if self.scoring_mode == "poincare":
+            return poincare_distance(query, candidate)
+        return euclidean_distance(query, candidate)
+
+    def _task_score(self, node: dict[str, Any], task_id: str, task_desc: str) -> float:
+        task = str(node.get("task", "")).lower()
+        text = f"{task_id} {task_desc}".lower()
+        if task and task in text:
+            return 0.35
+        task_tokens = _tokenize(task.replace("-", " "))
+        query_tokens = _tokenize(text)
+        return 0.18 * self._token_overlap(task_tokens, query_tokens)
+
+    def _query_anchor(self, query_text: str, candidate_ids: list[str]) -> np.ndarray | None:
+        coords = self._coords()
+        q_tokens = _tokenize(query_text)
+        scored = []
+        for nid in candidate_ids:
+            if nid not in coords:
+                continue
+            lexical = self._token_overlap(q_tokens, self._node_tokens.get(nid, set()))
+            if lexical > 0:
+                scored.append((lexical, nid))
+        if not scored:
+            candidate_ids = [nid for nid in candidate_ids if nid in coords]
+            if not candidate_ids:
+                return None
+            return np.mean(np.vstack([coords[nid] for nid in candidate_ids[: min(8, len(candidate_ids))]]), axis=0)
+        scored.sort(reverse=True)
+        top = scored[:8]
+        weights = np.asarray([score for score, _nid in top], dtype=np.float32)
+        weights = weights / max(float(weights.sum()), 1e-8)
+        anchor = np.sum(np.vstack([coords[nid] for _score, nid in top]) * weights[:, None], axis=0)
+        if self.scoring_mode in {"poincare", "flat_twin"}:
+            norm = float(np.linalg.norm(anchor))
+            if norm >= 0.985:
+                anchor = anchor / max(norm, 1e-8) * 0.985
+        return anchor.astype(np.float32)
+
+    def _rank(
+        self,
+        *,
+        query_text: str,
+        candidate_ids: list[str],
+        task_id: str,
+        task_desc: str,
+        top_k: int,
+        stage_bonus: dict[str, float] | None = None,
+        outcome_bonus: dict[str, float] | None = None,
+    ) -> list[str]:
+        coords = self._coords()
+        anchor = self._query_anchor(query_text, candidate_ids)
+        q_tokens = _tokenize(query_text)
+        scored: list[tuple[float, str]] = []
+        for nid in candidate_ids:
+            if nid not in self.nodes:
+                continue
+            node = self.nodes[nid]
+            lexical = self._token_overlap(q_tokens, self._node_tokens.get(nid, set()))
+            task = self._task_score(node, task_id, task_desc)
+            stage = str(node.get("stage") or node.get("stage_pair") or "")
+            outcome = str(node.get("outcome") or "")
+            bonus = (stage_bonus or {}).get(stage, 0.0) + (outcome_bonus or {}).get(outcome, 0.0)
+            metric_improvement = node.get("metric_improvement")
+            if isinstance(metric_improvement, (int, float)) and metric_improvement > 0:
+                bonus += 0.08
+            geometry = 0.0
+            if anchor is not None and nid in coords:
+                geometry = 1.0 / (1.0 + self._distance(anchor, coords[nid]))
+            score = 0.50 * geometry + 0.32 * lexical + task + bonus
+            scored.append((score, nid))
+        scored.sort(key=lambda item: (-item[0], item[1]))
+        return [nid for _score, nid in scored[:top_k]]
+
+    def _ancestor_path(self, node_id: str, max_hops: int = 4) -> list[str]:
+        path = [node_id]
+        cur = node_id
+        while len(path) < max_hops:
+            parent = self.nodes.get(cur, {}).get("parent_id")
+            if not parent or parent not in self.nodes:
+                break
+            path.append(str(parent))
+            cur = str(parent)
+        return list(reversed(path))
+
+    def _path_label(self, path: list[str]) -> str:
+        labels = []
+        for nid in path:
+            node = self.nodes[nid]
+            stage = node.get("stage", node.get("type", "node"))
+            step = node.get("step")
+            labels.append(f"{node.get('run_short_id', node.get('run_id', 'run'))}/T{step}:{stage}:{nid.split('::')[-1][:8]}")
+        return " -> ".join(labels)
+
+    def _transition_card(self, transition_id: str) -> dict[str, Any]:
+        node = self.nodes[transition_id]
+        return {
+            "id": transition_id,
+            "stage_pair": node.get("stage_pair"),
+            "outcome": node.get("outcome"),
+            "metric_delta": node.get("metric_delta"),
+            "metric_improvement": node.get("metric_improvement"),
+            "parent_buggy": node.get("parent_buggy"),
+            "child_buggy": node.get("child_buggy"),
+            "attached_sop_ids": node.get("attached_sop_ids") or [],
+            "evidence_refs": self._evidence_by_transition.get(transition_id, [])[:3],
+        }
+
+    def inspect_forest(self, *, task_id: str, task_desc: str, query_text: str) -> dict[str, Any]:
+        q_tokens = _tokenize(query_text)
+        task_counts = collections.Counter(str(n.get("task", "unknown")) for n in self.nodes.values() if n.get("type") == "RunNode")
+        stage_counts = collections.Counter(str(n.get("stage", "unknown")) for n in self.nodes.values() if n.get("type") == "RunNode")
+        outcome_counts = collections.Counter(str(n.get("outcome", "unknown")) for n in self.nodes.values() if n.get("type") == "Transition")
+        candidate_runs = collections.Counter()
+        for nid in self._run_nodes:
+            node = self.nodes[nid]
+            score = self._token_overlap(q_tokens, self._node_tokens.get(nid, set())) + self._task_score(node, task_id, task_desc)
+            if score > 0:
+                candidate_runs[str(node.get("run_id"))] += score
+        return {
+            "tool": "inspect_forest",
+            "scoring_mode": self.scoring_mode,
+            "node_counts": collections.Counter(str(n.get("type", "unknown")) for n in self.nodes.values()),
+            "task_counts_top": task_counts.most_common(8),
+            "stage_counts": dict(stage_counts),
+            "transition_outcomes": dict(outcome_counts),
+            "matched_runs": candidate_runs.most_common(6),
+            "navigation_suggestions": {
+                "draft": "look for task-level successful branches and reusable SOP signposts",
+                "improve": "look for similar local-best lineage and metric-improving transitions",
+                "debug": "look for similar failed nodes, then expand explicit child transitions for fixes",
+            },
+        }
+
+    def _pack_for_draft(self, *, task_id: str, task_desc: str, query_text: str, strategy: str) -> dict[str, Any]:
+        candidates = [
+            nid for nid in self._run_nodes
+            if self.nodes[nid].get("stage") in {"draft", "improve", "evolution"}
+            and self.nodes[nid].get("is_buggy") is not True
+        ]
+        selected_nodes = self._rank(
+            query_text=query_text,
+            candidate_ids=candidates,
+            task_id=task_id,
+            task_desc=task_desc,
+            top_k=self.top_k,
+            stage_bonus={"draft": 0.08, "improve": 0.04, "evolution": 0.04},
+        )
+        transitions = []
+        for nid in selected_nodes:
+            transitions += self._transitions_by_child.get(nid, [])
+        return self._build_pack("draft_task_successful_branches", selected_nodes, transitions[: self.top_k], strategy)
+
+    def _pack_for_improve(self, *, task_id: str, task_desc: str, query_text: str, strategy: str) -> dict[str, Any]:
+        candidates = [
+            nid for nid in self._run_nodes
+            if self.nodes[nid].get("local_best_node_id")
+            or self.nodes[nid].get("metric_improvement") is not None
+        ]
+        selected_nodes = self._rank(
+            query_text=query_text,
+            candidate_ids=candidates,
+            task_id=task_id,
+            task_desc=task_desc,
+            top_k=self.top_k,
+            stage_bonus={"improve": 0.10, "evolution": 0.06},
+        )
+        transitions = []
+        for nid in selected_nodes:
+            transitions += self._transitions_by_child.get(nid, [])
+            best = self.nodes[nid].get("local_best_node_id")
+            if best:
+                transitions += self._transitions_by_child.get(str(best), [])
+        return self._build_pack("improve_local_best_lineage", selected_nodes, transitions[: self.top_k], strategy)
+
+    def _pack_for_debug(self, *, task_id: str, task_desc: str, query_text: str, strategy: str) -> dict[str, Any]:
+        failed = [
+            nid for nid in self._run_nodes
+            if self.nodes[nid].get("is_buggy") is True
+            or "error" in self._node_text(self.nodes[nid]).lower()
+            or "traceback" in self._node_text(self.nodes[nid]).lower()
+        ]
+        selected_failed = self._rank(
+            query_text=query_text,
+            candidate_ids=failed,
+            task_id=task_id,
+            task_desc=task_desc,
+            top_k=max(self.top_k, 8),
+            stage_bonus={"debug": 0.10, "improve": 0.04},
+        )
+        repair_transitions: list[str] = []
+        for nid in selected_failed:
+            for tid in self._transitions_by_parent.get(nid, []):
+                t = self.nodes[tid]
+                child = self.nodes.get(str(t.get("child_node_id")), {})
+                if t.get("outcome") == "debug_fixed" or child.get("is_buggy") is False:
+                    repair_transitions.append(tid)
+            repair_transitions += self._transitions_by_child.get(nid, [])
+        return self._build_pack("debug_failure_recovery_paths", selected_failed[: self.top_k], repair_transitions[: self.top_k], strategy)
+
+    def _build_pack(self, pack_type: str, selected_nodes: list[str], selected_transitions: list[str], strategy: str) -> dict[str, Any]:
+        selected_transitions = list(dict.fromkeys([tid for tid in selected_transitions if tid in self.nodes]))[: self.top_k]
+        attached_sops: list[str] = []
+        evidence_refs: list[str] = []
+        for tid in selected_transitions:
+            attached_sops += [sid for sid in self.nodes[tid].get("attached_sop_ids") or [] if sid in self.nodes]
+            evidence_refs += self._evidence_by_transition.get(tid, [])
+        attached_sops = list(dict.fromkeys(attached_sops))[: self.top_k]
+        evidence_refs = list(dict.fromkeys(evidence_refs))[: self.top_k]
+
+        matched_paths = []
+        for nid in selected_nodes[: self.top_k]:
+            matched_paths.append(self._path_label(self._ancestor_path(nid, max_hops=4)))
+
+        warnings = []
+        for nid in selected_nodes[: self.top_k]:
+            parent = self.nodes[nid].get("parent_id")
+            if parent:
+                siblings = [sid for sid in self._children_by_node.get(str(parent), []) if sid != nid]
+                bad_siblings = [sid for sid in siblings if self.nodes[sid].get("is_buggy") is True]
+                if bad_siblings:
+                    warnings.append(
+                        f"{self.nodes[nid].get('run_short_id', '')}/T{self.nodes[nid].get('step')} has {len(bad_siblings)} buggy sibling attempts under the same parent; verify branch conditions before copying."
+                    )
+        transition_cards = [self._transition_card(tid) for tid in selected_transitions]
+        return {
+            "pack_type": pack_type,
+            "strategy": strategy,
+            "scoring_mode": self.scoring_mode,
+            "matched_run_paths": matched_paths,
+            "selected_nodes": selected_nodes[: self.top_k],
+            "selected_transitions": selected_transitions,
+            "transition_cards": transition_cards,
+            "attached_sops": attached_sops,
+            "risk_warnings": list(dict.fromkeys(warnings))[:6],
+            "evidence_refs": evidence_refs,
+            "navigation_trace": ["inspect_forest(context)", f"{pack_type}(strategy={strategy})"],
+        }
+
+    def _strategy_action_spec(self):
+        from llm import FunctionSpec
+
+        return FunctionSpec(
+            name="choose_run_forest_navigation_strategy",
+            description="Choose a read-only navigation strategy for Hyperbolic Run-Forest Memory.",
+            json_schema={
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "strategy": {
+                        "type": "string",
+                        "enum": ["draft_successful_branches", "improve_local_best_lineage", "debug_failure_recovery", "finish"],
+                    },
+                    "reason": {"type": "string"},
+                    "focus": {"type": "string"},
+                    "risk_keywords": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["strategy", "reason"],
+            },
+        )
+
+    def _llm_choose_strategy(self, *, stage: str, task_id: str, task_desc: str, query_text: str, forest_obs: dict[str, Any]) -> dict[str, Any]:
+        if self.cfg is None:
+            raise RuntimeError("cfg is required for LLM run-forest navigation")
+        from llm import query
+
+        system = (
+            "You are a read-only Memory Navigator for an ML coding agent. "
+            "You inspect a hyperbolic run forest and choose one navigation strategy. "
+            "Use DeepSeek/OpenAI-compatible function calling when configured. "
+            "Do not invent memories; choose a strategy for deterministic map tools to execute."
+        )
+        user_payload = {
+            "stage": stage,
+            "task_id": task_id,
+            "task_desc": task_desc[:1800],
+            "current_context": query_text[-5000:],
+            "forest_observation": forest_obs,
+            "policy": {
+                "debug": "prefer debug_failure_recovery",
+                "improve": "prefer improve_local_best_lineage",
+                "draft": "prefer draft_successful_branches",
+            },
+        }
+        user = json.dumps(user_payload, ensure_ascii=False, indent=2)
+        model = getattr(self.cfg.agent.feedback, "model", None) or getattr(self.cfg.agent.code, "model", "")
+        return query(
+            system_message=system,
+            user_message=user,
+            model=model,
+            temperature=0.1,
+            max_tokens=900,
+            func_spec=self._strategy_action_spec(),
+            cfg=self.cfg,
+        )
+
+    def _retrieve_pack(self, *, stage: str, task_id: str, task_desc: str, query_text: str) -> dict[str, Any]:
+        forest_obs = self.inspect_forest(task_id=task_id, task_desc=task_desc, query_text=query_text)
+        llm_tool_calls = 0
+        strategy = {
+            "draft": "draft_successful_branches",
+            "improve": "improve_local_best_lineage",
+            "evolution": "improve_local_best_lineage",
+            "debug": "debug_failure_recovery",
+        }.get(stage, "draft_successful_branches")
+        llm_reason = "deterministic stage policy"
+        if self.agentic_enabled and self.cfg is not None:
+            try:
+                action = self._llm_choose_strategy(
+                    stage=stage,
+                    task_id=task_id,
+                    task_desc=task_desc,
+                    query_text=query_text,
+                    forest_obs=forest_obs,
+                )
+                llm_tool_calls += 1
+                chosen = str(action.get("strategy", "") or "")
+                if chosen == "draft_successful_branches":
+                    strategy = "draft_successful_branches"
+                elif chosen == "improve_local_best_lineage":
+                    strategy = "improve_local_best_lineage"
+                elif chosen == "debug_failure_recovery":
+                    strategy = "debug_failure_recovery"
+                llm_reason = str(action.get("reason", ""))
+            except Exception as exc:
+                logger.warning("[RunForestMemory] LLM navigator failed; deterministic fallback: %s", exc)
+                llm_reason = f"llm_failed_fallback: {exc}"
+
+        if strategy == "debug_failure_recovery":
+            pack = self._pack_for_debug(task_id=task_id, task_desc=task_desc, query_text=query_text, strategy=strategy)
+        elif strategy == "improve_local_best_lineage":
+            pack = self._pack_for_improve(task_id=task_id, task_desc=task_desc, query_text=query_text, strategy=strategy)
+        else:
+            pack = self._pack_for_draft(task_id=task_id, task_desc=task_desc, query_text=query_text, strategy=strategy)
+        pack["forest_observation"] = forest_obs
+        pack["llm_tool_calls"] = llm_tool_calls
+        pack["llm_reason"] = llm_reason
+        pack["agentic_enabled"] = self.agentic_enabled
+        return pack
+
+    def _format_sop(self, sop_id: str) -> str:
+        node = self.nodes.get(sop_id, {})
+        when = "; ".join(_as_list(node.get("applies_when"))) or str(node.get("condition", ""))
+        action = node.get("action") or node.get("principle") or node.get("title") or ""
+        return f"{sop_id}: {node.get('title', '')}\n  When: {when}\n  Action: {action}"
+
+    def _format_pack(self, pack: dict[str, Any]) -> str:
+        prompt_pack = {
+            "matched_run_paths": pack.get("matched_run_paths", [])[:4],
+            "selected_transitions": pack.get("selected_transitions", [])[:6],
+            "attached_sops": pack.get("attached_sops", [])[:6],
+            "risk_warnings": pack.get("risk_warnings", [])[:6],
+            "evidence_refs": pack.get("evidence_refs", [])[:6],
+        }
+        lines = [
+            "## Agentic Run-Forest Memory Navigation",
+            "A read-only Memory Navigator inspected the historical run forest before this generation step.",
+            "Use this as a map path pack: follow path evidence and SOP signposts only when they match the current code/data/error state.",
+            f"Mode: {self.mode}; scoring: {self.scoring_mode}; strategy: {pack.get('strategy')}; llm_tool_calls: {pack.get('llm_tool_calls', 0)}.",
+            f"Navigator reason: {pack.get('llm_reason', '')}",
+            "",
+            "### Map Path Pack JSON",
+            json.dumps(prompt_pack, ensure_ascii=False, indent=2),
+            "",
+            "### Matched Run Paths",
+        ]
+        for item in pack.get("matched_run_paths", [])[:4]:
+            lines.append(f"- {item}")
+        lines += ["", "### Selected Transitions"]
+        for card in pack.get("transition_cards", [])[:6]:
+            lines.append(
+                f"- {card.get('id')}: {card.get('stage_pair')} outcome={card.get('outcome')} "
+                f"metric_delta={card.get('metric_delta')} metric_improvement={card.get('metric_improvement')}"
+            )
+        if pack.get("attached_sops"):
+            lines += ["", "### Attached SOP Signposts"]
+            for sop_id in pack.get("attached_sops", [])[:6]:
+                lines.append(self._format_sop(sop_id))
+        if pack.get("risk_warnings"):
+            lines += ["", "### Risk Warnings"]
+            for warning in pack.get("risk_warnings", [])[:6]:
+                lines.append(f"- {warning}")
+        if pack.get("evidence_refs"):
+            lines += ["", "### Evidence Refs"]
+            for evidence_id in pack.get("evidence_refs", [])[:6]:
+                evidence = self.nodes.get(evidence_id, {})
+                lines.append(f"- {evidence_id}: {str(evidence.get('text', ''))[:500]}")
+        return "\n".join(lines).strip()
+
+    def retrieve_for_node(
+        self,
+        *,
+        stage: str,
+        task_id: str,
+        task_desc: str,
+        query_parts: list[str] | None = None,
+    ) -> tuple[str, list[str]]:
+        if not self.stage_enabled(stage):
+            return "", []
+        query_text = "\n".join([task_desc or "", *(query_parts or [])])
+        pack = self._retrieve_pack(stage=stage, task_id=task_id, task_desc=task_desc, query_text=query_text)
+        self._last_agentic_pack = pack
+        ref_ids = list(dict.fromkeys(
+            list(pack.get("selected_transitions", []))
+            + list(pack.get("attached_sops", []))
+            + list(pack.get("evidence_refs", []))
+            + list(pack.get("selected_nodes", []))
+        ))
+        text = self._format_pack(pack)
+        if self.max_chars > 0 and len(text) > self.max_chars:
+            text = text[: self.max_chars].rstrip() + "\n... (run-forest memory truncated)"
+        logger.info(
+            "[RunForestMemory] stage=%s strategy=%s refs=%s",
+            stage,
+            pack.get("strategy"),
+            ",".join(ref_ids[:10]),
+        )
+        return text, ref_ids[: max(self.top_k * 3, 12)]
 
 
 def fetch_external_skill_memory(agent: Any, stage: str, **kwargs: Any) -> tuple[str, list[str], str]:

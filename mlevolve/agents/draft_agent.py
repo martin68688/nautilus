@@ -9,7 +9,7 @@ from llm import compile_prompt_to_md
 from engine.search_node import SearchNode
 from agents.coder import plan_and_code_query, stepwise_plan_and_code_query
 from agents.triggers import register_node
-from agents.memory.external_skill_memory import fetch_external_skill_memory
+from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
 from agents.prompts import (
     ROBUSTNESS_GENERALIZATION_STRATEGY,
     MODEL_ARCHITECTURE_SAFETY,
@@ -169,6 +169,14 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
     )
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text
+    coldstart_external_text = getattr(agent, "coldstart_external_memory_text", "")
+    if coldstart_external_text and str(coldstart_external_text).strip():
+        existing_external = prompt.get("External Skill Memory", "")
+        prompt["External Skill Memory"] = (
+            f"{coldstart_external_text.strip()}\n\n"
+            f"---\n## Run-Forest Runtime Draft Navigation\n"
+            f"{existing_external.strip()}"
+        ).strip() if existing_external.strip() else coldstart_external_text.strip()
 
     instructions = f"\n# Instructions\n\n"
     instructions += compile_prompt_to_md(prompt["Instructions"], 2)
@@ -179,10 +187,11 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
 
     external_skill_section = ""
     if prompt.get("External Skill Memory", "").strip():
-        section_title = "Agentic Hyperbolic Memory Navigation" if "agentic" in external_skill_source else "External Skill Memory"
+        section_title = external_memory_section_title(external_skill_source)
+        section_intro = external_memory_section_intro(external_skill_source, "designing this node")
         external_skill_section = (
             f"\n# {section_title}\n"
-            "Below are persistent SOP memories retrieved before designing this node:\n"
+            f"{section_intro}\n"
             f"{prompt['External Skill Memory']}\n"
         )
 
@@ -211,6 +220,13 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
 
     from agents.adoption import log_adoption
     log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "draft")
+    log_adoption(
+        new_node,
+        agent,
+        getattr(agent, "coldstart_external_source", "") or external_skill_source,
+        getattr(agent, "coldstart_external_ref_ids", []),
+        "coldstart",
+    )
     log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "draft")
 
     logger.info(f"[draft] → node {new_node.id} (branch={new_node.branch_id})")

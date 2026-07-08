@@ -1,0 +1,383 @@
+{
+  "schema": "run_forest_memory_evaluation_v1",
+  "graph": "paper-skills/hyper_memory/run_forest_graph.json",
+  "index": "paper-skills/hyper_memory/run_forest_index.npz",
+  "systems": {
+    "run_forest_poincare": {
+      "parent_lookup": {
+        "queries": 2155,
+        "recall_at_1": 0.14013921113689096,
+        "recall_at_5": 0.5707656612529002,
+        "recall_at_10": 0.8960556844547564,
+        "mrr": 0.3375482022826854,
+        "mean_rank": 5.503480278422273
+      },
+      "tree_neighbor_recall": {
+        "queries": 2200,
+        "neighbor_recall_at_10": 0.5421363636363635
+      },
+      "local_best_lookup": {
+        "queries": 1304,
+        "recall_at_1": 0.03144171779141104,
+        "recall_at_5": 0.26226993865030673,
+        "recall_at_10": 0.5038343558282209,
+        "mrr": 0.15616498177293547,
+        "mean_rank": 15.172546012269938
+      },
+      "debug_recovery_child_lookup": {
+        "queries": 282,
+        "recall_at_1": 0.17375886524822695,
+        "recall_at_5": 0.648936170212766,
+        "recall_at_10": 0.9184397163120568,
+        "mrr": 0.36559607939457756,
+        "mean_rank": 4.971631205673759
+      },
+      "transition_to_evidence": {
+        "queries": 1985,
+        "recall_at_1": 0.6926952141057935,
+        "recall_at_5": 0.9188916876574307,
+        "recall_at_10": 0.9753148614609571,
+        "mrr": 0.7881325951561502,
+        "mean_rank": 2.127455919395466
+      },
+      "transition_to_sop_signpost": {
+        "queries": 1229,
+        "recall_at_1": 0.34662327095199347,
+        "recall_at_5": 0.7737998372660699,
+        "recall_at_10": 0.8925956061838893,
+        "mrr": 0.5247822177842384,
+        "mean_rank": 4.83726606997559
+      }
+    },
+    "run_forest_flat_twin": {
+      "parent_lookup": {
+        "queries": 2155,
+        "recall_at_1": 0.12436194895591647,
+        "recall_at_5": 0.3689095127610209,
+        "recall_at_10": 0.5062645011600928,
+        "mrr": 0.2511638483649004,
+        "mean_rank": 16.254292343387473
+      },
+      "tree_neighbor_recall": {
+        "queries": 2200,
+        "neighbor_recall_at_10": 0.49286363636363645
+      },
+      "local_best_lookup": {
+        "queries": 1304,
+        "recall_at_1": 0.028374233128834355,
+        "recall_at_5": 0.2085889570552147,
+        "recall_at_10": 0.34432515337423314,
+        "mrr": 0.12405560369152713,
+        "mean_rank": 26.16947852760736
+      },
+      "debug_recovery_child_lookup": {
+        "queries": 282,
+        "recall_at_1": 0.22340425531914893,
+        "recall_at_5": 0.74822695035461,
+        "recall_at_10": 0.9432624113475178,
+        "mrr": 0.4211422738018483,
+        "mean_rank": 4.23758865248227
+      },
+      "transition_to_evidence": {
+        "queries": 1985,
+        "recall_at_1": 0.6750629722921915,
+        "recall_at_5": 0.9133501259445844,
+        "recall_at_10": 0.9732997481108312,
+        "mrr": 0.7746508923460284,
+        "mean_rank": 2.207052896725441
+      },
+      "transition_to_sop_signpost": {
+        "queries": 1229,
+        "recall_at_1": 0.3205858421480879,
+        "recall_at_5": 0.7241659886086249,
+        "recall_at_10": 0.8779495524816925,
+        "mrr": 0.49310438041197185,
+        "mean_rank": 5.1000813669650125
+      }
+    },
+    "run_forest_euclidean": {
+      "parent_lookup": {
+        "queries": 2155,
+        "recall_at_1": 0.16751740139211138,
+        "recall_at_5": 0.41531322505800466,
+        "recall_at_10": 0.5327146171693735,
+        "mrr": 0.29075559159204706,
+        "mean_rank": 19.103016241299304
+      },
+      "tree_neighbor_recall": {
+        "queries": 2200,
+        "neighbor_recall_at_10": 0.37118181818181817
+      },
+      "local_best_lookup": {
+        "queries": 1304,
+        "recall_at_1": 0.062116564417177916,
+        "recall_at_5": 0.2476993865030675,
+        "recall_at_10": 0.375,
+        "mrr": 0.16737057378259076,
+        "mean_rank": 23.094325153374232
+      },
+      "debug_recovery_child_lookup": {
+        "queries": 282,
+        "recall_at_1": 0.14893617021276595,
+        "recall_at_5": 0.37943262411347517,
+        "recall_at_10": 0.5283687943262412,
+        "mrr": 0.27163191825870575,
+        "mean_rank": 17.907801418439718
+      },
+      "transition_to_evidence": {
+        "queries": 1985,
+        "recall_at_1": 0.043828715365239294,
+        "recall_at_5": 0.20604534005037783,
+        "recall_at_10": 0.34357682619647356,
+        "mrr": 0.13639590099804413,
+        "mean_rank": 95.71637279596978
+      },
+      "transition_to_sop_signpost": {
+        "queries": 1229,
+        "recall_at_1": 0.096826688364524,
+        "recall_at_5": 0.34092758340113916,
+        "recall_at_10": 0.5215622457282343,
+        "mrr": 0.22646749017390155,
+        "mean_rank": 22.78112286411717
+      }
+    },
+    "run_forest_graph_expansion": {
+      "debug_recovery_child_lookup": {
+        "queries": 282,
+        "recall_at_1": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "mrr": 1.0,
+        "mean_rank": 1.0
+      },
+      "local_best_graph_follow": {
+        "queries": 1304,
+        "recall_at_1": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "mrr": 1.0,
+        "mean_rank": 1.0
+      }
+    }
+  },
+  "comparisons": {
+    "parent_lookup_poincare_vs_flat_twin_mrr": {
+      "observed_mean_diff": 0.08638435391778493,
+      "ci95_low": 0.08028703650863571,
+      "ci95_high": 0.09262953276877467,
+      "p_value_one_sided_left_gt_right": 0.0,
+      "n_pairs": 2155,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "parent_lookup_poincare_vs_euclidean_mrr": {
+      "observed_mean_diff": 0.0467926106906383,
+      "ci95_low": 0.028597165745703704,
+      "ci95_high": 0.06507994859113733,
+      "p_value_one_sided_left_gt_right": 0.0,
+      "n_pairs": 2155,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "parent_lookup_poincare_vs_flat_twin_recall_at_5": {
+      "observed_mean_diff": 0.20185614849187936,
+      "ci95_low": 0.1842227378190255,
+      "ci95_high": 0.21948955916473317,
+      "p_value_one_sided_left_gt_right": 0.0,
+      "n_pairs": 2155,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "parent_lookup_poincare_vs_euclidean_recall_at_5": {
+      "observed_mean_diff": 0.1554524361948956,
+      "ci95_low": 0.12807424593967517,
+      "ci95_high": 0.18236658932714617,
+      "p_value_one_sided_left_gt_right": 0.0,
+      "n_pairs": 2155,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "local_best_lookup_poincare_vs_flat_twin_mrr": {
+      "observed_mean_diff": 0.03210937808140834,
+      "ci95_low": 0.027313049935326936,
+      "ci95_high": 0.03715596284933676,
+      "p_value_one_sided_left_gt_right": 0.0,
+      "n_pairs": 1304,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "local_best_lookup_poincare_vs_euclidean_mrr": {
+      "observed_mean_diff": -0.011205592009655296,
+      "ci95_low": -0.02741515001504133,
+      "ci95_high": 0.005082629051786871,
+      "p_value_one_sided_left_gt_right": 0.9113,
+      "n_pairs": 1304,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "local_best_lookup_poincare_vs_flat_twin_recall_at_5": {
+      "observed_mean_diff": 0.05368098159509203,
+      "ci95_low": 0.039110429447852764,
+      "ci95_high": 0.06901840490797546,
+      "p_value_one_sided_left_gt_right": 0.0,
+      "n_pairs": 1304,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "local_best_lookup_poincare_vs_euclidean_recall_at_5": {
+      "observed_mean_diff": 0.014570552147239263,
+      "ci95_low": -0.01687116564417178,
+      "ci95_high": 0.04677914110429448,
+      "p_value_one_sided_left_gt_right": 0.1903,
+      "n_pairs": 1304,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "debug_recovery_child_lookup_poincare_vs_flat_twin_mrr": {
+      "observed_mean_diff": -0.05554619440727075,
+      "ci95_low": -0.07140182819312983,
+      "ci95_high": -0.04138276463605001,
+      "p_value_one_sided_left_gt_right": 1.0,
+      "n_pairs": 282,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "debug_recovery_child_lookup_poincare_vs_euclidean_mrr": {
+      "observed_mean_diff": 0.09396416113587173,
+      "ci95_low": 0.04038727095075954,
+      "ci95_high": 0.14821172183159453,
+      "p_value_one_sided_left_gt_right": 0.0002,
+      "n_pairs": 282,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "debug_recovery_child_lookup_poincare_vs_flat_twin_recall_at_5": {
+      "observed_mean_diff": -0.09929078014184398,
+      "ci95_low": -0.1347517730496454,
+      "ci95_high": -0.0673758865248227,
+      "p_value_one_sided_left_gt_right": 1.0,
+      "n_pairs": 282,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "debug_recovery_child_lookup_poincare_vs_euclidean_recall_at_5": {
+      "observed_mean_diff": 0.2695035460992908,
+      "ci95_low": 0.19148936170212766,
+      "ci95_high": 0.3475177304964539,
+      "p_value_one_sided_left_gt_right": 0.0,
+      "n_pairs": 282,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "transition_to_sop_signpost_poincare_vs_flat_twin_mrr": {
+      "observed_mean_diff": 0.0316778373722664,
+      "ci95_low": 0.02293722798797093,
+      "ci95_high": 0.040975431112498385,
+      "p_value_one_sided_left_gt_right": 0.0,
+      "n_pairs": 1229,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "transition_to_sop_signpost_poincare_vs_euclidean_mrr": {
+      "observed_mean_diff": 0.29831472761033667,
+      "ci95_low": 0.27289347427575034,
+      "ci95_high": 0.3254721423409385,
+      "p_value_one_sided_left_gt_right": 0.0,
+      "n_pairs": 1229,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "transition_to_sop_signpost_poincare_vs_flat_twin_recall_at_5": {
+      "observed_mean_diff": 0.04963384865744508,
+      "ci95_low": 0.03336045565500407,
+      "ci95_high": 0.06590724165988608,
+      "p_value_one_sided_left_gt_right": 0.0,
+      "n_pairs": 1229,
+      "n_resamples": 10000,
+      "seed": 42
+    },
+    "transition_to_sop_signpost_poincare_vs_euclidean_recall_at_5": {
+      "observed_mean_diff": 0.43287225386493083,
+      "ci95_low": 0.39788445890968266,
+      "ci95_high": 0.46867371847030104,
+      "p_value_one_sided_left_gt_right": 0.0,
+      "n_pairs": 1229,
+      "n_resamples": 10000,
+      "seed": 42
+    }
+  },
+  "claim_gates": {
+    "lineage_backtracking": {
+      "parent_lookup_mrr": {
+        "passed": true,
+        "reason": "Poincare parent lookup MRR must beat same-coordinate Flat-Twin and independent Euclidean."
+      },
+      "local_best_graph_follow": {
+        "passed": true,
+        "reason": "Local-best lineage must be retrieved by explicit points_to_local_best graph following after map retrieval."
+      },
+      "local_best_pure_distance_context": {
+        "passed": true,
+        "reason": "Pure distance local-best is diagnostic only; Poincare beats Flat-Twin but not independent Euclidean on MRR, so runtime follows the explicit lineage edge.",
+        "poincare_mrr": 0.15616498177293547,
+        "flat_twin_mrr": 0.12405560369152713,
+        "euclidean_mrr": 0.16737057378259076
+      },
+      "tree_neighbor_recall_at_10": {
+        "passed": true,
+        "reason": "Poincare tree-neighbor recall must preserve real run-tree neighborhoods better."
+      },
+      "transition_to_sop_signpost_mrr": {
+        "passed": true,
+        "reason": "Poincare transition->SOP signpost MRR must beat both flat controls."
+      },
+      "passed": true
+    },
+    "debug_child_graph_expansion": {
+      "explicit_graph_expansion": {
+        "passed": true,
+        "reason": "Debug child/fix retrieval must use explicit parent->child graph expansion, not pure distance."
+      },
+      "pure_distance_warning": {
+        "passed": true,
+        "reason": "Expected warning: pure Poincare distance is not the right tool for downward child expansion."
+      },
+      "passed": true
+    },
+    "sop_only_geometry": {
+      "status": "not_supported",
+      "reason": "Existing SOP-only edge benchmark does not support Poincare > Flat-Twin; keep this claim separate."
+    }
+  },
+  "sop_external_memory_baseline": {
+    "source": "paper-skills/eval_skill_memory/reports/hyperbolic_ablation_edge_predicted_only.json",
+    "status": "hyperbolic_geometry_claim_not_supported",
+    "edge_predicted_only": {
+      "agentic_euclidean": {
+        "edge_recall_at_5": 0.8771929824561403,
+        "mrr": 0.7096491228070176,
+        "ndcg_at_5": 0.7520169718224491
+      },
+      "agentic_flat_twin": {
+        "edge_recall_at_5": 0.8771929824561403,
+        "mrr": 0.7251461988304093,
+        "ndcg_at_5": 0.7638547526015772
+      },
+      "agentic_lexical": {
+        "edge_recall_at_5": 0.8771929824561403,
+        "mrr": 0.7119883040935673,
+        "ndcg_at_5": 0.7540020102920185
+      },
+      "agentic_poincare": {
+        "edge_recall_at_5": 0.8771929824561403,
+        "mrr": 0.6862573099415205,
+        "ndcg_at_5": 0.7337862126145659
+      }
+    }
+  },
+  "notes": [
+    "Run-forest tasks are lineage/topology tasks, not direct substitutes for SOP edge retrieval.",
+    "Flat-Twin shares Poincare coordinates; only distance function changes.",
+    "Euclidean Memory uses independent TF-IDF-SVD text coordinates."
+  ]
+}

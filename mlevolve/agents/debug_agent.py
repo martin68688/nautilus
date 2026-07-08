@@ -15,7 +15,7 @@ from agents.prompts import (
 from agents.coder.diff_coder import SearchReplacePatcher, DIFF_SYS_FORMAT
 from agents.planner import build_chat_prompt_for_model
 from agents.triggers import register_node
-from agents.memory.external_skill_memory import fetch_external_skill_memory
+from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
 
 logger = logging.getLogger("MLEvolve")
 
@@ -164,10 +164,11 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         current_introduction = introduction_base + (full_code_requirement if use_full_code_requirement else "")
         external_skill_section = ""
         if prompt.get("External Skill Memory", "").strip():
-            section_title = "Agentic Hyperbolic Memory Navigation" if "agentic" in external_skill_source else "External Skill Memory"
+            section_title = external_memory_section_title(external_skill_source)
+            section_intro = external_memory_section_intro(external_skill_source, "fixing this bug")
             external_skill_section = (
                 f"\n# {section_title}\n"
-                "Below are persistent SOP memories retrieved before fixing this bug:\n"
+                f"{section_intro}\n"
                 f"{prompt['External Skill Memory']}\n"
             )
         user_prompt = f"\n# Task description\n{prompt['Task description']}\n{external_skill_section}\n{instructions_with_format}"

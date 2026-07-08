@@ -1,0 +1,25 @@
+extends: config.yaml
+
+adoption_tracking:
+  enable: True
+  enable_analysis: True
+  judge_mode: llm-all
+
+external_skill_memory:
+  enable: True
+  graph_path: "../paper-skills/hyper_memory/run_forest_graph.json"
+  index_path: "../paper-skills/hyper_memory/run_forest_index.npz"
+  text_model_path: ""
+  source_name: "run_forest_agentic_memory"
+  mode: "run_forest_agentic"
+  scoring_mode: "poincare"
+  enable_agentic: True
+  navigator_max_steps: 3
+  navigator_reference_budget: 1200
+  top_k: 6
+  max_chars: 6500
+  include_draft: True
+  include_improve: True
+  include_evolution: True
+  include_debug: True
+  include_fusion: True

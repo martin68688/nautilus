@@ -131,8 +131,22 @@ class ExternalSkillMemoryConfig:
     index_path: str = ""
     text_model_path: str = ""
     source_name: str = "skillgraph"
-    mode: str = "skillgraph"  # skillgraph | agentic_hyperbolic | flat_twin_agentic
-    scoring_mode: str = "lexical"  # lexical | poincare | flat_twin
+    mode: str = "skillgraph"  # skillgraph | agentic_hyperbolic | flat_twin_agentic | agentic_euclidean | run_forest_agentic | run_forest_flat_twin | run_forest_euclidean
+    scoring_mode: str = "lexical"  # lexical | poincare | flat_twin | euclidean
+    geometry_distance_weight: float = 0.30
+    geometry_semantic_weight: float = 0.20
+    geometry_constraint_weight: float = 0.05
+    geometry_condition_weight: float = 0.18
+    geometry_failure_weight: float = 0.14
+    geometry_evidence_weight: float = 0.08
+    geometry_reliability_weight: float = 0.08
+    geometry_conflict_weight: float = 0.10
+    geometry_distance_norm: str = "none"  # none | minmax | zscore
+    geometry_query_radius_quantile: float = 0.5
+    geometry_query_radius_mode: str = "predicted_distribution"  # quantile | predicted_distribution
+    geometry_query_radius_bands: list[str] = field(default_factory=lambda: ["core", "middle", "edge"])
+    geometry_query_radius_top_bands: int = 2
+    geometry_radius_fusion: str = "weighted_max"  # weighted_max | weighted_mean
     enable_agentic: bool = False
     navigator_max_steps: int = 3
     navigator_reference_budget: int = 1200

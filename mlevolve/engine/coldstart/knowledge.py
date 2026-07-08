@@ -10,6 +10,65 @@ METHODOLOGY_MAP_JSON = Path(__file__).resolve().parent / "methodology_map.json"
 # Side-channel: most recent methodology ref_ids (set by build_guidance_description,
 # read by AgentSearch.__init__ for adoption tracking). NEVER injected into prompts.
 _LAST_REF_IDS: list[str] = []
+_LAST_RUN_FOREST_REF_IDS: list[str] = []
+_LAST_RUN_FOREST_SOURCE: str = ""
+_LAST_RUN_FOREST_TEXT: str = ""
+
+
+def _looks_like_run_forest_memory(ext_cfg: Any) -> bool:
+    if ext_cfg is None or not getattr(ext_cfg, "enable", False):
+        return False
+    values = [
+        getattr(ext_cfg, "mode", ""),
+        getattr(ext_cfg, "source_name", ""),
+        getattr(ext_cfg, "graph_path", ""),
+    ]
+    return any("run_forest" in str(value).lower() for value in values)
+
+
+def _build_run_forest_coldstart_text(cfg: Any, task_desc: str) -> tuple[str, list[str], str]:
+    """Return a read-only Run-Forest map path pack for initial draft guidance."""
+    ext_cfg = getattr(cfg, "external_skill_memory", None)
+    if not _looks_like_run_forest_memory(ext_cfg):
+        return "", [], ""
+    try:
+        from agents.memory.external_skill_memory import RunForestMemoryLayer
+
+        layer = RunForestMemoryLayer(
+            graph_path=getattr(ext_cfg, "graph_path", ""),
+            index_path=getattr(ext_cfg, "index_path", ""),
+            source_name=getattr(ext_cfg, "source_name", "run_forest_agentic_memory"),
+            mode=getattr(ext_cfg, "mode", "run_forest_agentic"),
+            scoring_mode=getattr(ext_cfg, "scoring_mode", "poincare"),
+            enable_agentic=getattr(ext_cfg, "enable_agentic", False),
+            navigator_max_steps=getattr(ext_cfg, "navigator_max_steps", 3),
+            navigator_reference_budget=getattr(ext_cfg, "navigator_reference_budget", 1200),
+            top_k=min(int(getattr(ext_cfg, "top_k", 6) or 6), 6),
+            max_chars=min(int(getattr(ext_cfg, "max_chars", 5000) or 5000), 4500),
+            cfg=cfg,
+        )
+        text, ref_ids = layer.retrieve_for_node(
+            stage="draft",
+            task_id=getattr(cfg, "exp_id", ""),
+            task_desc=task_desc or getattr(cfg, "exp_id", ""),
+            query_parts=["cold-start task-level successful branches"],
+        )
+        if not text:
+            return "", [], layer.source_name
+        guidance = (
+            "\n\n---\n## Run-Forest Cold-Start Map Path Pack\n"
+            "Before the first draft, a read-only Memory Navigator inspected historical run trees. "
+            "Use these paths as evidence-backed starting hints, not as commands to copy blindly.\n\n"
+            f"{text}"
+        )
+        return guidance, ref_ids, layer.source_name
+    except Exception as exc:
+        return (
+            "\n\n---\n## Run-Forest Cold-Start Map Path Pack\n"
+            f"Run-Forest cold-start memory was configured but unavailable; continuing without it. Reason: {exc}",
+            [],
+            getattr(ext_cfg, "source_name", "run_forest_agentic_memory") if ext_cfg is not None else "run_forest_agentic_memory",
+        )
 
 
 def _load_json(path: str) -> Dict:
@@ -138,6 +197,15 @@ def build_guidance_description(cfg: Any, task_desc: str = "") -> str:
         if methodology_text:
             text += methodology_text
 
-    global _LAST_REF_IDS
+    # Keep model-template cold start byte-compatible with the original path.
+    # Run-Forest cold-start memory is injected later as a separate external
+    # memory section so the "copy template exactly" rule still refers only to
+    # the original model template text.
+    run_forest_text, run_forest_ref_ids, run_forest_source = _build_run_forest_coldstart_text(cfg, task_desc)
+
+    global _LAST_REF_IDS, _LAST_RUN_FOREST_REF_IDS, _LAST_RUN_FOREST_SOURCE, _LAST_RUN_FOREST_TEXT
     _LAST_REF_IDS = ref_ids  # side-channel snapshot for adoption tracking
+    _LAST_RUN_FOREST_REF_IDS = list(run_forest_ref_ids)
+    _LAST_RUN_FOREST_SOURCE = run_forest_source
+    _LAST_RUN_FOREST_TEXT = run_forest_text
     return text

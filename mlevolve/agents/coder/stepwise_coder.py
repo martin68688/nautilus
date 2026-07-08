@@ -248,7 +248,7 @@ class StepAgent:
         if prompt_base.get("External Skill Memory", "").strip():
             external_skill_section = (
                 "\n# External Skill Memory\n"
-                "Below are persistent SOP memories retrieved before this code-generation step:\n"
+                "Below is the retrieved external memory package for this code-generation step; it may contain SOP cards or a run-forest map path pack:\n"
                 f"{prompt_base['External Skill Memory']}\n"
             )
 
@@ -401,7 +401,7 @@ class MetaAgent:
         if prompt_base.get("External Skill Memory", "").strip():
             external_skill_section = (
                 "\n# External Skill Memory\n"
-                "Below are persistent SOP memories retrieved before merging the solution:\n"
+                "Below is the retrieved external memory package for merging the solution; it may contain SOP cards or a run-forest map path pack:\n"
                 f"{prompt_base['External Skill Memory']}\n"
             )
 
