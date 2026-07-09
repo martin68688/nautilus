@@ -4114,3 +4114,163 @@ Add a "template replay / protected architecture" mode for high-confidence histor
 4. Add a retrieval conflict warning:
    if `0.0725 validation` is retrieved, also inject the counter-memory that this was a validation extreme / real-test worse, so the agent does not chase the wrong target.
 ```
+
+## Checkpoint: Clean-Source Audit For 0.07 And Three-Model Ensemble Retrieval
+
+Time: 2026-07-09 13:03-13:12 UTC
+
+The user correctly questioned whether the `0.07` source should have been excluded. I rechecked the live pod and the cloned experiment worktree. The result is important:
+
+```text
+There is a clean SOP/SkillGraph provenance path, but the online Run-Forest path is not using the same clean gate.
+```
+
+Evidence:
+
+```text
+Live Run-Forest artifact:
+  /workspace/nautilus_runforest_online_runforest_online_a100x3_r3_20260709_045537/paper-skills/hyper_memory/run_forest_graph.json
+
+meta:
+  schema = hyperbolic_run_forest_memory_v1
+  builder = build_run_forest_memory.py
+  runs_dir = mlevolve/runs
+  journal_count = 45
+  no allowlist
+  no leak_verified
+  no paper_grade
+
+builder behavior:
+  build_run_forest_memory.py loads sorted(runs_dir.glob("*/logs/journal.json"))
+  it has no --allowlist argument
+  it has no require-clean-provenance mode
+```
+
+The clean allowlist exists in the same cloned worktree:
+
+```text
+paper-skills/eval_skill_memory/clean_run_allowlist.json
+allowed entries: 22
+blocked_runs includes:
+  20260512 => quarantined INDEX_BUG / contaminated KB source
+```
+
+But the Run-Forest graph ignored it:
+
+```text
+run_count_in_forest: 45
+allowed_count: 22
+extra_not_allowlisted: 23
+
+extra examples:
+  20260512_094857
+  20260512_100231
+  20260512_105637
+  20260512_112908
+  20260516_091845
+  20260514_183931
+  ...
+
+blocked 20260512 runs present:
+  20260512_094857
+  20260512_100231
+  20260512_105637
+  20260512_112908
+```
+
+So the user's memory is correct: `0.0725` is from the 20260512 family that the coordination memory says should be quarantined. It entered the live online memory because the new Run-Forest builder was built over all journals, not the clean allowlist.
+
+There is also a second contamination path in cold-start methodology:
+
+```text
+Live methodology_map.json:
+{
+  "spooky-author-identification": [
+    "winning-recipe-nlp-classification",
+    "ensemble-diversity-vs-validation-gap",
+    "small-data-transformer-finetuning"
+  ]
+}
+
+Live active file:
+  paper-skills/experience_kb/winning-recipe-nlp-classification/experience_methodology.md
+
+It still says:
+  DeBERTa-v3-large partial unfreezing ... achieves 0.0725 val loss
+```
+
+In this pod clone, `paper-skills/_quarantine_contaminated_kb` is absent, so the quarantine described in `coordination/shared_memory.md` was not materialized in the code path used by the online Job commit (`eb754c1`). The active MethodologyAgent therefore loaded contaminated/legacy categories at startup:
+
+```text
+[MethodologyAgent] LLM matched 2 categories:
+  winning-recipe-nlp-classification
+  small-data-transformer-finetuning
+```
+
+Answer to "was the three-model ensemble retrieved or not?":
+
+```text
+It was retrieved.
+
+Examples:
+  05:35 cold-start guidance included:
+    DeBERTa-v3-large + XGBoost + LR + weighted ensemble, achieved ~0.2013
+
+  12:15 RunForestMemory retrieved:
+    run::20260517_151325...::transition::8efd3270e8::5db3f25122
+
+  12:55 RunForestMemory retrieved:
+    run::20260517_151325...::transition::8efd3270e8::5db3f25122
+    sop::sg_0267 / sg_0270 / sg_0271
+```
+
+But it was not reliably adopted:
+
+```text
+Current active runfiles:
+  runfile_0.py -> node fab410... stage=improve
+    DeBERTa-v3-base, single neural validation path
+    imports XGBoost/LR but no actual xgb/lr/ensemble usage
+
+  runfile_1.py -> node aea5ce... stage=improve
+    DeBERTa-v3-base, single neural validation path
+    imports XGBoost/LR but no actual xgb/lr/ensemble usage
+
+  runfile_2.py -> node e5b475... stage=improve
+    DeBERTa-v3-small + handcrafted fusion
+    does train XGBoost and CNN branches as auxiliary OOF features
+    not the historical DeBERTa-large + XGBoost + LR weighted ensemble template
+```
+
+Current online status:
+
+```text
+Job: runforest-online-a100x3-r3
+Pod: runforest-online-a100x3-r3-58772
+Status: Running, 0/1 completions, restarts=0
+Journal: 38 nodes, 11 valid metrics
+Best: 8cb589... metric=0.346175
+Manifest: still 0 bytes
+Adoption artifacts: absent
+Current task: still spooky; cactus/leaf/taxi not started yet
+```
+
+Root cause:
+
+```text
+1. Clean SOP graph path is certified, but online Run-Forest graph is not clean-certified.
+2. Cold-start methodology still exposes contaminated `winning-recipe-nlp-classification`.
+3. Retrieval is active and finds both the three-model ensemble and 0.07 historical path.
+4. Generation treats retrieved memories as loose advice, not locked templates.
+5. Accepted local best drifted to DeBERTa-small; current active improve nodes are mostly DeBERTa-base/small variants, not the historical large weighted ensemble.
+```
+
+Required fix before any serious follow-up run:
+
+```text
+1. Add --allowlist / --require-clean-provenance to build_run_forest_memory.py.
+2. Rebuild run_forest_graph.json from only clean_run_allowlist.json.
+3. Remove/quarantine contaminated experience_kb categories from cold-start scan root and methodology_map.
+4. Add a hard runtime guard: if a retrieved RunNode/Transition comes from blocked run prefix 20260512, reject or label as risk warning only.
+5. Add template-lock replay for the clean DeBERTa-large + XGBoost + LR ensemble if we want to test that template.
+```
