@@ -1397,6 +1397,42 @@ top Python workers:
 
 Interpretation: this is not a result checkpoint, but it verifies that the plateau-triggered Run-Forest improve child is executing on GPU2 rather than sitting idle. Continue read-only monitoring until parse/metric/leakage results appear.
 
+Follow-up execution health check at `2026-07-09 17:11 CST` / `09:11 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 4h15m
+pod status: Ready 1/1, Running, restarts=0
+active improve child: 19d8c728cb6c410ba2d17ed336080a29
+parse result: not available yet
+journal nodes: still 15
+metric_count: still 5
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+```
+
+The improve child continues to update its checkpoint:
+
+```text
+workspace/working/best_model_19d8c728cb6c410ba2d17ed336080a29.pt
+  mtime: Thu Jul  9 09:10:40 UTC 2026
+  size: 574839119 bytes
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 30495 MiB used, 95% utilization
+GPU1: 35307 MiB used, 95% utilization
+GPU2: 7063 MiB used, 65% utilization
+top Python workers:
+  elapsed 00:31:08, ~95.8% CPU
+  elapsed 00:56:28, ~94.2% CPU
+  elapsed 00:07:49, ~92.0% CPU
+```
+
+Interpretation: still no new result/adoption artifact, but the improve child remains active and healthy. Continue read-only monitoring.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
