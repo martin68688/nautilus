@@ -281,6 +281,34 @@ runner args: --num-gpus 3 --cpu-number 6
 kubectl apply --dry-run=client: job.batch/runforest-online-a100x3
 ```
 
+Submission result for the first A100 attempt:
+
+```text
+job: runforest-online-a100x3
+pod: runforest-online-a100x3-5jsnc
+node: node-1-1.sdsc.optiputer.net
+status: Failed / pod Error
+failure point: git clone before code checkout completed
+error: RPC failed; curl 56 Recv failure; early EOF; invalid index-pack output
+```
+
+This failure happened before `checked_out_commit`, preflight tests, matrix execution, navigator calls, or adoption analysis. It is a code-delivery/network failure, not a Run-Forest runtime failure.
+
+A retry YAML was added:
+
+```text
+job yaml: job-runforest-online-a100x3-r2.yaml
+job name: runforest-online-a100x3-r2
+resources: 3x A100, 6 CPU, 64Gi
+kubectl apply --dry-run=client: job.batch/runforest-online-a100x3-r2
+```
+
+The r2 job keeps the same experiment and resource shape, but makes code checkout more robust:
+
+- retry remote shallow clone up to three times;
+- if repeated remote shallow clone fails, seed from the existing PVC repo and then `git fetch --depth=1 origin codex/hyperbolic-structural-memory`;
+- still run from the remote branch contents, preserving the pushed-branch provenance requirement.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
