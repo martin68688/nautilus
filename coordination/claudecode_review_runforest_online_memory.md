@@ -1359,6 +1359,44 @@ top active Python workers:
 
 Interpretation: the online run is now showing both sides of the safety loop: another suspicious/over-optimized metric was rejected, and then Run-Forest memory was used for plateau-aware improve rather than only debug. This gives additional runtime-memory coverage evidence for improve mode, but still no final effect/adoption conclusion because the first task has not finished and the matrix/adoption artifacts are absent.
 
+Follow-up execution health check at `2026-07-09 17:08 CST` / `09:08 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 4h12m
+pod status: Ready 1/1, Running, restarts=0
+active improve child: 19d8c728cb6c410ba2d17ed336080a29
+parse result: not available yet
+journal nodes: still 15
+metric_count: still 5
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+```
+
+The improve child is actively training on GPU2 and writing checkpoint files:
+
+```text
+workspace/working/best_model_19d8c728cb6c410ba2d17ed336080a29.pt
+  mtime: Thu Jul  9 09:07:55 UTC 2026
+  size: 574839119 bytes
+workspace/working/best_val_probs.npy
+  mtime: Thu Jul  9 09:07:23 UTC 2026
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 30495 MiB used, 100% utilization
+GPU1: 35307 MiB used, 96% utilization
+GPU2: 7063 MiB used, 68% utilization
+top Python workers:
+  elapsed 00:27:29, ~95.2% CPU
+  elapsed 00:04:11, ~94.6% CPU
+  elapsed 00:52:49, ~93.8% CPU
+```
+
+Interpretation: this is not a result checkpoint, but it verifies that the plateau-triggered Run-Forest improve child is executing on GPU2 rather than sitting idle. Continue read-only monitoring until parse/metric/leakage results appear.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
