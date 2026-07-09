@@ -2956,6 +2956,165 @@ Interpretation for ClaudeCode review:
 - Memory retrieval continues to be visibly active in logs, including `debug_failure_recovery` and `improve_local_best_lineage`.
 - The strongest current diagnosis remains unchanged: retrieval quality is better than actuation quality. The memory layer finds strong historical references, but the code generator often treats them as advice rather than as an architecture to preserve.
 
+Follow-up parse and live-process checkpoint at `2026-07-09 19:40 CST` / `11:40 UTC`:
+
+Cluster state remains healthy:
+
+```text
+Job: runforest-online-a100x3-r3
+status: Running
+pod: runforest-online-a100x3-r3-58772
+pod restarts: 0
+current task: still spooky-author-identification
+cactus/leaf/taxi: not started yet
+```
+
+New journal state:
+
+```text
+journal mtime: Thu Jul 9 11:33:00 UTC 2026
+nodes: 28
+valid_metrics: 7
+best_min: 0.369656
+manifest: still 0 bytes
+adoption_report.json: absent
+adoption_events.jsonl: absent
+external_memory_adoption_events.jsonl: absent
+```
+
+New parsed nodes:
+
+```text
+node: 2287d62b34074bb282e5005dc6a194fc
+parent: 5bb660d469c944bbbb8aca410d6d6078
+stage: improve
+raw metric before leakage reset: 0.397472
+parse: FAIL
+final metric: None
+reason:
+  high-confidence data leakage
+  Stage 1 MLM pretraining used all_texts = train_texts + test_texts
+  the transformer backbone therefore saw test texts before final prediction
+extra parser warning:
+  output path saved hash-suffixed submission rather than ./submission/submission.csv
+```
+
+This validates the earlier concern about `2287...`: the plateau improve retrieved strong history but generated a complex `DeBERTa-v3-small + MLM + feature reconstruction` variant. The leakage checker correctly caught the test-text MLM leak.
+
+```text
+node: e5b3e997ca5a49fdb36235f56359c8cf
+parent: 3d38dfc1bfa840dc9226a66356e1d9eb
+stage: debug
+metric: 0.730335
+parse: PASS
+leakage check: has_leakage=False, confidence=high
+best status:
+  local best for branch 4 only
+  global best remains 0.369656
+top solution status:
+  saved as top6
+execution time: 6481.65 seconds
+```
+
+The `e5b3...` result is legal but poor. It is now a useful negative example: RunForest got a runnable debug child, but its architecture produced much worse log loss than the branch-1 solutions.
+
+Top solutions after this checkpoint:
+
+```text
+top1: 24ba5082e39f4494a065c469520c5457 metric=0.369656
+top2: 5bb660d469c944bbbb8aca410d6d6078 metric=0.37155
+top3: 37243e8669764c6abe3e5de076963c4f metric=0.376155
+top4: 19d8c728cb6c410ba2d17ed336080a29 metric=0.382008
+top5: cc4660189e5d49bd9c7e8e2564bc37e3 metric=0.39604
+top6: e5b3e997ca5a49fdb36235f56359c8cf metric=0.730335
+```
+
+New memory retrieval and child generation after `2287...` failed:
+
+```text
+selected node: ca22f97abf18415e89bccff07280d293
+stage: debug
+strategy: debug_failure_recovery
+refs:
+  run::20260516_091845_spooky-author-identification::transition::54ae377856::4bba6e1078
+  run::20260517_151325_spooky-author-identification::transition::d44038102d::0acd2ce065
+  run::20260517_151325_spooky-author-identification::transition::cf0f5f3b44::a345ae7dd3
+  run::20260516_125444_spooky-author-identification::transition::fea89972fb::197781b971
+  run::20260514_023457_spooky-author-identification::transition::11dd8825fa::4c59ca9769
+  run::20260516_125444_spooky-author-identification::transition::39c03723bd::c72f212a91
+  sop::sg_0268
+  sop::sg_0267
+  sop::sg_0270
+  sop::sg_0271
+child: bdb69a1d667d4f26a866b477ad01030f
+assigned:
+  process_id=1
+  GPU=1
+```
+
+Current `bdb69...` runfile scheme:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-large
+MAX_LENGTH = 512
+BATCH_SIZE = 16
+NUM_EPOCHS = 40
+DeBERTa fine-tuning
+XGBoost on handcrafted + sparse n-gram features
+LogisticRegression on sparse features
+ensemble:
+  simple average weights
+  DeBERTa = 1/3
+  XGBoost = 1/3
+  LR = 1/3
+important:
+  comments explicitly disable DeBERTa embeddings for XGBoost to avoid leakage
+```
+
+New memory retrieval and child generation after `e5b3...` passed but was weak:
+
+```text
+selected node: 24ba5082e39f4494a065c469520c5457
+stage: improve
+strategy: improve_local_best_lineage
+refs:
+  run::20260516_125444_spooky-author-identification::transition::92989935c3::bfbf637cc9
+  run::20260512_112908_spooky-author-identification::transition::530e3979d9::c42a7b9434
+  run::20260514_183931_spooky-author-identification::transition::ec3cce3973::d8bbe636ca
+  sop::sg_0002
+  sop::sg_0222
+  sop::sg_0230
+  sop::sg_0228
+  sop::sg_0221
+  evidence::79141a4233f1
+  evidence::2b09b298a6b9
+child: 8cb589f6afd74267b4ebb98db27187d3
+assigned:
+  process_id=0
+  GPU=0
+```
+
+Current `8cb589...` runfile scheme:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-small
+MAX_LENGTH = 256
+BATCH_SIZE = 32
+NUM_EPOCHS = 20
+unfreeze last 4 layers
+criterion: FocalLoss(gamma=3.0, label_smoothing=0.1)
+scheduler: CosineAnnealingLR
+```
+
+Interpretation for ClaudeCode review:
+
+- The run is continuing; this is no longer the exact 10:56 state.
+- The leakage detector is doing useful work and rejected the `2287...` MLM-on-test path.
+- `e5b3...` demonstrates that a legal debug fix can still be strategically poor.
+- The retrieval layer again found strong historical lineages including `c42a7b9434`, but the generated `8cb589...` child still drifted toward `DeBERTa-v3-small` rather than preserving the historically strong large-model recipe.
+- In contrast, `bdb69...` is closer to the intended leakage-safe large-model ensemble shape.
+- Adoption artifacts are still absent because the first task has not completed.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
