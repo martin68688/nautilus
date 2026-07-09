@@ -309,6 +309,32 @@ The r2 job keeps the same experiment and resource shape, but makes code checkout
 - if repeated remote shallow clone fails, seed from the existing PVC repo and then `git fetch --depth=1 origin codex/hyperbolic-structural-memory`;
 - still run from the remote branch contents, preserving the pushed-branch provenance requirement.
 
+Submission result for the second A100 attempt:
+
+```text
+job: runforest-online-a100x3-r2
+pod: runforest-online-a100x3-r2-jq6rh
+node: node-1-1.sdsc.optiputer.net
+status: Failed / pod Error
+checked_out_commit: aa11d958c8f47253538e0488174bf86797b69bfc
+failure point: preflight pytest path
+error: file or directory not found: tests/test_run_forest_memory.py
+```
+
+The r2 checkout succeeded, but the command was running from `${WORKDIR}/mlevolve`, while the test file lives at `${WORKDIR}/tests/test_run_forest_memory.py`. Therefore the test path should be `../tests/test_run_forest_memory.py`.
+
+A third retry YAML was added:
+
+```text
+job yaml: job-runforest-online-a100x3-r3.yaml
+job name: runforest-online-a100x3-r3
+resources: 3x A100, 6 CPU, 64Gi
+kubectl apply --dry-run=client: job.batch/runforest-online-a100x3-r3
+preflight fix: pytest -q ../tests/test_run_forest_memory.py
+```
+
+The r3 checkout strategy also prefers the already-successful r2 checkout as a PVC local seed, then fetches the pushed branch from remote. This avoids spending another long A100 allocation on a full remote checkout while still validating the remote branch provenance.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
