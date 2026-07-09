@@ -1755,6 +1755,75 @@ workspace/working/best_deberta_model.pt
 
 Interpretation: the prior GPU2 low-utilization snapshot was transient. The current draft worker is actively training again and checkpointing model weights. There is still no parse/result checkpoint for `ca180ddf...`, so no adoption/result conclusion can be drawn yet.
 
+Follow-up result/debug checkpoint at `2026-07-09 17:41 CST` / `09:41 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 4h45m
+pod status: Ready 1/1, Running, restarts=0
+journal nodes: 19
+metric_count: 6
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+```
+
+The root-expansion draft generated after the previous Run-Forest draft retrieval has now parsed as failed:
+
+```text
+node: dff93ce6cbcf44538fd04fea4f7882fd
+stage: draft
+parent: 949b7f29c71846ebbcaae3779e46119f
+parse: FAIL
+metric: None
+best after parse: still 0.369656
+observed artifact: workspace/submission/submission_dff93ce6cbcf44538fd04fea4f7882fd.csv
+analysis excerpt: execution ran without throwing hard errors but produced excessive fork/tokenizer multiprocessing warnings and no metric value was accepted
+```
+
+The failure triggered debug retrieval with Run-Forest memory:
+
+```text
+stage=debug
+strategy=debug_failure_recovery
+refs:
+  run::20260509_154039_spooky-author-identification::transition::dc633aebfe::1852b63b5b
+  run::20260511_014836_spooky-author-identification::transition::31e12b2fef::5be1911c1a
+  run::20260511_014836_spooky-author-identification::transition::171c1aa3a2::31e12b2fef
+  run::20260509_154039_spooky-author-identification::transition::dc633aebfe::b926644769
+  run::20260510_095558_spooky-author-identification::transition::897a944a49::2089261d7d
+  run::20260510_095558_spooky-author-identification::transition::2dd4fc7db8::897a944a49
+  sop::sg_0156
+  sop::sg_0157
+  sop::sg_0096
+  sop::sg_0101
+```
+
+The debug agent applied a larger patch and launched a new child:
+
+```text
+parent: dff93ce6cbcf44538fd04fea4f7882fd
+child: 3d38dfc1bfa840dc9226a66356e1d9eb
+stage: debug
+patch: 7 diff patches applied
+code review: needs_revision=False
+execution: assigned process_id=0, cpu={113,114}, GPU0
+parse result: not available yet
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 1039 MiB used, 0% utilization
+GPU1: 35307 MiB used, 94% utilization
+GPU2: 29725 MiB used, 100% utilization
+top Python workers:
+  PID 4206, elapsed 00:51, ~99.3% CPU, likely new debug child startup
+  PID 3234, elapsed 01:00:43, ~96.6% CPU
+  PID 3951, elapsed 00:15:07, ~96.3% CPU
+```
+
+Interpretation: the draft branch did not improve the metric and produced another failed node, but Run-Forest debug recovery fired as intended with a new set of historical repair transitions and SOP signposts. The matrix is still on the first task; no task-level manifest row has been emitted yet.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
