@@ -372,6 +372,58 @@ Current online-result status:
 - `runforest_online_manifest.jsonl` is still empty because the matrix runner writes a row after each task finishes.
 - `adoption_report.json` is not present yet; adoption analysis is expected after enough generated nodes / run completion.
 
+Additional live checkpoint as of `2026-07-09 15:00:30 CST` / `07:00:30 UTC`:
+
+```text
+job: runforest-online-a100x3-r3
+pod: runforest-online-a100x3-r3-58772
+status: Running, 0/1 completions
+age: about 124 minutes
+restarts: 0
+node: node-1-1.sdsc.optiputer.net
+```
+
+GPU/process status from read-only `kubectl exec`:
+
+```text
+GPU0: NVIDIA A100-SXM4-80GB, 30363 MiB used, 100% utilization
+GPU1: NVIDIA A100-SXM4-80GB, 35307 MiB used, 96% utilization
+GPU2: NVIDIA A100-SXM4-80GB, 13927 MiB used, 96% utilization
+top worker processes: three Python workers at roughly 95-96% CPU each
+```
+
+Run artifact status at this checkpoint:
+
+```text
+matrix dir: /workspace/nautilus/mlevolve/runs/runforest_online_a100x3_r3_20260709_045537_matrix
+manifest: runforest_online_manifest.jsonl exists but is still 0 bytes
+spooky log: spooky-author-identification.log exists, about 65 KiB
+journal: exists, about 145 KiB
+journal nodes: 2
+metric_count: 0
+best_min: None
+latest nodes: root plus buggy draft 9074a44d9e64432aa8e2c5347d0d3a8d
+```
+
+Interpretation: this is still an active run, not a completed result. The pod is not Pending and does not require any mutation. The three GPUs are busy, so the correct action is continued read-only monitoring until either the first long-running draft finishes or the Job fails/completes.
+
+Follow-up read-only health check at `2026-07-09 15:03:23 CST` / `07:03:23 UTC`:
+
+```text
+job status: still Running, 0/1 completions, about 127 minutes old
+pod status: Ready 1/1, Running, restarts=0
+GPU0: 30363 MiB used, 94% utilization
+GPU1: 35307 MiB used, 99% utilization
+GPU2: 13927 MiB used, 98% utilization
+journal nodes: still 2
+metric_count: still 0
+manifest: still 0 bytes
+adoption_report/adoption_events: not yet present
+summary json/md: not yet present
+```
+
+Interpretation unchanged: the Job is still spending GPU time on the first task's long-running draft/debug executions. There is no evidence of a scheduler Pending state, pod restart, or completed online result yet.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
