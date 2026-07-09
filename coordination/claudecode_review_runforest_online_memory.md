@@ -622,6 +622,70 @@ top processes: three mlevolve worker Python processes still active, plus one sho
 
 Interpretation: still no valid metric, but the job remains live. Runtime memory evidence is now extensive for debug-stage navigation, though the first task is stuck in repeated generated-code failure recovery rather than reaching a score.
 
+Additional material checkpoint at `2026-07-09 15:24:07 CST` / `07:24:07 UTC`:
+
+```text
+job status: still Running, 0/1 completions, about 148 minutes old
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 8
+metric_count: 1
+best_min: 0.37155
+manifest: still 0 bytes because the task has not finished
+summary/adoption report: not yet present
+```
+
+First successful metric:
+
+```text
+node: 5bb660d469c944bbbb8aca410d6d6078
+stage: debug
+parent: ddbc3a59afa4427e8928125c25d4b407
+is_buggy: False
+metric: 0.37155
+maximize: False
+best updated: node 5bb660d469c944bbbb8aca410d6d6078, metric=0.37155
+```
+
+Validation/leakage evidence:
+
+```text
+format validation: passed
+content quality: valid
+metric direction: maximize=False
+data leakage check: has_leakage=False, confidence=high
+parse result: PASS | metric=0.37155
+```
+
+The run then moved from debug recovery into improve:
+
+```text
+progress: 7/80 steps completed, 3 tasks running
+next stage: normal improve for node 5bb660d469c944bbbb8aca410d6d6078
+RunForestMemory fired for improve:
+  stage=improve
+  strategy=improve_local_best_lineage
+  refs include transitions:
+    run::20260516_125444_spooky-author-identification::transition::92989935c3::bfbf637cc9
+    run::20260511_102550_spooky-author-identification::transition::8fa40b1647::dd6126c1cf
+    run::20260516_125444_spooky-author-identification::transition::92989935c3::669be7d1fe
+  refs include SOPs/evidence:
+    sop::sg_0002, sop::sg_0222, sop::sg_0230, sop::sg_0228, sop::sg_0221, sop::sg_0164, evidence::79141a4233f1
+improve path:
+  diff improve with two-stage planning and memory
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 1001 MiB used, 0% utilization
+GPU1: 35307 MiB used, 93% utilization
+GPU2: 13393 MiB used, 11% utilization
+top processes: mlevolve Python workers still active
+```
+
+Interpretation: this is the first online success signal. Runtime Run-Forest memory has now been verified in three modes on the same live task: draft retrieval, repeated debug/failure-recovery retrieval, and improve/local-best-lineage retrieval. The online matrix is still not complete and no task-level manifest/adoption summary exists yet, but the first valid metric and leakage-clean success node are now present.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
