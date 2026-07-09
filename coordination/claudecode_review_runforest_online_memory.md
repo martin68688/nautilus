@@ -4,9 +4,11 @@
 
 This document records the implementation and experiment setup for the online test of the new **Agentic Run-Forest Memory** system.
 
-User request:
+Current effective user request:
 
-- Launch a Kubernetes Job with **4x RTX A6000, 12 CPU, 64Gi memory**.
+- Launch a Kubernetes Job with **3x A100, 6 CPU, 64Gi memory**.
+- If the Job/Pod is Pending, do not mutate resources; wait and monitor read-only.
+- Deliver code to the PVC by pushing the branch remotely, then having the Job fetch/checkout that branch into the PVC workdir.
 - Test the new memory system across multiple tasks.
 - Put the memory into both:
   - cold-start memory, and
@@ -14,6 +16,8 @@ User request:
 - Keep the original cold-start model template unchanged, so comparison against previous no-RunForest runs is fair.
 - Monitor navigator behavior, retrieval quality signals, and adoption rate.
 - Compare against previous runs without this memory structure.
+
+Historical note: this file also records earlier 4x RTX A6000 attempts because they are part of the audit trail. Those attempts are superseded by the active A100x3 `r3` Job below; they were not deleted or mutated.
 
 ## High-Level Design
 
@@ -102,12 +106,11 @@ Experiment scripts:
     - `leaf-classification`
     - `new-york-city-taxi-fare-prediction`
   - Uses `MLEVOLVE_CONFIG=./config/config_run_forest_agentic.yaml`.
-  - Forces:
-    - `agent.search.num_gpus=4`
-    - `agent.search.parallel_search_num=4`
-    - `cpu_number=12`
-    - `external_skill_memory.mode=run_forest_agentic`
-    - `adoption_tracking.judge_mode=llm-all`
+  - Accepts resource-coupled runtime args from the Job:
+    - current A100x3 r3: `--num-gpus 3`, `--parallel-search-num 3`, `--cpu-number 6`
+    - older A6000 attempts used `4/4/12` and are retained only as historical audit entries
+  - `external_skill_memory.mode=run_forest_agentic`
+  - `adoption_tracking.judge_mode=llm-all`
   - Writes `runforest_online_manifest.jsonl`.
 
 - `paper-skills/hyper_memory/summarize_runforest_online_matrix.py`
@@ -120,8 +123,20 @@ Experiment scripts:
 
 Kubernetes files:
 
+- `job-runforest-online-a100x3-r3.yaml`
+  - Active Job under review.
+  - Requests and limits:
+    - `nvidia.com/a100: "3"`
+    - `cpu: "6"`
+    - `memory: "64Gi"`
+  - Uses PVC `haoming-storage` mounted at `/workspace`.
+  - Fetches/checks out pushed branch `codex/hyperbolic-structural-memory` into a PVC workdir.
+  - Runs preflight compile/tests.
+  - Runs the multi-task matrix.
+  - Runs the summarizer after the matrix.
+
 - `job-runforest-online-a6000x4.yaml`
-  - Job, not long-lived pod.
+  - Historical superseded Job, not long-lived pod.
   - Requests and limits:
     - `nvidia.com/rtxa6000: "4"`
     - `cpu: "12"`
@@ -1023,6 +1038,41 @@ top processes: two main Python workers still running around 96-97% CPU
 ```
 
 Interpretation: the debug recovery branch successfully converted a TypeError branch into a valid, leakage-low-confidence-warning solution, but it did not beat the current best. The live run then returned to draft exploration and again used Run-Forest draft-successful-branch retrieval. This gives evidence for runtime memory across draft, improve, debug, and back-to-draft expansion within the same task, though final adoption/effect claims are still pending task/matrix completion.
+
+Read-only pod spec verification at `2026-07-09 16:21:58 CST` / `08:21:58 UTC`:
+
+```text
+pod: runforest-online-a100x3-r3-58772
+restartPolicy: Never
+image: haomingwang22/mlevolve:v1
+requests:
+  cpu: "6"
+  memory: "64Gi"
+  nvidia.com/a100: "3"
+limits:
+  cpu: "6"
+  memory: "64Gi"
+  nvidia.com/a100: "3"
+PVC:
+  haoming-storage mounted at /workspace
+```
+
+Same checkpoint runtime status:
+
+```text
+job status: Running, 0/1 completions
+pod status: Ready 1/1, Running, restarts=0
+GPU0: 29889 MiB used, 100% utilization
+GPU1: 35307 MiB used, 98% utilization
+GPU2: 13927 MiB used, 96% utilization
+journal nodes: 13
+metric_count: 5
+best_min: 0.369656
+manifest: still 0 bytes
+adoption_report/adoption_events: not yet present
+```
+
+Interpretation: the active Job exactly matches the user-requested A100x3 resource shape and is still actively executing. No resource mutation was performed during this verification. The current draft node `dff93ce6cbcf44538fd04fea4f7882fd` is still running and has not yet produced a parse result.
 
 ## Review Checklist For ClaudeCode
 
