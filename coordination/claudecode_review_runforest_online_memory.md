@@ -686,6 +686,39 @@ top processes: mlevolve Python workers still active
 
 Interpretation: this is the first online success signal. Runtime Run-Forest memory has now been verified in three modes on the same live task: draft retrieval, repeated debug/failure-recovery retrieval, and improve/local-best-lineage retrieval. The online matrix is still not complete and no task-level manifest/adoption summary exists yet, but the first valid metric and leakage-clean success node are now present.
 
+Additional live health checkpoint at `2026-07-09 15:28:18 CST` / `07:28:18 UTC`:
+
+```text
+job status: still Running, 0/1 completions, about 152 minutes old
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 8
+metric_count: 1
+best_min: 0.37155
+manifest: still 0 bytes because the first task has not finished
+summary/adoption report: not yet present
+```
+
+Recent runtime state:
+
+```text
+after first valid metric, the run entered improve on node 5bb660d469c944bbbb8aca410d6d6078
+RunForestMemory fired for improve with strategy=improve_local_best_lineage
+diff improve used two-stage planning with memory
+new improve child: 37243e8669764c6abe3e5de076963c4f
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 8065 MiB used, 69% utilization
+GPU1: 35307 MiB used, 94% utilization
+GPU2: 13393 MiB used, 70% utilization
+top processes: three active Python workers around 91-100% CPU
+```
+
+Interpretation: no new task-level artifact exists yet, but this checkpoint verifies the online Job is not idle after the first success. The first task is still executing, improve-stage memory is active, and all three requested A100 GPUs are doing work.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
