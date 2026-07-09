@@ -1518,6 +1518,50 @@ top Python workers:
 
 Interpretation: Run-Forest memory is now verified in a live evolution path as well as improve/debug. The new evolution child failed, but the runtime responded by invoking debug recovery memory. The overall matrix is still in the first task; no task-level manifest row or adoption report has been emitted yet.
 
+Follow-up debug/draft checkpoint at `2026-07-09 17:23 CST` / `09:23 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 4h28m
+pod status: Ready 1/1, Running, restarts=0
+journal nodes: 18
+metric_count: 6
+best_min: still 0.369656
+adoption artifacts: still not present
+```
+
+The Run-Forest debug recovery for the failed evolution child produced another child, but it also failed fast:
+
+```text
+parent: 3aced0e0fcfd4a6db43834cd704bc4c3
+child: e0d3ef011bb54f29a9dd8c77b66bd850
+stage: debug
+patch: 1 diff patch applied
+review: requested revision, but review diff patch failed; original code kept to avoid raw diff corruption
+parse: FAIL
+reason: RuntimeError, no metric, missing submission file
+best after parse: still 0.369656
+```
+
+After that failed debug attempt, the scheduler returned to root expansion and invoked Run-Forest draft memory again:
+
+```text
+stage=draft
+strategy=draft_successful_branches
+refs:
+  run::20260515_173948_spooky-author-identification::transition::2a14416a9d::b74f997873
+  run::20260517_151325_spooky-author-identification::transition::5fffd41185::423a8dfe1b
+  run::20260516_125444_spooky-author-identification::transition::cc9848eb59::323518e35d
+  run::20260516_091845_spooky-author-identification::transition::50fa1f64dc::0545da1777
+  run::20260516_091845_spooky-author-identification::transition::50fa1f64dc::1ec214a74f
+  run::20260517_151325_spooky-author-identification::transition::5fffd41185::8efd3270e8
+  sop::sg_0202
+  sop::sg_0204
+  sop::sg_0222
+  sop::sg_0267
+```
+
+Interpretation: the live run now has direct runtime evidence for Run-Forest retrieval before improve, evolution, debug, and draft. The newly generated evolution/debug branch was not useful yet, but the memory layer is being called in the intended control points and the system continues running without pod restarts.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
