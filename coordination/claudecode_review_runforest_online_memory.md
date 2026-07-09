@@ -530,6 +530,52 @@ top processes: three Python workers still active, around 98-101% CPU each
 
 Interpretation: the first task is still failing to produce a valid metric, but this is useful evidence for the runtime-memory requirement. The Run-Forest navigator has now repeatedly fired in debug mode across multiple failed branches and supplied transition/SOP/evidence refs used before patch generation. Still no online performance comparison or adoption-rate result can be claimed until a valid metric and run summary/adoption artifacts exist.
 
+Additional live checkpoint at `2026-07-09 15:17:12 CST` / `07:17:12 UTC`:
+
+```text
+job status: still Running, 0/1 completions, about 141 minutes old
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 6
+metric_count: 0
+manifest: still 0 bytes
+summary/adoption report: not yet present
+```
+
+New runtime behavior since the previous checkpoint:
+
+```text
+node ddbc3a59afa4427e8928125c25d4b407 finished execution parsing
+parent: bd5021e06d034427847f1a9373ef8807
+stage: debug
+result: FAIL / is_buggy=True / metric=None
+failure class in log: RuntimeError; no metric value reported; submission file not found
+progress after parse: 5/80 steps completed, 3 tasks running
+RunForestMemory fired again for debug:
+  stage=debug
+  strategy=debug_failure_recovery
+  refs include transitions:
+    run::20260514_023457_spooky-author-identification::transition::bdcb77ac47::bef409bbb7
+    run::20260513_145802_spooky-author-identification::transition::fd4b9d10ce::3b74cb6461
+    run::20260514_023457_spooky-author-identification::transition::530dd2b836::126b3fd04d
+  refs include SOPs/evidence:
+    sop::sg_0187, sop::sg_0001, sop::sg_0085, evidence::117dabde73e6
+debug patch:
+  Successfully applied 2 diff patch(es)
+  new child: 5bb660d469c944bbbb8aca410d6d6078
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 1877 MiB used, 0% utilization
+GPU1: 34735 MiB used, 96% utilization
+GPU2: 13927 MiB used, 0% utilization
+top processes: three Python workers still active, around 96-100% CPU each
+```
+
+Interpretation: the online run is still alive and actively cycling through debug recovery, but it has not produced any successful metric yet. This strengthens the evidence that runtime Run-Forest memory is wired into repeated debug attempts, while also showing that the current first-task trajectory is struggling to recover from generated-code failures.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
