@@ -2029,6 +2029,108 @@ Interpretation for ClaudeCode review:
   - force preservation of model family, unfreeze depth, scheduler, head, and leak-safe data split unless the agent explicitly justifies a deviation,
   - filter buggy nodes out of improve/evolution selected_nodes unless the strategy is explicitly debug recovery.
 
+Follow-up active-runfile diagnostic checkpoint at `2026-07-09 18:10 CST` / `10:10 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 5h14m
+pod status: Ready 1/1, Running, restarts=0
+journal nodes: still 20
+metric_count: still 6
+best_min: still 0.369656
+manifest: still 0 bytes
+adoption artifacts: not present
+```
+
+The current active debug node remains:
+
+```text
+node: e5b3e997ca5a49fdb36235f56359c8cf
+stage: debug
+run file: workspace/runfile_0.py
+GPU: 0
+PID: 4313
+GPU0 pmon: about 95% SM, about 55% memory activity
+checkpoint mtime: Thu Jul  9 10:09:17 UTC 2026
+```
+
+Active `runfile_0.py` scheme:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-base
+MAX_LENGTH = 512
+TRAIN_BATCH_SIZE = 16
+EVAL_BATCH_SIZE = 32
+NUM_EPOCHS = 40
+PATIENCE = 5
+LABEL_SMOOTHING = 0.1
+WEIGHT_DECAY = 0.01
+backbone_lr = 2e-5
+head_lr = 5e-5
+scheduler = CosineAnnealingWarmRestarts
+loss = CrossEntropyLoss(label_smoothing=0.1)
+AMP = autocast() + GradScaler
+```
+
+Model architecture actually being trained:
+
+```text
+DeBERTa-v3-base CLS embedding
+  + dense handcrafted feature projection
+  -> concat
+  -> Linear classifier for 3 authors
+```
+
+Feature pipeline:
+
+```text
+dense handcrafted features:
+  stylometric 30
+  readability 4
+  POS approximation 5
+  author vocabulary / punctuation style 12
+  raw total 51, after VarianceThreshold actual dense dimension = 43
+
+sparse text features:
+  char ngram 2-4
+  char ngram 4-6
+  char ngram 5-7
+  word ngram 1-3
+  punctuation ngram
+  chi2-selected sparse dimension = 10000
+```
+
+Important detail: in `runfile_0.py`, the sparse TF-IDF features are saved but are not fed into the final neural model. `xgboost` and `LogisticRegression` are imported, but replay inspection found no actual XGBoost/LR training or ensemble use in this active file. Therefore this active node is **not** the full DeBERTa + TF-IDF + XGBoost + LR weighted ensemble described by some earlier draft text.
+
+Critical architecture mismatch:
+
+```text
+Historical best memory says:
+  DeBERTa-v3-large
+  partial unfreeze last 8 of 24 layers
+  simple Linear head
+  CosineWarmRestarts + warmup
+  log loss around 0.0725
+
+Active e5b3 runfile uses:
+  DeBERTa-v3-base
+  freeze embeddings
+  freeze encoder layers i < 16
+```
+
+Because DeBERTa-v3-base has fewer than 16 encoder layers, the `if i < 16: freeze` rule likely freezes the entire backbone. The active model is therefore mainly training the dense feature projection and classifier head, not the historically successful "large model with last 8 layers unfrozen" recipe.
+
+Interpretation for ClaudeCode review:
+
+- This is concrete evidence that the generator drifted away from the retrieved best trace.
+- RunForest memory did surface the historical `large + last-8-unfrozen` recipe, but runtime actuation did not preserve it.
+- The bad-result plateau is plausibly explained by this architecture drift, not by the absence of useful historical memory.
+- A future `certified_best_trace` mode should include hard preservation checks for:
+  - model family/name,
+  - hidden layer count and freeze/unfreeze rule,
+  - classifier head complexity,
+  - whether sparse/ensemble components claimed in the plan are actually used,
+  - whether the generated code silently downgrades `large` to `base/small`.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
