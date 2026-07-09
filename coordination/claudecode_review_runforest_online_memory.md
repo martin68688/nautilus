@@ -839,6 +839,64 @@ top processes: three active Python workers still running around 90-96% CPU
 
 Interpretation: this is the first online evidence that a Run-Forest-guided improve path beat the earlier debug-derived best on the live spooky task. It is still not a final effect claim, because the first task and matrix have not finished and adoption/summary artifacts are not available yet. But it is a meaningful live signal: debug recovery found a valid baseline, then repeated improve-stage Run-Forest retrieval produced a better leakage-clean solution and continued to guide the next child.
 
+Additional material checkpoint at `2026-07-09 16:01:20 CST` / `08:01:20 UTC`:
+
+```text
+job status: still Running, 0/1 completions
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 11
+metric_count: 4
+best_min: 0.369656
+manifest: still 0 bytes because the first task has not finished
+adoption/summary artifacts: not yet present
+```
+
+Next improve child completed but did not improve:
+
+```text
+node: 0ea5cb31350a48358cbe1ac29173e9b0
+stage: improve
+parent: 24ba5082e39f4494a065c469520c5457
+is_buggy: False
+metric: 0.434066
+maximize: False
+current best remained: 0.369656 from node 24ba5082e39f4494a065c469520c5457
+reported improvement relative to best: -0.064410 for a minimize metric
+parse result: PASS | metric=0.434066
+data leakage check: has_leakage=False, confidence=high
+```
+
+Follow-up improve retrieval after the worse child:
+
+```text
+progress: 10/80 steps completed, 3 tasks running
+next stage: normal improve for node 0ea5cb31350a48358cbe1ac29173e9b0
+RunForestMemory fired again:
+  stage=improve
+  strategy=improve_local_best_lineage
+  refs include transitions:
+    run::20260516_125444_spooky-author-identification::transition::92989935c3::bfbf637cc9
+    run::20260514_183931_spooky-author-identification::transition::ec3cce3973::d8bbe636ca
+    run::20260516_125444_spooky-author-identification::transition::92989935c3::669be7d1fe
+  refs include SOPs/evidence:
+    sop::sg_0002, sop::sg_0222, sop::sg_0230, sop::sg_0228, sop::sg_0221,
+    evidence::79141a4233f1, evidence::b8ba2ad05016
+new improve child submitted:
+  cf716824167542f486876fd0c811a74c
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 1981 MiB used, 0% utilization
+GPU1: 35307 MiB used, 96% utilization
+GPU2: 13927 MiB used, 95% utilization
+top processes: three active Python workers still running around 96% CPU
+```
+
+Interpretation: this checkpoint shows a realistic mixed online behavior: the previous Run-Forest improve found a better best, but the next memory-guided branch was valid yet worse. The navigator continued retrieving local-best lineage evidence and SOPs for the following improve child. This should be treated as useful audit evidence, not as a monotonic improvement claim.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
