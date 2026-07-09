@@ -467,6 +467,69 @@ top processes: two Python workers still active, one near 99% CPU and one near 97
 
 Interpretation: this is no longer the earlier "all GPUs busy" state. One more draft has failed, Run-Forest debug navigation is confirmed a second time, and the run appears to be in a CPU/debug handoff or task-transition phase. It is still not a final online result; no metric, adoption report, manifest row, or summary exists yet.
 
+Additional live checkpoint at `2026-07-09 15:14:28 CST` / `07:14:28 UTC`:
+
+```text
+job status: still Running, 0/1 completions, about 137 minutes old
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 5
+metric_count: 0
+manifest: still 0 bytes
+summary/adoption report: not yet present
+```
+
+New runtime behavior since the previous checkpoint:
+
+```text
+node 758c132e22e94135bc7889d0e8e657f7 finished execution parsing
+result: FAIL / is_buggy=True / metric=None
+failure class in log: RuntimeError; no metric value reported; submission file not found
+progress: 3/80 steps completed, 3 tasks running
+RunForestMemory fired again for debug:
+  stage=debug
+  strategy=debug_failure_recovery
+  refs include transitions:
+    run::20260516_125444_spooky-author-identification::transition::cc9848eb59::39c03723bd
+    run::20260513_165253_spooky-author-identification::transition::287ed0c96b::07eef72d46
+    run::20260509_185008_spooky-author-identification::transition::0d800b57b4::cbe7d283fe
+  refs include SOPs:
+    sop::sg_0112, sop::sg_0085, sop::sg_0148, sop::sg_0149
+debug patch:
+  Successfully applied 2 diff patch(es)
+  new child: 356ed2ef23c34618baf2f0dcad95168a
+```
+
+The earlier debug child for `fe6beb...` also finished and failed:
+
+```text
+node bd5021e06d034427847f1a9373ef8807
+parent: fe6beb7438c948dc8f5e5c1b1f56c266
+stage: debug
+result: FAIL / is_buggy=True / metric=None
+failure class in log: TypeError; no metric value reported; submission file not found
+progress after parse: 4/80 steps completed, 3 tasks running
+RunForestMemory fired again for debug:
+  stage=debug
+  strategy=debug_failure_recovery
+  refs include SOPs/evidence:
+    sop::sg_0187, sop::sg_0004, sop::sg_0189, evidence::117dabde73e6
+debug patch:
+  Successfully applied 2 diff patch(es)
+  new child: ddbc3a59afa4427e8928125c25d4b407
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 7961 MiB used, 81% utilization
+GPU1: 34735 MiB used, 94% utilization
+GPU2: 13927 MiB used, 0% utilization
+top processes: three Python workers still active, around 98-101% CPU each
+```
+
+Interpretation: the first task is still failing to produce a valid metric, but this is useful evidence for the runtime-memory requirement. The Run-Forest navigator has now repeatedly fired in debug mode across multiple failed branches and supplied transition/SOP/evidence refs used before patch generation. Still no online performance comparison or adoption-rate result can be claimed until a valid metric and run summary/adoption artifacts exist.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
