@@ -719,6 +719,64 @@ top processes: three active Python workers around 91-100% CPU
 
 Interpretation: no new task-level artifact exists yet, but this checkpoint verifies the online Job is not idle after the first success. The first task is still executing, improve-stage memory is active, and all three requested A100 GPUs are doing work.
 
+Additional material checkpoint at `2026-07-09 15:37:17 CST` / `07:37:17 UTC`:
+
+```text
+job status: still Running, 0/1 completions
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 9
+metric_count: 2
+best_min: 0.37155
+manifest: still 0 bytes because the first task has not finished
+adoption/summary artifacts: not yet present
+```
+
+First improve child completed:
+
+```text
+node: 37243e8669764c6abe3e5de076963c4f
+stage: improve
+parent: 5bb660d469c944bbbb8aca410d6d6078
+is_buggy: False
+metric: 0.376155
+maximize: False
+best remained: 0.37155 from node 5bb660d469c944bbbb8aca410d6d6078
+improvement relative to best: -0.004605 for a minimize metric
+parse result: PASS | metric=0.376155
+data leakage check: has_leakage=False, confidence=high
+```
+
+Follow-up improve retrieval after that node:
+
+```text
+progress: 8/80 steps completed, 3 tasks running
+next stage: normal improve for node 37243e8669764c6abe3e5de076963c4f
+RunForestMemory fired again:
+  stage=improve
+  strategy=improve_local_best_lineage
+  refs include transitions:
+    run::20260516_125444_spooky-author-identification::transition::92989935c3::bfbf637cc9
+    run::20260516_125444_spooky-author-identification::transition::644318bb19::7febc5ae80
+    run::20260517_151325_spooky-author-identification::transition::16114ca8db::fd8710a1b5
+    run::20260517_151325_spooky-author-identification::transition::5fffd41185::16114ca8db
+  refs include SOPs:
+    sop::sg_0002, sop::sg_0222, sop::sg_0230, sop::sg_0228, sop::sg_0221, sop::sg_0238
+new improve child submitted:
+  24ba5082e39f4494a065c469520c5457
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 1001 MiB used, 0% utilization
+GPU1: 35307 MiB used, 89% utilization
+GPU2: 13927 MiB used, 5% utilization
+top processes: three active Python workers still running around 95-99% CPU
+```
+
+Interpretation: this checkpoint verifies the first Run-Forest-guided improve produced a valid, leakage-clean solution but did not beat the debug-derived best. The system continued to use Run-Forest memory for the next improve attempt, so retrieval remains active beyond the first success. Final effect/adoption conclusions still cannot be made until the task/matrix completes and reports are written.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
