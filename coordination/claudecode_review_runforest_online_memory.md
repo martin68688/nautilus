@@ -1694,6 +1694,33 @@ To make it push harder, add a certified-best-trace mode:
   - run a guard that blocks risky deviations such as pseudo-labeling or validation-weight optimization.
 ```
 
+Follow-up health checkpoint at `2026-07-09 17:36 CST` / `09:36 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 4h40m
+pod status: Ready 1/1, Running, restarts=0
+journal nodes: still 18
+metric_count: still 6
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+latest log mtime: 09:26:13 UTC, when draft ca180ddf7e3448ecbd33b77753c28338 was assigned to GPU2
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 30497 MiB used, 96% utilization
+GPU1: 35307 MiB used, 95% utilization
+GPU2: 29725 MiB used, 0% utilization
+top Python workers:
+  PID 3951, elapsed 00:09:51, ~98.8% CPU, state D, likely current GPU2 draft worker
+  PID 3234, elapsed 00:55:28, ~96.4% CPU
+  PID 2780, elapsed 01:20:48, ~96.0% CPU
+```
+
+Interpretation: there is still no parse/result checkpoint for `ca180ddf...`. The job is not Pending and the pod has not restarted. GPU2 has memory allocated but no instantaneous GPU compute at this snapshot; the worker is still CPU-active in uninterruptible/D state, which may be data/model I/O or a transient loading/waiting phase. Continue read-only monitoring; do not mutate the job unless this becomes a repeated stuck condition with stronger evidence.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
