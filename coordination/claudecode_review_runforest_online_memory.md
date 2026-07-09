@@ -4683,6 +4683,9 @@ Important current status:
 
 ```text
 clean-r1: failed before retrieval/training
-clean-r2: prepared but not yet submitted at the time of this note
+clean-r2: submitted after pushing commit 17ee18158d301b1c7117443cb5dfad39bb3ff6bf
+clean-r2 pod: runforest-online-a100x3-clean-r2-k6pp2
+clean-r2 tag: runforest_online_a100x3_clean_r2_20260709_143945
+clean-r2 checkout mode: seed_archive from /workspace/nautilus
 No clean online RunForest retrieval/adoption metrics exist yet.
 ```
