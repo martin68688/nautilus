@@ -3346,6 +3346,113 @@ Interpretation:
 - RunForest retrieval for debug recovery is active and produced `69df...`.
 - The two large-model ensemble branches are still the most important pending evidence, especially GPU2 `5066...`, but neither has parsed yet.
 
+Superseding GPU2 checkpoint at `2026-07-09 19:59 CST` / `11:59 UTC`:
+
+GPU2 `5066...` has now parsed and failed. The earlier "still pending" note above is no longer current.
+
+```text
+node: 5066c7eccd824ea79eca0ad3f952fa98
+stage: debug
+parent: ca180ddf7e3448ecbd33b77753c28338
+scheme:
+  DeBERTa-v3-large
+  MAX_LENGTH=512
+  BATCH_SIZE=16
+  NUM_EPOCHS=40
+  freeze embeddings, train last 8 layers
+  XGBoost on reduced TF-IDF + stylometric + readability + POS
+  LogisticRegression on sparse n-grams
+  fixed weights:
+    DeBERTa=0.50
+    XGBoost=0.25
+    LR=0.25
+parse: FAIL
+metric: None
+is_buggy: True
+exec_time: 4227.5s
+reason:
+  RuntimeError
+  state_dict mismatch while loading best DeBERTa checkpoint
+  unexpected keys: pooler.dense.weight, pooler.dense.bias
+  no submission file produced
+observed partial training result before crash:
+  best validation log loss: 0.3579
+  validation accuracy: 0.8763
+```
+
+Interpretation:
+
+- The fixed-weight DeBERTa-large + XGBoost + LR idea did not produce an official metric or submission.
+- This is not evidence that the architecture is weak; it is an engineering failure at checkpoint reload time after training had already reached a plausible validation score.
+- The failure is specifically a model-class/checkpoint mismatch: the saved state dict contains DeBERTa pooler keys, while the custom `DeBERTaAuthorClassifier` load path does not accept them.
+
+The scheduler immediately reused GPU2 for another improve attempt from the current best:
+
+```text
+new node: c06f2c6e69494fa6acf9d400dde1ecdd
+parent: 8cb589f6afd74267b4ebb98db27187d3
+stage: improve
+RunForest strategy: improve_local_best_lineage
+refs:
+  run::20260516_125444_spooky-author-identification::transition::92989935c3::bfbf637cc9
+  run::20260516_125444_spooky-author-identification::transition::2aeb8453d8::347d68bc6c
+  run::20260516_125444_spooky-author-identification::transition::cc9848eb59::2aeb8453d8
+  run::20260516_125444_spooky-author-identification::transition::92989935c3::669be7d1fe
+  sop::sg_0002
+  sop::sg_0222
+  sop::sg_0230
+  sop::sg_0228
+  sop::sg_0221
+  sop::sg_0202
+diff patches applied: 4
+assigned:
+  process_id=2
+  GPU=2
+status:
+  runfile_2.py process alive
+  not yet parsed
+```
+
+Live state at this checkpoint:
+
+```text
+Job: runforest-online-a100x3-r3
+status: Running, 0/1 completions, age ~7h04m
+Pod: runforest-online-a100x3-r3-58772
+status: Ready 1/1, Running, restarts=0
+
+GPU0:
+  runfile_0.py alive
+  node 69df137a2e6744afbb5556212ea4463a likely still running
+
+GPU1:
+  runfile_1.py alive
+  node bdb69a1d667d4f26a866b477ad01030f likely still running
+
+GPU2:
+  runfile_2.py alive
+  node c06f2c6e69494fa6acf9d400dde1ecdd launched
+
+journal:
+  nodes: 31
+  valid_metrics: 8
+  best_min: 0.346175
+  current best: 8cb589f6afd74267b4ebb98db27187d3
+manifest:
+  still 0 bytes
+adoption artifacts:
+  adoption_report.json absent
+  adoption_events.jsonl absent
+  external_memory_adoption_events.jsonl absent
+```
+
+Current takeaway:
+
+- RunForest retrieval remains active before improve/debug.
+- Retrieval repeatedly finds strong historical spooky lineage refs and SOPs.
+- Actuation is still the bottleneck: the agent either drifts to smaller architectures, introduces simple code bugs, or fails at checkpoint plumbing.
+- The first task has not completed, so cactus/leaf/taxi have not started and no cross-task matrix result exists yet.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
