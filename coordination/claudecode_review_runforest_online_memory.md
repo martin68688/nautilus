@@ -335,6 +335,43 @@ preflight fix: pytest -q ../tests/test_run_forest_memory.py
 
 The r3 checkout strategy also prefers the already-successful r2 checkout as a PVC local seed, then fetches the pushed branch from remote. This avoids spending another long A100 allocation on a full remote checkout while still validating the remote branch provenance.
 
+Live r3 checkpoint as of `2026-07-09 14:42:20 CST`:
+
+```text
+job: runforest-online-a100x3-r3
+pod: runforest-online-a100x3-r3-58772
+node: node-1-1.sdsc.optiputer.net
+status: Running, 0/1 completions
+checked_out_commit: eb754c1671f02b395ac7b2eb9473faacbb7fe186
+run_tag: runforest_online_a100x3_r3_20260709_045537
+current task: spooky-author-identification
+run dir: /workspace/nautilus/mlevolve/runs/20260709_053545_runforest_online_a100x3_r3_20260709_045537_spooky-author-identification_runforest
+```
+
+Verified runtime behavior in r3:
+
+- `RunForestMemory` loaded `6666 nodes / 15040 edges`, `scoring=poincare`, `agentic=True`.
+- `AgentSearch` enabled external memory with `source=run_forest_agentic_memory`.
+- ThreadPool max workers is `3`, matching the requested 3 GPUs.
+- Draft navigation fired before each draft:
+  - `stage=draft strategy=draft_successful_branches`
+  - returned transition refs plus SOP refs, e.g. `sop::sg_0202`, `sop::sg_0204`, `sop::sg_0222`.
+- Debug navigation fired after a failed draft:
+  - `stage=debug strategy=debug_failure_recovery`
+  - returned failure-recovery transition refs plus SOP refs.
+- Initial three draft executions were bound to GPU `0`, `1`, and `2` respectively.
+- At checkpoint, all three A100s were active in training:
+  - GPU0 about `30GiB`, high utilization;
+  - GPU1 about `35GiB`, high utilization;
+  - GPU2 about `14GiB`, high utilization after debug retry started.
+
+Current online-result status:
+
+- The first task has started and Run-Forest memory is visibly active.
+- No successful metric has been reported yet; journal currently contains the root plus one buggy draft.
+- `runforest_online_manifest.jsonl` is still empty because the matrix runner writes a row after each task finishes.
+- `adoption_report.json` is not present yet; adoption analysis is expected after enough generated nodes / run completion.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
