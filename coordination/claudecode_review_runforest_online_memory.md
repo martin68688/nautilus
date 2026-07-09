@@ -1824,6 +1824,62 @@ top Python workers:
 
 Interpretation: the draft branch did not improve the metric and produced another failed node, but Run-Forest debug recovery fired as intended with a new set of historical repair transitions and SOP signposts. The matrix is still on the first task; no task-level manifest row has been emitted yet.
 
+Follow-up chained-debug checkpoint at `2026-07-09 17:44 CST` / `09:44 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 4h48m
+pod status: Ready 1/1, Running, restarts=0
+journal nodes: 20
+metric_count: 6
+best_min: still 0.369656
+adoption artifacts: still not present
+```
+
+The debug child for `dff93...` failed:
+
+```text
+node: 3d38dfc1bfa840dc9226a66356e1d9eb
+stage: debug
+parent: dff93ce6cbcf44538fd04fea4f7882fd
+parse: FAIL
+metric: None
+reason: TypeError during first training epoch; torch.cuda.amp.autocast called with an unsupported argument pattern
+best after parse: still 0.369656
+```
+
+This triggered another Run-Forest debug recovery:
+
+```text
+stage=debug
+strategy=debug_failure_recovery
+refs:
+  run::20260509_042918_spooky-author-identification::transition::5ef44d95ba::8cc305a104
+  run::20260509_185008_spooky-author-identification::transition::cbe7d283fe::45fbc745a5
+  run::20260510_162636_spooky-author-identification::transition::b9ef6b51d6::d77bd43b3e
+  run::20260510_162636_spooky-author-identification::transition::ea6b27209a::b9ef6b51d6
+  run::20260510_025317_spooky-author-identification::transition::95eb3fc7ae::72d7f18660
+  run::20260510_025317_spooky-author-identification::transition::a7f4cd59aa::95eb3fc7ae
+  sop::sg_0001
+  sop::sg_0085
+  sop::sg_0112
+  sop::sg_0139
+```
+
+The new debug attempt:
+
+```text
+parent: 3d38dfc1bfa840dc9226a66356e1d9eb
+child: e5b3e997ca5a49fdb36235f56359c8cf
+stage: debug
+initial debug patch: 2 diff patches applied
+code review: needs_revision=True
+review patch: 1 patch applied
+execution: assigned process_id=0, cpu={113,114}, GPU0
+parse result: not available yet
+```
+
+Interpretation: this branch is now in a repeated runtime-fix loop. Run-Forest retrieval is actively supplying different debug-recovery paths and SOPs, but the generated fixes are still failing before producing an accepted metric. This is useful adoption-behavior evidence, but not positive performance evidence.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
