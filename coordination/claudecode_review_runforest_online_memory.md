@@ -576,6 +576,52 @@ top processes: three Python workers still active, around 96-100% CPU each
 
 Interpretation: the online run is still alive and actively cycling through debug recovery, but it has not produced any successful metric yet. This strengthens the evidence that runtime Run-Forest memory is wired into repeated debug attempts, while also showing that the current first-task trajectory is struggling to recover from generated-code failures.
 
+Additional live checkpoint at `2026-07-09 15:21:25 CST` / `07:21:25 UTC`:
+
+```text
+job status: still Running, 0/1 completions, about 145 minutes old
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 7
+metric_count: 0
+manifest: still 0 bytes
+summary/adoption report: not yet present
+```
+
+New runtime behavior since the previous checkpoint:
+
+```text
+node cbca06f530e64186b6a70754e3160623 finished execution parsing
+parent: 9074a44d9e64432aa8e2c5347d0d3a8d
+stage: debug
+result: FAIL / is_buggy=True / metric=None
+failure class in log: execution error detected; no metric value reported
+progress after parse: 6/80 steps completed, 3 tasks running
+RunForestMemory fired again for debug:
+  stage=debug
+  strategy=debug_failure_recovery
+  refs include transitions:
+    run::20260509_154039_spooky-author-identification::transition::dc633aebfe::1852b63b5b
+    run::20260517_151325_spooky-author-identification::transition::d44038102d::0acd2ce065
+    run::20260514_023457_spooky-author-identification::transition::11dd8825fa::4c59ca9769
+  refs include SOPs:
+    sop::sg_0268, sop::sg_0267, sop::sg_0185, sop::sg_0186
+debug patch:
+  Successfully applied 1 diff patch(es)
+  new child: 8949d0497f9e427eb4c0d8f2b4f6b4cb
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 7961 MiB used, 77% utilization
+GPU1: 35307 MiB used, 3% utilization
+GPU2: 4 MiB used, 0% utilization
+top processes: three mlevolve worker Python processes still active, plus one short-lived Python from monitoring
+```
+
+Interpretation: still no valid metric, but the job remains live. Runtime memory evidence is now extensive for debug-stage navigation, though the first task is stuck in repeated generated-code failure recovery rather than reaching a score.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
