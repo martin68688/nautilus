@@ -2720,6 +2720,118 @@ Interpretation for ClaudeCode review:
 - The remaining concern is that the fix still keeps a complex ensemble rather than returning to the simpler historical best `DeBERTa-v3-large` recipe.
 - The first task still has not completed, and adoption metrics still cannot be computed.
 
+Follow-up repeated-NaN and plateau checkpoint at `2026-07-09 18:49 CST` / `10:49 UTC`:
+
+The `e6a...` numerical-stability child also finished, but was rejected:
+
+```text
+node: e6a57cae308e417d88850f63715f9823
+parent: ae14a030ec25494cbf86c34b8be1b509
+stage: debug
+raw final validation log loss: 0.390813
+raw final validation accuracy: 0.8661
+submission:
+  workspace/submission/submission_e6a57cae308e417d88850f63715f9823.csv
+parse: FAIL
+metric after parse: None
+reason:
+  training completed, but log still showed NaN training-loss episodes
+  parser treated it as numerically unstable
+stats after parse:
+  step=26
+  nodes=26
+  branches=5
+  best=0.369656
+```
+
+After this failure, the search went back into late-stage plateau exploitation:
+
+```text
+selected node: 5bb660d469c944bbbb8aca410d6d6078
+selected node metric: 0.37155
+mode: improve
+plateau:
+  success_patience=3>=2
+  total_patience=10>=5
+```
+
+RunForest improve memory fired with stronger historical best-lineage refs:
+
+```text
+stage=improve
+strategy=improve_local_best_lineage
+refs:
+  run::20260512_112908_spooky-author-identification::transition::530e3979d9::c42a7b9434
+  run::20260516_125444_spooky-author-identification::transition::92989935c3::669be7d1fe
+  run::20260516_125444_spooky-author-identification::transition::92989935c3::bfbf637cc9
+  sop::sg_0222
+  sop::sg_0230
+  sop::sg_0221
+  sop::sg_0228
+  sop::sg_0002
+  evidence::2b09b298a6b9
+  evidence::0e46750c9c94
+```
+
+This is important because `c42a7b9434` is one of the strongest known spooky historical nodes, around `0.072548`.
+
+The generated improve child:
+
+```text
+parent: 5bb660d469c944bbbb8aca410d6d6078
+child: 2287d62b34074bb282e5005dc6a194fc
+stage: improve
+diff attempts:
+  attempt 1: invalid SEARCH/REPLACE format
+  attempt 2: applied 2 patches
+code review:
+  needs_revision=True
+  applied 1 review patch
+execution assigned:
+  process_id=1
+  cpu={115,116}
+  GPU=1
+```
+
+Current `2287...` runfile scheme:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-small
+MAX_LENGTH = 256
+BATCH_SIZE = 32
+NUM_EPOCHS = 20
+architecture:
+  DeBERTa-v3-small
+  feature fusion
+  feature reconstruction auxiliary head
+  stage-1 MLM-style self-supervised warmup
+  stage-2 supervised training
+scheduler:
+  CosineAnnealingWarmRestarts
+```
+
+Runtime state at this checkpoint:
+
+```text
+GPU0:
+  e5b3... still running
+GPU1:
+  2287... just launched
+GPU2:
+  5066... running leakage-recovery large ensemble branch
+matrix manifest:
+  still 0 bytes
+adoption artifacts:
+  still absent
+```
+
+Interpretation for ClaudeCode review:
+
+- RunForest correctly resurfaced a very strong historical lineage (`c42a7b...`) during plateau.
+- The generated code still drifted away from that lineage: instead of adopting the simple historical `DeBERTa-v3-large` recipe, it produced another `DeBERTa-v3-small` feature-fusion variant with extra auxiliary machinery.
+- This is strong evidence for the current core limitation: retrieval can find excellent memory, but actuation still does not preserve the key architectural recipe.
+- The NaN-recovery path improved the raw result from `0.397456` to `0.390813`, but remained invalid because numerical instability persisted.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
