@@ -1919,6 +1919,116 @@ workspace/working/best_model_e5b3e997ca5a49fdb36235f56359c8cf.pt
 
 Interpretation: `e5b3...` is not idle; it is in the training/checkpointing phase. Continue read-only monitoring until parse, metric, leakage, task completion, or job failure.
 
+Follow-up plateau/retrieval diagnostic checkpoint at `2026-07-09 18:01 CST` / `10:01 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 5h6m
+pod status: Ready 1/1, Running, restarts=0
+GPU0: 12369 MiB used, 92% utilization
+GPU1: 35307 MiB used, 0% utilization
+GPU2: 29725 MiB used, 100% utilization
+journal nodes: still 20
+metric_count: still 6
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+```
+
+The current `e5b3...` debug child is still alive and writing checkpoints:
+
+```text
+workspace/working/best_model_e5b3e997ca5a49fdb36235f56359c8cf.pt
+  mtime: Thu Jul  9 10:01:24 UTC 2026
+  size: 737836607 bytes
+workspace/working/best_val_probs.npy
+  mtime: Thu Jul  9 10:01:24 UTC 2026
+```
+
+Important diagnostic: the current poor metric is **not** because Run-Forest lacks strong historical records, and not because the navigator never retrieves them.
+
+Evidence from the active Run-Forest artifact:
+
+```text
+spooky metric-bearing historical RunNodes: 423
+top clean-looking historical nodes include:
+  0.07254887025258404  run::20260512_112908_spooky-author-identification::node::c42a7b9434...
+  0.06925915154448731  run::20260514_113102_spooky-author-identification::node::5850ebb19e...
+  0.06589297556579664  run::20260514_113102_spooky-author-identification::node::bee03d62...
+```
+
+There are also extremely low historical scores such as `0.0014`, `0.0086`, and `0.0109`. These should be treated as suspicious until leak-certified; the online run has already rejected some attractive-looking low-score branches for high-confidence leakage or validation-set ensemble-weight optimization.
+
+Evidence that strong traces were retrieved:
+
+```text
+09:03 UTC improve retrieval:
+  run::20260512_112908_spooky-author-identification::transition::530e3979d9::c42a7b9434
+  historical metric path: 0.145657 -> 0.072548
+
+09:21 UTC evolution retrieval:
+  run::20260512_112908_spooky-author-identification::transition::530e3979d9::c42a7b9434
+
+09:22 UTC draft navigator reason:
+  explicitly references Run8 best log loss 0.0725 and asks for partial unfreeze + style features + DeBERTa-v3-large.
+```
+
+Observed failure mode:
+
+```text
+RunForestMemoryLayer currently retrieves an advisory map pack.
+It does not clone/open the full historical best implementation.
+It does not make historical absolute best metric the primary ranking signal.
+It does not force the code generator to preserve the best trace's core architecture.
+```
+
+The ranking code in `RunForestMemoryLayer._rank()` uses approximately:
+
+```text
+score = 0.50 * geometry
+      + 0.32 * lexical_overlap
+      + task_bonus
+      + stage/outcome_bonus
+      + 0.08 * metric_improvement_bonus
+```
+
+There is no large bonus for absolute historical best metric. Therefore a known `0.0725` route can appear in the pack but still not dominate generation.
+
+Additional retrieval issue observed by replaying the current artifact:
+
+```text
+improve_local_best_lineage candidate selection can include buggy improve nodes
+because it admits nodes with local_best_node_id OR metric_improvement is not None.
+In a replay query, several top improve/evolution selected_nodes were buggy,
+while strong non-buggy nodes such as 530e3979 / c42a7b94 appeared only among the retrieved transitions/path context.
+```
+
+Behavioral evidence:
+
+```text
+Around 09:24 UTC, the generator did produce a draft close to the historical winning recipe:
+  DeBERTa-v3-large
+  partial unfreeze last 8 layers
+  simple linear head
+  "proven best strategy ... LogLoss ~0.0725"
+
+That attempt later failed to produce an accepted metric because the output was truncated / parse did not accept a metric, then the branch entered debug loops:
+  tokenizers fork warnings
+  autocast(device_type="cuda") compatibility error
+  local code-review patches
+```
+
+Interpretation for ClaudeCode review:
+
+- Run-Forest is active in cold-start/runtime and is returning relevant historical paths.
+- The plateau at `0.369656` is mainly a control/actuation problem: memory is advisory, not a certified-best-trace reproduction mechanism.
+- Current search keeps repairing the live poor branch instead of seeding a new branch from the best leak-certified historical path.
+- The next code fix should likely add a `certified_best_trace` / `historical_best_seed` mode:
+  - filter to leak-certified same-task historical nodes,
+  - rank by absolute metric and transition success,
+  - open full implementation/reference for the top path,
+  - force preservation of model family, unfreeze depth, scheduler, head, and leak-safe data split unless the agent explicitly justifies a deviation,
+  - filter buggy nodes out of improve/evolution selected_nodes unless the strategy is explicitly debug recovery.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
