@@ -1721,6 +1721,40 @@ top Python workers:
 
 Interpretation: there is still no parse/result checkpoint for `ca180ddf...`. The job is not Pending and the pod has not restarted. GPU2 has memory allocated but no instantaneous GPU compute at this snapshot; the worker is still CPU-active in uninterruptible/D state, which may be data/model I/O or a transient loading/waiting phase. Continue read-only monitoring; do not mutate the job unless this becomes a repeated stuck condition with stronger evidence.
 
+Follow-up liveness checkpoint at `2026-07-09 17:39 CST` / `09:39 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 4h43m
+pod status: Ready 1/1, Running, restarts=0
+journal nodes: still 18
+metric_count: still 6
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 30497 MiB used, 95% utilization
+GPU1: 35307 MiB used, 94% utilization
+GPU2: 29725 MiB used, 97% utilization
+top Python workers:
+  PID 3234, elapsed 00:58:29, ~96.5% CPU
+  PID 2780, elapsed 01:23:49, ~96.2% CPU
+  PID 3951, elapsed 00:12:52, ~95.7% CPU
+```
+
+File movement:
+
+```text
+workspace/working/best_deberta_model.pt
+  mtime: Thu Jul  9 09:36:35 UTC 2026
+  size: 1736230665 bytes
+```
+
+Interpretation: the prior GPU2 low-utilization snapshot was transient. The current draft worker is actively training again and checkpointing model weights. There is still no parse/result checkpoint for `ca180ddf...`, so no adoption/result conclusion can be drawn yet.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
