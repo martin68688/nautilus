@@ -1198,6 +1198,43 @@ GPU2: 13927 MiB used, 0% utilization
 
 The latest run files are still the debug child launcher and logs from `08:40:37 UTC`; no parse/update has landed for `ca22f97...` yet. Interpretation: the recovery child is still in execution, so no final adoption/effect conclusion can be drawn.
 
+Follow-up execution health check at `2026-07-09 16:56:25 CST` / `08:56:25 UTC`:
+
+```text
+job status: still Running, 0/1 completions, duration about 4h
+pod status: Ready 1/1, Running, restarts=0
+journal nodes: still 14
+metric_count: still 5
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+```
+
+Main log still has no new parse line after `ca22f97...` started execution, but the working files continued to change:
+
+```text
+workspace/working/best_val_probs.npy
+  mtime: Thu Jul  9 08:53:53 UTC 2026
+workspace/working/best_model_dff93ce6cbcf44538fd04fea4f7882fd.pt
+  mtime: Thu Jul  9 08:53:53 UTC 2026
+workspace/working/best_deberta_model.pt
+  mtime: Thu Jul  9 08:51:36 UTC 2026
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 30467 MiB used, 100% utilization
+GPU1: 35307 MiB used, 93% utilization
+GPU2: 13927 MiB used, 0% utilization
+top Python workers:
+  elapsed 01:35:56, ~98.5% CPU
+  elapsed 00:15:48, ~96.0% CPU
+  elapsed 00:41:08, ~93.6% CPU
+```
+
+Interpretation: still not a result checkpoint, but it confirms that the recovery execution has not gone idle or Pending. Continue read-only monitoring; no cluster or pod mutation is warranted.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
