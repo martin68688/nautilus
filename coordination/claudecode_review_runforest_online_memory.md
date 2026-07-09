@@ -1880,6 +1880,45 @@ parse result: not available yet
 
 Interpretation: this branch is now in a repeated runtime-fix loop. Run-Forest retrieval is actively supplying different debug-recovery paths and SOPs, but the generated fixes are still failing before producing an accepted metric. This is useful adoption-behavior evidence, but not positive performance evidence.
 
+Follow-up liveness checkpoint at `2026-07-09 17:52 CST` / `09:52 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 4h52m
+pod status: Ready 1/1, Running, restarts=0
+journal nodes: still 20
+metric_count: still 6
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+```
+
+No parse/result has been written yet for `e5b3e997ca5a49fdb36235f56359c8cf`, but it is actively training:
+
+```text
+GPU0: 12369 MiB used, 94% utilization
+GPU1: 35307 MiB used, 0% utilization
+GPU2: 29725 MiB used, 100% utilization
+top Python workers:
+  PID 3234, elapsed 01:11:52, ~97.5% CPU
+  PID 4313, elapsed 00:07:55, ~94.8% CPU, likely e5b3 debug child
+  PID 3951, elapsed 00:26:16, ~93.0% CPU
+```
+
+Recent file movement confirms the current debug child is checkpointing:
+
+```text
+workspace/working/best_deberta_model.pt
+  mtime: Thu Jul  9 09:50:50 UTC 2026
+  size: 1736230665 bytes
+workspace/working/best_val_probs.npy
+  mtime: Thu Jul  9 09:50:39 UTC 2026
+workspace/working/best_model_e5b3e997ca5a49fdb36235f56359c8cf.pt
+  mtime: Thu Jul  9 09:50:38 UTC 2026
+  size: 737836607 bytes
+```
+
+Interpretation: `e5b3...` is not idle; it is in the training/checkpointing phase. Continue read-only monitoring until parse, metric, leakage, task completion, or job failure.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
