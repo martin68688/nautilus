@@ -4587,3 +4587,102 @@ Required fix before any serious follow-up run:
 4. Add a hard runtime guard: if a retrieved RunNode/Transition comes from blocked run prefix 20260512, reject or label as risk warning only.
 5. Add template-lock replay for the clean DeBERTa-large + XGBoost + LR ensemble if we want to test that template.
 ```
+
+## 2026-07-09 clean-r1 restart failure and clean-r2 fix
+
+After killing the contaminated r3 job, Codex submitted:
+
+```text
+job: runforest-online-a100x3-clean-r1
+pod: runforest-online-a100x3-clean-r1-twhzd
+resources: 3x A100, 6 CPU, 64Gi
+branch: codex/hyperbolic-structural-memory
+checked_out_commit: f3c73d0ad6bf4646ce95fa92a7954181901e63f3
+```
+
+The job did not reach training, retrieval, or adoption analysis. It failed during clean graph build, immediately after `=== Build clean Run-Forest graph from allowlist ===`.
+
+Failure:
+
+```text
+ValueError:
+  '/workspace/nautilus/mlevolve/runs/20260509_042918_spooky-author-identification/logs/journal.json'
+  is not in the subpath of
+  '/workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r1_20260709_135135'
+```
+
+Root cause:
+
+```text
+paper-skills/hyper_memory/build_run_forest_memory.py stored Run node journal_path as:
+  str(path.relative_to(REPO))
+
+In the clean online job, the code clone lives at:
+  /workspace/nautilus_runforest_online_<tag>
+
+but the persistent historical runs live at:
+  /workspace/nautilus/mlevolve/runs
+
+Those are sibling PVC paths, not parent/child paths. The builder incorrectly assumed every journal path sits under the current code clone.
+```
+
+This is a path serialization bug, not evidence that the clean allowlist admitted leaked runs. The builder crashed before it could finish writing the certified graph.
+
+Fix committed locally for the next push:
+
+```text
+paper-skills/hyper_memory/build_run_forest_memory.py
+  added display_path(path, base=REPO)
+  changed Run node journal_path to display_path(path)
+
+Behavior:
+  if path is under the current repo clone, write a relative path
+  otherwise, write the absolute path
+```
+
+Local verification after the fix:
+
+```text
+python -m py_compile paper-skills/hyper_memory/build_run_forest_memory.py
+pytest -q tests/test_run_forest_memory.py
+  8 passed
+
+External-runs simulation:
+  python paper-skills/hyper_memory/build_run_forest_memory.py \
+    --runs-dir /tmp/nautilus-runforest-builder-test/runs \
+    --sop-graph paper-skills/hyper_memory/hyper_graph.json \
+    --out-dir /tmp/nautilus-runforest-builder-test/out \
+    --allowlist paper-skills/eval_skill_memory/clean_run_allowlist.json \
+    --require-clean-provenance
+
+Result:
+  provenance clean_certified
+  leak_verified True
+  paper_grade True
+  journal_count 22
+```
+
+New job spec prepared:
+
+```text
+job-runforest-online-a100x3-clean-r2.yaml
+```
+
+Additional r2 improvement:
+
+```text
+clean-r1 spent most of its lifetime in git clone --shared checkout on the PVC.
+clean-r2 uses seed repo fetch + git archive into the workdir:
+  git -C "${seed}" fetch --depth=1 origin "${BRANCH}"
+  git -C "${seed}" archive --format=tar "${commit}" | tar -x -C "${WORKDIR}"
+
+This should still pull the pushed remote branch into the PVC workdir, but with less git checkout overhead.
+```
+
+Important current status:
+
+```text
+clean-r1: failed before retrieval/training
+clean-r2: prepared but not yet submitted at the time of this note
+No clean online RunForest retrieval/adoption metrics exist yet.
+```

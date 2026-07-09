@@ -54,6 +54,14 @@ def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def display_path(path: Path, *, base: Path = REPO) -> str:
+    """Return a stable readable path even when artifacts live outside this clone."""
+    try:
+        return str(path.resolve().relative_to(base.resolve()))
+    except ValueError:
+        return str(path)
+
+
 def run_id_matches_prefix(run_id: str, prefix: str) -> bool:
     return run_id == prefix or run_id.startswith(f"{prefix}_") or run_id.startswith(f"{prefix}-")
 
@@ -566,7 +574,7 @@ def build_artifact(
                 "run_id": run_id,
                 "run_short_id": run_short_id(run_id),
                 "task": task,
-                "journal_path": str(path.relative_to(REPO)),
+                "journal_path": display_path(path),
                 "node_count": len(graph["nodes"]),
                 "edge_count": len(graph["parents"]),
                 "root_count": len(graph["roots"]),
