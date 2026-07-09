@@ -960,6 +960,70 @@ top processes: three active Python workers still running around 96-97% CPU
 
 Interpretation: this is the first post-best failure-to-debug recovery checkpoint in the live online run. It verifies that runtime memory is not only used for improve/local-best exploration; after an improve branch introduced a TypeError, the system switched into debug mode, found similar historical successful fixes, retrieved Run-Forest debug recovery transitions/SOPs, and generated a patched child. Final adoption/effect claims still require task completion and adoption reports.
 
+Additional material checkpoint at `2026-07-09 16:14:16 CST` / `08:14:16 UTC`:
+
+```text
+job status: still Running, 0/1 completions
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 13
+metric_count: 5
+best_min: 0.369656
+manifest: still 0 bytes because the first task has not finished
+adoption/summary artifacts: not yet present
+```
+
+Debug recovery child completed:
+
+```text
+node: cc4660189e5d49bd9c7e8e2564bc37e3
+stage: debug
+parent: cf716824167542f486876fd0c811a74c
+is_buggy: False
+metric: 0.39604
+maximize: False
+current best remained: 0.369656 from node 24ba5082e39f4494a065c469520c5457
+parse result: PASS | metric=0.39604
+data leakage check: has_leakage=True, confidence=low
+leakage handling: not marked buggy because confidence was low
+```
+
+After debug recovery, the run returned to draft expansion:
+
+```text
+progress: 12/80 steps completed, 3 tasks running
+selection: root node 949b7f29c71846ebbcaae3779e46119f
+mode: exploration
+RunForestMemory fired:
+  stage=draft
+  strategy=draft_successful_branches
+  refs include transitions:
+    run::20260515_173948_spooky-author-identification::transition::2a14416a9d::b74f997873
+    run::20260517_151325_spooky-author-identification::transition::5fffd41185::423a8dfe1b
+    run::20260516_125444_spooky-author-identification::transition::cc9848eb59::323518e35d
+    run::20260516_091845_spooky-author-identification::transition::50fa1f64dc::1ec214a74f
+    run::20260516_091845_spooky-author-identification::transition::50fa1f64dc::0545da1777
+    run::20260516_104127_spooky-author-identification::transition::51d591325f::f1cc39d3e1
+  refs include SOPs:
+    sop::sg_0202, sop::sg_0204, sop::sg_0222, sop::sg_0210
+draft path:
+  stepwise generation route
+  Step 1/3: data_processing_and_feature_engineering
+  Step 2/3: model_design
+  Step 3/3: training_evaluation
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 1001 MiB used, 0% utilization
+GPU1: 35307 MiB used, 99% utilization
+GPU2: 13927 MiB used, 95% utilization
+top processes: two main Python workers still running around 96-97% CPU
+```
+
+Interpretation: the debug recovery branch successfully converted a TypeError branch into a valid, leakage-low-confidence-warning solution, but it did not beat the current best. The live run then returned to draft exploration and again used Run-Forest draft-successful-branch retrieval. This gives evidence for runtime memory across draft, improve, debug, and back-to-draft expansion within the same task, though final adoption/effect claims are still pending task/matrix completion.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
