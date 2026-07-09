@@ -424,6 +424,49 @@ summary json/md: not yet present
 
 Interpretation unchanged: the Job is still spending GPU time on the first task's long-running draft/debug executions. There is no evidence of a scheduler Pending state, pod restart, or completed online result yet.
 
+Additional material checkpoint at `2026-07-09 15:10:17 CST` / `07:10:17 UTC`:
+
+```text
+job status: still Running, 0/1 completions, about 132 minutes old
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 3
+metric_count: 0
+manifest: still 0 bytes
+summary/adoption report: not yet present
+```
+
+New runtime behavior since the previous checkpoint:
+
+```text
+node fe6beb7438c948dc8f5e5c1b1f56c266 finished execution parsing
+result: FAIL / is_buggy=True / metric=None
+progress: 2/80 steps completed, 3 tasks running
+RunForestMemory fired again for debug:
+  stage=debug
+  strategy=debug_failure_recovery
+  refs include transitions:
+    run::20260509_154039_spooky-author-identification::transition::dc633aebfe::1852b63b5b
+    run::20260509_154039_spooky-author-identification::transition::dc633aebfe::b926644769
+    run::20260511_014836_spooky-author-identification::transition::31e12b2fef::5be1911c1a
+  refs include SOPs:
+    sop::sg_0096, sop::sg_0101, sop::sg_0094, sop::sg_0156
+debug patch:
+  Successfully applied 6 diff patch(es)
+  new child: bd5021e06d034427847f1a9373ef8807
+```
+
+GPU/process snapshot immediately after that debug handoff:
+
+```text
+GPU0: 897 MiB used, 0% utilization
+GPU1: 4 MiB used, 0% utilization
+GPU2: 13927 MiB used, 0% utilization
+top processes: two Python workers still active, one near 99% CPU and one near 97% CPU
+```
+
+Interpretation: this is no longer the earlier "all GPUs busy" state. One more draft has failed, Run-Forest debug navigation is confirmed a second time, and the run appears to be in a CPU/debug handoff or task-transition phase. It is still not a final online result; no metric, adoption report, manifest row, or summary exists yet.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
