@@ -3587,6 +3587,158 @@ Current updated takeaway:
 - Main bottleneck remains code-generation/patch actuation, not pure retrieval availability.
 - The first task is still not finalized, so there is not yet any valid multi-task matrix/adoption summary.
 
+Regression checkpoint at `2026-07-09 20:16 CST` / `12:16 UTC`:
+
+The GPU2 child `c06f...` parsed successfully but regressed.
+
+```text
+node: c06f2c6e69494fa6acf9d400dde1ecdd
+parent: 8cb589f6afd74267b4ebb98db27187d3
+stage: improve
+parse: PASS
+metric: 0.423935
+is_buggy: False
+is_valid: True
+exec_time: 987.0s
+leakage check:
+  has_leakage=False
+  confidence=high
+observed validation:
+  best validation log loss: 0.423935
+  validation accuracy: 0.8542
+  best epoch: 12
+  early stop: epoch 16 after 4 epochs without improvement
+current best remains:
+  8cb589f6afd74267b4ebb98db27187d3
+  metric: 0.346175
+```
+
+RunForest injection for this node:
+
+```text
+stage=improve
+strategy=improve_local_best_lineage
+refs:
+  run::20260516_125444_spooky-author-identification::transition::92989935c3::bfbf637cc9
+  run::20260516_125444_spooky-author-identification::transition::2aeb8453d8::347d68bc6c
+  run::20260516_125444_spooky-author-identification::transition::cc9848eb59::2aeb8453d8
+  run::20260516_125444_spooky-author-identification::transition::92989935c3::669be7d1fe
+  sop::sg_0002
+  sop::sg_0222
+  sop::sg_0230
+  sop::sg_0228
+  sop::sg_0221
+  sop::sg_0202
+methodology refs also injected:
+  partial unfreezing / differentiated LR
+  multi-sample dropout
+  multi-scale feature engineering
+  chi2 n-gram selection
+  training stability
+  train-only fit / no leakage
+  scheduler warmup
+  DeBERTa + feature-model synergy
+```
+
+Implemented scheme:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-small
+unfreeze last 4 layers
+handcrafted features:
+  stylometric 30d
+  readability 4d
+  POS approximation 5d
+TF-IDF word+char features:
+  5000 raw
+  chi2 select to 4000
+feature projection:
+  256d
+multi-sample dropout:
+  K=8
+training:
+  FocalLoss with alpha weights
+  AdamW
+  backbone lr=3e-5
+  head lr=5e-5
+  CosineAnnealingWarmRestarts
+  mixup on pooled embeddings and handcrafted features
+  mixed precision
+  early stopping patience=4
+```
+
+Interpretation:
+
+- This is a clean, valid negative result: the node ran, passed validation, passed leakage check, but underperformed the parent by `+0.077760` log-loss.
+- The retrieval pack again found relevant historical lineage and SOPs, but the selected action was harmful. The likely culprit is actuation/choice of modification: mixup on already-small transformer pooled embeddings plus scheduler changes made validation worse.
+- This reinforces the current pattern: RunForest is active and supplies useful context, but the generator does not reliably preserve the best historical architecture or choose safe deltas.
+
+After `c06f...`, the system immediately continued from this regressed node:
+
+```text
+stage=improve
+selected node: c06f2c6e69494fa6acf9d400dde1ecdd
+strategy=improve_local_best_lineage
+refs:
+  run::20260517_151325_spooky-author-identification::transition::8efd3270e8::5db3f25122
+  run::20260514_113102_spooky-author-identification::transition::bee03d62f4::5850ebb19e
+  run::20260514_113102_spooky-author-identification::transition::ce3d8aadaf::bee03d62f4
+  run::20260516_125444_spooky-author-identification::transition::92989935c3::2e2b9fa6f1
+  sop::sg_0267
+  sop::sg_0270
+  sop::sg_0271
+  sop::sg_0222
+  sop::sg_0230
+  sop::sg_0228
+status:
+  generated plan
+  generated JSON plan with 2 modules
+  first diff attempt failed: response did not contain SEARCH/REPLACE format
+  regenerating diff
+```
+
+Live state at this checkpoint:
+
+```text
+Job: runforest-online-a100x3-r3
+status: Running, 0/1 completions, age ~7h20m
+Pod: runforest-online-a100x3-r3-58772
+status: Ready 1/1, Running, restarts=0
+
+GPU0:
+  runfile_0.py alive
+  06d87893b5f3401396495df1d7119c0d still pending / not parsed
+  utilization ~76%, memory ~8.5GiB
+
+GPU1:
+  runfile_1.py alive
+  bdb69a1d667d4f26a866b477ad01030f still pending / not parsed
+  utilization ~96%, memory ~35.3GiB
+
+GPU2:
+  c06f... finished
+  no active runfile_2.py at this sample
+  memory ~4MiB
+  system is generating the next diff from c06f...
+
+journal:
+  nodes: 34
+  valid_metrics: 10
+  best_min: 0.346175
+manifest:
+  still 0 bytes
+adoption artifacts:
+  adoption_report.json absent
+  adoption_events.jsonl absent
+  external_memory_adoption_events.jsonl absent
+```
+
+Updated takeaway:
+
+- We now have one local new best (`8cb589...`), one debug recovery success (`69df...`), one valid regression (`c06f...`), and multiple patch/checkpoint failures.
+- The strongest signal remains: retrieval is active and relevant, but action selection and patch quality are the bottleneck.
+- Since the first task is still not finalized and adoption artifacts are absent, this is not yet enough for final online comparison.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
