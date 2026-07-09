@@ -3867,6 +3867,107 @@ Updated takeaway:
 - The live run is still on `spooky-author-identification`; cactus, leaf, and taxi have not started because the matrix manifest remains empty.
 - The current bottleneck remains downstream actuation: retrieval gives relevant transitions/SOP signposts, but generated edits often regress, crash, or fail to preserve the strongest historical architecture.
 
+Large three-model ensemble checkpoint at `2026-07-09 20:46 CST` / `12:46 UTC`:
+
+The GPU1 three-model ensemble branch `bdb69...` has now finished and parsed. It did generate a submission, but the parser/leakage checker rejected the node and reset its metric.
+
+```text
+node: bdb69a1d667d4f26a866b477ad01030f
+parent: ca22f97abf18415e89bccff07280d293
+stage: debug
+parse: FAIL
+metric before leakage rejection: 0.4396
+final metric: None
+is_valid: True
+is_buggy: True
+exec_time: 5959.3s
+finish_time: 2026-07-09T12:45:45
+submission:
+  workspace/submission/submission_bdb69a1d667d4f26a866b477ad01030f.csv
+  mtime: 2026-07-09 12:45:13 UTC
+leakage check:
+  has_leakage=True
+  confidence=high
+```
+
+Implemented scheme:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-large
+DeBERTa:
+  max length 512
+  fine-tuned with AdamW
+  linear warmup scheduler
+  label smoothing
+  gradient clipping
+  mixed precision
+Feature models:
+  XGBoost on handcrafted + SVD-reduced sparse n-gram features
+  LogisticRegression on chi2-selected sparse features
+Ensemble:
+  simple average
+  DeBERTa 1/3
+  XGBoost 1/3
+  LR 1/3
+```
+
+Leakage checker reason, abbreviated:
+
+```text
+The node used the same validation split for model selection / early stopping and final metric reporting.
+XGBoost used eval_set on the validation split with early stopping.
+The final ensemble score was reported on that same validation split.
+The DeBERTa best-checkpoint handling also looked inconsistent: best epoch val loss was 0.4396, but final DeBERTa evaluation reported 0.8888, suggesting the best checkpoint was not reloaded.
+```
+
+Interpretation:
+
+- The answer to "did the three-model ensemble finish?" is yes for this `bdb69...` branch: it completed enough to emit a submission and be parsed.
+- It is not a usable result because leakage checking marked it high-confidence leaky/over-optimistic and reset the metric to `None`.
+- This is distinct from the earlier GPU2 fixed-weight ensemble `5066...`, which also finished but failed earlier at checkpoint loading:
+  - `5066...`: DeBERTa 0.50 / XGBoost 0.25 / LR 0.25, crashed on `state_dict` unexpected `pooler.dense.*` keys.
+  - `bdb69...`: simple-average 1/3 + 1/3 + 1/3, generated submission, then failed leakage check.
+- The current best remains `8cb589...` with metric `0.346175`.
+
+Live state after this checkpoint:
+
+```text
+Job: runforest-online-a100x3-r3
+status: Running, 0/1 completions, age ~7h49m
+Pod: runforest-online-a100x3-r3-58772
+status: Ready 1/1, Running, restarts=0
+
+GPU1:
+  runfile_1.py no longer appears after bdb69 parsed
+
+Still active:
+  GPU0 / runfile_0.py:
+    likely fab410f9a5cb433b82f1c647a7c050b6
+    not parsed yet
+    recent checkpoint: best_model_fab410...pt
+  GPU2 / runfile_2.py:
+    likely e5b475d574084ddf8e5155c24da6a98c
+    not parsed yet
+
+journal:
+  nodes: 36
+  valid_metrics: 11
+  best_min: 0.346175
+
+matrix manifest:
+  still 0 bytes
+adoption artifacts:
+  adoption_report.json absent
+  adoption_events.jsonl absent
+  external_memory_adoption_events.jsonl absent
+```
+
+Updated takeaway:
+
+- The large three-model ensemble did not improve the run. It either crashed (`5066...`) or was rejected as leaky (`bdb69...`).
+- The leakage checker is doing useful guardrail work, but the generator keeps producing solutions that look plausible and expensive yet do not become accepted progress.
+- Since the first task still has not completed, there is still no multi-task matrix result or final adoption-rate report.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
