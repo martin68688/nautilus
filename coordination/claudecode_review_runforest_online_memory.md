@@ -3739,6 +3739,134 @@ Updated takeaway:
 - The strongest signal remains: retrieval is active and relevant, but action selection and patch quality are the bottleneck.
 - Since the first task is still not finalized and adoption artifacts are absent, this is not yet enough for final online comparison.
 
+SWA follow-up checkpoint at `2026-07-09 20:26 CST` / `12:26 UTC`:
+
+The post-best SWA follow-up `06d878...` has now parsed successfully, but it also regressed relative to the current best.
+
+```text
+node: 06d87893b5f3401396495df1d7119c0d
+parent: 8cb589f6afd74267b4ebb98db27187d3
+stage: improve
+parse: PASS
+metric: 0.369386
+is_buggy: False
+is_valid: True
+exec_time: 767.2s
+leakage check:
+  has_leakage=False
+  confidence=high
+observed validation:
+  best validation log loss before SWA: 0.3531 at epoch 9
+  final validation log loss after SWA: 0.3694
+  final validation accuracy: 0.8605
+current best remains:
+  8cb589f6afd74267b4ebb98db27187d3
+  metric: 0.346175
+```
+
+Implemented scheme:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-small
+handcrafted features:
+  stylometric 30d
+  readability 4d
+  POS approximation 5d
+TF-IDF:
+  word 1-2 grams
+  char 3-5 grams
+  chi2 select to 4000
+model:
+  last 4 DeBERTa layers trainable
+  handcrafted feature projection 256d
+  multi-sample dropout K=8
+training:
+  FocalLoss with class weights and label smoothing
+  one-cycle cosine schedule with 3-epoch warmup
+  mixed precision
+  SWA enabled
+  early stopping patience=4
+```
+
+Interpretation:
+
+- This is a valid leakage-clean result, but not a new best.
+- It is especially useful diagnostically because the node's own analysis reports a better single-checkpoint validation loss (`0.3531`) before SWA, while the final SWA validation loss is worse (`0.3694`). In this branch, the memory-guided idea of adding SWA did not improve the current architecture.
+- The current best still comes from `8cb589...`, not the later SWA variants.
+
+Current live worker state at this checkpoint:
+
+```text
+Job: runforest-online-a100x3-r3
+status: Running, 0/1 completions, age ~7h29m
+Pod: runforest-online-a100x3-r3-58772
+status: Ready 1/1, Running, restarts=0
+
+GPU0:
+  runfile_0.py alive
+  likely node fab410f9a5cb433b82f1c647a7c050b6
+  journal status: not parsed / not found yet
+  current runfile scheme:
+    microsoft/deberta-v3-base
+    XGBoost + LogisticRegression
+    SWA
+    FocalLoss
+  sample utilization: ~86%
+  memory: ~3.5GiB
+
+GPU1:
+  runfile_1.py alive
+  node bdb69a1d667d4f26a866b477ad01030f still pending / not parsed
+  current runfile scheme:
+    microsoft/deberta-v3-large
+    XGBoost on handcrafted + sparse n-gram features
+    LogisticRegression on sparse features
+    simple average ensemble, 1/3 each
+  sample utilization: 0% at this instant
+  memory: ~35.3GiB
+
+GPU2:
+  runfile_2.py alive
+  likely node e5b475d574084ddf8e5155c24da6a98c
+  journal status: not parsed / not found yet
+  current runfile scheme:
+    microsoft/deberta-v3-small
+    multi-view ensemble
+    XGBoost branch
+    CNN branch
+    transformer branch with ensemble features
+    mixup
+    FocalLoss
+  sample utilization: 0% at this instant
+  memory: ~425MiB
+
+journal:
+  nodes: 35
+  valid_metrics: 11
+  best_min: 0.346175
+  current best: 8cb589f6afd74267b4ebb98db27187d3
+
+journal adoption_log summary:
+  total events: 1310
+  run_forest_agentic_memory: 697
+  methodology: 594
+  global_memory: 19
+
+matrix manifest:
+  still 0 bytes
+adoption artifacts:
+  adoption_report.json absent
+  adoption_events.jsonl absent
+  external_memory_adoption_events.jsonl absent
+```
+
+Updated takeaway:
+
+- Runtime memory use is abundant in the live journal, including hundreds of `run_forest_agentic_memory` injection records.
+- However, the formal adoption artifacts are still absent because the first task has not finished. The 1310 journal events are useful live telemetry, not final adoption-rate evidence.
+- The live run is still on `spooky-author-identification`; cactus, leaf, and taxi have not started because the matrix manifest remains empty.
+- The current bottleneck remains downstream actuation: retrieval gives relevant transitions/SOP signposts, but generated edits often regress, crash, or fail to preserve the strongest historical architecture.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
