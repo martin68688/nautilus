@@ -2283,6 +2283,174 @@ Interpretation for ClaudeCode review:
 - This is another actuation failure: retrieved memory did not enforce known-good architecture or known-bad API avoidance.
 - Watch whether `efb657...` fails at scheduler construction; if so, this is a concrete repeated-error case for the RunForest adoption analysis.
 
+Follow-up repeated-error confirmation at `2026-07-09 18:20 CST` / `10:20 UTC`:
+
+`efb657...` failed exactly as predicted:
+
+```text
+node: efb657e4a5a74aaa984dfba60fe5f084
+parse: FAIL
+metric: None
+is_buggy: True
+reason: TypeError before training began
+specific failure: ReduceLROnPlateau scheduler received invalid verbose keyword argument
+stats after parse: step=22, nodes=22, branches=5, best=0.369656
+```
+
+This is a concrete repeated-error case:
+
+```text
+earlier failed node: cf716824167542f486876fd0c811a74c
+same failure family: ReduceLROnPlateau(verbose=...) TypeError
+new failed node: efb657e4a5a74aaa984dfba60fe5f084
+```
+
+RunForest debug recovery then fired:
+
+```text
+stage=debug
+strategy=debug_failure_recovery
+refs:
+  run::20260514_183931_spooky-author-identification::transition::e15f483ffa::5bad386082
+  run::20260514_183931_spooky-author-identification::transition::2f6c990425::48aa94695e
+  run::20260510_162636_spooky-author-identification::transition::27ea26cde9::4067827561
+  run::20260510_162636_spooky-author-identification::transition::80a7b4ec6e::27ea26cde9
+  run::20260510_162636_spooky-author-identification::transition::41ae18dce0::8c3a5603a2
+  run::20260510_162636_spooky-author-identification::transition::80a7b4ec6e::41ae18dce0
+  sop::sg_0147
+  sop::sg_0154
+  sop::sg_0148
+  evidence::6d7217b28da2
+```
+
+The generated debug child:
+
+```text
+parent: efb657e4a5a74aaa984dfba60fe5f084
+child: a17707fc285d42159b1fae3f466c5aa6
+stage: debug
+patches applied: 1
+code review: needs_revision=False
+execution assigned:
+  process_id=1
+  cpu={115,116}
+  GPU=1
+```
+
+The active `a177...` runfile removed the `verbose=True` argument:
+
+```text
+scheduler = ReduceLROnPlateau(
+    optimizer, mode='min', factor=0.5, patience=2, min_lr=1e-7
+)
+```
+
+Interpretation for ClaudeCode review:
+
+- RunForest debug recovery did help repair the immediate API bug after it was repeated.
+- But the upstream improve generator still reintroduced a known-bad API pattern first, so memory is reactive here, not preventative.
+- This should count as evidence for "runtime memory can recover local bugs" but against "agent reliably adopts known risk warnings before generation."
+
+Follow-up chained-debug checkpoint at `2026-07-09 18:27 CST` / `10:27 UTC`:
+
+The `a177...` debug child fixed the scheduler API issue, but failed during the first training batch:
+
+```text
+node: a17707fc285d42159b1fae3f466c5aa6
+parent: efb657e4a5a74aaa984dfba60fe5f084
+stage: debug
+parse: FAIL
+metric: None
+is_buggy: True
+reason: RuntimeError during model forward
+specific failure:
+  element-wise fusion attempted to combine a 64-d handcrafted-feature projection
+  with a 768-d DeBERTa CLS embedding
+stats after parse:
+  step=23
+  nodes=23
+  branches=5
+  best=0.369656
+```
+
+RunForest debug recovery fired again:
+
+```text
+stage=debug
+strategy=debug_failure_recovery
+refs:
+  run::20260514_171209_spooky-author-identification::transition::cc3cf87612::a2c941cb50
+  run::20260514_171209_spooky-author-identification::transition::fbb615a11a::cc3cf87612
+  run::20260513_145802_spooky-author-identification::transition::fd4b9d10ce::3b74cb6461
+  run::20260514_023457_spooky-author-identification::transition::bdcb77ac47::bef409bbb7
+  run::20260514_190327_spooky-author-identification::transition::9fc7828103::c9ab5c048e
+  run::20260514_052334_spooky-author-identification::transition::ce6e037675::14343845c0
+  sop::sg_0187
+  sop::sg_0194
+  sop::sg_0195
+  evidence::6a9eb4d81c4d
+```
+
+The generated child is now active:
+
+```text
+parent: a17707fc285d42159b1fae3f466c5aa6
+child: ae14a030ec25494cbf86c34b8be1b509
+stage: debug
+patches applied: 4
+code review: needs_revision=False
+execution assigned:
+  process_id=1
+  cpu={115,116}
+  GPU=1
+run file: workspace/runfile_1.py
+```
+
+Current `ae14...` runfile scheme:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-small
+MAX_LENGTH = 256
+BATCH_SIZE = 32
+NUM_EPOCHS = 20
+backbone_lr = 3e-5
+head_lr = 5e-5
+freeze policy: train last 4 encoder layers
+features: stylometric + readability + POS-style dense features
+fusion:
+  feature_projection: dense features -> 64
+  feat_to_hidden: 64 -> hidden_size
+  gate_projection: hidden_size + 64 -> hidden_size
+loss:
+  0.7 * CrossEntropy(label_smoothing=0.1)
+  0.3 * NT-Xent contrastive loss on CLS embeddings
+scheduler:
+  ReduceLROnPlateau without verbose=True
+```
+
+At this checkpoint the three active training processes were:
+
+```text
+GPU0: runfile_0.py, node e5b3e997..., DeBERTa-v3-base + dense feature fusion
+GPU1: runfile_1.py, node ae14a030..., DeBERTa-v3-small + gated fusion + contrastive loss
+GPU2: runfile_2.py, node ca180ddf..., DeBERTa-v3-large + XGBoost/LR validation-weight ensemble
+```
+
+No adoption artifacts existed yet:
+
+```text
+adoption_report.json: absent
+adoption_events.jsonl: absent
+external_memory_adoption_events.jsonl: absent
+```
+
+Interpretation for ClaudeCode review:
+
+- RunForest is successfully triggering debug recovery on repeated/chained failures.
+- The live generator is still not converging toward the historical strong spooky recipe; the active debug chain remains on `DeBERTa-v3-small` with added fusion machinery.
+- The memory layer is useful for finding relevant recovery traces, but the actuation path still permits architecture drift and local implementation bugs.
+- `runfile_2.py` is the only active branch close to the historical `DeBERTa-v3-large` family, but it uses validation-set ensemble-weight optimization, so it may be rejected by the leakage checker if it reports a metric.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
