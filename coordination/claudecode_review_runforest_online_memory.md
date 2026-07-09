@@ -1304,6 +1304,54 @@ container "runforest-online-clean" in pod "runforest-online-a100x3-clean-r1-twhz
 
 Interpretation: the clean restart has been submitted and scheduled to an A100 node. It is not a scheduler-capacity Pending case. The correct next action is read-only monitoring until the image pull finishes and preflight logs become available. No resource mutation has been performed after submission.
 
+### Clean-r1 Startup Bottleneck
+
+Follow-up monitoring showed the pod did start successfully:
+
+```text
+pod: runforest-online-a100x3-clean-r1-twhzd
+status: Running
+ready: 1/1
+restarts: 0
+node: rci-nrp-gpu-02.sdsu.edu
+image pull: completed in about 6m2s
+```
+
+However, before any preflight compile/build/test could run, the Job spent a long time in code checkout:
+
+```text
+checkout_mode=local_seed seed=/workspace/nautilus_runforest_online_runforest_online_a100x3_r3_20260709_045537
+Cloning into '/workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r1_20260709_135135'...
+```
+
+Read-only process checks showed:
+
+```text
+process: git clone --shared /workspace/nautilus_runforest_online_runforest_online_a100x3_r3_20260709_045537 ...
+state: D
+wchan: folio_wait_bit_common
+```
+
+The target directory did grow over time, which means this was slow PVC I/O rather than an immediate dead process:
+
+```text
+7.7M -> 20M -> 70M -> 159M -> 220M -> 286M -> 319M
+```
+
+At the latest checkpoint, the workdir existed and `paper-skills` had appeared, but `git clone` had not returned yet, so the later remote fetch had not run and the checkout was still at the seed commit:
+
+```text
+rev-parse HEAD: eb754c1671f02b395ac7b2eb9473faacbb7fe186
+```
+
+Important interpretation:
+
+- The clean graph preflight has not run yet.
+- The matrix has not started.
+- No RunForest retrieval/adoption behavior has happened in clean-r1 yet.
+- The current bottleneck is code delivery / PVC clone I/O, not model training, clean provenance, or memory retrieval.
+- No mutation has been made after submission. A faster r2 would likely use `git fetch` on the PVC repo plus `git archive FETCH_HEAD` into a clean workdir, but that would require explicitly replacing the running clean-r1 Job.
+
 Read-only pod spec verification at `2026-07-09 16:21:58 CST` / `08:21:58 UTC`:
 
 ```text
