@@ -2511,6 +2511,107 @@ Interpretation for ClaudeCode review:
 - The first task has still not completed: the matrix manifest is empty, so no cactus/leaf/taxi task has started yet.
 - Adoption rate still cannot be assessed because adoption artifacts have not been emitted.
 
+Follow-up NaN recovery checkpoint at `2026-07-09 18:35 CST` / `10:35 UTC`:
+
+`ae14...` finished execution and produced a submission, but the parser marked it buggy:
+
+```text
+node: ae14a030ec25494cbf86c34b8be1b509
+parent: a17707fc285d42159b1fae3f466c5aa6
+stage: debug
+raw final validation log loss: 0.397456
+submission:
+  workspace/submission/submission_ae14a030ec25494cbf86c34b8be1b509.csv
+parse: FAIL
+metric after parse: None
+reason:
+  training loss became NaN at epoch 2
+  parser treated the run as numerically unstable even though later epochs recovered
+stats after parse:
+  step=24
+  nodes=24
+  branches=5
+  best=0.369656
+```
+
+The model scheme was still the small gated-fusion branch:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-small
+fusion = DeBERTa CLS + handcrafted dense features through gated fusion
+loss = CrossEntropy(label_smoothing=0.1) + NT-Xent contrastive loss
+```
+
+RunForest debug recovery fired again:
+
+```text
+stage=debug
+strategy=debug_failure_recovery
+reason/focus:
+  NaN loss, gradient explosion, numerical instability,
+  contrastive loss, gated fusion dimension mismatch
+refs:
+  run::20260516_104127_spooky-author-identification::transition::acc9081473::e8b10aef38
+  run::20260517_151325_spooky-author-identification::transition::bf2596d303::a0eb360b2c
+  run::20260515_173948_spooky-author-identification::transition::a53d39475e::ebf906624d
+  run::20260515_173948_spooky-author-identification::transition::8c144362fb::a53d39475e
+  run::20260516_125444_spooky-author-identification::transition::5acc5e52ca::d68ca7d771
+  run::20260516_125444_spooky-author-identification::transition::aeb1a5cc7e::fdc9078913
+  sop::sg_0214
+  sop::sg_0201
+  sop::sg_0202
+  sop::sg_0232
+```
+
+Generated child:
+
+```text
+parent: ae14a030ec25494cbf86c34b8be1b509
+child: e6a57cae308e417d88850f63715f9823
+stage: debug
+diff patches from debug: 1
+code review: needs_revision=True
+review patches applied: 1
+execution assigned:
+  process_id=1
+  cpu={115,116}
+  GPU=1
+```
+
+Current `e6a...` runfile changes:
+
+```text
+contrastive temperature:
+  0.1 -> 0.5
+loss weighting:
+  0.70 * CE + 0.30 * contrastive
+  ->
+  0.85 * CE + 0.15 * contrastive
+gradient clipping:
+  max_norm 1.0 -> 0.5
+scheduler:
+  ReduceLROnPlateau without verbose=True
+```
+
+Runtime state at the checkpoint:
+
+```text
+GPU0:
+  e5b3... still running DeBERTa-v3-base + dense feature fusion
+GPU1:
+  e6a... just launched; GPU memory had not ramped yet at the instant checked
+GPU2:
+  ca180... still holding ~29.7GiB but 0% GPU utilization
+```
+
+Interpretation for ClaudeCode review:
+
+- RunForest again retrieved relevant failure-recovery memory and produced a targeted numerical-stability patch.
+- This is a stronger recovery signal than the scheduler bug case because the retrieval focus explicitly mentions NaN/contrastive-loss instability.
+- However, the search remains stuck in a local debug chain around a weak `DeBERTa-v3-small + gated fusion + contrastive loss` architecture.
+- The parser correctly refused to accept the raw `0.397456` metric because training had NaN instability; safety is conservative, but no progress toward the `0.369656` best was made.
+- The first task still has not completed and no adoption artifacts exist yet.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
