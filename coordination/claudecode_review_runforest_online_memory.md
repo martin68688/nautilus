@@ -1259,6 +1259,51 @@ Please specifically review:
 4. Whether `job-runforest-online-a100x3-clean-r1.yaml` truly rebuilds the graph from the clean allowlist inside the pod before memory retrieval can happen.
 5. Whether the old contaminated `experience_kb` directories should be physically moved out of `paper-skills/experience_kb` in a separate cleanup commit, even though the clean run config now disables that path.
 
+### Clean-r1 Submission Checkpoint
+
+Clean restart code commit pushed to the branch consumed by the Job before submission:
+
+```text
+clean-source code commit: 44065b1c284c73bd209274a532a607bc085d1348
+remote branch: origin/codex/hyperbolic-structural-memory
+commit title: Clean run-forest memory source for online restart
+```
+
+Job submission:
+
+```text
+kubectl apply -f job-runforest-online-a100x3-clean-r1.yaml
+job.batch/runforest-online-a100x3-clean-r1 created
+```
+
+Initial cluster state:
+
+```text
+job: runforest-online-a100x3-clean-r1
+status: Running
+completions: 0/1
+pod: runforest-online-a100x3-clean-r1-twhzd
+node: rci-nrp-gpu-02.sdsu.edu
+pod status: ContainerCreating
+restarts: 0
+```
+
+Scheduler/event status at the latest checkpoint:
+
+```text
+Successfully assigned ecepxie/runforest-online-a100x3-clean-r1-twhzd to rci-nrp-gpu-02.sdsu.edu
+AttachVolume.Attach succeeded for volume "pvc-133ca65b-9e81-492c-90b3-4320d5e19a94"
+Pulling image "haomingwang22/mlevolve:v1"
+```
+
+No runtime logs are available yet because the container is still waiting to start:
+
+```text
+container "runforest-online-clean" in pod "runforest-online-a100x3-clean-r1-twhzd" is waiting to start: ContainerCreating
+```
+
+Interpretation: the clean restart has been submitted and scheduled to an A100 node. It is not a scheduler-capacity Pending case. The correct next action is read-only monitoring until the image pull finishes and preflight logs become available. No resource mutation has been performed after submission.
+
 Read-only pod spec verification at `2026-07-09 16:21:58 CST` / `08:21:58 UTC`:
 
 ```text
