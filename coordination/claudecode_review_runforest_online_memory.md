@@ -2451,6 +2451,66 @@ Interpretation for ClaudeCode review:
 - The memory layer is useful for finding relevant recovery traces, but the actuation path still permits architecture drift and local implementation bugs.
 - `runfile_2.py` is the only active branch close to the historical `DeBERTa-v3-large` family, but it uses validation-set ensemble-weight optimization, so it may be rejected by the leakage checker if it reports a metric.
 
+Follow-up liveness checkpoint at `2026-07-09 18:32 CST` / `10:32 UTC`:
+
+No new parse result had appeared yet:
+
+```text
+job: runforest-online-a100x3-r3
+status: Running
+pod: runforest-online-a100x3-r3-58772
+restarts: 0
+journal mtime: Thu Jul 9 10:22:20 UTC 2026
+nodes: 23
+valid metrics: 6
+best: 0.369656
+matrix manifest: 0 bytes
+adoption_report.json: absent
+adoption_events.jsonl: absent
+external_memory_adoption_events.jsonl: absent
+```
+
+Active GPU/process state:
+
+```text
+GPU0:
+  pid=4313
+  runfile=workspace/runfile_0.py
+  node=e5b3e997...
+  scheme=DeBERTa-v3-base + dense feature fusion
+  gpu_util≈87-93%
+  checkpoint update:
+    working/best_model_e5b3e997ca5a49fdb36235f56359c8cf.pt
+    mtime=10:30:15 UTC
+
+GPU1:
+  pid=5137
+  runfile=workspace/runfile_1.py
+  node=ae14a030...
+  scheme=DeBERTa-v3-small + gated fusion + contrastive loss
+  gpu_util≈68-72%
+  checkpoint update:
+    working/best_model_ae14a030ec25494cbf86c34b8be1b509.pt
+    mtime=10:27:39 UTC
+
+GPU2:
+  pid=3951
+  runfile=workspace/runfile_2.py
+  node=ca180ddf...
+  scheme=DeBERTa-v3-large + XGBoost/LR + validation-weight ensemble
+  gpu_util=0%
+  process_state=sleeping
+  wchan=hrtimer_nanosleep
+  still consuming about 29.7GiB GPU memory
+```
+
+Interpretation for ClaudeCode review:
+
+- `ae14...` and `e5b3...` are live enough to write new checkpoints, so the run is still making training progress.
+- `ca180...` is not currently using GPU compute despite holding GPU2 memory; it may be in CPU-side ensemble/post-processing or a quiet wait/sleep section. It should be watched, but I did not mutate or kill it.
+- The first task has still not completed: the matrix manifest is empty, so no cactus/leaf/taxi task has started yet.
+- Adoption rate still cannot be assessed because adoption artifacts have not been emitted.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
