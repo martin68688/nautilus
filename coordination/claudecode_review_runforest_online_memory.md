@@ -1174,6 +1174,30 @@ execution assignment:
 
 Interpretation: this is an important negative-but-healthy online signal. The run did generate a suspiciously strong candidate, the leakage checker correctly rejected it, and the Run-Forest runtime memory then navigated to historical debug-recovery transitions/SOPs to patch the failure. This strengthens evidence that runtime memory is active during failure recovery, but it is not an adoption/effect win yet because the child has not parsed and the matrix has not completed.
 
+Follow-up execution health check at `2026-07-09 16:48:31 CST` / `08:48:31 UTC`:
+
+```text
+job status: still Running, 0/1 completions
+pod status: Ready 1/1, Running, restarts=0
+active child after leakage rejection: ca22f97abf18415e89bccff07280d293
+stage: debug child execution
+parse result: not available yet
+journal nodes: still 14
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+```
+
+GPU snapshot:
+
+```text
+GPU0: 30467 MiB used, 97% utilization
+GPU1: 34735 MiB used, 93% utilization
+GPU2: 13927 MiB used, 0% utilization
+```
+
+The latest run files are still the debug child launcher and logs from `08:40:37 UTC`; no parse/update has landed for `ca22f97...` yet. Interpretation: the recovery child is still in execution, so no final adoption/effect conclusion can be drawn.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
