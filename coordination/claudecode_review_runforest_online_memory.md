@@ -1235,6 +1235,39 @@ top Python workers:
 
 Interpretation: still not a result checkpoint, but it confirms that the recovery execution has not gone idle or Pending. Continue read-only monitoring; no cluster or pod mutation is warranted.
 
+Follow-up execution health check at `2026-07-09 17:00:30 CST` / `09:00:30 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 4h04m
+pod status: Ready 1/1, Running, restarts=0
+journal nodes: still 14
+metric_count: still 5
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+```
+
+The main log still has not emitted the parse result for `ca22f97abf18415e89bccff07280d293`, but execution remains active:
+
+```text
+GPU0: 30467 MiB used, 100% utilization
+GPU1: 35307 MiB used, 96% utilization
+GPU2: 13927 MiB used, 0% utilization
+top Python workers:
+  elapsed 01:40:01, ~98.6% CPU
+  elapsed 00:45:12, ~94.2% CPU
+  elapsed 00:19:53, ~93.5% CPU
+```
+
+Latest file movement:
+
+```text
+workspace/working/best_deberta_model.pt
+  mtime: Thu Jul  9 08:59:36 UTC 2026
+```
+
+Interpretation: the recovery child is still in long model training/evaluation. No matrix row, summary, or adoption report exists yet, so the online comparison remains pending.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
