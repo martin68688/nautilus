@@ -1111,6 +1111,69 @@ top Python workers:
 
 Interpretation: the active draft node is a long-running training/evaluation node, not a completed matrix result yet. The quiet main log is expected while subprocess training runs; the model checkpoint mtime proves the pod is still doing useful work. No mutation was performed.
 
+Material checkpoint at `2026-07-09 16:41:38 CST` / `08:41:38 UTC`:
+
+```text
+job status: still Running, 0/1 completions
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 14
+metric_count: 5
+best_min: still 0.369656
+manifest: still 0 bytes
+adoption_report/adoption_events: not yet present
+```
+
+Important leakage-defense event:
+
+```text
+node: 356ed2ef23c34618baf2f0dcad95168a
+parent: 758c132e22e94135bc7889d0e8e657f7
+stage: debug
+initial parsed metric before leakage filter: 0.1224
+metric direction: minimize
+format/content validation: valid
+data leakage check: has_leakage=True, confidence=high
+final parse result: FAIL
+final metric: None
+is_buggy: True
+current best remained: 0.369656
+```
+
+The leakage agent rejected the apparent large improvement. The reason given was a critical embedding/validation leakage pattern: a DeBERTa model was used to generate embeddings for downstream XGBoost/ensemble evaluation in a way that gave the downstream model an unfair advantage, and validation-set ensemble weight optimization made the reported score over-optimistic. The engine therefore reset the metric and marked the node buggy:
+
+```text
+Node 356ed2ef23c34618baf2f0dcad95168a detected data leakage with high confidence.
+Marking as buggy and resetting metric.
+```
+
+Run-Forest debug recovery fired immediately after that failure:
+
+```text
+engine message:
+  Found 2 similar errors with successful fixes from memory
+RunForestMemory fired:
+  stage=debug
+  strategy=debug_failure_recovery
+  refs include transitions:
+    run::20260517_151325_spooky-author-identification::transition::d44038102d::0acd2ce065
+    run::20260515_173948_spooky-author-identification::transition::a53d39475e::ebf906624d
+    run::20260515_173948_spooky-author-identification::transition::8c144362fb::a53d39475e
+    run::20260516_125444_spooky-author-identification::transition::fea89972fb::197781b971
+    run::20260516_125444_spooky-author-identification::transition::39c03723bd::c72f212a91
+    run::20260516_091845_spooky-author-identification::transition::42cff56203::9a9870cf55
+  refs include SOPs:
+    sop::sg_0268, sop::sg_0267, sop::sg_0201, sop::sg_0202
+debug patch:
+  Successfully applied 1 diff patch(es)
+new debug child:
+  ca22f97abf18415e89bccff07280d293
+execution assignment:
+  process_id=1, cpu={115, 116}, GPU=1
+```
+
+Interpretation: this is an important negative-but-healthy online signal. The run did generate a suspiciously strong candidate, the leakage checker correctly rejected it, and the Run-Forest runtime memory then navigated to historical debug-recovery transitions/SOPs to patch the failure. This strengthens evidence that runtime memory is active during failure recovery, but it is not an adoption/effect win yet because the child has not parsed and the matrix has not completed.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
