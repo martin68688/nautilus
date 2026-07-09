@@ -1562,6 +1562,138 @@ refs:
 
 Interpretation: the live run now has direct runtime evidence for Run-Forest retrieval before improve, evolution, debug, and draft. The newly generated evolution/debug branch was not useful yet, but the memory layer is being called in the intended control points and the system continues running without pod restarts.
 
+## Plateau / Retrieval Diagnostic
+
+Diagnostic checkpoint at `2026-07-09 17:27 CST` / `09:27 UTC`, prompted by the question: why is the live run still around `0.369656` even though the memory graph contains much stronger historical traces?
+
+Current live status:
+
+```text
+job status: still Running, 0/1 completions, age about 4h30m
+pod status: Ready 1/1, Running, restarts=0
+live journal nodes: 18
+live valid metric_count: 6
+live best_min: 0.369656
+manifest: still 0 bytes
+adoption artifacts: not present
+latest new draft: ca180ddf7e3448ecbd33b77753c28338, assigned to GPU2 at 09:26:13 UTC
+```
+
+Important finding: the run is not stalled. It is continuing, but the top accepted metric has not improved. Two apparently better candidates were rejected by the safety layer:
+
+```text
+356ed2ef23c34618baf2f0dcad95168a
+  initial metric before rejection: 0.1224
+  final: buggy, metric=None
+  reason: high-confidence embedding/validation leakage
+
+8949d0497f9e427eb4c0d8f2b4f6b4cb
+  initial metric before rejection: 0.3151
+  final: buggy, metric=None
+  reason: high-confidence validation-set ensemble weight optimization
+```
+
+So the live search is stuck at a poor-looking accepted best partly because unsafe/improperly scored candidates are being zeroed out, as intended.
+
+The historical Run-Forest graph does contain very strong spooky records. A local graph audit over `paper-skills/hyper_memory/run_forest_graph.json` found:
+
+```text
+spooky RunNode count: 1405
+valid metric-bearing spooky nodes: 423
+top clean-labeled historical examples include:
+  20260514_113102 / node 66f27e... metric 0.00142
+  20260514_171209 / node 881ed9... metric 0.00864
+  20260514_190327 / node c14daa... metric 0.01097
+  20260514_113102 / node bee03d... metric 0.06589
+  20260512_112908 / node c42a7b... metric 0.07255
+  20260510_162636 / node 80a7b4... metric 0.35183
+```
+
+Caveat for ClaudeCode: some ultra-low historical metrics (`0.001`, `0.008`, `0.010`) are suspicious even if currently marked `is_buggy=False` in the memory graph. The online safety layer is already rejecting similar too-good candidates when it sees validation leakage, so the memory graph likely still contains records that need post-hoc certification/quarantine before being allowed to dominate retrieval.
+
+What RunForestMemory actually does today:
+
+```text
+1. LLM navigator chooses one coarse strategy:
+   draft_successful_branches | improve_local_best_lineage | debug_failure_recovery
+
+2. Deterministic map tool builds a pack for that strategy.
+
+3. Candidate ranking is not sorted by absolute historical metric.
+   score = 0.50 * geometry
+         + 0.32 * token overlap
+         + task_match_bonus
+         + stage/outcome bonus
+         + small metric_improvement bonus
+
+4. The prompt receives a map path pack:
+   matched_run_paths
+   selected_transitions
+   attached_sops
+   risk_warnings
+   evidence_refs
+
+5. The code agent then generates or diffs new code. It does not directly clone the historical best implementation.
+```
+
+This explains the main behavior: the memory can point toward good historical routes, but it does not force adoption of the strongest trace.
+
+Evidence that good traces were retrieved:
+
+```text
+improve at 09:03 UTC retrieved:
+  transition 530e3979d9 -> c42a7b9434
+    parent metric 0.145657
+    child metric 0.072549
+    summary: DeBERTa-v3-large + handcrafted features + TF-IDF + cosine restarts + label smoothing
+
+  transition bee03d62f4 -> 5850ebb19e
+    parent metric 0.065893
+    child metric 0.069259
+    summary: DeBERTa-v3-large + projection head + multi-sample dropout + label smoothing
+
+evolution at 09:21 UTC retrieved:
+  transition 976e62376e -> 80a7b4ec6e
+    child metric 0.351827
+    summary: ModernBERT-large + TF-IDF + handcrafted features + 3-fold CV
+  SOP sg_0147:
+    use ModernBERT-large with TF-IDF and handcrafted features for best performance
+```
+
+Why it still did not advance:
+
+```text
+1. Retrieval is advisory, not executable.
+   The generator saw the ModernBERT/TF-IDF route, but decided "large model may be too slow" and changed it to DeBERTa-v3-base + pseudo-labeling.
+
+2. The generated evolution diff introduced an indentation/runtime failure:
+   node 3aced0e0fcfd4a6db43834cd704bc4c3 -> FAIL, RuntimeError/IndentationError, no metric.
+
+3. The debug child also failed:
+   node e0d3ef011bb54f29a9dd8c77b66bd850 -> FAIL, IndentationError, no metric.
+
+4. The retrieval scorer does not strongly prioritize absolute best historical metric.
+   It gives only a small +0.08 bonus for positive transition improvement; absolute metric like 0.065 or 0.072 is not a hard routing feature.
+
+5. The memory pack is capped and summarized.
+   It includes transition cards, SOP signposts, and short evidence, but not full historical code. That makes faithful reproduction unlikely.
+
+6. The graph still contains suspicious ultra-low historical records.
+   Letting "best metric wins" blindly would be unsafe until those records are certified by the same leakage guard.
+```
+
+Immediate engineering implication:
+
+```text
+The current system is useful as a read-only map, but it is not yet a "best trace replay" system.
+To make it push harder, add a certified-best-trace mode:
+  - only use leakage-certified historical nodes;
+  - rank by task + certified metric + transition success, not just geometry/token overlap;
+  - open the full implementation/reference for the top certified path;
+  - force the generator to preserve the path's core architecture unless it gives a concrete incompatibility reason;
+  - run a guard that blocks risky deviations such as pseudo-labeling or validation-weight optimization.
+```
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
