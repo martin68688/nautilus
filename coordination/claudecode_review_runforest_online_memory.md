@@ -2612,6 +2612,114 @@ Interpretation for ClaudeCode review:
 - The parser correctly refused to accept the raw `0.397456` metric because training had NaN instability; safety is conservative, but no progress toward the `0.369656` best was made.
 - The first task still has not completed and no adoption artifacts exist yet.
 
+Follow-up leakage-recovery checkpoint at `2026-07-09 18:47 CST` / `10:47 UTC`:
+
+The long-running `ca180...` large-model branch finally parsed:
+
+```text
+node: ca180ddf7e3448ecbd33b77753c28338
+parent: 949b7f29c71846ebbcaae3779e46119f
+stage: draft
+raw metric before safety filter: 0.3416
+parse: FAIL
+metric after parse: None
+reason:
+  high-confidence data leakage
+  DeBERTa embeddings were extracted with one supervised DeBERTa model
+  and then fed into XGBoost
+  ensemble weights were optimized on the same validation set used for reporting
+submission:
+  workspace/submission/submission_ca180ddf7e3448ecbd33b77753c28338.csv
+stats after parse:
+  step=25
+  nodes=25
+  branches=5
+  best=0.369656
+```
+
+RunForest debug recovery then fired for leakage cleanup:
+
+```text
+stage=debug
+strategy=debug_failure_recovery
+refs:
+  run::20260515_173948_spooky-author-identification::transition::6653f911ef::7c5a9917de
+  run::20260515_173948_spooky-author-identification::transition::2a14416a9d::6653f911ef
+  run::20260509_154039_spooky-author-identification::transition::dc633aebfe::1852b63b5b
+  run::20260516_125444_spooky-author-identification::transition::fea89972fb::197781b971
+  run::20260516_125444_spooky-author-identification::transition::cc9848eb59::39c03723bd
+  run::20260516_091845_spooky-author-identification::transition::54ae377856::4bba6e1078
+  sop::sg_0202
+  sop::sg_0204
+  evidence::e7f5c4062cbc
+  evidence::7b1830f140b7
+```
+
+The generated child:
+
+```text
+parent: ca180ddf7e3448ecbd33b77753c28338
+child: 5066c7eccd824ea79eca0ad3f952fa98
+stage: debug
+diff patches applied: 4
+code review: needs_revision=False
+execution assigned:
+  process_id=2
+  cpu={125,126}
+  GPU=2
+```
+
+Current `5066...` runfile scheme:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-large
+MAX_LENGTH = 512
+BATCH_SIZE = 16
+NUM_EPOCHS = 40
+
+DeBERTa:
+  freeze embeddings
+  train last 8 encoder layers
+  simple classifier head
+
+XGBoost:
+  no longer uses DeBERTa embeddings
+  uses reduced TF-IDF + stylometric + readability + POS features
+
+LogisticRegression:
+  uses sparse n-gram features
+
+Ensemble:
+  no validation-set grid search
+  fixed weights:
+    DeBERTa = 0.50
+    XGBoost = 0.25
+    LR = 0.25
+```
+
+Runtime state at this checkpoint:
+
+```text
+GPU0:
+  e5b3... still running DeBERTa-v3-base + dense feature fusion
+GPU1:
+  e6a... process had ended, but no parse result had appeared yet in journal/log tail
+GPU2:
+  5066... just launched after leakage-recovery patch
+matrix manifest:
+  still 0 bytes
+adoption artifacts:
+  still absent
+```
+
+Interpretation for ClaudeCode review:
+
+- Safety filtering worked again: the superficially improved `0.3416` result was rejected for leakage.
+- RunForest retrieved leakage-recovery references and produced a materially relevant fix: remove DeBERTa embeddings from XGBoost and avoid validation-set ensemble-weight tuning.
+- This is one of the clearest positive examples so far of runtime memory shaping the actual code in the intended direction.
+- The remaining concern is that the fix still keeps a complex ensemble rather than returning to the simpler historical best `DeBERTa-v3-large` recipe.
+- The first task still has not completed, and adoption metrics still cannot be computed.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
