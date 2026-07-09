@@ -3251,6 +3251,101 @@ No parse line, metric, or submission_5066*.csv has appeared yet.
 GPU2 still has an active runfile_2.py process.
 ```
 
+Immediate failure-recovery checkpoint at `2026-07-09 19:51 CST` / `11:51 UTC`:
+
+The child generated from the new best failed quickly:
+
+```text
+node: d5a19b7a2279458781fb1545e71a4a20
+parent: 8cb589f6afd74267b4ebb98db27187d3
+stage: improve
+parse: FAIL
+metric: None
+reason:
+  NameError
+  NUM_SWA_CHECKPOINTS referenced before definition
+  no submission produced
+```
+
+This failure came from an attempted SWA extension to the `8cb589...` recipe. The current `d5a19...`/recovery code shape:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-small
+MAX_LENGTH = 256
+BATCH_SIZE = 32
+NUM_EPOCHS = 20
+loss:
+  FocalLoss(gamma=3.0, label_smoothing=0.1)
+new machinery:
+  SWA_START_EPOCH = 3
+  NUM_SWA_CHECKPOINTS = 10
+  manual checkpoint averaging
+```
+
+RunForest immediately fired debug recovery:
+
+```text
+stage=debug
+strategy=debug_failure_recovery
+selected failed node: d5a19b7a2279458781fb1545e71a4a20
+refs:
+  run::20260511_102550_spooky-author-identification::transition::3f907fe24c::77d63ef685
+  run::20260510_162636_spooky-author-identification::transition::41ae18dce0::8c3a5603a2
+  run::20260510_162636_spooky-author-identification::transition::80a7b4ec6e::41ae18dce0
+  run::20260516_104127_spooky-author-identification::transition::df97203d62::4f06e34baa
+  run::20260514_183931_spooky-author-identification::transition::c6b9aceee3::26c8c38dab
+  run::20260514_183931_spooky-author-identification::transition::2f6c990425::48aa94695e
+  sop::sg_0162
+  sop::sg_0166
+  sop::sg_0147
+  sop::sg_0154
+child: 69df137a2e6744afbb5556212ea4463a
+diff patches applied: 1
+assigned:
+  process_id=0
+  GPU=0
+```
+
+Current live processes:
+
+```text
+GPU0:
+  node 69df137a2e6744afbb5556212ea4463a
+  runfile_0.py
+  v3-small + focal loss + SWA recovery
+  running, not parsed
+
+GPU1:
+  node bdb69a1d667d4f26a866b477ad01030f
+  runfile_1.py
+  DeBERTa-v3-large + XGBoost + LR simple-average ensemble
+  running, not parsed
+
+GPU2:
+  node 5066c7eccd824ea79eca0ad3f952fa98
+  runfile_2.py
+  DeBERTa-v3-large + XGBoost + LR fixed-weight ensemble
+  running, not parsed
+```
+
+Updated journal state:
+
+```text
+journal mtime: Thu Jul 9 11:49:42 UTC 2026
+nodes: 30
+valid_metrics: 8
+best_min: 0.346175
+manifest: still 0 bytes
+adoption artifacts: still absent
+```
+
+Interpretation:
+
+- New best `8cb589...` remains the best valid solution.
+- The next improvement tried adding SWA but introduced a simple code-order bug.
+- RunForest retrieval for debug recovery is active and produced `69df...`.
+- The two large-model ensemble branches are still the most important pending evidence, especially GPU2 `5066...`, but neither has parsed yet.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
