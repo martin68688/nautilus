@@ -209,6 +209,78 @@ Yes. The Job is designed to:
 
 This avoids mutating the old PVC checkout and keeps the experiment source reproducible by branch/commit.
 
+## Cluster Status Checkpoint
+
+As of the latest readonly monitoring checkpoint, `2026-07-09 06:28:32 CST`, the code has been committed and pushed to:
+
+```text
+branch: codex/hyperbolic-structural-memory
+commit: cc07cea Add run-forest online memory pilot
+```
+
+First submitted Job:
+
+```text
+job: runforest-online-a6000x4
+```
+
+This Job scheduled onto `gpu00.nrp.hpc.udel.edu` but failed before the container command ran. Kubernetes reported an NVIDIA runtime/CDI device-handle error:
+
+```text
+failed to create NVIDIA Container Runtime
+failed to get device handle from UUID: Unknown Error
+```
+
+No experiment code, PVC checkout, preflight tests, matrix run, navigator, or adoption analysis executed in that failed attempt.
+
+A retry Job was created with the same resource shape and same branch, excluding only the node that produced the NVIDIA runtime/CDI startup failure:
+
+```text
+job: runforest-online-a6000x4-r2
+pod: runforest-online-a6000x4-r2-bnfdh
+resources: 4x RTX A6000, 12 CPU, 64Gi
+status at checkpoint: Pending, 0/1, no node assigned, age 179m
+```
+
+The retry pod has remained Pending during readonly monitoring from approximately `05:53` through `06:28 CST`. Recent scheduler events still show `FailedScheduling` because no suitable node is currently available under the requested constraints. Per the user's explicit instruction, while this pod is Pending, Codex must not delete/recreate the job, lower resources, switch GPU type, or mutate the job spec. The correct action is to keep waiting and monitor read-only.
+
+Because the retry Job has not reached Running, there are not yet any runtime logs, GPU process state, RunForest navigator traces, adoption reports, matrix summaries, or performance comparison results to review.
+
+Current blocker: external cluster scheduling. The experiment is queued with the requested fixed resource shape; completion now requires the Kubernetes scheduler to assign a suitable 4x RTX A6000 node or the user to explicitly change the requested constraints.
+
+## Latest Resource Retarget: A100x3
+
+The user then updated the requested online pilot resource shape. The latest active target is now:
+
+```text
+job yaml: job-runforest-online-a100x3.yaml
+job name: runforest-online-a100x3
+resources: 3x A100, 6 CPU, 64Gi
+gpu resource key: nvidia.com/a100
+branch cloned by Job: codex/hyperbolic-structural-memory
+```
+
+The previous A6000 Jobs were not deleted or mutated. The new A100 Job keeps the same Run-Forest online memory test design:
+
+- clone the pushed branch from remote into a fresh PVC workdir;
+- symlink `/workspace/nautilus/mlevolve/.env`;
+- run preflight compile plus `pytest -q tests/test_run_forest_memory.py`;
+- run the same four-task matrix through `run_runforest_online_matrix.py`;
+- inject Run-Forest memory through cold-start side-channel plus runtime external memory;
+- keep the original cold-start model-template text unchanged;
+- write the manifest and summary under `/workspace/nautilus/mlevolve/runs`.
+
+YAML validation performed locally before submission:
+
+```text
+kind: Job
+metadata.name: runforest-online-a100x3
+namespace: ecepxie
+requests/limits: cpu=6, memory=64Gi, nvidia.com/a100=3
+runner args: --num-gpus 3 --cpu-number 6
+kubectl apply --dry-run=client: job.batch/runforest-online-a100x3
+```
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
@@ -217,7 +289,7 @@ Please verify:
 2. Run-Forest cold-start map pack is injected separately and adoption-logged separately.
 3. Runtime RunForest memory still injects before draft/improve/debug/evolution/fusion.
 4. `config_path=...` is not used incorrectly; the runner uses `MLEVOLVE_CONFIG`.
-5. Job resource requests match user request: 4x A6000, 12 CPU, 64Gi.
+5. Latest Job resource requests match user request: 3x A100, 6 CPU, 64Gi. The older A6000 Jobs are historical attempts only.
 6. Job main command exits after matrix + summary; no `sleep` keeps the Job alive.
 7. Branch cloning into a fresh workdir does not destroy historical runs.
 8. Summarizer compares against historical runs that do not contain Run-Forest config.
@@ -230,4 +302,3 @@ Please verify:
 - Adoption rate with `judge_mode=llm-all` may be slow and API-expensive because every injected memory/code pair is judged.
 - If DeepSeek/API fails, `RunForestMemoryLayer` falls back to deterministic stage policy and logs `LLM navigator failed`.
 - The comparison uses historical no-RunForest runs on the same PVC, not a freshly rerun baseline in the same Job.
-
