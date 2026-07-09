@@ -1268,6 +1268,97 @@ workspace/working/best_deberta_model.pt
 
 Interpretation: the recovery child is still in long model training/evaluation. No matrix row, summary, or adoption report exists yet, so the online comparison remains pending.
 
+Material checkpoint at `2026-07-09 17:04:21 CST` / `09:04:21 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 4h08m
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 15
+metric_count: 5
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+```
+
+Second high-confidence leakage rejection:
+
+```text
+node: 8949d0497f9e427eb4c0d8f2b4f6b4cb
+parent: cbca06f530e64186b6a70754e3160623
+stage: debug
+initial parsed metric before leakage filter: 0.3151
+metric direction: minimize
+format/content validation: valid
+data leakage check: has_leakage=True, confidence=high
+final parse result: FAIL
+final metric: None
+is_buggy: True
+current best remained: 0.369656
+```
+
+The leakage agent rejected the node because the code optimized ensemble weights on the same validation set used for reporting the final score. This was treated as high-confidence leakage/validation inflation, so the metric was reset:
+
+```text
+Node 8949d0497f9e427eb4c0d8f2b4f6b4cb detected data leakage with high confidence.
+Marking as buggy and resetting metric.
+```
+
+After this rejection, the search switched to exploitation/plateau handling and Run-Forest improve memory fired:
+
+```text
+progress: 14/80 steps completed, 3 tasks running
+mode: exploitation
+selected node for improve:
+  37243e8669764c6abe3e5de076963c4f
+selected node metric:
+  0.376155
+plateau handling:
+  PLATEAU DETECTED
+  using Magnitude-Based prompt
+RunForestMemory fired:
+  stage=improve
+  strategy=improve_local_best_lineage
+  refs include transitions:
+    run::20260512_112908_spooky-author-identification::transition::530e3979d9::c42a7b9434
+    run::20260516_125444_spooky-author-identification::transition::644318bb19::7febc5ae80
+    run::20260514_113102_spooky-author-identification::transition::bee03d62f4::5850ebb19e
+    run::20260514_113102_spooky-author-identification::transition::ce3d8aadaf::bee03d62f4
+  refs include SOPs:
+    sop::sg_0238, sop::sg_0222, sop::sg_0230
+  refs include evidence:
+    evidence::2b09b298a6b9
+    evidence::96d091d12d7a
+    evidence::02a07c0a5f79
+diff improve:
+  two-stage planning with memory
+  initial plan length: 4213 chars
+  refine plan retrieved: 2 success and 2 fail records
+  generated JSON plan: 3 modules
+  applied 8 diff patches
+code review:
+  needs_revision=True
+  applied 2 review patches
+new improve child:
+  19d8c728cb6c410ba2d17ed336080a29
+execution assignment:
+  process_id=2, cpu={125, 126}, GPU=2
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 30495 MiB used, 100% utilization
+GPU1: 35307 MiB used, 96% utilization
+GPU2: 4 MiB used, 0% utilization immediately after assignment
+top active Python workers:
+  elapsed 00:25, ~100% CPU
+  elapsed 00:49:04, ~94.7% CPU
+  elapsed 00:23:44, ~94.5% CPU
+```
+
+Interpretation: the online run is now showing both sides of the safety loop: another suspicious/over-optimized metric was rejected, and then Run-Forest memory was used for plateau-aware improve rather than only debug. This gives additional runtime-memory coverage evidence for improve mode, but still no final effect/adoption conclusion because the first task has not finished and the matrix/adoption artifacts are absent.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
