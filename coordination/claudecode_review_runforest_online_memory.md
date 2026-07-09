@@ -897,6 +897,69 @@ top processes: three active Python workers still running around 96% CPU
 
 Interpretation: this checkpoint shows a realistic mixed online behavior: the previous Run-Forest improve found a better best, but the next memory-guided branch was valid yet worse. The navigator continued retrieving local-best lineage evidence and SOPs for the following improve child. This should be treated as useful audit evidence, not as a monotonic improvement claim.
 
+Additional material checkpoint at `2026-07-09 16:03:48 CST` / `08:03:48 UTC`:
+
+```text
+job status: still Running, 0/1 completions
+pod status: Ready 1/1, Running, restarts=0
+current task: still spooky-author-identification
+journal nodes: 12
+metric_count: 4
+best_min: 0.369656
+manifest: still 0 bytes because the first task has not finished
+adoption/summary artifacts: not yet present
+```
+
+Next improve child failed and triggered debug recovery:
+
+```text
+node: cf716824167542f486876fd0c811a74c
+stage: improve
+parent: 0ea5cb31350a48358cbe1ac29173e9b0
+is_buggy: True
+metric: None
+failure class in log: TypeError; no metric value reported; submission file not found
+current best remained: 0.369656 from node 24ba5082e39f4494a065c469520c5457
+parse result: FAIL | metric=None
+```
+
+Debug retrieval after that failure:
+
+```text
+progress: 11/80 steps completed, 3 tasks running
+engine message: Found 1 similar errors with successful fixes from memory
+RunForestMemory fired:
+  stage=debug
+  strategy=debug_failure_recovery
+  refs include transitions:
+    run::20260514_183931_spooky-author-identification::transition::e15f483ffa::5bad386082
+    run::20260510_162636_spooky-author-identification::transition::41ae18dce0::8c3a5603a2
+    run::20260510_162636_spooky-author-identification::transition::80a7b4ec6e::41ae18dce0
+    run::20260514_052334_spooky-author-identification::transition::04157f1f12::d8f7a86d78
+    run::20260514_052334_spooky-author-identification::transition::83238881f5::04157f1f12
+    run::20260508_123447_spooky-author-identification::transition::84e9ca6a3d::c95a7b417f
+  refs include SOPs:
+    sop::sg_0147, sop::sg_0154, sop::sg_0148, sop::sg_0194
+debug patch:
+  Successfully applied 1 diff patch(es)
+  new debug child submitted:
+    cc4660189e5d49bd9c7e8e2564bc37e3
+code review for debug child:
+  needs_revision=True
+  review patch applied successfully
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 1981 MiB used, 0% utilization
+GPU1: 35307 MiB used, 96% utilization
+GPU2: 13927 MiB used, 96% utilization
+top processes: three active Python workers still running around 96-97% CPU
+```
+
+Interpretation: this is the first post-best failure-to-debug recovery checkpoint in the live online run. It verifies that runtime memory is not only used for improve/local-best exploration; after an improve branch introduced a TypeError, the system switched into debug mode, found similar historical successful fixes, retrieved Run-Forest debug recovery transitions/SOPs, and generated a patched child. Final adoption/effect claims still require task completion and adoption reports.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
