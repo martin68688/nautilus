@@ -1433,6 +1433,91 @@ top Python workers:
 
 Interpretation: still no new result/adoption artifact, but the improve child remains active and healthy. Continue read-only monitoring.
 
+Follow-up result checkpoint at `2026-07-09 17:22 CST` / `09:22 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 4h26m
+pod status: Ready 1/1, Running, restarts=0
+journal nodes: 16 at first poll, then 17 after an evolution child failed
+metric_count after 19d8 parse: 6
+best_min: still 0.369656
+manifest: still 0 bytes
+summary/adoption artifacts: not present
+```
+
+The plateau-triggered Run-Forest improve child completed successfully:
+
+```text
+node: 19d8c728cb6c410ba2d17ed336080a29
+stage: improve
+parent: 37243e8669764c6abe3e5de076963c4f
+metric: 0.382008
+parse: PASS
+leakage: has_leakage=False, confidence=high
+best after parse: still 0.369656
+saved rank: top4 submission
+```
+
+Leakage-agent reasoning for this node was clean: train/validation indices were asserted disjoint, feature transformers were fit on training only, and no validation-set ensemble weight optimization or OOF embedding leakage was detected. This validates that the Run-Forest plateau improve child ran end-to-end and was not rejected by the safety layer, though it did not improve the current best.
+
+Immediately after that, the engine detected branch stagnation and triggered intra-branch evolution with Run-Forest memory:
+
+```text
+stage=evolution
+strategy=improve_local_best_lineage
+refs:
+  run::20260512_112908_spooky-author-identification::transition::0c760df643::195396c254
+  run::20260512_112908_spooky-author-identification::transition::891bd176d5::0c760df643
+  run::20260512_112908_spooky-author-identification::transition::530e3979d9::c42a7b9434
+  run::20260510_162636_spooky-author-identification::transition::80a7b4ec6e::41ae18dce0
+  run::20260510_162636_spooky-author-identification::transition::976e62376e::80a7b4ec6e
+  sop::sg_0147
+  sop::sg_0148
+  evidence::aec8747d5e4f
+  evidence::49da40185d0b
+  evidence::2b09b298a6b9
+```
+
+The evolution planner explicitly cited historical memory that ModernBERT-large with TF-IDF and handcrafted features can reach around 0.35 log loss, then proposed a model-scaling / semi-supervised shift. Its generated child failed quickly:
+
+```text
+node: 3aced0e0fcfd4a6db43834cd704bc4c3
+stage: evolution
+parse: FAIL
+reason: execution error, RuntimeError, no metric, missing submission file
+```
+
+The failure immediately triggered debug retrieval with Run-Forest memory:
+
+```text
+stage=debug
+strategy=debug_failure_recovery
+refs:
+  run::20260514_052334_spooky-author-identification::transition::83238881f5::f8befdbf0f
+  run::20260517_132158_spooky-author-identification::transition::fde2822718::f0ab5ccf9d
+  run::20260510_162636_spooky-author-identification::transition::a18ddddfed::52e3799473
+  run::20260508_123447_spooky-author-identification::transition::907a7c8f29::4074e1f64a
+  run::20260510_162636_spooky-author-identification::transition::27ea26cde9::4067827561
+  run::20260510_162636_spooky-author-identification::transition::80a7b4ec6e::27ea26cde9
+  sop::sg_0194
+  sop::sg_0196
+  sop::sg_0266
+  sop::sg_0265
+```
+
+GPU/process snapshot at the same checkpoint:
+
+```text
+GPU0: 30497 MiB used, 96% utilization
+GPU1: 35307 MiB used, 96% utilization
+GPU2: 4 MiB used, 0% utilization
+top Python workers:
+  elapsed 00:41:40, ~95.4% CPU
+  elapsed 01:07:00, ~95.2% CPU
+```
+
+Interpretation: Run-Forest memory is now verified in a live evolution path as well as improve/debug. The new evolution child failed, but the runtime responded by invoking debug recovery memory. The overall matrix is still in the first task; no task-level manifest row or adoption report has been emitted yet.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
