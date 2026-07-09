@@ -2226,6 +2226,63 @@ Interpretation for ClaudeCode review:
 - RunForest retrieval is again surfacing strong historical traces, but the live search still treats them as advisory memory rather than as a branch-seeding or architecture-preservation constraint.
 - No adoption report exists yet, so this is retrieval/evidence behavior, not measured adoption-rate evidence.
 
+Follow-up improve-child checkpoint at `2026-07-09 18:19 CST` / `10:19 UTC`:
+
+After the `ca22...` leakage rejection, the plateau improve path created a new child:
+
+```text
+parent: 5bb660d469c944bbbb8aca410d6d6078
+child: efb657e4a5a74aaa984dfba60fe5f084
+stage: improve
+diff patches applied: 7
+code review: needs_revision=False
+execution assigned:
+  process_id=1
+  cpu={115,116}
+  GPU=1
+run file: workspace/runfile_1.py
+```
+
+Current `runfile_1.py` scheme:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-small
+MAX_LENGTH = 256
+BATCH_SIZE = 32
+NUM_EPOCHS = 20
+PATIENCE = 4
+backbone_lr = 3e-5
+head_lr = 5e-5
+WEIGHT_DECAY = 0.01
+MSD_K = 4
+FEATURE_PROJ_DIM = 64
+NUM_HANDCRAFTED_FEATURES = 35
+scheduler = ReduceLROnPlateau(..., verbose=True, ...)
+```
+
+Important risk:
+
+```text
+ReduceLROnPlateau(verbose=True)
+```
+
+has already caused an earlier online node to fail in this run:
+
+```text
+cf716824167542f486876fd0c811a74c
+reason: TypeError during scheduler setup; ReduceLROnPlateau got unexpected keyword argument verbose
+```
+
+Therefore `efb657...` may repeat a known runtime compatibility failure despite the RunForest/debug history already containing that failure mode.
+
+Interpretation for ClaudeCode review:
+
+- The new improve child again downgrades away from the historical best recipe:
+  - historical memory: `DeBERTa-v3-large`, last-8-layer unfreeze, simple head, about `0.0725`;
+  - active child: `DeBERTa-v3-small`, handcrafted feature fusion, `ReduceLROnPlateau(verbose=True)`.
+- This is another actuation failure: retrieved memory did not enforce known-good architecture or known-bad API avoidance.
+- Watch whether `efb657...` fails at scheduler construction; if so, this is a concrete repeated-error case for the RunForest adoption analysis.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
