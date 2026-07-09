@@ -1,39 +1,276 @@
 {
   "schema": "run_forest_builder_report_v1",
-  "journal_count": 45,
-  "node_count": 6666,
-  "edge_count": 15040,
+  "provenance_status": "clean_certified",
+  "paper_grade_provenance": true,
+  "leak_verified": true,
+  "source_runs": [
+    "20260509_042918",
+    "20260509_154039",
+    "20260509_185008",
+    "20260510_025317",
+    "20260510_095558",
+    "20260510_162636",
+    "20260511_014836",
+    "20260511_102550",
+    "20260513_165253",
+    "20260514_023457",
+    "20260514_052334",
+    "20260515_173948",
+    "20260516_104127",
+    "20260516_125444",
+    "20260517_132158",
+    "20260517_151325",
+    "20260627_135133",
+    "20260701_145201",
+    "20260701_145250",
+    "20260701_155016",
+    "20260701_180038",
+    "20260701_180146"
+  ],
+  "allowlist_path": "paper-skills/eval_skill_memory/clean_run_allowlist.json",
+  "allowlist_hash": "a98b26b2152574f32fcad98a007b2e1fcfac3da80d7ecf9c32df49e69ec45cc7",
+  "allowlist": [
+    "20260509_042918",
+    "20260509_154039",
+    "20260509_185008",
+    "20260510_025317",
+    "20260510_095558",
+    "20260510_162636",
+    "20260511_014836",
+    "20260511_102550",
+    "20260513_165253",
+    "20260514_023457",
+    "20260514_052334",
+    "20260515_173948",
+    "20260516_104127",
+    "20260516_125444",
+    "20260517_132158",
+    "20260517_151325",
+    "20260627_135133",
+    "20260701_145201",
+    "20260701_145250",
+    "20260701_155016",
+    "20260701_180038",
+    "20260701_180146"
+  ],
+  "blocked_run_prefixes": [
+    "20260512"
+  ],
+  "journal_filter_report": {
+    "runs_dir": "/Users/haoming/Downloads/nautilus/mlevolve/runs",
+    "discovered_journal_count": 45,
+    "included_journal_count": 22,
+    "included_source_runs": [
+      "20260509_042918",
+      "20260509_154039",
+      "20260509_185008",
+      "20260510_025317",
+      "20260510_095558",
+      "20260510_162636",
+      "20260511_014836",
+      "20260511_102550",
+      "20260513_165253",
+      "20260514_023457",
+      "20260514_052334",
+      "20260515_173948",
+      "20260516_104127",
+      "20260516_125444",
+      "20260517_132158",
+      "20260517_151325",
+      "20260627_135133",
+      "20260701_145201",
+      "20260701_145250",
+      "20260701_155016",
+      "20260701_180038",
+      "20260701_180146"
+    ],
+    "excluded_runs": [
+      {
+        "run_id": "20260501_184944_openadmet-expansionrx",
+        "run_short_id": "20260501_184944",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260501_184944_openadmet-expansionrx/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260502_021401_openadmet-expansionrx",
+        "run_short_id": "20260502_021401",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260502_021401_openadmet-expansionrx/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260502_030117_openadmet-expansionrx",
+        "run_short_id": "20260502_030117",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260502_030117_openadmet-expansionrx/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260502_041127_openadmet-expansionrx",
+        "run_short_id": "20260502_041127",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260502_041127_openadmet-expansionrx/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260502_072931_aspiring-catfish-of-tempest",
+        "run_short_id": "20260502_072931",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260502_072931_aspiring-catfish-of-tempest/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260503_073513_pompous-skunk-of-research",
+        "run_short_id": "20260503_073513",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260503_073513_pompous-skunk-of-research/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260503_080910_fluorescent-silky-axolotl",
+        "run_short_id": "20260503_080910",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260503_080910_fluorescent-silky-axolotl/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260505_090635_dashing-chupacabra-of-radiance",
+        "run_short_id": "20260505_090635",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260505_090635_dashing-chupacabra-of-radiance/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260508_123447_spooky-author-identification",
+        "run_short_id": "20260508_123447",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260508_123447_spooky-author-identification/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260511_100750_spooky-author-identification",
+        "run_short_id": "20260511_100750",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260511_100750_spooky-author-identification/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260512_094857_spooky-author-identification",
+        "run_short_id": "20260512_094857",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260512_094857_spooky-author-identification/logs/journal.json",
+        "reason": "blocked_run"
+      },
+      {
+        "run_id": "20260512_100231_spooky-author-identification",
+        "run_short_id": "20260512_100231",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260512_100231_spooky-author-identification/logs/journal.json",
+        "reason": "blocked_run"
+      },
+      {
+        "run_id": "20260512_105637_spooky-author-identification",
+        "run_short_id": "20260512_105637",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260512_105637_spooky-author-identification/logs/journal.json",
+        "reason": "blocked_run"
+      },
+      {
+        "run_id": "20260512_112908_spooky-author-identification",
+        "run_short_id": "20260512_112908",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260512_112908_spooky-author-identification/logs/journal.json",
+        "reason": "blocked_run"
+      },
+      {
+        "run_id": "20260513_140923_spooky-author-identification",
+        "run_short_id": "20260513_140923",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260513_140923_spooky-author-identification/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260513_145802_spooky-author-identification",
+        "run_short_id": "20260513_145802",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260513_145802_spooky-author-identification/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260513_160019_spooky-author-identification",
+        "run_short_id": "20260513_160019",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260513_160019_spooky-author-identification/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260514_113102_spooky-author-identification",
+        "run_short_id": "20260514_113102",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260514_113102_spooky-author-identification/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260514_171209_spooky-author-identification",
+        "run_short_id": "20260514_171209",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260514_171209_spooky-author-identification/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260514_183931_spooky-author-identification",
+        "run_short_id": "20260514_183931",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260514_183931_spooky-author-identification/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260514_190327_spooky-author-identification",
+        "run_short_id": "20260514_190327",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260514_190327_spooky-author-identification/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260516_091845_spooky-author-identification",
+        "run_short_id": "20260516_091845",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260516_091845_spooky-author-identification/logs/journal.json",
+        "reason": "not_allowlisted"
+      },
+      {
+        "run_id": "20260517_131348_spooky-author-identification",
+        "run_short_id": "20260517_131348",
+        "journal_path": "/Users/haoming/Downloads/nautilus/mlevolve/runs/20260517_131348_spooky-author-identification/logs/journal.json",
+        "reason": "not_allowlisted"
+      }
+    ],
+    "excluded_by_reason": {
+      "blocked_run": 4,
+      "not_allowlisted": 19
+    },
+    "missing_allowed_runs": []
+  },
+  "sop_filter_report": {
+    "total_sops": 281,
+    "included_sops": 281,
+    "excluded_sops": [],
+    "excluded_sop_count": 0,
+    "excluded_sops_by_reason": {}
+  },
+  "journal_count": 22,
+  "node_count": 4209,
+  "edge_count": 10421,
   "node_type_counts": {
-    "Evidence": 1985,
-    "Run": 45,
-    "RunNode": 2200,
+    "Evidence": 1236,
+    "Run": 22,
+    "RunNode": 1346,
     "SOP": 281,
-    "Transition": 2155
+    "Transition": 1324
   },
   "edge_kind_counts": {
-    "contains": 2200,
+    "contains": 1346,
     "distills_to": 2773,
-    "has_transition": 2155,
-    "parent_of": 2155,
-    "points_to_local_best": 1617,
-    "supported_by": 1985,
-    "transition_to": 2155
+    "has_transition": 1324,
+    "parent_of": 1324,
+    "points_to_local_best": 1094,
+    "supported_by": 1236,
+    "transition_to": 1324
   },
   "sop_count": 281,
   "sops_with_attached_transitions": 264,
-  "transition_count": 2155,
+  "transition_count": 1324,
   "transitions_with_sop_attachments": 1229,
   "attachment_quality_counts": {
     "branch_lexical_match": 2304,
     "evidence_turn_match": 469
   },
-  "evidence_count": 1985,
+  "evidence_count": 1236,
   "local_best_coordinate_attractions": 0,
   "local_best_attraction_weight": 0.0,
   "poincare_max_norm": 0.9878803970168318,
   "flat_twin_same_as_poincare": true,
   "euclidean_shape": [
-    6666,
+    4209,
     16
   ],
   "run_node_topology_preserved": true,

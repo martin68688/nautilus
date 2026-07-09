@@ -1039,6 +1039,226 @@ top processes: two main Python workers still running around 96-97% CPU
 
 Interpretation: the debug recovery branch successfully converted a TypeError branch into a valid, leakage-low-confidence-warning solution, but it did not beat the current best. The live run then returned to draft exploration and again used Run-Forest draft-successful-branch retrieval. This gives evidence for runtime memory across draft, improve, debug, and back-to-draft expansion within the same task, though final adoption/effect claims are still pending task/matrix completion.
 
+## Clean-Source Restart After User Stop Request
+
+The user then explicitly requested:
+
+```text
+直接杀掉目前的job。把数据源改成干净的再重新做实验。
+```
+
+This supersedes the earlier "if Pending, do not mutate" constraint for the already-running contaminated r3 Job. The r3 Job was deleted:
+
+```text
+kubectl delete job runforest-online-a100x3-r3 -n ecepxie
+job.batch "runforest-online-a100x3-r3" deleted
+```
+
+Follow-up read-only check:
+
+```text
+kubectl get pod -n ecepxie -l job-name=runforest-online-a100x3-r3 -o wide
+No resources found in ecepxie namespace.
+```
+
+### Verified Contamination Root Cause
+
+The previous r3 online run was not clean-source even though the SOP hyper graph itself was clean-certified.
+
+1. `build_run_forest_memory.py` scanned all available journals under `mlevolve/runs/*/logs/journal.json`.
+   - It did not accept `--allowlist`.
+   - It did not emit `allowlist_hash`, `leak_verified`, or `paper_grade`.
+   - The previous graph meta only said `journal_count=45`.
+
+2. The clean allowlist exists at:
+
+```text
+paper-skills/eval_skill_memory/clean_run_allowlist.json
+```
+
+It contains 22 allowed runs and explicitly blocks the `20260512` family.
+
+3. The previous r3 graph included non-allowlisted and blocked runs. Live retrieval logs showed refs such as:
+
+```text
+run::20260512_112908_spooky-author-identification::transition::530e3979d9::c42a7b9434
+run::20260513_145802_spooky-author-identification::transition::fd4b9d10ce::3b74cb6461
+```
+
+The `20260512_112908 -> c42a7b9434` path is the known high-risk `0.0725` source the user remembered.
+
+4. Cold-start methodology was also contaminated:
+
+```text
+mlevolve/engine/coldstart/methodology_map.json
+```
+
+previously listed:
+
+```json
+[
+  "winning-recipe-nlp-classification",
+  "ensemble-diversity-vs-validation-gap",
+  "small-data-transformer-finetuning"
+]
+```
+
+The `experience_kb` cards include `0.0725` / `20260512` references. Therefore the clean rerun must not inject methodology KB text.
+
+### Clean-Source Code Changes
+
+Implemented clean provenance support:
+
+- `paper-skills/hyper_memory/build_run_forest_memory.py`
+  - Adds `--allowlist`.
+  - Adds `--require-clean-provenance`.
+  - Filters journals to allowed run IDs only.
+  - Excludes blocked prefixes such as `20260512`.
+  - Filters SOP attachments by clean `source_branches`.
+  - Fails closed if clean mode is requested without an allowlist.
+  - Fails closed if any allowlisted run is missing from `runs-dir`.
+  - Emits:
+    - `source_runs`
+    - `allowlist`
+    - `allowlist_hash`
+    - `allowlist_path`
+    - `blocked_run_prefixes`
+    - `leak_verified: true`
+    - `paper_grade: true`
+    - `provenance_status: clean_certified`
+
+- `mlevolve/agents/memory/external_skill_memory.py`
+  - `RunForestMemoryLayer` now refuses to load a run-forest graph unless:
+    - `meta.leak_verified is True`
+    - `meta.paper_grade is True`
+  - This prevents accidental reuse of the old uncensored graph.
+
+- `mlevolve/config/config_run_forest_agentic.yaml`
+  - Sets `methodology_kb_path: ""`.
+  - Sets `methodology_dynamic: False`.
+  - The clean online run uses model-template cold-start plus RunForest memory, but no contaminated experience KB.
+
+- `mlevolve/engine/coldstart/methodology_map.json`
+  - `spooky-author-identification` now maps to `[]`.
+  - This prevents static methodology fallback from reintroducing the three contaminated categories.
+
+- `tests/test_run_forest_memory.py`
+  - Adds clean provenance tests.
+  - Confirms graph source runs exactly equal the allowlist.
+  - Confirms no `20260512` run nodes/transitions/evidence exist.
+  - Confirms clean run-forest config disables methodology KB.
+
+- `job-runforest-online-a100x3-clean-r1.yaml`
+  - New Job for clean restart.
+  - Same requested resources:
+    - `nvidia.com/a100: "3"`
+    - `cpu: "6"`
+    - `memory: "64Gi"`
+  - No `sleep` in the Job command.
+  - Pulls pushed branch `codex/hyperbolic-structural-memory` into a fresh PVC workdir.
+  - Rebuilds `run_forest_graph.json` inside the pod from the PVC runs dir and clean allowlist before pytest/matrix.
+  - Runs a preflight assertion:
+    - `source_runs == allowlist`
+    - `leak_verified == true`
+    - `paper_grade == true`
+    - no `20260512`
+  - Then runs the four-task matrix.
+
+### Local Clean Artifact Rebuild
+
+Command:
+
+```bash
+python paper-skills/hyper_memory/build_run_forest_memory.py \
+  --runs-dir mlevolve/runs \
+  --sop-graph paper-skills/hyper_memory/hyper_graph.json \
+  --out-dir paper-skills/hyper_memory \
+  --allowlist paper-skills/eval_skill_memory/clean_run_allowlist.json \
+  --require-clean-provenance
+```
+
+Result:
+
+```text
+Wrote paper-skills/hyper_memory/run_forest_graph.json
+Wrote paper-skills/hyper_memory/run_forest_index.npz
+Wrote paper-skills/hyper_memory/run_forest_builder_report.json
+```
+
+Clean verification:
+
+```text
+provenance clean_certified
+leak_verified True
+paper_grade True
+source_equals_allowed True
+node_runs_equals_allowed True
+blocked_in_nodes []
+journal_count 22
+nodes 4209
+edges 10421
+excluded_by_reason {'blocked_run': 4, 'not_allowlisted': 19}
+```
+
+Interpretation: the new graph is much smaller than the old r3 graph because it no longer includes non-allowlisted runs. The old r3 graph loaded `6666 nodes / 15040 edges`; the clean graph has `4209 nodes / 10421 edges`.
+
+### Local Tests Before Clean Job Submission
+
+Commands:
+
+```bash
+python -m py_compile \
+  paper-skills/hyper_memory/build_run_forest_memory.py \
+  mlevolve/agents/memory/external_skill_memory.py \
+  paper-skills/hyper_memory/run_runforest_online_matrix.py \
+  paper-skills/hyper_memory/summarize_runforest_online_matrix.py \
+  mlevolve/engine/coldstart/knowledge.py \
+  mlevolve/engine/agent_search.py \
+  mlevolve/agents/draft_agent.py
+
+python paper-skills/hyper_memory/evaluate_run_forest_memory.py \
+  --graph /Users/haoming/Downloads/nautilus/paper-skills/hyper_memory/run_forest_graph.json \
+  --index /Users/haoming/Downloads/nautilus/paper-skills/hyper_memory/run_forest_index.npz \
+  --output /Users/haoming/Downloads/nautilus/paper-skills/eval_skill_memory/reports/run_forest_memory_evaluation.json \
+  --report /Users/haoming/Downloads/nautilus/coordination/run_forest_memory_experiment_report.md
+
+pytest -q tests/test_run_forest_memory.py tests/test_hyperbolic_memory.py
+```
+
+Result:
+
+```text
+24 passed in 5.20s
+```
+
+Kubernetes dry-run:
+
+```text
+kubectl apply --dry-run=client -f job-runforest-online-a100x3-clean-r1.yaml
+job.batch/runforest-online-a100x3-clean-r1 created (dry run)
+```
+
+YAML resource check:
+
+```text
+requests {'cpu': '6', 'memory': '64Gi', 'nvidia.com/a100': '3'}
+limits   {'cpu': '6', 'memory': '64Gi', 'nvidia.com/a100': '3'}
+has_sleep False
+build_clean True
+num_gpus_arg True
+cpu_arg True
+```
+
+### Review Focus For ClaudeCode
+
+Please specifically review:
+
+1. Whether `build_run_forest_memory.py` clean filtering can still admit any non-allowlisted journal or SOP attachment.
+2. Whether `RunForestMemoryLayer` fail-closed behavior is too strict for non-paper experiments, and whether that strictness is appropriate for this online clean rerun.
+3. Whether disabling methodology KB in `config_run_forest_agentic.yaml` is sufficient to prevent cold-start leakage for this experiment.
+4. Whether `job-runforest-online-a100x3-clean-r1.yaml` truly rebuilds the graph from the clean allowlist inside the pod before memory retrieval can happen.
+5. Whether the old contaminated `experience_kb` directories should be physically moved out of `paper-skills/experience_kb` in a separate cleanup commit, even though the clean run config now disables that path.
+
 Read-only pod spec verification at `2026-07-09 16:21:58 CST` / `08:21:58 UTC`:
 
 ```text

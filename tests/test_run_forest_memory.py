@@ -3,6 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 
 REPO = Path(__file__).resolve().parents[1]
@@ -10,6 +11,17 @@ GRAPH = REPO / "paper-skills" / "hyper_memory" / "run_forest_graph.json"
 INDEX = REPO / "paper-skills" / "hyper_memory" / "run_forest_index.npz"
 BUILDER_REPORT = REPO / "paper-skills" / "hyper_memory" / "run_forest_builder_report.json"
 EVAL_REPORT = REPO / "paper-skills" / "eval_skill_memory" / "reports" / "run_forest_memory_evaluation.json"
+ALLOWLIST = REPO / "paper-skills" / "eval_skill_memory" / "clean_run_allowlist.json"
+RUN_FOREST_CONFIG = REPO / "mlevolve" / "config" / "config_run_forest_agentic.yaml"
+METHODOLOGY_MAP = REPO / "mlevolve" / "engine" / "coldstart" / "methodology_map.json"
+
+
+def _short_run_id(value: object) -> str:
+    text = str(value or "")
+    parts = text.split("_")
+    if len(parts) >= 2 and parts[0].isdigit():
+        return "_".join(parts[:2])
+    return text
 
 
 def test_run_forest_artifacts_exist_and_preserve_topology():
@@ -34,6 +46,37 @@ def test_run_forest_artifacts_exist_and_preserve_topology():
     assert report["transitions_with_sop_attachments"] > 0
 
 
+def test_run_forest_artifacts_are_clean_certified():
+    graph = json.loads(GRAPH.read_text())
+    report = json.loads(BUILDER_REPORT.read_text())
+    allowlist = json.loads(ALLOWLIST.read_text())
+    allowed = {entry["run_id"] for entry in allowlist["entries"] if entry.get("allowed")}
+
+    meta = graph["meta"]
+    assert meta["provenance_status"] == "clean_certified"
+    assert meta["leak_verified"] is True
+    assert meta["paper_grade"] is True
+    assert report["paper_grade_provenance"] is True
+    assert set(meta["source_runs"]) == allowed
+    assert not any(str(run_id).startswith("20260512") for run_id in meta["source_runs"])
+
+    run_nodes = [node for node in graph["nodes"] if node.get("type") in {"Run", "RunNode", "Transition", "Evidence"}]
+    assert run_nodes
+    node_runs = {_short_run_id(node.get("run_short_id") or node.get("run_id")) for node in run_nodes}
+    assert node_runs == allowed
+    assert not any(run_id.startswith("20260512") for run_id in node_runs)
+
+
+def test_run_forest_builder_requires_allowlist_for_clean_mode():
+    import sys
+
+    sys.path.insert(0, str(REPO / "paper-skills" / "hyper_memory"))
+    from build_run_forest_memory import build_artifact
+
+    with pytest.raises(ValueError, match="requires --allowlist"):
+        build_artifact(REPO / "mlevolve" / "runs", REPO / "paper-skills" / "hyper_memory" / "hyper_graph.json", require_clean_provenance=True)
+
+
 def test_run_forest_coordinates_have_clean_controls():
     index = np.load(INDEX, allow_pickle=True)
     poincare = index["poincare"]
@@ -45,6 +88,18 @@ def test_run_forest_coordinates_have_clean_controls():
     assert poincare.shape[1] == 2
     assert euclidean.shape[1] == 16
     assert float(np.linalg.norm(poincare, axis=1).max()) < 1.0
+
+
+def test_run_forest_online_config_disables_contaminated_methodology():
+    cfg_text = RUN_FOREST_CONFIG.read_text(encoding="utf-8")
+    mapping = json.loads(METHODOLOGY_MAP.read_text(encoding="utf-8"))
+
+    assert 'methodology_kb_path: ""' in cfg_text
+    assert "methodology_dynamic: False" in cfg_text
+    spooky_entries = mapping.get("spooky-author-identification", [])
+    assert "winning-recipe-nlp-classification" not in spooky_entries
+    assert "ensemble-diversity-vs-validation-gap" not in spooky_entries
+    assert "small-data-transformer-finetuning" not in spooky_entries
 
 
 def test_run_forest_evaluation_supports_lineage_claim_but_not_all_tasks():

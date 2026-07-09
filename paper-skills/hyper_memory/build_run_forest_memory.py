@@ -31,6 +31,7 @@ REPO = Path(__file__).resolve().parents[2]
 DEFAULT_RUNS_DIR = REPO / "mlevolve" / "runs"
 DEFAULT_SOP_GRAPH = REPO / "paper-skills" / "hyper_memory" / "hyper_graph.json"
 DEFAULT_OUT_DIR = REPO / "paper-skills" / "hyper_memory"
+DEFAULT_ALLOWLIST = REPO / "paper-skills" / "eval_skill_memory" / "clean_run_allowlist.json"
 
 
 def read_json(path: Path) -> dict[str, Any] | list[Any]:
@@ -47,6 +48,70 @@ def short_text(value: Any, limit: int = 900) -> str:
 
 def stable_hash(text: str, n: int = 12) -> str:
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:n]
+
+
+def file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def run_id_matches_prefix(run_id: str, prefix: str) -> bool:
+    return run_id == prefix or run_id.startswith(f"{prefix}_") or run_id.startswith(f"{prefix}-")
+
+
+def load_clean_allowlist(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        raise FileNotFoundError(f"Clean run allowlist not found: {path}")
+    data = read_json(path)
+    if not isinstance(data, dict):
+        raise ValueError(f"Clean run allowlist must be a JSON object: {path}")
+    entries = data.get("entries")
+    if not isinstance(entries, list):
+        raise ValueError(f"Clean run allowlist missing entries: {path}")
+
+    allowed_run_ids: set[str] = set()
+    allowed_paths: dict[str, str] = {}
+    for entry in entries:
+        if not isinstance(entry, dict) or not entry.get("allowed"):
+            continue
+        run_id = str(entry.get("run_id") or "").strip()
+        if not run_id:
+            continue
+        allowed_run_ids.add(run_id)
+        if entry.get("path"):
+            allowed_paths[run_id] = str(entry["path"])
+    if not allowed_run_ids:
+        raise ValueError(f"Clean run allowlist has no allowed run ids: {path}")
+
+    blocked_prefixes = [
+        str(item.get("run_id")).strip()
+        for item in data.get("blocked_runs", [])
+        if isinstance(item, dict) and str(item.get("run_id", "")).strip()
+    ]
+    return {
+        "path": path,
+        "schema": data.get("schema"),
+        "status": data.get("status"),
+        "hash": file_sha256(path),
+        "allowed_run_ids": sorted(allowed_run_ids),
+        "allowed_paths": allowed_paths,
+        "blocked_prefixes": sorted(set(blocked_prefixes)),
+    }
+
+
+def classify_run_source(run_id: str, provenance: dict[str, Any] | None) -> str:
+    if provenance is None:
+        return "unrestricted"
+    run_id = str(run_id)
+    short_id = run_short_id(run_id)
+    for prefix in provenance.get("blocked_prefixes", []):
+        if run_id_matches_prefix(run_id, prefix) or run_id_matches_prefix(short_id, prefix):
+            return "blocked"
+    allowed = set(provenance.get("allowed_run_ids", []))
+    if run_id in allowed or short_id in allowed:
+        return "allowed"
+    if any(run_id_matches_prefix(run_id, prefix) for prefix in allowed):
+        return "allowed"
+    return "not_allowlisted"
 
 
 STOPWORDS = {
@@ -156,9 +221,24 @@ def node_text(node: dict[str, Any]) -> str:
     ).strip()
 
 
-def load_journals(runs_dir: Path) -> list[tuple[str, Path, dict[str, Any]]]:
+def load_journals(
+    runs_dir: Path,
+    provenance: dict[str, Any] | None = None,
+) -> tuple[list[tuple[str, Path, dict[str, Any]]], dict[str, Any]]:
     rows: list[tuple[str, Path, dict[str, Any]]] = []
+    report: dict[str, Any] = {
+        "runs_dir": str(runs_dir),
+        "discovered_journal_count": 0,
+        "included_journal_count": 0,
+        "included_source_runs": [],
+        "excluded_runs": [],
+        "excluded_by_reason": {},
+        "missing_allowed_runs": [],
+    }
+    seen_allowed: set[str] = set()
+    allowed = set(provenance.get("allowed_run_ids", [])) if provenance else set()
     for path in sorted(runs_dir.glob("*/logs/journal.json")):
+        report["discovered_journal_count"] += 1
         try:
             data = read_json(path)
         except Exception:
@@ -169,8 +249,28 @@ def load_journals(runs_dir: Path) -> list[tuple[str, Path, dict[str, Any]]]:
         if not isinstance(nodes, list) or len(nodes) < 2:
             continue
         run_id = path.parents[1].name
+        source_status = classify_run_source(run_id, provenance)
+        if provenance is not None and source_status != "allowed":
+            reason = "blocked_run" if source_status == "blocked" else "not_allowlisted"
+            report["excluded_runs"].append(
+                {
+                    "run_id": run_id,
+                    "run_short_id": run_short_id(run_id),
+                    "journal_path": str(path),
+                    "reason": reason,
+                }
+            )
+            counter = collections.Counter(report["excluded_by_reason"])
+            counter[reason] += 1
+            report["excluded_by_reason"] = dict(sorted(counter.items()))
+            continue
+        seen_allowed.add(run_short_id(run_id))
         rows.append((run_id, path, data))
-    return rows
+    report["included_journal_count"] = len(rows)
+    report["included_source_runs"] = sorted({run_short_id(run_id) for run_id, _path, _data in rows})
+    if provenance is not None:
+        report["missing_allowed_runs"] = sorted(allowed - seen_allowed)
+    return rows, report
 
 
 def journal_graph(journal: dict[str, Any]) -> dict[str, Any]:
@@ -257,13 +357,50 @@ def assign_run_coords(
     return coords
 
 
-def load_sops(graph_path: Path) -> tuple[list[dict[str, Any]], dict[tuple[str, str], list[str]]]:
+def sop_provenance_status(sop: dict[str, Any], provenance: dict[str, Any] | None) -> str:
+    if provenance is None:
+        return "unrestricted"
+    branches = sop.get("source_branches") or []
+    if not branches:
+        return "missing_source_branches"
+    has_allowed = False
+    for branch in branches:
+        if not isinstance(branch, list | tuple) or not branch:
+            return "malformed_source_branch"
+        status = classify_run_source(str(branch[0]), provenance)
+        if status == "blocked":
+            return "blocked"
+        if status != "allowed":
+            return "not_allowlisted"
+        has_allowed = True
+    return "allowed" if has_allowed else "missing_source_branches"
+
+
+def load_sops(
+    graph_path: Path,
+    provenance: dict[str, Any] | None = None,
+) -> tuple[list[dict[str, Any]], dict[tuple[str, str], list[str]], dict[str, Any]]:
     if not graph_path.exists():
-        return [], {}
+        return [], {}, {"total_sops": 0, "included_sops": 0, "excluded_sops": []}
     graph = read_json(graph_path)
     if not isinstance(graph, dict):
-        return [], {}
-    sops = [n for n in graph.get("nodes", []) if isinstance(n, dict) and n.get("type") == "SOP"]
+        return [], {}, {"total_sops": 0, "included_sops": 0, "excluded_sops": []}
+    raw_sops = [n for n in graph.get("nodes", []) if isinstance(n, dict) and n.get("type") == "SOP"]
+    sops: list[dict[str, Any]] = []
+    excluded_sops: list[dict[str, Any]] = []
+    for sop in raw_sops:
+        status = sop_provenance_status(sop, provenance)
+        if provenance is not None and status != "allowed":
+            excluded_sops.append(
+                {
+                    "sop_id": str(sop.get("id")),
+                    "title": short_text(sop.get("title"), 160),
+                    "reason": status,
+                    "source_branches": sop.get("source_branches") or [],
+                }
+            )
+            continue
+        sops.append(sop)
     branch_to_sops: dict[tuple[str, str], list[str]] = collections.defaultdict(list)
     for sop in sops:
         sop_id = str(sop.get("id"))
@@ -273,7 +410,14 @@ def load_sops(graph_path: Path) -> tuple[list[dict[str, Any]], dict[tuple[str, s
             branch_to_sops[(str(branch[0]), str(branch[1]))].append(sop_id)
     for values in branch_to_sops.values():
         values.sort()
-    return sops, dict(branch_to_sops)
+    report = {
+        "total_sops": len(raw_sops),
+        "included_sops": len(sops),
+        "excluded_sops": excluded_sops,
+        "excluded_sop_count": len(excluded_sops),
+        "excluded_sops_by_reason": dict(sorted(collections.Counter(item["reason"] for item in excluded_sops).items())),
+    }
+    return sops, dict(branch_to_sops), report
 
 
 def transition_outcome(child: dict[str, Any], parent: dict[str, Any]) -> str:
@@ -342,9 +486,37 @@ def euclidean_text_coords(nodes: list[dict[str, Any]], dims: int = 16) -> np.nda
     return dense[:, :dims].astype(np.float64)
 
 
-def build_artifact(runs_dir: Path, sop_graph_path: Path) -> tuple[dict[str, Any], dict[str, np.ndarray], dict[str, Any]]:
-    journals = load_journals(runs_dir)
-    sops, branch_to_sops = load_sops(sop_graph_path)
+def build_artifact(
+    runs_dir: Path,
+    sop_graph_path: Path,
+    allowlist_path: Path | None = None,
+    require_clean_provenance: bool = False,
+) -> tuple[dict[str, Any], dict[str, np.ndarray], dict[str, Any]]:
+    runs_dir = Path(runs_dir).resolve()
+    sop_graph_path = Path(sop_graph_path).resolve()
+    allowlist_path = Path(allowlist_path).resolve() if allowlist_path is not None else None
+    if require_clean_provenance and allowlist_path is None:
+        raise ValueError("--require-clean-provenance requires --allowlist")
+    provenance = load_clean_allowlist(allowlist_path) if allowlist_path is not None else None
+    journals, journal_report = load_journals(runs_dir, provenance)
+    sops, branch_to_sops, sop_report = load_sops(sop_graph_path, provenance)
+    if require_clean_provenance:
+        if not journals:
+            raise ValueError("Clean provenance requested but no allowlisted journals were included")
+        if journal_report.get("missing_allowed_runs"):
+            raise ValueError(
+                "Clean provenance requested but allowlisted runs are missing from runs-dir: "
+                f"{journal_report['missing_allowed_runs']}"
+            )
+        included = {run_short_id(run_id) for run_id, _path, _data in journals}
+        allowed = set(provenance.get("allowed_run_ids", [])) if provenance else set()
+        if not included.issubset(allowed):
+            raise ValueError(f"Clean provenance violation: included non-allowlisted runs {sorted(included - allowed)}")
+        bad_sops = [item for item in sop_report.get("excluded_sops", []) if item.get("reason") == "blocked"]
+        if bad_sops:
+            raise ValueError(f"Clean provenance violation: SOP graph contains blocked source SOPs: {bad_sops[:3]}")
+        if not sops:
+            raise ValueError("Clean provenance requested but no clean SOPs were included")
     sop_by_id = {str(sop.get("id")): sop for sop in sops}
     sop_turns_by_id = {sop_id: evidence_turn_map(sop) for sop_id, sop in sop_by_id.items()}
     sop_tokens_by_id = {
@@ -551,6 +723,7 @@ def build_artifact(runs_dir: Path, sop_graph_path: Path) -> tuple[dict[str, Any]
                         "id": evidence_id,
                         "type": "Evidence",
                         "run_id": run_id,
+                        "run_short_id": run_short_id(run_id),
                         "transition_id": transition_id,
                         "parent_node_id": parent_node_id,
                         "child_node_id": child_node_id,
@@ -626,6 +799,18 @@ def build_artifact(runs_dir: Path, sop_graph_path: Path) -> tuple[dict[str, Any]
             "runs_dir": str(runs_dir.relative_to(REPO)) if runs_dir.is_relative_to(REPO) else str(runs_dir),
             "sop_graph": str(sop_graph_path.relative_to(REPO)) if sop_graph_path.exists() and sop_graph_path.is_relative_to(REPO) else str(sop_graph_path),
             "journal_count": len(journals),
+            "source_runs": sorted({run_short_id(run_id) for run_id, _path, _journal in journals}),
+            "allowlist": provenance.get("allowed_run_ids", []) if provenance else [],
+            "allowlist_hash": provenance.get("hash", "") if provenance else "",
+            "allowlist_path": (
+                str(allowlist_path.relative_to(REPO))
+                if allowlist_path is not None and allowlist_path.exists() and allowlist_path.is_relative_to(REPO)
+                else (str(allowlist_path) if allowlist_path is not None else "")
+            ),
+            "blocked_run_prefixes": provenance.get("blocked_prefixes", []) if provenance else [],
+            "leak_verified": bool(provenance and require_clean_provenance),
+            "paper_grade": bool(provenance and require_clean_provenance),
+            "provenance_status": "clean_certified" if provenance and require_clean_provenance else "uncertified_bootstrap",
             "coordinate_model": "global circular run forest layout; radius grows with run-tree depth",
             "flat_twin_model": "same coordinates as poincare; distance function changes only",
             "euclidean_model": "independent TF-IDF-SVD text coordinates over RunNode/Transition/SOP/Evidence text",
@@ -644,6 +829,16 @@ def build_artifact(runs_dir: Path, sop_graph_path: Path) -> tuple[dict[str, Any]
     }
     report = {
         "schema": "run_forest_builder_report_v1",
+        "provenance_status": "clean_certified" if provenance and require_clean_provenance else "uncertified_bootstrap",
+        "paper_grade_provenance": bool(provenance and require_clean_provenance),
+        "leak_verified": bool(provenance and require_clean_provenance),
+        "source_runs": sorted({run_short_id(run_id) for run_id, _path, _journal in journals}),
+        "allowlist_path": graph["meta"]["allowlist_path"],
+        "allowlist_hash": graph["meta"]["allowlist_hash"],
+        "allowlist": graph["meta"]["allowlist"],
+        "blocked_run_prefixes": graph["meta"]["blocked_run_prefixes"],
+        "journal_filter_report": journal_report,
+        "sop_filter_report": sop_report,
         "journal_count": len(journals),
         "node_count": len(nodes),
         "edge_count": len(edges),
@@ -671,9 +866,16 @@ def main() -> None:
     parser.add_argument("--runs-dir", type=Path, default=DEFAULT_RUNS_DIR)
     parser.add_argument("--sop-graph", type=Path, default=DEFAULT_SOP_GRAPH)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
+    parser.add_argument("--allowlist", type=Path, default=None)
+    parser.add_argument("--require-clean-provenance", action="store_true")
     args = parser.parse_args()
 
-    graph, index, report = build_artifact(args.runs_dir, args.sop_graph)
+    graph, index, report = build_artifact(
+        args.runs_dir,
+        args.sop_graph,
+        allowlist_path=args.allowlist,
+        require_clean_provenance=args.require_clean_provenance,
+    )
     args.out_dir.mkdir(parents=True, exist_ok=True)
     graph_path = args.out_dir / "run_forest_graph.json"
     index_path = args.out_dir / "run_forest_index.npz"

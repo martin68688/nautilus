@@ -1692,8 +1692,14 @@ class RunForestMemoryLayer:
         if not self.index_path.exists():
             raise FileNotFoundError(f"Run-forest index not found: {self.index_path}")
         self.graph = json.loads(self.graph_path.read_text(encoding="utf-8"))
-        if (self.graph.get("meta") or {}).get("schema") != "hyperbolic_run_forest_memory_v1":
+        meta = self.graph.get("meta") or {}
+        if meta.get("schema") != "hyperbolic_run_forest_memory_v1":
             raise ValueError(f"Not a run-forest memory graph: {self.graph_path}")
+        if meta.get("leak_verified") is not True or meta.get("paper_grade") is not True:
+            raise ValueError(
+                "Run-Forest memory graph is not clean-certified; rebuild with "
+                "build_run_forest_memory.py --allowlist ... --require-clean-provenance"
+            )
         self.nodes = {str(n["id"]): n for n in self.graph.get("nodes", []) if n.get("id")}
         for edge in self.graph.get("edges", []):
             src, dst = str(edge.get("src")), str(edge.get("dst"))

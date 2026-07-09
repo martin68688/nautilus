@@ -8,52 +8,52 @@ This experiment evaluates the new carrier: run/journal memory as a hyperbolic fo
 
 | Task | System | R@5 | MRR | Extra |
 |---|---|---:|---:|---:|
-| parent_lookup | run_forest_poincare | 0.5708 | 0.3375 | queries=2155 |
-| parent_lookup | run_forest_flat_twin | 0.3689 | 0.2512 | queries=2155 |
-| parent_lookup | run_forest_euclidean | 0.4153 | 0.2908 | queries=2155 |
-| local_best_lookup | run_forest_poincare | 0.2623 | 0.1562 | queries=1304 |
-| local_best_lookup | run_forest_flat_twin | 0.2086 | 0.1241 | queries=1304 |
-| local_best_lookup | run_forest_euclidean | 0.2477 | 0.1674 | queries=1304 |
-| debug_recovery_child_lookup | run_forest_poincare | 0.6489 | 0.3656 | queries=282 |
-| debug_recovery_child_lookup | run_forest_flat_twin | 0.7482 | 0.4211 | queries=282 |
-| debug_recovery_child_lookup | run_forest_euclidean | 0.3794 | 0.2716 | queries=282 |
-| transition_to_sop_signpost | run_forest_poincare | 0.7738 | 0.5248 | queries=1229 |
-| transition_to_sop_signpost | run_forest_flat_twin | 0.7242 | 0.4931 | queries=1229 |
-| transition_to_sop_signpost | run_forest_euclidean | 0.3409 | 0.2265 | queries=1229 |
-| transition_to_evidence | run_forest_poincare | 0.9189 | 0.7881 | queries=1985 |
-| transition_to_evidence | run_forest_flat_twin | 0.9134 | 0.7747 | queries=1985 |
-| transition_to_evidence | run_forest_euclidean | 0.2060 | 0.1364 | queries=1985 |
-| debug_recovery_child_lookup | run_forest_graph_expansion | 1.0000 | 1.0000 | queries=282 |
-| local_best_graph_follow | run_forest_graph_expansion | 1.0000 | 1.0000 | queries=1304 |
+| parent_lookup | run_forest_poincare | 0.6360 | 0.3775 | queries=1324 |
+| parent_lookup | run_forest_flat_twin | 0.4056 | 0.2813 | queries=1324 |
+| parent_lookup | run_forest_euclidean | 0.4298 | 0.2929 | queries=1324 |
+| local_best_lookup | run_forest_poincare | 0.3014 | 0.1888 | queries=866 |
+| local_best_lookup | run_forest_flat_twin | 0.2309 | 0.1480 | queries=866 |
+| local_best_lookup | run_forest_euclidean | 0.2875 | 0.1798 | queries=866 |
+| debug_recovery_child_lookup | run_forest_poincare | 0.7418 | 0.3870 | queries=213 |
+| debug_recovery_child_lookup | run_forest_flat_twin | 0.8263 | 0.4738 | queries=213 |
+| debug_recovery_child_lookup | run_forest_euclidean | 0.3991 | 0.2814 | queries=213 |
+| transition_to_sop_signpost | run_forest_poincare | 0.8080 | 0.5716 | queries=1229 |
+| transition_to_sop_signpost | run_forest_flat_twin | 0.7868 | 0.5435 | queries=1229 |
+| transition_to_sop_signpost | run_forest_euclidean | 0.4109 | 0.2815 | queries=1229 |
+| transition_to_evidence | run_forest_poincare | 0.8997 | 0.7709 | queries=1236 |
+| transition_to_evidence | run_forest_flat_twin | 0.9005 | 0.7711 | queries=1236 |
+| transition_to_evidence | run_forest_euclidean | 0.2799 | 0.1753 | queries=1236 |
+| debug_recovery_child_lookup | run_forest_graph_expansion | 1.0000 | 1.0000 | queries=213 |
+| local_best_graph_follow | run_forest_graph_expansion | 1.0000 | 1.0000 | queries=866 |
 
 ## Tree Neighbor Preservation
 
 | System | Neighbor Recall@10 | Queries |
 |---|---:|---:|
-| run_forest_poincare | 0.5421 | 2200 |
-| run_forest_flat_twin | 0.4929 | 2200 |
-| run_forest_euclidean | 0.3712 | 2200 |
+| run_forest_poincare | 0.5637 | 1346 |
+| run_forest_flat_twin | 0.4996 | 1346 |
+| run_forest_euclidean | 0.3740 | 1346 |
 
 ## Bootstrap Comparisons
 
 | Comparison | Mean Diff | p one-sided | 95% CI |
 |---|---:|---:|---|
-| parent_lookup_poincare_vs_flat_twin_mrr | 0.0864 | 0.0000 | [0.0803, 0.0926] |
-| parent_lookup_poincare_vs_euclidean_mrr | 0.0468 | 0.0000 | [0.0286, 0.0651] |
-| parent_lookup_poincare_vs_flat_twin_recall_at_5 | 0.2019 | 0.0000 | [0.1842, 0.2195] |
-| parent_lookup_poincare_vs_euclidean_recall_at_5 | 0.1555 | 0.0000 | [0.1281, 0.1824] |
-| local_best_lookup_poincare_vs_flat_twin_mrr | 0.0321 | 0.0000 | [0.0273, 0.0372] |
-| local_best_lookup_poincare_vs_euclidean_mrr | -0.0112 | 0.9113 | [-0.0274, 0.0051] |
-| local_best_lookup_poincare_vs_flat_twin_recall_at_5 | 0.0537 | 0.0000 | [0.0391, 0.0690] |
-| local_best_lookup_poincare_vs_euclidean_recall_at_5 | 0.0146 | 0.1903 | [-0.0169, 0.0468] |
-| debug_recovery_child_lookup_poincare_vs_flat_twin_mrr | -0.0555 | 1.0000 | [-0.0714, -0.0414] |
-| debug_recovery_child_lookup_poincare_vs_euclidean_mrr | 0.0940 | 0.0002 | [0.0404, 0.1482] |
-| debug_recovery_child_lookup_poincare_vs_flat_twin_recall_at_5 | -0.0993 | 1.0000 | [-0.1348, -0.0674] |
-| debug_recovery_child_lookup_poincare_vs_euclidean_recall_at_5 | 0.2695 | 0.0000 | [0.1915, 0.3475] |
-| transition_to_sop_signpost_poincare_vs_flat_twin_mrr | 0.0317 | 0.0000 | [0.0229, 0.0410] |
-| transition_to_sop_signpost_poincare_vs_euclidean_mrr | 0.2983 | 0.0000 | [0.2729, 0.3255] |
-| transition_to_sop_signpost_poincare_vs_flat_twin_recall_at_5 | 0.0496 | 0.0000 | [0.0334, 0.0659] |
-| transition_to_sop_signpost_poincare_vs_euclidean_recall_at_5 | 0.4329 | 0.0000 | [0.3979, 0.4687] |
+| parent_lookup_poincare_vs_flat_twin_mrr | 0.0962 | 0.0000 | [0.0861, 0.1063] |
+| parent_lookup_poincare_vs_euclidean_mrr | 0.0846 | 0.0000 | [0.0606, 0.1086] |
+| parent_lookup_poincare_vs_flat_twin_recall_at_5 | 0.2304 | 0.0000 | [0.2069, 0.2545] |
+| parent_lookup_poincare_vs_euclidean_recall_at_5 | 0.2062 | 0.0000 | [0.1730, 0.2402] |
+| local_best_lookup_poincare_vs_flat_twin_mrr | 0.0408 | 0.0000 | [0.0335, 0.0484] |
+| local_best_lookup_poincare_vs_euclidean_mrr | 0.0089 | 0.2106 | [-0.0126, 0.0295] |
+| local_best_lookup_poincare_vs_flat_twin_recall_at_5 | 0.0704 | 0.0000 | [0.0520, 0.0901] |
+| local_best_lookup_poincare_vs_euclidean_recall_at_5 | 0.0139 | 0.2578 | [-0.0266, 0.0531] |
+| debug_recovery_child_lookup_poincare_vs_flat_twin_mrr | -0.0868 | 1.0000 | [-0.1125, -0.0633] |
+| debug_recovery_child_lookup_poincare_vs_euclidean_mrr | 0.1056 | 0.0003 | [0.0446, 0.1661] |
+| debug_recovery_child_lookup_poincare_vs_flat_twin_recall_at_5 | -0.0845 | 1.0000 | [-0.1221, -0.0469] |
+| debug_recovery_child_lookup_poincare_vs_euclidean_recall_at_5 | 0.3427 | 0.0000 | [0.2582, 0.4272] |
+| transition_to_sop_signpost_poincare_vs_flat_twin_mrr | 0.0281 | 0.0000 | [0.0188, 0.0375] |
+| transition_to_sop_signpost_poincare_vs_euclidean_mrr | 0.2901 | 0.0000 | [0.2633, 0.3178] |
+| transition_to_sop_signpost_poincare_vs_flat_twin_recall_at_5 | 0.0212 | 0.0076 | [0.0041, 0.0382] |
+| transition_to_sop_signpost_poincare_vs_euclidean_recall_at_5 | 0.3971 | 0.0000 | [0.3637, 0.4312] |
 
 ## SOP-Only Reference Point
 

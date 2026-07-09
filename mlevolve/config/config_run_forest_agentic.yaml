@@ -1,5 +1,8 @@
 extends: config.yaml
 
+methodology_kb_path: ""
+methodology_dynamic: False
+
 adoption_tracking:
   enable: True
   enable_analysis: True

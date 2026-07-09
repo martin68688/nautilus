@@ -1,7 +1,3 @@
 {
-  "spooky-author-identification": [
-    "winning-recipe-nlp-classification",
-    "ensemble-diversity-vs-validation-gap",
-    "small-data-transformer-finetuning"
-  ]
+  "spooky-author-identification": []
 }
