@@ -2832,6 +2832,130 @@ Interpretation for ClaudeCode review:
 - This is strong evidence for the current core limitation: retrieval can find excellent memory, but actuation still does not preserve the key architectural recipe.
 - The NaN-recovery path improved the raw result from `0.397456` to `0.390813`, but remained invalid because numerical instability persisted.
 
+Read-only liveness and runfile audit at `2026-07-09 18:56 CST` / `10:56 UTC`:
+
+Cluster state:
+
+```text
+Job: runforest-online-a100x3-r3
+status: Running
+completions: 0/1
+duration: 6h1m
+pod: runforest-online-a100x3-r3-58772
+pod status: Ready 1/1, Running, restarts=0
+node: node-1-1.sdsc.optiputer.net
+```
+
+GPU state:
+
+```text
+GPU0 A100:
+  memory: 12369 / 81920 MiB
+  util: 97%
+  PID: 4313
+  runfile: runfile_0.py
+
+GPU1 A100:
+  memory: 21507 / 81920 MiB
+  util: 71%
+  PID: 5566
+  runfile: runfile_1.py
+
+GPU2 A100:
+  memory: 29725 / 81920 MiB
+  util: 0% at sample instant, process still alive
+  PID: 5531
+  runfile: runfile_2.py
+```
+
+Journal/matrix state:
+
+```text
+journal mtime: Thu Jul 9 10:47:27 UTC 2026
+nodes: 26
+valid_metrics: 6
+best_min: 0.369656
+manifest: still 0 bytes
+adoption_report.json: absent
+adoption_events.jsonl: absent
+external_memory_adoption_events.jsonl: absent
+```
+
+Current live runfile schemes:
+
+```text
+runfile_0.py / likely node e5b3...
+  MODEL_NAME = microsoft/deberta-v3-base
+  MAX_LENGTH = 512
+  BATCH_SIZE = 16
+  NUM_EPOCHS = 40
+  architecture:
+    DeBERTa-v3-base
+    freeze embeddings
+    code attempts to freeze encoder layers i < 16
+    handcrafted dense feature projection
+    concat [CLS] + projected handcrafted features
+    classifier head
+  training:
+    label_smoothing = 0.1
+    AdamW
+    CosineAnnealingWarmRestarts
+  concern:
+    if v3-base has fewer than 16 encoder layers in this environment,
+    the loop may freeze the whole backbone and train mostly the fusion/classifier head.
+
+runfile_1.py / node 2287d62b34074bb282e5005dc6a194fc
+  MODEL_NAME = microsoft/deberta-v3-small
+  MAX_LENGTH = 256
+  BATCH_SIZE = 32
+  NUM_EPOCHS = 20
+  architecture:
+    DeBERTa-v3-small
+    unfreeze only last 4 layers
+    handcrafted feature fusion
+    FeatureReconstructionHead auxiliary module
+    multiple-sample dropout style averaged logits
+  training:
+    Stage 1 MLM-style self-supervised pretraining on all texts
+    Stage 2 supervised fine-tuning with CE + MSE reconstruction loss
+    CosineAnnealingWarmRestarts
+  concern:
+    this is the clearest architecture drift example in the current live set.
+    It retrieved strong history, but generated a more complex v3-small recipe
+    instead of preserving the simpler known-strong v3-large recipe.
+
+runfile_2.py / node 5066c7eccd824ea79eca0ad3f952fa98
+  MODEL_NAME = microsoft/deberta-v3-large
+  MAX_LENGTH = 512
+  BATCH_SIZE = 16
+  NUM_EPOCHS = 40
+  architecture:
+    DeBERTa-v3-large
+    freeze embeddings
+    train last 8 encoder layers
+    simple classifier head
+  extra models:
+    XGBoost on reduced TF-IDF + stylometric + readability + POS features
+    LogisticRegression on sparse n-gram features
+  ensemble:
+    fixed weights, no validation-set grid search
+    DeBERTa = 0.50
+    XGBoost = 0.25
+    LR = 0.25
+  positive signal:
+    this is the best current example of RunForest acting on leakage memory:
+    it removed DeBERTa embeddings from XGBoost and removed validation-optimized
+    ensemble weights after `ca180...` was rejected.
+```
+
+Interpretation for ClaudeCode review:
+
+- The run is not idle or stuck at the Kubernetes level: all three A100-backed workers are alive, with GPU0/GPU1 actively computing and GPU2 holding a live large-model process.
+- The first task has still not completed; cactus/leaf/taxi have not started yet.
+- No adoption artifacts exist yet, so adoption rate still cannot be computed from final reports.
+- Memory retrieval continues to be visibly active in logs, including `debug_failure_recovery` and `improve_local_best_lineage`.
+- The strongest current diagnosis remains unchanged: retrieval quality is better than actuation quality. The memory layer finds strong historical references, but the code generator often treats them as advice rather than as an architecture to preserve.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
