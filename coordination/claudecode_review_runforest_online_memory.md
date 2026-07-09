@@ -3453,6 +3453,140 @@ Current takeaway:
 - Actuation is still the bottleneck: the agent either drifts to smaller architectures, introduces simple code bugs, or fails at checkpoint plumbing.
 - The first task has not completed, so cactus/leaf/taxi have not started and no cross-task matrix result exists yet.
 
+Debug-recovery success checkpoint at `2026-07-09 20:05 CST` / `12:05 UTC`:
+
+The `69df...` recovery child has now parsed successfully.
+
+```text
+node: 69df137a2e6744afbb5556212ea4463a
+parent: d5a19b7a2279458781fb1545e71a4a20
+stage: debug
+parse: PASS
+metric: 0.353037
+is_buggy: False
+is_valid: True
+exec_time: 817.6s
+leakage check:
+  has_leakage=False
+  confidence=high
+```
+
+Recovered scheme:
+
+```text
+MODEL_NAME = microsoft/deberta-v3-small
+handcrafted feature fusion
+TF-IDF n-gram features
+mean pooling
+multi-sample dropout K=8
+FocalLoss + label smoothing + class weights
+AdamW
+warmup + cosine annealing
+SWA averaging available, but final submission used the best single checkpoint
+```
+
+Observed training result:
+
+```text
+best validation log loss: 0.353037
+validation accuracy: 0.8644
+SWA validation log loss: 0.3783
+best single checkpoint remained better than SWA
+```
+
+Interpretation:
+
+- This is a real online positive for RunForest debug memory: the child `d5a19...` crashed with `NUM_SWA_CHECKPOINTS` undefined, and the memory-guided debug child `69df...` fixed it into a valid runnable solution.
+- It did not beat the current best `8cb589...` (`0.346175`), so it is a recovery success rather than a new-best success.
+- The recovered node confirms a useful pattern: memory can help repair local code failures, but performance actuation is still below the historical strong spooky traces.
+
+Immediately after `69df...`, RunForest attempted another improve from that node:
+
+```text
+node: c401620ba9ab4c8792dd16b8f8907755
+parent: 69df137a2e6744afbb5556212ea4463a
+stage: improve
+RunForest strategy: improve_local_best_lineage
+refs:
+  run::20260515_173948_spooky-author-identification::transition::2a14416a9d::b74f997873
+  run::20260516_091845_spooky-author-identification::transition::046a76d4b2::6b249f55b8
+  run::20260516_091845_spooky-author-identification::transition::50fa1f64dc::1ec214a74f
+  run::20260516_104127_spooky-author-identification::transition::51d591325f::b84bc77a19
+  sop::sg_0202
+  sop::sg_0204
+  sop::sg_0212
+  sop::sg_0213
+  evidence::c2c103c68ddd
+  evidence::30cb6729a6b1
+planned changes:
+  increase MSD_K from 8 to 16
+  increase feature projection dropout to 0.35
+  replace warmup + cosine with OneCycleLR
+  remove SWA and keep best-checkpoint selection
+code review:
+  needs_revision=True
+  returned diff format
+  diff patch failed with applied_count=0
+  original code was kept to avoid writing raw diff to runfile
+parse: FAIL
+metric: None
+is_buggy: True
+exec_time: 0.34s
+reason:
+  RuntimeError / IndentationError
+  unexpected indent at runfile_0.py:1314
+  duplicate FINAL EVALUATION sections with inconsistent indentation
+  orphaned if val_loss < best_val_loss block
+```
+
+Interpretation:
+
+- The plan content was sensible and evidence-aligned: remove harmful SWA, regularize harder, and use OneCycleLR.
+- The failure is an actuation/code-edit failure. The code review noticed a problem, but its diff could not be applied, and the unchanged broken code was executed.
+- This is another example where retrieval and high-level planning look better than final patch quality.
+
+Live state after this checkpoint:
+
+```text
+Job: runforest-online-a100x3-r3
+status: Running, 0/1 completions, age ~7h08m
+Pod: runforest-online-a100x3-r3-58772
+status: Ready 1/1, Running, restarts=0
+
+GPU0:
+  no active runfile_0.py after c401... failed
+  scheduler is generating another improve from 8cb589...
+
+GPU1:
+  runfile_1.py alive
+  bdb69a1d667d4f26a866b477ad01030f still pending / not parsed
+  utilization ~92-96%, memory ~35.3GiB
+
+GPU2:
+  runfile_2.py alive
+  c06f2c6e69494fa6acf9d400dde1ecdd still pending / not parsed
+  utilization ~70-75%, memory ~11.4GiB
+
+journal:
+  nodes: 33
+  valid_metrics: 9
+  best_min: 0.346175
+  current best: 8cb589f6afd74267b4ebb98db27187d3
+manifest:
+  still 0 bytes
+adoption artifacts:
+  adoption_report.json absent
+  adoption_events.jsonl absent
+  external_memory_adoption_events.jsonl absent
+```
+
+Current updated takeaway:
+
+- RunForest memory has now produced both a local new best (`8cb589...`) and a debug recovery success (`69df...`).
+- It still has not recreated the historical `~0.07` spooky architecture despite retrieving those lineages.
+- Main bottleneck remains code-generation/patch actuation, not pure retrieval availability.
+- The first task is still not finalized, so there is not yet any valid multi-task matrix/adoption summary.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
