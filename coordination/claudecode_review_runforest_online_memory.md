@@ -1074,6 +1074,43 @@ adoption_report/adoption_events: not yet present
 
 Interpretation: the active Job exactly matches the user-requested A100x3 resource shape and is still actively executing. No resource mutation was performed during this verification. The current draft node `dff93ce6cbcf44538fd04fea4f7882fd` is still running and has not yet produced a parse result.
 
+Read-only long-node health check at `2026-07-09 16:33:10 CST` / `08:33:10 UTC`:
+
+```text
+job status: still Running, 0/1 completions
+pod status: Ready 1/1, Running, restarts=0
+current executing node: dff93ce6cbcf44538fd04fea4f7882fd
+journal nodes: still 13
+metric_count: still 5
+best_min: still 0.369656
+manifest: still 0 bytes
+adoption_report/adoption_events: not yet present
+```
+
+The main mlevolve log has not emitted a new parse line after `dff93ce6cbcf44538fd04fea4f7882fd` started execution, but the run directory is still actively changing:
+
+```text
+workspace/working/best_model_dff93ce6cbcf44538fd04fea4f7882fd.pt
+  mtime: Thu Jul  9 08:33:11 UTC 2026
+  size: 1540937216 bytes
+workspace/working/best_val_probs.npy
+  mtime: Thu Jul  9 08:26:08 UTC 2026
+```
+
+GPU/process snapshot:
+
+```text
+GPU0: 30459 MiB used, 3% utilization
+GPU1: 35307 MiB used, 0% utilization
+GPU2: 13927 MiB used, 97% utilization
+top Python workers:
+  elapsed 01:22:29, ~102% CPU
+  elapsed 01:12:42, ~96.7% CPU
+  elapsed 00:17:53, ~93.0% CPU
+```
+
+Interpretation: the active draft node is a long-running training/evaluation node, not a completed matrix result yet. The quiet main log is expected while subprocess training runs; the model checkpoint mtime proves the pod is still doing useful work. No mutation was performed.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
