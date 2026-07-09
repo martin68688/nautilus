@@ -2131,6 +2131,101 @@ Interpretation for ClaudeCode review:
   - whether sparse/ensemble components claimed in the plan are actually used,
   - whether the generated code silently downgrades `large` to `base/small`.
 
+Follow-up leakage-rejection checkpoint at `2026-07-09 18:17 CST` / `10:17 UTC`:
+
+```text
+job status: still Running, 0/1 completions, age about 5h21m
+pod status: Ready 1/1, Running, restarts=0
+journal nodes: 21
+metric_count: still 6
+best_min: still 0.369656
+manifest: still 0 bytes
+adoption artifacts: not present
+```
+
+New parsed node:
+
+```text
+node: ca22f97abf18415e89bccff07280d293
+stage: debug
+parent transition in log: 356ed2ef23c34618baf2f0dcad95168a -> ca22f97abf18415e89bccff07280d293
+raw parsed metric before safety reset: 0.4908
+final accepted metric: None
+parse result: FAIL
+```
+
+The node generated a submission:
+
+```text
+workspace/submission/submission_ca22f97abf18415e89bccff07280d293.csv
+mtime: Thu Jul  9 10:16:16 UTC 2026
+```
+
+But it was rejected by high-confidence leakage detection:
+
+```text
+Data leakage check:
+  has_leakage=True
+  confidence=high
+
+Primary reason:
+  Ensemble weights were optimized on the same validation set used for reporting.
+  The reported 0.4908 validation metric was therefore reset to None.
+
+Additional concern:
+  DeBERTa validation predictions / checkpoint behavior were used inside the ensemble process,
+  and the leakage checker flagged the workflow as over-optimistic.
+```
+
+After this rejection:
+
+```text
+[stats] step=21, nodes=21, branches=5, best=0.369656
+```
+
+The search then selected an existing valid node for another improve attempt:
+
+```text
+selected node: 5bb660d469c944bbbb8aca410d6d6078
+stage: debug
+metric: 0.37155
+mode: late-stage exploitation
+plateau warning:
+  success_patience=3>=2 AND total_patience=6>=5
+```
+
+RunForest memory fired again for the improve step:
+
+```text
+stage=improve
+strategy=improve_local_best_lineage
+refs:
+  run::20260516_125444_spooky-author-identification::transition::92989935c3::bfbf637cc9
+  run::20260514_113102_spooky-author-identification::transition::bee03d62f4::5850ebb19e
+  run::20260514_113102_spooky-author-identification::transition::ce3d8aadaf::bee03d62f4
+  run::20260516_125444_spooky-author-identification::transition::92989935c3::669be7d1fe
+  sop::sg_0002
+  sop::sg_0222
+  sop::sg_0230
+  sop::sg_0228
+  sop::sg_0221
+  evidence::79141a4233f1
+```
+
+This is important because `bee03d62f4 -> 5850ebb19e` is one of the strong historical spooky traces:
+
+```text
+bee03d62... historical metric: about 0.065893
+5850ebb... historical metric: about 0.069259
+```
+
+Interpretation for ClaudeCode review:
+
+- Safety filtering is working: a superficially valid `0.4908` node was rejected for validation-set ensemble-weight optimization.
+- The online run is now in late-stage plateau mode and keeps selecting the same small set of mediocre valid nodes (`0.3697`, `0.3715`) for exploitation.
+- RunForest retrieval is again surfacing strong historical traces, but the live search still treats them as advisory memory rather than as a branch-seeding or architecture-preservation constraint.
+- No adoption report exists yet, so this is retrieval/evidence behavior, not measured adoption-rate evidence.
+
 ## Review Checklist For ClaudeCode
 
 Please verify:
