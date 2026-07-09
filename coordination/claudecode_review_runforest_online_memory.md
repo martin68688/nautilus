@@ -3989,3 +3989,128 @@ Please verify:
 - Adoption rate with `judge_mode=llm-all` may be slow and API-expensive because every injected memory/code pair is judged.
 - If DeepSeek/API fails, `RunForestMemoryLayer` falls back to deterministic stage policy and logs `LLM navigator failed`.
 - The comparison uses historical no-RunForest runs on the same PVC, not a freshly rerun baseline in the same Job.
+
+## Checkpoint: Historical Best Confusion And Current Stagnation Diagnosis
+
+Time: 2026-07-09 12:59:45 UTC
+
+The user challenged the earlier interpretation: older records seemed to contain a much lower metric for this general spooky NLP scheme. I rechecked the current pod, the live journal, the RunForest graph artifact, and the paper-skills methodology records.
+
+Key correction:
+
+```text
+The historical 0.07254887025258404 node exists in the RunForest graph:
+  run::20260512_112908_spooky-author-identification::node::c42a7b9434...
+
+But it is not the same as the DeBERTa + XGBoost + LR heterogeneous ensemble template.
+It is closer to:
+  DeBERTa-v3-large single-model fine-tuning
+  last 8 layers unfrozen
+  simple linear head
+  handcrafted/TF-IDF features present in preprocessing
+  single StratifiedKFold/validation split
+  cosine warm restarts + AMP + clipping + label smoothing
+```
+
+The cleaner historical heterogeneous ensemble records are higher on validation:
+
+```text
+20260509_185008 / d93b4c2a...: metric 0.2013
+  DeBERTa-v3-large + XGBoost + LogisticRegression + grid-searched weights
+
+20260517_151325 / 8efd3270...: metric 0.25522
+20260517_151325 / 5db3f251...: metric 0.247654
+20260516_091845 / 4bba6e10...: metric 0.1975
+```
+
+The methodology KB also contains a warning, currently strongest in the quarantined ensemble-diversity notes:
+
+```text
+Run8 / 0.0725 is a validation extreme and was worse on real test behavior than the heterogeneous ensemble.
+The likely cause is early-stopping selection bias plus non-independent train/val distribution.
+```
+
+So two historical ideas were being conflated:
+
+1. Lowest validation number: `c42a7b9434`, single DeBERTa-large style recipe, 0.0725.
+2. More robust real-test template: heterogeneous DeBERTa-large + XGBoost + LR ensemble, around 0.20-0.25 validation.
+
+Current online run diagnosis:
+
+```text
+RunForest retrieval is active and did retrieve the low historical node c42a7b9434 several times.
+It also loaded the cold-start template text saying:
+  DeBERTa-v3-large + XGBoost + LR + weighted ensemble
+  achieved ~0.2013
+  do not use DeBERTa-small/base
+
+But code generation did not preserve the exact template.
+It kept turning historical records into partial local edits and approximate rewrites.
+```
+
+Observed failure modes:
+
+```text
+1. Exact/large ensemble attempts often became buggy:
+   - rel_embeddings attribute error
+   - checkpoint state_dict mismatch
+   - SequenceClassifierOutput passed directly to loss
+   - long/truncated training without a parseable final score
+
+2. Large ensemble attempts that completed were rejected or not strong:
+   - bdb69... completed and emitted a submission, but was rejected by leakage checker.
+   - parser queued metric 0.4396; terminal printed ensemble validation log loss 0.372493.
+   - final metric reset to None.
+
+3. Current accepted best is a degraded but clean local branch:
+   - 8cb589... metric 0.346175
+   - DeBERTa-v3-small + handcrafted feature fusion + Focal/MSD
+   - not the historical DeBERTa-large ensemble template.
+
+4. Tree search then kept exploiting the accepted local best branch:
+   - repeated diff improve on 8cb589...
+   - subsequent accepted children regressed or failed
+   - the search did not force a clean full-template restart from the historical large ensemble.
+```
+
+Most important blocker:
+
+```text
+This is not mainly a retrieval failure.
+It is an actuation / preservation failure.
+
+The memory layer retrieves useful historical routes, but the generator treats them as loose advice.
+For complex ensemble code, that loses the architecture-level invariants:
+  model variant must stay DeBERTa-v3-large,
+  code template should be copied closely,
+  checkpoint reload must be correct,
+  feature branches must stay aligned,
+  validation/ensemble scoring must satisfy the current leakage checker.
+```
+
+Recommended next fix:
+
+```text
+Add a "template replay / protected architecture" mode for high-confidence historical run nodes:
+
+1. If memory retrieves a RunNode or template with strong metric and low risk,
+   the draft/debug agent should copy the full reference code skeleton instead of summarizing it.
+
+2. Mark core invariants as locked:
+   - MODEL_NAME
+   - max_length
+   - feature pipeline order
+   - checkpoint save/load API
+   - ensemble branch identities
+   - submission path
+
+3. If the current leakage checker rejects validation weight search,
+   provide an alternate clean protocol:
+   - nested split for ensemble weights, or
+   - OOF predictions for ensemble fitting, or
+   - fixed weights with a dev/test holdout,
+   rather than silently replacing the historical optimized ensemble with equal averaging.
+
+4. Add a retrieval conflict warning:
+   if `0.0725 validation` is retrieved, also inject the counter-memory that this was a validation extreme / real-test worse, so the agent does not chase the wrong target.
+```
