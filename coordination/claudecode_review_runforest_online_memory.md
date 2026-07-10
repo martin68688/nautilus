@@ -8003,3 +8003,44 @@ validation:
   embedded Bash `bash -n`: passed
   `kubectl create --dry-run=client`: passed
   r8-to-r9 diff is limited to job/run tag and robust checkout fallback logic.
+
+## A100x1 clean-r9 launch checkpoint: 2026-07-10 15:43 CST
+
+source provenance:
+  branch: codex/dual-time-procedural-memory
+  pushed commit expected by this launch: e81cc0cd
+  commit subject: Fall back to remote clone for locked RunForest seed
+
+submission and scheduling:
+  Job: runforest-online-a100x1-clean-r9
+  Pod: runforest-online-a100x1-clean-r9-lr6nr
+  phase: Running
+  ready: 1/1
+  node: hcc-gpengine-shor-c5303.unl.edu
+  GPU: NVIDIA A100-SXM4-80GB
+  rendered resources: 1x A100 / 8 CPU / 64Gi
+
+checkout behavior observed:
+  The shared PVC source repository was detected as locked and skipped without mutation:
+    seed_checkout_skipped reason=shallow_lock seed=/workspace/nautilus
+  The script then selected an alternate clean seed worktree and started fetching the target remote branch.
+  At this checkpoint the fetch was still running, so the final checked-out commit had not yet been emitted.
+
+experiment state:
+  checkout in progress
+  cold-start SHA gate not reached yet
+  clean graph build not reached yet
+  tests and four-task matrix not started
+  no retrieval, metric, journal, or adoption evidence exists yet
+  GPU utilization was 0% because model execution had not begun.
+
+monitoring:
+  heartbeat automation: runforest-a100x1-monitor
+  cadence: one read-only checkpoint every 10 minutes
+  future process inspection must avoid printing full command lines or remote URLs.
+
+credential-hygiene observation:
+  A read-only process inspection showed that an existing seed repository remote is configured with an
+  embedded credential. The credential is intentionally omitted from this report and must never be copied
+  into logs or user-facing output. This does not change the experiment result, but the remote configuration
+  should be sanitized or the credential rotated outside this running experiment.
