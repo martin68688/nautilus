@@ -8474,3 +8474,119 @@ Requested ClaudeCode review output:
   5. Review whether retrieved ensemble guidance is being suppressed by draft novelty/simple-solution prompts.
   6. Review generated-code validation hygiene, real five-fold behavior, and debug repair regressions.
   7. Separate required correctness fixes from research follow-ups and generated-artifact cleanup.
+
+## Live iteration tree, schemes, and per-node memory injection: 2026-07-10 18:07 CST
+
+Read-only job state:
+  Job runforest-online-a100x1-clean-r9 is Running, 0/1 complete, age approximately 142 minutes.
+  Pod runforest-online-a100x1-clean-r9-lr6nr is Running with zero restarts.
+  The matrix is still on task 1/4, spooky-author-identification, at 10/80 completed search steps.
+  Best accepted metric remains log loss 0.35532684322228614 from node e6f39008.
+  Current GPU snapshot: A100-SXM4-80GB, 18,313 MiB used, 88% utilization.
+  Current executing node: fb79481c, child of c278d95f. It has passed code review and is training.
+
+Search shape:
+  The run is not a single linear sequence. Three initial drafts created three branches. The one-GPU executor
+  alternates execution among those branches while generation/debug planning remains queued in parallel.
+
+Branch A - accepted DeBERTa baseline -> ambitious improve -> leakage repair chain:
+  e6f39008 (draft, accepted 0.3553268432)
+    Scheme: DeBERTa-v3-large mean-pooled classifier + character/word TF-IDF + stylometric/readability/document-
+    frequency features; AMP, gradient accumulation, early stopping. StratifiedKFold(5) is instantiated but
+    only the first split is used.
+    Injection: 36 ledger events = 18 cold-start + 18 runtime-draft; 12 run-transition, 12 SOP, 12 evidence
+    events, with 10 unique SOPs. Key SOPs: sg_0164 hybrid transformer/features, sg_0221 DeBERTa-large mean
+    pooling/multi-sample dropout, sg_0226 real five-fold ensemble, sg_0227 mean pooling, sg_0120 stratified CV.
+    Reflection: adopted DeBERTa-large, mean pooling, engineered features, AMP/regularization; did not adopt
+    full five-fold execution or the later three-model ensemble.
+  -> 83d9b42a (improve, RuntimeError)
+    Scheme change: adds stylometric attention pooling and two-stage LightGBM fusion to the accepted baseline.
+    Injection: 17 refs = 9 run, 5 SOP, 3 evidence. SOPs: sg_0133 attention pooling, sg_0130 LightGBM fusion,
+    sg_0164 hybrid features, sg_0165 multi-scale/attention, sg_0108 DeBERTa + XGBoost + LR ensemble.
+    Direct adoption evidence: its plan explicitly cites sg_0133/sg_0130/sg_0164.
+    Failure: torch.einsum output is non-contiguous; `.view()` should have been `.reshape()`.
+  -> 2aecfa5f (debug, raw score 0.3411710555, rejected)
+    Change: applies the minimal `.view()` -> `.reshape()` repair; preserves DeBERTa + attention + LightGBM.
+    Injection: 18 refs = 7 run, 6 SOP, 5 evidence. Key SOPs: sg_0092 backbone access, sg_0086 frozen
+    embeddings + XGBoost, sg_0164 hybrid model, sg_0162 progressive unfreezing.
+    Result: code executed and beat the accepted baseline numerically, but the high-confidence leakage checker
+    rejected it because TF-IDF was fitted on combined train+test text and the two-stage validation was unsafe.
+  -> 0fa38b52 (debug, raw score 0.3089302743, rejected)
+    Change: fits TF-IDF on train only and attempts to restructure the LightGBM/two-stage feature pipeline.
+    Injection: 18 refs = 6 run, 6 SOP, 6 evidence. SOPs: sg_0219 focal loss, sg_0210 stratified split,
+    sg_0232 non-overlapping optimizer groups, sg_0123 gradient accumulation, sg_0214 definition order,
+    sg_0276 checkpoint architecture matching.
+    Result: code executed with a lower raw score, but the medium-confidence leakage checker rejected it because
+    the final LightGBM/ensemble design reused validation-derived embeddings/data for secondary training/model
+    selection and did not report an untouched final ensemble validation metric.
+    State: its next child is queued but has not yet received the GPU.
+
+Branch B - DeBERTa stylometric-attention draft -> API repair chain (currently executing):
+  afad3ee0 (draft, NameError)
+    Scheme: DeBERTa-v3-large + stylometric cross-attention + multi-sample dropout + TF-IDF; batch 16,
+    gradient accumulation 2, nominal 15 epochs; only first StratifiedKFold split.
+    Injection: 36 events, same cold-start/runtime 12 run + 12 SOP + 12 evidence structure; 10 unique SOPs.
+    Key SOPs include sg_0202 full DeBERTa + XGBoost + Logistic Regression ensemble, sg_0204 TF-IDF n-grams,
+    sg_0221 robust DeBERTa-large, and sg_0164/sg_0165 hybrid attention features.
+    Failure: train_idx used before the fold split was defined.
+  -> d7557bc7 (debug, TypeError)
+    Change: moves/removes the train_idx dependency, but passes output_hidden_states incorrectly into
+    AutoModel.from_pretrained.
+    Injection: 18 refs = 10 run, 6 SOP, 2 evidence. SOPs: sg_0002 script-order sanity, sg_0155 smaller
+    DeBERTa, sg_0173 DistilBERT, sg_0174 TF-IDF/stylometric MLP, sg_0177 simplify unstable attention,
+    sg_0160 NLTK resources.
+    Failure: DebertaV2Model.__init__ does not accept output_hidden_states as a constructor kwarg.
+  -> c278d95f (debug, TypeError)
+    Change: moves output_hidden_states into AutoConfig.
+    Injection: 18 refs = 8 run, 6 SOP, 4 evidence. SOPs: sg_0148 avoid direct from_pretrained dropout args,
+    sg_0146 DeBERTa 3-fold, sg_0187 correct ModernBERT paths, sg_0115 config-based dropout, plus ModernBERT
+    hybrid alternatives.
+    Failure: the code still passed add_pooling_layer=False to DebertaV2Model, which this installed API rejects.
+  -> fb79481c (debug, currently training)
+    Current scheme: DeBERTa-v3-large AutoModel configured through AutoConfig; first 12 layers frozen;
+    stylometric multi-head attention pooling; learned feature gate between CLS and stylometric attention;
+    four-sample dropout classifier; label smoothing; differential learning rates; cosine warm restarts;
+    batch 16, gradient accumulation 2, up to 15 epochs, patience 4.
+    Features: train-only character TF-IDF (2-6), train-only word TF-IDF (1-4), dense stylometric/readability/
+    POS/punctuation features, and author-specific vocabulary features.
+    Split: still only list(StratifiedKFold(5).split(...))[0], not full five-fold CV.
+    Current leakage risk: author-specific vocabulary is built from the full labeled training dataframe before
+    the train/validation split, so validation labels influence those features. The leakage checker should be
+    expected to inspect this even if training completes successfully.
+    Confirmed retrieval: six debug transitions from 20260510_162636, 20260514_023457, 20260510_025317, and
+    20260509_042918; visible SOPs sg_0147 hybrid ModernBERT/TF-IDF, sg_0148 config-safe pretrained loading,
+    sg_0187 correct backbone paths, and sg_0115 config-based dropout. The node is not journaled yet, so its
+    final adoption ledger and result are not available.
+
+Branch C - ModernBERT hybrid draft -> attribute/API repair chain:
+  dc6491a4 (draft, AttributeError)
+    Scheme: ModernBERT-large + gated stylometric/TF-IDF fusion; AMP, gradient accumulation, early stopping;
+    only first StratifiedKFold split.
+    Injection: 36 events; 10 unique SOPs. It received both full ensemble recipes sg_0202 and sg_0108,
+    TF-IDF sg_0204, LightGBM fusion sg_0130, and the ModernBERT regularization SOP sg_0088.
+    Failure: accessed nonexistent self.backbone.modernbert.encoder.layer.
+  -> 9c63eacc (debug, AttributeError)
+    Change: switches to self.backbone.model, following the backbone-access memory.
+    Injection: 18 refs = 10 run, 6 SOP, 2 evidence. SOPs: sg_0092 correct backbone attributes, sg_0088
+    ModernBERT regularization, sg_0086 frozen embeddings + XGBoost, sg_0085 smaller model, sg_0001 cleanup,
+    sg_0112 stable DeBERTa alternative.
+    Failure: assumes word_embeddings, while this ModernBERT implementation uses tok_embeddings.
+  -> e28c9bf3 (debug, RuntimeError)
+    Change: fixes tok_embeddings and hidden_size=1024.
+    Injection: 18 refs = 7 run, 6 SOP, 5 evidence. Key SOPs: sg_0092/sg_0187-style backbone correction,
+    sg_0153 dimension matching, sg_0147 ModernBERT hybrid, sg_0086 XGBoost fallback.
+    Failure: uses an autocast(device_type=...) signature incompatible with the installed torch API.
+    State: its next child is queued but has not yet received the GPU.
+
+Iteration interpretation:
+  The system is retrieving stage-appropriate memory and the generated plans often reflect it. The full
+  DeBERTa + XGBoost + Logistic Regression recipe was injected into both afad3ee0 and dc6491a4, and sg_0108
+  was injected into the improve node, so retrieval absence is disproven.
+  The accepted path remains conservative because the full ensemble was not implemented in the initial drafts.
+  Later branches increased architectural complexity faster than execution reliability. Debug retrieval is
+  relevant, but each local repair has repeatedly exposed the next API, validation, or leakage defect.
+  Two raw numerical improvements (0.3412 and 0.3089) are not accepted results. They were correctly reset to
+  metric=None after leakage review. The only valid best remains 0.3553.
+  At 10/80 after roughly 2h22m on one GPU, completing all 80 heavy-transformer steps before the six-hour task
+  limit is unlikely. The run will probably terminate by time budget rather than step count unless later nodes
+  are much faster.
