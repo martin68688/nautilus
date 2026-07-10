@@ -124,10 +124,15 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             )
         prompt["Instructions"]["Inherited draft role contract (MANDATORY)"] = inherited
     if parent_node.leakage_audit and parent_node.leakage_audit.get("status") != "clean":
-        prompt["Instructions"]["Leakage audit root cause (MANDATORY)"] = [
-            "Fix the audited data-flow or evaluation protocol without discarding valid model components.",
-            format_audit(parent_node.leakage_audit),
-        ]
+        repair_contract = {
+            "LEAKAGE REPAIR CONTRACT - HIGHEST PRIORITY": [
+                "Fix the audited data-flow or evaluation protocol before addressing any lower-priority runtime issue.",
+                "Preserve valid model and ensemble components. Do not hide the issue through variable renaming.",
+                "The replacement code must pass a fresh audit under its own code hash.",
+                format_audit(parent_node.leakage_audit),
+            ]
+        }
+        prompt["Instructions"] = repair_contract | prompt["Instructions"]
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY
     prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
@@ -349,6 +354,15 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     log_adoption(new_node, agent, "global_memory", _mem_ids, "debug")
     log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "debug")
     log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "debug")
+    if new_node.leakage_repair_context:
+        log_adoption(
+            new_node,
+            agent,
+            "leakage_failure_memory",
+            [new_node.leakage_repair_context.get("source_node_id")],
+            "debug",
+            adoption_mode="mandatory_audit_repair",
+        )
 
     logger.info(f"[debug] {parent_node.id} → node {new_node.id}")
     return new_node

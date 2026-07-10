@@ -2,6 +2,7 @@
 
 import logging
 
+from agents.leakage_audit import rank_eligible
 from engine.search_node import SearchNode
 from utils.metric import WorstMetricValue
 
@@ -39,7 +40,12 @@ def validate_executed_node(agent, node: SearchNode):
         )
         return
 
-    if hasattr(node, 'branch_id') and node.branch_id:
+    if hasattr(node, 'branch_id') and node.branch_id and rank_eligible(agent, node):
         if node.branch_id not in agent.branch_successful_nodes:
             agent.branch_successful_nodes[node.branch_id] = []
         agent.branch_successful_nodes[node.branch_id].append(node)
+    elif getattr(agent.acfg, "check_data_leakage", False):
+        logger.warning(
+            "Node %s remains in the journal for repair but is excluded from branch_successful_nodes",
+            node.id,
+        )

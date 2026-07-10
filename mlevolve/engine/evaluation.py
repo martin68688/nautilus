@@ -4,6 +4,7 @@ import logging
 import time
 import random
 
+from agents.leakage_audit import rank_eligible
 from engine.search_node import SearchNode
 
 logger = logging.getLogger("MLEvolve")
@@ -34,6 +35,9 @@ def get_node_reward(agent, node: SearchNode):
         reward = -1
     elif node.is_buggy is False and node.metric.value is None:
         reward = -1
+    elif not rank_eligible(agent, node):
+        logger.warning("Node %s receives zero reward because its audit is not rank-eligible", node.id)
+        reward = 0
     else:
         if node.metric.value is not None and agent.best_metric is not None:
             improvement = node.metric.value - agent.best_metric if node.metric.maximize else agent.best_metric - node.metric.value
@@ -53,6 +57,15 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
 
     improvement = 0
     should_backpropagate = False
+
+    if getattr(agent.acfg, "check_data_leakage", False) and not rank_eligible(agent, cur_node):
+        cur_node.continue_improve = True
+        cur_node.is_terminal = False
+        logger.warning(
+            "Node %s is audit repair-only; skipping metric improvement/local-best updates",
+            cur_node.id,
+        )
+        return False
 
     if (agent.search_start_time and
         cur_node.stage != "root" and

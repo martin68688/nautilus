@@ -342,7 +342,32 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
     if not getattr(agent.acfg, "check_data_leakage", False):
         return False
     audit = leakage_audit.audit_code(node.code)
+    layer = getattr(agent, "external_skill_memory", None)
+    if layer is not None and hasattr(layer, "structural_failure_patterns"):
+        patterns = layer.structural_failure_patterns(node.code)
+        fresh_issue_codes = {
+            str(item.get("issue_code"))
+            for item in audit.get("issues", [])
+            if item.get("issue_code")
+        }
+        patterns = [
+            pattern for pattern in patterns
+            if str(pattern.get("issue_code")) in fresh_issue_codes
+        ]
+        if patterns:
+            audit = leakage_audit.merge_audits(
+                node.code,
+                audit,
+                leakage_audit.failure_pattern_audit(node.code, patterns),
+            )
     node.leakage_audit = audit
+    node.audit_repair_required = audit.get("status") != "clean"
+    if audit.get("status") == "clean" and node.leakage_repair_context:
+        node.resolved_issue_codes = [
+            str(item.get("issue_code"))
+            for item in node.leakage_repair_context.get("issues", [])
+            if item.get("issue_code")
+        ]
     leakage_audit.persist_audit(agent, node)
     if not audit.get("hard_block"):
         if audit.get("status") != "clean":
@@ -376,10 +401,21 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
 
     static_audit = node.leakage_audit or leakage_audit.audit_code(node.code)
     leakage_result = data_leakage_agent.run(agent, node)
+    for _ in range(2):
+        if str(leakage_result.get("classification")) != "audit_unavailable":
+            break
+        leakage_result = data_leakage_agent.run(agent, node)
     llm_audit = leakage_audit.llm_result_to_audit(node.code, leakage_result)
     merged_audit = leakage_audit.merge_audits(node.code, static_audit, llm_audit)
     merged_audit["observed_metric"] = response.get("metric")
     node.leakage_audit = merged_audit
+    node.audit_repair_required = merged_audit.get("status") != "clean"
+    if merged_audit.get("status") == "clean" and node.leakage_repair_context:
+        node.resolved_issue_codes = [
+            str(item.get("issue_code"))
+            for item in node.leakage_repair_context.get("issues", [])
+            if item.get("issue_code")
+        ]
 
     if merged_audit.get("hard_block"):
         logger.error(
@@ -408,7 +444,14 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
 
 def _save_to_global_memory(agent, node: SearchNode):
     audit = node.leakage_audit or {}
-    positive_eligible = not audit or audit.get("memory_disposition") == "positive_eligible"
+    if getattr(agent.acfg, "check_data_leakage", False):
+        positive_eligible = (
+            bool(audit)
+            and audit.get("status") == "clean"
+            and audit.get("memory_disposition") == "positive_eligible"
+        )
+    else:
+        positive_eligible = not audit or audit.get("memory_disposition") == "positive_eligible"
     if agent.global_memory and positive_eligible and not node.is_buggy and node.metric and node.metric.value is not None:
         try:
             parent_node = node.parent

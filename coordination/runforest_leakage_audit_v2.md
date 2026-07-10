@@ -1,5 +1,7 @@
 # RunForest Leakage Audit V2
 
+> Superseded by `runforest_leakage_audit_v3_implementation_report.md`. This file records the pre-hardening checkpoint at commit `dc6015dc`; its general closed-loop claims must not be used as the current implementation claim.
+
 ## Status
 
 This change replaces the previous single LLM boolean gate with a structured audit and memory-admission pipeline.
@@ -180,4 +182,3 @@ Verified behaviors:
 - The contaminated three-model node is absent from draft retrieval.
 - Exact replay rejects the historical source before GPU launch.
 - `PYTHONPATH=mlevolve python -m pytest -q tests`: `34 passed`.
-

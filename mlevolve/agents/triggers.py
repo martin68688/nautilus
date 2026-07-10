@@ -1,5 +1,6 @@
 import logging
 
+from agents.leakage_audit import rank_eligible
 from engine.search_node import SearchNode
 
 from engine.conditions import should_trigger_branch_fusion
@@ -32,7 +33,10 @@ def get_patience_counter(agent, parent_node: SearchNode) -> tuple:
     if len(branch_successful_nodes) == 0:
         return 0, len(branch_all_nodes), None
 
-    valid_nodes = [n for n in branch_successful_nodes if n.metric and n.metric.value is not None]
+    valid_nodes = [
+        n for n in branch_successful_nodes
+        if n.metric and n.metric.value is not None and rank_eligible(agent, n)
+    ]
     if not valid_nodes:
         return 0, len(branch_all_nodes), None
 
@@ -88,5 +92,15 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
             node.replay_source = copy.deepcopy(parent_node.replay_source)
         if node.replay_status is None:
             node.replay_status = parent_node.replay_status
+        parent_audit = parent_node.leakage_audit or {}
+        if parent_audit.get("status") not in {None, "clean"}:
+            node.leakage_repair_context = {
+                "source_node_id": parent_node.id,
+                "source_code_sha256": parent_audit.get("code_sha256"),
+                "status": parent_audit.get("status"),
+                "issues": copy.deepcopy(parent_audit.get("issues") or []),
+            }
+            node.leakage_repair_attempt = parent_node.leakage_repair_attempt + 1
+            node.audit_repair_required = True
         if node.branch_id in agent.branch_all_nodes:
             agent.branch_all_nodes[node.branch_id].append(node)

@@ -5,6 +5,7 @@ import logging
 from collections import defaultdict
 from typing import List
 
+from agents.leakage_audit import rank_eligible
 from engine.search_node import SearchNode
 
 logger = logging.getLogger("MLEvolve")
@@ -89,7 +90,21 @@ def update_top_candidates(agent, new_node: SearchNode) -> None:
     Only consider nodes that are not buggy and have a valid metric value.
     Each branch contributes at most 5 candidates to ensure diversity.
     """
-    if not new_node or new_node.is_buggy or not new_node.metric or new_node.metric.value is None or new_node.is_valid is False:
+    if (
+        not new_node
+        or new_node.is_buggy
+        or not new_node.metric
+        or new_node.metric.value is None
+        or new_node.is_valid is False
+        or not rank_eligible(agent, new_node)
+    ):
+        if new_node and new_node.leakage_audit:
+            logger.warning(
+                "Node %s excluded from top candidates by leakage policy: status=%s metric=%s",
+                new_node.id,
+                new_node.leakage_audit.get("status"),
+                new_node.leakage_audit.get("metric_disposition"),
+            )
         return
 
     # Avoid duplicates (by node id)
@@ -195,7 +210,10 @@ def get_branch_top_nodes(agent, branch_id: int, top_k: int = 3) -> List[SearchNo
         logger.info(f"Branch {branch_id} has no successful nodes")
         return []
 
-    successful_nodes = agent.branch_successful_nodes[branch_id]
+    successful_nodes = [
+        node for node in agent.branch_successful_nodes[branch_id]
+        if rank_eligible(agent, node)
+    ]
 
     if not successful_nodes:
         logger.info(f"Branch {branch_id} has no successful nodes")
@@ -222,6 +240,14 @@ def get_branch_top_nodes(agent, branch_id: int, top_k: int = 3) -> List[SearchNo
 def update_best_solution(agent, node):
     """Update top-K candidates and global best node."""
     if not node.metric or node.metric.value is None:
+        return
+
+    if not rank_eligible(agent, node):
+        logger.warning(
+            "Node %s retained for diagnostics but excluded from certified best solution: status=%s",
+            node.id,
+            (node.leakage_audit or {}).get("status", "missing"),
+        )
         return
 
     submission_file_path = agent.cfg.workspace_dir / "submission" / f"submission_{node.id}.csv"

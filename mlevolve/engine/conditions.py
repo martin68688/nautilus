@@ -3,6 +3,7 @@
 import logging
 import time
 
+from agents.leakage_audit import rank_eligible
 logger = logging.getLogger("MLEvolve")
 
 
@@ -21,7 +22,7 @@ def should_trigger_branch_fusion(agent) -> bool:
 
     successful_branches = [
         bid for bid, nodes in agent.branch_successful_nodes.items()
-        if len(nodes) >= scfg.fusion_min_successful_nodes
+        if len([node for node in nodes if rank_eligible(agent, node)]) >= scfg.fusion_min_successful_nodes
     ]
     if len(successful_branches) < scfg.fusion_min_branches:
         return False
@@ -41,7 +42,10 @@ def is_branch_stagnant(agent, branch_id: int, threshold: int = 3) -> bool:
     if branch_id not in agent.branch_successful_nodes:
         return False
 
-    successful_nodes = agent.branch_successful_nodes[branch_id]
+    successful_nodes = [
+        node for node in agent.branch_successful_nodes[branch_id]
+        if rank_eligible(agent, node)
+    ]
     if len(successful_nodes) < 1:
         return False
 
@@ -97,7 +101,7 @@ def is_globally_stagnant(agent) -> bool:
     current_best_metric = agent.best_node.metric
 
     for node in recent_nodes:
-        if node.is_buggy is False and node.metric and node.metric.value is not None:
+        if rank_eligible(agent, node) and node.metric and node.metric.value is not None:
             if agent.metric_maximize:
                 improvement = node.metric.value - current_best_metric.value
             else:

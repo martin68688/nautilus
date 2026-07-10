@@ -73,7 +73,7 @@ def test_run_forest_artifacts_are_clean_certified():
     run_nodes = [node for node in graph["nodes"] if node.get("type") == "RunNode" and node.get("code_length", 0) > 0]
     assert run_nodes
     assert all(len(node.get("code_sha256", "")) == 64 for node in run_nodes)
-    assert all(node.get("leakage_audit", {}).get("schema") == "mlevolve_leakage_audit_v1" for node in run_nodes)
+    assert all(node.get("leakage_audit", {}).get("schema") == "mlevolve_leakage_audit_v2" for node in run_nodes)
     assert report["failure_pattern_count"] > 0
 
 
@@ -287,6 +287,10 @@ def test_role_metadata_is_inherited_by_debug_and_improve_nodes():
         replay_source={"code_sha256": "abc"},
         replay_status="exact_source_loaded",
     )
+    from agents.leakage_audit import audit_code
+    parent.leakage_audit = audit_code(
+        "X_train, X_val = train_test_split(X)\nTfidfVectorizer().fit_transform(X_val)"
+    )
     child = SearchNode(code="print('fixed')", plan="fix", stage="debug", parent=parent)
     fake_agent = SimpleNamespace(
         _serialize_prompt=lambda prompt: str(prompt),
@@ -301,6 +305,10 @@ def test_role_metadata_is_inherited_by_debug_and_improve_nodes():
     assert child.source_ref_ids == parent.source_ref_ids
     assert child.replay_source == parent.replay_source
     assert child.replay_status == "exact_source_loaded"
+    assert child.leakage_audit == {}
+    assert child.audit_repair_required is True
+    assert child.leakage_repair_attempt == 1
+    assert child.leakage_repair_context["source_code_sha256"] == parent.leakage_audit["code_sha256"]
 
 
 def test_role_specific_prompt_rules_are_not_global():
@@ -310,6 +318,47 @@ def test_role_specific_prompt_rules_are_not_global():
     assert 'draft_role == "novel_exploration"' in source
     assert 'draft_role == "coldstart_baseline"' in source
     assert 'draft_role != "coldstart_baseline"' in source
+
+
+def test_repair_contract_is_high_priority_in_debug_and_improve_prompts():
+    for relative in ("mlevolve/agents/debug_agent.py", "mlevolve/agents/improve_agent.py"):
+        source = (REPO / relative).read_text(encoding="utf-8")
+        assert "LEAKAGE REPAIR CONTRACT - HIGHEST PRIORITY" in source
+        assert "fresh audit" in source
+
+
+def test_d93_structural_rename_still_matches_failure_patterns():
+    import ast
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents.memory.external_skill_memory import RunForestMemoryLayer
+
+    target = json.loads(REPLAY_TARGETS.read_text(encoding="utf-8"))["targets"][0]
+    journal_path = REPO / "mlevolve" / "runs" / target["run_id"] / "logs" / "journal.json"
+    journal = json.loads(journal_path.read_text(encoding="utf-8"))
+    code = next(
+        node["code"] for node in journal["nodes"]
+        if node["id"] == target["original_node_id"]
+    )
+    assigned = {
+        node.id for node in ast.walk(ast.parse(code))
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store)
+    }
+
+    class RenameLocals(ast.NodeTransformer):
+        def visit_Name(self, node):
+            if node.id in assigned:
+                node.id = f"renamed_{node.id}"
+            return node
+
+    renamed = ast.unparse(RenameLocals().visit(ast.parse(code)))
+    layer = RunForestMemoryLayer(str(GRAPH), index_path=str(INDEX), top_k=3)
+    matches = layer.structural_failure_patterns(renamed)
+    assert {
+        "TRANSFORM_FIT_ON_HOLDOUT",
+        "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION",
+    }.issubset({item.get("issue_code") for item in matches})
 
 
 def test_run_forest_coldstart_does_not_modify_model_template():

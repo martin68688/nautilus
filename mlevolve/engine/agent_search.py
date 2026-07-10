@@ -40,6 +40,7 @@ class AgentSearch:
         self.scfg = cfg.agent.search
         self.task_desc = clean_task_desc(task_desc, cfg)
         self.journal = journal
+        self.journal.audit_enforced = bool(self.acfg.check_data_leakage)
         self.data_preview: str | None = None
         self.current_step = 0
         self.current_node: SearchNode | None = None
@@ -284,6 +285,31 @@ class AgentSearch:
                         )
                         result_node.lock = True
                         logger.info(f"[_run_single_step] Draft node {result_node.id} is locked.")
+                elif (
+                    parent_node.leakage_audit
+                    and parent_node.leakage_audit.get("status") != "clean"
+                    and parent_node.leakage_repair_attempt >= 2
+                ):
+                    parent_node.is_terminal = True
+                    evaluation.backpropagate(parent_node, 0)
+                    _root = True
+                    logger.error(
+                        "Node %s exhausted two mandatory leakage-repair attempts; terminating branch",
+                        parent_node.id,
+                    )
+                elif (
+                    parent_node.leakage_audit
+                    and parent_node.leakage_audit.get("status") != "clean"
+                ):
+                    logger.warning(
+                        "Node %s is in mandatory leakage-repair mode (attempt=%s)",
+                        parent_node.id,
+                        parent_node.leakage_repair_attempt + 1,
+                    )
+                    if parent_node.is_buggy or parent_node.is_valid is False:
+                        result_node = debug_agent.run(self, parent_node)
+                    else:
+                        result_node = improve_agent.run(self, parent_node)
                 elif parent_node.is_buggy or parent_node.is_valid is False:
                     result_node = debug_agent.run(self, parent_node)
 

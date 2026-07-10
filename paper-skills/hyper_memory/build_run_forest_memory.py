@@ -33,7 +33,7 @@ MLEVOLVE_ROOT = REPO / "mlevolve"
 if str(MLEVOLVE_ROOT) not in sys.path:
     sys.path.insert(0, str(MLEVOLVE_ROOT))
 
-from agents.leakage_audit import audit_code, merge_audits
+from agents.leakage_audit import AUDIT_SCHEMA, DETECTOR_VERSION, audit_code, merge_audits
 
 
 DEFAULT_RUNS_DIR = REPO / "mlevolve" / "runs"
@@ -677,9 +677,12 @@ def build_artifact(
             if node_record["local_best_node_id"]:
                 edges.append({"src": node_id, "dst": node_record["local_best_node_id"], "kind": "points_to_local_best", "weight": 0.6})
 
-            for issue in leakage_audit.get("issues", []):
+            for issue in (leakage_audit.get("issues", []) if raw_code.strip() else []):
                 issue_code = str(issue.get("issue_code") or "UNKNOWN_LEAKAGE_ISSUE")
-                pattern_key = f"{leakage_audit.get('code_sha256')}::{issue_code}"
+                pattern_key = (
+                    f"{leakage_audit.get('structural_sha256') or leakage_audit.get('code_sha256')}"
+                    f"::{issue_code}"
+                )
                 pattern_id = f"failure::leakage::{stable_hash(pattern_key)}"
                 if pattern_id not in failure_patterns:
                     pattern_record = {
@@ -691,6 +694,7 @@ def build_artifact(
                         "severity": issue.get("severity"),
                         "execution_disposition": issue.get("execution_disposition"),
                         "code_sha256": leakage_audit.get("code_sha256"),
+                        "structural_sha256": leakage_audit.get("structural_sha256"),
                         "evidence": issue.get("evidence"),
                         "remediation": issue.get("remediation"),
                         "source_node_ids": [node_id],
@@ -878,6 +882,8 @@ def build_artifact(
         "meta": {
             "schema": "hyperbolic_run_forest_memory_v1",
             "builder": "build_run_forest_memory.py",
+            "audit_schema": AUDIT_SCHEMA,
+            "audit_detector_version": DETECTOR_VERSION,
             "runs_dir": str(runs_dir.relative_to(REPO)) if runs_dir.is_relative_to(REPO) else str(runs_dir),
             "sop_graph": str(sop_graph_path.relative_to(REPO)) if sop_graph_path.exists() and sop_graph_path.is_relative_to(REPO) else str(sop_graph_path),
             "journal_count": len(journals),

@@ -82,6 +82,10 @@ class SearchNode(DataClassJsonMixin):
     replay_status: Optional[str] = field(default=None, kw_only=True)
     skip_code_review: bool = field(default=False, kw_only=True)
     leakage_audit: dict = field(default_factory=dict, kw_only=True)
+    leakage_repair_context: dict = field(default_factory=dict, kw_only=True)
+    leakage_repair_attempt: int = field(default=0, kw_only=True)
+    resolved_issue_codes: list[str] = field(default_factory=list, kw_only=True)
+    audit_repair_required: bool = field(default=False, kw_only=True)
 
     def __post_init__(self) -> None:
         if self.parent is not None:
@@ -207,12 +211,16 @@ class SearchNode(DataClassJsonMixin):
         logger.info("fetch_child_memory")
         summary = []
 
+        def certified(child: "SearchNode") -> bool:
+            audit = child.leakage_audit or {}
+            return audit.get("status") == "clean" and audit.get("rank_eligible") is True
+
         sorted_children = sorted(
             [n for n in self.children if n.is_buggy is not None or n.stage == "draft"],
             key=lambda n: (
                 n.is_buggy is False,
                 n.is_buggy is not None,
-                n.metric.value if (n.metric and n.metric.value is not None) else float('-inf')
+                n.metric.value if (certified(n) and n.metric and n.metric.value is not None) else float('-inf')
             ),
             reverse=True
         )
@@ -234,9 +242,14 @@ class SearchNode(DataClassJsonMixin):
                 summary_part += f"Results: The implementation of this design has bugs.\n"
                 summary_part += f"Insight: Using a different approach may not result in the same bugs as the above approach.\n"
             else:
-                if n.analysis:
+                if not certified(n):
+                    summary_part += (
+                        "Results: metric withheld because leakage audit is "
+                        f"{(n.leakage_audit or {}).get('status', 'missing')}; use this attempt only for repair.\n"
+                    )
+                elif n.analysis:
                     summary_part += f"Results: {n.analysis}\n"
-                if n.metric and n.metric.value is not None:
+                if certified(n) and n.metric and n.metric.value is not None:
                     metric_display = self._format_metric_change(n)
                     summary_part += f"Validation Metric: {metric_display}\n"
                 if hasattr(n, 'exec_time') and n.exec_time is not None:
@@ -250,7 +263,7 @@ class SearchNode(DataClassJsonMixin):
             total_attempts = len(sorted_children)
             pending = [n for n in sorted_children if n.is_buggy is None]
             executed = [n for n in sorted_children if n.is_buggy is not None]
-            successful = [n for n in executed if n.is_buggy is False]
+            successful = [n for n in executed if n.is_buggy is False and certified(n)]
 
             stats_parts = []
             if pending:
@@ -439,6 +452,7 @@ class Journal(DataClassJsonMixin):
     """A collection of nodes representing the solution tree."""
 
     nodes: list[SearchNode] = field(default_factory=list)
+    audit_enforced: bool = False
 
     def __getitem__(self, idx: int) -> SearchNode:
         return self.nodes[idx]
@@ -463,7 +477,14 @@ class Journal(DataClassJsonMixin):
     def get_best_node(self, only_good=True) -> None | SearchNode:
         """Return the best solution found so far (node with the highest validation metric)."""
         if only_good:
-            nodes = self.good_nodes
+            audited = self.audit_enforced or any(bool(n.leakage_audit) for n in self.nodes)
+            nodes = [
+                n for n in self.good_nodes
+                if not audited or (
+                    n.leakage_audit.get("status") == "clean"
+                    and n.leakage_audit.get("rank_eligible") is True
+                )
+            ]
             if not nodes:
                 return None
         else:

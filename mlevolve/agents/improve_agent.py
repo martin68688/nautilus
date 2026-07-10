@@ -61,10 +61,15 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             )
         prompt["Instructions"]["Inherited draft role contract (MANDATORY)"] = inherited
     if parent_node.leakage_audit and parent_node.leakage_audit.get("status") != "clean":
-        prompt["Instructions"]["Inherited leakage audit (MANDATORY)"] = [
-            "Preserve the useful model architecture, but repair every audit finding before reusing its metric or preprocessing pipeline.",
-            format_audit(parent_node.leakage_audit),
-        ]
+        repair_contract = {
+            "LEAKAGE REPAIR CONTRACT - HIGHEST PRIORITY": [
+                "This branch is repair-only. Fix every audited data-flow/evaluation issue before any optimization or novelty work.",
+                "Preserve useful model and ensemble components; change split, fitting, selection, and reporting boundaries as required.",
+                "The replacement code receives a fresh audit. The parent audit is evidence, not the child's verdict.",
+                format_audit(parent_node.leakage_audit),
+            ]
+        }
+        prompt["Instructions"] = repair_contract | prompt["Instructions"]
 
     success_patience, total_patience, branch_best_score = get_patience_counter(agent, parent_node)
     use_magnitude_prompt = (success_patience >= 2) or (total_patience >= 5)
@@ -297,6 +302,15 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     from agents.adoption import log_adoption
     log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "improve")
     log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "improve")
+    if new_node.leakage_repair_context:
+        log_adoption(
+            new_node,
+            agent,
+            "leakage_failure_memory",
+            [new_node.leakage_repair_context.get("source_node_id")],
+            "improve",
+            adoption_mode="mandatory_audit_repair",
+        )
 
     if hasattr(parent_node, '_topk_triggered'):
         parent_node._topk_triggered = False

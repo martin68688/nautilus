@@ -241,21 +241,21 @@
     "excluded_sops_by_reason": {}
   },
   "journal_count": 22,
-  "node_count": 4877,
-  "edge_count": 12289,
+  "node_count": 4996,
+  "edge_count": 12945,
   "node_type_counts": {
     "Evidence": 1236,
-    "FailurePattern": 668,
+    "FailurePattern": 787,
     "Run": 22,
     "RunNode": 1346,
     "SOP": 281,
     "Transition": 1324
   },
   "edge_kind_counts": {
-    "blocks_adoption_of": 934,
+    "blocks_adoption_of": 1262,
     "contains": 1346,
     "distills_to": 2773,
-    "has_failure_pattern": 934,
+    "has_failure_pattern": 1262,
     "has_transition": 1324,
     "parent_of": 1324,
     "points_to_local_best": 1094,
@@ -274,25 +274,25 @@
   "audited_code_node_count": 1324,
   "audit_status_counts": {
     "audit_unavailable": 141,
-    "blocked": 340,
-    "clean": 785,
-    "protocol_biased": 42,
-    "warning": 16
+    "blocked": 280,
+    "clean": 693,
+    "protocol_biased": 55,
+    "warning": 155
   },
   "audit_issue_counts": {
     "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE": 22,
-    "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION": 165,
+    "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION": 179,
     "STATIC_AUDIT_PARSE_FAILED": 141,
-    "TRANSFORM_FIT_BEFORE_SPLIT": 375,
-    "TRANSFORM_FIT_ON_HOLDOUT": 231
+    "TRANSFORM_FIT_BEFORE_SPLIT": 396,
+    "TRANSFORM_FIT_ON_HOLDOUT": 524
   },
-  "failure_pattern_count": 668,
+  "failure_pattern_count": 787,
   "local_best_coordinate_attractions": 0,
   "local_best_attraction_weight": 0.0,
   "poincare_max_norm": 0.9878803970168318,
   "flat_twin_same_as_poincare": true,
   "euclidean_shape": [
-    4877,
+    4996,
     16
   ],
   "run_node_topology_preserved": true,

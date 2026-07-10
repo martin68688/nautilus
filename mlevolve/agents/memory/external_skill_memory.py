@@ -24,6 +24,8 @@ from typing import Any
 import joblib
 import numpy as np
 
+from agents.leakage_audit import structural_sha256
+
 logger = logging.getLogger("MLEvolve")
 
 
@@ -1902,8 +1904,22 @@ class RunForestMemoryLayer:
     def _positive_memory_eligible(self, node: dict[str, Any]) -> bool:
         audit = node.get("leakage_audit")
         if isinstance(audit, dict) and audit:
-            return audit.get("memory_disposition") == "positive_eligible"
-        return node.get("is_buggy") is not True
+            return (
+                audit.get("status") == "clean"
+                and audit.get("memory_disposition") == "positive_eligible"
+                and audit.get("paper_grade_eligible") is True
+            )
+        return False
+
+    def structural_failure_patterns(self, code: str) -> list[dict[str, Any]]:
+        digest = structural_sha256(code)
+        if not digest:
+            return []
+        return [
+            node for node in self.nodes.values()
+            if node.get("type") == "FailurePattern"
+            and node.get("structural_sha256") == digest
+        ]
 
     def _failure_pattern_card(self, pattern_id: str) -> dict[str, Any]:
         node = self.nodes.get(pattern_id, {})

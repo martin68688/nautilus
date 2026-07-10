@@ -13,13 +13,24 @@ import hashlib
 import json
 import os
 import re
+import threading
 import time
+import uuid
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterable
 
 
-AUDIT_SCHEMA = "mlevolve_leakage_audit_v1"
-DETECTOR_VERSION = "deterministic_static_v1"
+AUDIT_SCHEMA = "mlevolve_leakage_audit_v2"
+DETECTOR_VERSION = "deterministic_static_v2"
+REGISTRY_SCHEMA = "mlevolve_leakage_registry_record_v2"
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows fallback
+    fcntl = None
+
+_REGISTRY_LOCK = threading.RLock()
 
 _HOLDOUT_PARTS = {
     "val": "validation",
@@ -27,6 +38,12 @@ _HOLDOUT_PARTS = {
     "validation": "validation",
     "holdout": "holdout",
     "test": "test",
+    "dev": "validation",
+    "eval": "validation",
+    "evaluation": "validation",
+    "oos": "holdout",
+    "unseen": "holdout",
+    "private": "holdout",
 }
 
 _STATEFUL_TRANSFORMERS = {
@@ -40,6 +57,7 @@ _STATEFUL_TRANSFORMERS = {
     "OneHotEncoder",
     "OrdinalEncoder",
     "PCA",
+    "Pipeline",
     "PowerTransformer",
     "QuantileTransformer",
     "RobustScaler",
@@ -58,6 +76,35 @@ _SEVERITY_RANK = {"none": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 
 def code_sha256(code: str) -> str:
     return hashlib.sha256((code or "").encode("utf-8")).hexdigest()
+
+
+def structural_sha256(code: str) -> str:
+    """Hash Python structure while ignoring local identifier renames and formatting."""
+    try:
+        tree = ast.parse(code or "")
+    except SyntaxError:
+        return ""
+
+    class Canonicalizer(ast.NodeTransformer):
+        def visit_Name(self, node: ast.Name) -> ast.AST:
+            return ast.copy_location(ast.Name(id="identifier", ctx=node.ctx), node)
+
+        def visit_arg(self, node: ast.arg) -> ast.AST:
+            node.arg = "argument"
+            return node
+
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.AST:
+            node.name = "function"
+            return self.generic_visit(node)
+
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> ast.AST:
+            node.name = "function"
+            return self.generic_visit(node)
+
+    canonical = Canonicalizer().visit(tree)
+    ast.fix_missing_locations(canonical)
+    payload = ast.dump(canonical, annotate_fields=True, include_attributes=False)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _semantic_taints(name: str) -> set[str]:
@@ -94,7 +141,9 @@ def _expr_taints(expr: ast.AST | None, taints: dict[str, set[str]]) -> set[str]:
     if expr is None:
         return set()
     if isinstance(expr, ast.Name):
-        return _semantic_taints(expr.id) | taints.get(expr.id, set())
+        if expr.id in taints:
+            return set(taints[expr.id])
+        return _semantic_taints(expr.id)
     if isinstance(expr, ast.Attribute):
         return _expr_taints(expr.value, taints)
     if isinstance(expr, ast.Call):
@@ -133,9 +182,22 @@ def _is_explicit_train_partition(target_name: str, value: ast.AST, code: str) ->
 def _is_split_assignment(value: ast.AST) -> bool:
     return any(
         isinstance(node, ast.Call)
-        and _call_name(node.func) in {"train_test_split", "split"}
+        and _call_name(node.func) == "train_test_split"
         for node in ast.walk(value)
     )
+
+
+def _split_output_taints(names: list[str], value: ast.AST) -> list[set[str]] | None:
+    if not _is_split_assignment(value):
+        return None
+    output: list[set[str]] = []
+    for index, name in enumerate(names):
+        if index % 2 == 0:
+            output.append(set())
+        else:
+            semantic = _semantic_taints(name)
+            output.append(semantic or {"validation"})
+    return output
 
 
 def _issue(
@@ -196,22 +258,32 @@ def _summarize_audit(code: str, issues: Iterable[dict[str, Any]], *, detector_st
         status = "blocked"
         memory_disposition = "quarantine"
         metric_disposition = "reject"
+        execution_disposition = "block"
+        search_disposition = "blocked"
     elif has_protocol_bias:
         status = "protocol_biased"
         memory_disposition = "negative_only"
         metric_disposition = "protocol_biased"
+        execution_disposition = "allow_diagnostic"
+        search_disposition = "repair_only"
     elif detector_status != "complete":
         status = "audit_unavailable"
         memory_disposition = "negative_only"
         metric_disposition = "unverified"
+        execution_disposition = "allow_diagnostic"
+        search_disposition = "provisional"
     elif issue_list:
         status = "warning"
         memory_disposition = "negative_only"
         metric_disposition = "unverified"
+        execution_disposition = "allow_diagnostic"
+        search_disposition = "repair_only"
     else:
         status = "clean"
         memory_disposition = "positive_eligible"
         metric_disposition = "accept"
+        execution_disposition = "allow"
+        search_disposition = "normal"
 
     max_severity = "none"
     for item in issue_list:
@@ -224,21 +296,80 @@ def _summarize_audit(code: str, issues: Iterable[dict[str, Any]], *, detector_st
         "detector_version": DETECTOR_VERSION,
         "detector_status": detector_status,
         "code_sha256": code_sha256(code),
+        "structural_sha256": structural_sha256(code),
         "status": status,
         "max_severity": max_severity,
         "hard_block": hard_block,
         "paper_grade_eligible": status == "clean",
         "metric_disposition": metric_disposition,
         "memory_disposition": memory_disposition,
+        "execution_disposition": execution_disposition,
+        "search_disposition": search_disposition,
+        "rank_eligible": status == "clean",
+        "repair_required": status != "clean",
         "issues": issue_list,
     }
+
+
+def rank_eligible(agent: Any, node: Any) -> bool:
+    """Return whether a node may influence certified ranking and artifacts."""
+    if getattr(getattr(agent, "acfg", None), "check_data_leakage", False) is not True:
+        return bool(
+            node is not None
+            and getattr(node, "is_buggy", None) is not True
+            and getattr(node, "is_valid", None) is not False
+        )
+    audit = getattr(node, "leakage_audit", None)
+    if not isinstance(audit, dict) or not audit:
+        return False
+    if audit.get("schema") != AUDIT_SCHEMA or audit.get("detector_status") != "complete":
+        return False
+    if audit.get("code_sha256") != code_sha256(getattr(node, "code", "")):
+        return False
+    return bool(
+        audit.get("status") == "clean"
+        and audit.get("metric_disposition") == "accept"
+        and audit.get("paper_grade_eligible") is True
+    )
+
+
+def failure_pattern_audit(code: str, patterns: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    issues: list[dict[str, Any]] = []
+    for pattern in patterns:
+        original_code = str(pattern.get("issue_code") or "UNKNOWN")
+        issues.append(
+            _issue(
+                code=code,
+                node=None,
+                issue_code=f"HISTORICAL_FAILURE_PATTERN_MATCH::{original_code}",
+                category=str(pattern.get("category") or "historical_failure"),
+                severity=str(pattern.get("severity") or "high"),
+                evidence=(
+                    "Current code structurally matches a previously audited failure. "
+                    + str(pattern.get("evidence") or "")
+                ),
+                remediation=str(pattern.get("remediation") or "Resolve the historical failure before reuse."),
+                execution_disposition=str(pattern.get("execution_disposition") or "review"),
+            )
+        )
+    return _summarize_audit(code, issues)
 
 
 def audit_code(code: str) -> dict[str, Any]:
     """Run deterministic static leakage checks over one Python solution."""
     code = code or ""
     if not code.strip():
-        return _summarize_audit(code, [], detector_status="complete")
+        issue = _issue(
+            code=code,
+            node=None,
+            issue_code="EMPTY_CODE_AUDIT_FAILED",
+            category="audit_failure",
+            severity="high",
+            evidence="No executable Python source was supplied for audit.",
+            remediation="Generate non-empty executable code before certification.",
+            execution_disposition="block",
+        )
+        return _summarize_audit(code, [issue], detector_status="unavailable")
 
     try:
         tree = ast.parse(code)
@@ -279,22 +410,17 @@ def audit_code(code: str) -> dict[str, Any]:
                             constructors[name] = constructor
 
         taints: dict[str, set[str]] = {}
-        for names, _value in assignments:
-            for name in names:
-                taints.setdefault(name, set()).update(_semantic_taints(name))
-        for _ in range(max(2, len(assignments) + 1)):
-            changed = False
-            for names, value in assignments:
-                value_taints = _expr_taints(value, taints)
-                for name in names:
-                    assigned_taints = set(value_taints)
-                    if _is_split_assignment(value) or _is_explicit_train_partition(name, value, code):
-                        assigned_taints.clear()
-                    before = len(taints.setdefault(name, set()))
-                    taints[name].update(assigned_taints)
-                    changed = changed or len(taints[name]) != before
-            if not changed:
-                break
+        assignments.sort(key=lambda item: int(getattr(item[1], "lineno", 0) or 0))
+        for names, value in assignments:
+            value_taints = _expr_taints(value, taints)
+            split_taints = _split_output_taints(names, value)
+            for index, name in enumerate(names):
+                if split_taints is not None:
+                    taints[name] = set(split_taints[index])
+                elif _is_explicit_train_partition(name, value, code):
+                    taints[name] = set(value_taints)
+                else:
+                    taints[name] = _semantic_taints(name) | value_taints
 
         split_lines = [
             int(node.lineno)
@@ -312,13 +438,16 @@ def audit_code(code: str) -> dict[str, Any]:
                 continue
             receiver = _root_name(node.func.value)
             constructor = constructors.get(receiver, "")
-            transformer_like = constructor in _STATEFUL_TRANSFORMERS or (not constructor and method == "fit_transform")
-            if not transformer_like:
-                continue
+            transformer_like = constructor in _STATEFUL_TRANSFORMERS or method == "fit_transform"
             fit_taints: set[str] = set()
             for arg in node.args:
                 fit_taints.update(_expr_taints(arg, taints))
             for keyword in node.keywords:
+                if keyword.arg in {
+                    "eval_set", "eval_metric", "validation_data", "validation_set",
+                    "val_set", "callbacks",
+                }:
+                    continue
                 fit_taints.update(_expr_taints(keyword.value, taints))
             if fit_taints:
                 holdouts = ", ".join(sorted(fit_taints))
@@ -334,7 +463,7 @@ def audit_code(code: str) -> dict[str, Any]:
                         execution_disposition="block",
                     )
                 )
-            elif first_split_line is not None and int(node.lineno) < first_split_line:
+            elif transformer_like and first_split_line is not None and int(node.lineno) < first_split_line:
                 arg_names = {_root_name(arg) for arg in node.args}
                 if any(name and "train" in name.lower() for name in arg_names) and constructor not in {"LabelBinarizer", "LabelEncoder"}:
                     issues.append(
@@ -343,10 +472,10 @@ def audit_code(code: str) -> dict[str, Any]:
                             node=node,
                             issue_code="TRANSFORM_FIT_BEFORE_SPLIT",
                             category="validation_contamination",
-                            severity="high",
+                            severity="medium",
                             evidence=f"{constructor or receiver}.{method} is called before the first data split. Source: {_source_line(code, node)}",
                             remediation="Split rows first and fit a fresh transformer inside each training split or fold.",
-                            execution_disposition="block",
+                            execution_disposition="allow_with_warning",
                         )
                     )
 
@@ -378,9 +507,9 @@ def audit_code(code: str) -> dict[str, Any]:
     lower = code.lower()
     ensemble_weight_search = bool(
         re.search(r"(?:best|optimal|optimized)[_\s]*(?:ensemble[_\s]*)?weights?", lower)
-        and re.search(r"val(?:idation)?[_\w]*proba|val_probas|y_val", lower)
-        and re.search(r"for\s+\w+\s+in\s+(?:np\.)?(?:arange|linspace)|gridsearch", lower)
-        and re.search(r"log[_\s]?loss|compute_log_loss", lower)
+        and re.search(r"(?:val|valid|validation|dev|holdout|oof)[_\w]*(?:proba|pred)|y_(?:val|valid|dev|holdout)", lower)
+        and re.search(r"for\s+\w+\s+in\s+(?:np\.)?(?:arange|linspace)|gridsearch|optuna|minimize\s*\(", lower)
+        and re.search(r"log[_\s]?loss|compute_log_loss|brier|score", lower)
     )
     if ensemble_weight_search:
         line_match = re.search(r"(?m)^.*(?:best|optimal|optimized)[_\s]*(?:ensemble[_\s]*)?weights?.*$", code, re.IGNORECASE)
@@ -420,13 +549,15 @@ def audit_code(code: str) -> dict[str, Any]:
 def merge_audits(code: str, *audits: dict[str, Any] | None) -> dict[str, Any]:
     issues: list[dict[str, Any]] = []
     detector_status = "complete"
+    detector_rank = {"complete": 0, "llm_unavailable": 1, "registry_unavailable": 2, "registry_corrupt": 3, "unavailable": 4}
     llm_reviews: list[dict[str, Any]] = []
     for audit in audits:
         if not audit:
             continue
         issues.extend(item for item in audit.get("issues", []) if isinstance(item, dict))
-        if audit.get("detector_status") not in {None, "complete"}:
-            detector_status = str(audit.get("detector_status"))
+        current_status = str(audit.get("detector_status") or "complete")
+        if detector_rank.get(current_status, 4) > detector_rank.get(detector_status, 0):
+            detector_status = current_status
         llm_reviews.extend(item for item in audit.get("llm_reviews", []) if isinstance(item, dict))
     merged = _summarize_audit(code, issues, detector_status=detector_status)
     if llm_reviews:
@@ -493,6 +624,20 @@ def registry_dir_for_agent(agent: Any) -> Path | None:
     return Path(workspace) / "global_memory" / "leakage_audits"
 
 
+@contextmanager
+def _registry_file_lock(lock_path: Path):
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with _REGISTRY_LOCK:
+        with lock_path.open("a+", encoding="utf-8") as lock_file:
+            if fcntl is not None:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                if fcntl is not None:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+
 def persist_audit(agent: Any, node: Any) -> Path | None:
     audit = getattr(node, "leakage_audit", None) or {}
     digest = str(audit.get("code_sha256") or code_sha256(getattr(node, "code", "")))
@@ -501,30 +646,42 @@ def persist_audit(agent: Any, node: Any) -> Path | None:
         return None
     registry_dir.mkdir(parents=True, exist_ok=True)
     path = registry_dir / f"{digest}.json"
-    existing: dict[str, Any] = {}
-    if path.exists():
+    lock_path = registry_dir / f"{digest}.lock"
+    with _registry_file_lock(lock_path):
+        existing: dict[str, Any] = {}
+        if path.exists():
+            try:
+                existing = json.loads(path.read_text(encoding="utf-8"))
+            except Exception:
+                existing = {}
+        occurrences = list(existing.get("occurrences") or [])
+        occurrence = {
+            "node_id": str(getattr(node, "id", "")),
+            "stage": str(getattr(node, "stage", "")),
+            "draft_role": str(getattr(node, "draft_role", "") or ""),
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        }
+        occurrence_key = (occurrence["node_id"], occurrence["stage"], occurrence["draft_role"])
+        if not any(
+            (str(item.get("node_id")), str(item.get("stage")), str(item.get("draft_role"))) == occurrence_key
+            for item in occurrences if isinstance(item, dict)
+        ):
+            occurrences.append(occurrence)
+        payload = {
+            "schema": REGISTRY_SCHEMA,
+            "code_sha256": digest,
+            "structural_sha256": audit.get("structural_sha256"),
+            "audit": audit,
+            "occurrences": occurrences,
+        }
+        tmp = path.with_suffix(
+            f".{os.getpid()}.{threading.get_ident()}.{uuid.uuid4().hex}.tmp"
+        )
         try:
-            existing = json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
-            existing = {}
-    occurrences = list(existing.get("occurrences") or [])
-    occurrence = {
-        "node_id": str(getattr(node, "id", "")),
-        "stage": str(getattr(node, "stage", "")),
-        "draft_role": str(getattr(node, "draft_role", "") or ""),
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
-    }
-    if occurrence not in occurrences:
-        occurrences.append(occurrence)
-    payload = {
-        "schema": "mlevolve_leakage_registry_record_v1",
-        "code_sha256": digest,
-        "audit": audit,
-        "occurrences": occurrences,
-    }
-    tmp = path.with_suffix(f".{os.getpid()}.tmp")
-    tmp.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
-    os.replace(tmp, path)
+            tmp.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+            os.replace(tmp, path)
+        finally:
+            tmp.unlink(missing_ok=True)
     return path
 
 
@@ -537,14 +694,29 @@ def load_registry_audit(agent: Any, digest: str) -> dict[str, Any] | None:
         return None
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-        return payload.get("audit") if isinstance(payload, dict) else None
+        if not isinstance(payload, dict) or payload.get("schema") not in {
+            "mlevolve_leakage_registry_record_v1", REGISTRY_SCHEMA
+        }:
+            raise ValueError("unsupported leakage registry schema")
+        if str(payload.get("code_sha256") or "") != str(digest):
+            raise ValueError("leakage registry hash mismatch")
+        audit = payload.get("audit")
+        if not isinstance(audit, dict):
+            raise ValueError("missing leakage registry audit")
+        return audit
     except Exception:
         return {
             "schema": AUDIT_SCHEMA,
+            "detector_version": DETECTOR_VERSION,
+            "detector_status": "registry_corrupt",
             "status": "audit_unavailable",
             "hard_block": False,
             "paper_grade_eligible": False,
             "memory_disposition": "negative_only",
             "metric_disposition": "unverified",
+            "execution_disposition": "allow_diagnostic",
+            "search_disposition": "provisional",
+            "rank_eligible": False,
+            "repair_required": True,
             "issues": [],
         }

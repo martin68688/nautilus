@@ -7,6 +7,10 @@ across the whole run for similarity search and guidance. Task-scoped (one direct
 
 import json
 import logging
+import os
+import threading
+import uuid
+from functools import wraps
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
 from datetime import datetime
@@ -15,7 +19,20 @@ from .record import MemRecord
 from .retriever import HybridRetriever
 from .embedding_models import EmbeddingModel
 
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows fallback
+    fcntl = None
+
 logger = logging.getLogger("memory")
+
+
+def _synchronized(method):
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+    return wrapped
 
 
 class GlobalMemoryLayer:
@@ -42,14 +59,20 @@ class GlobalMemoryLayer:
         )
         self.retriever = HybridRetriever(self.embedding_model)
 
+        self._lock = threading.RLock()
+        self._load_error: str | None = None
         self.records: List[MemRecord] = []
         self.node_metadata_map: Dict[str, Dict[str, Any]] = {}
         self._load_memory()
 
         logger.info(f"[GlobalMemory] Initialized with {len(self.records)} existing records")
 
+    @_synchronized
     def save_node(self, node, parent_node: Optional = None) -> bool:
         """Save a search node to global memory. Returns True if saved."""
+        if self._load_error:
+            logger.error("[GlobalMemory] Refusing to overwrite corrupt memory: %s", self._load_error)
+            return False
         if not self._should_save_node(node):
             return False
 
@@ -106,8 +129,12 @@ class GlobalMemoryLayer:
             logger.error(f"[GlobalMemory] Failed to save node {node.id}: {e}")
             return False
 
+    @_synchronized
     def save_leakage_audit(self, node) -> bool:
         """Persist an audit finding as negative memory keyed by source-code hash."""
+        if self._load_error:
+            logger.error("[GlobalMemory] Refusing to overwrite corrupt memory: %s", self._load_error)
+            return False
         audit = getattr(node, "leakage_audit", None) or {}
         if audit.get("memory_disposition") == "positive_eligible":
             return False
@@ -372,6 +399,7 @@ class GlobalMemoryLayer:
         records_file = self.memory_dir / "records.json"
         if not records_file.exists():
             logger.info("[GlobalMemory] No existing memory file found, starting fresh")
+            self._load_error = None
             return
         try:
             with open(records_file, "r", encoding="utf-8") as f:
@@ -403,12 +431,18 @@ class GlobalMemoryLayer:
                 texts = [self._extract_text(r) for r in self.records]
                 self.retriever.build_index(self.records, texts)
                 logger.info(f"[GlobalMemory] Loaded {len(self.records)} records from disk")
+            self._load_error = None
         except Exception as e:
             logger.error(f"[GlobalMemory] Failed to load memory: {e}")
+            self._load_error = str(e)
             self.records = []
+            self.node_metadata_map = {}
 
+    @_synchronized
     def _save_memory(self) -> None:
         records_file = self.memory_dir / "records.json"
+        if self._load_error:
+            raise RuntimeError(f"Refusing to overwrite corrupt GlobalMemory: {self._load_error}")
         try:
             records_data = []
             for r in self.records:
@@ -428,8 +462,40 @@ class GlobalMemoryLayer:
                             d[key] = meta[key]
                 records_data.append(d)
 
-            with open(records_file, "w", encoding="utf-8") as f:
-                json.dump(records_data, f, indent=2, ensure_ascii=False)
+            lock_path = self.memory_dir / "records.lock"
+            with lock_path.open("a+", encoding="utf-8") as lock_file:
+                if fcntl is not None:
+                    fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+                try:
+                    existing_data = []
+                    if records_file.exists():
+                        existing_data = json.loads(records_file.read_text(encoding="utf-8"))
+                    by_id = {
+                        str(item.get("record_id")): item
+                        for item in existing_data
+                        if isinstance(item, dict) and item.get("record_id")
+                    }
+                    for item in records_data:
+                        record_id = str(item.get("record_id") or "")
+                        previous = by_id.get(record_id, {})
+                        if previous and item.get("source_node_ids") is not None:
+                            item["source_node_ids"] = list(dict.fromkeys([
+                                *(previous.get("source_node_ids") or []),
+                                *(item.get("source_node_ids") or []),
+                            ]))
+                        by_id[record_id] = item
+                    tmp = records_file.with_suffix(
+                        f".{os.getpid()}.{threading.get_ident()}.{uuid.uuid4().hex}.tmp"
+                    )
+                    with open(tmp, "w", encoding="utf-8") as f:
+                        json.dump(list(by_id.values()), f, indent=2, ensure_ascii=False)
+                        f.flush()
+                        os.fsync(f.fileno())
+                    os.replace(tmp, records_file)
+                finally:
+                    if fcntl is not None:
+                        fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
             logger.debug(f"[GlobalMemory] Saved {len(self.records)} records to disk")
         except Exception as e:
             logger.error(f"[GlobalMemory] Failed to save memory: {e}")
+            raise
