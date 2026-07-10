@@ -7720,3 +7720,40 @@ pre-submit validation evidence:
 pending policy:
   After submission, if Kubernetes reports Pending, do not patch, delete, resubmit, or change the GPU
   profile. Perform only low-frequency read-only checkpoints and wait for scheduling.
+
+## A40x2 clean-r6 submission checkpoint: 2026-07-10 15:16 CST
+
+source provenance:
+  local/remote branch: codex/dual-time-procedural-memory
+  pushed commit: 33405b1f
+  commit subject: Launch RunForest clean test on two A40s
+
+submission:
+  command mode: `kubectl create` from the validated manifest
+  result: job.batch/runforest-online-a40x2-clean-r6 created
+  namespace: ecepxie
+
+first read-only checkpoint:
+  Job:
+    name: runforest-online-a40x2-clean-r6
+    controller status: Running
+    completions: 0/1
+  Pod:
+    name: runforest-online-a40x2-clean-r6-l4vbg
+    phase: Pending
+    ready: 0/1
+    scheduled: false
+    node: none
+  rendered resources:
+    requests/limits nvidia.com/a40: 2
+    requests/limits cpu: 12
+    requests/limits memory: 64Gi
+  scheduler evidence:
+    `FailedScheduling`
+    the relevant capacity reason is `Insufficient nvidia.com/a40`; the full event also lists unrelated
+    nodes excluded by product affinity, taints, reservations, or other constraints.
+
+action:
+  No Kubernetes resource was patched, deleted, retried, or resubmitted.
+  Per the user's explicit policy, this is now a wait-only state. Future monitoring must be low-frequency
+  and read-only until scheduling changes.
