@@ -11,7 +11,9 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "mlevolve"))
 
 from agents.leakage_audit import (
+    audit_repair_preservation,
     audit_code,
+    build_repair_preservation_contract,
     load_registry_audit,
     persist_audit,
     rank_eligible,
@@ -24,6 +26,74 @@ from engine.execution import validate_executed_node
 from engine.evaluation import check_improvement, get_node_reward
 from engine.search_node import Journal, SearchNode
 from utils.metric import MetricValue
+
+
+def test_repair_preservation_blocks_model_simplification_but_allows_split_fix():
+    parent = '''
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
+model_name = "microsoft/deberta-v3-large"
+tfidf = TfidfVectorizer()
+xgb = XGBClassifier()
+lr = LogisticRegression()
+features = tfidf.fit_transform(all_texts)
+'''
+    contract = build_repair_preservation_contract(parent)
+
+    repaired = parent.replace("all_texts", "X_train")
+    assert audit_repair_preservation(repaired, contract)["status"] == "clean"
+
+    simplified = '''
+from sklearn.feature_extraction.text import TfidfVectorizer
+tfidf = TfidfVectorizer()
+features = tfidf.fit_transform(X_train)
+'''
+    audit = audit_repair_preservation(simplified, contract)
+    assert audit["status"] == "blocked"
+    issue_codes = {item["issue_code"] for item in audit["issues"]}
+    assert "REPAIR_MODEL_COMPONENT_REMOVED" in issue_codes
+    assert "REPAIR_MODEL_IDENTITY_CHANGED" in issue_codes
+
+
+def test_repair_preservation_blocks_custom_model_architecture_rewrite():
+    parent = '''
+import torch.nn as nn
+class StrongModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.encoder = nn.Linear(32, 16)
+        self.dropout = nn.Dropout(0.3)
+'''
+    contract = build_repair_preservation_contract(parent)
+    child = parent.replace("self.dropout = nn.Dropout(0.3)", "self.dropout = nn.Identity()")
+    audit = audit_repair_preservation(child, contract)
+    assert audit["status"] == "blocked"
+    assert any(item["issue_code"] == "REPAIR_MODEL_ARCHITECTURE_CHANGED" for item in audit["issues"])
+
+
+def test_repair_preservation_blocks_component_hyperparameter_downgrade():
+    parent = "model = XGBClassifier(n_estimators=800, max_depth=7, learning_rate=0.03)"
+    contract = build_repair_preservation_contract(parent)
+    child = "model = XGBClassifier(n_estimators=20, max_depth=2, learning_rate=0.3)"
+    audit = audit_repair_preservation(child, contract)
+    assert audit["status"] == "blocked"
+    assert any(
+        item["issue_code"] == "REPAIR_MODEL_CONFIGURATION_CHANGED"
+        for item in audit["issues"]
+    )
+
+
+def test_repair_preservation_blocks_training_budget_downgrade():
+    parent = "BATCH_SIZE = 16\nNUM_EPOCHS = 40\nPATIENCE = 5\nmodel = XGBClassifier()"
+    contract = build_repair_preservation_contract(parent)
+    child = "BATCH_SIZE = 16\nNUM_EPOCHS = 1\nPATIENCE = 1\nmodel = XGBClassifier()"
+    audit = audit_repair_preservation(child, contract)
+    assert audit["status"] == "blocked"
+    assert any(
+        item["issue_code"] == "REPAIR_TRAINING_HYPERPARAMETER_CHANGED"
+        for item in audit["issues"]
+    )
 
 
 def test_static_audit_blocks_transform_fit_on_holdout_but_allows_train_only_fit():
@@ -398,6 +468,37 @@ matrix = vectorizer.fit_transform(combined)
     assert registry.exists()
     saved = json.loads(registry.read_text(encoding="utf-8"))
     assert saved["audit"]["issues"][0]["issue_code"] == "TRANSFORM_FIT_ON_HOLDOUT"
+
+
+def test_preflight_blocks_clean_but_simplified_repair_before_execution(tmp_path):
+    parent_code = '''
+model_name = "microsoft/deberta-v3-large"
+tfidf = TfidfVectorizer()
+xgb = XGBClassifier()
+lr = LogisticRegression()
+features = tfidf.fit_transform(all_texts)
+'''
+    child = SearchNode(
+        code="tfidf = TfidfVectorizer()\nfeatures = tfidf.fit_transform(X_train)\n",
+        plan="shortcut", stage="debug",
+        leakage_repair_context={
+            "source_node_id": "parent",
+            "issues": [{"issue_code": "TRANSFORM_FIT_ON_HOLDOUT"}],
+            "preservation_contract": build_repair_preservation_contract(parent_code),
+        },
+    )
+    agent = SimpleNamespace(
+        acfg=SimpleNamespace(check_data_leakage=True),
+        cfg=SimpleNamespace(workspace_dir=tmp_path),
+        global_memory=None,
+    )
+    assert result_parse_agent.run_pre_execution_leakage_audit(agent, child) is True
+    assert child.leakage_audit["status"] == "blocked"
+    assert any(
+        item["issue_code"] == "REPAIR_MODEL_COMPONENT_REMOVED"
+        for item in child.leakage_audit["issues"]
+    )
+    assert child.resolved_issue_codes == []
 
 
 def test_runforest_builds_and_retrieves_failure_pattern(tmp_path):

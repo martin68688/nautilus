@@ -309,6 +309,47 @@ def test_role_metadata_is_inherited_by_debug_and_improve_nodes():
     assert child.audit_repair_required is True
     assert child.leakage_repair_attempt == 1
     assert child.leakage_repair_context["source_code_sha256"] == parent.leakage_audit["code_sha256"]
+    contract = child.leakage_repair_context["preservation_contract"]
+    assert contract["status"] == "frozen"
+    from agents.leakage_audit import code_sha256
+    assert contract["source_code_sha256"] == code_sha256(parent.code)
+
+
+def test_repair_preservation_contract_cannot_ratchet_down_across_attempts():
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents.leakage_audit import audit_code
+    from agents.triggers import register_node
+    from engine.search_node import SearchNode
+
+    original = SearchNode(
+        code="TfidfVectorizer()\nXGBClassifier()\nLogisticRegression()\n",
+        plan="source", stage="draft", branch_id=4,
+    )
+    original.leakage_audit = audit_code(
+        "X_train, X_val = train_test_split(X)\nTfidfVectorizer().fit_transform(X_val)"
+    )
+    fake_agent = SimpleNamespace(
+        _serialize_prompt=str, next_branch_id=5,
+        branch_all_nodes={4: [original]}, branch_successful_nodes={4: []},
+    )
+    first = SearchNode(code="TfidfVectorizer()", plan="bad repair", stage="debug", parent=original)
+    register_node(fake_agent, first, "first", parent_node=original)
+    first.leakage_audit = audit_code(
+        "X_train, X_val = train_test_split(X)\nTfidfVectorizer().fit_transform(X_val)"
+    )
+    second = SearchNode(code="print('simpler')", plan="worse repair", stage="debug", parent=first)
+    register_node(fake_agent, second, "second", parent_node=first)
+    assert (
+        second.leakage_repair_context["preservation_contract"]
+        == first.leakage_repair_context["preservation_contract"]
+    )
+    assert second.leakage_repair_context["preservation_contract"]["component_calls"] == {
+        "LogisticRegression": 1,
+        "TfidfVectorizer": 1,
+        "XGBClassifier": 1,
+    }
 
 
 def test_role_specific_prompt_rules_are_not_global():

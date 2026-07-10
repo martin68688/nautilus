@@ -8,7 +8,11 @@ from llm import compile_prompt_to_md
 from engine.search_node import SearchNode
 from utils.response import wrap_code
 from agents.triggers import get_patience_counter, register_node
-from agents.leakage_audit import format_audit
+from agents.leakage_audit import (
+    build_repair_preservation_contract,
+    format_audit,
+    format_repair_preservation_contract,
+)
 from agents.prompts import (
     ROBUSTNESS_GENERALIZATION_STRATEGY,
     MODEL_ARCHITECTURE_SAFETY,
@@ -65,6 +69,11 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             "LEAKAGE REPAIR CONTRACT - HIGHEST PRIORITY": [
                 "This branch is repair-only. Fix every audited data-flow/evaluation issue before any optimization or novelty work.",
                 "Preserve useful model and ensemble components; change split, fitting, selection, and reporting boundaries as required.",
+                "Do not change model architecture, checkpoint identity, feature families, ensemble membership, loss, or optimizer. This is not an optimization pass.",
+                format_repair_preservation_contract(
+                    parent_node.leakage_repair_context.get("preservation_contract", {})
+                    or build_repair_preservation_contract(parent_node.code)
+                ),
                 "The replacement code receives a fresh audit. The parent audit is evidence, not the child's verdict.",
                 format_audit(parent_node.leakage_audit),
             ]

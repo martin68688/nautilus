@@ -73,6 +73,39 @@ _STATEFUL_TRANSFORMERS = {
 
 _SEVERITY_RANK = {"none": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 
+_REPAIR_UTILITY_CALLS = {
+    "Counter", "DataFrame", "DataLoader", "Dataset", "GradScaler", "Path",
+    "Series", "Tensor", "TensorDataset",
+}
+_REPAIR_MODEL_CALLS = {
+    "Adam", "AdamW", "AutoModel", "AutoModelForSequenceClassification",
+    "CountVectorizer", "CrossEntropyLoss", "LabelEncoder", "LogisticRegression",
+    "StandardScaler", "TfidfTransformer", "TfidfVectorizer", "VarianceThreshold",
+    "XGBClassifier", "XGBRegressor",
+}
+_REPAIR_MODEL_CALL_PATTERN = re.compile(
+    r"(?:Attention|Boost|Classifier|Conv\d*d?|Decoder|Dropout|Embedding|Encoder|"
+    r"Forest|GRU|LSTM|LayerNorm|Linear|Loss|Model|Net|Optimizer|Regression|Regressor|"
+    r"RNN|SVC|SVM|SVR|Transformer)$"
+)
+_MODEL_LITERAL_PATTERN = re.compile(
+    r"(?:deberta|modernbert|roberta|bert|electra|transformer|xgboost|lightgbm)",
+    re.IGNORECASE,
+)
+_TRAINING_HYPERPARAMETER_PATTERN = re.compile(
+    r"^(?:batch_size|learning_rate|lr|weight_decay|num_epochs|epochs|max_epochs|"
+    r"patience|dropout|hidden_size|num_layers|gradient_accumulation_steps|"
+    r"warmup_steps|warmup_ratio|max_length|seed)$",
+    re.IGNORECASE,
+)
+
+
+def _is_model_identity_literal(value: str) -> bool:
+    if not _MODEL_LITERAL_PATTERN.search(value):
+        return False
+    stripped = value.strip()
+    return bool(stripped and (not re.search(r"\s", stripped) or "/" in stripped))
+
 
 def code_sha256(code: str) -> str:
     return hashlib.sha256((code or "").encode("utf-8")).hexdigest()
@@ -105,6 +138,219 @@ def structural_sha256(code: str) -> str:
     ast.fix_missing_locations(canonical)
     payload = ast.dump(canonical, annotate_fields=True, include_attributes=False)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _is_repair_protected_call(name: str) -> bool:
+    return bool(
+        name
+        and name not in _REPAIR_UTILITY_CALLS
+        and (name in _REPAIR_MODEL_CALLS or _REPAIR_MODEL_CALL_PATTERN.search(name))
+    )
+
+
+def build_repair_preservation_contract(code: str) -> dict[str, Any]:
+    """Freeze model-design elements that a leakage-only repair may not remove."""
+    source_hash = code_sha256(code)
+    try:
+        tree = ast.parse(code or "")
+    except SyntaxError as exc:
+        return {
+            "schema": "mlevolve_repair_preservation_v1",
+            "source_code_sha256": source_hash,
+            "status": "unavailable",
+            "error": f"source AST parse failed at line {exc.lineno}: {exc.msg}",
+        }
+
+    component_calls: dict[str, int] = {}
+    component_call_hashes: dict[str, list[str]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _call_name(node.func)
+        if _is_repair_protected_call(name):
+            component_calls[name] = component_calls.get(name, 0) + 1
+            component_call_hashes.setdefault(name, []).append(
+                structural_sha256(ast.unparse(node))
+            )
+
+    architecture_hashes: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ClassDef):
+            continue
+        class_calls = {
+            _call_name(child.func)
+            for child in ast.walk(node)
+            if isinstance(child, ast.Call)
+        }
+        bases = " ".join(ast.unparse(base) for base in node.bases)
+        if any(_is_repair_protected_call(name) for name in class_calls) or re.search(
+            r"(?:nn\.)?Module|BaseEstimator", bases
+        ):
+            architecture_hashes.append(structural_sha256(ast.unparse(node)))
+
+    training_hyperparameters: dict[str, list[str]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        for target in targets:
+            for name in _target_names(target):
+                if _TRAINING_HYPERPARAMETER_PATTERN.fullmatch(name):
+                    training_hyperparameters.setdefault(name, []).append(
+                        structural_sha256(ast.unparse(node.value))
+                    )
+
+    model_literals = sorted({
+        node.value
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant)
+        and isinstance(node.value, str)
+        and len(node.value) <= 240
+        and _is_model_identity_literal(node.value)
+    })
+    return {
+        "schema": "mlevolve_repair_preservation_v1",
+        "source_code_sha256": source_hash,
+        "status": "frozen",
+        "component_calls": dict(sorted(component_calls.items())),
+        "component_call_hashes": {
+            name: sorted(hashes) for name, hashes in sorted(component_call_hashes.items())
+        },
+        "architecture_hashes": sorted(architecture_hashes),
+        "training_hyperparameters": {
+            name: sorted(hashes)
+            for name, hashes in sorted(training_hyperparameters.items())
+        },
+        "model_literals": model_literals,
+    }
+
+
+def audit_repair_preservation(code: str, contract: dict[str, Any]) -> dict[str, Any]:
+    """Fail closed when a repair removes or rewrites protected model design."""
+    if not isinstance(contract, dict) or contract.get("status") != "frozen":
+        issue = _issue(
+            code=code, node=None,
+            issue_code="REPAIR_PRESERVATION_CONTRACT_UNAVAILABLE",
+            category="repair_integrity", severity="high",
+            evidence=str((contract or {}).get("error") or "No frozen preservation contract is available."),
+            remediation="Recreate the repair child from the audited parent and freeze its model-design contract.",
+            execution_disposition="block",
+        )
+        return _summarize_audit(code, [issue])
+
+    current = build_repair_preservation_contract(code)
+    if current.get("status") != "frozen":
+        issue = _issue(
+            code=code, node=None,
+            issue_code="REPAIR_PRESERVATION_AUDIT_UNAVAILABLE",
+            category="repair_integrity", severity="high",
+            evidence=str(current.get("error") or "Repaired code could not be structurally inspected."),
+            remediation="Repair the syntax without changing the protected model design.",
+            execution_disposition="block",
+        )
+        return _summarize_audit(code, [issue])
+
+    issues: list[dict[str, Any]] = []
+    missing_components = {
+        name: int(required) - int(current.get("component_calls", {}).get(name, 0))
+        for name, required in contract.get("component_calls", {}).items()
+        if int(current.get("component_calls", {}).get(name, 0)) < int(required)
+    }
+    if missing_components:
+        issues.append(_issue(
+            code=code, node=None,
+            issue_code="REPAIR_MODEL_COMPONENT_REMOVED",
+            category="repair_integrity", severity="critical",
+            evidence=f"Protected model/feature calls were removed or reduced: {missing_components}",
+            remediation="Restore every protected model, feature, optimizer, loss, and ensemble component; modify only data/evaluation boundaries.",
+            execution_disposition="block",
+        ))
+
+    changed_configurations: dict[str, int] = {}
+    current_hashes = current.get("component_call_hashes", {})
+    for name, required_hashes in contract.get("component_call_hashes", {}).items():
+        available = list(current_hashes.get(name, []))
+        missing_count = 0
+        for required_hash in required_hashes:
+            if required_hash in available:
+                available.remove(required_hash)
+            else:
+                missing_count += 1
+        if missing_count:
+            changed_configurations[name] = missing_count
+    if changed_configurations:
+        issues.append(_issue(
+            code=code, node=None,
+            issue_code="REPAIR_MODEL_CONFIGURATION_CHANGED",
+            category="repair_integrity", severity="critical",
+            evidence=f"Protected component constructor/configuration changed: {changed_configurations}",
+            remediation="Restore the original component arguments and hyperparameters; only data/evaluation boundaries may change.",
+            execution_disposition="block",
+        ))
+
+    changed_hyperparameters: dict[str, int] = {}
+    current_hyperparameters = current.get("training_hyperparameters", {})
+    for name, required_hashes in contract.get("training_hyperparameters", {}).items():
+        available = list(current_hyperparameters.get(name, []))
+        missing_count = 0
+        for required_hash in required_hashes:
+            if required_hash in available:
+                available.remove(required_hash)
+            else:
+                missing_count += 1
+        if missing_count:
+            changed_hyperparameters[name] = missing_count
+    if changed_hyperparameters:
+        issues.append(_issue(
+            code=code, node=None,
+            issue_code="REPAIR_TRAINING_HYPERPARAMETER_CHANGED",
+            category="repair_integrity", severity="critical",
+            evidence=f"Protected training hyperparameters changed or disappeared: {changed_hyperparameters}",
+            remediation="Restore the original training budget and hyperparameters; leakage repair is not a model-tuning pass.",
+            execution_disposition="block",
+        ))
+
+    missing_architectures = sorted(
+        set(contract.get("architecture_hashes", []))
+        - set(current.get("architecture_hashes", []))
+    )
+    if missing_architectures:
+        issues.append(_issue(
+            code=code, node=None,
+            issue_code="REPAIR_MODEL_ARCHITECTURE_CHANGED",
+            category="repair_integrity", severity="critical",
+            evidence=f"{len(missing_architectures)} protected model class structure(s) no longer match the parent.",
+            remediation="Restore the parent model classes exactly; leakage repair belongs in split, fitting, selection, and reporting logic.",
+            execution_disposition="block",
+        ))
+
+    missing_literals = sorted(
+        set(contract.get("model_literals", [])) - set(current.get("model_literals", []))
+    )
+    if missing_literals:
+        issues.append(_issue(
+            code=code, node=None,
+            issue_code="REPAIR_MODEL_IDENTITY_CHANGED",
+            category="repair_integrity", severity="critical",
+            evidence=f"Protected model/checkpoint identifiers were removed: {missing_literals}",
+            remediation="Keep the original pretrained model names and checkpoint paths unchanged during leakage repair.",
+            execution_disposition="block",
+        ))
+
+    return _summarize_audit(code, issues)
+
+
+def format_repair_preservation_contract(contract: dict[str, Any]) -> str:
+    components = contract.get("component_calls", {}) if isinstance(contract, dict) else {}
+    literals = contract.get("model_literals", []) if isinstance(contract, dict) else []
+    architecture_count = len(contract.get("architecture_hashes", [])) if isinstance(contract, dict) else 0
+    hyperparameters = contract.get("training_hyperparameters", {}) if isinstance(contract, dict) else {}
+    return (
+        f"Protected component calls (minimum counts): {components}; "
+        f"protected model/checkpoint identifiers: {literals}; "
+        f"protected model class structures: {architecture_count}; "
+        f"protected training hyperparameters: {sorted(hyperparameters)}."
+    )
 
 
 def _semantic_taints(name: str) -> set[str]:

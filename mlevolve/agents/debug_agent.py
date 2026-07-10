@@ -15,7 +15,11 @@ from agents.prompts import (
 from agents.coder.diff_coder import SearchReplacePatcher, DIFF_SYS_FORMAT
 from agents.planner import build_chat_prompt_for_model
 from agents.triggers import register_node
-from agents.leakage_audit import format_audit
+from agents.leakage_audit import (
+    build_repair_preservation_contract,
+    format_audit,
+    format_repair_preservation_contract,
+)
 from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
 
 logger = logging.getLogger("MLEvolve")
@@ -128,6 +132,11 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             "LEAKAGE REPAIR CONTRACT - HIGHEST PRIORITY": [
                 "Fix the audited data-flow or evaluation protocol before addressing any lower-priority runtime issue.",
                 "Preserve valid model and ensemble components. Do not hide the issue through variable renaming.",
+                "Do not change model architecture, checkpoint identity, feature families, ensemble membership, loss, or optimizer. Only repair the audited data/evaluation flow.",
+                format_repair_preservation_contract(
+                    parent_node.leakage_repair_context.get("preservation_contract", {})
+                    or build_repair_preservation_contract(parent_node.code)
+                ),
                 "The replacement code must pass a fresh audit under its own code hash.",
                 format_audit(parent_node.leakage_audit),
             ]

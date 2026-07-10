@@ -94,11 +94,17 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
             node.replay_status = parent_node.replay_status
         parent_audit = parent_node.leakage_audit or {}
         if parent_audit.get("status") not in {None, "clean"}:
+            from agents.leakage_audit import build_repair_preservation_contract
+
+            preservation_contract = copy.deepcopy(
+                parent_node.leakage_repair_context.get("preservation_contract", {})
+            ) or build_repair_preservation_contract(parent_node.code)
             node.leakage_repair_context = {
                 "source_node_id": parent_node.id,
                 "source_code_sha256": parent_audit.get("code_sha256"),
                 "status": parent_audit.get("status"),
                 "issues": copy.deepcopy(parent_audit.get("issues") or []),
+                "preservation_contract": preservation_contract,
             }
             node.leakage_repair_attempt = parent_node.leakage_repair_attempt + 1
             node.audit_repair_required = True

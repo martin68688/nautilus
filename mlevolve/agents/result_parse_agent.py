@@ -342,6 +342,15 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
     if not getattr(agent.acfg, "check_data_leakage", False):
         return False
     audit = leakage_audit.audit_code(node.code)
+    if node.leakage_repair_context:
+        audit = leakage_audit.merge_audits(
+            node.code,
+            audit,
+            leakage_audit.audit_repair_preservation(
+                node.code,
+                node.leakage_repair_context.get("preservation_contract", {}),
+            ),
+        )
     layer = getattr(agent, "external_skill_memory", None)
     if layer is not None and hasattr(layer, "structural_failure_patterns"):
         patterns = layer.structural_failure_patterns(node.code)
