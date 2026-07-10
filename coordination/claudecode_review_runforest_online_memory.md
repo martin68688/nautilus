@@ -8590,3 +8590,88 @@ Iteration interpretation:
   At 10/80 after roughly 2h22m on one GPU, completing all 80 heavy-transformer steps before the six-hour task
   limit is unlikely. The run will probably terminate by time budget rather than step count unless later nodes
   are much faster.
+
+## Root-cause audit: incomplete ensemble adoption, single-fold CV, and leakage strictness: 2026-07-10 18:17 CST
+
+Why afad3ee0 did not implement the complete three-model ensemble:
+  This was not retrieval loss or prompt truncation. The live journal prompt contains the complete sg_0202
+  title, applicability condition, and action: fine-tune DeBERTa-v3-large, train XGBoost on embeddings plus
+  handcrafted features, train Logistic Regression on TF-IDF, and optimize blend weights on validation loss.
+  The prompt also contains sg_0204 and robust DeBERTa/hybrid SOPs.
+  However, the later and more imperative draft instructions conflict with that memory:
+    draft_agent.py says the first solution must be relatively simple and must avoid complex ensembles.
+    It also mandates novelty versus every memory attempt and prefers a completely different approach.
+    RunForest text says to use SOP signposts only when they match and not to copy them blindly.
+    Cold-start pretrained-model instructions use stronger MUST/CRITICAL wording than external memory.
+  External memory therefore acts as optional evidence, not a selected implementation contract. There is no
+  stage that records full/partial/rejected adoption before generation and no plan-to-code validator that checks
+  whether all components of a selected SOP were implemented.
+  Stepwise generation further locks in the omission: once model_design chooses only DeBERTa attention fusion,
+  the training_evaluation step is explicitly forbidden from introducing new models or redesigning the pipeline.
+  The three initial drafts are generated independently; the mandatory rule that at least one branch copy the
+  cold-start template has no branch-role coordinator or postcondition, so every branch can assume another branch
+  will cover a baseline/ensemble.
+  Conclusion: the complete ensemble lost to prompt-priority conflict and missing adoption enforcement, not to
+  retrieval failure. A branch-level intent assignment is needed: baseline, full-memory reproduction, and novel
+  alternative, each with selected SOP ids and required components.
+
+Why StratifiedKFold(5) uses only one split:
+  The generated code consistently calls next(skf.split(...)) or list(skf.split(...))[0]. This is not an isolated
+  merge accident. Two upstream instructions actively encourage it:
+    prompt_leakage_prevention() presents next(skf.split(...)) as the canonical fix for the historical INDEX_BUG.
+    Retrieved sg_0120 says to create stratified folds but then "use one fold for validation and the rest for
+    training"; it does not require looping over all folds, OOF predictions, or fold averaging.
+  afad3ee0 also received sg_0087, which explicitly recommends a single stratified split for more epochs.
+  The stronger full-CV SOP sg_0226 was present for e6f39008 but was not in afad3ee0's runtime SOP set.
+  Full five-fold DeBERTa training would cost roughly five times more and conflicts with the simple-first-draft
+  and six-hour/one-GPU constraints. No validator distinguishes "StratifiedKFold used as a holdout generator"
+  from real five-fold CV.
+  Conclusion: current behavior is expected from the prompt. Reports must call it a single stratified holdout.
+  To require real five-fold CV, the selected SOP must specify an explicit fold loop, per-fold fresh model,
+  OOF metric, and test-probability averaging, with a static/runtime conformance check.
+
+Leakage-check implementation:
+  triggers.py now checks every metric-bearing node. This replaced the previous extreme-score-only trigger in
+  commit 74960b73.
+  data_leakage_agent.py sends the complete code, output, task, and metric to one LLM and asks for a binary
+  has_leakage plus high/medium/low confidence.
+  result_parse_agent.py treats both high and medium as fatal: mark is_buggy=true and replace the metric with
+  WorstMetricValue. Low confidence is only logged. Checker failure is fail-open.
+
+What the checker got right:
+  For 2aecfa5f, character and word TF-IDF were explicitly fit on concatenated train+test text. Under the strict
+  paper protocol this is transductive test-distribution access and is a valid rejection reason.
+  Training LightGBM on the transformer's validation rows without an untouched evaluation set leaves the final
+  ensemble unvalidated. It should not be allowed to claim the transformer's reported validation score as the
+  final ensemble score.
+  The current fb79481c branch creates author-specific vocabularies from the complete labeled train dataframe
+  before the split. Validation labels influence those features; this is genuine target leakage if those
+  features enter validation inference.
+
+Where the checker is too strict or factually wrong:
+  Per-row stylometric/readability features computed for train and test together are not leakage when no global
+  fit/statistic is shared; the 2aecfa5f reason itself calls this only suspicious.
+  A transformer trained on train_idx can validly produce embeddings for disjoint val_idx. The 0fa38b52 reason
+  incorrectly treats same-distribution training data as supervised leakage even though the model did not see
+  the validation rows. The OOF warning is only valid when one fold model is reused to encode rows it trained on.
+  Using one validation set for early stopping and final reporting is standard holdout model selection bias, not
+  classic data leakage. It may be insufficient for a paper-grade claim, but should not automatically erase a
+  component metric.
+  In both 2aecfa5f and 0fa38b52, final_val_score is calculated from transformer validation predictions before
+  LightGBM; LightGBM affects test submission only. Therefore the checker should distinguish "transformer metric
+  is usable" from "final ensemble has no unbiased validation metric" instead of invalidating the entire node.
+  The 0fa38b52 verdict explicitly says 0.3089 is reasonable, while result_parse_agent.py appends the hard-coded
+  sentence that it is "unrealistically extreme due to data leakage." This is internally contradictory.
+  A single medium-confidence LLM judgement is currently sufficient for irreversible metric deletion; there is
+  no deterministic evidence gate, second judge, or appeal state.
+
+Recommended leakage policy for ClaudeCode review:
+  Separate issue classes: fatal target/train-val overlap, strict-protocol transductive test preprocessing,
+  evaluation/model-selection bias, and unvalidated downstream ensemble.
+  Reject only proven fatal leakage, or strict-protocol violations when strict_paper mode is enabled.
+  Preserve raw_metric and add certified_metric/certification_status instead of deleting all numerical evidence.
+  Medium confidence should quarantine or request a second judge, not mark buggy immediately.
+  Require evidence fields: issue_type, affected component/metric, exact code lines, whether validation rows or
+  labels were actually observed, severity, protocol mode, and recommended action.
+  A valid transformer metric with an unvalidated ensemble submission should remain attached to the transformer
+  component while the ensemble claim is rejected.
