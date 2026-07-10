@@ -8081,3 +8081,88 @@ interpretation:
   The source fetch has succeeded and the job is alive in a slow PVC archive-extraction phase. This is not
   yet model execution or memory-system evidence. The correct action is low-frequency wait-only monitoring;
   do not interrupt or replace the pod while `git archive` and `tar` remain active.
+
+## Low-frequency checkpoint: 2026-07-10 16:24 CST
+
+Scope:
+  One read-only checkpoint for clean-r9. No Kubernetes or PVC state was mutated, and credential-bearing
+  command lines/remotes were not printed into this report.
+
+cluster state:
+  Job: runforest-online-a100x1-clean-r9
+  status: Running
+  completions: 0/1
+  age: about 58 minutes
+  Pod: runforest-online-a100x1-clean-r9-lr6nr
+  ready: 1/1
+  restarts: 0
+  node: hcc-gpengine-shor-c5303.unl.edu
+
+verified startup gates:
+  checked-out commit:
+    e81cc0cdb47ebd4706ff23236fbdb31afb7acb0b
+  original cold-start template SHA256:
+    5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+  original template keys observed in live guidance:
+    ModernBERT
+    DeBERTa-v3-large
+  clean graph:
+    clean_graph_ok 22 runs 4212 nodes
+    runtime graph load: 4212 nodes / 10429 edges
+    scoring=poincare
+    agentic=True
+  tests:
+    8 passed, 3 deprecation warnings
+
+matrix/task state:
+  four-task matrix started with:
+    spooky-author-identification
+    aerial-cactus-identification
+    leaf-classification
+    new-york-city-taxi-fare-prediction
+  current task: spooky-author-identification
+  current run:
+    20260710_081621_runforest_online_a100x1_clean_r9_20260710_074146_spooky-author-identification_runforest
+  matrix manifest rows: 0
+  interpretation: no task has completed yet.
+
+retrieval evidence:
+  RunForest loaded both during initial guidance and AgentSearch runtime initialization.
+  Four draft-stage retrieval events were visible by this checkpoint: one initial guidance retrieval and one
+  for each of three generated drafts.
+  strategy: draft_successful_branches
+  each event selected run-transition references plus SOP references.
+  observed references include clean historical spooky transitions and SOPs such as sg_0088, sg_0087,
+  sg_0221, sg_0223, sg_0202, and sg_0204.
+  This proves retrieval execution and injection, but not yet adoption or causal benefit.
+
+draft/execution state:
+  Phase 1 completed: 3 draft codes generated and code-reviewed.
+  Phase 2 started: three draft executions submitted to a one-worker executor; execution is therefore
+  sequential on the single requested GPU.
+  active runfile: runfile_0.py
+  runfile_0 scheme:
+    microsoft/deberta-v3-large
+    character and word TF-IDF feature construction
+    batch size 8
+    10 epochs
+    StratifiedKFold(n_splits=5) is instantiated, but the implementation uses only
+    `next(skf.split(...))`; this is one stratified 80/20 holdout, not full five-fold training.
+  GPU snapshot:
+    NVIDIA A100-SXM4-80GB
+    14949 MiB used
+    92% utilization
+
+metric/adoption state:
+  journal.json: not present
+  filtered_journal.json: not present
+  adoption_report.json: not present
+  adoption_events.jsonl: not present
+  external_memory_adoption_events.jsonl: not present
+  accepted metric: none
+  adoption rate: not computable yet
+
+current interpretation:
+  The requested cold-start template, clean RunForest graph, runtime retrieval, and real GPU execution are
+  all now verified. The experiment has not produced its first evaluated node, so no quality comparison or
+  adoption conclusion is valid yet. Continue low-frequency read-only monitoring.
