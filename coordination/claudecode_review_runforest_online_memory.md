@@ -7757,3 +7757,61 @@ action:
   No Kubernetes resource was patched, deleted, retried, or resubmitted.
   Per the user's explicit policy, this is now a wait-only state. Future monitoring must be low-frequency
   and read-only until scheduling changes.
+
+## Resource objective revision: RTX A6000x3 clean-r7, 2026-07-10 15:20 CST
+
+user-directed change:
+  The requested resource profile superseded A40x2/12 CPU with:
+    3x RTX A6000
+    5 CPU
+    64Gi RAM
+
+retired superseded queue entry:
+  Job: runforest-online-a40x2-clean-r6
+  state before deletion: Pending / unscheduled / no container start
+  deletion result: job.batch "runforest-online-a40x2-clean-r6" deleted
+  reason: avoid leaving an obsolete A40 request in the queue after the explicit resource objective changed.
+  No experiment code, model training, retrieval, journal, metric, or adoption artifact had run in that pod.
+
+replacement manifest:
+  `job-runforest-online-rtxa6000x3-clean-r7.yaml`
+
+RTX A6000 resource evidence:
+  resource key: nvidia.com/rtxa6000
+  required product label: NVIDIA-RTX-A6000
+  observed labelled nodes include capacities of 4, 5, 6, and 8 RTX A6000 GPUs.
+  The repository's existing RTX A6000 Job templates use the generic nvidia.com/gpu toleration and do not
+  add the A40-specific large-GPU toleration.
+
+replacement resource contract:
+  Job name: runforest-online-rtxa6000x3-clean-r7
+  GPU request/limit: nvidia.com/rtxa6000=3
+  CPU request/limit: 5
+  memory request/limit: 64Gi
+  runtime GPU count: RUNFOREST_NUM_GPUS=3
+  matrix runner GPU count: --num-gpus 3
+  runtime CPU count: RUNFOREST_CPU_NUMBER=5 / --cpu-number 5
+
+controlled experiment fields retained:
+  branch: codex/dual-time-procedural-memory
+  remote-resolved checkout into a fresh PVC-backed workdir
+  original cold-start template SHA256:
+    5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+  required template keys: ModernBERT, DeBERTa-v3-large
+  clean allowlist graph build with --require-clean-provenance
+  four-task matrix: spooky, aerial cactus, leaf, NYC taxi fare
+  RunForest agentic runtime retrieval with Poincare scoring
+  coldstart.use_coldstart=True
+  adoption_tracking.enable=True
+  adoption_tracking.enable_analysis=True
+  adoption_tracking.judge_mode=llm-all
+
+manifest validation:
+  Python YAML/resource assertions: passed
+  embedded Bash `bash -n`: passed
+  `kubectl create --dry-run=client`: passed
+  requests and limits match exactly for GPU, CPU, and memory.
+
+pending policy:
+  Once the RTX A6000 Job is submitted, an unscheduled Pending state is wait-only. Do not patch the Job,
+  switch GPU types, delete/resubmit it, or poll continuously.
