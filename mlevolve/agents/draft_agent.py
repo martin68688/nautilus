@@ -23,8 +23,52 @@ from agents.planner import build_chat_prompt_for_model
 logger = logging.getLogger("MLEvolve")
 
 
-def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
+def run(
+    agent,
+    init_solution_path: Optional[str] = None,
+    draft_role: Optional[str] = None,
+) -> SearchNode:
     """Generate initial draft. If init_solution_path is provided and readable, use file content directly."""
+    draft_role = agent.claim_draft_role(draft_role)
+
+    if draft_role == "memory_reproduction":
+        from agents.adoption import log_adoption
+        from agents.memory.run_forest_replay import load_exact_replay
+
+        replay = load_exact_replay(agent)
+        agent.virtual_root.add_expected_child_count()
+        new_node = SearchNode(
+            plan=replay["plan"],
+            code=replay["code"],
+            parent=agent.virtual_root,
+            stage="draft",
+            local_best_node=agent.virtual_root,
+            draft_role=draft_role,
+            role_contract=replay["role_contract"],
+            source_ref_ids=replay["source_ref_ids"],
+            replay_source=replay["replay_source"],
+            replay_status="exact_source_loaded",
+            skip_code_review=True,
+        )
+        register_node(agent, new_node, replay["role_contract"], new_branch=True)
+        log_adoption(
+            new_node,
+            agent,
+            "run_forest_agentic_memory",
+            replay["source_ref_ids"],
+            "draft",
+            adoption_mode="exact_code_replay",
+        )
+        logger.info(
+            "[draft] → node %s (branch=%s role=%s source=%s sha256=%s)",
+            new_node.id,
+            new_node.branch_id,
+            draft_role,
+            replay["replay_source"]["graph_node_id"],
+            replay["replay_source"]["code_sha256"],
+        )
+        return new_node
+
     if init_solution_path:
         try:
             code = Path(init_solution_path).read_text(encoding="utf-8")
@@ -40,6 +84,9 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
                 parent=agent.virtual_root,
                 stage="draft",
                 local_best_node=agent.virtual_root,
+                draft_role=draft_role,
+                role_contract={"role": draft_role, "requirement": "Use the user-provided source code."},
+                skip_code_review=True,
             )
             register_node(agent, new_node, "User-provided init solution (no LLM).", new_branch=True)
             logger.info(f"[draft] → node {new_node.id} (branch={new_node.branch_id}) [init_solution]")
@@ -65,7 +112,7 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
     prompt: Any = {
         "Introduction": introduction,
         "Task description": agent.task_desc,
-        "Memory": agent.virtual_root.fetch_child_memory(),
+        "Memory": "" if draft_role == "coldstart_baseline" else agent.virtual_root.fetch_child_memory(),
         "Instructions": {},
     }
     prompt["Instructions"] |= prompt_resp_fmt()
@@ -101,16 +148,6 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
 
     prompt["Instructions"] |= {
         "Solution sketch guideline": [
-            "- This first solution design should be relatively simple — avoid complex ensemble strategies or extensive hyperparameter searches at this stage.\n",
-            "- 🎯 **CRITICAL: NOVELTY & DIVERSITY REQUIREMENT**:\n",
-            "  • **Mandatory**: Your solution MUST be NOVEL compared to ALL existing attempts in Memory.\n",
-            "  • **Step 1**: Carefully analyze the core idea of EACH previous attempt in Memory.\n",
-            "  • **Step 2 - Choose Strategy**:\n",
-            "    → **Option A (Preferred)**: Propose a COMPLETELY DIFFERENT approach exploring an untried direction.\n",
-            "    → **Option B**: Build upon an existing approach BUT add significant novel insights that fundamentally change the solution.\n",
-            "  • **Forbidden**: Minor variations (changing hyperparameters, swapping similar models, tweaking preprocessing).\n",
-            "  • **Think**: 'Does my approach explore a fundamentally different hypothesis?' If NO → redesign.\n",
-            "- Don't propose the same modelling solution but keep the evaluation the same.\n",
             "- Your plan should be concise but comprehensive: Must address WHAT/WHY/HOW (2-4 sentences each). Avoid verbosity - every sentence should add new insight. Natural length: around 8-12 sentences for a complete reasoning process.\n",
             "- Propose an evaluation metric that is reasonable for this task.\n",
             "- Don't suggest to do EDA.\n",
@@ -122,15 +159,51 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
             "- **FINAL OUTPUT**: The VERY LAST line of execution MUST be `print(f'Final Validation Score: {score}')`. This is required for the score parser."
         ]
     }
+
+    if draft_role == "coldstart_baseline":
+        role_contract = {
+            "role": draft_role,
+            "requirement": (
+                "Build a runnable baseline from only the first applicable original cold-start model template. "
+                "Preserve its model name, checkpoint path, and loading API; adapt only task data, labels, "
+                "training, validation, and submission code. Do not use RunForest memory."
+            ),
+            "primary_model": getattr(agent, "coldstart_primary_model_name", ""),
+        }
+        prompt["Instructions"]["Draft role contract (MANDATORY)"] = [role_contract["requirement"]]
+    elif draft_role == "novel_exploration":
+        role_contract = {
+            "role": draft_role,
+            "requirement": (
+                "Explore a materially different hypothesis from the cold-start baseline, exact memory replay, "
+                "and previous attempts. Novelty applies to this branch only. Complex pipelines and ensembles "
+                "are allowed when justified by the task and resource budget."
+            ),
+        }
+        prompt["Instructions"]["Draft role contract (MANDATORY)"] = [
+            role_contract["requirement"],
+            "Minor hyperparameter-only variations do not satisfy this role.",
+        ]
+    else:
+        role_contract = {
+            "role": draft_role,
+            "requirement": "Design a competitive runnable solution without assuming another branch covers required components.",
+        }
+        prompt["Instructions"]["Draft role contract"] = [role_contract["requirement"]]
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
     prompt["Instructions"] |= prompt_leakage_prevention()
 
-    if agent.use_coldstart and (agent.coldstart_description != "None model"):
+    coldstart_description = (
+        getattr(agent, "coldstart_primary_description", agent.coldstart_description)
+        if draft_role == "coldstart_baseline"
+        else agent.coldstart_description
+    )
+    if agent.use_coldstart and (coldstart_description != "None model"):
         coldstart_guideline = [
             f"""
             **Pretrained Model Strategy**:
 
-            • **Option A [RECOMMENDED]**: {agent.coldstart_description}
+            • **Option A [RECOMMENDED]**: {coldstart_description}
               → SOTA models with proven performance. Use for end-to-end fine-tuning OR as frozen feature extractors.
 
             • **Option B**: Alternative pretrained models if better suited to task characteristics.
@@ -138,9 +211,6 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
             • **Option C**: Train from scratch / non-DL methods (only when pretraining provides no advantage).
 
             **CRITICAL: When using any recommended pretrained model (Option A), you MUST copy the Code template EXACTLY as provided — including model variant names, file paths, and checkpoint filenames. Only the listed weights are available locally; other variants will fail to load.**
-
-            **🔴 MANDATORY — EXACT COPY BRANCH RULE:**
-            When multiple initial drafts/branches are generated, at least ONE branch MUST use the Code template VERBATIM — copy the ENTIRE code as-is, character for character, ZERO modifications. Do NOT rename classes, do NOT add/remove layers, do NOT change hyperparameters, do NOT "improve" the architecture, do NOT add feature fusion or gating mechanisms. This verbatim branch serves as a proven baseline (the Code template already achieved the best recorded score). Other branches are free to explore alternatives, but the verbatim-copy branch is MANDATORY.
 
             **Key Techniques**:
             1. **Feature Extractor Pattern**: If dataset is small or domain mismatch exists → Freeze backbone + train only final layers (or feed to XGBoost/SVM).
@@ -160,17 +230,21 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY
     prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
 
-    external_skill_text, external_skill_ref_ids, external_skill_source = fetch_external_skill_memory(
-        agent,
-        "draft",
-        run_memory=prompt.get("Memory", ""),
-        data_preview=agent.data_preview or "",
-        coldstart=getattr(agent, "coldstart_description", ""),
-    )
+    if draft_role == "coldstart_baseline":
+        external_skill_text, external_skill_ref_ids, external_skill_source = "", [], "run_forest_agentic_memory"
+    else:
+        external_skill_text, external_skill_ref_ids, external_skill_source = fetch_external_skill_memory(
+            agent,
+            "draft",
+            run_memory=prompt.get("Memory", ""),
+            data_preview=agent.data_preview or "",
+            coldstart=getattr(agent, "coldstart_description", ""),
+            draft_role=draft_role,
+        )
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text
     coldstart_external_text = getattr(agent, "coldstart_external_memory_text", "")
-    if coldstart_external_text and str(coldstart_external_text).strip():
+    if draft_role != "coldstart_baseline" and coldstart_external_text and str(coldstart_external_text).strip():
         existing_external = prompt.get("External Skill Memory", "")
         prompt["External Skill Memory"] = (
             f"{coldstart_external_text.strip()}\n\n"
@@ -210,24 +284,35 @@ def run(agent, init_solution_path: Optional[str] = None) -> SearchNode:
             context={
                 "stage": "draft",
                 "memory": prompt.get("Memory", ""),
+                "draft_role": draft_role,
+                "role_contract": role_contract,
             },
         )
     else:
         plan, code = plan_and_code_query(agent, prompt_complete)
-    new_node = SearchNode(plan=plan, code=code, parent=agent.virtual_root, stage="draft",
-                        local_best_node=agent.virtual_root)
+    new_node = SearchNode(
+        plan=plan,
+        code=code,
+        parent=agent.virtual_root,
+        stage="draft",
+        local_best_node=agent.virtual_root,
+        draft_role=draft_role,
+        role_contract=role_contract,
+        source_ref_ids=list(external_skill_ref_ids),
+    )
     register_node(agent, new_node, prompt_complete, new_branch=True)
 
     from agents.adoption import log_adoption
     log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "draft")
-    log_adoption(
-        new_node,
-        agent,
-        getattr(agent, "coldstart_external_source", "") or external_skill_source,
-        getattr(agent, "coldstart_external_ref_ids", []),
-        "coldstart",
-    )
+    if draft_role != "coldstart_baseline":
+        log_adoption(
+            new_node,
+            agent,
+            getattr(agent, "coldstart_external_source", "") or external_skill_source,
+            getattr(agent, "coldstart_external_ref_ids", []),
+            "coldstart",
+        )
     log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "draft")
 
-    logger.info(f"[draft] → node {new_node.id} (branch={new_node.branch_id})")
+    logger.info(f"[draft] → node {new_node.id} (branch={new_node.branch_id} role={draft_role})")
     return new_node

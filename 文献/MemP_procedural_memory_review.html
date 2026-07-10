@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>把"经验"蒸馏成可复用技能：MemP 如何让 Agent 拥有可进化的程序性记忆</title>
+</head>
+<body style="margin:0; padding:0; background:#ffffff; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px;">
+
+<div style="max-width:680px; margin:0 auto; padding:24px 20px 60px;">
+
+<!-- 标题 -->
+<h1 style="font-size:24px; color:#111827; font-weight:700; line-height:1.45; text-align:left; margin:0 0 8px; letter-spacing:0.2px;">
+把“经验”蒸馏成可复用技能：MemP 如何让 Agent 拥有可进化的程序性记忆
+</h1>
+<p style="font-size:13px; color:#6b7280; margin:0 0 28px; text-align:left;">
+深度拆解浙大 &times; 阿里《Memp: Exploring Agent Procedural Memory》
+</p>
+
+<!-- 论文基本信息 -->
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 32px; text-align:justify;">
+<p style="margin:0 0 6px;"><strong style="color:#111827;">文章名字：</strong>Memp: Exploring Agent Procedural Memory</p>
+<p style="margin:0 0 6px;"><strong style="color:#111827;">作者与机构：</strong>Runnan Fang, Yuan Liang（共同一作）, Xiaobin Wang, Jialong Wu, Shuofei Qiao, Pengjun Xie, Fei Huang, Huajun Chen, Ningyu Zhang（通讯）。浙江大学 &times; 阿里巴巴集团</p>
+<p style="margin:0 0 6px;"><strong style="color:#111827;">期刊与会议：</strong>arXiv:2508.06433v2（2025.08，预印本，AAAI 系作者群）</p>
+<p style="margin:0 0 6px;"><strong style="color:#111827;">论文类型：</strong>Method（系统性方法探索 / 实验研究）</p>
+<p style="margin:0;"><strong style="color:#111827;">一句话定位：</strong>把“程序性记忆”从模糊的概念变成一个可被显式构建、检索、更新与弃用的<strong>一等优化对象</strong>，并系统性地对比 Build / Retrieve / Update 三大生命周期的策略组合。</p>
+</div>
+
+<!-- 一、完整摘要 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">一、完整摘要</h2>
+
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">问题：</strong>基于大语言模型（LLM）的智能体在复杂长程任务上表现亮眼，但它们的“程序性记忆（procedural memory）”极其脆弱——要么是手工拼装的 prompt 模板，要么是纠缠在静态模型参数里、更新代价高昂。一旦遭遇网络抖动、UI 变更、数据 schema 漂移等突发外部事件，整个执行链路就会被推翻，被迫从零重试。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">方法：</strong>提出 <strong style="color:#111827;">Memp</strong>，一个任务无关（task-agnostic）的框架，把程序性记忆当作核心优化对象。它把历史成功轨迹蒸馏为两类记忆——细粒度的<strong>逐步指令</strong>与更高层的<strong>脚本式抽象</strong>，并系统探索 Build（构建）、Retrieval（检索）、Update（更新）三个阶段的最佳策略组合。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">贡献：</strong>不同于以往“只追加不维护”的记忆机制，Memp 引入一套<strong>动态更新机制</strong>（增 / 校验 / 反思修正 / 动态弃用），让记忆库随新经验持续演进、纠错与裁剪，使经验积累真正“改善”而非“侵蚀”性能。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">结果：</strong>在 TravelPlanner 与 ALFWorld 两个基准上，随记忆库不断精炼，Agent 在同类任务上的成功率与效率持续上升；且<strong>强模型蒸馏出的记忆可迁移到弱模型</strong>——把 GPT-4o 的记忆迁移到 Qwen2.5-14B，后者成功率提升、步数显著下降。
+</p>
+
+<!-- Figure 1 -->
+<div style="text-align:center; margin:24px 0;">
+<img src="./memp_figs/fig1_overview.png" alt="Figure 1 程序性记忆总览" style="max-width:100%; height:auto; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.08);"/>
+<p style="font-size:12.5px; color:#6b7280; margin:10px 0 0; text-align:center; line-height:1.6;">图 1：拥有程序性记忆后，Agent 在求解相似任务时既能提升准确率（accuracy &uarr;），又能压缩执行步数（steps &darr;）。</p>
+</div>
+
+<!-- 二、知识背景全景 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">二、知识背景全景</h2>
+
+<p style="font-weight:700; color:#111827; margin:0 0 8px;">前置概念</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 10px;"><strong>程序性记忆（Procedural Memory）：</strong>人类长时记忆的一类，负责“知道怎么做”（如打字、骑车），一旦习得便能不假思索地自动执行——对应 Agent 中可复用的推理模式、工具序列与故障恢复策略。</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 10px;"><strong>MDP 建模：</strong>把 Agent 与环境的交互抽象为马尔可夫决策过程，状态 <i>s<sub>t</sub></i>、动作 <i>a<sub>t</sub></i>、转移与观测 <i>O<sub>t</sub></i> 串成轨迹 &tau;，为后续“从轨迹蒸馏经验”提供形式化基础。</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;"><strong>记忆增强 Agent：</strong>LangGraph、AutoGPT、Memory Bank、Soar 等只给出粗粒度抽象（缓冲区、规则块、产生式系统），却把“如何构建 / 索引 / 修补 / 裁剪技能”这一生命周期优化问题基本留白。</p>
+
+<p style="font-weight:700; color:#111827; margin:0 0 8px;">赛道全景</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+当前让 Agent“从经验中学习”大致分四派：<strong>强化学习</strong>样本效率低、易灾难性遗忘；<strong>经验回放 / 模仿学习</strong>依赖高质量数据；<strong>记忆管理</strong>多停留在“只读式”语义检索；<strong>程序性记忆方向</strong>（Voyager、AWM、AutoManual）已证明把技能沉淀下来可复用，但<strong>缺乏对构建-检索-更新全链路的系统性对比</strong>——这正是 MemP 切入的空白。
+</p>
+
+<p style="font-weight:700; color:#111827; margin:0 0 8px;">出现契机（Why Now?）</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+Deep Research、WebDancer 等长程 Agent 兴起，单任务动辄数十步、运行数十分钟，<strong>重试成本高到不可接受</strong>；同时强模型（GPT-4o / Claude / Qwen）的反思与代码生成能力成熟，使得“把轨迹蒸馏成结构化经验”第一次具备工程可行性。
+</p>
+
+<!-- 三、痛点与动机 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">三、痛点与动机</h2>
+
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">技术瓶颈：</strong>复杂任务表面千差万别，深层却共享相似的结构与环境。现有 Agent 每次都“从零开始”，把大量 token / 步数浪费在反复理解同一环境上；而已有的记忆机制要么<strong>只追加不维护</strong>（merge 策略，垃圾越攒越多），要么把知识锁死在难更新的模型参数里。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">研究动机：</strong>作者不急于再造一个“更强”的单点方法，而是把视角拉高——<strong>把程序性记忆的全生命周期作为研究对象</strong>，回答一个被回避的问题：构建、检索、更新到底该用哪种策略？只有回答了这个问题，才能保证新经验“改善”而非“侵蚀”性能。
+</p>
+
+<!-- 四、核心方法 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">四、核心方法</h2>
+
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">创新概述：</strong>Memp 的整体思想是把策略 &pi;(<i>a<sub>t</sub></i>|<i>s<sub>t</sub></i>) 升级为 &pi;<sub>mp</sub>(<i>a<sub>t</sub></i>|<i>s<sub>t</sub></i>)——其中 <i>m<sub>p</sub></i> 是 Agent 学到的程序性记忆。整个框架（见下图）由三大模块闭环组成：<strong>Build（构建）</strong>把过去轨迹编码进记忆库；<strong>Retrieve（检索）</strong>为新任务召回最相关的记忆；<strong>Update（更新）</strong>用执行反馈动态增删改记忆。图中左侧蓝灰色模块对应历史轨迹与记忆存储，中间橙色流程线表示检索召回，右侧绿色箭头表示执行后回写更新。
+</p>
+
+<!-- Figure 2 -->
+<div style="text-align:center; margin:24px 0;">
+<img src="./memp_figs/fig2_framework.png" alt="Figure 2 MemP 三阶段框架" style="max-width:100%; height:auto; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.08);"/>
+<p style="font-size:12.5px; color:#6b7280; margin:10px 0 0; text-align:center; line-height:1.6;">图 2：程序性记忆框架由 Build / Retrieve / Update 构成闭环，分别负责编码存储、召回匹配、依据新经验修正记忆。</p>
+</div>
+
+<p style="font-weight:700; color:#111827; margin:18px 0 8px;">形式化定义</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+对任务轨迹 &tau; 与奖励 <i>r</i>，构建器 <i>B</i> 生成记忆单元：
+</p>
+<p style="text-align:center; margin:16px 0; font-family:'Times New Roman',Times,serif; font-size:1.15em; color:#111827; line-height:1.8; padding:4px 0; border:none;">
+<span style="float:right; color:#6b7280; font-size:0.85em; font-family:sans-serif; font-weight:normal; margin-top:2px;">(3)</span>
+Mem = <span style="display:inline-block; vertical-align:middle; text-align:center; margin:0 4px;"><span style="display:block; font-size:0.7em; line-height:1.0; margin-bottom:-1px;">T</span><span style="display:block; font-size:1.3em; line-height:1.0; font-family:'Times New Roman',Times,serif;">&sum;</span><span style="display:block; font-size:0.7em; line-height:1.0; margin-top:-1px;">t=1</span></span> mp<sub>t</sub>,&nbsp; 其中 mp<sub>t</sub> = B(&tau;<sub>t</sub>, r<sub>t</sub>)
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+检索阶段用向量嵌入模型 &phi; 的余弦相似度，为新任务 <i>t<sub>new</sub></i> 召回最匹配的记忆：
+</p>
+<p style="text-align:center; margin:16px 0; font-family:'Times New Roman',Times,serif; font-size:1.15em; color:#111827; line-height:1.8; padding:4px 0; border:none;">
+<span style="float:right; color:#6b7280; font-size:0.85em; font-family:sans-serif; font-weight:normal; margin-top:2px;">(5)</span>
+m<sub>retrieved</sub> = arg max <span style="display:inline-block; vertical-align:middle; text-align:center; margin:0 2px;"><span style="display:block; border-bottom:1px solid #111827; padding:0 4px; font-size:0.85em; line-height:1.2;">&phi;(t<sub>new</sub>) &middot; &phi;(t<sub>i</sub>)</span><span style="display:block; padding:0 4px; font-size:0.85em; line-height:1.2;">&Vert;&phi;(t<sub>new</sub>)&Vert; &Vert;&phi;(t<sub>i</sub>)&Vert;</span></span>
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+更新机制被建模为一个把当前记忆与执行反馈映射到新记忆的函数，可进一步细化为“增 / 删 / 改”三操作复合：
+</p>
+<p style="text-align:center; margin:16px 0; font-family:'Times New Roman',Times,serif; font-size:1.15em; color:#111827; line-height:1.8; padding:4px 0; border:none;">
+<span style="float:right; color:#6b7280; font-size:0.85em; font-family:sans-serif; font-weight:normal; margin-top:2px;">(7)</span>
+U = Add(M<sub>new</sub>) &ominus; Remove(M<sub>obso</sub>) &oplus; Update(M<sub>exist</sub>)
+</p>
+
+<p style="font-weight:700; color:#111827; margin:18px 0 8px;">子模块细节穷尽</p>
+
+<p style="text-align:justify; text-indent:2em; margin:0 0 10px;">
+<strong>① Build 策略（记忆如何被构造）。</strong>对比三种粒度：<strong>Script</strong>（让模型把成功轨迹总结成高层脚本式指南，泛化性好）、<strong>Trajectory</strong>（直接存完整执行轨迹，对相似任务拟合更好）、<strong>Proceduralization</strong>（把脚本指南 + 具体轨迹二者结合）。关键洞察：脚本更擅长迁移到不同测试任务，轨迹更适合处理与已完成任务高度相似的场景，二者融合取得最优。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 10px;">
+<strong>② Retrieve 策略（记忆如何被召回）。</strong>对比三种键构建方式：<strong>Random Sample</strong>（随机抽几条，作 baseline）、<strong>Key=Query</strong>（用查询描述本身作键，依赖语义相似度）、<strong>Key=AveFact</strong>（用大模型从查询中抽取关键词，再对所有匹配关键词的相似度取平均，聚焦核心任务要素）。结论：Query 与 AveFact 显著优于随机，AveFact 在 TravelPlanner 上整体最佳。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 10px;">
+<strong>③ Update 策略（记忆如何被维护）——本文最大亮点。</strong>每完成 <i>t</i> 个测试任务后刷新一次记忆库，对比三种在线更新：<strong>Vanilla</strong>（把所有轨迹直接追加）、<strong>Validation</strong>（仅保留成功任务的轨迹）、<strong>Adjustment</strong>（基于反思的纠错机制：当召回的记忆导致执行失败，把错误轨迹与原记忆合并后原地修订）。反思式 Adjustment 表现最强，最终组相比次优策略高 +0.7 分、步数少 14 步。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong>④ 跨模型迁移与检索扩缩。</strong>强模型离线蒸馏的记忆库可直接给弱模型用；GPT-4o 的记忆迁移到 Qwen2.5-14B，在 TravelPlanner 上成功率 +5%、平均步数 -1.6。同时召回记忆数并非越多越好——随召回量增加性能先升后平台期，召回过多反而因上下文膨胀与噪声记忆干扰而下降。
+</p>
+
+<!-- 五、实验 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">五、实验</h2>
+
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">实验配置：</strong>两个互补基准——TravelPlanner（复杂约束下的工具与规划能力，#CS / #HC / Steps）与 ALFWorld（家务长程任务，Dev / Test / Steps）。三个骨干：GPT-4o、Claude-3.5-sonnet、Qwen2.5-72B-Instruct。对比公平：同一记忆库构建-检索-更新策略在三大模型上横向铺开，所有指标统一（&uarr; 越大越好，&darr; 越小越好）。
+</p>
+
+<p style="font-weight:700; color:#111827; margin:18px 0 10px;">表 1：Build 策略对比（TravelPlanner &amp; ALFWorld）</p>
+<div style="overflow-x:auto; margin:0 0 6px;">
+<table style="border-collapse:collapse; width:100%; font-size:13px; min-width:560px;">
+<thead>
+<tr style="border-bottom:2px solid #111827;">
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:left; color:#111827; font-weight:700;">Model</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">Granularity</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">#CS&uarr;</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">#HC&uarr;</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">Steps&darr;</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">Dev&uarr;</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">Test&uarr;</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">Steps&darr;</th>
+</tr>
+</thead>
+<tbody>
+<tr><td colspan="8" style="border:none; border-left:none; border-right:none; padding:4px 8px; color:#6b7280; font-size:12px;">TravelPlanner&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ALFWorld</td></tr>
+<tr><td rowspan="4" style="border:none; border-left:none; border-right:none; padding:7px 8px; color:#111827; font-weight:600;">GPT-4o</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px;">No Memory</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">71.93</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">12.88</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">17.84</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">39.28</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">42.14</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">23.76</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">Script</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">72.08</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">5.50</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">15.79</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">66.67</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">56.43</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">18.52</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">Trajectory</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><u style="text-decoration:underline;">76.02</u></td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">8.25</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">14.64</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">67.17</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">74.29</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">16.49</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">Proceduralization</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">79.94</strong></td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">9.76</strong></td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">14.62</strong></td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">87.14</strong></td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">77.86</strong></td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">15.01</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p style="font-size:12px; color:#6b7280; margin:0 0 12px;">表注：#CS / #HC 分别为常识约束与硬约束通过率；粗体为最优，下划线为次优。Proceduralization（脚本 + 轨迹融合）在 GPT-4o 上全面提升。</p>
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 22px; text-align:justify;">
+<strong style="color:#111827;">数据解读：</strong>以 GPT-4o 为例，Proceduralization 把 ALFWorld Dev 从 39.28% 拉到 87.14%（+47.86 点），步数从 23.76 压到 15.01，证明“经验复用”对长程任务收益巨大。<strong>局限性：</strong>在 TravelPlanner 的 #HC（硬约束）上，任何 Build 策略相对 No Memory 几乎无提升甚至下降（12.88&rarr;9.76），说明程序性记忆擅长压缩“操作流程”、却不擅长改善“约束满足”这类需要精确推理的任务；Claude 上 Script 甚至比 No Memory 还差（#HC 33.06&rarr;29.61），提示记忆内容若与模型既有能力冲突会产生负迁移。
+</div>
+
+<p style="font-weight:700; color:#111827; margin:6px 0 10px;">表 2：Retrieve 策略对比（TravelPlanner）</p>
+<div style="overflow-x:auto; margin:0 0 6px;">
+<table style="border-collapse:collapse; width:100%; font-size:13px; max-width:520px;">
+<thead>
+<tr style="border-bottom:2px solid #111827;">
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:left; color:#111827; font-weight:700;">Model</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:left; color:#111827; font-weight:700;">Policy</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">#CS&uarr;</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">#HC&uarr;</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">Steps&darr;</th>
+</tr>
+</thead>
+<tbody>
+<tr><td rowspan="4" style="border:none; border-left:none; border-right:none; padding:7px 8px; color:#111827; font-weight:600;">GPT-4o</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px;">No Memory</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">71.93</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">12.88</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">17.84</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">Random Sample</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">74.59</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">6.72</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">15.12</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">Key=Query</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">73.38</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">8.95</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">15.44</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">Key=AveFact</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">76.02</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">8.25</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">14.64</strong></td></tr>
+<tr><td rowspan="4" style="border:none; border-left:none; border-right:none; padding:7px 8px; color:#111827; font-weight:600;">Claude-3.5</td>
+<td style="border:none; border-left:none; border-right:none; padding:7px 8px;">No Memory</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">63.49</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">33.06</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">18.84</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">Random Sample</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">63.99</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">29.91</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">17.93</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">Key=Query</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">64.93</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">28.56</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">17.60</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">Key=AveFact</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">65.76</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">29.61</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">17.72</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p style="font-size:12px; color:#6b7280; margin:0 0 12px;">表注：Key=AveFact（关键词平均相似度）整体最优；Claude 的 #HC 上 No Memory 反而最高，记忆检索引入的噪声会伤害硬约束推理。</p>
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 22px; text-align:justify;">
+<strong style="color:#111827;">定量分析与局限性评估：</strong>语义检索（Query / AveFact）稳定优于随机，且 AveFact 在 #CS 与步数上最优——证明“关键词聚焦”比“整句语义匹配”更抗噪。<strong>局限：</strong>在 Claude 上，所有检索策略的 #HC 均低于 No Memory（33.06），说明当一个模型本身在某维度已经很强时，召回的记忆反而成为干扰项；检索的增益高度依赖“记忆内容与模型能力的互补关系”，并非无脑加分。
+</div>
+
+<!-- Update curves -->
+<div style="text-align:center; margin:20px 0;">
+<img src="./memp_figs/fig3_update_curves.png" alt="Figure 3 更新策略曲线" style="max-width:100%; height:auto; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.08);"/>
+<p style="font-size:12.5px; color:#6b7280; margin:10px 0 0; text-align:center; line-height:1.6;">图 3：随轨迹组数增加，三种更新策略的奖励增益（左）与步数压缩（右）持续上升，反思式 Adjustment 增长最陡。</p>
+</div>
+
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">迁移与扩缩实验：</strong>图 4 (a) 显示 GPT-4o 蒸馏的记忆迁移到 Qwen2.5-14B 后，Delivery / Steps / Commonsense 三项均显著改善（如 Commonsense 通过率 59.3 &rarr; 65.5）；图 4 (b) 显示召回记忆数从 0 增到约 12.5 条时分数持续上升至 82.5，再继续增加反而回落——存在一个“召回甜点区”。
+</p>
+
+<div style="text-align:center; margin:20px 0;">
+<img src="./memp_figs/fig4_transfer_retrieval.png" alt="Figure 4 迁移与检索扩缩" style="max-width:100%; height:auto; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.08);"/>
+<p style="font-size:12.5px; color:#6b7280; margin:10px 0 0; text-align:center; line-height:1.6;">图 4：(a) 强模型记忆迁移到弱模型的收益；(b) 召回记忆数量与性能呈“先升后降”的非单调关系。</p>
+</div>
+
+<div style="text-align:center; margin:20px 0;">
+<img src="./memp_figs/fig5_case_study.png" alt="Figure 5 案例对比" style="max-width:100%; height:auto; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.08);"/>
+<p style="font-size:12.5px; color:#6b7280; margin:10px 0 0; text-align:center; line-height:1.6;">图 5：“热鸡蛋并扔进垃圾桶”任务——无记忆 27 步失败、23 步勉强完成；有记忆 14 步一次成功，省 9 步、省 685 token。</p>
+</div>
+
+<!-- 六、极客评分 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">六、极客评分</h2>
+
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 14px; text-align:justify;">
+<strong style="color:#111827;">创新性（7.0 / 10）。</strong>理由：核心贡献不在单一算法，而在<strong>把“记忆生命周期”首次作为系统优化对象</strong>，Build / Retrieve / Update 三维度的策略对比填补了领域空白；但底层仍依赖成熟的向量检索 + LLM 反思，属于“重要但非颠覆”的工程化梳理。
+</div>
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 14px; text-align:justify;">
+<strong style="color:#111827;">实用性（8.0 / 10）。</strong>理由：框架<strong>任务无关、模型无关、轻量</strong>，无需训练即可落地，强&mdash;弱模型记忆迁移对中小模型收益尤其显著（步数压缩近 50%），直接可用于降本；局限是强依赖高质量向量嵌入与可靠的奖励信号，开放任务（无明确 reward）下更新机制会失效。
+</div>
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 14px; text-align:justify;">
+<strong style="color:#111827;">行业价值（7.5 / 10）。</strong>理由：直击长程 Agent 的<strong>“重试成本高”这一真实痛点</strong>，迁移性与可演进性贴合生产场景（客服、RPA、自动化运维）；但 TravelPlanner 硬约束场景的提升有限，说明它在“流程型”任务价值最大，对“精确推理型”任务天花板明显。
+</div>
+
+<p style="font-size:12.5px; color:#9ca3af; margin:32px 0 0; text-align:center; line-height:1.6;">
+本文由 paper-reviewer 拆解生成 &middot; 论文来源：arXiv:2508.06433v2
+</p>
+
+</div>
+</body>
+</html>

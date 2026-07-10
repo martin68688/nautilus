@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trace2Skill 蒸馏真实产物演示</title>
+<style>
+  :root{
+    --bg:#0a0c12; --panel:#14171f; --panel2:#1a1e28; --line:#262b38;
+    --txt:#e8eaf0; --mut:#8b94a8; --acc:#6ee7ff;
+    --green:#4ade80; --red:#fb7185; --amber:#fbbf24; --blue:#60a5fa; --purple:#c4b5fd; --teal:#2dd4bf;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 70px}
+  h1{font-size:25px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:14px;margin-bottom:22px}
+  h2{font-size:19px;margin:30px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  h3{font-size:15px;margin:14px 0 8px}
+  p{margin:8px 0}
+  code{background:#0c0e14;padding:2px 6px;border-radius:4px;color:var(--acc);font-size:12.5px}
+  .small{font-size:12px;color:var(--mut)}
+
+  .timeline{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+  .tl-row{display:flex;align-items:flex-start;gap:10px;margin:6px 0;position:relative}
+  .tl-dot{width:14px;height:14px;border-radius:50%;flex:0 0 14px;margin-top:4px;z-index:2}
+  .tl-line{position:absolute;left:6px;top:18px;bottom:-10px;width:2px;background:var(--line);z-index:1}
+  .tl-row:last-child .tl-line{display:none}
+  .tl-content{flex:1;font-size:13px}
+  .tl-metric{font-family:monospace;font-weight:700;font-size:12px}
+  .tl-delta{font-size:11px;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:6px}
+
+  .skill{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:16px 18px;margin:14px 0;border-left:4px solid var(--blue)}
+  .skill.good{border-left-color:var(--green)}
+  .skill.bad{border-left-color:var(--red)}
+  .skill.warn{border-left-color:var(--amber)}
+  .skill-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+  .skill-id{font-size:11px;color:var(--mut);font-family:monospace}
+  .skill-title{font-size:15.5px;font-weight:700}
+  .field{margin:8px 0;font-size:13px}
+  .field .flabel{display:inline-block;width:88px;color:var(--mut);font-size:11.5px;vertical-align:top}
+  .field .fval{display:inline-block;max-width:calc(100% - 96px)}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}
+  .tag{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+  .t-cond{background:rgba(196,181,253,.15);color:var(--purple)}
+  .t-pos{background:rgba(74,222,128,.15);color:var(--green)}
+  .t-neg{background:rgba(251,113,133,.15);color:var(--red)}
+  .t-ev{background:rgba(110,231,255,.12);color:var(--acc)}
+  .metric-box{display:inline-block;background:#0c0e14;border:1px solid var(--line);border-radius:6px;
+    padding:3px 10px;font-family:monospace;font-size:12px;margin:2px 4px 2px 0}
+  .delta-up{color:var(--red)}.delta-down{color:var(--green)}.delta-flat{color:var(--amber)}
+  .conflict-box{background:rgba(251,113,133,.08);border:1px solid rgba(251,113,133,.3);border-radius:8px;padding:10px 12px;margin:8px 0}
+  .note{border-left:3px solid var(--acc);background:rgba(110,231,255,.07);padding:11px 15px;border-radius:0 9px 9px 0;margin:14px 0;font-size:13px}
+  .warn{border-left:3px solid var(--red);background:rgba(251,113,133,.08);padding:11px 15px;border-radius:0 9px 9px 0;margin:14px 0;font-size:13px}
+  .good{border-left:3px solid var(--green);background:rgba(74,222,128,.08);padding:11px 15px;border-radius:0 9px 9px 0;margin:14px 0;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🧪 Trace2Skill 蒸馏 · 真实产物演示</h1>
+<p class="sub">从一条真实演化路径（run <code>20260516_104127</code>，已修复数据泄露）蒸馏出结构化 skill。<br>
+<b>注意：metric 是验证集 log loss，越低越好</b>（spooky 任务 maximize=False）。<br>展示改进版蒸馏如何保留条件、证据、失败模式与冲突——而非合并成 1 个文件。</p>
+
+<!-- ============ 演化路径 ============ -->
+<h2>① 蒸馏原料：一条完整的演化路径</h2>
+<div class="timeline">
+<p style="margin-top:0"><b>来源</b>：run <code>20260516_104127_spooky-author-identification</code>（后期已修复数据泄露的 run，无 &lt;0.1 的泄露节点）</p>
+<p><b>故事</b>：从欠拟合基线（log loss 1.09）一路优化到 0.32，中途因换小模型 + 超时退化到 0.61，再用注意力池化部分恢复。</p>
+
+<div class="tl-row">
+  <div class="tl-dot" style="background:var(--red)"></div><div class="tl-line"></div>
+  <div class="tl-content"><b>step10</b> · draft · <span class="tl-metric" style="color:var(--red)">log loss=1.0902</span><br><span class="small">初始基线：MultiResolutionAuthorClassifier + DeBERTa-v3-large + 63 个手工特征。严重欠拟合（acc~40%，接近随机）。</span></div>
+</div>
+<div class="tl-row">
+  <div class="tl-dot" style="background:var(--green)"></div><div class="tl-line"></div>
+  <div class="tl-content"><b>step16</b> · improve · <span class="tl-metric" style="color:var(--green)">log loss=0.3872</span> <span class="tl-delta" style="background:rgba(74,222,128,.2);color:var(--green)">↓0.703 ★大幅改善</span><br><span class="small"><b>关键转折</b>：删掉手工特征 + 用标准 AutoModelForSequenceClassification。plan："hand-crafted features drown out the transformer signal"</span></div>
+</div>
+<div class="tl-row">
+  <div class="tl-dot" style="background:var(--green)"></div><div class="tl-line"></div>
+  <div class="tl-content"><b>step22</b> · debug · <span class="tl-metric" style="color:var(--green)">log loss=0.3196</span> <span class="tl-delta" style="background:rgba(74,222,128,.2);color:var(--green)">↓0.068 继续优化</span><br><span class="small">修复 head_mask bug + mean pooling + multi-sample dropout。达到本路径最优。</span></div>
+</div>
+<div class="tl-row">
+  <div class="tl-dot" style="background:var(--red)"></div><div class="tl-line"></div>
+  <div class="tl-content"><b>step46</b> · debug · <span class="tl-metric" style="color:var(--red)">log loss=0.6129</span> <span class="tl-delta" style="background:rgba(251,113,133,.2);color:var(--red)">↑0.293 ★退化</span><br><span class="small"><b>失误</b>：为避免超时换成 deberta-v3-small + 减 epoch。log loss 反升。plan："training is too slow and gets killed by the timeout"</span></div>
+</div>
+<div class="tl-row">
+  <div class="tl-dot" style="background:var(--amber)"></div>
+  <div class="tl-content"><b>step49</b> · improve · <span class="tl-metric" style="color:var(--amber)">log loss=0.4277</span> <span class="tl-delta" style="background:rgba(251,191,36,.2);color:var(--amber)">↓0.185 部分恢复</span><br><span class="small">加 multi-head attention pooling 试图恢复。比 step46 好但仍未回到 step22 的 0.32。</span></div>
+</div>
+</div>
+
+<div class="note">
+<b>为什么这条路径是蒸馏的金矿</b>：它同时包含<b>成功转折</b>（step16 删手工特征，↓0.703）、<b>持续优化</b>（step22 修 bug，↓0.068）、<b>失误退化</b>（step46 换小模型，↑0.293）、和<b>部分恢复</b>（step49 注意力池化）。原版 Trace2Skill 会合并成 1 个 skill 文件，<b>丢失了转折点和冲突</b>。
+</div>
+
+<!-- ============ 蒸馏出的 skill ============ -->
+<h2>② 蒸馏产物：8 个结构化 skill</h2>
+<p>下面是从这条路径蒸馏出的 skill。<b>绿色=降低 log loss 的有效 skill，红色=升高 log loss 的失败 skill，黄色=条件/警告</b>。metric_delta 中 <span style="color:var(--green)">绿色↓</span>=变好（log loss 下降），<span style="color:var(--red)">红色↑</span>=变差。</p>
+
+<!-- Skill 1 -->
+<div class="skill good">
+<div class="skill-head">
+  <div><span class="skill-title">S1 · 小数据 transformer 微调：删手工特征，用标准 AutoModel</span></div>
+  <span class="skill-id">SOP-NATIVE-001 · distilled from step16</span>
+</div>
+<div class="field"><span class="flabel">SOP</span><span class="fval">当 transformer 在小文本分类任务上欠拟合时，<b>删除所有手工特征</b>（文体/统计/n-gram），改用标准 AutoModelForSequenceClassification 直接喂原始文本。</span></div>
+<div class="field"><span class="flabel">条件</span><span class="fval"><span class="tag t-cond">transformer backbone</span> <span class="tag t-cond">val log loss &gt; 0.8（欠拟合）</span> <span class="tag t-cond">手工特征 &gt; 50 维</span></span></div>
+<div class="field"><span class="flabel">证据</span><span class="fval"><span class="metric-box">Δ log loss: <span class="delta-down">↓0.703</span></span> <span class="metric-box">step 10→16</span> <span class="metric-box">run 20260516_104127</span></span></div>
+<div class="field"><span class="flabel">plan 原文</span><span class="fval small">"the hand-crafted features drown out the transformer signal... a standard AutoModelForSequenceClassification achieves much better"</span></div>
+<div class="field"><span class="flabel">失效模式</span><span class="fval">文体学任务（作者归因）可能仍需少量手工特征（见 S4 的条件分支）</span></div>
+</div>
+
+<!-- Skill 2 -->
+<div class="skill good">
+<div class="skill-head">
+  <div><span class="skill-title">S2 · mean pooling + multi-sample dropout 防过拟合</span></div>
+  <span class="skill-id">SOP-POOL-002 · distilled from step22</span>
+</div>
+<div class="field"><span class="flabel">SOP</span><span class="fval">用 mean pooling（over non-padding tokens）替代 CLS token + multi-sample dropout（K 次前向平均）提升泛化。</span></div>
+<div class="field"><span class="flabel">条件</span><span class="fval"><span class="tag t-cond">DeBERTa</span> <span class="tag t-cond">val log loss 已达 0.3-0.5 平台</span></span></div>
+<div class="field"><span class="flabel">证据</span><span class="fval"><span class="metric-box">Δ log loss: <span class="delta-down">↓0.068</span></span> <span class="metric-box">step 16→22</span></span></div>
+<div class="field"><span class="flabel">依赖</span><span class="fval">需先修 head_mask bug（DebertaV2Model.forward 不再接受 head_mask）</span></div>
+</div>
+
+<!-- Skill 3 (失败) -->
+<div class="skill bad">
+<div class="skill-head">
+  <div><span class="skill-title">S3 · 为避免超时换 deberta-v3-small（退化）</span></div>
+  <span class="skill-id">FAIL-SMALL-003 · distilled from step46</span>
+</div>
+<div class="field"><span class="flabel">失败模式</span><span class="fval">为避免 6h 超时，从 deberta-v3-large 换成 -small + 减 epoch。log loss 从 0.32 反升到 0.61。<b>省时的代价是性能大幅退化</b>。</span></div>
+<div class="field"><span class="flabel">条件</span><span class="fval"><span class="tag t-cond">6h 超时限制</span> <span class="tag t-cond">原用 large 模型</span></span></div>
+<div class="field"><span class="flabel">证据</span><span class="fval"><span class="metric-box">Δ log loss: <span class="delta-up">↑0.293</span></span> <span class="metric-box">step 22→46</span></span></div>
+<div class="field"><span class="flabel">plan 原文</span><span class="fval small">"training is too slow and gets killed by the timeout... use a smaller, faster model (deberta-v3-small)" —— <b>这个权衡判断在 spooky 上是错的</b>，small 模型容量不足。</span></div>
+</div>
+
+<!-- Skill 4 (部分恢复) -->
+<div class="skill warn">
+<div class="skill-head">
+  <div><span class="skill-title">S4 · multi-head attention pooling 补救小模型（部分有效）</span></div>
+  <span class="skill-id">SOP-ATTN-004 · distilled from step49</span>
+</div>
+<div class="field"><span class="flabel">SOP</span><span class="fval">在 deberta-v3-small 上加 multi-head attention pooling（可学习注意力权重聚合 token）部分弥补容量损失。</span></div>
+<div class="field"><span class="flabel">条件</span><span class="fval"><span class="tag t-cond">已换成 small 模型</span> <span class="tag t-cond">欠拟合（log loss &gt; 0.5）</span></span></div>
+<div class="field"><span class="flabel">证据</span><span class="fval"><span class="metric-box">Δ log loss: <span class="delta-down">↓0.185</span></span> <span class="metric-box">step 46→49</span> <span class="metric-box">但仍未回到 step22 的 0.32</span></span></div>
+<div class="field"><span class="flabel">警告</span><span class="fval"><b>部分恢复，非最优</b>。证明"换小模型"是错误决策，attention pooling 只是缓解。应回退到 large + 优化超时方案。</span></div>
+</div>
+
+<!-- Skill 5 (条件) -->
+<div class="skill warn">
+<div class="skill-head">
+  <div><span class="skill-title">C1 · 条件：6h 超时限制</span></div>
+  <span class="skill-id">COND-TIMEOUT-005</span>
+</div>
+<div class="field"><span class="flabel">类型</span><span class="fval">Condition 节点</span></div>
+<div class="field"><span class="flabel">关联</span><span class="fval"><span class="tag t-neg">triggers → S3（换小模型失败）</span> <span class="tag t-pos">applies_when → S4（attention pooling 补救）</span></span></div>
+<div class="field"><span class="flabel">价值</span><span class="fval small">这个条件是 S3（失败）和 S4（部分恢复）的<b>共同前提</b>——超时压力下，换小模型是错的，attention pooling 是缓解。这正是工程约束导致决策分叉的真实案例。</span></div>
+</div>
+
+<!-- Skill 6 (冲突边) -->
+<div class="skill bad" style="border-left-color:var(--red)">
+<div class="skill-head">
+  <div><span class="skill-title">★ S2 ↔ S3 冲突边（prevents）</span></div>
+  <span class="skill-id">CONFLICT-001 · auto-detected</span>
+</div>
+<div class="conflict-box">
+<p style="margin-top:0"><b>冲突类型</b>：双真冲突（同任务、相反模型选择策略）</p>
+<p><b>S2</b>：用 large + mean pooling + dropout → <b>log loss 0.32</b>（本路径最优）</p>
+<p><b>S3</b>：换 small 模型省时 → <b>log loss 0.61</b>（退化）</p>
+<p style="margin-bottom:0"><b>判定依据</b>：同任务（spooky）+ 相反模型规模选择 + metric 客观判定 S2 胜（0.32 &lt; 0.61）。<b>→ prevents 边，S3 对跖于 S2</b>。教训：在 spooky 这类需要容量的小数据任务上，不应为省时换小模型。</p>
+</div>
+</div>
+
+<!-- Skill 7 (refines) -->
+<div class="skill good">
+<div class="skill-head">
+  <div><span class="skill-title">S5 · refines 链：原生微调 → mean pooling → attention pooling</span></div>
+  <span class="skill-id">RELATION-001 · auto-detected</span>
+</div>
+<div class="field"><span class="flabel">关系</span><span class="fval">S1（原生 AutoModel）→ refines → S2（+mean pooling）→ refines → S4（+attention pooling）</span></div>
+<div class="field"><span class="flabel">证据链</span><span class="fval"><span class="metric-box">1.09 → 0.39 → 0.32</span>（S1→S2 持续降 log loss）</span></div>
+<div class="field"><span class="flabel">分支</span><span class="fval small">S4 是在 S3（换小模型）<b>之后</b>的补救，所以 S4 refines S2 但带了"小模型"条件——这是<b>条件化 refines</b>，不是简单线性细化。</span></div>
+</div>
+
+<!-- ============ 对比 ============ -->
+<h2>③ 改进版 vs 原版 Trace2Skill 的产物对比</h2>
+<div style="overflow-x:auto">
+<table style="width:100%;border-collapse:collapse;font-size:13px;min-width:520px">
+<thead><tr style="background:var(--panel2)">
+<th style="border:1px solid var(--line);padding:8px;text-align:left">维度</th>
+<th style="border:1px solid var(--line);padding:8px">原版 Trace2Skill</th>
+<th style="border:1px solid var(--line);padding:8px">改进版（本研究）</th>
+</tr></thead>
+<tbody>
+<tr><td style="border:1px solid var(--line);padding:8px">产物数量</td><td style="border:1px solid var(--line);padding:8px;text-align:center">1 个 SKILL.md（244行）</td><td style="border:1px solid var(--line);padding:8px;text-align:center"><b>7 个独立 skill + 1 条件 + 1 冲突 + 1 refines</b></td></tr>
+<tr><td style="border:1px solid var(--line);padding:8px">条件保留</td><td style="border:1px solid var(--line);padding:8px;text-align:center">❌ 混在正文里</td><td style="border:1px solid var(--line);padding:8px;text-align:center"><b>✅ 独立 Condition 节点（C1）</b></td></tr>
+<tr><td style="border:1px solid var(--line);padding:8px">metric 证据</td><td style="border:1px solid var(--line);padding:8px;text-align:center">❌ 无</td><td style="border:1px solid var(--line);padding:8px;text-align:center"><b>✅ 每个 skill 带 Δ log loss</b></td></tr>
+<tr><td style="border:1px solid var(--line);padding:8px">失败保留</td><td style="border:1px solid var(--line);padding:8px;text-align:center">❌ prevalent bias 丢弃</td><td style="border:1px solid var(--line);padding:8px;text-align:center"><b>✅ S3 失败 skill 保留</b></td></tr>
+<tr><td style="border:1px solid var(--line);padding:8px">冲突建模</td><td style="border:1px solid var(--line);padding:8px;text-align:center">❌ 合并消除</td><td style="border:1px solid var(--line);padding:8px;text-align:center"><b>✅ prevents 边（S2↔S3）</b></td></tr>
+<tr><td style="border:1px solid var(--line);padding:8px">可检索性</td><td style="border:1px solid var(--line);padding:8px;text-align:center">❌ 整块注入（反检索）</td><td style="border:1px solid var(--line);padding:8px;text-align:center"><b>✅ 每个 skill 独立可检索</b></td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- ============ 洞察 ============ -->
+<h2>④ 这次蒸馏揭示的关键洞察</h2>
+
+<div class="good">
+<p style="margin-top:0"><b>洞察 1：工程约束（超时）是冲突的根源（C1 的价值）</b></p>
+<p style="margin-bottom:0">S2（large 模型，log loss 0.32）和 S3（small 模型，0.61）<b>共享超时约束 C1</b>。原版合并成一句"注意超时"，丢失了"换小模型是错的"反面知识。改进版用 prevents 边保留对立——agent 检索到 S3 时，自动看到对跖的 S2 警告。</p>
+</div>
+
+<div class="warn">
+<p style="margin-top:0"><b>洞察 2：失败的 plan 原文是金矿</b></p>
+<p style="margin-bottom:0">S3 的 plan 写着"use a smaller, faster model (deberta-v3-small)"——看似合理但<b>在 spooky 上是错的</b>（容量不足）。原版不会提取这个错误推理，改进版作为 failure_mode 保留。</p>
+</div>
+
+<div class="note">
+<p style="margin-top:0"><b>洞察 3：refines 边有 metric 证据</b></p>
+<p style="margin-bottom:0">S1→S2 是<b>有 log loss 证据的 refines 链</b>（1.09→0.39→0.32，持续下降）。不是 LLM 主观判断。这正是你"metric_delta 验证 patch"的核心价值。</p>
+</div>
+
+<div class="good">
+<p style="margin-top:0"><b>洞察 4：这些 skill 直接可入双曲图</b></p>
+<p style="margin-bottom:0">每个 skill 都有：① SOP（→角度θ）；② Δ log loss（→半径r，越低越好→r越小）；③ 条件（→applies_when）；④ 失败模式（→prevents端点）。<b>这才是双曲 skill 图的真实节点数据</b>。</p>
+</div>
+
+<!-- ============ 双曲落点预测 ============ -->
+<h2>⑤ 这些 skill 在双曲图的预测落点</h2>
+<div class="timeline">
+<div class="tl-row"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-content"><b>S1 原生微调</b> · 半径小（核心基石，log loss 已大降）· 角度=架构扇区</div></div>
+<div class="tl-row"><div class="tl-dot" style="background:var(--green)"></div><div class="tl-content"><b>S2 mean pooling</b> · 半径最小（核心前沿，log loss=0.32 最优）· <span class="tag t-neg">prevents→S3</span></div></div>
+<div class="tl-row"><div class="tl-dot" style="background:var(--red)"></div><div class="tl-content"><b>S3 换小模型（失败）</b> · 半径大（边缘，log loss=0.61）· <b>对跖于 S2</b> · <span class="tag t-neg">prevented_by→S2</span></div></div>
+<div class="tl-row"><div class="tl-dot" style="background:var(--amber)"></div><div class="tl-content"><b>S4 attention pooling</b> · 半径中（部分恢复，log loss=0.43）· <span class="tag" style="background:rgba(110,231,255,.15);color:var(--acc)">refines→S2（条件化）</span></div></div>
+<div class="tl-row"><div class="tl-dot" style="background:var(--purple)"></div><div class="tl-content"><b>C1 超时条件</b> · Condition 节点 · <span class="tag t-pos">applies_when→S3,S4</span></div></div>
+</div>
+
+</div>
+</body>
+</html>

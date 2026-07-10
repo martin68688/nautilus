@@ -39,5 +39,14 @@
   "neighbor_category_or_failure_coherence": 0.8658362989323843,
   "random_category_or_failure_coherence": 0.5825622775800712,
   "neighbor_coherence_lift": 0.28327402135231317,
+  "query_aware_gate": {
+    "status": "not_evaluated",
+    "required_inputs": [
+      "benchmark dev queries",
+      "gold SOP labels",
+      "runner output"
+    ],
+    "note": "Query-aware checks are computed by the offline ablation evaluator because they need query/gold pairs."
+  },
   "note": "Geometry ablation is not claim-grade unless this report passes."
 }

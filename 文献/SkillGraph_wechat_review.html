@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>从扁平技能库到演化技能图：SkillGraph 如何重构 Agent 技能复用</title>
+</head>
+<body style="margin:0; padding:0; background:#ffffff; color:#111827; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <main style="max-width:760px; margin:0 auto; padding:28px 18px 48px; background:#ffffff;">
+    <h1 style="font-size:25px; line-height:1.42; font-weight:800; color:#111827; margin:0 0 10px; letter-spacing:0;">从扁平技能库到演化技能图：SkillGraph 如何重构 Agent 技能复用</h1>
+    <p style="margin:0 0 22px; color:#4b5563; font-size:14px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:0;">SkillGraph: Skill-Augmented Reinforcement Learning for Agents via Evolving Skill Graphs</p>
+
+    <section style="margin:0 0 26px;">
+      <h2 style="font-size:19px; line-height:1.5; font-weight:800; color:#111827; margin:0 0 14px; padding-bottom:6px; border-bottom:1px solid #111827;">论文基本信息</h2>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:0;"><strong style="color:#111827;">文章名字：</strong>SkillGraph: Skill-Augmented Reinforcement Learning for Agents via Evolving Skill Graphs</p>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:0;"><strong style="color:#111827;">作者与机构：</strong>Xiaoyuan Li, Moxin Li, Keqin Bao, Yubo Ma, Wenjie Wang, Dayiheng Liu, Fuli Feng；University of Science and Technology of China、Alibaba Group、National University of Singapore。</p>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:0;"><strong style="color:#111827;">期刊与会议：</strong>arXiv:2605.12039，NeurIPS 2026 模板预印本；未见正式录用信息。</p>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:0;"><strong style="color:#111827;">论文类型：</strong>Method / System。</p>
+      <p style="margin:0; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:0;"><strong style="color:#111827;">一句话定位：</strong>把 LLM Agent 的扁平技能库升级为可检索、可排序、可演化的有向技能图，并与 GRPO 强化学习闭环共训练。</p>
+    </section>
+
+    <section style="margin:0 0 26px;">
+      <h2 style="font-size:19px; line-height:1.5; font-weight:800; color:#111827; margin:0 0 14px; padding-bottom:6px; border-bottom:1px solid #111827;">一、完整摘要</h2>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">现有 LLM Agent 技能库通常把经验存成孤立条目，并依赖语义相似度做 Top-K 检索。这种做法在组合任务上失效：Agent 不仅要知道哪些技能相关，还要知道技能之间谁先谁后、谁增强谁、哪些技能经常共同出现。扁平技能库也缺乏结构信号，难以判断技能何时该合并、拆分或淘汰。</p>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">SkillGraph 将可复用技能表示为有向图节点，用 prerequisite、enhance、co-occur 三类边编码依赖、增强与共现关系。面对新任务时，它检索的不是离散技能列表，而是依赖有序的技能子图，用于指导多步决策。训练中，图结构持续从 Agent 轨迹与强化学习反馈中更新，使技能库与策略共同改进。</p>
+      <p style="margin:0; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">实验覆盖 ALFWorld、WebShop 和 7 个 search-augmented QA benchmark。结果显示，SkillGraph 相比 memory-augmented RL 方法达到更高性能，尤其在需要组合多个技能的复杂任务上收益明显。</p>
+    </section>
+
+    <section style="margin:0 0 26px;">
+      <h2 style="font-size:19px; line-height:1.5; font-weight:800; color:#111827; margin:0 0 14px; padding-bottom:6px; border-bottom:1px solid #111827;">二、知识背景全景</h2>
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:0 0 8px;">前置概念</h3>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;"><strong style="color:#111827;">Skill Library：</strong>把历史轨迹蒸馏成可复用策略单元，供后续任务检索和复用。</p>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;"><strong style="color:#111827;">Graph-aware Retrieval：</strong>检索目标从“相似文本块”变成“依赖有序的技能子图”。</p>
+      <p style="margin:0 0 12px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;"><strong style="color:#111827;">GRPO：</strong>通过组内 rollout reward 归一化 advantage 的 policy optimization 方法，减少对 value model 的依赖。</p>
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:0 0 8px;">赛道全景</h3>
+      <p style="margin:0 0 12px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">Agent 记忆大致分三路：raw trajectory / summary memory 成本低但噪声高；flat skill bank 可复用但无结构；graph memory 有关系建模但多为静态事实图。SkillGraph 的位置是 skill bank 与 graph memory 的交叉点：把技能关系变成训练过程中的一等对象。</p>
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:0 0 8px;">出现契机</h3>
+      <p style="margin:0; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">LLM Agent 已能产生足够多轨迹，RL for agents 开始可用，复杂任务开始暴露 flat memory 的上限：不是找不到经验，而是经验没有依赖结构。</p>
+    </section>
+
+    <section style="margin:0 0 26px;">
+      <h2 style="font-size:19px; line-height:1.5; font-weight:800; color:#111827; margin:0 0 14px; padding-bottom:6px; border-bottom:1px solid #111827;">三、痛点与动机</h2>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">Top-K 语义检索返回的是 unordered hints。ALFWorld 的“加热并放置”任务需要定位物体、拿起物体、使用加热设备、放到目标位置的硬顺序；WebShop 任务需要查询改写、属性匹配、价格比较的软组合。扁平库只能给相似技能，不能表达执行依赖。</p>
+      <p style="margin:0; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">作者的切入点很明确：skill reuse 的核心瓶颈不是 skill extraction，而是 skill organization。显式技能关系能同时服务 retrieval ordering、skill maintenance 和 curriculum unlocking。</p>
+    </section>
+
+    <section style="margin:0 0 26px;">
+      <h2 style="font-size:19px; line-height:1.5; font-weight:800; color:#111827; margin:0 0 14px; padding-bottom:6px; border-bottom:1px solid #111827;">四、核心方法</h2>
+      <figure style="margin:0 0 18px; padding:0;">
+        <img src="./skillgraph_figures/figure_1.png" alt="SkillGraph framework overview" style="display:block; width:100%; max-width:100%; height:auto; margin:0 auto; border-radius:4px; box-shadow:0 8px 24px rgba(17,24,39,0.10);">
+        <figcaption style="font-size:13px; line-height:1.7; color:#6b7280; margin:8px 0 0; text-align:center;">Figure 1. SkillGraph 总体架构：图构建、图感知检索、图演化与 GRPO 闭环。</figcaption>
+      </figure>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">图中蓝色模块是 Graph Construction：从成功轨迹和失败轨迹出发，经 teacher model 蒸馏 general skills 与 task-specific skills，并初始化技能图。绿色模块是 Graph-aware Retrieval：从 seed select 开始，经过 graph expand、backward / forward traversal 与 topological ordering，输出 ordered skills 作为 task context。橙色模块是 Graph Evolution：执行节点级 insert / merge / split / deprecate、边级 reinforce / discover / prune，以及 progressive unlocking。灰色模块是 Policy Model、Environment、GRPO Optimization，构成训练闭环。</p>
+
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:14px 0 8px;">1. 图结构定义</h3>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">技能图记为 <i>G</i>=(<i>V</i>,<i>E</i>)。节点 <i>v</i> 是技能记录，包含 title、principle、applicability condition、category。边 <i>e</i> 带类型和权重 <i>w</i>(<i>e</i>)∈[0,1]。</p>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">三类边：prereq 表示 A 必须先于 B；enhance 表示 general skill A 增强 task-specific skill B；co_occur 表示两个技能在成功轨迹中经常共同出现。</p>
+      <p style="text-align:center; margin:14px 0; font-family:'Times New Roman',Times,serif; font-size:17px; color:#111827; line-height:1.8; padding:4px 0; border:none;"><span style="float:right; color:#6b7280; font-size:13px; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-weight:normal; margin-top:2px;">(1)</span><i>p</i><span style="font-size:13px;">hat</span>(<i>v</i>) = <span style="display:inline-block; vertical-align:middle; text-align:center; margin:0 2px;"><span style="display:block; border-bottom:1px solid #111827; padding:0 4px; font-size:0.85em; line-height:1.2;"><i>n</i><sub>succ</sub>(<i>v</i>)</span><span style="display:block; padding:0 4px; font-size:0.85em; line-height:1.2;"><i>n</i><sub>use</sub>(<i>v</i>)</span></span></p>
+      <p style="margin:0 0 12px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">每个节点维护使用次数、成功次数和经验成功率。这个统计量直接驱动后续的拆分、弃用和解锁。</p>
+
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:14px 0 8px;">2. 图感知检索</h3>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">给定任务描述 <i>d</i> 和任务类型 <i>t</i>(<i>d</i>)，系统先从已解锁技能集合中选择 general skills 与类型匹配技能作为种子。</p>
+      <p style="text-align:center; margin:14px 0; font-family:'Times New Roman',Times,serif; font-size:17px; color:#111827; line-height:1.8; padding:4px 0; border:none;"><span style="float:right; color:#6b7280; font-size:13px; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-weight:normal; margin-top:2px;">(2)</span><i>R</i><sub>seed</sub> = { <i>v</i> ∈ <i>V</i><sub>active</sub> : category(<i>v</i>) = general ∨ category(<i>v</i>) = <i>t</i>(<i>d</i>) }</p>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">Backward expansion 沿 incoming prerequisite edges 做 BFS，深度 D=2，用于找基础依赖。Forward expansion 沿 outgoing edges 做 beam search，beam width B=3，用边权传播候选分数。</p>
+      <p style="text-align:center; margin:14px 0; font-family:'Times New Roman',Times,serif; font-size:17px; color:#111827; line-height:1.8; padding:4px 0; border:none;"><span style="float:right; color:#6b7280; font-size:13px; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-weight:normal; margin-top:2px;">(3)</span>&sigma;(<i>v</i>) = max<sub><i>u</i>∈parents(<i>v</i>)</sub> &sigma;(<i>u</i>) · <i>w</i>(<i>u</i>,<i>v</i>)</p>
+      <p style="text-align:center; margin:14px 0; font-family:'Times New Roman',Times,serif; font-size:17px; color:#111827; line-height:1.8; padding:4px 0; border:none;"><span style="float:right; color:#6b7280; font-size:13px; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-weight:normal; margin-top:2px;">(4)</span><i>R</i><sub>ret</sub> = TopoSort<sub><i>G</i></sub>(<i>R</i><sub>seed</sub> ∪ <i>R</i><sub>BFS</sub> ∪ <i>R</i><sub>beam</sub>)</p>
+      <p style="margin:0 0 12px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">最终结果最多保留 K<sub>max</sub>=8 个技能，并按依赖顺序注入 prompt。这里的关键工程价值是：不用改模型结构，只改变上下文组织方式。</p>
+
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:14px 0 8px;">3. 图演化</h3>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">节点级演化负责技能粒度控制：失败覆盖不足则插入新技能；邻域 Jaccard 相似度超过 0.85 的技能合并；高使用但中低成功率的技能拆分；使用频繁但成功率低于 0.15 的技能弃用。</p>
+      <p style="text-align:center; margin:14px 0; font-family:'Times New Roman',Times,serif; font-size:17px; color:#111827; line-height:1.8; padding:4px 0; border:none;"><span style="float:right; color:#6b7280; font-size:13px; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-weight:normal; margin-top:2px;">(5)</span><i>w</i>(<i>e</i>) ← min(<i>w</i>(<i>e</i>) + &alpha;, 1.0), &nbsp; for all <i>e</i> ∈ path(&tau;<sup>+</sup>)</p>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">边级演化负责拓扑更新：成功路径加权强化；新共现关系被发现并加入 co_occur 边；所有边权按 0.99 衰减，低于 0.05 的边被删除。</p>
+      <p style="text-align:center; margin:14px 0; font-family:'Times New Roman',Times,serif; font-size:17px; color:#111827; line-height:1.8; padding:4px 0; border:none;"><span style="float:right; color:#6b7280; font-size:13px; font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; font-weight:normal; margin-top:2px;">(6)</span><span style="text-decoration:overline;"><i>p</i></span>(<i>L</i>) = <span style="display:inline-block; vertical-align:middle; text-align:center; margin:0 2px;"><span style="display:block; border-bottom:1px solid #111827; padding:0 4px; font-size:0.85em; line-height:1.2;">1</span><span style="display:block; padding:0 4px; font-size:0.85em; line-height:1.2;">|{<i>v</i>: &ell;(<i>v</i>)=<i>L</i>}|</span></span><span style="display:inline-block; vertical-align:middle; text-align:center; margin:0 4px;"><span style="display:block; font-size:0.7em; line-height:1.0; margin-bottom:-1px;"><i>v</i>:&ell;(<i>v</i>)=<i>L</i></span><span style="display:block; font-size:1.3em; line-height:1.0; font-family:'Times New Roman',Times,serif;">&sum;</span><span style="display:block; font-size:0.7em; line-height:1.0; margin-top:-1px;">&nbsp;</span></span><i>p</i><span style="font-size:13px;">hat</span>(<i>v</i>) ≥ &theta;<sub>unlock</sub></p>
+      <p style="margin:0; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">progressive unlocking 只先开放 level-0 技能；当前层平均成功率超过 0.6 后解锁下一层。level 只按 prereq/enhance 计算，co_occur 不参与，避免对称边制造环。</p>
+    </section>
+
+    <section style="margin:0 0 26px;">
+      <h2 style="font-size:19px; line-height:1.5; font-weight:800; color:#111827; margin:0 0 14px; padding-bottom:6px; border-bottom:1px solid #111827;">五、实验</h2>
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:0 0 8px;">实验配置</h3>
+      <p style="margin:0 0 12px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:2em;">实验覆盖 ALFWorld 六类 household manipulation、WebShop web navigation、7 个 search-augmented QA benchmark。Base policy 为 Qwen2.5-7B-Instruct，teacher model 为 OpenAI o3。训练使用 cold-start SFT 与 GRPO。Baseline 覆盖闭源 LLM、prompt/memory methods、RL methods、memory-augmented RL methods，以及 QA 检索推理方法。</p>
+
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:14px 0 8px;">Table 1. ALFWorld 与 WebShop 主结果</h3>
+      <div style="overflow-x:auto; margin:0 0 12px; border:none;">
+        <table style="border-collapse:collapse; min-width:900px; width:100%; font-size:13px; line-height:1.55; color:#111827;">
+          <thead>
+            <tr>
+              <th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:left; white-space:nowrap;">Method</th>
+              <th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Pick</th>
+              <th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Look</th>
+              <th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Clean</th>
+              <th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Heat</th>
+              <th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Cool</th>
+              <th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Pick2</th>
+              <th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">All</th>
+              <th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">WebShop Score</th>
+              <th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">WebShop Succ.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td style="border:none; padding:8px; font-style:italic;" colspan="10">Closed-source LLMs</td></tr>
+            <tr><td style="border:none; padding:8px;">GPT-4o</td><td style="border:none; padding:8px; text-align:center;">75.3</td><td style="border:none; padding:8px; text-align:center;">60.8</td><td style="border:none; padding:8px; text-align:center;">31.2</td><td style="border:none; padding:8px; text-align:center;">56.7</td><td style="border:none; padding:8px; text-align:center;">21.6</td><td style="border:none; padding:8px; text-align:center;">49.8</td><td style="border:none; padding:8px; text-align:center;">48.0</td><td style="border:none; padding:8px; text-align:center;">31.8</td><td style="border:none; padding:8px; text-align:center;">23.7</td></tr>
+            <tr><td style="border:none; padding:8px;">Gemini-2.5-Pro</td><td style="border:none; padding:8px; text-align:center;">92.8</td><td style="border:none; padding:8px; text-align:center;">63.3</td><td style="border:none; padding:8px; text-align:center;">62.1</td><td style="border:none; padding:8px; text-align:center;">69.0</td><td style="border:none; padding:8px; text-align:center;">26.6</td><td style="border:none; padding:8px; text-align:center;">58.7</td><td style="border:none; padding:8px; text-align:center;">60.3</td><td style="border:none; padding:8px; text-align:center;">42.5</td><td style="border:none; padding:8px; text-align:center;">35.9</td></tr>
+            <tr><td style="border:none; padding:8px; font-style:italic;" colspan="10">Prompt-based Agentic or Memory-based Methods</td></tr>
+            <tr><td style="border:none; padding:8px;">ReAct</td><td style="border:none; padding:8px; text-align:center;">48.5</td><td style="border:none; padding:8px; text-align:center;">35.4</td><td style="border:none; padding:8px; text-align:center;">34.3</td><td style="border:none; padding:8px; text-align:center;">13.2</td><td style="border:none; padding:8px; text-align:center;">18.2</td><td style="border:none; padding:8px; text-align:center;">17.6</td><td style="border:none; padding:8px; text-align:center;">31.2</td><td style="border:none; padding:8px; text-align:center;">46.2</td><td style="border:none; padding:8px; text-align:center;">19.5</td></tr>
+            <tr><td style="border:none; padding:8px;">Reflexion</td><td style="border:none; padding:8px; text-align:center;">62.0</td><td style="border:none; padding:8px; text-align:center;">41.6</td><td style="border:none; padding:8px; text-align:center;">44.9</td><td style="border:none; padding:8px; text-align:center;">30.9</td><td style="border:none; padding:8px; text-align:center;">36.3</td><td style="border:none; padding:8px; text-align:center;">23.8</td><td style="border:none; padding:8px; text-align:center;">42.7</td><td style="border:none; padding:8px; text-align:center;">58.1</td><td style="border:none; padding:8px; text-align:center;">28.8</td></tr>
+            <tr><td style="border:none; padding:8px;">Mem0</td><td style="border:none; padding:8px; text-align:center;">54.0</td><td style="border:none; padding:8px; text-align:center;">55.0</td><td style="border:none; padding:8px; text-align:center;">26.9</td><td style="border:none; padding:8px; text-align:center;">36.4</td><td style="border:none; padding:8px; text-align:center;">20.8</td><td style="border:none; padding:8px; text-align:center;">7.69</td><td style="border:none; padding:8px; text-align:center;">33.6</td><td style="border:none; padding:8px; text-align:center;">23.9</td><td style="border:none; padding:8px; text-align:center;">2.00</td></tr>
+            <tr><td style="border:none; padding:8px;">MemP</td><td style="border:none; padding:8px; text-align:center;">54.3</td><td style="border:none; padding:8px; text-align:center;">38.5</td><td style="border:none; padding:8px; text-align:center;">48.1</td><td style="border:none; padding:8px; text-align:center;">56.2</td><td style="border:none; padding:8px; text-align:center;">32.0</td><td style="border:none; padding:8px; text-align:center;">16.7</td><td style="border:none; padding:8px; text-align:center;">41.4</td><td style="border:none; padding:8px; text-align:center;">25.3</td><td style="border:none; padding:8px; text-align:center;">6.40</td></tr>
+            <tr><td style="border:none; padding:8px;">ExpeL</td><td style="border:none; padding:8px; text-align:center;">21.0</td><td style="border:none; padding:8px; text-align:center;">67.0</td><td style="border:none; padding:8px; text-align:center;">55.0</td><td style="border:none; padding:8px; text-align:center;">52.0</td><td style="border:none; padding:8px; text-align:center;">11.0</td><td style="border:none; padding:8px; text-align:center;">6.00</td><td style="border:none; padding:8px; text-align:center;">46.3</td><td style="border:none; padding:8px; text-align:center;">30.9</td><td style="border:none; padding:8px; text-align:center;">11.2</td></tr>
+            <tr><td style="border:none; padding:8px;">SimpleMem</td><td style="border:none; padding:8px; text-align:center;">64.5</td><td style="border:none; padding:8px; text-align:center;">33.3</td><td style="border:none; padding:8px; text-align:center;">20.0</td><td style="border:none; padding:8px; text-align:center;">12.5</td><td style="border:none; padding:8px; text-align:center;">33.3</td><td style="border:none; padding:8px; text-align:center;">3.84</td><td style="border:none; padding:8px; text-align:center;">29.7</td><td style="border:none; padding:8px; text-align:center;">33.2</td><td style="border:none; padding:8px; text-align:center;">8.59</td></tr>
+            <tr><td style="border:none; padding:8px; font-style:italic;" colspan="10">RL-based Methods</td></tr>
+            <tr><td style="border:none; padding:8px;">RLOO</td><td style="border:none; padding:8px; text-align:center;">87.6</td><td style="border:none; padding:8px; text-align:center;">78.2</td><td style="border:none; padding:8px; text-align:center;">87.3</td><td style="border:none; padding:8px; text-align:center;">81.3</td><td style="border:none; padding:8px; text-align:center;">71.9</td><td style="border:none; padding:8px; text-align:center;">48.9</td><td style="border:none; padding:8px; text-align:center;">75.5</td><td style="border:none; padding:8px; text-align:center;">80.3</td><td style="border:none; padding:8px; text-align:center;">65.7</td></tr>
+            <tr><td style="border:none; padding:8px;">GRPO</td><td style="border:none; padding:8px; text-align:center;">90.8</td><td style="border:none; padding:8px; text-align:center;">66.1</td><td style="border:none; padding:8px; text-align:center;">89.3</td><td style="border:none; padding:8px; text-align:center;">74.7</td><td style="border:none; padding:8px; text-align:center;">72.5</td><td style="border:none; padding:8px; text-align:center;">64.7</td><td style="border:none; padding:8px; text-align:center;">77.6</td><td style="border:none; padding:8px; text-align:center;">79.3</td><td style="border:none; padding:8px; text-align:center;">66.1</td></tr>
+            <tr><td style="border:none; padding:8px; font-style:italic;" colspan="10">Memory-Augmented RL-based Methods</td></tr>
+            <tr><td style="border:none; padding:8px;">MemRL</td><td style="border:none; padding:8px; text-align:center;">62.8</td><td style="border:none; padding:8px; text-align:center;">38.5</td><td style="border:none; padding:8px; text-align:center;">22.2</td><td style="border:none; padding:8px; text-align:center;">12.5</td><td style="border:none; padding:8px; text-align:center;">8.00</td><td style="border:none; padding:8px; text-align:center;">0.00</td><td style="border:none; padding:8px; text-align:center;">21.4</td><td style="border:none; padding:8px; text-align:center;">29.5</td><td style="border:none; padding:8px; text-align:center;">9.20</td></tr>
+            <tr><td style="border:none; padding:8px;">EvolveR</td><td style="border:none; padding:8px; text-align:center;">64.9</td><td style="border:none; padding:8px; text-align:center;">33.3</td><td style="border:none; padding:8px; text-align:center;">46.4</td><td style="border:none; padding:8px; text-align:center;">13.3</td><td style="border:none; padding:8px; text-align:center;">33.3</td><td style="border:none; padding:8px; text-align:center;">33.3</td><td style="border:none; padding:8px; text-align:center;">43.8</td><td style="border:none; padding:8px; text-align:center;">42.5</td><td style="border:none; padding:8px; text-align:center;">17.6</td></tr>
+            <tr><td style="border:none; padding:8px;">Mem0+GRPO</td><td style="border:none; padding:8px; text-align:center;">78.1</td><td style="border:none; padding:8px; text-align:center;">54.8</td><td style="border:none; padding:8px; text-align:center;">56.1</td><td style="border:none; padding:8px; text-align:center;">31.0</td><td style="border:none; padding:8px; text-align:center;">65.0</td><td style="border:none; padding:8px; text-align:center;">26.9</td><td style="border:none; padding:8px; text-align:center;">54.7</td><td style="border:none; padding:8px; text-align:center;">58.1</td><td style="border:none; padding:8px; text-align:center;">37.5</td></tr>
+            <tr><td style="border:none; padding:8px;">SimpleMem+GRPO</td><td style="border:none; padding:8px; text-align:center;">89.5</td><td style="border:none; padding:8px; text-align:center;">63.6</td><td style="border:none; padding:8px; text-align:center;">60.0</td><td style="border:none; padding:8px; text-align:center;">50.0</td><td style="border:none; padding:8px; text-align:center;">64.9</td><td style="border:none; padding:8px; text-align:center;">26.3</td><td style="border:none; padding:8px; text-align:center;">62.5</td><td style="border:none; padding:8px; text-align:center;">67.8</td><td style="border:none; padding:8px; text-align:center;">46.9</td></tr>
+            <tr><td style="border:none; padding:8px;">SkillRL</td><td style="border:none; padding:8px; text-align:center;">97.9</td><td style="border:none; padding:8px; text-align:center;">71.4</td><td style="border:none; padding:8px; text-align:center;">90.0</td><td style="border:none; padding:8px; text-align:center;">90.0</td><td style="border:none; padding:8px; text-align:center;">95.5</td><td style="border:none; padding:8px; text-align:center;">87.5</td><td style="border:none; padding:8px; text-align:center;">89.9</td><td style="border:none; padding:8px; text-align:center;">85.2</td><td style="border:none; padding:8px; text-align:center;">72.7</td></tr>
+            <tr><td style="border:none; border-bottom:2px solid #111827; padding:8px; font-weight:800;">SkillGraph</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">100.0</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">80.0</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">100.0</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">100.0</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">80.0</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">83.3</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">90.6</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">91.5</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">84.4</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="border-left:3px solid #111827; padding-left:16px; color:#4b5563; text-align:justify; margin:0 0 18px; font-size:14px; line-height:1.8; text-indent:0;"><strong style="color:#111827;">数据解读：</strong>SkillGraph 相比 vanilla GRPO 在 ALFWorld 提升 13.0 点，在 WebShop success 提升 18.3 点；相比 SkillRL，ALFWorld 只高 0.7 点，但 WebShop success 高 11.7 点。收益集中在组合导航和技能维护，不是所有任务无差别碾压。原文正文称 ExpeL 在 Heat 上为 56.2，但表格是 52.0；56.2 实际对应 MemP，属于内部数字不一致。</p>
+
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:14px 0 8px;">Table 2. Search-augmented QA 结果</h3>
+      <div style="overflow-x:auto; margin:0 0 12px; border:none;">
+        <table style="border-collapse:collapse; min-width:860px; width:100%; font-size:13px; line-height:1.55; color:#111827;">
+          <thead><tr><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:left;">Method</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">NQ</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">TriviaQA</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">PopQA</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">HotpotQA</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">2Wiki</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">MuSiQue</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Bamboogle</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Avg.</th></tr></thead>
+          <tbody>
+            <tr><td style="border:none; padding:8px;">Qwen2.5-7B-Instruct</td><td style="border:none; padding:8px; text-align:center;">11.6</td><td style="border:none; padding:8px; text-align:center;">35.6</td><td style="border:none; padding:8px; text-align:center;">1.20</td><td style="border:none; padding:8px; text-align:center;">16.4</td><td style="border:none; padding:8px; text-align:center;">22.2</td><td style="border:none; padding:8px; text-align:center;">4.80</td><td style="border:none; padding:8px; text-align:center;">14.4</td><td style="border:none; padding:8px; text-align:center;">15.2</td></tr>
+            <tr><td style="border:none; padding:8px;">CoT</td><td style="border:none; padding:8px; text-align:center;">12.8</td><td style="border:none; padding:8px; text-align:center;">35.6</td><td style="border:none; padding:8px; text-align:center;">3.80</td><td style="border:none; padding:8px; text-align:center;">16.2</td><td style="border:none; padding:8px; text-align:center;">22.6</td><td style="border:none; padding:8px; text-align:center;">6.60</td><td style="border:none; padding:8px; text-align:center;">24.0</td><td style="border:none; padding:8px; text-align:center;">17.4</td></tr>
+            <tr><td style="border:none; padding:8px;">RAG</td><td style="border:none; padding:8px; text-align:center;">27.4</td><td style="border:none; padding:8px; text-align:center;">58.2</td><td style="border:none; padding:8px; text-align:center;">17.8</td><td style="border:none; padding:8px; text-align:center;">25.8</td><td style="border:none; padding:8px; text-align:center;">23.2</td><td style="border:none; padding:8px; text-align:center;">9.40</td><td style="border:none; padding:8px; text-align:center;">16.8</td><td style="border:none; padding:8px; text-align:center;">25.5</td></tr>
+            <tr><td style="border:none; padding:8px;">Search-o1</td><td style="border:none; padding:8px; text-align:center;">19.4</td><td style="border:none; padding:8px; text-align:center;">40.6</td><td style="border:none; padding:8px; text-align:center;">11.4</td><td style="border:none; padding:8px; text-align:center;">17.0</td><td style="border:none; padding:8px; text-align:center;">27.0</td><td style="border:none; padding:8px; text-align:center;">8.60</td><td style="border:none; padding:8px; text-align:center;">30.4</td><td style="border:none; padding:8px; text-align:center;">22.1</td></tr>
+            <tr><td style="border:none; padding:8px;">Search-R1</td><td style="border:none; padding:8px; text-align:center;">39.3</td><td style="border:none; padding:8px; text-align:center;">61.0</td><td style="border:none; padding:8px; text-align:center;">39.7</td><td style="border:none; padding:8px; text-align:center;">37.0</td><td style="border:none; padding:8px; text-align:center;">40.1</td><td style="border:none; padding:8px; text-align:center;">14.6</td><td style="border:none; padding:8px; text-align:center;">36.8</td><td style="border:none; padding:8px; text-align:center;">38.5</td></tr>
+            <tr><td style="border:none; padding:8px;">ZeroSearch</td><td style="border:none; padding:8px; text-align:center;">43.6</td><td style="border:none; padding:8px; text-align:center;">61.8</td><td style="border:none; padding:8px; text-align:center;">51.5</td><td style="border:none; padding:8px; text-align:center;">34.6</td><td style="border:none; padding:8px; text-align:center;">35.2</td><td style="border:none; padding:8px; text-align:center;">18.4</td><td style="border:none; padding:8px; text-align:center;">27.8</td><td style="border:none; padding:8px; text-align:center;">39.1</td></tr>
+            <tr><td style="border:none; padding:8px;">EvolveR</td><td style="border:none; padding:8px; text-align:center;">43.5</td><td style="border:none; padding:8px; text-align:center;">63.4</td><td style="border:none; padding:8px; text-align:center;">44.6</td><td style="border:none; padding:8px; text-align:center;">38.2</td><td style="border:none; padding:8px; text-align:center;">42.0</td><td style="border:none; padding:8px; text-align:center;">15.6</td><td style="border:none; padding:8px; text-align:center;">54.4</td><td style="border:none; padding:8px; text-align:center;">43.1</td></tr>
+            <tr><td style="border:none; padding:8px;">SkillRL</td><td style="border:none; padding:8px; text-align:center;">45.9</td><td style="border:none; padding:8px; text-align:center;">63.3</td><td style="border:none; padding:8px; text-align:center;">45.9</td><td style="border:none; padding:8px; text-align:center;">43.2</td><td style="border:none; padding:8px; text-align:center;">40.3</td><td style="border:none; padding:8px; text-align:center;">20.2</td><td style="border:none; padding:8px; text-align:center;">73.8</td><td style="border:none; padding:8px; text-align:center;">47.1</td></tr>
+            <tr><td style="border:none; border-bottom:2px solid #111827; padding:8px; font-weight:800;">SkillGraph</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">48.0</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">63.8</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">48.5</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">44.7</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">43.4</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">19.5</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">72.6</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center; font-weight:800;">48.9</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="border-left:3px solid #111827; padding-left:16px; color:#4b5563; text-align:justify; margin:0 0 18px; font-size:14px; line-height:1.8; text-indent:0;"><strong style="color:#111827;">定量分析与局限性评估：</strong>SkillGraph 平均 48.9，比 SkillRL 高 1.8 点；在 NQ、TriviaQA、HotpotQA、2Wiki 上领先，但在 MuSiQue 与 Bamboogle 上低于 SkillRL。这说明图结构迁移有效，但不是通用检索推理银弹。原文正文写 NQ 52.9、PopQA 52.6，与表格 48.0、48.5 不一致，应以表格为准。</p>
+
+      <figure style="margin:0 0 18px; padding:0;">
+        <img src="./skillgraph_figures/figure_2.png" alt="Skill graph evolution curves" style="display:block; width:100%; max-width:100%; height:auto; margin:0 auto; border-radius:4px; box-shadow:0 8px 24px rgba(17,24,39,0.10);">
+        <figcaption style="font-size:13px; line-height:1.7; color:#6b7280; margin:8px 0 0; text-align:center;">Figure 2. WebShop 训练中的节点数、边数与平均节点成功率变化。</figcaption>
+      </figure>
+
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:14px 0 8px;">Table 3. 消融实验</h3>
+      <div style="overflow-x:auto; margin:0 0 12px; border:none;">
+        <table style="border-collapse:collapse; min-width:460px; width:100%; font-size:13px; line-height:1.55; color:#111827;">
+          <thead><tr><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:left;">Method</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">ALFWorld</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">WebShop</th></tr></thead>
+          <tbody>
+            <tr><td style="border:none; padding:8px; font-weight:800;">SkillGraph</td><td style="border:none; padding:8px; text-align:center; font-weight:800;">90.6</td><td style="border:none; padding:8px; text-align:center; font-weight:800;">84.4</td></tr>
+            <tr><td style="border:none; padding:8px;">w/o Graph Structure</td><td style="border:none; padding:8px; text-align:center;">89.9</td><td style="border:none; padding:8px; text-align:center;">72.7</td></tr>
+            <tr><td style="border:none; padding:8px;">w/o Graph-aware Ret.</td><td style="border:none; padding:8px; text-align:center;">59.4</td><td style="border:none; padding:8px; text-align:center;">79.7</td></tr>
+            <tr><td style="border:none; padding:8px;">w/o Graph Evolution</td><td style="border:none; padding:8px; text-align:center;">78.2</td><td style="border:none; padding:8px; text-align:center;">70.3</td></tr>
+            <tr><td style="border:none; border-bottom:2px solid #111827; padding:8px;">w/o Cold-Start SFT</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">73.4</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">67.2</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="border-left:3px solid #111827; padding-left:16px; color:#4b5563; text-align:justify; margin:0 0 18px; font-size:14px; line-height:1.8; text-indent:0;"><strong style="color:#111827;">数据解读：</strong>ALFWorld 最依赖 graph-aware retrieval，去掉后从 90.6 跌到 59.4；WebShop 最依赖 graph evolution，去掉后从 84.4 跌到 70.3。cold-start SFT 两边都掉 17.2，说明该方法不是即插即用 memory，而是 teacher、SFT、RL、图维护共同构成的系统工程。</p>
+
+      <figure style="margin:0 0 18px; padding:0;">
+        <img src="./skillgraph_figures/figure_3.png" alt="Training dynamics and prompt length" style="display:block; width:100%; max-width:100%; height:auto; margin:0 auto; border-radius:4px; box-shadow:0 8px 24px rgba(17,24,39,0.10);">
+        <figcaption style="font-size:13px; line-height:1.7; color:#6b7280; margin:8px 0 0; text-align:center;">Figure 3. WebShop 训练曲线与 prompt 长度对比。</figcaption>
+      </figure>
+
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:14px 0 8px;">Appendix Table 4. 训练超参数</h3>
+      <div style="overflow-x:auto; margin:0 0 12px; border:none;">
+        <table style="border-collapse:collapse; min-width:680px; width:100%; font-size:13px; line-height:1.55; color:#111827;">
+          <thead><tr><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:left;">Hyperparameter</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">ALFWorld</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">WebShop</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Search QA</th></tr></thead>
+          <tbody>
+            <tr><td style="border:none; padding:8px;">Learning rate</td><td style="border:none; padding:8px; text-align:center;">1e-6</td><td style="border:none; padding:8px; text-align:center;">1e-6</td><td style="border:none; padding:8px; text-align:center;">1e-6</td></tr>
+            <tr><td style="border:none; padding:8px;">LR warmup ratio</td><td style="border:none; padding:8px; text-align:center;">-</td><td style="border:none; padding:8px; text-align:center;">-</td><td style="border:none; padding:8px; text-align:center;">0.1</td></tr>
+            <tr><td style="border:none; padding:8px;">KL coefficient</td><td style="border:none; padding:8px; text-align:center;">0.01</td><td style="border:none; padding:8px; text-align:center;">0.01</td><td style="border:none; padding:8px; text-align:center;">0.001</td></tr>
+            <tr><td style="border:none; padding:8px;">Train batch size</td><td style="border:none; padding:8px; text-align:center;">16</td><td style="border:none; padding:8px; text-align:center;">16</td><td style="border:none; padding:8px; text-align:center;">256</td></tr>
+            <tr><td style="border:none; padding:8px;">Validation batch size</td><td style="border:none; padding:8px; text-align:center;">64</td><td style="border:none; padding:8px; text-align:center;">64</td><td style="border:none; padding:8px; text-align:center;">512</td></tr>
+            <tr><td style="border:none; padding:8px;">Group size</td><td style="border:none; padding:8px; text-align:center;">8</td><td style="border:none; padding:8px; text-align:center;">8</td><td style="border:none; padding:8px; text-align:center;">4</td></tr>
+            <tr><td style="border:none; padding:8px;">Max prompt length</td><td style="border:none; padding:8px; text-align:center;">4096</td><td style="border:none; padding:8px; text-align:center;">6000</td><td style="border:none; padding:8px; text-align:center;">5000</td></tr>
+            <tr><td style="border:none; padding:8px;">Max response length</td><td style="border:none; padding:8px; text-align:center;">512</td><td style="border:none; padding:8px; text-align:center;">768</td><td style="border:none; padding:8px; text-align:center;">700</td></tr>
+            <tr><td style="border:none; padding:8px;">Total epochs</td><td style="border:none; padding:8px; text-align:center;">200</td><td style="border:none; padding:8px; text-align:center;">200</td><td style="border:none; padding:8px; text-align:center;">200</td></tr>
+            <tr><td style="border:none; border-bottom:2px solid #111827; padding:8px;">Validation frequency</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">5</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">5</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">5</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="border-left:3px solid #111827; padding-left:16px; color:#4b5563; text-align:justify; margin:0 0 18px; font-size:14px; line-height:1.8; text-indent:0;"><strong style="color:#111827;">数据解读：</strong>Search QA 的 batch 明显更大，KL 更小，说明三个环境并非完全同构设置。WebShop 的 max prompt length 为 6000，也解释了论文为何强调 context efficiency：上下文成本是实际瓶颈。</p>
+
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:14px 0 8px;">Appendix Table 5. SkillGraph 超参数</h3>
+      <div style="overflow-x:auto; margin:0 0 12px; border:none;">
+        <table style="border-collapse:collapse; min-width:520px; width:100%; font-size:13px; line-height:1.55; color:#111827;">
+          <thead><tr><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:left;">Hyperparameter</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Symbol</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Value</th></tr></thead>
+          <tbody>
+            <tr><td style="border:none; padding:8px;">Retrieved skill cap</td><td style="border:none; padding:8px; text-align:center;">Kmax</td><td style="border:none; padding:8px; text-align:center;">8</td></tr>
+            <tr><td style="border:none; padding:8px;">Backward BFS depth</td><td style="border:none; padding:8px; text-align:center;">D</td><td style="border:none; padding:8px; text-align:center;">2</td></tr>
+            <tr><td style="border:none; padding:8px;">Forward beam width</td><td style="border:none; padding:8px; text-align:center;">B</td><td style="border:none; padding:8px; text-align:center;">3</td></tr>
+            <tr><td style="border:none; padding:8px;">Max new skills per update</td><td style="border:none; padding:8px; text-align:center;">m</td><td style="border:none; padding:8px; text-align:center;">3</td></tr>
+            <tr><td style="border:none; padding:8px;">Merge threshold</td><td style="border:none; padding:8px; text-align:center;">Jaccard</td><td style="border:none; padding:8px; text-align:center;">0.85</td></tr>
+            <tr><td style="border:none; padding:8px;">Deprecation threshold</td><td style="border:none; padding:8px; text-align:center;">-</td><td style="border:none; padding:8px; text-align:center;">0.15</td></tr>
+            <tr><td style="border:none; padding:8px;">Path reinforcement step</td><td style="border:none; padding:8px; text-align:center;">alpha</td><td style="border:none; padding:8px; text-align:center;">0.05</td></tr>
+            <tr><td style="border:none; padding:8px;">Edge decay factor</td><td style="border:none; padding:8px; text-align:center;">gamma</td><td style="border:none; padding:8px; text-align:center;">0.99</td></tr>
+            <tr><td style="border:none; padding:8px;">Edge pruning threshold</td><td style="border:none; padding:8px; text-align:center;">wmin</td><td style="border:none; padding:8px; text-align:center;">0.05</td></tr>
+            <tr><td style="border:none; border-bottom:2px solid #111827; padding:8px;">Level unlock threshold</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">theta</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">0.6</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="border-left:3px solid #111827; padding-left:16px; color:#4b5563; text-align:justify; margin:0 0 18px; font-size:14px; line-height:1.8; text-indent:0;"><strong style="color:#111827;">数据解读：</strong>检索上限 Kmax=8 很克制，说明作者确实在控制 prompt 噪声。图演化阈值多为手工超参，论文没有充分证明这些阈值跨环境稳健，这是落地时需要重新调参的部分。</p>
+
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:14px 0 8px;">Appendix Table 6. SkillGraph 置信区间</h3>
+      <div style="overflow-x:auto; margin:0 0 12px; border:none;">
+        <table style="border-collapse:collapse; min-width:520px; width:100%; font-size:13px; line-height:1.55; color:#111827;">
+          <thead><tr><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:left;">Benchmark</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Metric</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">SkillGraph</th></tr></thead>
+          <tbody>
+            <tr><td style="border:none; padding:8px;">ALFWorld</td><td style="border:none; padding:8px; text-align:center;">Overall Succ.</td><td style="border:none; padding:8px; text-align:center;">90.6 ± 7.1</td></tr>
+            <tr><td style="border:none; padding:8px;">WebShop</td><td style="border:none; padding:8px; text-align:center;">Task Score</td><td style="border:none; padding:8px; text-align:center;">91.5 ± 6.8</td></tr>
+            <tr><td style="border:none; padding:8px;">WebShop</td><td style="border:none; padding:8px; text-align:center;">Success Rate</td><td style="border:none; padding:8px; text-align:center;">84.4 ± 8.9</td></tr>
+            <tr><td style="border:none; padding:8px;">NQ</td><td style="border:none; padding:8px; text-align:center;">EM</td><td style="border:none; padding:8px; text-align:center;">48.0 ± 4.4</td></tr>
+            <tr><td style="border:none; padding:8px;">TriviaQA</td><td style="border:none; padding:8px; text-align:center;">EM</td><td style="border:none; padding:8px; text-align:center;">63.8 ± 4.2</td></tr>
+            <tr><td style="border:none; padding:8px;">PopQA</td><td style="border:none; padding:8px; text-align:center;">EM</td><td style="border:none; padding:8px; text-align:center;">48.5 ± 4.4</td></tr>
+            <tr><td style="border:none; padding:8px;">HotpotQA</td><td style="border:none; padding:8px; text-align:center;">EM</td><td style="border:none; padding:8px; text-align:center;">44.7 ± 4.4</td></tr>
+            <tr><td style="border:none; padding:8px;">2Wiki</td><td style="border:none; padding:8px; text-align:center;">EM</td><td style="border:none; padding:8px; text-align:center;">43.4 ± 4.3</td></tr>
+            <tr><td style="border:none; padding:8px;">MuSiQue</td><td style="border:none; padding:8px; text-align:center;">EM</td><td style="border:none; padding:8px; text-align:center;">19.5 ± 3.5</td></tr>
+            <tr><td style="border:none; padding:8px;">Bamboogle</td><td style="border:none; padding:8px; text-align:center;">EM</td><td style="border:none; padding:8px; text-align:center;">72.6 ± 3.9</td></tr>
+            <tr><td style="border:none; border-bottom:2px solid #111827; padding:8px;">Average QA</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">EM</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">48.9 ± 4.4</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="border-left:3px solid #111827; padding-left:16px; color:#4b5563; text-align:justify; margin:0 0 18px; font-size:14px; line-height:1.8; text-indent:0;"><strong style="color:#111827;">数据解读：</strong>WebShop success 的 95% 区间为 ±8.9，波动不小；ALFWorld 为 ±7.1。论文主表优势明显，但置信区间提示在小样本或高方差环境中仍需多 seed 复验。</p>
+
+      <h3 style="font-size:16px; line-height:1.6; font-weight:800; color:#111827; margin:14px 0 8px;">Appendix Table 7. Search QA 训练曲线</h3>
+      <div style="overflow-x:auto; margin:0 0 12px; border:none;">
+        <table style="border-collapse:collapse; min-width:760px; width:100%; font-size:13px; line-height:1.55; color:#111827;">
+          <thead><tr><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Step</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">NQ</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">TriviaQA</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">PopQA</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">HotpotQA</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">2Wiki</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">MuSiQue</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Bamboogle</th><th style="border:none; border-left:none; border-right:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:8px; text-align:center;">Avg.</th></tr></thead>
+          <tbody>
+            <tr><td style="border:none; padding:8px; text-align:center;">30</td><td style="border:none; padding:8px; text-align:center;">39.2</td><td style="border:none; padding:8px; text-align:center;">58.9</td><td style="border:none; padding:8px; text-align:center;">40.6</td><td style="border:none; padding:8px; text-align:center;">39.7</td><td style="border:none; padding:8px; text-align:center;">35.4</td><td style="border:none; padding:8px; text-align:center;">16.3</td><td style="border:none; padding:8px; text-align:center;">69.0</td><td style="border:none; padding:8px; text-align:center;">42.4</td></tr>
+            <tr><td style="border:none; padding:8px; text-align:center;">60</td><td style="border:none; padding:8px; text-align:center;">44.9</td><td style="border:none; padding:8px; text-align:center;">61.8</td><td style="border:none; padding:8px; text-align:center;">44.1</td><td style="border:none; padding:8px; text-align:center;">42.4</td><td style="border:none; padding:8px; text-align:center;">39.1</td><td style="border:none; padding:8px; text-align:center;">17.6</td><td style="border:none; padding:8px; text-align:center;">69.8</td><td style="border:none; padding:8px; text-align:center;">45.3</td></tr>
+            <tr><td style="border:none; padding:8px; text-align:center;">90</td><td style="border:none; padding:8px; text-align:center;">46.0</td><td style="border:none; padding:8px; text-align:center;">62.1</td><td style="border:none; padding:8px; text-align:center;">45.6</td><td style="border:none; padding:8px; text-align:center;">42.8</td><td style="border:none; padding:8px; text-align:center;">40.0</td><td style="border:none; padding:8px; text-align:center;">18.1</td><td style="border:none; padding:8px; text-align:center;">68.1</td><td style="border:none; padding:8px; text-align:center;">46.4</td></tr>
+            <tr><td style="border:none; padding:8px; text-align:center;">120</td><td style="border:none; padding:8px; text-align:center;">46.2</td><td style="border:none; padding:8px; text-align:center;">62.5</td><td style="border:none; padding:8px; text-align:center;">45.1</td><td style="border:none; padding:8px; text-align:center;">43.6</td><td style="border:none; padding:8px; text-align:center;">41.9</td><td style="border:none; padding:8px; text-align:center;">18.4</td><td style="border:none; padding:8px; text-align:center;">70.6</td><td style="border:none; padding:8px; text-align:center;">46.9</td></tr>
+            <tr><td style="border:none; padding:8px; text-align:center;">150</td><td style="border:none; padding:8px; text-align:center;">46.4</td><td style="border:none; padding:8px; text-align:center;">63.6</td><td style="border:none; padding:8px; text-align:center;">45.6</td><td style="border:none; padding:8px; text-align:center;">44.3</td><td style="border:none; padding:8px; text-align:center;">43.3</td><td style="border:none; padding:8px; text-align:center;">19.4</td><td style="border:none; padding:8px; text-align:center;">70.6</td><td style="border:none; padding:8px; text-align:center;">47.9</td></tr>
+            <tr><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">200</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">48.0</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">63.8</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">48.5</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">44.7</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">43.4</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">19.5</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">72.6</td><td style="border:none; border-bottom:2px solid #111827; padding:8px; text-align:center;">48.9</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="border-left:3px solid #111827; padding-left:16px; color:#4b5563; text-align:justify; margin:0; font-size:14px; line-height:1.8; text-indent:0;"><strong style="color:#111827;">数据解读：</strong>平均分从 step 30 的 42.4 增至 step 200 的 48.9，趋势稳定但增幅逐渐收敛。NQ 与 HotpotQA 是 in-domain，仍只达到 48.0 和 44.7，说明 search QA 的瓶颈不只在技能组织，还受检索质量、答案抽取和多跳证据链约束。</p>
+    </section>
+
+    <section style="margin:0 0 26px;">
+      <h2 style="font-size:19px; line-height:1.5; font-weight:800; color:#111827; margin:0 0 14px; padding-bottom:6px; border-bottom:1px solid #111827;">六、极客评分</h2>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:0;"><strong style="color:#111827;">创新性：7.0/10。</strong>图化 skill bank、dependency-ordered retrieval、evolution loop 是扎实系统创新；但底层模块多来自已有路线，核心是闭环集成，不是新学习理论。</p>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:0;"><strong style="color:#111827;">实用性：6.0/10。</strong>思路适合复杂 Agent，但落地成本高：强 teacher、轨迹采集、SFT、GRPO、图维护、验证反馈一个都不少。对普通本地轻量 Agent 不够友好。</p>
+      <p style="margin:0; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px; text-align:justify; text-indent:0;"><strong style="color:#111827;">行业价值：7.0/10。</strong>对 Web agent、embodied agent、搜索型 QA agent 有明确价值，尤其适合多步骤 SOP 与长期技能积累；短板是跨环境迁移尚未实证，且原文内部数字不一致降低可信度。</p>
+    </section>
+
+    <!-- ==================== 通俗讲解（带图） ==================== -->
+    <section style="margin:40px 0 26px; padding-top:20px; border-top:2px dashed #9ca3af;">
+      <h2 style="font-size:22px; line-height:1.4; font-weight:800; color:#111827; margin:0 0 6px; padding-bottom:6px; border-bottom:1px solid #111827;">七、通俗讲解：SkillGraph 到底在干什么</h2>
+      <p style="margin:0 0 18px; color:#6b7280; font-size:13.5px; line-height:1.7; text-indent:0;">下面用大白话 + 大量类比，从头到尾讲一遍。重点在方法论。配图来自论文原图（Figure 1/2/3）。</p>
+
+      <!-- 一句话概括 -->
+      <div style="background:#f9fafb; border-left:4px solid #111827; padding:14px 18px; margin:0 0 22px;">
+        <p style="margin:0; color:#111827; font-size:15.5px; line-height:1.75; text-indent:0;"><strong>一句话概括：</strong>让 AI agent 像人一样，把自己解题的经验整理成一张"技能关系图"，而不是一堆散乱的笔记。这样下次遇到复杂任务时，它不仅知道"该用哪些技能"，还知道"按什么顺序用、哪个是哪个的前提"。</p>
+      </div>
+
+      <!-- ====== 1. 解决什么问题 ====== -->
+      <h3 style="font-size:17px; font-weight:800; color:#111827; margin:22px 0 10px;">1. 先理解背景：什么是"技能库"</h3>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;">想象 agent 在 ALFWorld（模拟家居任务）里反复做任务。"加热一个杯子"需要：找杯子 → 拿起 → 放进微波炉 → 启动 → 拿出来。每次都从零摸索太傻了，所以 agent 会把反复出现的解题模式<strong>蒸馏成"技能"存起来</strong>，下次直接复用。这就是"技能库"。</p>
+
+      <h3 style="font-size:16px; font-weight:700; color:#374151; margin:18px 0 8px;">现有技能库的两个死穴</h3>
+      <p style="margin:0 0 6px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;"><strong>死穴 1：检索没有"组合性"。</strong>现有技能库像一个没有目录、没有顺序的杂物箱。你问它"怎么加热杯子"，它捞出一堆技能——[拿起物品] [微波炉操作] [找杯子] [启动电器]——但<strong>不告诉你先做哪个、后做哪个</strong>。复杂任务需要有序的技能链，扁平检索返回一堆，agent 不知道执行顺序。</p>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;"><strong>死穴 2：维护没有"结构信号"。</strong>技能库越攒越多，会出现：两个技能其实说同一件事（该合并）、一个技能太笼统（该拆细）、一个技能老不管用（该淘汰）。但现有系统没有信号告诉你"这俩该合并"——因为技能之间没有关系结构，全是孤立的。</p>
+
+      <div style="background:#fef2f2; border-left:4px solid #ef4444; padding:12px 16px; margin:0 0 22px;">
+        <p style="margin:0; color:#7f1d1d; font-size:14.5px; line-height:1.75; text-indent:0;"><strong>论文的核心思路：</strong>把扁平技能库升级成一张"技能关系图"。技能是节点，技能之间的关系（谁是谁的前提、谁增强谁、谁常和谁一起出现）是带类型的边。这样检索能沿图走出<strong>有顺序的技能链</strong>，维护也有结构信号（重复的合并、太宽的拆、失败的淘汰）。</p>
+      </div>
+
+      <!-- ====== 2. 方法论（重点）====== -->
+      <h3 style="font-size:17px; font-weight:800; color:#111827; margin:24px 0 10px;">2. 方法论（重点讲解）</h3>
+      <p style="margin:0 0 14px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;">整个方法是一个<strong>闭环</strong>，三阶段循环。下图（论文 Figure 1）是总览——左边轨迹输入，中部建图，右下检索，右上演化，最下方闭环回环。</p>
+
+      <img src="./skillgraph_figures/figure_1.png" alt="Figure 1 SkillGraph 架构总览" style="width:100%; display:block; margin:0 auto 6px; border-radius:6px; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
+      <p style="font-size:13px; color:#6b7280; text-align:center; margin:0 0 20px; text-indent:0;">图 1｜SkillGraph 三阶段闭环架构总览</p>
+
+      <!-- 2.1 图构建 -->
+      <h3 style="font-size:16px; font-weight:800; color:#111827; margin:20px 0 8px;">① 图构建：从轨迹蒸馏技能 + 建图</h3>
+
+      <p style="margin:0 0 6px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:0;"><strong style="color:#111827;">蒸馏技能（从哪来）。</strong>先让基础 agent 跑一堆任务，收集成功/失败轨迹。然后"老师模型"（teacher LLM）看这些轨迹，蒸馏出两类技能：</p>
+      <div style="overflow-x:auto; margin:6px 0 10px;">
+        <table style="border-collapse:collapse; font-size:13.5px; width:100%; min-width:420px;">
+          <thead><tr>
+            <th style="border:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:7px; text-align:left; color:#111827;">类型</th>
+            <th style="border:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:7px; text-align:left; color:#111827;">是什么</th>
+            <th style="border:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:7px; text-align:left; color:#111827;">例子</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px;"><strong>通用技能</strong></td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px;">跨任务都适用的推理策略</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px;">"做完每个子目标前先验证一下"</td></tr>
+            <tr><td style="border:none; border-bottom:2px solid #111827; padding:7px;"><strong>任务技能</strong></td><td style="border:none; border-bottom:2px solid #111827; padding:7px;">针对特定任务类型的策略</td><td style="border:none; border-bottom:2px solid #111827; padding:7px;">"加热前检查微波炉里有没有东西"</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin:0 0 12px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:0;">每个技能是一个小卡片，含四个字段：标题、核心原理（怎么做）、适用条件（什么情况用）、类别标签（general 还是 task-specific）。</p>
+
+      <p style="margin:0 0 6px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:0;"><strong style="color:#111827;">建图（三类边）。</strong>技能是节点，关键在<strong>三类带类型的边</strong>：</p>
+      <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px 16px; margin:0 0 12px;">
+        <p style="margin:0 0 6px; color:#111827; font-size:14.5px; line-height:1.75; text-indent:0;"><strong>边 1 — prerequisite（前置）A→B：</strong>"A 必须在 B 之前完成"。例：[找杯子]→[拿起杯子]（不先找到，怎么拿起？）</p>
+        <p style="margin:0 0 6px; color:#111827; font-size:14.5px; line-height:1.75; text-indent:0;"><strong>边 2 — enhance（增强）A→B：</strong>"通用技能 A 能让任务技能 B 效果更好"。例：[先验证子目标](通用)→[微波炉操作](任务)</p>
+        <p style="margin:0; color:#111827; font-size:14.5px; line-height:1.75; text-indent:0;"><strong>边 3 — co-occur（共现）A↔B：</strong>"A 和 B 经常在成功任务里一起出现"。例：[找杯子]↔[打开柜子]</p>
+      </div>
+      <p style="margin:0 0 14px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:0;">每条边带权重 <code style="background:#f3f4f6; padding:1px 5px; border-radius:3px; font-size:13px;">w∈[0,1]</code>（关系多强，训练中动态调）。每个节点还维护三个统计量——被用几次（n_use）、成功几次（n_succ）、成功率 p̂=n_succ/n_use。还有<strong>拓扑层级 ℓ(v)</strong>（辈分）：level 0 没前提（最基础），level 1 依赖 level 0，依此类推。</p>
+
+      <!-- 2.2 图感知检索 -->
+      <h3 style="font-size:16px; font-weight:800; color:#111827; margin:22px 0 8px;">② 图感知检索（最有价值的部分）</h3>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;">消融实验证明这是<strong>贡献最大</strong>的环节（去掉它，性能从 90.6 暴跌到 59.4）。扁平检索返回一堆没顺序，图感知检索要解决：沿图走，产出<strong>有依赖顺序的技能链</strong>。三步走：</p>
+
+      <p style="margin:0 0 4px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:0;"><strong>第 1 步：选种子。</strong>从"已解锁的技能集"里，选所有通用技能 + 和当前任务类型匹配的任务技能作为"种子节点"。类比：先确定"这次任务大概涉及哪几个工种"。</p>
+
+      <p style="margin:0 0 4px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:0;"><strong>第 2 步：双向扩展。</strong>从种子出发往两个方向找更多技能：<strong>向后</strong>（沿 prerequisite 边 BFS 往回走，找回基础前置——类比：你要做菜，往回找发现得先"切菜""点火"）；<strong>向前</strong>（沿出向边 beam search 往前走，打分 σ(v)=max_父 σ(父)·w(父,v)——类比：从"切菜"往前发现常跟着"炒菜""调味"，带上）。</p>
+
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:0;"><strong>第 3 步：拓扑排序。</strong>把种子 + 向后 + 向前的所有技能按依赖关系做拓扑排序，输出一条<strong>有序技能链</strong>：[找杯子]→[打开柜子]→[拿起]→[放微波炉]→[启动]→[取出]。从简单到复杂，符合子任务组合顺序。封顶 K_max 个注入 agent prompt。<strong>整个过程零 LLM 调用</strong>（纯图遍历），快且省钱。</p>
+
+      <div style="background:#ecfdf5; border-left:4px solid #10b981; padding:12px 16px; margin:0 0 22px;">
+        <p style="margin:0; color:#065f46; font-size:14.5px; line-height:1.75; text-indent:0;"><strong>关键特点：</strong>整个检索零 LLM 调用（纯图遍历），所以很快、很省钱。这是相对扁平向量检索的效率优势。</p>
+      </div>
+
+      <!-- 2.3 图演化 -->
+      <h3 style="font-size:16px; font-weight:800; color:#111827; margin:22px 0 8px;">③ 图演化（让图越来越聪明）</h3>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;">静态的图跟不上越来越强的 agent。所以每次验证时，根据训练反馈动态调整图——分节点级和边级。</p>
+
+      <p style="margin:0 0 6px; color:#111827; font-size:15px; line-height:1.8; text-align:justify; text-indent:0;"><strong>节点级：4 个操作（每个都有明确触发条件）</strong></p>
+      <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px 16px; margin:0 0 12px;">
+        <p style="margin:0 0 6px; color:#374151; font-size:14px; line-height:1.75; text-indent:0;"><strong>Insert（插入）：</strong>agent 在现有技能覆盖不了的任务上失败时，老师模型分析失败轨迹，提至多 m 个新技能补上。<span style="color:#6b7280;">类比：发现"煎蛋"没人会，赶紧总结一条写进去。</span></p>
+        <p style="margin:0 0 6px; color:#374151; font-size:14px; line-height:1.75; text-indent:0;"><strong>Merge（合并）：</strong>两个技能邻居高度重合（Jaccard≥τ_merge），说明干同一件事，合成一个。<span style="color:#6b7280;">类比："开冰箱"和"打开冷柜"其实是一回事。</span></p>
+        <p style="margin:0 0 6px; color:#374151; font-size:14px; line-height:1.75; text-indent:0;"><strong>Split（拆分）：</strong>成功率在 0.15-0.4 且被用≥10 次 → 说明太笼统，混了好几种情况。拆成几个聚焦的子技能。<span style="color:#6b7280;">类比："用电器"成功率 0.3（时灵时不灵），拆成"用微波炉""用冰箱"。</span></p>
+        <p style="margin:0; color:#374151; font-size:14px; line-height:1.75; text-indent:0;"><strong>Deprecate（淘汰）：</strong>被用≥20 次但成功率&lt;0.15 → 几乎没用，从未来检索剔除。<span style="color:#6b7280;">类比："拍一拍电器让它工作"成功率 0.05，淘汰。</span></p>
+      </div>
+
+      <p style="margin:0 0 6px; color:#111827; font-size:15px; line-height:1.8; text-align:justify; text-indent:0;"><strong>边级：3 个操作</strong></p>
+      <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:8px; padding:12px 16px; margin:0 0 12px;">
+        <p style="margin:0 0 6px; color:#374151; font-size:14px; line-height:1.75; text-indent:0;"><strong>Path reinforcement（路径强化）：</strong>成功轨迹走过的技能链，那条路径上每条边权重加 α（封顶 1.0）。<span style="color:#6b7280;">类比：成功用"找杯子→拿→加热"解决一次，下次更可能再走这条。</span></p>
+        <p style="margin:0 0 6px; color:#374151; font-size:14px; line-height:1.75; text-indent:0;"><strong>Co-occurrence discovery（发现新共现）：</strong>两个技能在成功任务里一起出现但还没连边，加一条 co-occur 边。</p>
+        <p style="margin:0; color:#374151; font-size:14px; line-height:1.75; text-indent:0;"><strong>Decay & pruning（衰减剪枝）：</strong>所有边权重每次乘衰减因子 γ（&lt;1）。掉到 w_min 以下的边剪掉。<span style="color:#6b7280;">类比：很久没用到的边慢慢变弱消失，防止图臃肿。</span></p>
+      </div>
+
+      <p style="margin:0 0 14px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:0;"><strong style="color:#111827;">Progressive Unlocking（渐进解锁，课程学习）。</strong>不一开始就把所有技能给 agent。一开始只解锁 level 0（最基础）。只有当 level L 的技能<strong>平均成功率≥θ_unlock</strong> 时，才解锁 level L+1。类比：学数学，先把加减法练熟，再学乘除，不会一上来就扔微积分。为什么这么设计？因为 agent 连基础技能都没掌握就给它高阶技能，会<strong>乱用、学坏</strong>。</p>
+
+      <p style="margin:0 0 14px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;">下图（论文 Figure 2）展示训练过程中图的演化动态——左图节点数（总数/活跃/插入/淘汰），中图各类边数，右图平均成功率稳步上升。</p>
+      <img src="./skillgraph_figures/figure_2.png" alt="Figure 2 图演化动态" style="width:100%; display:block; margin:0 auto 6px; border-radius:6px; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
+      <p style="font-size:13px; color:#6b7280; text-align:center; margin:0 0 20px; text-indent:0;">图 2｜训练过程中节点、边、成功率的演化动态</p>
+
+      <!-- 2.4 闭环训练 -->
+      <h3 style="font-size:16px; font-weight:800; color:#111827; margin:22px 0 8px;">④ 闭环训练（policy + 图协同进化）</h3>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;">用 <strong>GRPO</strong>（一种强化学习算法）训练 agent：给任务 + 技能链 → agent 跑一组 rollout → 按成功/失败打分 → GRPO 更新 agent <strong>权重</strong>（让它更会用技能）→ 更强的 agent 产出更好的轨迹 → 反过来驱动图演化。这就是"协同进化"：图变好→给 agent 更好指导→agent 变强→更好的轨迹优化图。</p>
+      <p style="margin:0 0 18px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;">下图（论文 Figure 3）对比 SkillGraph 和前作 SkillRL：左图任务得分收敛更快更高，右图 prompt 长度（上下文效率）更优。</p>
+      <img src="./skillgraph_figures/figure_3.png" alt="Figure 3 训练动态" style="width:100%; display:block; margin:0 auto 6px; border-radius:6px; box-shadow:0 2px 10px rgba(0,0,0,0.08);">
+      <p style="font-size:13px; color:#6b7280; text-align:center; margin:0 0 20px; text-indent:0;">图 3｜训练动态（左 任务得分）与上下文效率（右 prompt 长度）对比</p>
+
+      <!-- ====== 3. 实验关键 ====== -->
+      <h3 style="font-size:17px; font-weight:800; color:#111827; margin:24px 0 10px;">3. 实验里最该记住的</h3>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;"><strong>主结果：</strong>7B 小模型 + 技能图，<strong>反超 GPT-4o 42.6 分</strong>（ALFWorld 90.6 vs 48.0）。证明结构化技能推理能弥补模型规模差距。</p>
+      <p style="margin:0 0 8px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;"><strong>消融的两个反直觉发现：</strong></p>
+      <div style="background:#fef2f2; border-left:4px solid #ef4444; padding:12px 16px; margin:0 0 10px;">
+        <p style="margin:0 0 6px; color:#7f1d1d; font-size:14.5px; line-height:1.75; text-indent:0;"><strong>① 图感知检索是命脉：</strong>去掉它，ALFWorld 从 90.6 暴跌到 59.4（−31.2 分）。真正起作用的是"依赖感知的有序检索"。</p>
+        <p style="margin:0; color:#7f1d1d; font-size:14.5px; line-height:1.75; text-indent:0;"><strong>② 图结构本身只贡献 0.7 分：</strong>去掉图结构（退化为扁平库）只掉 0.7 分！这说明"图"这个壳子不重要，重要的是"用图来做有序检索"这个动作。如果有人能用更轻的方式实现有序检索，图的必要性就被削弱。</p>
+      </div>
+
+      <!-- ====== 4. 强弱 ====== -->
+      <h3 style="font-size:17px; font-weight:800; color:#111827; margin:24px 0 10px;">4. 强在哪、弱在哪</h3>
+      <div style="overflow-x:auto; margin:0 0 22px;">
+        <table style="border-collapse:collapse; font-size:13.5px; width:100%; min-width:480px;">
+          <thead><tr>
+            <th style="border:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:7px; text-align:left; color:#111827;">强点</th>
+            <th style="border:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:7px; text-align:left; color:#111827;">弱点</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151; vertical-align:top;">显式建模技能关系，依赖感知检索在组合性任务上确实强</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151; vertical-align:top;">依赖 RL 训练（GRPO 改权重），无法即插即用</td></tr>
+            <tr><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151; vertical-align:top;">演化机制有明确阈值（Insert/Merge/Split/Deprecate 都有数学条件）</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151; vertical-align:top;">节点只有 general/task 二分，无"条件/失败/证据"语义节点</td></tr>
+            <tr><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151; vertical-align:top;">Progressive Unlocking 课程学习很聪明</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151; vertical-align:top;">没有冲突处理——三类边全是正向/协同，无法表达互斥</td></tr>
+            <tr><td style="border:none; border-bottom:2px solid #111827; padding:7px; color:#374151; vertical-align:top;">检索零 LLM 调用，工程省成本</td><td style="border:none; border-bottom:2px solid #111827; padding:7px; color:#374151; vertical-align:top;">Deprecate 会丢弃低频技能（成功率&lt;0.15 淘汰），有些可能只是没找到适用条件</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ====== 5. 对你研究的意义 ====== -->
+      <h3 style="font-size:17px; font-weight:800; color:#111827; margin:24px 0 10px;">5. 对你研究的意义（为什么你要读这篇）</h3>
+      <p style="margin:0 0 10px; color:#374151; font-size:15px; line-height:1.8; text-align:justify; text-indent:2em;">这是你<strong>必须正面交锋的最近竞品</strong>。它撞你方案的 4 个子层（结构/检索/演化/建图），但你的方案在 5 个维度不同：</p>
+      <div style="overflow-x:auto; margin:0 0 18px;">
+        <table style="border-collapse:collapse; font-size:13.5px; width:100%; min-width:520px;">
+          <thead><tr>
+            <th style="border:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:7px; text-align:left; color:#111827;">维度</th>
+            <th style="border:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:7px; text-align:left; color:#111827;">SkillGraph</th>
+            <th style="border:none; border-top:2px solid #111827; border-bottom:1px solid #111827; padding:7px; text-align:left; color:#111827;">你的方案</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151;">几何</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151;">平面图</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#111827; font-weight:600;">双曲空间（几何承载关系）</td></tr>
+            <tr><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151;">节点</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151;">general/task 二分</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#111827; font-weight:600;">6 类 procedural 语义节点</td></tr>
+            <tr><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151;">检索</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151;">程序化拓扑排序</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#111827; font-weight:600;">agent 自主多跳</td></tr>
+            <tr><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151;">演化信号</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151;">RL task reward</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#111827; font-weight:600;">metric_delta 客观验证</td></tr>
+            <tr><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151;">训练范式</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#374151;">RL（改权重）</td><td style="border:none; border-bottom:1px solid #e5e7eb; padding:7px; color:#111827; font-weight:600;">context 注入（不改权重，即插即用）</td></tr>
+            <tr><td style="border:none; border-bottom:2px solid #111827; padding:7px; color:#374151;">冲突</td><td style="border:none; border-bottom:2px solid #111827; padding:7px; color:#9ca3af;">无</td><td style="border:none; border-bottom:2px solid #111827; padding:7px; color:#111827; font-weight:600;">prevents 几何对跖</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="background:#fffbeb; border-left:4px solid #f59e0b; padding:12px 16px; margin:0 0 10px;">
+        <p style="margin:0; color:#78350f; font-size:14.5px; line-height:1.75; text-indent:0;"><strong>最大的实验风险：</strong>你的"agent 自主检索"必须能跑赢它的"程序化拓扑排序"——否则你的核心差异点不成立。这是你必跑的 P0 实验。</p>
+      </div>
+    </section>
+    <!-- ==================== /通俗讲解 ==================== -->
+
+  </main>
+</body>
+</html>

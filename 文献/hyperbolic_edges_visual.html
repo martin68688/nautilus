@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>双曲图 · 边的几何表达</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --line:#2a2f3e;
+    --txt:#e8eaf0; --mut:#9aa3b8; --acc:#6ee7ff;
+    --green:#4ade80; --red:#fb7185; --amber:#fbbf24; --blue:#60a5fa; --purple:#c4b5fd;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 70px}
+  h1{font-size:25px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:14px;margin-bottom:24px}
+  h2{font-size:19px;margin:32px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  p{margin:9px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin:12px 0}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:860px){.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+  .edge-card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:14px}
+  .edge-card .name{font-size:15px;font-weight:700;margin-bottom:2px}
+  .edge-card .geom{font-size:12px;color:var(--acc);margin-bottom:6px;font-family:monospace}
+  .edge-card svg{display:block;margin:4px auto}
+  .edge-card .desc{font-size:12.5px;color:var(--mut);margin-top:6px}
+  code{background:#0c0e14;padding:2px 6px;border-radius:5px;color:var(--acc);font-size:13px}
+  .note{border-left:3px solid var(--acc);background:rgba(110,231,255,.07);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .warn{border-left:3px solid var(--red);background:rgba(251,113,133,.08);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .good{border-left:3px solid var(--green);background:rgba(74,222,128,.08);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .small{font-size:12px;color:var(--mut)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left}
+  th{background:#1e2230;color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🔗 双曲图里，"边"是怎么表达的？</h1>
+<p class="sub">核心：边不是额外存的东西，是 A、B 两个节点<b>几何位置关系</b>的自动结果。</p>
+
+<!-- ====== 根本概念 ====== -->
+<h2>先记住：两个量决定一切</h2>
+<div class="card">
+<p style="margin-top:0">每个节点在双曲空间有两个坐标。任意两个节点 A、B 的关系，<b>只看这两个量的对比</b>：</p>
+<div class="grid2">
+<div style="text-align:center">
+<p style="margin-top:0"><b>① 半径差 Δr = r_B − r_A</b></p>
+<svg viewBox="0 0 220 120" width="100%">
+  <circle cx="110" cy="60" r="50" fill="none" stroke="#2a2f3e" stroke-dasharray="3 3"/>
+  <circle cx="110" cy="60" r="3" fill="#9aa3b8"/>
+  <text x="113" y="58" font-size="9" fill="#9aa3b8">中心</text>
+  <circle cx="110" cy="35" r="6" fill="#60a5fa"/><text x="110" y="22" font-size="9" fill="#60a5fa" text-anchor="middle">A (r小=通用)</text>
+  <circle cx="110" cy="15" r="6" fill="#c4b5fd"/><text x="110" y="105" font-size="9" fill="#c4b5fd" text-anchor="middle">B (r大=具体)</text>
+  <line x1="110" y1="60" x2="110" y2="35" stroke="#4ade80" stroke-width="2"/>
+  <line x1="110" y1="35" x2="110" y2="15" stroke="#4ade80" stroke-width="2"/>
+  <text x="140" y="28" font-size="10" fill="#4ade80">Δr > 0 → B更具体</text>
+  <text x="140" y="44" font-size="9" fill="#9aa3b8">(层级/父子关系)</text>
+</svg>
+<p class="small">半径差告诉你：<b>层级关系</b></p>
+</div>
+<div style="text-align:center">
+<p style="margin-top:0"><b>② 角度差 Δθ = θ_B − θ_A</b></p>
+<svg viewBox="0 0 220 120" width="100%">
+  <circle cx="110" cy="60" r="50" fill="none" stroke="#2a2f3e" stroke-dasharray="3 3"/>
+  <circle cx="110" cy="60" r="3" fill="#9aa3b8"/>
+  <circle cx="80" cy="40" r="6" fill="#60a5fa"/><text x="80" y="30" font-size="9" fill="#60a5fa" text-anchor="middle">A</text>
+  <circle cx="140" cy="40" r="6" fill="#60a5fa"/><text x="140" y="30" font-size="9" fill="#60a5fa" text-anchor="middle">B</text>
+  <path d="M80,40 A50,50 0 0,1 140,40" fill="none" stroke="#fbbf24" stroke-width="2"/>
+  <text x="110" y="95" font-size="10" fill="#fbbf24" text-anchor="middle">Δθ 小 → 同类</text>
+  <text x="110" y="108" font-size="9" fill="#9aa3b8" text-anchor="middle">(语义关系)</text>
+</svg>
+<p class="small">角度差告诉你：<b>语义关系</b></p>
+</div>
+</div>
+<div class="note">
+<b>所以"边"= (Δr, Δθ) 这对数值的组合</b>。不同组合 → 不同类型的边。下面逐个看。
+</div>
+</div>
+
+<!-- ====== 七类边逐个 ====== -->
+<h2>你的 7 类边 → 7 种 (Δr, Δθ) 组合</h2>
+
+<div class="grid3">
+
+<!-- refines -->
+<div class="edge-card">
+<div class="name" style="color:var(--green)">① refines（细化）</div>
+<div class="geom">Δr > 0, Δθ ≈ 0</div>
+<svg viewBox="0 0 200 130" width="100%">
+  <circle cx="100" cy="65" r="55" fill="none" stroke="#2a2f3e" stroke-dasharray="3 3"/>
+  <circle cx="100" cy="65" r="3" fill="#9aa3b8"/>
+  <circle cx="100" cy="45" r="7" fill="#60a5fa"/><text x="100" y="48" font-size="7" fill="#fff" text-anchor="middle">A</text>
+  <circle cx="100" cy="20" r="7" fill="#c4b5fd"/><text x="100" y="23" font-size="7" fill="#08121a" text-anchor="middle">B</text>
+  <line x1="100" y1="45" x2="100" y2="20" stroke="#4ade80" stroke-width="2.5"/>
+  <text x="100" y="125" font-size="8.5" fill="#9aa3b8" text-anchor="middle">同方向，B 更靠边（更具体）</text>
+</svg>
+<div class="desc">A 是通用方法，B 是它的细化版。<br><b>例</b>：A="梯度下降" → B="带动量的Adam"</div>
+</div>
+
+<!-- prerequisite -->
+<div class="edge-card">
+<div class="name" style="color:var(--green)">② prerequisite（前置）</div>
+<div class="geom">Δr > 0, Δθ ≈ 0（强序）</div>
+<svg viewBox="0 0 200 130" width="100%">
+  <circle cx="100" cy="65" r="55" fill="none" stroke="#2a2f3e" stroke-dasharray="3 3"/>
+  <circle cx="100" cy="65" r="3" fill="#9aa3b8"/>
+  <circle cx="100" cy="50" r="7" fill="#60a5fa"/><text x="100" y="53" font-size="7" fill="#fff" text-anchor="middle">A</text>
+  <circle cx="100" cy="22" r="7" fill="#c4b5fd"/><text x="100" y="25" font-size="7" fill="#08121a" text-anchor="middle">B</text>
+  <line x1="100" y1="50" x2="100" y2="22" stroke="#4ade80" stroke-width="2.5"/>
+  <polygon points="100,28 96,34 104,34" fill="#4ade80"/>
+  <text x="100" y="125" font-size="8.5" fill="#9aa3b8" text-anchor="middle">A 必须先于 B（箭头向外）</text>
+</svg>
+<div class="desc">A 是 B 的前置条件。<br><b>例</b>：A="数据清洗" → B="特征工程"</div>
+</div>
+
+<!-- alternative -->
+<div class="edge-card">
+<div class="name" style="color:var(--blue)">③ alternative（替代）</div>
+<div class="geom">Δr ≈ 0, Δθ 小</div>
+<svg viewBox="0 0 200 130" width="100%">
+  <circle cx="100" cy="65" r="55" fill="none" stroke="#2a2f3e" stroke-dasharray="3 3"/>
+  <circle cx="100" cy="65" r="3" fill="#9aa3b8"/>
+  <circle cx="78" cy="28" r="7" fill="#60a5fa"/><text x="78" y="31" font-size="7" fill="#fff" text-anchor="middle">A</text>
+  <circle cx="122" cy="28" r="7" fill="#60a5fa"/><text x="122" y="31" font-size="7" fill="#fff" text-anchor="middle">B</text>
+  <line x1="85" y1="28" x2="115" y2="28" stroke="#60a5fa" stroke-width="2" stroke-dasharray="3 2"/>
+  <text x="100" y="125" font-size="8.5" fill="#9aa3b8" text-anchor="middle">同层（同 r），方向略不同</text>
+</svg>
+<div class="desc">A、B 同层级同类，可互换。<br><b>例</b>：A="XGBoost" ↔ B="LightGBM"</div>
+</div>
+
+<!-- co_occurs -->
+<div class="edge-card">
+<div class="name" style="color:var(--blue)">④ co_occurs（共现）</div>
+<div class="geom">Δr ≈ 0, Δθ 小</div>
+<svg viewBox="0 0 200 130" width="100%">
+  <circle cx="100" cy="65" r="55" fill="none" stroke="#2a2f3e" stroke-dasharray="3 3"/>
+  <circle cx="100" cy="65" r="3" fill="#9aa3b8"/>
+  <circle cx="85" cy="35" r="7" fill="#60a5fa"/><text x="85" y="38" font-size="7" fill="#fff" text-anchor="middle">A</text>
+  <circle cx="120" cy="40" r="7" fill="#60a5fa"/><text x="120" y="43" font-size="7" fill="#fff" text-anchor="middle">B</text>
+  <line x1="92" y1="36" x2="113" y2="39" stroke="#fbbf24" stroke-width="2"/>
+  <text x="100" y="125" font-size="8.5" fill="#9aa3b8" text-anchor="middle">常一起出现（经验共现）</text>
+</svg>
+<div class="desc">A、B 在成功 trace 里常一起用。<br><b>例</b>：标准化 + 正则化</div>
+</div>
+
+<!-- applies_when -->
+<div class="edge-card">
+<div class="name" style="color:var(--amber)">⑤ applies_when（适用条件）</div>
+<div class="geom">Δr < 0（跨层）, Δθ 中</div>
+<svg viewBox="0 0 200 130" width="100%">
+  <circle cx="100" cy="65" r="55" fill="none" stroke="#2a2f3e" stroke-dasharray="3 3"/>
+  <circle cx="100" cy="65" r="3" fill="#9aa3b8"/>
+  <circle cx="100" cy="22" r="7" fill="#4ade80"/><text x="100" y="25" font-size="7" fill="#08121a" text-anchor="middle">C</text>
+  <circle cx="75" cy="50" r="7" fill="#60a5fa"/><text x="75" y="53" font-size="7" fill="#fff" text-anchor="middle">A</text>
+  <line x1="82" y1="46" x2="94" y2="28" stroke="#fbbf24" stroke-width="2" stroke-dasharray="2 2"/>
+  <text x="100" y="125" font-size="8.5" fill="#9aa3b8" text-anchor="middle">条件C在外层，跨层指向A</text>
+</svg>
+<div class="desc">条件节点 C 指向适用它的 skill A。<br><b>例</b>：C="小数据集" → A="用交叉验证"</div>
+</div>
+
+<!-- supported_by -->
+<div class="edge-card">
+<div class="name" style="color:var(--amber)">⑥ supported_by（证据支撑）</div>
+<div class="geom">Δr < 0（包含）, Δθ ≈ 0</div>
+<svg viewBox="0 0 200 130" width="100%">
+  <circle cx="100" cy="65" r="55" fill="none" stroke="#2a2f3e" stroke-dasharray="3 3"/>
+  <circle cx="100" cy="65" r="3" fill="#9aa3b8"/>
+  <circle cx="100" cy="35" r="9" fill="#60a5fa" opacity=".4"/><text x="100" y="38" font-size="7" fill="#fff" text-anchor="middle">A</text>
+  <circle cx="100" cy="20" r="5" fill="#fbbf24"/><text x="100" y="23" font-size="6" fill="#08121a" text-anchor="middle">E</text>
+  <text x="100" y="125" font-size="8.5" fill="#9aa3b8" text-anchor="middle">A"包含"证据E（A在内层）</text>
+</svg>
+<div class="desc">skill A 由证据 E 支撑（A 包含 E）。<br><b>例</b>：A="dropout有效" ← E="实验日志"</div>
+</div>
+
+<!-- prevents -->
+<div class="edge-card" style="border-color:var(--red)">
+<div class="name" style="color:var(--red)">⭐ prevents（冲突）</div>
+<div class="geom">Δr ≈ 0, Δθ ≈ π（180°对跖）</div>
+<svg viewBox="0 0 200 130" width="100%">
+  <circle cx="100" cy="65" r="55" fill="none" stroke="#2a2f3e" stroke-dasharray="3 3"/>
+  <circle cx="100" cy="65" r="3" fill="#9aa3b8"/>
+  <circle cx="60" cy="40" r="7" fill="#fb7185"/><text x="60" y="43" font-size="7" fill="#08121a" text-anchor="middle">A</text>
+  <circle cx="140" cy="40" r="7" fill="#fb7185"/><text x="140" y="43" font-size="7" fill="#08121a" text-anchor="middle">B</text>
+  <line x1="67" y1="40" x2="133" y2="40" stroke="#fb7185" stroke-width="2.5"/>
+  <text x="100" y="34" font-size="9" fill="#fb7185" text-anchor="middle" font-weight="700">冲突</text>
+  <text x="100" y="125" font-size="8.5" fill="#9aa3b8" text-anchor="middle">同层但对跖（方向相反）</text>
+</svg>
+<div class="desc"><b>你的王牌</b>：两个都 metric-真但互斥。<br><b>例</b>：A="增大数据" vs B="精简数据"</div>
+</div>
+
+</div>
+
+<div class="note">
+<b>💡 关键领悟</b>：你不需要像普通图那样存 <code>(A, prevents, B)</code> 这条记录。
+只要 A 和 B 在双曲空间被放在了<b>对跖位置</b>（角度差≈180°），<b>它们的几何关系自动就是 prevents</b>。
+检索时算一下角度差，就知道这俩是冲突的。
+</div>
+
+<!-- ====== 速查表 ====== -->
+<h2>速查表：(Δr, Δθ) → 边类型</h2>
+<div class="card">
+<table>
+<tr><th>半径差 Δr</th><th>角度差 Δθ</th><th>边类型</th><th>含义</th></tr>
+<tr><td>大（B 更具体）</td><td>≈0（同方向）</td><td style="color:var(--green)">refines / prerequisite</td><td>B 是 A 的细化或前置</td></tr>
+<tr><td>≈0（同层）</td><td>小（方向近）</td><td style="color:var(--blue)">alternative / co_occurs</td><td>同层同类，可互换或共现</td></tr>
+<tr><td>负（跨层）</td><td>中</td><td style="color:var(--amber)">applies_when</td><td>外层条件指向内层 skill</td></tr>
+<tr><td>负（包含）</td><td>≈0（同方向）</td><td style="color:var(--amber)">supported_by</td><td>A 包含证据 E</td></tr>
+<tr><td>≈0（同层）</td><td><b>≈π（对跖）</b></td><td style="color:var(--red)"><b>prevents ⭐</b></td><td>同层但对立冲突</td></tr>
+</table>
+</div>
+
+<!-- ====== 检索时怎么用 ====== -->
+<h2>检索时：边不是"走"的，是"算"的</h2>
+<div class="card">
+<p style="margin-top:0">普通图检索 = 遍历边列表（从 A 出发，找所有 <code>prerequisite</code> 边连到的节点）。
+双曲检索 = <b>算几何</b>（从 query 点出发，算哪些点满足某类边的几何条件）。</p>
+<div class="grid2">
+<div>
+<h3 style="color:var(--acc);margin-top:0">普通图遍历</h3>
+<p class="small">找 <code>edges.filter(type=='prerequisite')</code><br>
+→ 遍历每个候选<br>
+→ 受限于显式存储的边</p>
+</div>
+<div>
+<h3 style="color:var(--acc);margin-top:0">双曲几何检索</h3>
+<p class="small">query q 的位置已知<br>
+→ 找所有满足 <code>Δr>0 且 Δθ≈0</code> 的点<br>
+→ 这就是"q 的所有 prerequisite"<br>
+→ <b>不受显式边限制，全空间都能算</b></p>
+</div>
+</div>
+<div class="good">
+<b>为什么这是混合检索</b>：因为"算几何"时，你可以<b>同时</b>加多个条件——
+"找 Δθ≈0（语义近）<b>且</b> Δr 合理（层级合适）的点"。
+<b>语义和层级在一个公式里同时满足</b>，这就是平面系统做不到的"统一"。
+</div>
+</div>
+
+<!-- ====== 总结 ====== -->
+<h2>一句话总结</h2>
+<div class="card" style="border-color:var(--acc)">
+<p style="margin-top:0;margin-bottom:0">
+<b>普通图的边 = 你存的一条记录；双曲图的边 = 两点位置关系的几何结果。</b><br>
+你用 (半径差 Δr, 角度差 Δθ) 这对数，就能<b>自动判断</b>任意两个节点是什么关系——
+细化、前置、替代、共现、条件、支撑、<b>冲突</b>。
+其中"冲突=对跖"是任何平面图都表达不了的，是双曲给你的<b>独有能力</b>。
+</p>
+</div>
+
+</div>
+</body>
+</html>

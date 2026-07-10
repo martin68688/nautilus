@@ -1,0 +1,41 @@
+{
+  "status": "passed",
+  "passed": true,
+  "queries": 57,
+  "gold_rows": 57,
+  "by_kind": {
+    "edge_api_debug": 19,
+    "edge_shape_path": 19,
+    "edge_version_mismatch": 19
+  },
+  "by_split": {
+    "test": 30,
+    "dev": 27
+  },
+  "by_query_style": {
+    "edge_api_debug": 19,
+    "edge_shape_path": 19,
+    "edge_version_mismatch": 19
+  },
+  "by_query_specificity": {
+    "low": 57
+  },
+  "title_token_overlap_mean": 0.027568922305764406,
+  "title_token_overlap_max": 0.4,
+  "title_leakage_levels": {
+    "low": 56,
+    "medium": 1
+  },
+  "distractor_count_mean": 78.3157894736842,
+  "distractor_count_min": 21,
+  "edge_profile": true,
+  "baseline_title_token_overlap_mean": 0.03202380952380953,
+  "require_certified_graph": true,
+  "graph_paper_grade": true,
+  "errors": [],
+  "warnings": [
+    "uneven dev/test split for edge_api_debug: dev=9 test=10",
+    "uneven dev/test split for edge_shape_path: dev=9 test=10",
+    "uneven dev/test split for edge_version_mismatch: dev=9 test=10"
+  ]
+}

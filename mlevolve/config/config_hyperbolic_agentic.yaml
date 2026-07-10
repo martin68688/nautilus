@@ -13,6 +13,20 @@ external_skill_memory:
   source_name: "hyperbolic_agentic_memory"
   mode: "agentic_hyperbolic"
   scoring_mode: "poincare"
+  geometry_distance_norm: "none"
+  geometry_distance_weight: 0.30
+  geometry_semantic_weight: 0.20
+  geometry_constraint_weight: 0.05
+  geometry_condition_weight: 0.18
+  geometry_failure_weight: 0.14
+  geometry_evidence_weight: 0.08
+  geometry_reliability_weight: 0.08
+  geometry_conflict_weight: 0.10
+  geometry_query_radius_quantile: 0.5
+  geometry_query_radius_mode: "predicted_distribution"
+  geometry_query_radius_bands: ["core", "middle", "edge"]
+  geometry_query_radius_top_bands: 2
+  geometry_radius_fusion: "weighted_max"
   enable_agentic: True
   navigator_max_steps: 3
   navigator_reference_budget: 1200

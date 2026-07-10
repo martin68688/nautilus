@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>把 Agent 轨迹编译成可验证的可执行技能：SKILL-DISCO 的 PFSM 视角</title>
+</head>
+<body style="margin:0; padding:0; background:#ffffff; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color:#374151; font-size:15px; line-height:1.8; letter-spacing:0.3px;">
+
+<div style="max-width:680px; margin:0 auto; padding:24px 20px 60px;">
+
+<!-- 标题 -->
+<h1 style="font-size:24px; color:#111827; font-weight:700; line-height:1.45; text-align:left; margin:0 0 8px; letter-spacing:0.2px;">
+把 Agent 轨迹编译成可验证的可执行技能：SKILL-DISCO 的 PFSM 视角
+</h1>
+<p style="font-size:13px; color:#6b7280; margin:0 0 28px; text-align:left;">
+深度拆解微软研究院《SKILL-DISCO: Distilling and Compiling Agent Traces into Reusable Procedural Skills》
+</p>
+
+<!-- 论文基本信息 -->
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 32px; text-align:justify;">
+<p style="margin:0 0 6px;"><strong style="color:#111827;">文章名字：</strong>SKILL-DISCO: Distilling and Compiling Agent Traces into Reusable Procedural Skills</p>
+<p style="margin:0 0 6px;"><strong style="color:#111827;">作者与机构：</strong>Zhongxin Guo, Danrui Qi（共同一作）, Hanwen Gu, Peng Cheng, Yongqiang Xiong。微软研究院（Microsoft Research）&times; 北京外国语大学</p>
+<p style="margin:0 0 6px;"><strong style="color:#111827;">期刊与会议：</strong>arXiv:2606.26669v1（2026.06，预印本）</p>
+<p style="margin:0 0 6px;"><strong style="color:#111827;">论文类型：</strong>Method（形式化 + 框架 + 实验验证）</p>
+<p style="margin:0;"><strong style="color:#111827;">一句话定位：</strong>用<strong>参数化有限状态机（PFSM）</strong>把“可复用技能”从模糊的自然语言脚本，重新定义为<strong>跨轨迹匹配的可执行控制流子图</strong>，并通过“蒸馏 + 编译”把它变成可离线验证、可跨模型迁移的可调用代码。</p>
+</div>
+
+<!-- 一、完整摘要 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">一、完整摘要</h2>
+
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">问题：</strong>Agent 经常从零开始重复求解相似任务，造成不必要的推理开销与冗长执行轨迹。此前的工作探索过工作流复用与可执行技能归纳，但<strong>哪些任务场景适合沉淀技能、共享的过程结构该如何表示</strong>，始终没有被讲清楚。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">方法：</strong>在<strong>FSM 定义的场景</strong>（有限状态、可容许动作、确定性转移）下研究该问题——成功轨迹可视为一张未知转移图中的路径，而程序性技能则被形式化为<strong>可复用的参数化控制流子图（PFSM 子图）</strong>。据此提出 <strong style="color:#111827;">SKILL-DISCO</strong>：一个“蒸馏 + 编译”框架，先从成功轨迹中蒸馏出可复用 PFSM 子图，再把它们编译成<strong>可调用、可执行、可验证</strong>的过程性技能。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">贡献：</strong>(C1) 显式划定技能发现的适用范围（FSM 场景）；(C2) 把技能形式化为参数绑定下可跨轨迹匹配的控制流子图；(C3) 提出蒸馏-编译框架近似这些结构目标；(C4) 实验证明跨基准、跨模型规模的有效性。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">结果：</strong>在 ALFWorld 与 WebArena 上，SKILL-DISCO 在不同基准与模型规模下<strong>同时提升成功率与压缩 Agent 轮次</strong>（如 ALFWorld 上 ReAct +12.7%、轮次 -54.5%；WebArena 上 ReAct +21.6%），证明“把共享经验表示为可复用执行结构”的价值。
+</p>
+
+<!-- Figure 1 -->
+<div style="text-align:center; margin:24px 0;">
+<img src="./skilldisco_figs/fig1_comparison.png" alt="Figure 1 SKILL-DISCO 对比" style="max-width:100%; height:auto; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.08);"/>
+<p style="font-size:12.5px; color:#6b7280; margin:10px 0 0; text-align:center; line-height:1.6;">图 1：SKILL-DISCO 蒸馏出能依据观测分支、跨 episode 与模型规模迁移的 PFSM 技能，无需重新归纳。</p>
+</div>
+
+<!-- 二、知识背景全景 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">二、知识背景全景</h2>
+
+<p style="font-weight:700; color:#111827; margin:0 0 8px;">前置概念</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 10px;"><strong>FSM 定义的场景：</strong>执行动力学可表示为有限状态机 M=(S, A, &delta;, S<sub>0</sub>, S<sub>goal</sub>)——状态集 S、动作集 A、确定性转移 &delta;、初始/目标状态集。若转移图已知，任务完成就退化为图上寻路；但真实 Agent 里这张图是未知的。</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 10px;"><strong>原始算子（Primitive Operator）：</strong>op=(X, Y, Pre, Post)，有输入输出空间、前置条件与后置谓词——把每个环境动作统一成带契约的可执行单元。</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;"><strong>参数化有限状态机（PFSM）：</strong>用参数 &theta; 抽象具体状态与动作，让“涉及不同物体/位置/长度但控制逻辑相同”的执行共享同一结构——这是“技能可复用”的形式化根基。</p>
+
+<p style="font-weight:700; color:#111827; margin:0 0 8px;">赛道全景</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+经验复用大致分两脉：<strong>自然语言复用</strong>（Reflexion 自反思、AWM 文本工作流、Trace2Skill 结构化技能文档）——知识存在 token 里，部署前不可验证、推理时还要重新解释；<strong>可执行工具/技能合成</strong>（LATM、CREATOR、Voyander、ASI、SkillWeaver）——把技能变成代码，但多为<strong>逐轨迹</strong>生成，缺少跨轨迹去重与一致性保证。<strong>SKILL-DISCO 的位置</strong>：首个<strong>语料级（corpus-level）离线编译器</strong>，通过语义聚类把等价操作合并为经验证的技能，使库大小随“不同行为数”而非“episode 数”增长。
+</p>
+
+<p style="font-weight:700; color:#111827; margin:0 0 8px;">出现契机（Why Now?）</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+CodeAct 等代码动作范式成熟，证明“可执行代码 > 自然语言”作为技能载体；同时强模型（GPT-4o / GPT-5）的代码合成与验证能力，使“离线编译 + 持有任务集验证”这条流水线第一次跑得通。
+</p>
+
+<!-- 三、痛点与动机 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">三、痛点与动机</h2>
+
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">技术瓶颈：</strong>可复用技能只有在任务共享稳定执行模式时才有意义；但现有方法直接用 LLM 从单条成功轨迹合成技能，<strong>没有显式的“共享结构”概念</strong>，导致技能库碎片化、充斥针对单条轨迹表面模式的冗余变体（Voyander 每条成功轨迹提交一个 JS 函数，近乎重复的变体从不合并）。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">研究动机：</strong>作者把适用范围<strong>显式收紧到 FSM 场景</strong>——在这里“成功轨迹 = 未知转移图上的路径”，技能 = 反复出现、有助到达目标状态的转移结构。这给了技能一个<strong>结构上可判定的定义</strong>（在参数绑定下能否匹配多条轨迹），而不是 LLM 拍脑袋写出的脚本。
+</p>
+
+<!-- 四、核心方法 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">四、核心方法</h2>
+
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">创新概述：</strong>SKILL-DISCO 把“技能发现”拆成两个阶段（见下图）。<strong>蒸馏阶段</strong>近似那条从原始轨迹到 PFSM 子图的潜在提升函数 &phi;：先把每条轨迹规范化为可执行中间程序，再切成子目标级操作，最后聚类出共享参数化控制流结构的片段——每个聚类即一个 PFSM 子图候选。<strong>编译阶段</strong>把每个候选结构变成可调用制品：先构造技能规格（签名/描述/行为要求/元数据），再合成 Python 代码并在留出任务上验证，只有通过验证的技能才进入最终库。图 2 中左侧“Distillation”区（蓝灰节点 S1..S8）展示轨迹规范化、操作抽取、技能合并三步；右侧“Compilation”区展示规格化与合成-验证循环。
+</p>
+
+<!-- Figure 2 -->
+<div style="text-align:center; margin:24px 0;">
+<img src="./skilldisco_figs/fig2_pipeline.png" alt="Figure 2 SKILL-DISCO 流水线" style="max-width:100%; height:auto; border-radius:4px; box-shadow:0 1px 6px rgba(0,0,0,0.08);"/>
+<p style="font-size:12.5px; color:#6b7280; margin:10px 0 0; text-align:center; line-height:1.6;">图 2：蒸馏阶段把成功轨迹转为可复用 PFSM 子图；编译阶段把它们转为可执行且经验证的技能。</p>
+</div>
+
+<p style="font-weight:700; color:#111827; margin:18px 0 8px;">核心形式化</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+一条成功轨迹被提升为参数化轨迹图 <span style="font-family:'Times New Roman',Times,serif;">G&#771;<sub>i</sub></span>，技能集 K = {K<sub>1</sub>,...,K<sub>m</sub>} 中每个 K<sub>j</sub> 是在参数绑定下匹配若干 <span style="font-family:'Times New Roman',Times,serif;">G&#771;<sub>i</sub></span> 的控制流子图（K<sub>j</sub> &prce; <span style="font-family:'Times New Roman',Times,serif;">G&#771;<sub>i</sub></span>）。理想技能集需同时满足三性：<strong>覆盖性</strong>（被多条轨迹支持）、<strong>效用性</strong>（有助到达目标）、<strong>紧凑性</strong>（不过度具体也不平凡通用）。每个聚类的可复用分用轨迹覆盖率估计：
+</p>
+<p style="text-align:center; margin:16px 0; font-family:'Times New Roman',Times,serif; font-size:1.15em; color:#111827; line-height:1.8; padding:4px 0; border:none;">
+r<sub>k</sub> &asymp; <span style="display:inline-block; vertical-align:middle; text-align:center; margin:0 2px;"><span style="display:block; border-bottom:1px solid #111827; padding:0 4px; font-size:0.85em; line-height:1.2;">1</span><span style="display:block; padding:0 4px; font-size:0.85em; line-height:1.2;">N</span></span> <span style="display:inline-block; vertical-align:middle; text-align:center; margin:0 4px;"><span style="display:block; font-size:0.7em; line-height:1.0; margin-bottom:-1px;">N</span><span style="display:block; font-size:1.3em; line-height:1.0; font-family:'Times New Roman',Times,serif;">&sum;</span><span style="display:block; font-size:0.7em; line-height:1.0; margin-top:-1px;">i=1</span></span> &#120124;[K<sub>k</sub> &prce; <span style="font-family:'Times New Roman',Times,serif;">G&#771;<sub>i</sub></span>]
+</p>
+<p style="font-size:12px; color:#6b7280; margin:0 0 12px; text-align:center;">&#120124; 为指示函数，K<sub>k</sub> &prce; <span style="font-family:'Times New Roman',Times,serif;">G&#771;<sub>i</sub></span> 表示存在某参数绑定使聚类 c<sub>k</sub> 近似的子图可匹配提升后的轨迹图。</p>
+
+<p style="font-weight:700; color:#111827; margin:18px 0 8px;">子模块细节穷尽（5 个 Stage）</p>
+
+<p style="text-align:justify; text-indent:2em; margin:0 0 10px;">
+<strong>Stage 1 轨迹规范化（Trace Normalization）。</strong>原始日志把推理文本、工具调用、观测、动作历史交织在一起，不暴露控制流。本阶段用 LLM 把每条轨迹转成 Python-like 中间程序 p<sub>i</sub>：保留原始环境调用与观测、把具体实体替换为带类型的符号变量、把重复动作模式与观测条件决策显式化为循环/分支。它不是最终技能，而是后续抽取的中间表示。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 10px;">
+<strong>Stage 2 子目标级操作抽取（Operation Extraction）。</strong>整条轨迹当技能太具体、单个原始算子当技能又失去复用价值，故抽取<strong>中间粒度</strong>算子 o=(&nu;, &sigma;, u, c)——动作导向标识符、自然语言摘要、原始算子序列 u、对应代码片段 c。<strong>丢弃 |o|=1 的单步片段</strong>（那只是原始算子），只保留多步算子集合 O<sub>multi</sub>。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 10px;">
+<strong>Stage 3 技能合并（Procedural Skill Consolidation）。</strong>把共享同一参数化执行结构（即便具体物体/位置/长度不同）的子目标级操作聚类，每个聚类近似一个可复用 PFSM 子图并获得上面定义的可复用分 r<sub>k</sub>。高覆盖聚类被抽象为技能候选——<strong>这一步是“库大小随行为数而非 episode 数增长”的关键</strong>。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 10px;">
+<strong>Stage 4 技能规格化（Skill Specification）。</strong>给每个候选技能补上显式规格：(i) 签名（动作导向名称、带默认值的类型化参数、结构化返回类型）；(ii) 描述（既是机器可读 docstring 也是 LLM 选择指南）；(iii) 行为要求（前置条件、后置条件、声明的副作用）；(iv) 元数据（抽象层级、每次调用预期摊销的原始动作数、继承自 r<sub>k</sub> 的置信分）。规格为合成与验证提供具体判据。
+</p>
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong>Stage 5 合成与验证（Synthesis &amp; Verification）。</strong>把规格合成为实现该行为的 Python 程序 f<sub>k</sub>，运行时与环境交互并返回结构化输出。在留出集上验证<strong>运行时正确性、后置条件满足度、动作节省量</strong>；失败技能带反馈重新合成，最多 R 次重试，仍失败则丢弃。最终产出<strong>经验证的可执行技能库</strong>。
+</p>
+
+<!-- 五、实验 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">五、实验</h2>
+
+<p style="text-align:justify; text-indent:2em; margin:0 0 12px;">
+<strong style="color:#111827;">实验配置：</strong>两个执行结构不同的数据集——ALFWorld（文本家务：导航/搜索/物体操作）与 WebArena（真实网站 web 导航）。采用<strong>严格的归纳/评测分离</strong>：技能只从归纳 split 学，只在留出任务上评（ALFWorld 归纳 200 / 评测 134；WebArena 一分为二各 406）。Baseline 两类：基础 Agent（ReAct、CodeAct）与离线技能归纳法（AWM<sub>offline</sub>、ASI<sub>offline</sub>）。指标：成功率 SR、平均轮次 Avg. Turns。所有技能增强变体把技能签名/描述拼进 prompt 指导 LLM 决策。
+</p>
+
+<p style="font-weight:700; color:#111827; margin:18px 0 10px;">表 1：端到端结果（ALFWorld &amp; WebArena，GPT-4o）</p>
+<div style="overflow-x:auto; margin:0 0 6px;">
+<table style="border-collapse:collapse; width:100%; font-size:13px; min-width:480px;">
+<thead>
+<tr style="border-bottom:2px solid #111827;">
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:left; color:#111827; font-weight:700;">Method</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">SR (%)&uarr;</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center; color:#111827; font-weight:700;">Avg. Turns&darr;</th>
+</tr>
+</thead>
+<tbody>
+<tr><td colspan="3" style="border:none; border-left:none; border-right:none; padding:4px 8px; color:#6b7280; font-size:12px;">(a) ALFWorld</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">ReAct</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">82.0</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">19.3</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">CodeAct</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><u style="text-decoration:underline;">96.3</u></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">3.6</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">AWM<sub>offline</sub></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">54.5</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">11.3</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">ASI<sub>offline</sub></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">47.0</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">11.4</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">SKILL-DISCO + ReAct</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">92.4 (+12.7%)</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">8.8 (&minus;54.5%)</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">SKILL-DISCO + CodeAct</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">99.3 (+3.1%)</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">3.2 (&minus;11.3%)</strong></td></tr>
+<tr><td colspan="3" style="border:none; border-left:none; border-right:none; padding:4px 8px; color:#6b7280; font-size:12px;">(b) WebArena</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">ReAct</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">23.9</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">5.9</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">CodeAct</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">20.0</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">10.9</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">AWM<sub>offline</sub></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">21.2</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">5.9</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">ASI<sub>offline</sub></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><u style="text-decoration:underline;">24.6</u></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">5.7</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">SKILL-DISCO + ReAct</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">29.1 (+21.6%)</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;"><strong style="color:#111827;">5.1 (&minus;13.1%)</strong></td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 8px;">SKILL-DISCO + CodeAct</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">22.9 (+14.8%)</td><td style="border:none; border-left:none; border-right:none; padding:7px 8px; text-align:center;">8.5 (&minus;22.0%)</td></tr>
+</tbody>
+</table>
+</div>
+<p style="font-size:12px; color:#6b7280; margin:0 0 12px;">表注：括号为相对基础 Agent 的变化；粗体最优、下划线次优。所有离线技能法用相同归纳/评测 split。</p>
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 22px; text-align:justify;">
+<strong style="color:#111827;">数据解读：</strong>SKILL-DISCO 在所有设定下取得最高 SR，且轮次一致下降——ALFWorld 上 ReAct 增益最大（+12.7%、轮次砍半），WebArena 上 ReAct 提升 21.6% 并以 4.5 个绝对点超越 ASI<sub>offline</sub>。同一技能库同时改善 ReAct（自然语言推理）与 CodeAct（代码发射），说明它是<strong>与 Agent 无关的增强层</strong>。<strong>局限性：</strong>在 ALFWorld 上 CodeAct 本身已 96.3%，技能提升空间被压缩到 +3.1%；WebArena 上 SKILL-DISCO+CodeAct（22.9%）虽较 CodeAct 提升，但仍低于 SKILL-DISCO+ReAct（29.1%），提示技能对“强代码 Agent”的边际增益不如对“弱推理 Agent”显著——技能更像“能力补丁”而非“锦上添花”。
+</div>
+
+<p style="font-weight:700; color:#111827; margin:6px 0 10px;">表 2：跨模型技能迁移（同一 GPT-4o 归纳的技能库）</p>
+<div style="overflow-x:auto; margin:0 0 6px;">
+<table style="border-collapse:collapse; width:100%; font-size:12.5px; min-width:520px;">
+<thead>
+<tr style="border-bottom:2px solid #111827;">
+<th style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:left; color:#111827; font-weight:700;">Model</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center; color:#111827; font-weight:700;">Van. SR</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center; color:#111827; font-weight:700;">+Sk. SR (&Delta;)</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center; color:#111827; font-weight:700;">Van. Turns</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center; color:#111827; font-weight:700;">+Sk. Turns (&Delta;)</th>
+</tr>
+</thead>
+<tbody>
+<tr><td colspan="5" style="border:none; border-left:none; border-right:none; padding:4px 6px; color:#6b7280; font-size:11.5px;">(a) ALFWorld</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 6px;">Qwen3.5-4B</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">61.2</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">91.0 (+48.8%)</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">9.0</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">5.0 (&minus;44.4%)</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 6px;">Qwen3.5-9B</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">54.5</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;"><strong style="color:#111827;">98.5 (+80.8%)</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">10.8</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;"><strong style="color:#111827;">3.4 (&minus;68.2%)</strong></td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 6px;">GPT-4o-mini</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">71.6</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">94.8 (+32.3%)</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">7.1</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">4.4 (&minus;38.0%)</td></tr>
+<tr><td colspan="5" style="border:none; border-left:none; border-right:none; padding:4px 6px; color:#6b7280; font-size:11.5px;">(b) WebArena</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 6px;">Qwen3.5-4B</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">10.1</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;"><strong style="color:#111827;">18.7 (+85.3%)</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">8.6</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">6.8 (&minus;20.4%)</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 6px;">GPT-4o-mini</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">18.0</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">18.0 (&plusmn;0.0%)</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">7.7</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">7.1 (&minus;7.7%)</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 6px;">GPT-5-chat</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">32.5</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">37.0 (+13.7%)</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">5.3</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">4.8 (&minus;8.6%)</td></tr>
+</tbody>
+</table>
+</div>
+<p style="font-size:12px; color:#6b7280; margin:0 0 12px;">表注：&Delta; 为相对原模型的相对变化（节选自论文 Table 2）。</p>
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 22px; text-align:justify;">
+<strong style="color:#111827;">定量分析与局限性评估：</strong>同一技能库无修改地迁移到从 Qwen3.5-4B 到 GPT-5-chat 的全谱模型，每个模型轮次均下降（&minus;7.7% ~ &minus;68.2%），SR 改善 +3.1% ~ +85.3%。<strong>弱模型受益最大</strong>：Qwen3.5-4B 在 WebArena 上 SR 翻倍（+85.3%）、ALFWorld 上从 61.2% 跃至 91.0%。<strong>局限：</strong>迁移并非万能——GPT-4o-mini 在 WebArena 上 SR 持平（&plusmn;0.0%），轮次仅微降，说明当模型与技能“能力重叠”时迁移增益趋零；技能库的归纳质量<strong>强依赖编译 LLM 的代码生成能力</strong>，模型越弱技能越易错或过度具体（论文 Limitations 明确指出）。
+</div>
+
+<p style="font-weight:700; color:#111827; margin:6px 0 10px;">表 3 &amp; 4：技能库紧凑性与流水线消融（ALFWorld）</p>
+<div style="overflow-x:auto; margin:0 0 6px;">
+<table style="border-collapse:collapse; width:100%; font-size:12.5px; min-width:560px;">
+<thead>
+<tr style="border-bottom:2px solid #111827;">
+<th style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:left; color:#111827; font-weight:700;">Bench/Method</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center; color:#111827; font-weight:700;">#Sk</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center; color:#111827; font-weight:700;">Turns&darr;</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center; color:#111827; font-weight:700;">Sk. turns</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center; color:#111827; font-weight:700;">Avg. prim. steps</th>
+<th style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center; color:#111827; font-weight:700;">Err.(%)&darr;</th>
+</tr>
+</thead>
+<tbody>
+<tr><td colspan="6" style="border:none; border-left:none; border-right:none; padding:4px 6px; color:#6b7280; font-size:11.5px;">表 3 技能使用统计（ALFWorld）</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 6px;">ASI<sub>offline</sub></td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">110</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">11.4</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">1.4</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">0.2</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">75.3</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 6px;">SKILL-DISCO</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;"><strong style="color:#111827;">5</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;"><strong style="color:#111827;">3.2</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">2.6</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">5.6</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;"><strong style="color:#111827;">0.0</strong></td></tr>
+<tr><td colspan="6" style="border:none; border-left:none; border-right:none; padding:4px 6px; color:#6b7280; font-size:11.5px;">表 4 流水线消融（ALFWorld）</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 6px;">A1: no distill</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">43</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">11.5</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">53.0 (&minus;46.6%)</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px;" colspan="2">&nbsp;</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 6px;">A2: no compile</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">N/A</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">3.6</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;">97.0 (&minus;2.3%)</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px;" colspan="2">&nbsp;</td></tr>
+<tr><td style="border:none; border-left:none; border-right:none; padding:7px 6px;">Full SKILL-DISCO</td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;"><strong style="color:#111827;">5</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;"><strong style="color:#111827;">3.2</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 6px; text-align:center;"><strong style="color:#111827;">99.3</strong></td><td style="border:none; border-left:none; border-right:none; padding:7px 6px;" colspan="2">&nbsp;</td></tr>
+</tbody>
+</table>
+</div>
+<p style="font-size:12px; color:#6b7280; margin:0 0 12px;">表注：#Sk 为归纳出的技能数；Err. 为执行错误率；表 4 中括号为相对完整流水线的相对 SR 变化。</p>
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 22px; text-align:justify;">
+<strong style="color:#111827;">定量分析与局限性评估：</strong>表 3 是本文最锋利的论据——<strong>5 个技能 vs 110 个</strong>，且执行错误率从 ASI 的 75.3% 降到 <strong>0.0%</strong>，每个技能调用平均折叠 5.6 个原始步、最高 33 步。这直接量化了“库大小随行为数而非 episode 数增长”的工程价值。<strong>消融（表 4）：</strong>去掉蒸馏（no distill）库膨胀到 43 个、SR 暴跌至 53.0%（&minus;46.6%），证明跨轨迹合并是去冗余的核心；去掉编译（no compile）SR 仅微降（99.3&rarr;97.0%），但每轮须保留完整过程文本导致 token 膨胀——<strong>编译主要换来效率与紧凑性而非成功率</strong>。<strong>局限：</strong>整个流水线强依赖编译 LLM 的代码生成质量，模型能力不足时会产出错误或过度具体的技能；且<strong>仅成功轨迹提供蒸馏信号</strong>，在前沿模型本身都很少成功的领域，语料过稀疏将无法支撑可靠的语料级技能抽取。
+</div>
+
+<!-- 六、极客评分 -->
+<h2 style="font-size:19px; color:#111827; font-weight:700; border-bottom:1px solid #111827; padding-bottom:6px; margin:36px 0 18px;">六、极客评分</h2>
+
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 14px; text-align:justify;">
+<strong style="color:#111827;">创新性（8.5 / 10）。</strong>理由：用 PFSM 把“技能可复用”从经验直觉<strong>升级为可判定的结构匹配问题</strong>，并据此设计了“蒸馏（发现结构）+ 编译（验证执行）”的双阶段范式，是<strong>底层逻辑层面的重构</strong>而非模块拼接——把“自然语言技能”这一行业默认范式直接证伪。
+</div>
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 14px; text-align:justify;">
+<strong style="color:#111827;">实用性（8.0 / 10）。</strong>理由：产出的技能是<strong>离线验证过的可执行 Python</strong>，执行错误率压到 0%、库极简（5 个）、可跨模型免重训迁移，工程落地成本可控，对中小模型的增益尤其显著（轮次最高降 68%）；局限是流水线质量上限被编译 LLM 能力锁死，且对“无明确成功信号”的开放任务无能为力。
+</div>
+<div style="border-left:3px solid #111827; padding:6px 16px; color:#4b5563; margin:0 0 14px; text-align:justify;">
+<strong style="color:#111827;">行业价值（8.0 / 10）。</strong>理由：直击 RPA、Web 自动化、运维脚本等<strong>强过程性场景</strong>的真实需求——“一次归纳、多模型复用、可验证不踩坑”极具商业价值，库规模可控也利于维护；但作者坦承它对纯 NLP 任务（文本生成、阅读理解）零收益，适用边界清晰而非万能。
+</div>
+
+<p style="font-size:12.5px; color:#9ca3af; margin:32px 0 0; text-align:center; line-height:1.6;">
+本文由 paper-reviewer 拆解生成 &middot; 论文来源：arXiv:2606.26669v1
+</p>
+
+</div>
+</body>
+</html>

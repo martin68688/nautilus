@@ -18,6 +18,7 @@ import hashlib
 import json
 import math
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -28,6 +29,13 @@ from sklearn.preprocessing import normalize
 
 
 REPO = Path(__file__).resolve().parents[2]
+MLEVOLVE_ROOT = REPO / "mlevolve"
+if str(MLEVOLVE_ROOT) not in sys.path:
+    sys.path.insert(0, str(MLEVOLVE_ROOT))
+
+from agents.leakage_audit import audit_code, merge_audits
+
+
 DEFAULT_RUNS_DIR = REPO / "mlevolve" / "runs"
 DEFAULT_SOP_GRAPH = REPO / "paper-skills" / "hyper_memory" / "hyper_graph.json"
 DEFAULT_OUT_DIR = REPO / "paper-skills" / "hyper_memory"
@@ -555,6 +563,10 @@ def build_artifact(
     transition_attach_count = 0
     attachment_quality_counts: collections.Counter[str] = collections.Counter()
     evidence_count = 0
+    failure_patterns: dict[str, dict[str, Any]] = {}
+    audited_code_node_count = 0
+    audit_status_counts: collections.Counter[str] = collections.Counter()
+    audit_issue_counts: collections.Counter[str] = collections.Counter()
     total_local_best_attractions = 0
     local_best_attraction_weight = 0.0
 
@@ -604,6 +616,19 @@ def build_artifact(
             current_metric = metric_value(raw_node)
             improvement = signed_metric_improvement(raw_node, parent_node) if parent_node else None
             local_best_raw = local_best_map.get(raw_id)
+            raw_code = str(raw_node.get("code") or "")
+            static_audit = audit_code(raw_code)
+            stored_audit = raw_node.get("leakage_audit") if isinstance(raw_node.get("leakage_audit"), dict) else None
+            leakage_audit = merge_audits(raw_code, static_audit, stored_audit)
+            if raw_code:
+                audited_code_node_count += 1
+                audit_status_counts[str(leakage_audit.get("status", "unknown"))] += 1
+                for issue in leakage_audit.get("issues", []):
+                    audit_issue_counts[str(issue.get("issue_code", "unknown"))] += 1
+            audit_text = " ".join(
+                f"{item.get('issue_code')}: {item.get('evidence')} Fix: {item.get('remediation')}"
+                for item in leakage_audit.get("issues", [])
+            )
             node_record = {
                 "id": node_id,
                 "type": "RunNode",
@@ -632,15 +657,64 @@ def build_artifact(
                 ),
                 "plan": short_text(raw_node.get("plan"), 900),
                 "code_summary": short_text(raw_node.get("code_summary"), 900),
+                "code_sha256": hashlib.sha256(raw_code.encode("utf-8")).hexdigest() if raw_code else "",
+                "code_length": len(raw_code),
                 "analysis": short_text(raw_node.get("analysis"), 900),
+                "leakage_audit": leakage_audit,
+                "audit_status": leakage_audit.get("status"),
+                "paper_grade_eligible": leakage_audit.get("paper_grade_eligible"),
+                "metric_disposition": leakage_audit.get("metric_disposition"),
+                "memory_disposition": leakage_audit.get("memory_disposition"),
+                "leakage_issue_codes": [
+                    str(item.get("issue_code")) for item in leakage_audit.get("issues", [])
+                ],
                 "terminal_excerpt": short_text("".join(raw_node.get("_term_out") or []), 700),
-                "text": node_text(raw_node),
+                "text": "\n".join(part for part in [node_text(raw_node), audit_text] if part),
             }
             nodes.append(node_record)
             coord_by_node[node_id] = raw_coords[raw_id]
             edges.append({"src": run_node_id, "dst": node_id, "kind": "contains", "weight": 1.0})
             if node_record["local_best_node_id"]:
                 edges.append({"src": node_id, "dst": node_record["local_best_node_id"], "kind": "points_to_local_best", "weight": 0.6})
+
+            for issue in leakage_audit.get("issues", []):
+                issue_code = str(issue.get("issue_code") or "UNKNOWN_LEAKAGE_ISSUE")
+                pattern_key = f"{leakage_audit.get('code_sha256')}::{issue_code}"
+                pattern_id = f"failure::leakage::{stable_hash(pattern_key)}"
+                if pattern_id not in failure_patterns:
+                    pattern_record = {
+                        "id": pattern_id,
+                        "type": "FailurePattern",
+                        "failure_kind": "leakage_audit",
+                        "issue_code": issue_code,
+                        "category": issue.get("category"),
+                        "severity": issue.get("severity"),
+                        "execution_disposition": issue.get("execution_disposition"),
+                        "code_sha256": leakage_audit.get("code_sha256"),
+                        "evidence": issue.get("evidence"),
+                        "remediation": issue.get("remediation"),
+                        "source_node_ids": [node_id],
+                        "task": task,
+                        "text": " ".join(
+                            str(value)
+                            for value in [
+                                issue_code,
+                                issue.get("category"),
+                                issue.get("evidence"),
+                                issue.get("remediation"),
+                            ]
+                            if value
+                        ),
+                    }
+                    failure_patterns[pattern_id] = pattern_record
+                    nodes.append(pattern_record)
+                    coord_by_node[pattern_id] = raw_coords[raw_id] * 0.995
+                else:
+                    sources = failure_patterns[pattern_id]["source_node_ids"]
+                    if node_id not in sources:
+                        sources.append(node_id)
+                edges.append({"src": node_id, "dst": pattern_id, "kind": "has_failure_pattern", "weight": 1.0})
+                edges.append({"src": pattern_id, "dst": node_id, "kind": "blocks_adoption_of", "weight": 1.0})
 
         for child_raw, parent_raw in sorted(graph["parents"].items(), key=lambda item: (graph["nodes"][item[0]].get("step") or 0, item[0])):
             child = graph["nodes"][child_raw]
@@ -816,9 +890,24 @@ def build_artifact(
                 else (str(allowlist_path) if allowlist_path is not None else "")
             ),
             "blocked_run_prefixes": provenance.get("blocked_prefixes", []) if provenance else [],
-            "leak_verified": bool(provenance and require_clean_provenance),
-            "paper_grade": bool(provenance and require_clean_provenance),
-            "provenance_status": "clean_certified" if provenance and require_clean_provenance else "uncertified_bootstrap",
+            "source_membership_verified": bool(provenance and require_clean_provenance),
+            "leak_audited": audited_code_node_count > 0,
+            "positive_admission_enforced": True,
+            "leak_verified": bool(provenance and require_clean_provenance and audited_code_node_count > 0),
+            "paper_grade": bool(provenance and require_clean_provenance and audited_code_node_count > 0),
+            "provenance_status": (
+                "source_allowlisted_and_code_audited"
+                if provenance and require_clean_provenance and audited_code_node_count > 0
+                else "uncertified_bootstrap"
+            ),
+            "audit_status_counts": dict(sorted(audit_status_counts.items())),
+            "audit_issue_counts": dict(sorted(audit_issue_counts.items())),
+            "failure_pattern_count": len(failure_patterns),
+            "paper_grade_definition": (
+                "Source membership is allowlisted, every code-bearing node receives deterministic audit metadata, "
+                "and runtime positive retrieval admits only memory_disposition=positive_eligible. Blocked, biased, "
+                "warning, and unavailable nodes remain in the graph solely as negative/debug evidence."
+            ),
             "coordinate_model": "global circular run forest layout; radius grows with run-tree depth",
             "flat_twin_model": "same coordinates as poincare; distance function changes only",
             "euclidean_model": "independent TF-IDF-SVD text coordinates over RunNode/Transition/SOP/Evidence text",
@@ -837,9 +926,12 @@ def build_artifact(
     }
     report = {
         "schema": "run_forest_builder_report_v1",
-        "provenance_status": "clean_certified" if provenance and require_clean_provenance else "uncertified_bootstrap",
-        "paper_grade_provenance": bool(provenance and require_clean_provenance),
-        "leak_verified": bool(provenance and require_clean_provenance),
+        "provenance_status": graph["meta"]["provenance_status"],
+        "source_membership_verified": graph["meta"]["source_membership_verified"],
+        "leak_audited": graph["meta"]["leak_audited"],
+        "positive_admission_enforced": graph["meta"]["positive_admission_enforced"],
+        "paper_grade_provenance": graph["meta"]["paper_grade"],
+        "leak_verified": graph["meta"]["leak_verified"],
         "source_runs": sorted({run_short_id(run_id) for run_id, _path, _journal in journals}),
         "allowlist_path": graph["meta"]["allowlist_path"],
         "allowlist_hash": graph["meta"]["allowlist_hash"],
@@ -858,6 +950,10 @@ def build_artifact(
         "transitions_with_sop_attachments": transition_attach_count,
         "attachment_quality_counts": dict(sorted(attachment_quality_counts.items())),
         "evidence_count": evidence_count,
+        "audited_code_node_count": audited_code_node_count,
+        "audit_status_counts": dict(sorted(audit_status_counts.items())),
+        "audit_issue_counts": dict(sorted(audit_issue_counts.items())),
+        "failure_pattern_count": len(failure_patterns),
         "local_best_coordinate_attractions": total_local_best_attractions,
         "local_best_attraction_weight": local_best_attraction_weight,
         "poincare_max_norm": float(np.max(np.linalg.norm(poincare, axis=1))) if len(poincare) else 0.0,

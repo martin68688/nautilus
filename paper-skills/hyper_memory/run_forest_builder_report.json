@@ -1,6 +1,9 @@
 {
   "schema": "run_forest_builder_report_v1",
-  "provenance_status": "clean_certified",
+  "provenance_status": "source_allowlisted_and_code_audited",
+  "source_membership_verified": true,
+  "leak_audited": true,
+  "positive_admission_enforced": true,
   "paper_grade_provenance": true,
   "leak_verified": true,
   "source_runs": [
@@ -28,7 +31,7 @@
     "20260701_180146"
   ],
   "allowlist_path": "paper-skills/eval_skill_memory/clean_run_allowlist.json",
-  "allowlist_hash": "a98b26b2152574f32fcad98a007b2e1fcfac3da80d7ecf9c32df49e69ec45cc7",
+  "allowlist_hash": "996b0c949dfc2e32b25e66319d8fce5927299673298b010ea0294fc653b580e8",
   "allowlist": [
     "20260509_042918",
     "20260509_154039",
@@ -238,18 +241,21 @@
     "excluded_sops_by_reason": {}
   },
   "journal_count": 22,
-  "node_count": 4209,
-  "edge_count": 10421,
+  "node_count": 4877,
+  "edge_count": 12289,
   "node_type_counts": {
     "Evidence": 1236,
+    "FailurePattern": 668,
     "Run": 22,
     "RunNode": 1346,
     "SOP": 281,
     "Transition": 1324
   },
   "edge_kind_counts": {
+    "blocks_adoption_of": 934,
     "contains": 1346,
     "distills_to": 2773,
+    "has_failure_pattern": 934,
     "has_transition": 1324,
     "parent_of": 1324,
     "points_to_local_best": 1094,
@@ -265,12 +271,28 @@
     "evidence_turn_match": 469
   },
   "evidence_count": 1236,
+  "audited_code_node_count": 1324,
+  "audit_status_counts": {
+    "audit_unavailable": 141,
+    "blocked": 340,
+    "clean": 785,
+    "protocol_biased": 42,
+    "warning": 16
+  },
+  "audit_issue_counts": {
+    "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE": 22,
+    "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION": 165,
+    "STATIC_AUDIT_PARSE_FAILED": 141,
+    "TRANSFORM_FIT_BEFORE_SPLIT": 375,
+    "TRANSFORM_FIT_ON_HOLDOUT": 231
+  },
+  "failure_pattern_count": 668,
   "local_best_coordinate_attractions": 0,
   "local_best_attraction_weight": 0.0,
   "poincare_max_norm": 0.9878803970168318,
   "flat_twin_same_as_poincare": true,
   "euclidean_shape": [
-    4209,
+    4877,
     16
   ],
   "run_node_topology_preserved": true,

@@ -1,0 +1,8 @@
+{
+  "status": "embedding_backend_unavailable",
+  "not_run": true,
+  "direction_backend": "sentence_embedding",
+  "embedding_model": "BAAI/bge-base-en-v1.5",
+  "error": "embedding_backend_unavailable: sentence embedding backend unavailable locally: We couldn't connect to 'https://huggingface.co' to load the files, and couldn't find them in the cached files.\nCheck your internet connection or see how to run the library in offline mode at 'https://huggingface.co/docs/transformers/installation#offline-mode'.",
+  "note": "V3 strict embedding mode does not silently fall back to TF-IDF."
+}

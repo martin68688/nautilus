@@ -1678,6 +1678,8 @@ class RunForestMemoryLayer:
         self._transitions: list[str] = []
         self._sops: list[str] = []
         self._evidence: list[str] = []
+        self._failure_patterns: list[str] = []
+        self._failure_patterns_by_source: dict[str, list[str]] = collections.defaultdict(list)
         self._run_nodes_by_run: dict[str, list[str]] = collections.defaultdict(list)
         self._children_by_node: dict[str, list[str]] = collections.defaultdict(list)
         self._transitions_by_parent: dict[str, list[str]] = collections.defaultdict(list)
@@ -1695,9 +1697,14 @@ class RunForestMemoryLayer:
         meta = self.graph.get("meta") or {}
         if meta.get("schema") != "hyperbolic_run_forest_memory_v1":
             raise ValueError(f"Not a run-forest memory graph: {self.graph_path}")
-        if meta.get("leak_verified") is not True or meta.get("paper_grade") is not True:
+        if (
+            meta.get("leak_verified") is not True
+            or meta.get("paper_grade") is not True
+            or meta.get("leak_audited") is not True
+            or meta.get("positive_admission_enforced") is not True
+        ):
             raise ValueError(
-                "Run-Forest memory graph is not clean-certified; rebuild with "
+                "Run-Forest memory graph is not source-allowlisted and code-audited; rebuild with "
                 "build_run_forest_memory.py --allowlist ... --require-clean-provenance"
             )
         self.nodes = {str(n["id"]): n for n in self.graph.get("nodes", []) if n.get("id")}
@@ -1709,6 +1716,8 @@ class RunForestMemoryLayer:
             weight = float(edge.get("weight", 1.0))
             self.out_edges[src].append((dst, kind, weight, edge))
             self.in_edges[dst].append((src, kind, weight, edge))
+            if kind == "has_failure_pattern":
+                self._failure_patterns_by_source[src].append(dst)
 
         data = np.load(self.index_path, allow_pickle=True)
         node_ids = [str(x) for x in data["node_ids"].tolist()]
@@ -1739,6 +1748,8 @@ class RunForestMemoryLayer:
             elif node_type == "Evidence":
                 self._evidence.append(nid)
                 self._evidence_by_transition[str(node.get("transition_id"))].append(nid)
+            elif node_type == "FailurePattern":
+                self._failure_patterns.append(nid)
         for values in self._run_nodes_by_run.values():
             values.sort(key=lambda nid: (self.nodes[nid].get("step") or 0, nid))
         for values in self._children_by_node.values():
@@ -1888,6 +1899,24 @@ class RunForestMemoryLayer:
             "evidence_refs": self._evidence_by_transition.get(transition_id, [])[:3],
         }
 
+    def _positive_memory_eligible(self, node: dict[str, Any]) -> bool:
+        audit = node.get("leakage_audit")
+        if isinstance(audit, dict) and audit:
+            return audit.get("memory_disposition") == "positive_eligible"
+        return node.get("is_buggy") is not True
+
+    def _failure_pattern_card(self, pattern_id: str) -> dict[str, Any]:
+        node = self.nodes.get(pattern_id, {})
+        return {
+            "id": pattern_id,
+            "issue_code": node.get("issue_code"),
+            "category": node.get("category"),
+            "severity": node.get("severity"),
+            "evidence": node.get("evidence"),
+            "remediation": node.get("remediation"),
+            "code_sha256": node.get("code_sha256"),
+        }
+
     def inspect_forest(self, *, task_id: str, task_desc: str, query_text: str) -> dict[str, Any]:
         q_tokens = _tokenize(query_text)
         task_counts = collections.Counter(str(n.get("task", "unknown")) for n in self.nodes.values() if n.get("type") == "RunNode")
@@ -1918,7 +1947,7 @@ class RunForestMemoryLayer:
         candidates = [
             nid for nid in self._run_nodes
             if self.nodes[nid].get("stage") in {"draft", "improve", "evolution"}
-            and self.nodes[nid].get("is_buggy") is not True
+            and self._positive_memory_eligible(self.nodes[nid])
         ]
         selected_nodes = self._rank(
             query_text=query_text,
@@ -1936,8 +1965,11 @@ class RunForestMemoryLayer:
     def _pack_for_improve(self, *, task_id: str, task_desc: str, query_text: str, strategy: str) -> dict[str, Any]:
         candidates = [
             nid for nid in self._run_nodes
-            if self.nodes[nid].get("local_best_node_id")
-            or self.nodes[nid].get("metric_improvement") is not None
+            if self._positive_memory_eligible(self.nodes[nid])
+            and (
+                self.nodes[nid].get("local_best_node_id")
+                or self.nodes[nid].get("metric_improvement") is not None
+            )
         ]
         selected_nodes = self._rank(
             query_text=query_text,
@@ -1959,6 +1991,7 @@ class RunForestMemoryLayer:
         failed = [
             nid for nid in self._run_nodes
             if self.nodes[nid].get("is_buggy") is True
+            or not self._positive_memory_eligible(self.nodes[nid])
             or "error" in self._node_text(self.nodes[nid]).lower()
             or "traceback" in self._node_text(self.nodes[nid]).lower()
         ]
@@ -1984,9 +2017,13 @@ class RunForestMemoryLayer:
         selected_transitions = list(dict.fromkeys([tid for tid in selected_transitions if tid in self.nodes]))[: self.top_k]
         attached_sops: list[str] = []
         evidence_refs: list[str] = []
+        failure_pattern_ids: list[str] = []
         for tid in selected_transitions:
             attached_sops += [sid for sid in self.nodes[tid].get("attached_sop_ids") or [] if sid in self.nodes]
             evidence_refs += self._evidence_by_transition.get(tid, [])
+            transition = self.nodes[tid]
+            for source_id in [transition.get("parent_node_id"), transition.get("child_node_id")]:
+                failure_pattern_ids += self._failure_patterns_by_source.get(str(source_id), [])
         attached_sops = list(dict.fromkeys(attached_sops))[: self.top_k]
         evidence_refs = list(dict.fromkeys(evidence_refs))[: self.top_k]
 
@@ -1997,13 +2034,22 @@ class RunForestMemoryLayer:
         warnings = []
         for nid in selected_nodes[: self.top_k]:
             parent = self.nodes[nid].get("parent_id")
+            failure_pattern_ids += self._failure_patterns_by_source.get(nid, [])
             if parent:
                 siblings = [sid for sid in self._children_by_node.get(str(parent), []) if sid != nid]
-                bad_siblings = [sid for sid in siblings if self.nodes[sid].get("is_buggy") is True]
+                bad_siblings = [sid for sid in siblings if not self._positive_memory_eligible(self.nodes[sid])]
                 if bad_siblings:
                     warnings.append(
-                        f"{self.nodes[nid].get('run_short_id', '')}/T{self.nodes[nid].get('step')} has {len(bad_siblings)} buggy sibling attempts under the same parent; verify branch conditions before copying."
+                        f"{self.nodes[nid].get('run_short_id', '')}/T{self.nodes[nid].get('step')} has {len(bad_siblings)} blocked or protocol-biased sibling attempts under the same parent; inspect the failure patterns before copying."
                     )
+                    for sibling_id in bad_siblings:
+                        failure_pattern_ids += self._failure_patterns_by_source.get(sibling_id, [])
+        failure_pattern_ids = list(dict.fromkeys(fid for fid in failure_pattern_ids if fid in self.nodes))[:6]
+        failure_cards = [self._failure_pattern_card(fid) for fid in failure_pattern_ids]
+        for card in failure_cards:
+            warnings.append(
+                f"[{card.get('issue_code')}] {card.get('evidence')} Fix: {card.get('remediation')}"
+            )
         transition_cards = [self._transition_card(tid) for tid in selected_transitions]
         return {
             "pack_type": pack_type,
@@ -2016,6 +2062,8 @@ class RunForestMemoryLayer:
             "attached_sops": attached_sops,
             "risk_warnings": list(dict.fromkeys(warnings))[:6],
             "evidence_refs": evidence_refs,
+            "failure_pattern_ids": failure_pattern_ids,
+            "failure_patterns": failure_cards,
             "navigation_trace": ["inspect_forest(context)", f"{pack_type}(strategy={strategy})"],
         }
 
@@ -2133,6 +2181,7 @@ class RunForestMemoryLayer:
             "attached_sops": pack.get("attached_sops", [])[:6],
             "risk_warnings": pack.get("risk_warnings", [])[:6],
             "evidence_refs": pack.get("evidence_refs", [])[:6],
+            "failure_patterns": pack.get("failure_patterns", [])[:6],
         }
         lines = [
             "## Agentic Run-Forest Memory Navigation",
@@ -2162,6 +2211,13 @@ class RunForestMemoryLayer:
             lines += ["", "### Risk Warnings"]
             for warning in pack.get("risk_warnings", [])[:6]:
                 lines.append(f"- {warning}")
+        if pack.get("failure_patterns"):
+            lines += ["", "### Leakage / Evaluation Failure Patterns"]
+            for card in pack.get("failure_patterns", [])[:6]:
+                lines.append(
+                    f"- [{card.get('issue_code')}] severity={card.get('severity')}: {card.get('evidence')}"
+                )
+                lines.append(f"  Required fix: {card.get('remediation')}")
         if pack.get("evidence_refs"):
             lines += ["", "### Evidence Refs"]
             for evidence_id in pack.get("evidence_refs", [])[:6]:
@@ -2187,6 +2243,7 @@ class RunForestMemoryLayer:
             + list(pack.get("attached_sops", []))
             + list(pack.get("evidence_refs", []))
             + list(pack.get("selected_nodes", []))
+            + list(pack.get("failure_pattern_ids", []))
         ))
         text = self._format_pack(pack)
         if self.max_chars > 0 and len(text) > self.max_chars:

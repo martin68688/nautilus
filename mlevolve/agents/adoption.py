@@ -19,7 +19,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger("MLEvolve")
 
 
-def log_adoption(node: "SearchNode", agent, source: str, ref_ids, stage: str) -> None:
+def log_adoption(
+    node: "SearchNode",
+    agent,
+    source: str,
+    ref_ids,
+    stage: str,
+    adoption_mode: str = "prompt_injection",
+) -> None:
     """Append adoption records to node.adoption_log.
 
     Args:
@@ -40,4 +47,5 @@ def log_adoption(node: "SearchNode", agent, source: str, ref_ids, stage: str) ->
             "ref_id": rid,
             "stage": stage,
             "injected_at": ts,
+            "adoption_mode": adoption_mode,
         })

@@ -8,7 +8,7 @@ from engine.executor import ExecutionResult
 from utils.metric import MetricValue, WorstMetricValue
 from utils.response import wrap_code
 from engine.validation import call_validate, _validate_submission_with_retry, validate_submission_content_quality
-from agents import data_leakage_agent
+from agents import data_leakage_agent, leakage_audit
 from agents.triggers import should_check_data_leakage
 
 logger = logging.getLogger("MLEvolve")
@@ -325,6 +325,47 @@ def _validate_metric_direction(agent, node: SearchNode, response: dict):
         )
 
 
+def _persist_leakage_audit(agent, node: SearchNode) -> None:
+    try:
+        leakage_audit.persist_audit(agent, node)
+    except Exception as exc:
+        logger.warning("Failed to persist leakage audit for node %s: %s", node.id, exc)
+    if agent.global_memory and node.leakage_audit.get("memory_disposition") != "positive_eligible":
+        try:
+            agent.global_memory.save_leakage_audit(node)
+        except Exception as exc:
+            logger.warning("Failed to save negative leakage memory for node %s: %s", node.id, exc)
+
+
+def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
+    """Audit reviewed code before GPU execution. Return True when execution is blocked."""
+    if not getattr(agent.acfg, "check_data_leakage", False):
+        return False
+    audit = leakage_audit.audit_code(node.code)
+    node.leakage_audit = audit
+    leakage_audit.persist_audit(agent, node)
+    if not audit.get("hard_block"):
+        if audit.get("status") != "clean":
+            logger.warning(
+                "Node %s preflight leakage audit: status=%s issues=%s",
+                node.id,
+                audit.get("status"),
+                [item.get("issue_code") for item in audit.get("issues", [])],
+            )
+        return False
+
+    audit_text = leakage_audit.format_audit(audit, heading="PRE-EXECUTION LEAKAGE AUDIT")
+    node.is_buggy = True
+    node.is_valid = False
+    node.metric = WorstMetricValue()
+    node.analysis = audit_text
+    node._term_out = [audit_text]
+    node.replay_status = "blocked_by_leakage_audit" if node.replay_source else node.replay_status
+    _persist_leakage_audit(agent, node)
+    logger.error("Node %s blocked before execution by deterministic leakage audit", node.id)
+    return True
+
+
 def _check_data_leakage(agent, node: SearchNode, response: dict):
     if not (agent.acfg.check_data_leakage and should_check_data_leakage(agent, node)):
         return
@@ -333,40 +374,42 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
         f"Node {node.id} running data leakage check (metric={node.metric.value})"
     )
 
+    static_audit = node.leakage_audit or leakage_audit.audit_code(node.code)
     leakage_result = data_leakage_agent.run(agent, node)
+    llm_audit = leakage_audit.llm_result_to_audit(node.code, leakage_result)
+    merged_audit = leakage_audit.merge_audits(node.code, static_audit, llm_audit)
+    merged_audit["observed_metric"] = response.get("metric")
+    node.leakage_audit = merged_audit
 
-    if leakage_result["has_leakage"] and leakage_result["confidence"] in ["high", "medium"]:
+    if merged_audit.get("hard_block"):
         logger.error(
-            f"⚠️  Node {node.id} detected data leakage with {leakage_result['confidence']} confidence. "
-            f"Marking as buggy and resetting metric."
+            "Node %s detected blocking leakage. Marking as buggy and resetting metric. issues=%s",
+            node.id,
+            [item.get("issue_code") for item in merged_audit.get("issues", [])],
         )
         node.is_buggy = True
+        node.is_valid = False
         node.metric = WorstMetricValue()
-        node.analysis = (
-            f"⚠️ DATA LEAKAGE DETECTED (Confidence: {leakage_result['confidence'].upper()})\n\n"
-            f"{leakage_result['reason']}\n\n"
-            f"The validation metric was {response['metric']:.4f} which is unrealistically extreme due to data leakage. "
-            f"To fix this issue, you need to:\n"
-            f"1. Carefully review the train/validation split logic\n"
-            f"2. Ensure no validation/test data is used during training\n"
-            f"3. Check that feature engineering only uses training data statistics\n"
-            f"4. Verify data augmentation doesn't leak validation samples\n"
-            f"5. Ensure proper temporal/group separation if applicable"
-        )
-        logger.info(f"Updated node.analysis with leakage detection details for debugging")
+        node.replay_status = "blocked_by_leakage_audit" if node.replay_source else node.replay_status
     else:
-        if leakage_result["has_leakage"]:
-            logger.info(
-                f"Node {node.id} has potential leakage but confidence is low. Not marking as buggy."
-            )
-        else:
-            logger.info(
-                f"Node {node.id} extreme value is justified: {leakage_result['reason']}"
-            )
+        logger.info(
+            "Node %s leakage audit completed: status=%s metric=%s memory=%s",
+            node.id,
+            merged_audit.get("status"),
+            merged_audit.get("metric_disposition"),
+            merged_audit.get("memory_disposition"),
+        )
+
+    if merged_audit.get("status") != "clean":
+        audit_text = leakage_audit.format_audit(merged_audit)
+        node.analysis = f"{node.analysis or ''}\n\n{audit_text}".strip()
+    _persist_leakage_audit(agent, node)
 
 
 def _save_to_global_memory(agent, node: SearchNode):
-    if agent.global_memory and not node.is_buggy and node.metric and node.metric.value is not None:
+    audit = node.leakage_audit or {}
+    positive_eligible = not audit or audit.get("memory_disposition") == "positive_eligible"
+    if agent.global_memory and positive_eligible and not node.is_buggy and node.metric and node.metric.value is not None:
         try:
             parent_node = node.parent
             agent.global_memory.save_node(node, parent_node)

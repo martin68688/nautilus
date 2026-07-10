@@ -15,6 +15,7 @@ from agents.prompts import (
 from agents.coder.diff_coder import SearchReplacePatcher, DIFF_SYS_FORMAT
 from agents.planner import build_chat_prompt_for_model
 from agents.triggers import register_node
+from agents.leakage_audit import format_audit
 from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
 
 logger = logging.getLogger("MLEvolve")
@@ -110,6 +111,23 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             "- Most libraries are stable and available. The bug is not caused by the library version mismatch. **Don't suggest to reinstall the core libraries.** (like pip install torch, pip upgrade transformers, !pip install tensorflow, subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'transformers', 'accelerate', 'pandas', 'torch', 'torchvision']))\n",
         ],
     }
+    if parent_node.draft_role:
+        inherited = [
+            f"This node belongs to the `{parent_node.draft_role}` branch.",
+            f"Inherited contract: {parent_node.role_contract}",
+            "Apply the smallest root-cause fix that preserves the branch's intended solution.",
+        ]
+        if parent_node.draft_role == "memory_reproduction":
+            inherited.append(
+                "Do not remove or replace DeBERTa/XGBoost/Logistic Regression/TF-IDF/weight-blending "
+                "components merely to make the script easier to run."
+            )
+        prompt["Instructions"]["Inherited draft role contract (MANDATORY)"] = inherited
+    if parent_node.leakage_audit and parent_node.leakage_audit.get("status") != "clean":
+        prompt["Instructions"]["Leakage audit root cause (MANDATORY)"] = [
+            "Fix the audited data-flow or evaluation protocol without discarding valid model components.",
+            format_audit(parent_node.leakage_audit),
+        ]
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY
     prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY

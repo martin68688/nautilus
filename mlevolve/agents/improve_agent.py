@@ -8,6 +8,7 @@ from llm import compile_prompt_to_md
 from engine.search_node import SearchNode
 from utils.response import wrap_code
 from agents.triggers import get_patience_counter, register_node
+from agents.leakage_audit import format_audit
 from agents.prompts import (
     ROBUSTNESS_GENERALIZATION_STRATEGY,
     MODEL_ARCHITECTURE_SAFETY,
@@ -48,6 +49,22 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     prompt["Previous solution"] = {
         "Code": wrap_code(parent_node.code),
     }
+    if parent_node.draft_role:
+        inherited = [
+            f"This node belongs to the `{parent_node.draft_role}` branch.",
+            f"Inherited contract: {parent_node.role_contract}",
+        ]
+        if parent_node.draft_role == "memory_reproduction":
+            inherited.append(
+                "Preserve every model, feature family, and ensemble component from the replayed solution. "
+                "Improvements may repair or tune the implementation but must not simplify it into a partial recipe."
+            )
+        prompt["Instructions"]["Inherited draft role contract (MANDATORY)"] = inherited
+    if parent_node.leakage_audit and parent_node.leakage_audit.get("status") != "clean":
+        prompt["Instructions"]["Inherited leakage audit (MANDATORY)"] = [
+            "Preserve the useful model architecture, but repair every audit finding before reusing its metric or preprocessing pipeline.",
+            format_audit(parent_node.leakage_audit),
+        ]
 
     success_patience, total_patience, branch_best_score = get_patience_counter(agent, parent_node)
     use_magnitude_prompt = (success_patience >= 2) or (total_patience >= 5)
@@ -322,6 +339,8 @@ def _diff_improve(agent, prompt_base, data_preview, parent_node):
         "previous_code_summary": parent_node.code_summary if hasattr(parent_node, 'code_summary') and parent_node.code_summary else None,
         "execution_output": parent_node.term_out if hasattr(parent_node, 'term_out') else "",
         "parent_node": parent_node,
+        "draft_role": parent_node.draft_role or "",
+        "role_contract": parent_node.role_contract or {},
     }
 
     use_memory = (

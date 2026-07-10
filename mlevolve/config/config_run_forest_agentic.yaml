@@ -3,6 +3,16 @@ extends: config.yaml
 methodology_kb_path: ""
 methodology_dynamic: False
 
+agent:
+  draft_role_policy:
+    enabled: True
+    roles:
+      - coldstart_baseline
+      - memory_reproduction
+      - novel_exploration
+    extra_role: novel_exploration
+    replay_targets_path: "../paper-skills/eval_skill_memory/clean_replay_targets.json"
+
 adoption_tracking:
   enable: True
   enable_analysis: True

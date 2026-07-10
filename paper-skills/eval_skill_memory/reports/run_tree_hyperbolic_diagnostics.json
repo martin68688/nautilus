@@ -1,0 +1,5425 @@
+{
+  "schema": "run_tree_vs_sop_hyperbolic_diagnostics_v1",
+  "journal_count": 45,
+  "run_tree_summary": {
+    "runs": 45,
+    "structure": {
+      "nodes": {
+        "count": 45,
+        "mean": 48.888888888888886,
+        "median": 52.0,
+        "min": 2.0,
+        "max": 110.0
+      },
+      "edges": {
+        "count": 45,
+        "mean": 47.888888888888886,
+        "median": 51.0,
+        "min": 1.0,
+        "max": 109.0
+      },
+      "leaf_fraction": {
+        "count": 45,
+        "mean": 0.2885597084770374,
+        "median": 0.25925925925925924,
+        "min": 0.1111111111111111,
+        "max": 0.6666666666666666
+      },
+      "max_depth": {
+        "count": 45,
+        "mean": 10.377777777777778,
+        "median": 10.0,
+        "min": 1.0,
+        "max": 23.0
+      },
+      "avg_depth": {
+        "count": 45,
+        "mean": 4.269105233377697,
+        "median": 4.4,
+        "min": 0.5,
+        "max": 10.418181818181818
+      },
+      "boundary_pressure": {
+        "count": 45,
+        "mean": 0.1875552870735159,
+        "median": 0.16025641025641027,
+        "min": 0.06172839506172839,
+        "max": 0.6666666666666666
+      },
+      "internal_avg_children": {
+        "count": 45,
+        "mean": 1.362813675016294,
+        "median": 1.2857142857142858,
+        "min": 1.0,
+        "max": 2.0
+      },
+      "metric_node_fraction": {
+        "count": 45,
+        "mean": 0.22010385182054207,
+        "median": 0.2839506172839506,
+        "min": 0.0,
+        "max": 0.5185185185185185
+      }
+    },
+    "distance_preservation": {
+      "poincare_corr": {
+        "count": 44,
+        "mean": 0.8204479872961894,
+        "median": 0.8282528940215984,
+        "min": 0.5989656326944662,
+        "max": 1.0
+      },
+      "flat_corr": {
+        "count": 44,
+        "mean": 0.6389090121823885,
+        "median": 0.6085044008944789,
+        "min": 0.2062998128742772,
+        "max": 1.0
+      },
+      "corr_diff": {
+        "count": 44,
+        "mean": 0.18153897511380088,
+        "median": 0.17012020173718156,
+        "min": 0.0,
+        "max": 0.5913808240271897
+      },
+      "poincare_stress": {
+        "count": 45,
+        "mean": 0.25037426388562906,
+        "median": 0.27617453641971634,
+        "min": 0.0,
+        "max": 0.5164792637182363
+      },
+      "flat_stress": {
+        "count": 45,
+        "mean": 0.3513935656517065,
+        "median": 0.38426141500146127,
+        "min": 0.0,
+        "max": 0.5919054116575128
+      },
+      "stress_diff": {
+        "count": 45,
+        "mean": -0.10101930176607742,
+        "median": -0.10314699084798812,
+        "min": -0.20312888716498814,
+        "max": 0.0
+      },
+      "poincare_neighbor_recall_at_10": {
+        "count": 45,
+        "mean": 0.7570071333200322,
+        "median": 0.7236363636363636,
+        "min": 0.487012987012987,
+        "max": 1.0
+      },
+      "flat_neighbor_recall_at_10": {
+        "count": 45,
+        "mean": 0.7035647776184819,
+        "median": 0.6666666666666667,
+        "min": 0.4701298701298702,
+        "max": 1.0
+      },
+      "neighbor_recall_diff": {
+        "count": 45,
+        "mean": 0.05344235570155035,
+        "median": 0.04117647058823515,
+        "min": -0.006172839506173089,
+        "max": 0.16545454545454563
+      },
+      "subtree_p_at_5_diff": {
+        "count": 42,
+        "mean": -0.05087452814006131,
+        "median": -0.008099613152804643,
+        "min": -0.2926829268292683,
+        "max": 0.0
+      },
+      "subtree_p_at_10_diff": {
+        "count": 42,
+        "mean": -0.019363247137540666,
+        "median": 0.0,
+        "min": -0.13445165945165946,
+        "max": 0.0
+      },
+      "parent_lookup_recall_at_5_poincare": {
+        "count": 45,
+        "mean": 0.8771544152061326,
+        "median": 0.9,
+        "min": 0.6238532110091743,
+        "max": 1.0
+      },
+      "parent_lookup_recall_at_5_flat": {
+        "count": 45,
+        "mean": 0.8167458637618729,
+        "median": 0.8125,
+        "min": 0.5596330275229358,
+        "max": 1.0
+      },
+      "parent_lookup_recall_at_5_diff": {
+        "count": 45,
+        "mean": 0.060408551444259835,
+        "median": 0.05063291139240506,
+        "min": -0.07692307692307693,
+        "max": 0.25
+      },
+      "parent_lookup_mrr_poincare": {
+        "count": 45,
+        "mean": 0.7202538217377127,
+        "median": 0.6887074829931973,
+        "min": 0.43943290483520536,
+        "max": 1.0
+      },
+      "parent_lookup_mrr_flat": {
+        "count": 45,
+        "mean": 0.5201892505176081,
+        "median": 0.4508461690354265,
+        "min": 0.3301697768498271,
+        "max": 1.0
+      },
+      "parent_lookup_mrr_diff": {
+        "count": 45,
+        "mean": 0.20006457122010446,
+        "median": 0.2,
+        "min": 0.0,
+        "max": 0.4166666666666667
+      },
+      "child_lookup_precision_at_5_diff": {
+        "count": 45,
+        "mean": -0.016801211476297363,
+        "median": -0.007462686567164179,
+        "min": -0.08333333333333333,
+        "max": 0.0058479532163742695
+      }
+    },
+    "poincare_corr_win_rate": 0.9545454545454546,
+    "poincare_stress_win_rate": 0.9777777777777777
+  },
+  "run_tree_results": [
+    {
+      "run_id": "20260501_184944_openadmet-expansionrx",
+      "journal_path": "mlevolve/runs/20260501_184944_openadmet-expansionrx/logs/journal.json",
+      "structure": {
+        "nodes": 110,
+        "edges": 109,
+        "roots": 1,
+        "tree_baseline_edges": 109,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 15,
+        "leaf_fraction": 0.13636363636363635,
+        "max_depth": 22,
+        "avg_depth": 10.418181818181818,
+        "deepest_node_fraction": 0.01818181818181818,
+        "boundary_pressure": 0.07727272727272727,
+        "internal_node_count": 95,
+        "internal_avg_children": 1.1473684210526316,
+        "max_children": 6,
+        "stage_counts": {
+          "debug": 86,
+          "draft": 5,
+          "evolution": 5,
+          "fusion_draft": 1,
+          "improve": 12,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 10,
+          "None": 1,
+          "True": 99
+        },
+        "valid_counts": {
+          "None": 100,
+          "True": 10
+        },
+        "metric_node_count": 10,
+        "metric_node_fraction": 0.09090909090909091,
+        "metric_delta": {
+          "count": 3,
+          "mean": -0.004899897378921529,
+          "median": 0.004807307863235466,
+          "min": -0.041457999999999995,
+          "max": 0.021950999999999943
+        },
+        "metric_improvement": {
+          "count": 3,
+          "mean": 0.004899897378921529,
+          "median": -0.004807307863235466,
+          "min": -0.021950999999999943,
+          "max": 0.041457999999999995
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.6028829427452278,
+          "scaled_rmse": 7.3057583421036965,
+          "relative_stress": 0.4421095154837347,
+          "linear_scale": 2.012915657394862,
+          "linear_bias": 2.670241174166154,
+          "pair_count": 5995,
+          "neighbor_recall_at_10": 0.5545454545454545
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.48166612349485877,
+          "scaled_rmse": 8.024816322082385,
+          "relative_stress": 0.48562346164056186,
+          "linear_scale": 7.250157985816402,
+          "linear_bias": 8.014720688756457,
+          "pair_count": 5995,
+          "neighbor_recall_at_10": 0.5600000000000002
+        },
+        "poincare_minus_flat": {
+          "corr": 0.12121681925036903,
+          "relative_stress": -0.04351394615682713,
+          "neighbor_recall_at_10": -0.005454545454545712
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 94,
+          "poincare_precision_at_k": 0.9489361702127659,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.05106382978723405,
+          "poincare_mrr": 0.9547872340425532,
+          "flat_twin_mrr": 0.9893617021276596,
+          "mrr_diff": -0.034574468085106384
+        },
+        "at_10": {
+          "queries": 94,
+          "poincare_precision_at_k": 0.9906914893617021,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.009308510638297872,
+          "poincare_mrr": 0.9547872340425532,
+          "flat_twin_mrr": 0.9893617021276596,
+          "mrr_diff": -0.034574468085106384
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 109,
+            "poincare_recall_at_k": 0.6238532110091743,
+            "flat_twin_recall_at_k": 0.5596330275229358,
+            "recall_diff": 0.06422018348623854,
+            "poincare_mrr": 0.43943290483520536,
+            "flat_twin_mrr": 0.33895480639915093,
+            "mrr_diff": 0.10047809843605436
+          },
+          "child_lookup": {
+            "queries": 95,
+            "poincare_precision_at_k": 0.6771929824561403,
+            "flat_twin_precision_at_k": 0.6894736842105263,
+            "precision_diff": -0.012280701754385965
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260502_021401_openadmet-expansionrx",
+      "journal_path": "mlevolve/runs/20260502_021401_openadmet-expansionrx/logs/journal.json",
+      "structure": {
+        "nodes": 11,
+        "edges": 10,
+        "roots": 1,
+        "tree_baseline_edges": 10,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 3,
+        "leaf_fraction": 0.2727272727272727,
+        "max_depth": 4,
+        "avg_depth": 2.0,
+        "deepest_node_fraction": 0.09090909090909091,
+        "boundary_pressure": 0.18181818181818182,
+        "internal_node_count": 8,
+        "internal_avg_children": 1.25,
+        "max_children": 3,
+        "stage_counts": {
+          "debug": 7,
+          "draft": 3,
+          "root": 1
+        },
+        "buggy_counts": {
+          "None": 1,
+          "True": 10
+        },
+        "valid_counts": {
+          "None": 11
+        },
+        "metric_node_count": 0,
+        "metric_node_fraction": 0.0,
+        "metric_delta": {
+          "count": 0
+        },
+        "metric_improvement": {
+          "count": 0
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.9986985813716457,
+          "scaled_rmse": 0.08764808790112746,
+          "relative_stress": 0.026199156709576146,
+          "linear_scale": 1.1855171766936963,
+          "linear_bias": -0.04536344323305178,
+          "pair_count": 55,
+          "neighbor_recall_at_10": 1.0
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.9475534916036278,
+          "scaled_rmse": 0.5492414085837246,
+          "relative_stress": 0.16417542104404811,
+          "linear_scale": 3.7328131810534226,
+          "linear_bias": -0.08733827803446503,
+          "pair_count": 55,
+          "neighbor_recall_at_10": 1.0
+        },
+        "poincare_minus_flat": {
+          "corr": 0.051145089768017904,
+          "relative_stress": -0.13797626433447197,
+          "neighbor_recall_at_10": 0.0
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 7,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        },
+        "at_10": {
+          "queries": 7,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 10,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 1.0,
+            "flat_twin_mrr": 0.6333333333333333,
+            "mrr_diff": 0.3666666666666667
+          },
+          "child_lookup": {
+            "queries": 8,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260502_030117_openadmet-expansionrx",
+      "journal_path": "mlevolve/runs/20260502_030117_openadmet-expansionrx/logs/journal.json",
+      "structure": {
+        "nodes": 49,
+        "edges": 48,
+        "roots": 1,
+        "tree_baseline_edges": 48,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 8,
+        "leaf_fraction": 0.16326530612244897,
+        "max_depth": 10,
+        "avg_depth": 4.469387755102041,
+        "deepest_node_fraction": 0.02040816326530612,
+        "boundary_pressure": 0.09183673469387754,
+        "internal_node_count": 41,
+        "internal_avg_children": 1.170731707317073,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 32,
+          "draft": 5,
+          "evolution": 3,
+          "improve": 8,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 9,
+          "None": 1,
+          "True": 39
+        },
+        "valid_counts": {
+          "None": 40,
+          "True": 9
+        },
+        "metric_node_count": 9,
+        "metric_node_fraction": 0.1836734693877551,
+        "metric_delta": {
+          "count": 2,
+          "mean": 0.17639999999999997,
+          "median": 0.17639999999999997,
+          "min": 0.16969999999999996,
+          "max": 0.18309999999999998
+        },
+        "metric_improvement": {
+          "count": 2,
+          "mean": -0.17639999999999997,
+          "median": -0.17639999999999997,
+          "min": -0.18309999999999998,
+          "max": -0.16969999999999996
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8866976229678195,
+          "scaled_rmse": 1.725611484251045,
+          "relative_stress": 0.22413509006839286,
+          "linear_scale": 1.3671041141047564,
+          "linear_bias": 0.12608596213538928,
+          "pair_count": 1176,
+          "neighbor_recall_at_10": 0.8326530612244898
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.5594774135426267,
+          "scaled_rmse": 3.093470617979269,
+          "relative_stress": 0.4018026780145373,
+          "linear_scale": 3.9931223207281317,
+          "linear_bias": 3.339730480306118,
+          "pair_count": 1176,
+          "neighbor_recall_at_10": 0.6816326530612244
+        },
+        "poincare_minus_flat": {
+          "corr": 0.3272202094251928,
+          "relative_stress": -0.17766758794614443,
+          "neighbor_recall_at_10": 0.15102040816326534
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 40,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.8875,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.1125
+        },
+        "at_10": {
+          "queries": 40,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.8875,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.1125
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 48,
+            "poincare_recall_at_k": 0.9375,
+            "flat_twin_recall_at_k": 0.8125,
+            "recall_diff": 0.125,
+            "poincare_mrr": 0.712435807656396,
+            "flat_twin_mrr": 0.420271164021164,
+            "mrr_diff": 0.2921646436352319
+          },
+          "child_lookup": {
+            "queries": 41,
+            "poincare_precision_at_k": 0.975609756097561,
+            "flat_twin_precision_at_k": 0.9878048780487805,
+            "precision_diff": -0.012195121951219513
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260502_041127_openadmet-expansionrx",
+      "journal_path": "mlevolve/runs/20260502_041127_openadmet-expansionrx/logs/journal.json",
+      "structure": {
+        "nodes": 55,
+        "edges": 54,
+        "roots": 1,
+        "tree_baseline_edges": 54,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 9,
+        "leaf_fraction": 0.16363636363636364,
+        "max_depth": 13,
+        "avg_depth": 5.381818181818182,
+        "deepest_node_fraction": 0.01818181818181818,
+        "boundary_pressure": 0.09090909090909091,
+        "internal_node_count": 46,
+        "internal_avg_children": 1.173913043478261,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 35,
+          "draft": 5,
+          "improve": 14,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 11,
+          "None": 1,
+          "True": 43
+        },
+        "valid_counts": {
+          "False": 5,
+          "None": 39,
+          "True": 11
+        },
+        "metric_node_count": 11,
+        "metric_node_fraction": 0.2,
+        "metric_delta": {
+          "count": 7,
+          "mean": 0.05120057142857142,
+          "median": -0.0014819999999999972,
+          "min": -0.004200000000000037,
+          "max": 0.3508
+        },
+        "metric_improvement": {
+          "count": 7,
+          "mean": -0.05120057142857142,
+          "median": 0.0014819999999999972,
+          "min": -0.3508,
+          "max": 0.004200000000000037
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8257489116836851,
+          "scaled_rmse": 2.63695122348755,
+          "relative_stress": 0.2858301143707308,
+          "linear_scale": 1.5249137334260523,
+          "linear_bias": -0.2344528199373923,
+          "pair_count": 1485,
+          "neighbor_recall_at_10": 0.7236363636363636
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6409517100726632,
+          "scaled_rmse": 3.5885429909066997,
+          "relative_stress": 0.3889771052187189,
+          "linear_scale": 5.431693538210219,
+          "linear_bias": 2.953864888635264,
+          "pair_count": 1485,
+          "neighbor_recall_at_10": 0.6963636363636362
+        },
+        "poincare_minus_flat": {
+          "corr": 0.18479720161102198,
+          "relative_stress": -0.10314699084798812,
+          "neighbor_recall_at_10": 0.02727272727272745
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 45,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9777777777777777,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.022222222222222223
+        },
+        "at_10": {
+          "queries": 45,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9777777777777777,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.022222222222222223
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 54,
+            "poincare_recall_at_k": 0.8703703703703703,
+            "flat_twin_recall_at_k": 0.8518518518518519,
+            "recall_diff": 0.018518518518518517,
+            "poincare_mrr": 0.6754960317460317,
+            "flat_twin_mrr": 0.43538359788359776,
+            "mrr_diff": 0.2401124338624339
+          },
+          "child_lookup": {
+            "queries": 46,
+            "poincare_precision_at_k": 0.9202898550724636,
+            "flat_twin_precision_at_k": 0.9420289855072462,
+            "precision_diff": -0.021739130434782608
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260502_072931_aspiring-catfish-of-tempest",
+      "journal_path": "mlevolve/runs/20260502_072931_aspiring-catfish-of-tempest/logs/journal.json",
+      "structure": {
+        "nodes": 35,
+        "edges": 34,
+        "roots": 1,
+        "tree_baseline_edges": 34,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 8,
+        "leaf_fraction": 0.22857142857142856,
+        "max_depth": 9,
+        "avg_depth": 3.8285714285714287,
+        "deepest_node_fraction": 0.02857142857142857,
+        "boundary_pressure": 0.12857142857142856,
+        "internal_node_count": 27,
+        "internal_avg_children": 1.2592592592592593,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 23,
+          "draft": 5,
+          "improve": 6,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 5,
+          "None": 1,
+          "True": 29
+        },
+        "valid_counts": {
+          "None": 30,
+          "True": 5
+        },
+        "metric_node_count": 5,
+        "metric_node_fraction": 0.14285714285714285,
+        "metric_delta": {
+          "count": 3,
+          "mean": -0.005033333333333334,
+          "median": -0.00020000000000000573,
+          "min": -0.0194,
+          "max": 0.004500000000000004
+        },
+        "metric_improvement": {
+          "count": 3,
+          "mean": 0.005033333333333334,
+          "median": 0.00020000000000000573,
+          "min": -0.004500000000000004,
+          "max": 0.0194
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8624443238457844,
+          "scaled_rmse": 1.655317975492045,
+          "relative_stress": 0.25622117466643257,
+          "linear_scale": 1.260887134681743,
+          "linear_bias": 0.13022245924729597,
+          "pair_count": 595,
+          "neighbor_recall_at_10": 0.7799999999999999
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6502640716070479,
+          "scaled_rmse": 2.4845478826532825,
+          "relative_stress": 0.38457491940132754,
+          "linear_scale": 4.236838925733114,
+          "linear_bias": 1.930705223878996,
+          "pair_count": 595,
+          "neighbor_recall_at_10": 0.6457142857142858
+        },
+        "poincare_minus_flat": {
+          "corr": 0.2121802522387365,
+          "relative_stress": -0.12835374473489497,
+          "neighbor_recall_at_10": 0.13428571428571412
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 26,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.7993589743589743,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.20064102564102565
+        },
+        "at_10": {
+          "queries": 26,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.7993589743589743,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.20064102564102565
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 34,
+            "poincare_recall_at_k": 0.9411764705882353,
+            "flat_twin_recall_at_k": 0.9705882352941176,
+            "recall_diff": -0.029411764705882353,
+            "poincare_mrr": 0.7899653979238754,
+            "flat_twin_mrr": 0.525,
+            "mrr_diff": 0.26496539792387547
+          },
+          "child_lookup": {
+            "queries": 27,
+            "poincare_precision_at_k": 0.9382716049382716,
+            "flat_twin_precision_at_k": 0.9814814814814815,
+            "precision_diff": -0.04320987654320988
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260503_073513_pompous-skunk-of-research",
+      "journal_path": "mlevolve/runs/20260503_073513_pompous-skunk-of-research/logs/journal.json",
+      "structure": {
+        "nodes": 19,
+        "edges": 18,
+        "roots": 1,
+        "tree_baseline_edges": 18,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 5,
+        "leaf_fraction": 0.2631578947368421,
+        "max_depth": 4,
+        "avg_depth": 2.263157894736842,
+        "deepest_node_fraction": 0.21052631578947367,
+        "boundary_pressure": 0.23684210526315788,
+        "internal_node_count": 14,
+        "internal_avg_children": 1.2857142857142858,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 13,
+          "draft": 5,
+          "root": 1
+        },
+        "buggy_counts": {
+          "None": 1,
+          "True": 18
+        },
+        "valid_counts": {
+          "None": 19
+        },
+        "metric_node_count": 0,
+        "metric_node_fraction": 0.0,
+        "metric_delta": {
+          "count": 0
+        },
+        "metric_improvement": {
+          "count": 0
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.9704336958382882,
+          "scaled_rmse": 0.454238077512925,
+          "relative_stress": 0.11224669256461006,
+          "linear_scale": 1.1670434792435243,
+          "linear_bias": 0.22567721341333188,
+          "pair_count": 171,
+          "neighbor_recall_at_10": 0.9105263157894737
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.8002239992486586,
+          "scaled_rmse": 1.128597373123624,
+          "relative_stress": 0.2788875011620516,
+          "linear_scale": 3.5287287339733346,
+          "linear_bias": 0.6614657208601493,
+          "pair_count": 171,
+          "neighbor_recall_at_10": 0.7578947368421052
+        },
+        "poincare_minus_flat": {
+          "corr": 0.1702096965896296,
+          "relative_stress": -0.16664080859744151,
+          "neighbor_recall_at_10": 0.15263157894736856
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 13,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.8461538461538461,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.15384615384615385
+        },
+        "at_10": {
+          "queries": 13,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.8461538461538461,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.15384615384615385
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 18,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 1.0,
+            "flat_twin_mrr": 0.6018518518518517,
+            "mrr_diff": 0.39814814814814814
+          },
+          "child_lookup": {
+            "queries": 14,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260503_080910_fluorescent-silky-axolotl",
+      "journal_path": "mlevolve/runs/20260503_080910_fluorescent-silky-axolotl/logs/journal.json",
+      "structure": {
+        "nodes": 51,
+        "edges": 50,
+        "roots": 1,
+        "tree_baseline_edges": 50,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 9,
+        "leaf_fraction": 0.17647058823529413,
+        "max_depth": 11,
+        "avg_depth": 4.96078431372549,
+        "deepest_node_fraction": 0.0392156862745098,
+        "boundary_pressure": 0.10784313725490197,
+        "internal_node_count": 42,
+        "internal_avg_children": 1.1904761904761905,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 34,
+          "draft": 5,
+          "evolution": 1,
+          "improve": 10,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 9,
+          "None": 1,
+          "True": 41
+        },
+        "valid_counts": {
+          "None": 42,
+          "True": 9
+        },
+        "metric_node_count": 9,
+        "metric_node_fraction": 0.17647058823529413,
+        "metric_delta": {
+          "count": 3,
+          "mean": 1.3358235867818198,
+          "median": 0.16000000000000003,
+          "min": 0.02630472183227539,
+          "max": 3.8211660385131836
+        },
+        "metric_improvement": {
+          "count": 3,
+          "mean": -1.3358235867818198,
+          "median": -0.16000000000000003,
+          "min": -3.8211660385131836,
+          "max": -0.02630472183227539
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8477323801919908,
+          "scaled_rmse": 2.301583859197912,
+          "relative_stress": 0.2681395669295813,
+          "linear_scale": 1.4835344575843719,
+          "linear_bias": -0.17855602837560536,
+          "pair_count": 1275,
+          "neighbor_recall_at_10": 0.7823529411764706
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.5884295256455379,
+          "scaled_rmse": 3.508403779144967,
+          "relative_stress": 0.4087367341383254,
+          "linear_scale": 4.744218879792692,
+          "linear_bias": 3.217081519528352,
+          "pair_count": 1275,
+          "neighbor_recall_at_10": 0.7058823529411765
+        },
+        "poincare_minus_flat": {
+          "corr": 0.25930285454645297,
+          "relative_stress": -0.1405971672087441,
+          "neighbor_recall_at_10": 0.07647058823529407
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 41,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9430894308943089,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.05691056910569106
+        },
+        "at_10": {
+          "queries": 41,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9430894308943089,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.05691056910569106
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 50,
+            "poincare_recall_at_k": 0.86,
+            "flat_twin_recall_at_k": 0.9,
+            "recall_diff": -0.04,
+            "poincare_mrr": 0.6706844070961718,
+            "flat_twin_mrr": 0.466079365079365,
+            "mrr_diff": 0.20460504201680674
+          },
+          "child_lookup": {
+            "queries": 42,
+            "poincare_precision_at_k": 0.9365079365079364,
+            "flat_twin_precision_at_k": 0.9880952380952381,
+            "precision_diff": -0.05158730158730159
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260505_090635_dashing-chupacabra-of-radiance",
+      "journal_path": "mlevolve/runs/20260505_090635_dashing-chupacabra-of-radiance/logs/journal.json",
+      "structure": {
+        "nodes": 51,
+        "edges": 50,
+        "roots": 1,
+        "tree_baseline_edges": 50,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 12,
+        "leaf_fraction": 0.23529411764705882,
+        "max_depth": 9,
+        "avg_depth": 4.607843137254902,
+        "deepest_node_fraction": 0.0196078431372549,
+        "boundary_pressure": 0.12745098039215685,
+        "internal_node_count": 39,
+        "internal_avg_children": 1.2820512820512822,
+        "max_children": 8,
+        "stage_counts": {
+          "debug": 37,
+          "draft": 5,
+          "improve": 8,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 1,
+          "None": 1,
+          "True": 49
+        },
+        "valid_counts": {
+          "None": 50,
+          "True": 1
+        },
+        "metric_node_count": 1,
+        "metric_node_fraction": 0.0196078431372549,
+        "metric_delta": {
+          "count": 0
+        },
+        "metric_improvement": {
+          "count": 0
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.715541863569192,
+          "scaled_rmse": 2.6829937625504736,
+          "relative_stress": 0.3392321546263243,
+          "linear_scale": 1.1101146058183835,
+          "linear_bias": 1.3619180657391725,
+          "pair_count": 1275,
+          "neighbor_recall_at_10": 0.6529411764705884
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.3934318206727369,
+          "scaled_rmse": 3.530957548601811,
+          "relative_stress": 0.4464469332077855,
+          "linear_scale": 2.7556048285540045,
+          "linear_bias": 5.005297757214162,
+          "pair_count": 1275,
+          "neighbor_recall_at_10": 0.5705882352941177
+        },
+        "poincare_minus_flat": {
+          "corr": 0.3221100428964551,
+          "relative_stress": -0.10721477858146122,
+          "neighbor_recall_at_10": 0.08235294117647063
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 38,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9868421052631579,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.013157894736842105
+        },
+        "at_10": {
+          "queries": 38,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9868421052631579,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.013157894736842105
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 50,
+            "poincare_recall_at_k": 0.88,
+            "flat_twin_recall_at_k": 0.68,
+            "recall_diff": 0.2,
+            "poincare_mrr": 0.6206285102999874,
+            "flat_twin_mrr": 0.40261839808387123,
+            "mrr_diff": 0.21801011221611616
+          },
+          "child_lookup": {
+            "queries": 39,
+            "poincare_precision_at_k": 0.9794871794871796,
+            "flat_twin_precision_at_k": 0.9846153846153846,
+            "precision_diff": -0.005128205128205128
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260508_123447_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260508_123447_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 62,
+        "edges": 61,
+        "roots": 1,
+        "tree_baseline_edges": 61,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 20,
+        "leaf_fraction": 0.3225806451612903,
+        "max_depth": 17,
+        "avg_depth": 6.564516129032258,
+        "deepest_node_fraction": 0.03225806451612903,
+        "boundary_pressure": 0.1774193548387097,
+        "internal_node_count": 42,
+        "internal_avg_children": 1.4523809523809523,
+        "max_children": 7,
+        "stage_counts": {
+          "debug": 27,
+          "draft": 5,
+          "evolution": 2,
+          "improve": 27,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 20,
+          "None": 1,
+          "True": 41
+        },
+        "valid_counts": {
+          "False": 2,
+          "None": 40,
+          "True": 20
+        },
+        "metric_node_count": 20,
+        "metric_node_fraction": 0.3225806451612903,
+        "metric_delta": {
+          "count": 11,
+          "mean": 0.03710074988609736,
+          "median": 0.04061500000000001,
+          "min": -0.3564132367248073,
+          "max": 0.3297928582957581
+        },
+        "metric_improvement": {
+          "count": 11,
+          "mean": -0.03710074988609736,
+          "median": -0.04061500000000001,
+          "min": -0.3297928582957581,
+          "max": 0.3564132367248073
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.6317037027233905,
+          "scaled_rmse": 4.6961369931757,
+          "relative_stress": 0.48260393750857283,
+          "linear_scale": 1.653371988442856,
+          "linear_bias": 0.4982046763264881,
+          "pair_count": 1891,
+          "neighbor_recall_at_10": 0.567741935483871
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.5194818921618874,
+          "scaled_rmse": 5.176355263492287,
+          "relative_stress": 0.5319541222359607,
+          "linear_scale": 5.740036700619064,
+          "linear_bias": 3.538851611055486,
+          "pair_count": 1891,
+          "neighbor_recall_at_10": 0.5064516129032258
+        },
+        "poincare_minus_flat": {
+          "corr": 0.11222181056150304,
+          "relative_stress": -0.04935018472738789,
+          "neighbor_recall_at_10": 0.06129032258064515
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 41,
+          "poincare_precision_at_k": 0.7073170731707317,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.2926829268292683,
+          "poincare_mrr": 0.8209349593495935,
+          "flat_twin_mrr": 0.9451219512195121,
+          "mrr_diff": -0.1241869918699187
+        },
+        "at_10": {
+          "queries": 41,
+          "poincare_precision_at_k": 0.8663182346109174,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.13368176538908247,
+          "poincare_mrr": 0.8209349593495935,
+          "flat_twin_mrr": 0.9451219512195121,
+          "mrr_diff": -0.1241869918699187
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 61,
+            "poincare_recall_at_k": 0.7377049180327869,
+            "flat_twin_recall_at_k": 0.639344262295082,
+            "recall_diff": 0.09836065573770492,
+            "poincare_mrr": 0.5335508944115501,
+            "flat_twin_mrr": 0.4155948935439313,
+            "mrr_diff": 0.11795600086761883
+          },
+          "child_lookup": {
+            "queries": 42,
+            "poincare_precision_at_k": 0.8714285714285714,
+            "flat_twin_precision_at_k": 0.8714285714285714,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260509_042918_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260509_042918_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 55,
+        "edges": 54,
+        "roots": 1,
+        "tree_baseline_edges": 54,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 13,
+        "leaf_fraction": 0.23636363636363636,
+        "max_depth": 10,
+        "avg_depth": 3.7818181818181817,
+        "deepest_node_fraction": 0.01818181818181818,
+        "boundary_pressure": 0.12727272727272726,
+        "internal_node_count": 42,
+        "internal_avg_children": 1.2857142857142858,
+        "max_children": 6,
+        "stage_counts": {
+          "debug": 27,
+          "draft": 5,
+          "evolution": 2,
+          "improve": 20,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 17,
+          "None": 1,
+          "True": 37
+        },
+        "valid_counts": {
+          "None": 38,
+          "True": 17
+        },
+        "metric_node_count": 17,
+        "metric_node_fraction": 0.3090909090909091,
+        "metric_delta": {
+          "count": 8,
+          "mean": -0.042099105765502805,
+          "median": -0.01808582319564067,
+          "min": -0.3098064333320816,
+          "max": 0.07835455229632438
+        },
+        "metric_improvement": {
+          "count": 8,
+          "mean": 0.042099105765502805,
+          "median": 0.01808582319564067,
+          "min": -0.07835455229632438,
+          "max": 0.3098064333320816
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8463818714281544,
+          "scaled_rmse": 1.694581740898755,
+          "relative_stress": 0.2554256887164688,
+          "linear_scale": 1.2920274544534243,
+          "linear_bias": 0.10246896868075976,
+          "pair_count": 1485,
+          "neighbor_recall_at_10": 0.712727272727273
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.46441831783810295,
+          "scaled_rmse": 2.817902469416354,
+          "relative_stress": 0.424744738843208,
+          "linear_scale": 2.9357435587767777,
+          "linear_bias": 3.43821914845012,
+          "pair_count": 1485,
+          "neighbor_recall_at_10": 0.5472727272727274
+        },
+        "poincare_minus_flat": {
+          "corr": 0.3819635535900514,
+          "relative_stress": -0.1693190501267392,
+          "neighbor_recall_at_10": 0.16545454545454563
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 41,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9410569105691056,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.05894308943089432
+        },
+        "at_10": {
+          "queries": 41,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9410569105691056,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.05894308943089432
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 54,
+            "poincare_recall_at_k": 0.9259259259259259,
+            "flat_twin_recall_at_k": 0.8888888888888888,
+            "recall_diff": 0.037037037037037035,
+            "poincare_mrr": 0.7288524051595948,
+            "flat_twin_mrr": 0.49376102292768953,
+            "mrr_diff": 0.23509138223190507
+          },
+          "child_lookup": {
+            "queries": 42,
+            "poincare_precision_at_k": 0.9380952380952381,
+            "flat_twin_precision_at_k": 0.9738095238095238,
+            "precision_diff": -0.03571428571428571
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260509_154039_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260509_154039_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 81,
+        "edges": 80,
+        "roots": 1,
+        "tree_baseline_edges": 80,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 14,
+        "leaf_fraction": 0.1728395061728395,
+        "max_depth": 20,
+        "avg_depth": 7.432098765432099,
+        "deepest_node_fraction": 0.012345679012345678,
+        "boundary_pressure": 0.09259259259259259,
+        "internal_node_count": 67,
+        "internal_avg_children": 1.1940298507462686,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 48,
+          "draft": 5,
+          "evolution": 3,
+          "improve": 24,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 23,
+          "None": 1,
+          "True": 57
+        },
+        "valid_counts": {
+          "None": 58,
+          "True": 23
+        },
+        "metric_node_count": 23,
+        "metric_node_fraction": 0.2839506172839506,
+        "metric_delta": {
+          "count": 9,
+          "mean": 0.04268756124570036,
+          "median": -0.007344679267759169,
+          "min": -0.08539479832635738,
+          "max": 0.34364167754445707
+        },
+        "metric_improvement": {
+          "count": 9,
+          "mean": -0.04268756124570036,
+          "median": 0.007344679267759169,
+          "min": -0.34364167754445707,
+          "max": 0.08539479832635738
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.6415233238057187,
+          "scaled_rmse": 4.549848352476209,
+          "relative_stress": 0.4001060867990152,
+          "linear_scale": 1.4794973780181833,
+          "linear_bias": 1.5657665550244035,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.5790123456790124
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.592140144288324,
+          "scaled_rmse": 4.779572655417261,
+          "relative_stress": 0.4203076594167822,
+          "linear_scale": 6.139466979142141,
+          "linear_bias": 4.195059975698667,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.5061728395061729
+        },
+        "poincare_minus_flat": {
+          "corr": 0.04938317951739479,
+          "relative_stress": -0.020201572617767005,
+          "neighbor_recall_at_10": 0.07283950617283952
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 66,
+          "poincare_precision_at_k": 0.9727272727272728,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.027272727272727268,
+          "poincare_mrr": 0.9166666666666666,
+          "flat_twin_mrr": 0.9848484848484849,
+          "mrr_diff": -0.06818181818181818
+        },
+        "at_10": {
+          "queries": 66,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9166666666666666,
+          "flat_twin_mrr": 0.9848484848484849,
+          "mrr_diff": -0.06818181818181818
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 80,
+            "poincare_recall_at_k": 0.775,
+            "flat_twin_recall_at_k": 0.6875,
+            "recall_diff": 0.0875,
+            "poincare_mrr": 0.5523890977663947,
+            "flat_twin_mrr": 0.37564501980862275,
+            "mrr_diff": 0.17674407795777197
+          },
+          "child_lookup": {
+            "queries": 67,
+            "poincare_precision_at_k": 0.8606965174129353,
+            "flat_twin_precision_at_k": 0.8681592039800995,
+            "precision_diff": -0.007462686567164179
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260509_185008_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260509_185008_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 40,
+        "edges": 39,
+        "roots": 1,
+        "tree_baseline_edges": 39,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 10,
+        "leaf_fraction": 0.25,
+        "max_depth": 11,
+        "avg_depth": 4.4,
+        "deepest_node_fraction": 0.025,
+        "boundary_pressure": 0.1375,
+        "internal_node_count": 30,
+        "internal_avg_children": 1.3,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 13,
+          "draft": 5,
+          "evolution": 1,
+          "fusion": 1,
+          "improve": 19,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 17,
+          "None": 1,
+          "True": 22
+        },
+        "valid_counts": {
+          "None": 23,
+          "True": 17
+        },
+        "metric_node_count": 17,
+        "metric_node_fraction": 0.425,
+        "metric_delta": {
+          "count": 12,
+          "mean": 0.06702240322890218,
+          "median": -0.005080777136622583,
+          "min": -0.06927979753113439,
+          "max": 0.6484
+        },
+        "metric_improvement": {
+          "count": 12,
+          "mean": -0.06702240322890218,
+          "median": 0.005080777136622583,
+          "min": -0.6484,
+          "max": 0.06927979753113439
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8307568763595117,
+          "scaled_rmse": 2.1182418415095627,
+          "relative_stress": 0.29139834856745306,
+          "linear_scale": 1.2732951599819948,
+          "linear_bias": 0.266051028272377,
+          "pair_count": 780,
+          "neighbor_recall_at_10": 0.7575000000000001
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6777246835869104,
+          "scaled_rmse": 2.7981987485597344,
+          "relative_stress": 0.3849373939817624,
+          "linear_scale": 4.69304002867063,
+          "linear_bias": 2.1379074337884556,
+          "pair_count": 780,
+          "neighbor_recall_at_10": 0.745
+        },
+        "poincare_minus_flat": {
+          "corr": 0.15303219277260127,
+          "relative_stress": -0.09353904541430935,
+          "neighbor_recall_at_10": 0.012500000000000067
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 29,
+          "poincare_precision_at_k": 0.9540229885057471,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.04597701149425288,
+          "poincare_mrr": 0.8275862068965517,
+          "flat_twin_mrr": 0.9482758620689655,
+          "mrr_diff": -0.1206896551724138
+        },
+        "at_10": {
+          "queries": 29,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.8275862068965517,
+          "flat_twin_mrr": 0.9482758620689655,
+          "mrr_diff": -0.1206896551724138
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 39,
+            "poincare_recall_at_k": 0.8461538461538461,
+            "flat_twin_recall_at_k": 0.9230769230769231,
+            "recall_diff": -0.07692307692307693,
+            "poincare_mrr": 0.658933658933659,
+            "flat_twin_mrr": 0.5252442002442002,
+            "mrr_diff": 0.1336894586894587
+          },
+          "child_lookup": {
+            "queries": 30,
+            "poincare_precision_at_k": 0.8944444444444444,
+            "flat_twin_precision_at_k": 0.9722222222222221,
+            "precision_diff": -0.07777777777777777
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260510_025317_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260510_025317_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 80,
+        "edges": 79,
+        "roots": 1,
+        "tree_baseline_edges": 79,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 13,
+        "leaf_fraction": 0.1625,
+        "max_depth": 21,
+        "avg_depth": 6.3625,
+        "deepest_node_fraction": 0.0125,
+        "boundary_pressure": 0.08750000000000001,
+        "internal_node_count": 67,
+        "internal_avg_children": 1.1791044776119404,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 43,
+          "draft": 5,
+          "improve": 31,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 26,
+          "None": 1,
+          "True": 53
+        },
+        "valid_counts": {
+          "None": 54,
+          "True": 26
+        },
+        "metric_node_count": 26,
+        "metric_node_fraction": 0.325,
+        "metric_delta": {
+          "count": 11,
+          "mean": -0.10844271099095198,
+          "median": -0.02739785062637945,
+          "min": -0.7839457853257019,
+          "max": 0.3248767247650523
+        },
+        "metric_improvement": {
+          "count": 11,
+          "mean": 0.10844271099095198,
+          "median": 0.02739785062637945,
+          "min": -0.3248767247650523,
+          "max": 0.7839457853257019
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.6705262001138552,
+          "scaled_rmse": 4.662697238415011,
+          "relative_stress": 0.4240889754307755,
+          "linear_scale": 1.6210280726221893,
+          "linear_bias": 1.041633156422109,
+          "pair_count": 3160,
+          "neighbor_recall_at_10": 0.6900000000000001
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.4597476612243832,
+          "scaled_rmse": 5.5813254894094015,
+          "relative_stress": 0.507641497468086,
+          "linear_scale": 4.995766150481058,
+          "linear_bias": 5.249686624603961,
+          "pair_count": 3160,
+          "neighbor_recall_at_10": 0.6175
+        },
+        "poincare_minus_flat": {
+          "corr": 0.210778538889472,
+          "relative_stress": -0.08355252203731045,
+          "neighbor_recall_at_10": 0.07250000000000001
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 66,
+          "poincare_precision_at_k": 0.9962121212121212,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.003787878787878788,
+          "poincare_mrr": 0.9532828282828283,
+          "flat_twin_mrr": 0.9924242424242424,
+          "mrr_diff": -0.039141414141414144
+        },
+        "at_10": {
+          "queries": 66,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9532828282828283,
+          "flat_twin_mrr": 0.9924242424242424,
+          "mrr_diff": -0.039141414141414144
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 79,
+            "poincare_recall_at_k": 0.7848101265822784,
+            "flat_twin_recall_at_k": 0.7341772151898734,
+            "recall_diff": 0.05063291139240506,
+            "poincare_mrr": 0.6284484554495723,
+            "flat_twin_mrr": 0.4104952523864425,
+            "mrr_diff": 0.21795320306312976
+          },
+          "child_lookup": {
+            "queries": 67,
+            "poincare_precision_at_k": 0.8059701492537313,
+            "flat_twin_precision_at_k": 0.8159203980099502,
+            "precision_diff": -0.009950248756218907
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260510_095558_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260510_095558_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 57,
+        "edges": 56,
+        "roots": 1,
+        "tree_baseline_edges": 56,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 12,
+        "leaf_fraction": 0.21052631578947367,
+        "max_depth": 12,
+        "avg_depth": 4.456140350877193,
+        "deepest_node_fraction": 0.017543859649122806,
+        "boundary_pressure": 0.11403508771929824,
+        "internal_node_count": 45,
+        "internal_avg_children": 1.2444444444444445,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 30,
+          "draft": 5,
+          "evolution": 1,
+          "fusion": 1,
+          "improve": 19,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 18,
+          "None": 1,
+          "True": 38
+        },
+        "valid_counts": {
+          "None": 39,
+          "True": 18
+        },
+        "metric_node_count": 18,
+        "metric_node_fraction": 0.3157894736842105,
+        "metric_delta": {
+          "count": 6,
+          "mean": 0.016746153005073715,
+          "median": 0.022559247266785737,
+          "min": -0.05856896565571629,
+          "max": 0.07771403598805987
+        },
+        "metric_improvement": {
+          "count": 6,
+          "mean": -0.016746153005073715,
+          "median": -0.022559247266785737,
+          "min": -0.07771403598805987,
+          "max": 0.05856896565571629
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8353834260115814,
+          "scaled_rmse": 2.092433309863256,
+          "relative_stress": 0.2726141683707557,
+          "linear_scale": 1.3527401240614514,
+          "linear_bias": 0.23417499070638217,
+          "pair_count": 1596,
+          "neighbor_recall_at_10": 0.7771929824561403
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.5330285640889066,
+          "scaled_rmse": 3.2208590832908524,
+          "relative_stress": 0.41963192628017965,
+          "linear_scale": 3.8224029451794683,
+          "linear_bias": 3.4202775555588154,
+          "pair_count": 1596,
+          "neighbor_recall_at_10": 0.6666666666666667
+        },
+        "poincare_minus_flat": {
+          "corr": 0.3023548619226748,
+          "relative_stress": -0.14701775790942395,
+          "neighbor_recall_at_10": 0.11052631578947358
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 44,
+          "poincare_precision_at_k": 0.9696969696969696,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.030303030303030307,
+          "poincare_mrr": 0.8428030303030302,
+          "flat_twin_mrr": 0.9886363636363636,
+          "mrr_diff": -0.14583333333333337
+        },
+        "at_10": {
+          "queries": 44,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.8428030303030302,
+          "flat_twin_mrr": 0.9886363636363636,
+          "mrr_diff": -0.14583333333333337
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 56,
+            "poincare_recall_at_k": 0.9107142857142857,
+            "flat_twin_recall_at_k": 0.7678571428571429,
+            "recall_diff": 0.14285714285714285,
+            "poincare_mrr": 0.7062287414965986,
+            "flat_twin_mrr": 0.4490804655195411,
+            "mrr_diff": 0.2571482759770575
+          },
+          "child_lookup": {
+            "queries": 45,
+            "poincare_precision_at_k": 0.9555555555555556,
+            "flat_twin_precision_at_k": 0.9629629629629629,
+            "precision_diff": -0.0074074074074074086
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260510_162636_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260510_162636_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 59,
+        "edges": 58,
+        "roots": 1,
+        "tree_baseline_edges": 58,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 11,
+        "leaf_fraction": 0.1864406779661017,
+        "max_depth": 22,
+        "avg_depth": 6.593220338983051,
+        "deepest_node_fraction": 0.01694915254237288,
+        "boundary_pressure": 0.1016949152542373,
+        "internal_node_count": 48,
+        "internal_avg_children": 1.2083333333333333,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 31,
+          "draft": 5,
+          "improve": 22,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 18,
+          "None": 1,
+          "True": 40
+        },
+        "valid_counts": {
+          "None": 41,
+          "True": 18
+        },
+        "metric_node_count": 18,
+        "metric_node_fraction": 0.3050847457627119,
+        "metric_delta": {
+          "count": 6,
+          "mean": -0.08432188038387152,
+          "median": -0.0015562916354064649,
+          "min": -0.6524128945130286,
+          "max": 0.7031333495067362
+        },
+        "metric_improvement": {
+          "count": 6,
+          "mean": 0.08432188038387152,
+          "median": 0.0015562916354064649,
+          "min": -0.7031333495067362,
+          "max": 0.6524128945130286
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.5989656326944662,
+          "scaled_rmse": 5.463632187784966,
+          "relative_stress": 0.5164792637182363,
+          "linear_scale": 1.4951404042601444,
+          "linear_bias": 2.541523616261338,
+          "pair_count": 1711,
+          "neighbor_recall_at_10": 0.6983050847457629
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.3972299213836759,
+          "scaled_rmse": 6.261535915254811,
+          "relative_stress": 0.5919054116575128,
+          "linear_scale": 4.49995044506675,
+          "linear_bias": 5.7906814945430956,
+          "pair_count": 1711,
+          "neighbor_recall_at_10": 0.628813559322034
+        },
+        "poincare_minus_flat": {
+          "corr": 0.20173571131079032,
+          "relative_stress": -0.07542614793927649,
+          "neighbor_recall_at_10": 0.06949152542372894
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 47,
+          "poincare_precision_at_k": 0.9875886524822695,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.012411347517730497,
+          "poincare_mrr": 0.9049645390070922,
+          "flat_twin_mrr": 0.9787234042553191,
+          "mrr_diff": -0.07375886524822696
+        },
+        "at_10": {
+          "queries": 47,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9049645390070922,
+          "flat_twin_mrr": 0.9787234042553191,
+          "mrr_diff": -0.07375886524822696
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 58,
+            "poincare_recall_at_k": 0.7413793103448276,
+            "flat_twin_recall_at_k": 0.6551724137931034,
+            "recall_diff": 0.08620689655172414,
+            "poincare_mrr": 0.591171814156094,
+            "flat_twin_mrr": 0.39914229111477434,
+            "mrr_diff": 0.1920295230413198
+          },
+          "child_lookup": {
+            "queries": 48,
+            "poincare_precision_at_k": 0.7465277777777777,
+            "flat_twin_precision_at_k": 0.7465277777777777,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260511_014836_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260511_014836_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 21,
+        "edges": 20,
+        "roots": 1,
+        "tree_baseline_edges": 20,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 5,
+        "leaf_fraction": 0.23809523809523808,
+        "max_depth": 6,
+        "avg_depth": 2.5714285714285716,
+        "deepest_node_fraction": 0.047619047619047616,
+        "boundary_pressure": 0.14285714285714285,
+        "internal_node_count": 16,
+        "internal_avg_children": 1.25,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 11,
+          "draft": 5,
+          "improve": 4,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 6,
+          "None": 1,
+          "True": 14
+        },
+        "valid_counts": {
+          "None": 15,
+          "True": 6
+        },
+        "metric_node_count": 6,
+        "metric_node_fraction": 0.2857142857142857,
+        "metric_delta": {
+          "count": 2,
+          "mean": 0.13341244642571326,
+          "median": 0.13341244642571326,
+          "min": 0.016191930892592576,
+          "max": 0.25063296195883394
+        },
+        "metric_improvement": {
+          "count": 2,
+          "mean": -0.13341244642571326,
+          "median": -0.13341244642571326,
+          "min": -0.25063296195883394,
+          "max": -0.016191930892592576
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.977384613841204,
+          "scaled_rmse": 0.47387112188812414,
+          "relative_stress": 0.10519337800899162,
+          "linear_scale": 1.169205546329928,
+          "linear_bias": 0.23858441486116788,
+          "pair_count": 210,
+          "neighbor_recall_at_10": 0.895238095238095
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.7847457275991436,
+          "scaled_rmse": 1.388918394545642,
+          "relative_stress": 0.30832226517397976,
+          "linear_scale": 3.800641317835256,
+          "linear_bias": 0.7687898721392051,
+          "pair_count": 210,
+          "neighbor_recall_at_10": 0.7761904761904762
+        },
+        "poincare_minus_flat": {
+          "corr": 0.19263888624206038,
+          "relative_stress": -0.20312888716498814,
+          "neighbor_recall_at_10": 0.11904761904761885
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 15,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.1
+        },
+        "at_10": {
+          "queries": 15,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.1
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 20,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 0.975,
+            "flat_twin_mrr": 0.5683333333333334,
+            "mrr_diff": 0.4066666666666666
+          },
+          "child_lookup": {
+            "queries": 16,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260511_100750_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260511_100750_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 10,
+        "edges": 9,
+        "roots": 1,
+        "tree_baseline_edges": 9,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 3,
+        "leaf_fraction": 0.3,
+        "max_depth": 4,
+        "avg_depth": 1.9,
+        "deepest_node_fraction": 0.1,
+        "boundary_pressure": 0.2,
+        "internal_node_count": 7,
+        "internal_avg_children": 1.2857142857142858,
+        "max_children": 3,
+        "stage_counts": {
+          "debug": 6,
+          "draft": 3,
+          "root": 1
+        },
+        "buggy_counts": {
+          "None": 1,
+          "True": 9
+        },
+        "valid_counts": {
+          "None": 10
+        },
+        "metric_node_count": 0,
+        "metric_node_fraction": 0.0,
+        "metric_delta": {
+          "count": 0
+        },
+        "metric_improvement": {
+          "count": 0
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.9984369122485582,
+          "scaled_rmse": 0.09096383717844178,
+          "relative_stress": 0.029031011865460143,
+          "linear_scale": 1.1862984655331072,
+          "linear_bias": -0.04296864180132933,
+          "pair_count": 45,
+          "neighbor_recall_at_10": 1.0
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.9391020730978363,
+          "scaled_rmse": 0.5592853717887332,
+          "relative_stress": 0.17849533142193613,
+          "linear_scale": 3.643555657167842,
+          "linear_bias": -0.06016337006825435,
+          "pair_count": 45,
+          "neighbor_recall_at_10": 1.0
+        },
+        "poincare_minus_flat": {
+          "corr": 0.05933483915072191,
+          "relative_stress": -0.149464319556476,
+          "neighbor_recall_at_10": 0.0
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 6,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9166666666666666,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.08333333333333333
+        },
+        "at_10": {
+          "queries": 6,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9166666666666666,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.08333333333333333
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 9,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 1.0,
+            "flat_twin_mrr": 0.6481481481481481,
+            "mrr_diff": 0.35185185185185186
+          },
+          "child_lookup": {
+            "queries": 7,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260511_102550_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260511_102550_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 34,
+        "edges": 33,
+        "roots": 1,
+        "tree_baseline_edges": 33,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 10,
+        "leaf_fraction": 0.29411764705882354,
+        "max_depth": 7,
+        "avg_depth": 2.8823529411764706,
+        "deepest_node_fraction": 0.029411764705882353,
+        "boundary_pressure": 0.16176470588235295,
+        "internal_node_count": 24,
+        "internal_avg_children": 1.375,
+        "max_children": 7,
+        "stage_counts": {
+          "debug": 14,
+          "draft": 5,
+          "fusion_draft": 2,
+          "improve": 12,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 11,
+          "None": 1,
+          "True": 22
+        },
+        "valid_counts": {
+          "None": 23,
+          "True": 11
+        },
+        "metric_node_count": 11,
+        "metric_node_fraction": 0.3235294117647059,
+        "metric_delta": {
+          "count": 5,
+          "mean": 0.023290490235568163,
+          "median": 0.046223545888863515,
+          "min": -0.16735520238145124,
+          "max": 0.143982
+        },
+        "metric_improvement": {
+          "count": 5,
+          "mean": -0.023290490235568163,
+          "median": -0.046223545888863515,
+          "min": -0.143982,
+          "max": 0.16735520238145124
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.9061195185278136,
+          "scaled_rmse": 1.0026454193527337,
+          "relative_stress": 0.1966727553345747,
+          "linear_scale": 1.1378826251089396,
+          "linear_bias": 0.48381370690762404,
+          "pair_count": 561,
+          "neighbor_recall_at_10": 0.7823529411764706
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6055194888482576,
+          "scaled_rmse": 1.8862759287944293,
+          "relative_stress": 0.3700002783404458,
+          "linear_scale": 3.1078813631417392,
+          "linear_bias": 1.9850511915346953,
+          "pair_count": 561,
+          "neighbor_recall_at_10": 0.6382352941176471
+        },
+        "poincare_minus_flat": {
+          "corr": 0.300600029679556,
+          "relative_stress": -0.1733275230058711,
+          "neighbor_recall_at_10": 0.14411764705882346
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 23,
+          "poincare_precision_at_k": 0.9565217391304348,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.043478260869565216,
+          "poincare_mrr": 0.74824016563147,
+          "flat_twin_mrr": 0.9130434782608695,
+          "mrr_diff": -0.1648033126293996
+        },
+        "at_10": {
+          "queries": 23,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.74824016563147,
+          "flat_twin_mrr": 0.9130434782608695,
+          "mrr_diff": -0.1648033126293996
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 33,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 0.7813131313131314,
+            "flat_twin_mrr": 0.5631313131313131,
+            "mrr_diff": 0.21818181818181823
+          },
+          "child_lookup": {
+            "queries": 24,
+            "poincare_precision_at_k": 0.9791666666666666,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": -0.020833333333333332
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260512_094857_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260512_094857_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 13,
+        "edges": 12,
+        "roots": 1,
+        "tree_baseline_edges": 12,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 3,
+        "leaf_fraction": 0.23076923076923078,
+        "max_depth": 4,
+        "avg_depth": 2.3076923076923075,
+        "deepest_node_fraction": 0.23076923076923078,
+        "boundary_pressure": 0.23076923076923078,
+        "internal_node_count": 10,
+        "internal_avg_children": 1.2,
+        "max_children": 3,
+        "stage_counts": {
+          "debug": 9,
+          "draft": 3,
+          "root": 1
+        },
+        "buggy_counts": {
+          "None": 1,
+          "True": 12
+        },
+        "valid_counts": {
+          "None": 13
+        },
+        "metric_node_count": 0,
+        "metric_node_fraction": 0.0,
+        "metric_delta": {
+          "count": 0
+        },
+        "metric_improvement": {
+          "count": 0
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.999027764595655,
+          "scaled_rmse": 0.08875586532499795,
+          "relative_stress": 0.023076524984499466,
+          "linear_scale": 1.1752234725937105,
+          "linear_bias": -0.03595128445732279,
+          "pair_count": 78,
+          "neighbor_recall_at_10": 1.0
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.9402060153316035,
+          "scaled_rmse": 0.6857322971329314,
+          "relative_stress": 0.17829039725456217,
+          "linear_scale": 3.9771864719646137,
+          "linear_bias": -0.028757741370798954,
+          "pair_count": 78,
+          "neighbor_recall_at_10": 1.0
+        },
+        "poincare_minus_flat": {
+          "corr": 0.05882174926405148,
+          "relative_stress": -0.1552138722700627,
+          "neighbor_recall_at_10": 0.0
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 9,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        },
+        "at_10": {
+          "queries": 9,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 12,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 1.0,
+            "flat_twin_mrr": 0.5833333333333334,
+            "mrr_diff": 0.4166666666666667
+          },
+          "child_lookup": {
+            "queries": 10,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260512_100231_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260512_100231_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 8,
+        "edges": 7,
+        "roots": 1,
+        "tree_baseline_edges": 7,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 2,
+        "leaf_fraction": 0.25,
+        "max_depth": 4,
+        "avg_depth": 2.0,
+        "deepest_node_fraction": 0.125,
+        "boundary_pressure": 0.1875,
+        "internal_node_count": 6,
+        "internal_avg_children": 1.1666666666666667,
+        "max_children": 2,
+        "stage_counts": {
+          "debug": 5,
+          "draft": 2,
+          "root": 1
+        },
+        "buggy_counts": {
+          "None": 1,
+          "True": 7
+        },
+        "valid_counts": {
+          "None": 8
+        },
+        "metric_node_count": 0,
+        "metric_node_fraction": 0.0,
+        "metric_delta": {
+          "count": 0
+        },
+        "metric_improvement": {
+          "count": 0
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.9999999999999997,
+          "scaled_rmse": 6.257899356052382e-08,
+          "relative_stress": 2.0859664520174608e-08,
+          "linear_scale": 1.1111110879840878,
+          "linear_bias": 7.095791347609677e-08,
+          "pair_count": 28,
+          "neighbor_recall_at_10": 1.0
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.9429938391043441,
+          "scaled_rmse": 0.5764441501427121,
+          "relative_stress": 0.1921480500475707,
+          "linear_scale": 3.044556376754895,
+          "linear_bias": 0.3322878914491903,
+          "pair_count": 28,
+          "neighbor_recall_at_10": 1.0
+        },
+        "poincare_minus_flat": {
+          "corr": 0.05700616089565558,
+          "relative_stress": -0.1921480291879062,
+          "neighbor_recall_at_10": 0.0
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 5,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        },
+        "at_10": {
+          "queries": 5,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 7,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 1.0,
+            "flat_twin_mrr": 0.619047619047619,
+            "mrr_diff": 0.380952380952381
+          },
+          "child_lookup": {
+            "queries": 6,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260512_105637_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260512_105637_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 2,
+        "edges": 1,
+        "roots": 1,
+        "tree_baseline_edges": 1,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 1,
+        "leaf_fraction": 0.5,
+        "max_depth": 1,
+        "avg_depth": 0.5,
+        "deepest_node_fraction": 0.5,
+        "boundary_pressure": 0.5,
+        "internal_node_count": 1,
+        "internal_avg_children": 1.0,
+        "max_children": 1,
+        "stage_counts": {
+          "draft": 1,
+          "root": 1
+        },
+        "buggy_counts": {
+          "None": 1,
+          "True": 1
+        },
+        "valid_counts": {
+          "None": 2
+        },
+        "metric_node_count": 0,
+        "metric_node_fraction": 0.0,
+        "metric_delta": {
+          "count": 0
+        },
+        "metric_improvement": {
+          "count": 0
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": NaN,
+          "scaled_rmse": 0.0,
+          "relative_stress": 0.0,
+          "linear_scale": 0.49723756767804594,
+          "linear_bias": 0.552486200944826,
+          "pair_count": 1,
+          "neighbor_recall_at_10": 1.0
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": NaN,
+          "scaled_rmse": 0.0,
+          "relative_stress": 0.0,
+          "linear_scale": 0.35814892658114494,
+          "linear_bias": 0.8488973292944124,
+          "pair_count": 1,
+          "neighbor_recall_at_10": 1.0
+        },
+        "poincare_minus_flat": {
+          "corr": NaN,
+          "relative_stress": 0.0,
+          "neighbor_recall_at_10": 0.0
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 0
+        },
+        "at_10": {
+          "queries": 0
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 1,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 1.0,
+            "flat_twin_mrr": 1.0,
+            "mrr_diff": 0.0
+          },
+          "child_lookup": {
+            "queries": 1,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260512_112908_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260512_112908_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 66,
+        "edges": 65,
+        "roots": 1,
+        "tree_baseline_edges": 65,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 22,
+        "leaf_fraction": 0.3333333333333333,
+        "max_depth": 9,
+        "avg_depth": 3.909090909090909,
+        "deepest_node_fraction": 0.030303030303030304,
+        "boundary_pressure": 0.18181818181818182,
+        "internal_node_count": 44,
+        "internal_avg_children": 1.4772727272727273,
+        "max_children": 6,
+        "stage_counts": {
+          "debug": 27,
+          "draft": 5,
+          "evolution": 1,
+          "fusion": 3,
+          "fusion_draft": 1,
+          "improve": 28,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 22,
+          "None": 1,
+          "True": 43
+        },
+        "valid_counts": {
+          "None": 44,
+          "True": 22
+        },
+        "metric_node_count": 22,
+        "metric_node_fraction": 0.3333333333333333,
+        "metric_delta": {
+          "count": 16,
+          "mean": 0.028033570429736622,
+          "median": 0.025937236729538155,
+          "min": -0.32814196958594555,
+          "max": 0.28058942957668437
+        },
+        "metric_improvement": {
+          "count": 16,
+          "mean": -0.028033570429736622,
+          "median": -0.025937236729538155,
+          "min": -0.28058942957668437,
+          "max": 0.32814196958594555
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.788055521901873,
+          "scaled_rmse": 1.9092313187054775,
+          "relative_stress": 0.28073081838656766,
+          "linear_scale": 1.0876683311630408,
+          "linear_bias": 1.05177686500062,
+          "pair_count": 2145,
+          "neighbor_recall_at_10": 0.609090909090909
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.5681148963476491,
+          "scaled_rmse": 2.552290178826481,
+          "relative_stress": 0.375285332710639,
+          "linear_scale": 3.3837662876699253,
+          "linear_bias": 3.10126411843103,
+          "pair_count": 2145,
+          "neighbor_recall_at_10": 0.5621212121212121
+        },
+        "poincare_minus_flat": {
+          "corr": 0.2199406255542239,
+          "relative_stress": -0.09455451432407136,
+          "neighbor_recall_at_10": 0.046969696969696884
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 43,
+          "poincare_precision_at_k": 0.852325581395349,
+          "flat_twin_precision_at_k": 0.9941860465116279,
+          "precision_diff": -0.14186046511627906,
+          "poincare_mrr": 0.796733111849391,
+          "flat_twin_mrr": 0.9244186046511628,
+          "mrr_diff": -0.12768549280177188
+        },
+        "at_10": {
+          "queries": 43,
+          "poincare_precision_at_k": 0.9435215946843853,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.05647840531561463,
+          "poincare_mrr": 0.796733111849391,
+          "flat_twin_mrr": 0.9244186046511628,
+          "mrr_diff": -0.12768549280177188
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 65,
+            "poincare_recall_at_k": 0.8769230769230769,
+            "flat_twin_recall_at_k": 0.7230769230769231,
+            "recall_diff": 0.15384615384615385,
+            "poincare_mrr": 0.6129355053548602,
+            "flat_twin_mrr": 0.43203393388913747,
+            "mrr_diff": 0.1809015714657227
+          },
+          "child_lookup": {
+            "queries": 44,
+            "poincare_precision_at_k": 0.9348484848484848,
+            "flat_twin_precision_at_k": 0.9553030303030304,
+            "precision_diff": -0.020454545454545454
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260513_140923_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260513_140923_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 7,
+        "edges": 6,
+        "roots": 1,
+        "tree_baseline_edges": 6,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 4,
+        "leaf_fraction": 0.5714285714285714,
+        "max_depth": 2,
+        "avg_depth": 1.1428571428571428,
+        "deepest_node_fraction": 0.2857142857142857,
+        "boundary_pressure": 0.42857142857142855,
+        "internal_node_count": 3,
+        "internal_avg_children": 2.0,
+        "max_children": 4,
+        "stage_counts": {
+          "debug": 2,
+          "draft": 4,
+          "root": 1
+        },
+        "buggy_counts": {
+          "None": 1,
+          "True": 6
+        },
+        "valid_counts": {
+          "None": 7
+        },
+        "metric_node_count": 0,
+        "metric_node_fraction": 0.0,
+        "metric_delta": {
+          "count": 0
+        },
+        "metric_improvement": {
+          "count": 0
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.9538063889508201,
+          "scaled_rmse": 0.2606642467121086,
+          "relative_stress": 0.12440793593077909,
+          "linear_scale": 1.2756907246199531,
+          "linear_bias": -0.033560781955149825,
+          "pair_count": 21,
+          "neighbor_recall_at_10": 1.0
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.8883614924043405,
+          "scaled_rmse": 0.39838165000553694,
+          "relative_stress": 0.1901366965935517,
+          "linear_scale": 3.134819114078302,
+          "linear_bias": -0.054031311989541406,
+          "pair_count": 21,
+          "neighbor_recall_at_10": 1.0
+        },
+        "poincare_minus_flat": {
+          "corr": 0.06544489654647967,
+          "relative_stress": -0.06572876066277261,
+          "neighbor_recall_at_10": 0.0
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 2,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        },
+        "at_10": {
+          "queries": 2,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 6,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 1.0,
+            "flat_twin_mrr": 0.8333333333333334,
+            "mrr_diff": 0.16666666666666666
+          },
+          "child_lookup": {
+            "queries": 3,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260513_145802_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260513_145802_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 6,
+        "edges": 5,
+        "roots": 1,
+        "tree_baseline_edges": 5,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 3,
+        "leaf_fraction": 0.5,
+        "max_depth": 3,
+        "avg_depth": 1.3333333333333333,
+        "deepest_node_fraction": 0.16666666666666666,
+        "boundary_pressure": 0.3333333333333333,
+        "internal_node_count": 3,
+        "internal_avg_children": 1.6666666666666667,
+        "max_children": 3,
+        "stage_counts": {
+          "debug": 2,
+          "draft": 3,
+          "root": 1
+        },
+        "buggy_counts": {
+          "None": 1,
+          "True": 5
+        },
+        "valid_counts": {
+          "None": 6
+        },
+        "metric_node_count": 0,
+        "metric_node_fraction": 0.0,
+        "metric_delta": {
+          "count": 0
+        },
+        "metric_improvement": {
+          "count": 0
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.9959088797561445,
+          "scaled_rmse": 0.09254569467374522,
+          "relative_stress": 0.04338079437831807,
+          "linear_scale": 1.2028297427018477,
+          "linear_bias": -0.054302124700446,
+          "pair_count": 15,
+          "neighbor_recall_at_10": 1.0
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.9460653743119714,
+          "scaled_rmse": 0.3318006937009442,
+          "relative_stress": 0.1555315751723176,
+          "linear_scale": 3.2266895100806803,
+          "linear_bias": -0.06847915484778275,
+          "pair_count": 15,
+          "neighbor_recall_at_10": 1.0
+        },
+        "poincare_minus_flat": {
+          "corr": 0.04984350544417315,
+          "relative_stress": -0.11215078079399954,
+          "neighbor_recall_at_10": 0.0
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 2,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.6666666666666666,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.33333333333333337
+        },
+        "at_10": {
+          "queries": 2,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.6666666666666666,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.33333333333333337
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 5,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 1.0,
+            "flat_twin_mrr": 0.8,
+            "mrr_diff": 0.2
+          },
+          "child_lookup": {
+            "queries": 3,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260513_160019_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260513_160019_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 3,
+        "edges": 2,
+        "roots": 1,
+        "tree_baseline_edges": 2,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 2,
+        "leaf_fraction": 0.6666666666666666,
+        "max_depth": 1,
+        "avg_depth": 0.6666666666666666,
+        "deepest_node_fraction": 0.6666666666666666,
+        "boundary_pressure": 0.6666666666666666,
+        "internal_node_count": 1,
+        "internal_avg_children": 2.0,
+        "max_children": 2,
+        "stage_counts": {
+          "draft": 2,
+          "root": 1
+        },
+        "buggy_counts": {
+          "None": 1,
+          "True": 2
+        },
+        "valid_counts": {
+          "None": 3
+        },
+        "metric_node_count": 0,
+        "metric_node_fraction": 0.0,
+        "metric_delta": {
+          "count": 0
+        },
+        "metric_improvement": {
+          "count": 0
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 1.0,
+          "scaled_rmse": 4.440892098500626e-16,
+          "relative_stress": 3.3306690738754696e-16,
+          "linear_scale": 1.1111111405455043,
+          "linear_bias": 5.710806889555815e-16,
+          "pair_count": 3,
+          "neighbor_recall_at_10": 1.0
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 1.0,
+          "scaled_rmse": 6.012996326510578e-16,
+          "relative_stress": 4.509747244882934e-16,
+          "linear_scale": 2.370235581599823,
+          "linear_bias": -8.577076119797424e-16,
+          "pair_count": 3,
+          "neighbor_recall_at_10": 1.0
+        },
+        "poincare_minus_flat": {
+          "corr": 0.0,
+          "relative_stress": -1.1790781710074643e-16,
+          "neighbor_recall_at_10": 0.0
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 0
+        },
+        "at_10": {
+          "queries": 0
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 2,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 1.0,
+            "flat_twin_mrr": 1.0,
+            "mrr_diff": 0.0
+          },
+          "child_lookup": {
+            "queries": 1,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260513_165253_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260513_165253_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 36,
+        "edges": 35,
+        "roots": 1,
+        "tree_baseline_edges": 35,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 6,
+        "leaf_fraction": 0.16666666666666666,
+        "max_depth": 10,
+        "avg_depth": 4.638888888888889,
+        "deepest_node_fraction": 0.027777777777777776,
+        "boundary_pressure": 0.09722222222222221,
+        "internal_node_count": 30,
+        "internal_avg_children": 1.1666666666666667,
+        "max_children": 4,
+        "stage_counts": {
+          "debug": 21,
+          "draft": 4,
+          "evolution": 2,
+          "improve": 8,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 8,
+          "None": 1,
+          "True": 27
+        },
+        "valid_counts": {
+          "False": 1,
+          "None": 27,
+          "True": 8
+        },
+        "metric_node_count": 8,
+        "metric_node_fraction": 0.2222222222222222,
+        "metric_delta": {
+          "count": 3,
+          "mean": 0.00959830139555253,
+          "median": -0.009606071272578787,
+          "min": -0.022127805926426547,
+          "max": 0.06052878138566292
+        },
+        "metric_improvement": {
+          "count": 3,
+          "mean": -0.00959830139555253,
+          "median": 0.009606071272578787,
+          "min": -0.06052878138566292,
+          "max": 0.022127805926426547
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8134387070457139,
+          "scaled_rmse": 2.149793044296703,
+          "relative_stress": 0.30010405892021336,
+          "linear_scale": 1.1090236981428245,
+          "linear_bias": 0.8384120142037488,
+          "pair_count": 630,
+          "neighbor_recall_at_10": 0.7694444444444444
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.7107867019166351,
+          "scaled_rmse": 2.5998093609831905,
+          "relative_stress": 0.3629248609393773,
+          "linear_scale": 4.695371182182554,
+          "linear_bias": 1.8676289431622535,
+          "pair_count": 630,
+          "neighbor_recall_at_10": 0.736111111111111
+        },
+        "poincare_minus_flat": {
+          "corr": 0.1026520051290788,
+          "relative_stress": -0.06282080201916396,
+          "neighbor_recall_at_10": 0.033333333333333326
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 29,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9310344827586207,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.06896551724137931
+        },
+        "at_10": {
+          "queries": 29,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9310344827586207,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.06896551724137931
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 35,
+            "poincare_recall_at_k": 0.9142857142857143,
+            "flat_twin_recall_at_k": 0.8285714285714286,
+            "recall_diff": 0.08571428571428572,
+            "poincare_mrr": 0.6887074829931973,
+            "flat_twin_mrr": 0.43032982890125754,
+            "mrr_diff": 0.2583776540919398
+          },
+          "child_lookup": {
+            "queries": 30,
+            "poincare_precision_at_k": 0.9777777777777777,
+            "flat_twin_precision_at_k": 0.9777777777777777,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260514_023457_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260514_023457_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 24,
+        "edges": 23,
+        "roots": 1,
+        "tree_baseline_edges": 23,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 6,
+        "leaf_fraction": 0.25,
+        "max_depth": 8,
+        "avg_depth": 3.0,
+        "deepest_node_fraction": 0.041666666666666664,
+        "boundary_pressure": 0.14583333333333334,
+        "internal_node_count": 18,
+        "internal_avg_children": 1.2777777777777777,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 15,
+          "draft": 5,
+          "improve": 3,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 3,
+          "None": 1,
+          "True": 20
+        },
+        "valid_counts": {
+          "None": 21,
+          "True": 3
+        },
+        "metric_node_count": 3,
+        "metric_node_fraction": 0.125,
+        "metric_delta": {
+          "count": 1,
+          "mean": -0.16672795855315986,
+          "median": -0.16672795855315986,
+          "min": -0.16672795855315986,
+          "max": -0.16672795855315986
+        },
+        "metric_improvement": {
+          "count": 1,
+          "mean": 0.16672795855315986,
+          "median": 0.16672795855315986,
+          "min": 0.16672795855315986,
+          "max": 0.16672795855315986
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.9308916050575415,
+          "scaled_rmse": 0.9682484913075898,
+          "relative_stress": 0.19143021747915098,
+          "linear_scale": 1.2451076205119638,
+          "linear_bias": 0.1443444979201231,
+          "pair_count": 276,
+          "neighbor_recall_at_10": 0.8624999999999999
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6999378030603508,
+          "scaled_rmse": 1.893061123467431,
+          "relative_stress": 0.3742728295680594,
+          "linear_scale": 3.834910071678599,
+          "linear_bias": 1.2268502984460785,
+          "pair_count": 276,
+          "neighbor_recall_at_10": 0.7041666666666666
+        },
+        "poincare_minus_flat": {
+          "corr": 0.23095380199719073,
+          "relative_stress": -0.18284261208890842,
+          "neighbor_recall_at_10": 0.15833333333333333
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 17,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9019607843137254,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.09803921568627451
+        },
+        "at_10": {
+          "queries": 17,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9019607843137254,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.09803921568627451
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 23,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 0.9565217391304348,
+            "recall_diff": 0.043478260869565216,
+            "poincare_mrr": 0.8623188405797101,
+            "flat_twin_mrr": 0.5847826086956522,
+            "mrr_diff": 0.277536231884058
+          },
+          "child_lookup": {
+            "queries": 18,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260514_052334_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260514_052334_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 73,
+        "edges": 72,
+        "roots": 1,
+        "tree_baseline_edges": 72,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 16,
+        "leaf_fraction": 0.2191780821917808,
+        "max_depth": 15,
+        "avg_depth": 5.780821917808219,
+        "deepest_node_fraction": 0.0136986301369863,
+        "boundary_pressure": 0.11643835616438356,
+        "internal_node_count": 57,
+        "internal_avg_children": 1.263157894736842,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 41,
+          "draft": 5,
+          "improve": 26,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 17,
+          "None": 1,
+          "True": 55
+        },
+        "valid_counts": {
+          "None": 56,
+          "True": 17
+        },
+        "metric_node_count": 17,
+        "metric_node_fraction": 0.2328767123287671,
+        "metric_delta": {
+          "count": 6,
+          "mean": 0.027463638900913356,
+          "median": 0.009600714144406108,
+          "min": -0.12461174976181344,
+          "max": 0.2515035869962958
+        },
+        "metric_improvement": {
+          "count": 6,
+          "mean": -0.027463638900913356,
+          "median": -0.009600714144406108,
+          "min": -0.2515035869962958,
+          "max": 0.12461174976181344
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.7298421567077312,
+          "scaled_rmse": 3.172414683367979,
+          "relative_stress": 0.3423019292121468,
+          "linear_scale": 1.443565037867629,
+          "linear_bias": 0.5262208084806198,
+          "pair_count": 2628,
+          "neighbor_recall_at_10": 0.6328767123287672
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.5509827733619664,
+          "scaled_rmse": 3.8726915799531314,
+          "relative_stress": 0.41786144983235457,
+          "linear_scale": 4.671703186641705,
+          "linear_bias": 4.051350808051643,
+          "pair_count": 2628,
+          "neighbor_recall_at_10": 0.5808219178082192
+        },
+        "poincare_minus_flat": {
+          "corr": 0.1788593833457648,
+          "relative_stress": -0.07555952062020777,
+          "neighbor_recall_at_10": 0.05205479452054795
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 56,
+          "poincare_precision_at_k": 0.9226190476190477,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.0773809523809524,
+          "poincare_mrr": 0.9291666666666666,
+          "flat_twin_mrr": 0.988095238095238,
+          "mrr_diff": -0.058928571428571434
+        },
+        "at_10": {
+          "queries": 56,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9291666666666666,
+          "flat_twin_mrr": 0.988095238095238,
+          "mrr_diff": -0.058928571428571434
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 72,
+            "poincare_recall_at_k": 0.875,
+            "flat_twin_recall_at_k": 0.7361111111111112,
+            "recall_diff": 0.1388888888888889,
+            "poincare_mrr": 0.6166716079790793,
+            "flat_twin_mrr": 0.40239078051578053,
+            "mrr_diff": 0.21428082746329874
+          },
+          "child_lookup": {
+            "queries": 57,
+            "poincare_precision_at_k": 0.9269005847953217,
+            "flat_twin_precision_at_k": 0.9210526315789473,
+            "precision_diff": 0.0058479532163742695
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260514_113102_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260514_113102_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 27,
+        "edges": 26,
+        "roots": 1,
+        "tree_baseline_edges": 26,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 9,
+        "leaf_fraction": 0.3333333333333333,
+        "max_depth": 8,
+        "avg_depth": 3.4074074074074074,
+        "deepest_node_fraction": 0.037037037037037035,
+        "boundary_pressure": 0.18518518518518517,
+        "internal_node_count": 18,
+        "internal_avg_children": 1.4444444444444444,
+        "max_children": 4,
+        "stage_counts": {
+          "debug": 8,
+          "draft": 4,
+          "evolution": 1,
+          "improve": 13,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 14,
+          "None": 1,
+          "True": 12
+        },
+        "valid_counts": {
+          "None": 13,
+          "True": 14
+        },
+        "metric_node_count": 14,
+        "metric_node_fraction": 0.5185185185185185,
+        "metric_delta": {
+          "count": 8,
+          "mean": -0.0031510929005094564,
+          "median": 0.00257878818046689,
+          "min": -0.06783721223945177,
+          "max": 0.030254587102918035
+        },
+        "metric_improvement": {
+          "count": 8,
+          "mean": 0.0031510929005094564,
+          "median": -0.00257878818046689,
+          "min": -0.030254587102918035,
+          "max": 0.06783721223945177
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8503339577470835,
+          "scaled_rmse": 1.5028300984662628,
+          "relative_stress": 0.27617453641971634,
+          "linear_scale": 1.1081213690698672,
+          "linear_bias": 0.2984222049651345,
+          "pair_count": 351,
+          "neighbor_recall_at_10": 0.7703703703703704
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.7878695998591657,
+          "scaled_rmse": 1.7587032381573737,
+          "relative_stress": 0.3231962495252556,
+          "linear_scale": 4.3820448103388925,
+          "linear_bias": 0.8200635523374309,
+          "pair_count": 351,
+          "neighbor_recall_at_10": 0.7703703703703704
+        },
+        "poincare_minus_flat": {
+          "corr": 0.06246435788791782,
+          "relative_stress": -0.047021713105539265,
+          "neighbor_recall_at_10": 0.0
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 17,
+          "poincare_precision_at_k": 0.9068627450980392,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.09313725490196079,
+          "poincare_mrr": 0.8578431372549019,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.14215686274509806
+        },
+        "at_10": {
+          "queries": 17,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.8578431372549019,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.14215686274509806
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 26,
+            "poincare_recall_at_k": 0.8846153846153846,
+            "flat_twin_recall_at_k": 0.8846153846153846,
+            "recall_diff": 0.0,
+            "poincare_mrr": 0.7038919413919414,
+            "flat_twin_mrr": 0.591025641025641,
+            "mrr_diff": 0.11286630036630035
+          },
+          "child_lookup": {
+            "queries": 18,
+            "poincare_precision_at_k": 0.8425925925925926,
+            "flat_twin_precision_at_k": 0.9259259259259258,
+            "precision_diff": -0.08333333333333333
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260514_171209_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260514_171209_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 80,
+        "edges": 79,
+        "roots": 1,
+        "tree_baseline_edges": 79,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 22,
+        "leaf_fraction": 0.275,
+        "max_depth": 13,
+        "avg_depth": 5.2875,
+        "deepest_node_fraction": 0.0125,
+        "boundary_pressure": 0.14375000000000002,
+        "internal_node_count": 58,
+        "internal_avg_children": 1.3620689655172413,
+        "max_children": 8,
+        "stage_counts": {
+          "debug": 38,
+          "draft": 5,
+          "evolution": 4,
+          "fusion": 4,
+          "fusion_draft": 1,
+          "improve": 27,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 24,
+          "None": 1,
+          "True": 55
+        },
+        "valid_counts": {
+          "None": 56,
+          "True": 24
+        },
+        "metric_node_count": 24,
+        "metric_node_fraction": 0.3,
+        "metric_delta": {
+          "count": 14,
+          "mean": 0.08577287925471867,
+          "median": 0.029493371176620847,
+          "min": -1.0237481528934635,
+          "max": 0.9507319716011214
+        },
+        "metric_improvement": {
+          "count": 14,
+          "mean": -0.08577287925471867,
+          "median": -0.029493371176620847,
+          "min": -0.9507319716011214,
+          "max": 1.0237481528934635
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.6826395848393384,
+          "scaled_rmse": 2.9085124047902444,
+          "relative_stress": 0.34794242661885944,
+          "linear_scale": 1.1385328362907299,
+          "linear_bias": 0.9688795939652508,
+          "pair_count": 3160,
+          "neighbor_recall_at_10": 0.5875
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6296947954176443,
+          "scaled_rmse": 3.0919469867885994,
+          "relative_stress": 0.36988652198568894,
+          "linear_scale": 4.28940627239534,
+          "linear_bias": 3.381582920857186,
+          "pair_count": 3160,
+          "neighbor_recall_at_10": 0.5325
+        },
+        "poincare_minus_flat": {
+          "corr": 0.052944789421694116,
+          "relative_stress": -0.021944095366829508,
+          "neighbor_recall_at_10": 0.05500000000000005
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 57,
+          "poincare_precision_at_k": 0.9473684210526315,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.05263157894736842,
+          "poincare_mrr": 0.9055555555555554,
+          "flat_twin_mrr": 0.9824561403508771,
+          "mrr_diff": -0.07690058479532165
+        },
+        "at_10": {
+          "queries": 57,
+          "poincare_precision_at_k": 0.9842105263157895,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.015789473684210523,
+          "poincare_mrr": 0.9055555555555554,
+          "flat_twin_mrr": 0.9824561403508771,
+          "mrr_diff": -0.07690058479532165
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 79,
+            "poincare_recall_at_k": 0.810126582278481,
+            "flat_twin_recall_at_k": 0.759493670886076,
+            "recall_diff": 0.05063291139240506,
+            "poincare_mrr": 0.5567971783635852,
+            "flat_twin_mrr": 0.4165550237385682,
+            "mrr_diff": 0.14024215462501702
+          },
+          "child_lookup": {
+            "queries": 58,
+            "poincare_precision_at_k": 0.9120689655172414,
+            "flat_twin_precision_at_k": 0.9327586206896551,
+            "precision_diff": -0.020689655172413793
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260514_183931_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260514_183931_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 64,
+        "edges": 63,
+        "roots": 1,
+        "tree_baseline_edges": 63,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 24,
+        "leaf_fraction": 0.375,
+        "max_depth": 7,
+        "avg_depth": 3.40625,
+        "deepest_node_fraction": 0.015625,
+        "boundary_pressure": 0.1953125,
+        "internal_node_count": 40,
+        "internal_avg_children": 1.575,
+        "max_children": 7,
+        "stage_counts": {
+          "debug": 25,
+          "draft": 5,
+          "evolution": 5,
+          "fusion": 3,
+          "improve": 25,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 20,
+          "None": 1,
+          "True": 43
+        },
+        "valid_counts": {
+          "None": 44,
+          "True": 20
+        },
+        "metric_node_count": 20,
+        "metric_node_fraction": 0.3125,
+        "metric_delta": {
+          "count": 9,
+          "mean": 0.07294479216591483,
+          "median": -0.011158875405458284,
+          "min": -0.6260190683657251,
+          "max": 0.6564851710069832
+        },
+        "metric_improvement": {
+          "count": 9,
+          "mean": -0.07294479216591483,
+          "median": 0.011158875405458284,
+          "min": -0.6564851710069832,
+          "max": 0.6260190683657251
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8869069690438314,
+          "scaled_rmse": 1.0877026351159225,
+          "relative_stress": 0.18246035217121814,
+          "linear_scale": 1.0742213928014106,
+          "linear_bias": 0.6459187131893465,
+          "pair_count": 2016,
+          "neighbor_recall_at_10": 0.70625
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6114893129407001,
+          "scaled_rmse": 1.8630830485745662,
+          "relative_stress": 0.3125291584228928,
+          "linear_scale": 2.8370553534329495,
+          "linear_bias": 2.806842175028693,
+          "pair_count": 2016,
+          "neighbor_recall_at_10": 0.5640624999999999
+        },
+        "poincare_minus_flat": {
+          "corr": 0.2754176561031313,
+          "relative_stress": -0.13006880625167466,
+          "neighbor_recall_at_10": 0.14218750000000013
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 39,
+          "poincare_precision_at_k": 0.9004273504273504,
+          "flat_twin_precision_at_k": 0.9935897435897436,
+          "precision_diff": -0.09316239316239316,
+          "poincare_mrr": 0.78015873015873,
+          "flat_twin_mrr": 0.9444444444444443,
+          "mrr_diff": -0.16428571428571428
+        },
+        "at_10": {
+          "queries": 39,
+          "poincare_precision_at_k": 0.9538563288563288,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.04614367114367114,
+          "poincare_mrr": 0.78015873015873,
+          "flat_twin_mrr": 0.9444444444444443,
+          "mrr_diff": -0.16428571428571428
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 63,
+            "poincare_recall_at_k": 0.9206349206349206,
+            "flat_twin_recall_at_k": 0.7777777777777778,
+            "recall_diff": 0.14285714285714285,
+            "poincare_mrr": 0.7076080004651433,
+            "flat_twin_mrr": 0.4808188708490935,
+            "mrr_diff": 0.22678912961604988
+          },
+          "child_lookup": {
+            "queries": 40,
+            "poincare_precision_at_k": 0.9558333333333333,
+            "flat_twin_precision_at_k": 0.9591666666666667,
+            "precision_diff": -0.0033333333333333353
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260514_190327_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260514_190327_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 78,
+        "edges": 77,
+        "roots": 1,
+        "tree_baseline_edges": 77,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 24,
+        "leaf_fraction": 0.3076923076923077,
+        "max_depth": 11,
+        "avg_depth": 4.8076923076923075,
+        "deepest_node_fraction": 0.01282051282051282,
+        "boundary_pressure": 0.16025641025641027,
+        "internal_node_count": 54,
+        "internal_avg_children": 1.4259259259259258,
+        "max_children": 7,
+        "stage_counts": {
+          "debug": 32,
+          "draft": 5,
+          "evolution": 3,
+          "fusion_draft": 2,
+          "improve": 35,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 25,
+          "None": 1,
+          "True": 52
+        },
+        "valid_counts": {
+          "None": 53,
+          "True": 25
+        },
+        "metric_node_count": 25,
+        "metric_node_fraction": 0.32051282051282054,
+        "metric_delta": {
+          "count": 19,
+          "mean": 0.03416613967133046,
+          "median": -0.004677388199423149,
+          "min": -0.693978735735364,
+          "max": 0.8670375165678426
+        },
+        "metric_improvement": {
+          "count": 19,
+          "mean": -0.03416613967133046,
+          "median": 0.004677388199423149,
+          "min": -0.8670375165678426,
+          "max": 0.693978735735364
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8071780073926231,
+          "scaled_rmse": 2.2514631772275004,
+          "relative_stress": 0.26746089327956735,
+          "linear_scale": 1.389117013280517,
+          "linear_bias": -0.12687711238247731,
+          "pair_count": 3003,
+          "neighbor_recall_at_10": 0.6038461538461537
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.524373086972454,
+          "scaled_rmse": 3.2476180430521695,
+          "relative_stress": 0.3857983695274997,
+          "linear_scale": 3.7239449119473895,
+          "linear_bias": 4.1745197112256465,
+          "pair_count": 3003,
+          "neighbor_recall_at_10": 0.5807692307692308
+        },
+        "poincare_minus_flat": {
+          "corr": 0.28280492042016914,
+          "relative_stress": -0.11833747624793234,
+          "neighbor_recall_at_10": 0.023076923076922884
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 53,
+          "poincare_precision_at_k": 0.9283018867924528,
+          "flat_twin_precision_at_k": 0.9962264150943396,
+          "precision_diff": -0.06792452830188679,
+          "poincare_mrr": 0.8638364779874214,
+          "flat_twin_mrr": 0.9591194968553458,
+          "mrr_diff": -0.09528301886792453
+        },
+        "at_10": {
+          "queries": 53,
+          "poincare_precision_at_k": 0.9976415094339622,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.0023584905660377358,
+          "poincare_mrr": 0.8638364779874214,
+          "flat_twin_mrr": 0.9591194968553458,
+          "mrr_diff": -0.09528301886792453
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 77,
+            "poincare_recall_at_k": 0.8571428571428571,
+            "flat_twin_recall_at_k": 0.7402597402597403,
+            "recall_diff": 0.11688311688311688,
+            "poincare_mrr": 0.5866724778489485,
+            "flat_twin_mrr": 0.47889063772039486,
+            "mrr_diff": 0.1077818401285535
+          },
+          "child_lookup": {
+            "queries": 54,
+            "poincare_precision_at_k": 0.9018518518518519,
+            "flat_twin_precision_at_k": 0.932716049382716,
+            "precision_diff": -0.0308641975308642
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260515_173948_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260515_173948_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 52,
+        "edges": 51,
+        "roots": 1,
+        "tree_baseline_edges": 51,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 21,
+        "leaf_fraction": 0.40384615384615385,
+        "max_depth": 6,
+        "avg_depth": 2.9038461538461537,
+        "deepest_node_fraction": 0.019230769230769232,
+        "boundary_pressure": 0.21153846153846154,
+        "internal_node_count": 31,
+        "internal_avg_children": 1.6451612903225807,
+        "max_children": 7,
+        "stage_counts": {
+          "debug": 22,
+          "draft": 5,
+          "fusion_draft": 1,
+          "improve": 23,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 10,
+          "None": 1,
+          "True": 41
+        },
+        "valid_counts": {
+          "None": 42,
+          "True": 10
+        },
+        "metric_node_count": 10,
+        "metric_node_fraction": 0.19230769230769232,
+        "metric_delta": {
+          "count": 2,
+          "mean": 0.013904500000000014,
+          "median": 0.013904500000000014,
+          "min": -0.176591,
+          "max": 0.20440000000000003
+        },
+        "metric_improvement": {
+          "count": 2,
+          "mean": -0.013904500000000014,
+          "median": -0.013904500000000014,
+          "min": -0.20440000000000003,
+          "max": 0.176591
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.907405193365673,
+          "scaled_rmse": 0.8840411577013975,
+          "relative_stress": 0.1691786080404175,
+          "linear_scale": 1.068733130688787,
+          "linear_bias": 0.7413103944480949,
+          "pair_count": 1326,
+          "neighbor_recall_at_10": 0.6923076923076924
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6024898212905068,
+          "scaled_rmse": 1.6789178883376805,
+          "relative_stress": 0.32129385480383377,
+          "linear_scale": 2.6379304196336872,
+          "linear_bias": 2.453436333817663,
+          "pair_count": 1326,
+          "neighbor_recall_at_10": 0.6000000000000001
+        },
+        "poincare_minus_flat": {
+          "corr": 0.3049153720751663,
+          "relative_stress": -0.15211524676341626,
+          "neighbor_recall_at_10": 0.09230769230769231
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 30,
+          "poincare_precision_at_k": 0.8350000000000001,
+          "flat_twin_precision_at_k": 0.9933333333333334,
+          "precision_diff": -0.15833333333333333,
+          "poincare_mrr": 0.7123260073260074,
+          "flat_twin_mrr": 0.9055555555555554,
+          "mrr_diff": -0.19322954822954821
+        },
+        "at_10": {
+          "queries": 30,
+          "poincare_precision_at_k": 0.9138095238095238,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.08619047619047618,
+          "poincare_mrr": 0.7123260073260074,
+          "flat_twin_mrr": 0.9055555555555554,
+          "mrr_diff": -0.19322954822954821
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 51,
+            "poincare_recall_at_k": 0.9411764705882353,
+            "flat_twin_recall_at_k": 0.7647058823529411,
+            "recall_diff": 0.17647058823529413,
+            "poincare_mrr": 0.6948490507314037,
+            "flat_twin_mrr": 0.4294467787114846,
+            "mrr_diff": 0.26540227201991906
+          },
+          "child_lookup": {
+            "queries": 31,
+            "poincare_precision_at_k": 0.9580645161290322,
+            "flat_twin_precision_at_k": 0.964516129032258,
+            "precision_diff": -0.006451612903225808
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260516_091845_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260516_091845_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 44,
+        "edges": 43,
+        "roots": 1,
+        "tree_baseline_edges": 43,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 17,
+        "leaf_fraction": 0.38636363636363635,
+        "max_depth": 7,
+        "avg_depth": 3.0681818181818183,
+        "deepest_node_fraction": 0.022727272727272728,
+        "boundary_pressure": 0.20454545454545453,
+        "internal_node_count": 27,
+        "internal_avg_children": 1.5925925925925926,
+        "max_children": 6,
+        "stage_counts": {
+          "debug": 17,
+          "draft": 5,
+          "fusion_draft": 1,
+          "improve": 20,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 11,
+          "None": 1,
+          "True": 32
+        },
+        "valid_counts": {
+          "None": 32,
+          "True": 12
+        },
+        "metric_node_count": 11,
+        "metric_node_fraction": 0.25,
+        "metric_delta": {
+          "count": 1,
+          "mean": -0.07133900000000001,
+          "median": -0.07133900000000001,
+          "min": -0.07133900000000001,
+          "max": -0.07133900000000001
+        },
+        "metric_improvement": {
+          "count": 1,
+          "mean": 0.07133900000000001,
+          "median": 0.07133900000000001,
+          "min": 0.07133900000000001,
+          "max": 0.07133900000000001
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8695996271071111,
+          "scaled_rmse": 1.197730920869374,
+          "relative_stress": 0.2177692583398862,
+          "linear_scale": 1.078847741566395,
+          "linear_bias": 0.8231968439960072,
+          "pair_count": 946,
+          "neighbor_recall_at_10": 0.6909090909090909
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.5418890194370466,
+          "scaled_rmse": 2.0387193602122875,
+          "relative_stress": 0.370676247311325,
+          "linear_scale": 2.6963840480138876,
+          "linear_bias": 2.731540617920037,
+          "pair_count": 946,
+          "neighbor_recall_at_10": 0.6000000000000001
+        },
+        "poincare_minus_flat": {
+          "corr": 0.32771060767006455,
+          "relative_stress": -0.15290698897143878,
+          "neighbor_recall_at_10": 0.09090909090909083
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 26,
+          "poincare_precision_at_k": 0.8705128205128205,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.1294871794871795,
+          "poincare_mrr": 0.7304195804195804,
+          "flat_twin_mrr": 0.8974358974358974,
+          "mrr_diff": -0.16701631701631703
+        },
+        "at_10": {
+          "queries": 26,
+          "poincare_precision_at_k": 0.8952991452991453,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.1047008547008547,
+          "poincare_mrr": 0.7304195804195804,
+          "flat_twin_mrr": 0.8974358974358974,
+          "mrr_diff": -0.16701631701631703
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 43,
+            "poincare_recall_at_k": 0.9069767441860465,
+            "flat_twin_recall_at_k": 0.813953488372093,
+            "recall_diff": 0.09302325581395349,
+            "poincare_mrr": 0.7198228128460687,
+            "flat_twin_mrr": 0.46222314507198226,
+            "mrr_diff": 0.2575996677740864
+          },
+          "child_lookup": {
+            "queries": 27,
+            "poincare_precision_at_k": 0.9358024691358025,
+            "flat_twin_precision_at_k": 0.9679012345679012,
+            "precision_diff": -0.03209876543209877
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260516_104127_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260516_104127_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 77,
+        "edges": 76,
+        "roots": 1,
+        "tree_baseline_edges": 76,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 32,
+        "leaf_fraction": 0.4155844155844156,
+        "max_depth": 11,
+        "avg_depth": 5.038961038961039,
+        "deepest_node_fraction": 0.012987012987012988,
+        "boundary_pressure": 0.2142857142857143,
+        "internal_node_count": 45,
+        "internal_avg_children": 1.6888888888888889,
+        "max_children": 7,
+        "stage_counts": {
+          "debug": 28,
+          "draft": 5,
+          "evolution": 1,
+          "fusion": 1,
+          "fusion_draft": 1,
+          "improve": 40,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 21,
+          "None": 1,
+          "True": 55
+        },
+        "valid_counts": {
+          "None": 56,
+          "True": 21
+        },
+        "metric_node_count": 21,
+        "metric_node_fraction": 0.2727272727272727,
+        "metric_delta": {
+          "count": 9,
+          "mean": -0.18771255555555555,
+          "median": -0.032968,
+          "min": -0.794025,
+          "max": 0.062193
+        },
+        "metric_improvement": {
+          "count": 9,
+          "mean": 0.18771255555555555,
+          "median": 0.032968,
+          "min": -0.062193,
+          "max": 0.794025
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.7229137112329029,
+          "scaled_rmse": 2.7633990224661504,
+          "relative_stress": 0.3454543937339125,
+          "linear_scale": 1.2618336990083412,
+          "linear_bias": 0.25472959732709344,
+          "pair_count": 2926,
+          "neighbor_recall_at_10": 0.487012987012987
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6833586093822399,
+          "scaled_rmse": 2.9199571779711393,
+          "relative_stress": 0.3650258353731331,
+          "linear_scale": 5.048554765388757,
+          "linear_bias": 2.2319921168562478,
+          "pair_count": 2926,
+          "neighbor_recall_at_10": 0.4701298701298702
+        },
+        "poincare_minus_flat": {
+          "corr": 0.03955510185066302,
+          "relative_stress": -0.019571441639220588,
+          "neighbor_recall_at_10": 0.016883116883116833
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 44,
+          "poincare_precision_at_k": 0.8469696969696969,
+          "flat_twin_precision_at_k": 0.9954545454545454,
+          "precision_diff": -0.14848484848484847,
+          "poincare_mrr": 0.850595238095238,
+          "flat_twin_mrr": 0.9090909090909091,
+          "mrr_diff": -0.058495670995671
+        },
+        "at_10": {
+          "queries": 44,
+          "poincare_precision_at_k": 0.8587301587301588,
+          "flat_twin_precision_at_k": 0.9931818181818183,
+          "precision_diff": -0.13445165945165946,
+          "poincare_mrr": 0.850595238095238,
+          "flat_twin_mrr": 0.9090909090909091,
+          "mrr_diff": -0.058495670995671
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 76,
+            "poincare_recall_at_k": 0.7368421052631579,
+            "flat_twin_recall_at_k": 0.5789473684210527,
+            "recall_diff": 0.15789473684210525,
+            "poincare_mrr": 0.5359274668892544,
+            "flat_twin_mrr": 0.4508461690354265,
+            "mrr_diff": 0.08508129785382787
+          },
+          "child_lookup": {
+            "queries": 45,
+            "poincare_precision_at_k": 0.8718518518518519,
+            "flat_twin_precision_at_k": 0.8718518518518519,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260516_125444_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260516_125444_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 81,
+        "edges": 80,
+        "roots": 1,
+        "tree_baseline_edges": 80,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 21,
+        "leaf_fraction": 0.25925925925925924,
+        "max_depth": 11,
+        "avg_depth": 4.493827160493828,
+        "deepest_node_fraction": 0.037037037037037035,
+        "boundary_pressure": 0.14814814814814814,
+        "internal_node_count": 60,
+        "internal_avg_children": 1.3333333333333333,
+        "max_children": 8,
+        "stage_counts": {
+          "debug": 33,
+          "draft": 7,
+          "evolution": 6,
+          "fusion": 3,
+          "fusion_draft": 1,
+          "improve": 30,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 31,
+          "None": 1,
+          "True": 49
+        },
+        "valid_counts": {
+          "None": 50,
+          "True": 31
+        },
+        "metric_node_count": 31,
+        "metric_node_fraction": 0.38271604938271603,
+        "metric_delta": {
+          "count": 19,
+          "mean": -0.0032084736842105228,
+          "median": -0.010181999999999913,
+          "min": -0.12861500000000003,
+          "max": 0.26129399999999997
+        },
+        "metric_improvement": {
+          "count": 19,
+          "mean": 0.0032084736842105228,
+          "median": 0.010181999999999913,
+          "min": -0.26129399999999997,
+          "max": 0.12861500000000003
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.797680636901467,
+          "scaled_rmse": 2.429744200262736,
+          "relative_stress": 0.2998541635122749,
+          "linear_scale": 1.547312454855845,
+          "linear_bias": 0.19052349541314575,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.6666666666666666
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.2062998128742772,
+          "scaled_rmse": 3.9422252097125186,
+          "relative_stress": 0.4865090911658627,
+          "linear_scale": 1.6179101268583942,
+          "linear_bias": 6.488992630750869,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.6049382716049382
+        },
+        "poincare_minus_flat": {
+          "corr": 0.5913808240271897,
+          "relative_stress": -0.18665492765358782,
+          "neighbor_recall_at_10": 0.06172839506172845
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 59,
+          "poincare_precision_at_k": 0.9028248587570621,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.09717514124293787,
+          "poincare_mrr": 0.783232022215073,
+          "flat_twin_mrr": 0.9548022598870057,
+          "mrr_diff": -0.17157023767193258
+        },
+        "at_10": {
+          "queries": 59,
+          "poincare_precision_at_k": 0.940677966101695,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.059322033898305086,
+          "poincare_mrr": 0.783232022215073,
+          "flat_twin_mrr": 0.9548022598870057,
+          "mrr_diff": -0.17157023767193258
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 80,
+            "poincare_recall_at_k": 0.9,
+            "flat_twin_recall_at_k": 0.75,
+            "recall_diff": 0.15,
+            "poincare_mrr": 0.6069067044067044,
+            "flat_twin_mrr": 0.39145509004884005,
+            "mrr_diff": 0.21545161435786434
+          },
+          "child_lookup": {
+            "queries": 60,
+            "poincare_precision_at_k": 0.9577777777777778,
+            "flat_twin_precision_at_k": 0.98,
+            "precision_diff": -0.022222222222222223
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260517_131348_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260517_131348_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 3,
+        "edges": 2,
+        "roots": 1,
+        "tree_baseline_edges": 2,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 2,
+        "leaf_fraction": 0.6666666666666666,
+        "max_depth": 1,
+        "avg_depth": 0.6666666666666666,
+        "deepest_node_fraction": 0.6666666666666666,
+        "boundary_pressure": 0.6666666666666666,
+        "internal_node_count": 1,
+        "internal_avg_children": 2.0,
+        "max_children": 2,
+        "stage_counts": {
+          "draft": 2,
+          "root": 1
+        },
+        "buggy_counts": {
+          "None": 1,
+          "True": 2
+        },
+        "valid_counts": {
+          "None": 3
+        },
+        "metric_node_count": 0,
+        "metric_node_fraction": 0.0,
+        "metric_delta": {
+          "count": 0
+        },
+        "metric_improvement": {
+          "count": 0
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 1.0,
+          "scaled_rmse": 4.440892098500626e-16,
+          "relative_stress": 3.3306690738754696e-16,
+          "linear_scale": 1.1111111405455043,
+          "linear_bias": 5.710806889555815e-16,
+          "pair_count": 3,
+          "neighbor_recall_at_10": 1.0
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 1.0,
+          "scaled_rmse": 6.012996326510578e-16,
+          "relative_stress": 4.509747244882934e-16,
+          "linear_scale": 2.370235581599823,
+          "linear_bias": -8.577076119797424e-16,
+          "pair_count": 3,
+          "neighbor_recall_at_10": 1.0
+        },
+        "poincare_minus_flat": {
+          "corr": 0.0,
+          "relative_stress": -1.1790781710074643e-16,
+          "neighbor_recall_at_10": 0.0
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 0
+        },
+        "at_10": {
+          "queries": 0
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 2,
+            "poincare_recall_at_k": 1.0,
+            "flat_twin_recall_at_k": 1.0,
+            "recall_diff": 0.0,
+            "poincare_mrr": 1.0,
+            "flat_twin_mrr": 1.0,
+            "mrr_diff": 0.0
+          },
+          "child_lookup": {
+            "queries": 1,
+            "poincare_precision_at_k": 1.0,
+            "flat_twin_precision_at_k": 1.0,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260517_132158_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260517_132158_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 81,
+        "edges": 80,
+        "roots": 1,
+        "tree_baseline_edges": 80,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 22,
+        "leaf_fraction": 0.2716049382716049,
+        "max_depth": 19,
+        "avg_depth": 8.271604938271604,
+        "deepest_node_fraction": 0.04938271604938271,
+        "boundary_pressure": 0.16049382716049382,
+        "internal_node_count": 59,
+        "internal_avg_children": 1.3559322033898304,
+        "max_children": 7,
+        "stage_counts": {
+          "debug": 36,
+          "draft": 5,
+          "evolution": 4,
+          "improve": 35,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 33,
+          "None": 1,
+          "True": 47
+        },
+        "valid_counts": {
+          "None": 48,
+          "True": 33
+        },
+        "metric_node_count": 33,
+        "metric_node_fraction": 0.4074074074074074,
+        "metric_delta": {
+          "count": 15,
+          "mean": 0.05670959603611422,
+          "median": 0.0178787113739996,
+          "min": -0.1516044475076373,
+          "max": 0.4577614358899082
+        },
+        "metric_improvement": {
+          "count": 15,
+          "mean": -0.05670959603611422,
+          "median": -0.0178787113739996,
+          "min": -0.4577614358899082,
+          "max": 0.1516044475076373
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.6504788026437374,
+          "scaled_rmse": 5.704518328155958,
+          "relative_stress": 0.43295009096334747,
+          "linear_scale": 1.9078294837531289,
+          "linear_bias": -0.05889495282630903,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.5074074074074073
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6133300126607363,
+          "scaled_rmse": 5.932108464486973,
+          "relative_stress": 0.4502232706708314,
+          "linear_scale": 7.8896190049295685,
+          "linear_bias": 3.85724075918545,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.5135802469135804
+        },
+        "poincare_minus_flat": {
+          "corr": 0.037148789983001085,
+          "relative_stress": -0.017273179707483932,
+          "neighbor_recall_at_10": -0.006172839506173089
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 58,
+          "poincare_precision_at_k": 0.9103448275862069,
+          "flat_twin_precision_at_k": 0.996551724137931,
+          "precision_diff": -0.0862068965517241,
+          "poincare_mrr": 0.9482758620689655,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.05172413793103448
+        },
+        "at_10": {
+          "queries": 58,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9482758620689655,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.05172413793103448
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 80,
+            "poincare_recall_at_k": 0.6375,
+            "flat_twin_recall_at_k": 0.6,
+            "recall_diff": 0.0375,
+            "poincare_mrr": 0.5363704108479125,
+            "flat_twin_mrr": 0.4416708921560895,
+            "mrr_diff": 0.09469951869182293
+          },
+          "child_lookup": {
+            "queries": 59,
+            "poincare_precision_at_k": 0.788135593220339,
+            "flat_twin_precision_at_k": 0.809322033898305,
+            "precision_diff": -0.0211864406779661
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260517_151325_spooky-author-identification",
+      "journal_path": "mlevolve/runs/20260517_151325_spooky-author-identification/logs/journal.json",
+      "structure": {
+        "nodes": 81,
+        "edges": 80,
+        "roots": 1,
+        "tree_baseline_edges": 80,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 29,
+        "leaf_fraction": 0.35802469135802467,
+        "max_depth": 13,
+        "avg_depth": 3.814814814814815,
+        "deepest_node_fraction": 0.012345679012345678,
+        "boundary_pressure": 0.18518518518518517,
+        "internal_node_count": 52,
+        "internal_avg_children": 1.5384615384615385,
+        "max_children": 8,
+        "stage_counts": {
+          "debug": 32,
+          "draft": 6,
+          "evolution": 1,
+          "fusion_draft": 1,
+          "improve": 40,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 28,
+          "None": 1,
+          "True": 52
+        },
+        "valid_counts": {
+          "None": 53,
+          "True": 28
+        },
+        "metric_node_count": 28,
+        "metric_node_fraction": 0.345679012345679,
+        "metric_delta": {
+          "count": 10,
+          "mean": 0.011269900000000003,
+          "median": 0.014764,
+          "min": -0.136,
+          "max": 0.15314400000000006
+        },
+        "metric_improvement": {
+          "count": 10,
+          "mean": -0.011269900000000003,
+          "median": -0.014764,
+          "min": -0.15314400000000006,
+          "max": 0.136
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.7263737257622526,
+          "scaled_rmse": 2.4660198661840327,
+          "relative_stress": 0.3590000164646058,
+          "linear_scale": 1.239023027362292,
+          "linear_bias": 0.9411808692840717,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.6320987654320988
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.3109269435486717,
+          "scaled_rmse": 3.4101394809541694,
+          "relative_stress": 0.4964437418355279,
+          "linear_scale": 2.1229196580869045,
+          "linear_bias": 4.637051934359217,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.5493827160493828
+        },
+        "poincare_minus_flat": {
+          "corr": 0.4154467822135809,
+          "relative_stress": -0.13744372537092214,
+          "neighbor_recall_at_10": 0.08271604938271593
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 51,
+          "poincare_precision_at_k": 0.7705882352941176,
+          "flat_twin_precision_at_k": 0.9960784313725489,
+          "precision_diff": -0.22549019607843138,
+          "poincare_mrr": 0.7238756613756613,
+          "flat_twin_mrr": 0.8839869281045752,
+          "mrr_diff": -0.1601112667289138
+        },
+        "at_10": {
+          "queries": 51,
+          "poincare_precision_at_k": 0.8931372549019607,
+          "flat_twin_precision_at_k": 0.9980392156862745,
+          "precision_diff": -0.10490196078431371,
+          "poincare_mrr": 0.7238756613756613,
+          "flat_twin_mrr": 0.8839869281045752,
+          "mrr_diff": -0.1601112667289138
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 80,
+            "poincare_recall_at_k": 0.825,
+            "flat_twin_recall_at_k": 0.575,
+            "recall_diff": 0.25,
+            "poincare_mrr": 0.5880091233000716,
+            "flat_twin_mrr": 0.41561824724188856,
+            "mrr_diff": 0.17239087605818307
+          },
+          "child_lookup": {
+            "queries": 52,
+            "poincare_precision_at_k": 0.875,
+            "flat_twin_precision_at_k": 0.925,
+            "precision_diff": -0.049999999999999996
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260627_135133_elite-peach-mayfly",
+      "journal_path": "mlevolve/runs/20260627_135133_elite-peach-mayfly/logs/journal.json",
+      "structure": {
+        "nodes": 81,
+        "edges": 80,
+        "roots": 1,
+        "tree_baseline_edges": 80,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 33,
+        "leaf_fraction": 0.4074074074074074,
+        "max_depth": 13,
+        "avg_depth": 5.061728395061729,
+        "deepest_node_fraction": 0.012345679012345678,
+        "boundary_pressure": 0.20987654320987653,
+        "internal_node_count": 48,
+        "internal_avg_children": 1.6666666666666667,
+        "max_children": 7,
+        "stage_counts": {
+          "debug": 27,
+          "draft": 5,
+          "evolution": 3,
+          "fusion": 2,
+          "improve": 43,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 29,
+          "None": 1,
+          "True": 51
+        },
+        "valid_counts": {
+          "None": 52,
+          "True": 29
+        },
+        "metric_node_count": 29,
+        "metric_node_fraction": 0.35802469135802467,
+        "metric_delta": {
+          "count": 17,
+          "mean": 0.0667722265882353,
+          "median": 0.03281885200000001,
+          "min": -0.1487,
+          "max": 0.40650000000000003
+        },
+        "metric_improvement": {
+          "count": 17,
+          "mean": -0.0667722265882353,
+          "median": -0.03281885200000001,
+          "min": -0.40650000000000003,
+          "max": 0.1487
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.6340415468390043,
+          "scaled_rmse": 3.1904737307181565,
+          "relative_stress": 0.3904046713319294,
+          "linear_scale": 1.136145699144014,
+          "linear_bias": 1.0822785372701036,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.5543209876543209
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.4852228129424712,
+          "scaled_rmse": 3.607556869842641,
+          "relative_stress": 0.4414413572886984,
+          "linear_scale": 3.602968056542028,
+          "linear_bias": 4.117143562440475,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.5592592592592592
+        },
+        "poincare_minus_flat": {
+          "corr": 0.14881873389653305,
+          "relative_stress": -0.05103668595676897,
+          "neighbor_recall_at_10": -0.004938271604938316
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 47,
+          "poincare_precision_at_k": 0.902127659574468,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.0978723404255319,
+          "poincare_mrr": 0.8851317122593718,
+          "flat_twin_mrr": 0.9787234042553191,
+          "mrr_diff": -0.09359169199594732
+        },
+        "at_10": {
+          "queries": 47,
+          "poincare_precision_at_k": 0.9400709219858157,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.05992907801418439,
+          "poincare_mrr": 0.8851317122593718,
+          "flat_twin_mrr": 0.9787234042553191,
+          "mrr_diff": -0.09359169199594732
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 80,
+            "poincare_recall_at_k": 0.6875,
+            "flat_twin_recall_at_k": 0.6125,
+            "recall_diff": 0.075,
+            "poincare_mrr": 0.4999047506472737,
+            "flat_twin_mrr": 0.4044208436574811,
+            "mrr_diff": 0.0954839069897925
+          },
+          "child_lookup": {
+            "queries": 48,
+            "poincare_precision_at_k": 0.8624999999999999,
+            "flat_twin_precision_at_k": 0.8624999999999999,
+            "precision_diff": 0.0
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260701_145201_denoising-dirty-documents",
+      "journal_path": "mlevolve/runs/20260701_145201_denoising-dirty-documents/logs/journal.json",
+      "structure": {
+        "nodes": 81,
+        "edges": 80,
+        "roots": 1,
+        "tree_baseline_edges": 80,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 9,
+        "leaf_fraction": 0.1111111111111111,
+        "max_depth": 14,
+        "avg_depth": 6.839506172839506,
+        "deepest_node_fraction": 0.037037037037037035,
+        "boundary_pressure": 0.07407407407407407,
+        "internal_node_count": 72,
+        "internal_avg_children": 1.1111111111111112,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 49,
+          "draft": 5,
+          "evolution": 2,
+          "improve": 24,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 23,
+          "None": 1,
+          "True": 57
+        },
+        "valid_counts": {
+          "None": 54,
+          "True": 27
+        },
+        "metric_node_count": 23,
+        "metric_node_fraction": 0.2839506172839506,
+        "metric_delta": {
+          "count": 6,
+          "mean": 0.03582884597605025,
+          "median": 0.0004305700501421291,
+          "min": -0.011705769349445738,
+          "max": 0.22170436303333746
+        },
+        "metric_improvement": {
+          "count": 6,
+          "mean": -0.03582884597605025,
+          "median": -0.0004305700501421291,
+          "min": -0.22170436303333746,
+          "max": 0.011705769349445738
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.7810044139609194,
+          "scaled_rmse": 3.6407390761038934,
+          "relative_stress": 0.3071233755097015,
+          "linear_scale": 1.7054244409611923,
+          "linear_bias": 0.7783526093332557,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.7925925925925926
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.5082122285424051,
+          "scaled_rmse": 5.020644465365668,
+          "relative_stress": 0.42352864163155496,
+          "linear_scale": 5.1696370113177235,
+          "linear_bias": 5.9535243389832955,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.7666666666666667
+        },
+        "poincare_minus_flat": {
+          "corr": 0.27279218541851424,
+          "relative_stress": -0.11640526612185348,
+          "neighbor_recall_at_10": 0.025925925925925908
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 71,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        },
+        "at_10": {
+          "queries": 71,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 80,
+            "poincare_recall_at_k": 0.7,
+            "flat_twin_recall_at_k": 0.65,
+            "recall_diff": 0.05,
+            "poincare_mrr": 0.5129811507936508,
+            "flat_twin_mrr": 0.38345824314574317,
+            "mrr_diff": 0.12952290764790764
+          },
+          "child_lookup": {
+            "queries": 72,
+            "poincare_precision_at_k": 0.7916666666666666,
+            "flat_twin_precision_at_k": 0.8194444444444444,
+            "precision_diff": -0.027777777777777776
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260701_145250_aerial-cactus-identification",
+      "journal_path": "mlevolve/runs/20260701_145250_aerial-cactus-identification/logs/journal.json",
+      "structure": {
+        "nodes": 81,
+        "edges": 80,
+        "roots": 1,
+        "tree_baseline_edges": 80,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 11,
+        "leaf_fraction": 0.13580246913580246,
+        "max_depth": 21,
+        "avg_depth": 7.555555555555555,
+        "deepest_node_fraction": 0.012345679012345678,
+        "boundary_pressure": 0.07407407407407407,
+        "internal_node_count": 70,
+        "internal_avg_children": 1.1428571428571428,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 44,
+          "draft": 5,
+          "evolution": 3,
+          "improve": 28,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 28,
+          "None": 1,
+          "True": 52
+        },
+        "valid_counts": {
+          "None": 52,
+          "True": 29
+        },
+        "metric_node_count": 28,
+        "metric_node_fraction": 0.345679012345679,
+        "metric_delta": {
+          "count": 11,
+          "mean": 0.0003906530827117096,
+          "median": 1.4999999999987246e-05,
+          "min": -0.0006141678648030613,
+          "max": 0.0025856910280003254
+        },
+        "metric_improvement": {
+          "count": 11,
+          "mean": 0.0003906530827117096,
+          "median": 1.4999999999987246e-05,
+          "min": -0.0006141678648030613,
+          "max": 0.0025856910280003254
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.6777516077171031,
+          "scaled_rmse": 5.095892761622648,
+          "relative_stress": 0.40101750091463567,
+          "linear_scale": 1.7326486680480664,
+          "linear_bias": 1.0265659777020992,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.6777777777777778
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.5440061589825618,
+          "scaled_rmse": 5.815205561708845,
+          "relative_stress": 0.45762328815546144,
+          "linear_scale": 6.416125575703094,
+          "linear_bias": 5.140481730580405,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.6666666666666667
+        },
+        "poincare_minus_flat": {
+          "corr": 0.1337454487345413,
+          "relative_stress": -0.05660578724082577,
+          "neighbor_recall_at_10": 0.011111111111111072
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 69,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        },
+        "at_10": {
+          "queries": 69,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 80,
+            "poincare_recall_at_k": 0.7125,
+            "flat_twin_recall_at_k": 0.7375,
+            "recall_diff": -0.025,
+            "poincare_mrr": 0.5128664492175614,
+            "flat_twin_mrr": 0.40595999996735294,
+            "mrr_diff": 0.10690644925020856
+          },
+          "child_lookup": {
+            "queries": 70,
+            "poincare_precision_at_k": 0.7571428571428571,
+            "flat_twin_precision_at_k": 0.7904761904761906,
+            "precision_diff": -0.033333333333333326
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260701_155016_leaf-classification",
+      "journal_path": "mlevolve/runs/20260701_155016_leaf-classification/logs/journal.json",
+      "structure": {
+        "nodes": 56,
+        "edges": 55,
+        "roots": 1,
+        "tree_baseline_edges": 55,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 8,
+        "leaf_fraction": 0.14285714285714285,
+        "max_depth": 12,
+        "avg_depth": 5.714285714285714,
+        "deepest_node_fraction": 0.017857142857142856,
+        "boundary_pressure": 0.08035714285714285,
+        "internal_node_count": 48,
+        "internal_avg_children": 1.1458333333333333,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 33,
+          "draft": 5,
+          "evolution": 4,
+          "improve": 13,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 16,
+          "None": 1,
+          "True": 39
+        },
+        "valid_counts": {
+          "None": 33,
+          "True": 23
+        },
+        "metric_node_count": 16,
+        "metric_node_fraction": 0.2857142857142857,
+        "metric_delta": {
+          "count": 5,
+          "mean": 0.044902933288715335,
+          "median": 0.03394153025752459,
+          "min": 0.00042293276917449406,
+          "max": 0.09178799999999998
+        },
+        "metric_improvement": {
+          "count": 5,
+          "mean": -0.044902933288715335,
+          "median": -0.03394153025752459,
+          "min": -0.09178799999999998,
+          "max": -0.00042293276917449406
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.7965802663597044,
+          "scaled_rmse": 2.953368543935308,
+          "relative_stress": 0.31096592080270574,
+          "linear_scale": 1.4213093970194235,
+          "linear_bias": 0.6998861613410817,
+          "pair_count": 1540,
+          "neighbor_recall_at_10": 0.7464285714285713
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6647984622614618,
+          "scaled_rmse": 3.6494853609164757,
+          "relative_stress": 0.38426141500146127,
+          "linear_scale": 5.75380480170627,
+          "linear_bias": 2.845022842769196,
+          "pair_count": 1540,
+          "neighbor_recall_at_10": 0.7339285714285714
+        },
+        "poincare_minus_flat": {
+          "corr": 0.13178180409824258,
+          "relative_stress": -0.07329549419875553,
+          "neighbor_recall_at_10": 0.012499999999999956
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 47,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9787234042553191,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.02127659574468085
+        },
+        "at_10": {
+          "queries": 47,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.9787234042553191,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": -0.02127659574468085
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 55,
+            "poincare_recall_at_k": 0.8545454545454545,
+            "flat_twin_recall_at_k": 0.7454545454545455,
+            "recall_diff": 0.10909090909090909,
+            "poincare_mrr": 0.580053951896057,
+            "flat_twin_mrr": 0.3895244654335563,
+            "mrr_diff": 0.19052948646250084
+          },
+          "child_lookup": {
+            "queries": 48,
+            "poincare_precision_at_k": 0.9444444444444443,
+            "flat_twin_precision_at_k": 0.9652777777777777,
+            "precision_diff": -0.020833333333333332
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260701_180038_new-york-city-taxi-fare-prediction",
+      "journal_path": "mlevolve/runs/20260701_180038_new-york-city-taxi-fare-prediction/logs/journal.json",
+      "structure": {
+        "nodes": 34,
+        "edges": 33,
+        "roots": 1,
+        "tree_baseline_edges": 33,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 11,
+        "leaf_fraction": 0.3235294117647059,
+        "max_depth": 8,
+        "avg_depth": 3.4705882352941178,
+        "deepest_node_fraction": 0.058823529411764705,
+        "boundary_pressure": 0.1911764705882353,
+        "internal_node_count": 23,
+        "internal_avg_children": 1.434782608695652,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 14,
+          "draft": 5,
+          "improve": 14,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 11,
+          "None": 1,
+          "True": 22
+        },
+        "valid_counts": {
+          "None": 18,
+          "True": 16
+        },
+        "metric_node_count": 11,
+        "metric_node_fraction": 0.3235294117647059,
+        "metric_delta": {
+          "count": 4,
+          "mean": 0.03451424999999997,
+          "median": 0.00602949999999991,
+          "min": -0.04400000000000004,
+          "max": 0.1699980000000001
+        },
+        "metric_improvement": {
+          "count": 4,
+          "mean": -0.03451424999999997,
+          "median": -0.00602949999999991,
+          "min": -0.1699980000000001,
+          "max": 0.04400000000000004
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.8153761808746355,
+          "scaled_rmse": 1.6465674739244445,
+          "relative_stress": 0.28938732859386385,
+          "linear_scale": 1.115836225549203,
+          "linear_bias": 0.5439856561452261,
+          "pair_count": 561,
+          "neighbor_recall_at_10": 0.7088235294117646
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.6453454739899019,
+          "scaled_rmse": 2.1726194051175036,
+          "relative_stress": 0.38184194432046353,
+          "linear_scale": 3.819211677036445,
+          "linear_bias": 1.731458080026859,
+          "pair_count": 561,
+          "neighbor_recall_at_10": 0.6676470588235295
+        },
+        "poincare_minus_flat": {
+          "corr": 0.17003070688473354,
+          "relative_stress": -0.09245461572659969,
+          "neighbor_recall_at_10": 0.04117647058823515
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 22,
+          "poincare_precision_at_k": 0.8393939393939394,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": -0.1606060606060606,
+          "poincare_mrr": 0.8387445887445888,
+          "flat_twin_mrr": 0.9772727272727273,
+          "mrr_diff": -0.13852813852813856
+        },
+        "at_10": {
+          "queries": 22,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 0.8387445887445888,
+          "flat_twin_mrr": 0.9772727272727273,
+          "mrr_diff": -0.13852813852813856
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 33,
+            "poincare_recall_at_k": 0.9090909090909091,
+            "flat_twin_recall_at_k": 0.8484848484848485,
+            "recall_diff": 0.06060606060606061,
+            "poincare_mrr": 0.7259630941449123,
+            "flat_twin_mrr": 0.5791125541125541,
+            "mrr_diff": 0.14685054003235823
+          },
+          "child_lookup": {
+            "queries": 23,
+            "poincare_precision_at_k": 0.8550724637681159,
+            "flat_twin_precision_at_k": 0.9275362318840579,
+            "precision_diff": -0.07246376811594203
+          }
+        }
+      }
+    },
+    {
+      "run_id": "20260701_180146_leaf-classification",
+      "journal_path": "mlevolve/runs/20260701_180146_leaf-classification/logs/journal.json",
+      "structure": {
+        "nodes": 81,
+        "edges": 80,
+        "roots": 1,
+        "tree_baseline_edges": 80,
+        "edge_count_matches_tree": true,
+        "extra_edges_over_tree": 0,
+        "leaf_count": 9,
+        "leaf_fraction": 0.1111111111111111,
+        "max_depth": 23,
+        "avg_depth": 8.148148148148149,
+        "deepest_node_fraction": 0.012345679012345678,
+        "boundary_pressure": 0.06172839506172839,
+        "internal_node_count": 72,
+        "internal_avg_children": 1.1111111111111112,
+        "max_children": 5,
+        "stage_counts": {
+          "debug": 45,
+          "draft": 5,
+          "evolution": 11,
+          "improve": 19,
+          "root": 1
+        },
+        "buggy_counts": {
+          "False": 31,
+          "None": 1,
+          "True": 49
+        },
+        "valid_counts": {
+          "False": 1,
+          "None": 38,
+          "True": 42
+        },
+        "metric_node_count": 31,
+        "metric_node_fraction": 0.38271604938271603,
+        "metric_delta": {
+          "count": 15,
+          "mean": -0.07211367614153921,
+          "median": 0.0,
+          "min": -0.8395751556030374,
+          "max": 0.8367217406919244
+        },
+        "metric_improvement": {
+          "count": 15,
+          "mean": 0.07211367614153921,
+          "median": -0.0,
+          "min": -0.8367217406919244,
+          "max": 0.8395751556030374
+        }
+      },
+      "distance_preservation": {
+        "poincare": {
+          "pearson_corr_with_tree_distance": 0.63511378526158,
+          "scaled_rmse": 5.90297680232536,
+          "relative_stress": 0.43653895826563877,
+          "linear_scale": 1.6885688854130163,
+          "linear_bias": 2.522042879296383,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.6703703703703703
+        },
+        "flat_twin_euclidean_same_coords": {
+          "pearson_corr_with_tree_distance": 0.47010485907880445,
+          "scaled_rmse": 6.745085878791089,
+          "relative_stress": 0.4988148965416582,
+          "linear_scale": 5.915141051597715,
+          "linear_bias": 6.748122362552451,
+          "pair_count": 3240,
+          "neighbor_recall_at_10": 0.6469135802469137
+        },
+        "poincare_minus_flat": {
+          "corr": 0.16500892618277557,
+          "relative_stress": -0.06227593827601946,
+          "neighbor_recall_at_10": 0.023456790123456583
+        }
+      },
+      "subtree_leaf_retrieval": {
+        "at_5": {
+          "queries": 71,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        },
+        "at_10": {
+          "queries": 71,
+          "poincare_precision_at_k": 1.0,
+          "flat_twin_precision_at_k": 1.0,
+          "precision_diff": 0.0,
+          "poincare_mrr": 1.0,
+          "flat_twin_mrr": 1.0,
+          "mrr_diff": 0.0
+        }
+      },
+      "lineage_retrieval": {
+        "at_5": {
+          "parent_lookup": {
+            "queries": 80,
+            "poincare_recall_at_k": 0.6875,
+            "flat_twin_recall_at_k": 0.6,
+            "recall_diff": 0.0875,
+            "poincare_mrr": 0.497632719255469,
+            "flat_twin_mrr": 0.3301697768498271,
+            "mrr_diff": 0.16746294240564188
+          },
+          "child_lookup": {
+            "queries": 72,
+            "poincare_precision_at_k": 0.7638888888888888,
+            "flat_twin_precision_at_k": 0.7754629629629629,
+            "precision_diff": -0.011574074074074073
+          }
+        }
+      }
+    }
+  ],
+  "global_memory_flattening": {
+    "record_files": 26,
+    "total_records": 462,
+    "records_with_any_tree_topology_key": 0,
+    "records_with_any_tree_topology_key_fraction": 0.0,
+    "records_with_parent_metric_or_error": 462,
+    "records_with_parent_metric_or_error_fraction": 1.0,
+    "key_counts": {
+      "current_metric": 462,
+      "parent_error": 198,
+      "parent_metric": 222
+    },
+    "sample_files": [
+      {
+        "run_id": "20260503_080910_fluorescent-silky-axolotl",
+        "path": "mlevolve/runs/20260503_080910_fluorescent-silky-axolotl/workspace/global_memory/records.json",
+        "records": 9,
+        "records_with_any_topology_key": 0
+      },
+      {
+        "run_id": "20260505_090635_dashing-chupacabra-of-radiance",
+        "path": "mlevolve/runs/20260505_090635_dashing-chupacabra-of-radiance/workspace/global_memory/records.json",
+        "records": 1,
+        "records_with_any_topology_key": 0
+      },
+      {
+        "run_id": "20260508_123447_spooky-author-identification",
+        "path": "mlevolve/runs/20260508_123447_spooky-author-identification/workspace/global_memory/records.json",
+        "records": 20,
+        "records_with_any_topology_key": 0
+      },
+      {
+        "run_id": "20260509_042918_spooky-author-identification",
+        "path": "mlevolve/runs/20260509_042918_spooky-author-identification/workspace/global_memory/records.json",
+        "records": 17,
+        "records_with_any_topology_key": 0
+      },
+      {
+        "run_id": "20260509_154039_spooky-author-identification",
+        "path": "mlevolve/runs/20260509_154039_spooky-author-identification/workspace/global_memory/records.json",
+        "records": 23,
+        "records_with_any_topology_key": 0
+      },
+      {
+        "run_id": "20260509_185008_spooky-author-identification",
+        "path": "mlevolve/runs/20260509_185008_spooky-author-identification/workspace/global_memory/records.json",
+        "records": 17,
+        "records_with_any_topology_key": 0
+      },
+      {
+        "run_id": "20260510_025317_spooky-author-identification",
+        "path": "mlevolve/runs/20260510_025317_spooky-author-identification/workspace/global_memory/records.json",
+        "records": 26,
+        "records_with_any_topology_key": 0
+      },
+      {
+        "run_id": "20260510_095558_spooky-author-identification",
+        "path": "mlevolve/runs/20260510_095558_spooky-author-identification/workspace/global_memory/records.json",
+        "records": 18,
+        "records_with_any_topology_key": 0
+      },
+      {
+        "run_id": "20260510_162636_spooky-author-identification",
+        "path": "mlevolve/runs/20260510_162636_spooky-author-identification/workspace/global_memory/records.json",
+        "records": 18,
+        "records_with_any_topology_key": 0
+      },
+      {
+        "run_id": "20260511_014836_spooky-author-identification",
+        "path": "mlevolve/runs/20260511_014836_spooky-author-identification/workspace/global_memory/records.json",
+        "records": 6,
+        "records_with_any_topology_key": 0
+      }
+    ],
+    "interpretation": "GlobalMemory stores useful node-level transition context, but current records do not preserve parent-child topology."
+  },
+  "sop_memory_diagnostics": {
+    "graph_path": "paper-skills/hyper_memory/hyper_graph.json",
+    "edge_ablation_path": "paper-skills/eval_skill_memory/reports/hyperbolic_ablation_edge_predicted_only.json",
+    "status": "loaded",
+    "sop_count": 281,
+    "radius_band_counts": {
+      "core": 56,
+      "edge": 23,
+      "middle": 202
+    },
+    "edge_band_fraction": 0.08185053380782918,
+    "sop_sop_edges": 2326,
+    "tree_edge_count_for_same_nodes": 280,
+    "sop_edge_density_vs_tree": 8.307142857142857,
+    "average_sop_sop_degree": 16.555160142348754,
+    "sop_sop_edge_kinds": {
+      "co_occur": 1001,
+      "conflicts_with": 91,
+      "enhance": 558,
+      "prereq": 367,
+      "refines": 309
+    },
+    "paper_grade": true,
+    "provenance_status": "clean_certified",
+    "radius_model": "specificity_radius_v2",
+    "angle_model": "theta/phi spherical angles over tfidf_truncated_svd direction; structured SOP text fields",
+    "edge_predicted_only": {
+      "status": "hyperbolic_geometry_claim_not_supported",
+      "poincare_edge_recall_at_5": 0.8771929824561403,
+      "flat_twin_edge_recall_at_5": 0.8771929824561403,
+      "euclidean_edge_recall_at_5": 0.8771929824561403,
+      "poincare_mrr": 0.6862573099415205,
+      "flat_twin_mrr": 0.7251461988304093,
+      "euclidean_mrr": 0.7096491228070176,
+      "poincare_flat_twin_top5_overlap_mean": 0.9415204678362573,
+      "query_aware_status": "coordinate_quality_null",
+      "selected_edge_rate_by_system": {
+        "agentic_euclidean": 0.3894736842105263,
+        "agentic_flat_twin": 0.3929824561403509,
+        "agentic_lexical": 0.41754385964912283,
+        "agentic_poincare": 0.3649122807017544
+      }
+    }
+  }
+}

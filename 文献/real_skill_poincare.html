@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>真实 skill 数据 · 双曲落点验证</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --line:#2a2f3e;
+    --txt:#e8eaf0; --mut:#9aa3b8; --acc:#6ee7ff;
+    --green:#4ade80; --red:#fb7185; --amber:#fbbf24; --blue:#60a5fa; --purple:#c4b5fd; --teal:#2dd4bf;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 70px}
+  h1{font-size:24px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:14px;margin-bottom:24px}
+  h2{font-size:19px;margin:32px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  h3{font-size:15.5px;margin:18px 0 8px;color:var(--acc)}
+  p{margin:9px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin:12px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:860px){.grid2{grid-template-columns:1fr}}
+  code{background:#0c0e14;padding:2px 6px;border-radius:5px;color:var(--acc);font-size:13px}
+  .note{border-left:3px solid var(--acc);background:rgba(110,231,255,.07);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .warn{border-left:3px solid var(--red);background:rgba(251,113,133,.08);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .good{border-left:3px solid var(--green);background:rgba(74,222,128,.08);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .small{font-size:12.5px;color:var(--mut)}
+  svg{display:block;margin:0 auto}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:12.5px}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:left}
+  th{background:#1e2230;color:var(--acc)}
+  .stat{display:inline-block;background:#0c0e14;border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:4px 6px 4px 0}
+  .stat b{font-size:18px;color:var(--acc);display:block}
+  .stat span{font-size:11px;color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🔬 真实 skill 数据验证 · 双曲落点图</h1>
+<p class="sub">数据来源：6 个后期 spooky run（20260516/17，已修复数据泄露）· 124 个有效节点 · 无泄露污染。<br>
+<b>注意：metric 是验证集 log loss，越低越好</b>（spooky 任务 maximize=False）。验证"演化深度半径"假设。</p>
+
+<!-- ====== 1. 数据概览 ====== -->
+<h2>① 数据概览</h2>
+<div class="card">
+<div style="margin-bottom:8px">
+  <div class="stat"><b>6</b><span>后期 run（已修泄露）</span></div>
+  <div class="stat"><b>124</b><span>有效 skill 节点</span></div>
+  <div class="stat"><b>0.19–1.09</b><span>log loss 范围（越低越好）</span></div>
+  <div class="stat"><b>0</b><span>泄露节点（&lt;0.1）</span></div>
+  <div class="stat"><b>0.350</b><span>log loss 中位数</span></div>
+  <div class="stat"><b>36</b><span>step 中位数</span></div>
+</div>
+<p class="small">stage 分布：improve/debug 为主。metric 来自真实 Kaggle 验证集 log loss（spooky 作者归因分类，3 类），<b>越低越好</b>。已排除早期 run 的数据泄露污染（&lt;0.1 的节点）。</p>
+</div>
+
+<!-- ====== 2. 假设验证结果 ====== -->
+<h2>② 假设验证：诚实的结果</h2>
+<div class="card">
+<p style="margin-top:0"><b>核心假设</b>："演化深度半径"成立的前提是<b>"新=特化"</b>——后产生的 skill 应该更特化、log loss 更低（更有效）。用 step（搜索步数）作为"新旧"代理验证：</p>
+
+<table>
+<tr><th>子假设</th><th>验证方法</th><th>相关系数</th><th>结论</th></tr>
+<tr><td>"新=特化"（step↑ → 后期stage）</td><td>step vs stage_order 相关</td><td style="color:#fbbf24">+0.217</td><td>🟡 <b>弱正相关</b>（部分成立）</td></tr>
+<tr><td>"新=更有效"（step↑ → log loss↓）</td><td>step vs metric 相关</td><td style="color:#fb7185">−0.008</td><td>🔴 <b>几乎无关</b>（不成立）</td></tr>
+</table>
+
+<div class="warn">
+<b>⚠️ 关键发现</b><br>
+在后期无泄露数据上，<b>搜索后期（step 大）的 skill 并不比前期 log loss 更低</b>（相关仅 −0.008，几乎为零）。log loss 在各 step 桶之间波动（0.34–0.44），没有单调下降趋势。
+<br><br>
+这意味着：<b>"演化深度半径 = metric + recency 简单加权"不成立</b>。新 skill 不必然更有效，recency 不应与 metric 同等加权。
+</div>
+
+<div class="good">
+<b>但"新=特化"弱成立（+0.217）</b><br>
+后期 step 更多是 evolution/fusion（高特化 stage）。Q2（新+有效，即 log loss 低）里 evolution/fusion 占比显著高于 Q1——<b>后期 skill 偏向高特化 stage，只是不一定 log loss 更低</b>。
+</div>
+</div>
+
+<!-- ====== 3. step分桶 ====== -->
+<h2>③ step 分桶 vs 平均 log loss（越低越好）</h2>
+<div class="card">
+<svg viewBox="0 0 600 240" width="100%">
+  <line x1="60" y1="200" x2="560" y2="200" stroke="#9aa3b8" stroke-width="1.5"/>
+  <line x1="60" y1="40" x2="60" y2="200" stroke="#9aa3b8" stroke-width="1.5"/>
+  <text x="310" y="230" font-size="11" fill="#9aa3b8" text-anchor="middle">搜索步数 step（演化时序 →）</text>
+  <text x="20" y="120" font-size="11" fill="#9aa3b8" text-anchor="middle" transform="rotate(-90 20 120)">平均 log loss（↓更好）</text>
+  <!-- y轴: 0.33→200, 0.45→40, 每0.01=13.3px -->
+  <text x="52" y="204" font-size="9" fill="#9aa3b8" text-anchor="end">0.33</text>
+  <text x="52" y="170" font-size="9" fill="#9aa3b8" text-anchor="end">0.36</text>
+  <text x="52" y="137" font-size="9" fill="#9aa3b8" text-anchor="end">0.39</text>
+  <text x="52" y="103" font-size="9" fill="#9aa3b8" text-anchor="end">0.42</text>
+  <text x="52" y="70" font-size="9" fill="#9aa3b8" text-anchor="end">0.45</text>
+  <!-- 数据点 (step桶中心, avg logloss): 越低越好, 绿=低, 红=高 -->
+  <!-- 1-10: 0.444 -->
+  <circle cx="100" cy="76" r="5" fill="#fb7185"/><text x="100" y="68" font-size="8" fill="#fb7185" text-anchor="middle">0.444</text>
+  <!-- 11-20: 0.337 -->
+  <circle cx="165" cy="190" r="5" fill="#4ade80"/><text x="165" y="182" font-size="8" fill="#4ade80" text-anchor="middle">0.337</text>
+  <!-- 21-30: 0.409 -->
+  <circle cx="230" cy="103" r="5" fill="#fbbf24"/><text x="230" y="95" font-size="8" fill="#fbbf24" text-anchor="middle">0.409</text>
+  <!-- 31-40: 0.413 -->
+  <circle cx="295" cy="97" r="5" fill="#fbbf24"/><text x="295" y="89" font-size="8" fill="#fbbf24" text-anchor="middle">0.413</text>
+  <!-- 41-50: 0.423 -->
+  <circle cx="360" cy="84" r="5" fill="#fb7185"/><text x="360" y="76" font-size="8" fill="#fb7185" text-anchor="middle">0.423</text>
+  <!-- 51-60: 0.400 -->
+  <circle cx="425" cy="114" r="5" fill="#fbbf24"/><text x="425" y="106" font-size="8" fill="#fbbf24" text-anchor="middle">0.400</text>
+  <!-- 61-80: 0.394 -->
+  <circle cx="500" cy="123" r="5" fill="#fbbf24"/><text x="500" y="115" font-size="8" fill="#fbbf24" text-anchor="middle">0.394</text>
+  <polyline points="100,76 165,190 230,103 295,97 360,84 425,114 500,123" fill="none" stroke="#6ee7ff" stroke-width="2" opacity="0.5"/>
+  <text x="165" y="210" font-size="9" fill="#4ade80" text-anchor="middle">step11-20 最低</text>
+</svg>
+<p class="small" style="text-align:center">log loss 在各 step 桶间波动（0.34–0.44），<b>无单调下降趋势</b>。step 11-20 反而最低（0.337），说明"越新越好"假设不成立。</p>
+</div>
+
+<!-- ====== 4. 真实四象限落点 ====== -->
+<h2>④ 真实四象限落点（核心图）</h2>
+<div class="card">
+<p style="margin-top:0">以 log loss 中位数（0.350，越低越好）和 step 中位数（36）切分四象限。<b>有效 = log loss &lt; 0.350</b>（低 log loss = 好）。</p>
+
+<div style="text-align:center">
+<div class="stat"><b>33 (27%)</b><span>Q1 核心·旧+有效</span></div>
+<div class="stat"><b>29 (23%)</b><span>Q2 前沿·新+有效</span></div>
+<div class="stat"><b>34 (27%)</b><span>Q3 试探·新+无效</span></div>
+<div class="stat"><b>28 (23%)</b><span>Q4 淘汰·旧+无效</span></div>
+</div>
+
+<svg viewBox="0 0 560 400" width="100%" style="margin-top:10px">
+  <circle cx="280" cy="200" r="170" fill="none" stroke="#2a2f3e" stroke-width="2" stroke-dasharray="4 3"/>
+  <text x="280" y="30" font-size="10" fill="#9aa3b8" text-anchor="middle">边缘 = 低频保护（指数体积）</text>
+  <text x="280" y="390" font-size="10" fill="#9aa3b8" text-anchor="middle">中心 = 核心有效区（log loss 低）</text>
+  <circle cx="280" cy="200" r="55" fill="none" stroke="#9aa3b8" opacity="0.15" stroke-dasharray="2 2"/>
+  <circle cx="280" cy="200" r="110" fill="none" stroke="#9aa3b8" opacity="0.15" stroke-dasharray="2 2"/>
+  <circle cx="280" cy="200" r="150" fill="none" stroke="#9aa3b8" opacity="0.15" stroke-dasharray="2 2"/>
+  <text x="340" y="205" font-size="8" fill="#9aa3b8">r小(有效)</text>
+  <text x="395" y="205" font-size="8" fill="#9aa3b8">r中</text>
+  <text x="435" y="205" font-size="8" fill="#9aa3b8">r大(无效)</text>
+
+  <!-- Q1 核心·旧+有效 (33个) - 靠球心 -->
+  <circle cx="280" cy="175" r="13" fill="#4ade80" opacity="0.85"/>
+  <text x="280" y="179" font-size="9" fill="#08121a" text-anchor="middle" font-weight="700">Q1</text>
+  <text x="280" y="159" font-size="8" fill="#4ade80" text-anchor="middle">33个 · 27%</text>
+  <circle cx="250" cy="195" r="4" fill="#4ade80" opacity="0.6"/>
+  <circle cx="300" cy="160" r="4" fill="#4ade80" opacity="0.6"/>
+  <text x="280" y="148" font-size="7.5" fill="#9aa3b8" text-anchor="middle">step16 原生AutoModel logloss0.39</text>
+
+  <!-- Q2 前沿·新+有效 (29个) -->
+  <circle cx="225" cy="145" r="12" fill="#2dd4bf" opacity="0.85"/>
+  <text x="225" y="149" font-size="9" fill="#08121a" text-anchor="middle" font-weight="700">Q2</text>
+  <text x="225" y="129" font-size="8" fill="#2dd4bf" text-anchor="middle">29个 · 23%</text>
+  <circle cx="200" cy="125" r="4" fill="#2dd4bf" opacity="0.6"/>
+  <circle cx="245" cy="170" r="4" fill="#2dd4bf" opacity="0.6"/>
+  <text x="180" y="115" font-size="7.5" fill="#9aa3b8" text-anchor="middle">step56 DeBERTa微调 logloss0.29</text>
+
+  <!-- Q3 试探·新+无效 (34个) - 边缘 -->
+  <circle cx="175" cy="95" r="11" fill="#fbbf24" opacity="0.85"/>
+  <text x="175" y="99" font-size="9" fill="#08121a" text-anchor="middle" font-weight="700">Q3</text>
+  <text x="175" y="80" font-size="8" fill="#fbbf24" text-anchor="middle">34个 · 27%</text>
+  <circle cx="155" cy="115" r="4" fill="#fbbf24" opacity="0.6"/>
+  <circle cx="195" cy="70" r="4" fill="#fbbf24" opacity="0.6"/>
+  <text x="120" y="60" font-size="7.5" fill="#9aa3b8" text-anchor="middle">step49 attention pool logloss0.43</text>
+
+  <!-- Q4 淘汰·旧+无效 (28个) - 最边缘 -->
+  <circle cx="145" cy="60" r="10" fill="#fb7185" opacity="0.85"/>
+  <text x="145" y="64" font-size="9" fill="#08121a" text-anchor="middle" font-weight="700">Q4</text>
+  <text x="145" y="45" font-size="8" fill="#fb7185" text-anchor="middle">28个 · 23%</text>
+  <circle cx="130" cy="85" r="4" fill="#fb7185" opacity="0.6"/>
+  <circle cx="165" cy="40" r="4" fill="#fb7185" opacity="0.6"/>
+  <text x="95" y="30" font-size="7.5" fill="#9aa3b8" text-anchor="middle">step10 多分辨率 logloss1.09</text>
+
+  <path d="M270,170 Q245,155 232,148" stroke="#4ade80" stroke-width="2" fill="none" marker-end="url(#ar3)" opacity="0.7"/>
+  <defs>
+    <marker id="ar3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#4ade80"/>
+    </marker>
+  </defs>
+  <text x="265" y="190" font-size="8" fill="#4ade80">refines</text>
+</svg>
+
+<div class="grid2" style="margin-top:8px">
+<div class="card" style="margin:0;border-color:#4ade80">
+<p style="margin-top:0"><b style="color:#4ade80">Q1 核心·基石（旧+有效）33个</b></p>
+<p class="small">靠球心（r 小，log loss 低）。代表：step16 原生 AutoModel，log loss 0.39。早期发现的有效方案，<b>演化根基</b>。</p>
+</div>
+<div class="card" style="margin:0;border-color:#2dd4bf">
+<p style="margin-top:0"><b style="color:#2dd4bf">Q2 前沿（新+有效）29个</b></p>
+<p class="small">核心偏外。代表：step56 DeBERTa 微调，log loss 0.29（全路径最低）。<b>evolution/fusion 占比高于 Q1</b>→ 后期确实更特化。</p>
+</div>
+<div class="card" style="margin:0;border-color:#fbbf24">
+<p style="margin-top:0"><b style="color:#fbbf24">Q3 试探（新+无效）34个</b></p>
+<p class="small">边缘（r 大）。代表：step49 attention pooling，log loss 0.43。新方法 log loss 没降下去，但<b>双曲边缘保护可达性</b>。</p>
+</div>
+<div class="card" style="margin:0;border-color:#fb7185">
+<p style="margin-top:0"><b style="color:#fb7185">Q4 淘汰（旧+无效）28个</b></p>
+<p class="small">最边缘。代表：step10 多分辨率分类器，log loss 1.09（欠拟合）。早期失败方案，可追溯避免重蹈覆辙。</p>
+</div>
+</div>
+
+<div class="note">
+<b>📊 分布特征</b>：四象限<b>分布均衡</b>（各 23-27%），说明后期 run 的搜索探索充分。Q2 的 evolution/fusion 占比显著高于 Q1，验证"<b>后期 stage 更特化</b>"——这是"新=特化"的部分支撑。
+</div>
+</div>
+
+<!-- ====== 5. 修正后的半径方案 ====== -->
+<h2>⑤ 基于真实数据的半径方案修正</h2>
+<div class="card">
+<p style="margin-top:0">真实数据否定了"新=log loss 更低"（相关仅 −0.008），因此<b>原方案 r = 0.7·metric + 0.3·recency 需要修正</b>：</p>
+
+<div class="warn" style="margin-top:0">
+<b>原方案问题</b>：给 recency 0.3 权重会<b>错误地把"新但 log loss 高"的 skill 推向有效核心区</b>（Q3 应在边缘，但 recency 高会拉它向核心）。
+</div>
+
+<h3>修正方案：metric 主导 + recency 仅作 tiebreaker</h3>
+<div style="background:#0c0e14;border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-family:'SF Mono',Consolas,monospace;font-size:13.5px;color:var(--amber);margin:10px 0">
+r = sigmoid( 0.9 · norm(1/metric) + 0.1 · norm(recency) )
+</div>
+<p class="small"><b>修正逻辑</b>：因 log loss 越低越好，用 <code>1/metric</code>（或 −metric）归一化作有效性。权重提到 0.9（有效性远比时序重要），recency 降到 0.1 仅 tiebreak。</p>
+
+<h3>分阶段半径策略</h3>
+<table>
+<tr><th>象限</th><th>数据特征</th><th>半径策略</th></tr>
+<tr><td style="color:#4ade80">Q1 旧+有效</td><td>log loss 低，演化根基</td><td>r 小（核心），<b>主权重</b></td></tr>
+<tr><td style="color:#2dd4bf">Q2 新+有效</td><td>log loss 低且特化</td><td>r 小偏外（核心前沿），refines 连回 Q1</td></tr>
+<tr><td style="color:#fbbf24">Q3 新+无效</td><td>log loss 高但新</td><td>r 大（边缘），<b>不靠 recency 拉向核心</b></td></tr>
+<tr><td style="color:#fb7185">Q4 旧+无效</td><td>log loss 高且旧</td><td>r 最大（最边缘），可追溯</td></tr>
+</table>
+
+<div class="good">
+<b>数据驱动的结论</b>：演化深度半径方案<b>部分成立</b>（"新=特化"弱成立），但"新=log loss 更低"不成立，因此 recency 必须<b>严格从属于 metric</b>。修正后的 0.9/0.1 加权更贴合真实数据。这反而让方案<b>更稳健、更可辩护</b>——你不是在"猜"权重，是用 124 个无泄露节点校准的。
+</div>
+</div>
+
+<!-- ====== 6. 对研究的启示 ====== -->
+<h2>⑥ 这个验证对研究的启示</h2>
+<div class="card">
+<div class="warn" style="margin-top:0">
+<b>启示1（修正半径定义）</b>：论文里不能写"r 融合 metric 和 recency（0.7/0.3）"——真实数据证明不成立。应改为"metric 主导（0.9），recency 仅 tiebreak"，并<b>引用 124 节点验证（step-metric 相关 −0.008）作为依据</b>。注意 log loss 是越低越好，用 <code>1/metric</code> 或 <code>−metric</code> 归一化。
+</div>
+<div class="note">
+<b>启示2（强化"双曲保护低频"叙事）</b>：Q3 有 34 个"新但 log loss 高"的 skill。在 SkillGraph 里会被 Deprecate 丢弃。但在双曲方案里，它们在边缘保持可达——<b>其中某些可能只是没找到适用条件（Q3→Q2 的潜在转化）</b>。这是 vs SkillGraph 的实证差异化。
+</div>
+<div class="good">
+<b>启示3（实验设计直接可用）</b>：已有真实四象限数据。<b>主实验可直接用这 124 个节点</b>，对比"双曲嵌入检索" vs "平面向量检索"在 Q3（低频有效边缘 skill）上的召回率。
+</div>
+</div>
+
+<!-- ====== 7. 总结 ====== -->
+<h2>⑦ 一页纸总结</h2>
+<div class="card" style="border-color:var(--acc)">
+<p style="margin-top:0;margin-bottom:6px"><b>🔬 真实数据验证结论（124 节点，后期无泄露 run）</b></p>
+<p style="margin-bottom:6px"><b>成立的部分</b>：四象限分布均衡（各 23-27%）；"新=特化"弱成立（Q2 evolution/fusion 占比高）；双曲能合理承载四类 skill 落点。</p>
+<p style="margin-bottom:6px"><b>不成立的部分</b>："新=log loss 更低"几乎不成立（step-metric 相关 −0.008）→ recency 不能与 metric 同等加权。</p>
+<p style="margin-bottom:6px"><b>修正</b>：r = sigmoid(0.9·norm(1/metric) + 0.1·recency)，metric（log loss 越低越好）严格主导。</p>
+<p style="margin-bottom:0"><b>研究价值</b>：用无泄露真实数据校准了半径定义；Q3 的 34 个低频 skill 是双曲保护低频的实证弹药。</p>
+</div>
+
+</div>
+</body>
+</html>

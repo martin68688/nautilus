@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>演化深度半径 · 可视化</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --line:#2a2f3e;
+    --txt:#e8eaf0; --mut:#9aa3b8; --acc:#6ee7ff;
+    --green:#4ade80; --red:#fb7185; --amber:#fbbf24; --blue:#60a5fa; --purple:#c4b5fd; --teal:#2dd4bf;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 70px}
+  h1{font-size:25px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:14px;margin-bottom:24px}
+  h2{font-size:19px;margin:32px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  h3{font-size:15.5px;margin:18px 0 8px;color:var(--acc)}
+  p{margin:9px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin:12px 0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:860px){.grid2{grid-template-columns:1fr}.grid3{grid-template-columns:1fr}}
+  code{background:#0c0e14;padding:2px 6px;border-radius:5px;color:var(--acc);font-size:13px}
+  .formula{background:#0c0e14;border:1px solid var(--line);border-radius:10px;padding:12px 16px;
+    font-family:"SF Mono",Consolas,monospace;font-size:13.5px;color:var(--amber);overflow-x:auto;margin:10px 0}
+  .note{border-left:3px solid var(--acc);background:rgba(110,231,255,.07);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .warn{border-left:3px solid var(--red);background:rgba(251,113,133,.08);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .good{border-left:3px solid var(--green);background:rgba(74,222,128,.08);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .small{font-size:12.5px;color:var(--mut)}
+  svg{display:block;margin:0 auto}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left}
+  th{background:#1e2230;color:var(--acc)}
+  .legend-row{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--mut);margin-top:8px}
+  .legend-row i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🌳 演化深度半径 · 可视化</h1>
+<p class="sub">看懂"新旧 / 有效 / 无效"的 skill 在 Poincaré 球里分别落在哪，以及为什么 r 能统一表达层级与时序。</p>
+
+<!-- ====== 1. 生物学原型 ====== -->
+<h2>① 起点：生物学系统发生树（直觉来源）</h2>
+<div class="card">
+<p style="margin-top:0">演化深度半径的直觉来自<b>生物系统发生树</b>——一棵树的"距根距离"天然同时编码两件事：</p>
+<div class="grid2">
+<div>
+<p style="margin-top:0"><b>① 演化时间（新旧）</b></p>
+<p class="small">离根越远 = 分化越晚 = 越新</p>
+</div>
+<div>
+<p style="margin-top:0"><b>② 特化程度（层级）</b></p>
+<p class="small">离根越远 = 越特化 = 越具体</p>
+</div>
+</div>
+<svg viewBox="0 0 500 230" width="100%" style="margin-top:10px">
+  <!-- 时间轴背景 -->
+  <rect x="10" y="10" width="480" height="210" fill="#0c0e14" rx="8"/>
+  <text x="250" y="28" font-size="11" fill="#9aa3b8" text-anchor="middle">系统发生树（越往右越新、越特化）</text>
+  <text x="40" y="200" font-size="9" fill="#9aa3b8">古老·通用</text>
+  <text x="440" y="200" font-size="9" fill="#9aa3b8" text-anchor="end">现代·特化</text>
+  <line x1="40" y1="190" x2="440" y2="190" stroke="#2a2f3e" stroke-dasharray="2 2"/>
+  <!-- 根 -->
+  <circle cx="60" cy="120" r="9" fill="#6ee7ff"/>
+  <text x="60" y="123" font-size="8" fill="#08121a" text-anchor="middle" font-weight="700">根</text>
+  <text x="60" y="145" font-size="9" fill="#6ee7ff" text-anchor="middle">最古老·最通用</text>
+  <!-- 分支1: 模型 -->
+  <path d="M60,120 Q150,100 220,85" stroke="#4ade80" stroke-width="2.5" fill="none"/>
+  <circle cx="220" cy="85" r="6" fill="#60a5fa"/>
+  <text x="220" y="75" font-size="9" fill="#60a5fa" text-anchor="middle">线性模型</text>
+  <path d="M220,85 Q300,75 370,60" stroke="#4ade80" stroke-width="2" fill="none"/>
+  <circle cx="370" cy="60" r="6" fill="#60a5fa"/>
+  <text x="370" y="50" font-size="9" fill="#60a5fa" text-anchor="middle">神经网络</text>
+  <path d="M370,60 Q410,52 450,45" stroke="#4ade80" stroke-width="2" fill="none"/>
+  <circle cx="450" cy="45" r="6" fill="#c4b5fd"/>
+  <text x="450" y="35" font-size="9" fill="#c4b5fd" text-anchor="middle">Transformer</text>
+  <!-- 分支2: 优化 -->
+  <path d="M60,120 Q150,140 230,155" stroke="#4ade80" stroke-width="2.5" fill="none"/>
+  <circle cx="230" cy="155" r="6" fill="#60a5fa"/>
+  <text x="230" y="172" font-size="9" fill="#60a5fa" text-anchor="middle">梯度下降</text>
+  <path d="M230,155 Q310,160 380,165" stroke="#4ade80" stroke-width="2" fill="none"/>
+  <circle cx="380" cy="165" r="6" fill="#c4b5fd"/>
+  <text x="380" y="182" font-size="9" fill="#c4b5fd" text-anchor="middle">Adam</text>
+  <!-- 距根距离标注 -->
+  <text x="135" y="115" font-size="8" fill="#9aa3b8">r小</text>
+  <text x="335" y="100" font-size="8" fill="#9aa3b8">r中</text>
+  <text x="460" y="70" font-size="8" fill="#9aa3b8">r大</text>
+</svg>
+<p class="small">关键：在这棵树里，<b>"新"和"特化"是耦合的</b>——Transformer 既比线性模型新、也比它特化。这就是 r 能统一表达两者的前提。</p>
+</div>
+
+<!-- ====== 2. 映射到 Poincaré 球 ====== -->
+<h2>② 映射：演化树怎么"卷"进 Poincaré 球</h2>
+<div class="card">
+<p style="margin-top:0">系统发生树是"线性展开"的，双曲空间是"圆形"的。映射的关键：<b>把树根钉在球心，让分支沿不同方向（角度 θ）向外生长</b>。</p>
+<svg viewBox="0 0 560 320" width="100%">
+  <!-- 左：线性树 -->
+  <g transform="translate(10,10)">
+    <text x="130" y="20" font-size="11" fill="#9aa3b8" text-anchor="middle">线性演化树</text>
+    <circle cx="30" cy="150" r="7" fill="#6ee7ff"/>
+    <text x="30" y="170" font-size="8" fill="#6ee7ff" text-anchor="middle">根</text>
+    <line x1="30" y1="150" x2="100" y2="100" stroke="#4ade80" stroke-width="2"/>
+    <line x1="30" y1="150" x2="100" y2="200" stroke="#4ade80" stroke-width="2"/>
+    <circle cx="100" cy="100" r="5" fill="#60a5fa"/>
+    <circle cx="100" cy="200" r="5" fill="#60a5fa"/>
+    <line x1="100" y1="100" x2="180" y2="70" stroke="#4ade80" stroke-width="2"/>
+    <line x1="100" y1="200" x2="180" y2="230" stroke="#4ade80" stroke-width="2"/>
+    <circle cx="180" cy="70" r="5" fill="#60a5fa"/>
+    <circle cx="180" cy="230" r="5" fill="#60a5fa"/>
+    <line x1="180" y1="70" x2="250" y2="50" stroke="#4ade80" stroke-width="2"/>
+    <circle cx="250" cy="50" r="5" fill="#c4b5fd"/>
+    <text x="250" y="40" font-size="8" fill="#c4b5fd" text-anchor="middle">最新</text>
+    <text x="160" y="300" font-size="9" fill="#9aa3b8" text-anchor="middle">r = 距根距离（向外增长）</text>
+  </g>
+  <!-- 箭头 -->
+  <text x="295" y="160" font-size="22" fill="#6ee7ff" text-anchor="middle">→</text>
+  <text x="295" y="180" font-size="9" fill="#6ee7ff" text-anchor="middle">卷入球心</text>
+  <!-- 右：Poincaré 球 -->
+  <g transform="translate(330,20)">
+    <text x="115" y="0" font-size="11" fill="#9aa3b8" text-anchor="middle">Poincaré 球</text>
+    <circle cx="115" cy="150" r="120" fill="none" stroke="#2a2f3e" stroke-width="2" stroke-dasharray="4 3"/>
+    <text x="115" y="290" font-size="8" fill="#9aa3b8" text-anchor="middle">边缘 = 无限新·无限特化</text>
+    <!-- 根钉球心 -->
+    <circle cx="115" cy="150" r="8" fill="#6ee7ff"/>
+    <text x="115" y="153" font-size="7" fill="#08121a" text-anchor="middle" font-weight="700">根</text>
+    <!-- 分支1: 向左上 -->
+    <path d="M115,150 Q95,130 80,110" stroke="#4ade80" stroke-width="2.5" fill="none"/>
+    <circle cx="80" cy="110" r="5" fill="#60a5fa"/>
+    <path d="M80,110 Q65,95 55,80" stroke="#4ade80" stroke-width="2" fill="none"/>
+    <circle cx="55" cy="80" r="5" fill="#60a5fa"/>
+    <path d="M55,80 Q45,68 38,58" stroke="#4ade80" stroke-width="2" fill="none"/>
+    <circle cx="38" cy="58" r="5" fill="#c4b5fd"/>
+    <!-- 分支2: 向右下 -->
+    <path d="M115,150 Q140,170 155,190" stroke="#4ade80" stroke-width="2.5" fill="none"/>
+    <circle cx="155" cy="190" r="5" fill="#60a5fa"/>
+    <path d="M155,190 Q175,205 190,218" stroke="#4ade80" stroke-width="2" fill="none"/>
+    <circle cx="190" cy="218" r="5" fill="#c4b5fd"/>
+    <!-- 分支3: 向右上 -->
+    <path d="M115,150 Q140,135 160,125" stroke="#4ade80" stroke-width="2.5" fill="none"/>
+    <circle cx="160" cy="125" r="5" fill="#60a5fa"/>
+    <path d="M160,125 Q180,118 195,113" stroke="#4ade80" stroke-width="2" fill="none"/>
+    <circle cx="195" cy="113" r="5" fill="#c4b5fd"/>
+    <!-- 半径环 -->
+    <circle cx="115" cy="150" r="40" fill="none" stroke="#9aa3b8" opacity="0.2" stroke-dasharray="2 2"/>
+    <circle cx="115" cy="150" r="75" fill="none" stroke="#9aa3b8" opacity="0.2" stroke-dasharray="2 2"/>
+    <text x="155" y="155" font-size="7" fill="#9aa3b8">r小(古老)</text>
+    <text x="190" y="155" font-size="7" fill="#9aa3b8">r大(新·特化)</text>
+  </g>
+</svg>
+<div class="note">
+<b>映射规则</b>：树根钉在球心（r=0）；每个分支选一个<b>角度方向 θ</b>（不同领域不同方向）；沿该方向向外生长时 r 递增。越靠边缘 = 越新、越特化、r 越大。
+</div>
+</div>
+
+<!-- ====== 3. 四类 skill 落点 ====== -->
+<h2>③ 核心图：四类 skill 在球里落在哪</h2>
+<div class="card">
+<p style="margin-top:0">按 metric_delta（有效性）× recency（新旧）的组合，skill 分四类。看它们在 Poincaré 球里各自的位置：</p>
+<svg viewBox="0 0 560 380" width="100%">
+  <!-- 球 -->
+  <circle cx="280" cy="190" r="160" fill="none" stroke="#2a2f3e" stroke-width="2" stroke-dasharray="4 3"/>
+  <text x="280" y="25" font-size="10" fill="#9aa3b8" text-anchor="middle">边缘 = 无限空间（低频 skill 的几何保护）</text>
+  <text x="280" y="370" font-size="10" fill="#9aa3b8" text-anchor="middle">中心 = 核心有效区</text>
+  <!-- 同心环（层级） -->
+  <circle cx="280" cy="190" r="50" fill="none" stroke="#9aa3b8" opacity="0.15" stroke-dasharray="2 2"/>
+  <circle cx="280" cy="190" r="100" fill="none" stroke="#9aa3b8" opacity="0.15" stroke-dasharray="2 2"/>
+  <circle cx="280" cy="190" r="140" fill="none" stroke="#9aa3b8" opacity="0.15" stroke-dasharray="2 2"/>
+  <text x="335" y="195" font-size="8" fill="#9aa3b8">r小</text>
+  <text x="385" y="195" font-size="8" fill="#9aa3b8">r中</text>
+  <text x="425" y="195" font-size="8" fill="#9aa3b8">r大</text>
+
+  <!-- ① 核心区：旧+有效 -->
+  <circle cx="280" cy="170" r="11" fill="#4ade80"/>
+  <text x="280" y="174" font-size="8" fill="#08121a" text-anchor="middle" font-weight="700">S1</text>
+  <line x1="280" y1="159" x2="280" y2="120" stroke="#4ade80" stroke-width="1" opacity="0.4"/>
+  <text x="280" y="112" font-size="9.5" fill="#4ade80" text-anchor="middle" font-weight="700">① 核心·基石</text>
+  <text x="280" y="100" font-size="8" fill="#9aa3b8" text-anchor="middle">旧 + 有效</text>
+  <text x="280" y="88" font-size="7.5" fill="#9aa3b8" text-anchor="middle">例: 标准化+GBDT</text>
+
+  <!-- ② 核心区偏外：新+有效 -->
+  <circle cx="240" cy="150" r="10" fill="#2dd4bf"/>
+  <text x="240" y="153" font-size="7.5" fill="#08121a" text-anchor="middle" font-weight="700">S2</text>
+  <line x1="232" y1="145" x2="180" y2="110" stroke="#2dd4bf" stroke-width="1" opacity="0.4"/>
+  <text x="155" y="105" font-size="9.5" fill="#2dd4bf" text-anchor="middle" font-weight="700">② 核心前沿</text>
+  <text x="155" y="93" font-size="8" fill="#9aa3b8" text-anchor="middle">新 + 有效</text>
+  <text x="155" y="81" font-size="7.5" fill="#9aa3b8" text-anchor="middle">例: 新蒸馏的高效trick</text>
+
+  <!-- ③ 边缘：新+无效 -->
+  <circle cx="180" cy="100" r="9" fill="#fbbf24"/>
+  <text x="180" y="103" font-size="7" fill="#08121a" text-anchor="middle" font-weight="700">S3</text>
+  <line x1="172" y1="95" x2="100" y2="60" stroke="#fbbf24" stroke-width="1" opacity="0.4"/>
+  <text x="80" y="55" font-size="9.5" fill="#fbbf24" text-anchor="middle" font-weight="700">③ 边缘·试探</text>
+  <text x="80" y="43" font-size="8" fill="#9aa3b8" text-anchor="middle">新 + 无效</text>
+  <text x="80" y="31" font-size="7.5" fill="#9aa3b8" text-anchor="middle">例: 刚试的新方法没work</text>
+
+  <!-- ④ 最边缘：旧+无效 -->
+  <circle cx="150" cy="60" r="8" fill="#fb7185"/>
+  <text x="150" y="63" font-size="7" fill="#08121a" text-anchor="middle" font-weight="700">S4</text>
+  <line x1="145" y1="55" x2="95" y2="35" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+  <text x="75" y="28" font-size="9.5" fill="#fb7185" text-anchor="middle" font-weight="700">④ 边缘·淘汰</text>
+  <text x="75" y="16" font-size="8" fill="#9aa3b8" text-anchor="middle">旧 + 无效</text>
+
+  <!-- 一个演化分支连线 S1→S2 (refines) -->
+  <path d="M280,170 Q260,160 240,150" stroke="#4ade80" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#4ade80"/>
+    </marker>
+  </defs>
+  <text x="270" y="185" font-size="8" fill="#4ade80">refines</text>
+</svg>
+
+<div class="grid2" style="margin-top:8px">
+<div class="card" style="margin:0;border-color:#4ade80">
+<p style="margin-top:0"><b style="color:#4ade80">① 核心·基石（旧+有效）</b></p>
+<p class="small">r 最小，靠球心。<b>例</b>：原生 AutoModel 微调（log loss 低）。多次实验都证明有效（log loss 低），是演化谱系的根基。<b>检索权重最高</b>。</p>
+</div>
+<div class="card" style="margin:0;border-color:#2dd4bf">
+<p style="margin-top:0"><b style="color:#2dd4bf">② 核心前沿（新+有效）</b></p>
+<p class="small">r 小偏外，核心区边缘。<b>例</b>：新蒸馏出的高效 trick。既有效又新，是演化的当前前沿。靠 refines 边连回 S1。</p>
+</div>
+<div class="card" style="margin:0;border-color:#fbbf24">
+<p style="margin-top:0"><b style="color:#fbbf24">③ 边缘·试探（新+无效）</b></p>
+<p class="small">r 中大，靠边缘。<b>例</b>：刚试的新方法没 work。新但无效，推到边缘。但<b>双曲边缘有指数体积</b>，它不被丢弃，保持可达（等你找到适用条件）。</p>
+</div>
+<div class="card" style="margin:0;border-color:#fb7185">
+<p style="margin-top:0"><b style="color:#fb7185">④ 边缘·淘汰（旧+无效）</b></p>
+<p class="small">r 最大，最边缘。<b>例</b>：古老的失败方法。既旧又无效，但几何保护下仍可被追溯（避免重蹈覆辙）。</p>
+</div>
+</div>
+
+<div class="note">
+<b>关键看图里 S1→S2 的 refines 边</b>：从核心基石"长"向核心前沿，方向向外（r 递增）。<b>这就是 r 同时表达"演化时间"和"特化层级"的几何证据</b>——S2 比 S1 既新、又更特化，所以 r 更大。
+</div>
+</div>
+
+<!-- ====== 4. 半径公式 ====== -->
+<h2>④ 半径怎么算：metric + recency 融合</h2>
+<div class="card">
+<p style="margin-top:0">r 不是单一信号，是<b>有效性 + 时序</b>两个信号的融合（因为两者在演化里耦合）：</p>
+<div class="formula">
+r = sigmoid( α · norm(effectiveness) + β · norm(recency) )
+
+推荐 α = 0.9（有效性为主）, β = 0.1（时序为辅）
+</div>
+<p class="small"><b>注意 metric 方向</b>：spooky 是 log loss 任务（<code>maximize=False</code>），<b>越低越好</b>。effectiveness = norm(1/metric) 或 norm(−metric)，使"有效"映射为大值。recency 归一化到 [0,1]（最新=1）。sigmoid 保证 r 落在 (0,1) 的 Poincaré 球内。</p>
+<p class="small"><b>权重依据</b>：真实数据验证（124 个无泄露节点）显示 step-metric 相关仅 −0.008（几乎无关），故 recency 权重压到 0.1，metric 主导。</p>
+
+<h3>四类 skill 的 r 计算（示例）</h3>
+<table>
+<tr><th>skill</th><th>effectiveness</th><th>recency</th><th>r = σ(0.9·eff + 0.1·rec)</th><th>落点</th></tr>
+<tr><td>S1 原生AutoModel</td><td>0.9（log loss低，有效）</td><td>0.1（很旧）</td><td>σ(0.82) → 映射后小</td><td style="color:#4ade80">核心</td></tr>
+<tr><td>S2 DeBERTa微调</td><td>0.8（有效）</td><td>0.9（很新）</td><td>σ(0.81) → 映射后小偏外</td><td style="color:#2dd4bf">核心前沿</td></tr>
+<tr><td>S3 attention pool</td><td>0.2（log loss高，无效）</td><td>0.8（新）</td><td>σ(0.26) → 映射后大</td><td style="color:#fbbf24">边缘·试探</td></tr>
+<tr><td>S4 多分辨率分类</td><td>0.05（log loss极高）</td><td>0.1（旧）</td><td>σ(0.06) → 映射后最大</td><td style="color:#fb7185">最边缘</td></tr>
+</table>
+<p class="small">注意 r 经 sigmoid 后单调映射到球的半径——S1/S2 最靠核心（effectiveness 高），S3/S4 靠边缘。新旧与有效性通过加权和统一到一个标量，但 effectiveness 权重压倒性主导。</p>
+</div>
+
+<!-- ====== 5. 时序边派生 ====== -->
+<h2>⑤ 时序边怎么从 r 几何派生</h2>
+<div class="card">
+<p style="margin-top:0">有了演化深度半径，时序关系不用额外存，从 r 自动派生：</p>
+<svg viewBox="0 0 560 240" width="100%">
+  <!-- Poincaré 球 -->
+  <circle cx="280" cy="120" r="100" fill="none" stroke="#2a2f3e" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <circle cx="280" cy="120" r="3" fill="#9aa3b8"/>
+  <!-- 演化链 A→B→C 同方向递增 -->
+  <circle cx="240" cy="100" r="7" fill="#60a5fa"/><text x="240" y="103" font-size="7" fill="#fff" text-anchor="middle">A</text>
+  <circle cx="265" cy="85" r="7" fill="#60a5fa"/><text x="265" y="88" font-size="7" fill="#fff" text-anchor="middle">B</text>
+  <circle cx="290" cy="68" r="7" fill="#c4b5fd"/><text x="290" y="71" font-size="7" fill="#08121a" text-anchor="middle">C</text>
+  <path d="M247,97 L258,88" stroke="#4ade80" stroke-width="2" fill="none" marker-end="url(#a2)"/>
+  <path d="M272,82 L283,73" stroke="#4ade80" stroke-width="2" fill="none" marker-end="url(#a2)"/>
+  <defs>
+    <marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <polygon points="0,0 6,3 0,6" fill="#4ade80"/>
+    </marker>
+  </defs>
+  <!-- 标注 -->
+  <text x="240" y="125" font-size="8" fill="#9aa3b8" text-anchor="middle">r_A 小（旧·通用）</text>
+  <text x="265" y="60" font-size="8" fill="#9aa3b8" text-anchor="middle">r_B 中</text>
+  <text x="290" y="45" font-size="8" fill="#9aa3b8" text-anchor="middle">r_C 大（新·特化）</text>
+  <text x="255" y="110" font-size="8" fill="#4ade80">refines</text>
+  <text x="278" y="95" font-size="8" fill="#4ade80">refines</text>
+</svg>
+<table>
+<tr><th>几何条件（从 r 派生）</th><th>时序含义</th><th>边类型</th></tr>
+<tr><td>r_B > r_A 且 Δθ≈0</td><td>B 比 A 新且更特化</td><td><code>refines</code></td></tr>
+<tr><td>r_B > r_A 且 Δθ≈0 且 B 有效</td><td>B 是 A 的更好更新版</td><td><code>superseded_by</code></td></tr>
+<tr><td>r_B > r_A（纯时序）</td><td>B 严格晚于 A</td><td><code>successor_of</code></td></tr>
+</table>
+<div class="good">
+<b>结论</b>：时序边是 r 的<b>免费副产品</b>。你不需要像 Zep 那样额外存 valid_at 时间戳——只要 r 编码了演化深度，"谁更新"就能从 r 的大小关系自动读出。
+</div>
+</div>
+
+<!-- ====== 6. 耦合失效情况 ====== -->
+<h2>⑥ 什么时候这个方案会失效（必须诚实写进 Limitations）</h2>
+<div class="warn">
+<p style="margin-top:0"><b>⚠️ 三种"耦合失效"情况——此时新旧与特化解耦，r 算不准</b></p>
+</div>
+<div class="grid3">
+<div class="card" style="margin:0">
+<h3 style="color:#fb7185;margin-top:0">a. 范式革命</h3>
+<svg viewBox="0 0 160 100" width="100%">
+  <circle cx="80" cy="50" r="45" fill="none" stroke="#2a2f3e" stroke-dasharray="2 2"/>
+  <circle cx="65" cy="40" r="6" fill="#60a5fa"/><text x="65" y="43" font-size="6" fill="#fff" text-anchor="middle">旧</text>
+  <circle cx="95" cy="55" r="6" fill="#c4b5fd"/><text x="95" y="58" font-size="6" fill="#08121a" text-anchor="middle">新</text>
+  <text x="80" y="90" font-size="7" fill="#fb7185" text-anchor="middle">新但更通用！r该大还是小？</text>
+</svg>
+<p class="small"><b>例</b>：SGD → Transformer。新方法反而更通用（r 该小），但时序新（r 该大）。<b>冲突</b>。</p>
+<p class="small"><b>对策</b>：r 服从 metric（Transformer 有效则 r 小）；时序用时间戳元数据。</p>
+</div>
+<div class="card" style="margin:0">
+<h3 style="color:#fb7185;margin-top:0">b. 回滚</h3>
+<svg viewBox="0 0 160 100" width="100%">
+  <circle cx="80" cy="50" r="45" fill="none" stroke="#2a2f3e" stroke-dasharray="2 2"/>
+  <circle cx="70" cy="35" r="6" fill="#c4b5fd"/><text x="70" y="38" font-size="6" fill="#08121a" text-anchor="middle">新</text>
+  <circle cx="90" cy="60" r="6" fill="#60a5fa"/><text x="90" y="63" font-size="6" fill="#fff" text-anchor="middle">旧</text>
+  <text x="80" y="90" font-size="7" fill="#fb7185" text-anchor="middle">新不如旧！r 倒退</text>
+</svg>
+<p class="small"><b>例</b>：新方法不如旧的，回退。新 skill 的 r 应该<b>小于</b>旧 skill。<b>违背"新=外"假设</b>。</p>
+<p class="small"><b>对策</b>：r 服从 metric_delta（旧更有效则 r 更小）。</p>
+</div>
+<div class="card" style="margin:0">
+<h3 style="color:#fb7185;margin-top:0">c. 并行演化</h3>
+<svg viewBox="0 0 160 100" width="100%">
+  <circle cx="80" cy="50" r="45" fill="none" stroke="#2a2f3e" stroke-dasharray="2 2"/>
+  <circle cx="70" cy="35" r="6" fill="#60a5fa"/><text x="70" y="38" font-size="6" fill="#fff" text-anchor="middle">A</text>
+  <circle cx="90" cy="35" r="6" fill="#60a5fa"/><text x="90" y="38" font-size="6" fill="#fff" text-anchor="middle">B</text>
+  <text x="80" y="90" font-size="7" fill="#fb7185" text-anchor="middle">同时代但不同方向</text>
+</svg>
+<p class="small"><b>例</b>：两个 skill 同时代，r 相同。<b>无法从 r 判时序先后</b>。</p>
+<p class="small"><b>对策</b>：靠角度 θ 区分方向，r 不背时序；精确先后用时间戳。</p>
+</div>
+</div>
+<div class="note">
+<b>统一兜底原则</b>：当"新旧"与"层级"耦合失效时，<code>r 始终服从 metric_delta</code>（有效性优先），时序的精确先后用节点的时间戳元数据补充。论文里把这个<b>分层设计</b>讲清楚（r 主载有效性、时序是耦合时的副产品、失效时退回元数据），反而显得严谨。
+</div>
+
+<!-- ====== 7. 一页纸总结 ====== -->
+<h2>⑦ 一页纸总结</h2>
+<div class="card" style="border-color:var(--acc)">
+<p style="margin-top:0;margin-bottom:6px"><b>🌳 演化深度半径 = 一个 r 同时承载"有效性层级"和"演化时序"</b></p>
+<p style="margin-bottom:6px"><b>为什么成立</b>：在 MLE skill 演化里，新 skill 通常是从旧 skill 细化来的——"新"和"特化"天然耦合（与生物系统发生树同构）。</p>
+<p style="margin-bottom:6px"><b>公式</b>：r = sigmoid(0.9·effectiveness + 0.1·recency)（effectiveness = norm(1/metric)，因 log loss 越低越好）。四类 skill 落点：核心基石(旧+有效)→核心前沿(新+有效)→边缘试探(新+无效)→边缘淘汰(旧+无效)。</p>
+<p style="margin-bottom:6px"><b>时序边免费派生</b>：refines/superseded_by/successor_of 都从 r 大小关系自动读出，无需额外存时间戳。</p>
+<p style="margin-bottom:0"><b>失效兜底</b>：范式革命/回滚/并行演化时，r 服从 metric_delta，精确时序退回时间戳元数据。</p>
+</div>
+
+<div class="legend-row">
+<span><i style="background:#4ade80"></i>① 核心·基石（旧+有效）</span>
+<span><i style="background:#2dd4bf"></i>② 核心前沿（新+有效）</span>
+<span><i style="background:#fbbf24"></i>③ 边缘·试探（新+无效）</span>
+<span><i style="background:#fb7185"></i>④ 边缘·淘汰（旧+无效）</span>
+<span><i style="background:#6ee7ff"></i>演化根/球心</span>
+</div>
+
+</div>
+</body>
+</html>

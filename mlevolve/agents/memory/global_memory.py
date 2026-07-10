@@ -106,6 +106,60 @@ class GlobalMemoryLayer:
             logger.error(f"[GlobalMemory] Failed to save node {node.id}: {e}")
             return False
 
+    def save_leakage_audit(self, node) -> bool:
+        """Persist an audit finding as negative memory keyed by source-code hash."""
+        audit = getattr(node, "leakage_audit", None) or {}
+        if audit.get("memory_disposition") == "positive_eligible":
+            return False
+        digest = str(audit.get("code_sha256") or "")
+        if not digest:
+            return False
+        issues = [item for item in audit.get("issues", []) if isinstance(item, dict)]
+        descriptions = [
+            f"[{item.get('issue_code')}] {item.get('evidence')}"
+            for item in issues
+            if item.get("issue_code") or item.get("evidence")
+        ]
+        remediations = [
+            str(item.get("remediation"))
+            for item in issues
+            if item.get("remediation")
+        ]
+        record_id = f"leakage_{digest}"
+        if record_id in {record.record_id for record in self.records}:
+            metadata = self.node_metadata_map.setdefault(record_id, {})
+            occurrences = list(metadata.get("source_node_ids") or [])
+            if node.id not in occurrences:
+                occurrences.append(node.id)
+            metadata["source_node_ids"] = occurrences
+            metadata["leakage_audit"] = audit
+            self._save_memory()
+            return False
+
+        record = MemRecord(
+            record_id=record_id,
+            title=f"leakage_failure - {digest[:8]}",
+            description="\n".join(descriptions) or f"Audit status: {audit.get('status')}",
+            method="\n".join(dict.fromkeys(remediations)) or "Require a clean audit before reuse.",
+            label=-1,
+            timestamp=datetime.now().isoformat(),
+        )
+        self.records.append(record)
+        self.node_metadata_map[record_id] = {
+            "source_node_ids": [node.id],
+            "code_sha256": digest,
+            "leakage_audit": audit,
+        }
+        self._update_index(record)
+        self._save_memory()
+        logger.info(
+            "[GlobalMemory] Saved negative leakage memory for node %s (status=%s, hash=%s)",
+            node.id,
+            audit.get("status"),
+            digest[:12],
+        )
+        return True
+
     def retrieve_similar_records(
         self,
         query_text: str,
@@ -207,6 +261,9 @@ class GlobalMemoryLayer:
 
             if stage == "debug":
                 guidance_parts.append(f"- Result: ✅ Fixed successfully")
+            elif stage == "leakage_failure":
+                guidance_parts.append("- Result: Blocked or protocol-biased by leakage audit")
+                guidance_parts.append(f"- Required fix: {record.method}")
             elif stage in ["draft", "fusion_draft"]:
                 guidance_parts.append(f"- Result: ✅ Generated successfully")
             elif stage in ["improve", "evolution", "fusion"]:
@@ -325,7 +382,15 @@ class GlobalMemoryLayer:
 
             for item in records_data:
                 metadata = {}
-                for key in ("exec_time", "parent_metric", "current_metric", "parent_error"):
+                for key in (
+                    "exec_time",
+                    "parent_metric",
+                    "current_metric",
+                    "parent_error",
+                    "source_node_ids",
+                    "code_sha256",
+                    "leakage_audit",
+                ):
                     if key in item:
                         metadata[key] = item.pop(key)
 
@@ -350,7 +415,15 @@ class GlobalMemoryLayer:
                 d = r.to_dict()
                 if r.record_id in self.node_metadata_map:
                     meta = self.node_metadata_map[r.record_id]
-                    for key in ("exec_time", "parent_metric", "current_metric", "parent_error"):
+                    for key in (
+                        "exec_time",
+                        "parent_metric",
+                        "current_metric",
+                        "parent_error",
+                        "source_node_ids",
+                        "code_sha256",
+                        "leakage_audit",
+                    ):
                         if meta.get(key) is not None:
                             d[key] = meta[key]
                 records_data.append(d)

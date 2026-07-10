@@ -63,6 +63,14 @@ agent:
   # --- Code gen mode ---
   use_diff_mode: True                # SEARCH/REPLACE patch
 
+  # Optional explicit roles for initial draft branches. RunForest enables this
+  # in its overlay; the default agent keeps its ordinary draft behavior.
+  draft_role_policy:
+    enabled: False
+    roles: []
+    extra_role: novel_exploration
+    replay_targets_path: ""
+
   # --- Branch strategy ---
   fusion_vs_evolution_prob: 0.3
   branch_fusion_trigger_prob: 1.0

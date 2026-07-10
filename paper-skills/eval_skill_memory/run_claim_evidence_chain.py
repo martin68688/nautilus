@@ -22,6 +22,7 @@ def run_cmd(cmd: list[str]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run certified graph build, benchmark, retrieval, ablation, and readiness report.")
     parser.add_argument("--skip-rebuild", action="store_true", help="Use existing hyper_graph/hyper_index artifacts.")
+    parser.add_argument("--skip-tuning", action="store_true", help="Run the untuned scorer path instead of dev-split Poincare tuning.")
     parser.add_argument("--n-resamples", type=int, default=10_000)
     parser.add_argument("--top-k", type=int, default=5)
     args = parser.parse_args()
@@ -32,6 +33,9 @@ def main() -> None:
     validation = EVAL / "reports" / "benchmark_validation_report.json"
     results = EVAL / "reports" / "hyperbolic_retrieval_results.jsonl"
     ablation = EVAL / "reports" / "hyperbolic_ablation_report.json"
+    tuned_results = EVAL / "reports" / "hyperbolic_retrieval_results_tuned.jsonl"
+    tuned_ablation = EVAL / "reports" / "hyperbolic_ablation_report_tuned.json"
+    tuning_report = EVAL / "reports" / "poincare_tuning_report.json"
 
     if not args.skip_rebuild:
         run_cmd([sys.executable, str(EVAL / "certify_skillgraph_provenance.py"), "--output", str(certified_graph)])
@@ -66,41 +70,83 @@ def main() -> None:
     validation.write_text(validation_proc.stdout, encoding="utf-8")
     print(validation_proc.stdout, end="")
 
-    run_cmd([
-        sys.executable,
-        str(EVAL / "run_hyperbolic_retrieval_benchmark.py"),
-        "--graph",
-        str(HYPER / "hyper_graph.json"),
-        "--index",
-        str(HYPER / "hyper_index.npz"),
-        "--text-model",
-        str(HYPER / "hyper_text_model.joblib"),
-        "--benchmark",
-        str(bench),
-        "--output",
-        str(results),
-        "--top-k",
-        str(args.top_k),
-    ])
-    run_cmd([
-        sys.executable,
-        str(HYPER / "evaluate_hyperbolic_ablation.py"),
-        "--results",
-        str(results),
-        "--gold",
-        str(gold),
-        "--graph",
-        str(HYPER / "hyper_graph.json"),
-        "--graph-builder-report",
-        str(HYPER / "graph_builder_report.json"),
-        "--quality-report",
-        str(HYPER / "coordinate_quality_report.json"),
-        "--output",
-        str(ablation),
-        "--n-resamples",
-        str(args.n_resamples),
-    ])
-    run_cmd([sys.executable, str(EVAL / "make_claim_readiness_report.py")])
+    if args.skip_tuning:
+        run_cmd([
+            sys.executable,
+            str(EVAL / "run_hyperbolic_retrieval_benchmark.py"),
+            "--graph",
+            str(HYPER / "hyper_graph.json"),
+            "--index",
+            str(HYPER / "hyper_index.npz"),
+            "--text-model",
+            str(HYPER / "hyper_text_model.joblib"),
+            "--benchmark",
+            str(bench),
+            "--output",
+            str(results),
+            "--top-k",
+            str(args.top_k),
+        ])
+        run_cmd([
+            sys.executable,
+            str(HYPER / "evaluate_hyperbolic_ablation.py"),
+            "--results",
+            str(results),
+            "--gold",
+            str(gold),
+            "--graph",
+            str(HYPER / "hyper_graph.json"),
+            "--graph-builder-report",
+            str(HYPER / "graph_builder_report.json"),
+            "--quality-report",
+            str(HYPER / "coordinate_quality_report.json"),
+            "--output",
+            str(ablation),
+            "--n-resamples",
+            str(args.n_resamples),
+        ])
+        report_for_readiness = ablation
+    else:
+        run_cmd([
+            sys.executable,
+            str(EVAL / "tune_poincare_scoring.py"),
+            "--graph",
+            str(HYPER / "hyper_graph.json"),
+            "--index",
+            str(HYPER / "hyper_index.npz"),
+            "--text-model",
+            str(HYPER / "hyper_text_model.joblib"),
+            "--benchmark",
+            str(bench),
+            "--gold",
+            str(gold),
+            "--output",
+            str(tuning_report),
+            "--results-output",
+            str(tuned_results),
+            "--top-k",
+            str(args.top_k),
+        ])
+        run_cmd([
+            sys.executable,
+            str(HYPER / "evaluate_hyperbolic_ablation.py"),
+            "--results",
+            str(tuned_results),
+            "--gold",
+            str(gold),
+            "--graph",
+            str(HYPER / "hyper_graph.json"),
+            "--graph-builder-report",
+            str(HYPER / "graph_builder_report.json"),
+            "--quality-report",
+            str(HYPER / "coordinate_quality_report.json"),
+            "--output",
+            str(tuned_ablation),
+            "--n-resamples",
+            str(args.n_resamples),
+        ])
+        report_for_readiness = tuned_ablation
+    run_cmd([sys.executable, str(EVAL / "make_claim_readiness_report.py"), "--ablation-report", str(report_for_readiness)])
 
     summary = {
         "status": "completed",
@@ -110,6 +156,9 @@ def main() -> None:
         "validation": str(validation),
         "results": str(results),
         "ablation": str(ablation),
+        "tuned_results": str(tuned_results),
+        "tuned_ablation": str(tuned_ablation),
+        "tuning_report": str(tuning_report),
         "readiness": str(REPO / "coordination" / "hyperbolic_claim_readiness.md"),
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))

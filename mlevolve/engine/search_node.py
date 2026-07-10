@@ -75,6 +75,13 @@ class SearchNode(DataClassJsonMixin):
     work_dir: Optional[str] = field(default=None, kw_only=True)
     # ---- adoption tracking (side-channel: 记录 prompt 注入了哪些记忆条目 id，绝不进 prompt) ----
     adoption_log: list = field(default_factory=list, kw_only=True)
+    draft_role: Optional[str] = field(default=None, kw_only=True)
+    role_contract: dict = field(default_factory=dict, kw_only=True)
+    source_ref_ids: list[str] = field(default_factory=list, kw_only=True)
+    replay_source: dict = field(default_factory=dict, kw_only=True)
+    replay_status: Optional[str] = field(default=None, kw_only=True)
+    skip_code_review: bool = field(default=False, kw_only=True)
+    leakage_audit: dict = field(default_factory=dict, kw_only=True)
 
     def __post_init__(self) -> None:
         if self.parent is not None:

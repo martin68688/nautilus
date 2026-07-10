@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>双曲 vs 平面 vs 球面 · 同一棵树的三种命运</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --line:#2a2f3e;
+    --txt:#e8eaf0; --mut:#9aa3b8; --acc:#6ee7ff;
+    --green:#4ade80; --red:#fb7185; --amber:#fbbf24; --blue:#60a5fa; --purple:#c4b5fd;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}
+  .wrap{max-width:1280px;margin:0 auto;padding:28px 20px 70px}
+  h1{font-size:25px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:14px;margin-bottom:24px}
+  h2{font-size:19px;margin:32px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+  h3{font-size:15.5px;margin:18px 0 8px;color:var(--acc)}
+  p{margin:9px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px 18px;margin:12px 0}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:980px){.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+  .geom-card{background:var(--panel);border:2px solid var(--line);border-radius:13px;padding:14px}
+  .geom-card.bad{border-color:var(--red)}
+  .geom-card.ok{border-color:var(--amber)}
+  .geom-card.good{border-color:var(--green)}
+  .geom-card .title{font-size:16px;font-weight:700;margin-bottom:2px}
+  .geom-card .formula{font-size:11.5px;color:var(--acc);font-family:monospace;margin-bottom:8px}
+  .geom-card svg{display:block;margin:6px auto}
+  .geom-card .verdict{font-size:13px;font-weight:700;padding:6px 10px;border-radius:6px;margin-top:8px;text-align:center}
+  .verdict.bad{background:rgba(251,113,133,.15);color:var(--red)}
+  .verdict.ok{background:rgba(251,191,36,.15);color:var(--amber)}
+  .verdict.good{background:rgba(74,222,128,.15);color:var(--green)}
+  code{background:#0c0e14;padding:2px 6px;border-radius:5px;color:var(--acc);font-size:13px}
+  .note{border-left:3px solid var(--acc);background:rgba(110,231,255,.07);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .warn{border-left:3px solid var(--red);background:rgba(251,113,133,.08);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .good{border-left:3px solid var(--green);background:rgba(74,222,128,.08);padding:11px 15px;border-radius:0 9px 9px 0;margin:11px 0}
+  .small{font-size:12px;color:var(--mut)}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left}
+  th{background:#1e2230;color:var(--acc)}
+  .tree-node{fill:#60a5fa}
+  .tree-edge{stroke:#4ade80;stroke-width:1.5;fill:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>🌳 同一棵树，三种几何 · 双曲 vs 平面 vs 球面</h1>
+<p class="sub">用<b>完全相同的坐标 (r,θ)</b>，在三种几何下画同一棵 4 层 skill 树。看哪种能"装得下"且不失真。</p>
+
+<p>我们先定义<b>同一棵树</b>（4层，每个节点分3叉），然后看它在三种几何下的命运：</p>
+<div class="card">
+<p style="margin-top:0"><b>这棵 skill 树</b>（你的 skill 层级）：</p>
+<p class="small">
+L0(根): 优化方法 → 
+L1: 梯度下降 / 树模型 / 神经网 → 
+L2: Adam/SGD, XGB/LGBM, CNN/Transformer → 
+L3: Adam的lr, XGB的max_depth, ... (27 个叶子节点)
+</p>
+</div>
+
+<!-- ====== A. 三种几何对比 ====== -->
+<h2>① 同一棵树，放在三种几何里</h2>
+
+<div class="grid3">
+
+<!-- 平面 -->
+<div class="geom-card bad">
+<div class="title" style="color:var(--red)">平面 ℝ²（曲率=0）</div>
+<div class="formula">距离 = √(Δx²+Δy²)，面积 = πr²</div>
+<svg viewBox="0 0 280 280" width="100%">
+  <!-- 网格 -->
+  <g opacity="0.15">
+    <line x1="140" y1="20" x2="140" y2="260" stroke="#9aa3b8"/>
+    <line x1="20" y1="140" x2="260" y2="140" stroke="#9aa3b8"/>
+    <circle cx="140" cy="140" r="40" fill="none" stroke="#9aa3b8" stroke-dasharray="2 2"/>
+    <circle cx="140" cy="140" r="80" fill="none" stroke="#9aa3b8" stroke-dasharray="2 2"/>
+    <circle cx="140" cy="140" r="120" fill="none" stroke="#9aa3b8" stroke-dasharray="2 2"/>
+  </g>
+  <text x="140" y="15" font-size="9" fill="#9aa3b8" text-anchor="middle">网格均匀 · 面积线性增长</text>
+  <!-- 树: 根在中心，向外展开 -->
+  <circle cx="140" cy="140" r="7" fill="#6ee7ff"/>
+  <!-- L1: 3个 -->
+  <circle cx="100" cy="110" r="6" class="tree-node"/>
+  <circle cx="180" cy="110" r="6" class="tree-node"/>
+  <circle cx="140" cy="80" r="6" class="tree-node"/>
+  <line x1="140" y1="140" x2="100" y2="110" class="tree-edge"/>
+  <line x1="140" y1="140" x2="180" y2="110" class="tree-edge"/>
+  <line x1="140" y1="140" x2="140" y2="80" class="tree-edge"/>
+  <!-- L2: 9个 (挤在一起) -->
+  <circle cx="85" cy="85" r="4" class="tree-node"/>
+  <circle cx="115" cy="80" r="4" class="tree-node"/>
+  <circle cx="100" cy="60" r="4" class="tree-node"/>
+  <circle cx="165" cy="80" r="4" class="tree-node"/>
+  <circle cx="195" cy="85" r="4" class="tree-node"/>
+  <circle cx="180" cy="60" r="4" class="tree-node"/>
+  <circle cx="125" cy="55" r="4" class="tree-node"/>
+  <circle cx="155" cy="55" r="4" class="tree-node"/>
+  <circle cx="140" cy="40" r="4" class="tree-node"/>
+  <!-- L3: 27个 (严重拥挤，几乎重叠) -->
+  <g fill="#c4b5fd" opacity="0.7">
+    <circle cx="78" cy="70" r="2.5"/><circle cx="92" cy="68" r="2.5"/><circle cx="82" cy="58" r="2.5"/>
+    <circle cx="108" cy="68" r="2.5"/><circle cx="120" cy="72" r="2.5"/><circle cx="112" cy="60" r="2.5"/>
+    <circle cx="95" cy="50" r="2.5"/><circle cx="108" cy="48" r="2.5"/><circle cx="100" cy="42" r="2.5"/>
+    <circle cx="158" cy="68" r="2.5"/><circle cx="172" cy="70" r="2.5"/><circle cx="162" cy="60" r="2.5"/>
+    <circle cx="188" cy="68" r="2.5"/><circle cx="200" cy="72" r="2.5"/><circle cx="192" cy="58" r="2.5"/>
+    <circle cx="175" cy="50" r="2.5"/><circle cx="188" cy="48" r="2.5"/><circle cx="180" cy="42" r="2.5"/>
+    <circle cx="118" cy="48" r="2.5"/><circle cx="132" cy="50" r="2.5"/><circle cx="122" cy="40" r="2.5"/>
+    <circle cx="148" cy="48" r="2.5"/><circle cx="160" cy="50" r="2.5"/><circle cx="155" cy="40" r="2.5"/>
+    <circle cx="130" cy="32" r="2.5"/><circle cx="150" cy="32" r="2.5"/><circle cx="140" cy="25" r="2.5"/>
+  </g>
+  <text x="140" y="270" font-size="9.5" fill="#fb7185" text-anchor="middle">⚠️ L3 的 27 个叶子挤成一团，区分不开</text>
+</svg>
+<div class="verdict bad">❌ 装得下但严重失真</div>
+<p class="small">面积 = πr² <b>线性增长</b>。第3层的27个节点挤在边缘一小块区域，彼此距离太近，<b>区分不开</b>。层级越深越挤。</p>
+</div>
+
+<!-- 球面 -->
+<div class="geom-card ok">
+<div class="title" style="color:var(--amber)">球面 S²（曲率>0）</div>
+<div class="formula">面积 = 4πR² <b>有限！</b></div>
+<svg viewBox="0 0 280 280" width="100%">
+  <!-- 球面投影(球极平面投影) -->
+  <circle cx="140" cy="140" r="120" fill="none" stroke="#2a2f3e" stroke-width="2"/>
+  <!-- 纬度线 -->
+  <ellipse cx="140" cy="140" rx="120" ry="30" fill="none" stroke="#9aa3b8" opacity="0.2"/>
+  <ellipse cx="140" cy="140" rx="100" ry="55" fill="none" stroke="#9aa3b8" opacity="0.2"/>
+  <ellipse cx="140" cy="140" rx="70" ry="75" fill="none" stroke="#9aa3b8" opacity="0.2"/>
+  <text x="140" y="15" font-size="9" fill="#9aa3b8" text-anchor="middle">球面面积有限 · 边缘收窄</text>
+  <!-- 树: 根在"北极"(中心投影)，向外 -->
+  <circle cx="140" cy="140" r="7" fill="#6ee7ff"/>
+  <!-- L1 -->
+  <circle cx="105" cy="115" r="6" class="tree-node"/>
+  <circle cx="175" cy="115" r="6" class="tree-node"/>
+  <circle cx="140" cy="100" r="6" class="tree-node"/>
+  <line x1="140" y1="140" x2="105" y2="115" class="tree-edge"/>
+  <line x1="140" y1="140" x2="175" y2="115" class="tree-edge"/>
+  <line x1="140" y1="140" x2="140" y2="100" class="tree-edge"/>
+  <!-- L2: 球面下还能展开 -->
+  <circle cx="95" cy="95" r="4" class="tree-node"/>
+  <circle cx="115" cy="90" r="4" class="tree-node"/>
+  <circle cx="105" cy="80" r="4" class="tree-node"/>
+  <circle cx="165" cy="90" r="4" class="tree-node"/>
+  <circle cx="185" cy="95" r="4" class="tree-node"/>
+  <circle cx="175" cy="80" r="4" class="tree-node"/>
+  <circle cx="128" cy="78" r="4" class="tree-node"/>
+  <circle cx="152" cy="78" r="4" class="tree-node"/>
+  <circle cx="140" cy="68" r="4" class="tree-node"/>
+  <!-- L3: 球面边缘收窄，叶子更挤！ -->
+  <g fill="#c4b5fd" opacity="0.6">
+    <circle cx="90" cy="80" r="2.5"/><circle cx="100" cy="78" r="2.5"/><circle cx="95" cy="72" r="2.5"/>
+    <circle cx="110" cy="75" r="2.5"/><circle cx="120" cy="80" r="2.5"/><circle cx="113" cy="70" r="2.5"/>
+    <circle cx="160" cy="75" r="2.5"/><circle cx="170" cy="80" r="2.5"/><circle cx="165" cy="70" r="2.5"/>
+    <circle cx="180" cy="78" r="2.5"/><circle cx="190" cy="80" r="2.5"/><circle cx="185" cy="72" r="2.5"/>
+    <circle cx="122" cy="65" r="2.5"/><circle cx="132" cy="68" r="2.5"/><circle cx="128" cy="60" r="2.5"/>
+    <circle cx="148" cy="68" r="2.5"/><circle cx="158" cy="65" r="2.5"/><circle cx="152" cy="60" r="2.5"/>
+    <!-- 球面边缘收窄，9个挤更厉害 -->
+  </g>
+  <text x="140" y="270" font-size="9.5" fill="#fbbf24" text-anchor="middle">⚠️ 总面积有限，越往"赤道"外越收窄</text>
+</svg>
+<div class="verdict ok">⚠️ 比 L2 还拥挤，且会"撞南墙"</div>
+<p class="small">球面<b>总面积有限</b>。树越深，叶子越多，但球面"赤道外"空间反而<b>收窄</b>（像地球两极挤一起）。<b>装不下无限深的树</b>。</p>
+</div>
+
+<!-- 双曲 -->
+<div class="geom-card good">
+<div class="title" style="color:var(--green)">双曲 ℍ²（曲率&lt;0）</div>
+<div class="formula">面积 = 2π(cosh(r)−1) <b>指数增长！</b></div>
+<svg viewBox="0 0 280 280" width="100%">
+  <!-- Poincaré圆盘 -->
+  <circle cx="140" cy="140" r="120" fill="none" stroke="#2a2f3e" stroke-width="2" stroke-dasharray="4 3"/>
+  <!-- 双曲纬度线(越往外越密) -->
+  <circle cx="140" cy="140" r="30" fill="none" stroke="#9aa3b8" opacity="0.15"/>
+  <circle cx="140" cy="140" r="60" fill="none" stroke="#9aa3b8" opacity="0.15"/>
+  <circle cx="140" cy="140" r="90" fill="none" stroke="#9aa3b8" opacity="0.15"/>
+  <circle cx="140" cy="140" r="110" fill="none" stroke="#9aa3b8" opacity="0.15"/>
+  <text x="140" y="15" font-size="9" fill="#9aa3b8" text-anchor="middle">边缘面积指数膨胀 · 无限空间</text>
+  <!-- 树: 根在中心 -->
+  <circle cx="140" cy="140" r="7" fill="#6ee7ff"/>
+  <!-- L1: 3个，稍外推 -->
+  <circle cx="110" cy="115" r="6" class="tree-node"/>
+  <circle cx="170" cy="115" r="6" class="tree-node"/>
+  <circle cx="140" cy="100" r="6" class="tree-node"/>
+  <line x1="140" y1="140" x2="110" y2="115" class="tree-edge"/>
+  <line x1="140" y1="140" x2="170" y2="115" class="tree-edge"/>
+  <line x1="140" y1="140" x2="140" y2="100" class="tree-edge"/>
+  <!-- L2: 推到中层 -->
+  <circle cx="90" cy="90" r="4" class="tree-node"/>
+  <circle cx="115" cy="80" r="4" class="tree-node"/>
+  <circle cx="100" cy="65" r="4" class="tree-node"/>
+  <circle cx="165" cy="80" r="4" class="tree-node"/>
+  <circle cx="190" cy="90" r="4" class="tree-node"/>
+  <circle cx="180" cy="65" r="4" class="tree-node"/>
+  <circle cx="125" cy="60" r="4" class="tree-node"/>
+  <circle cx="155" cy="60" r="4" class="tree-node"/>
+  <circle cx="140" cy="45" r="4" class="tree-node"/>
+  <!-- L3: 27个叶子！双曲边缘能装下且分开 -->
+  <g fill="#c4b5fd">
+    <circle cx="75" cy="70" r="3"/><circle cx="85" cy="60" r="3"/><circle cx="78" cy="48" r="3"/>
+    <circle cx="95" cy="55" r="3"/><circle cx="105" cy="48" r="3"/><circle cx="100" cy="35" r="3"/>
+    <circle cx="80" cy="35" r="3"/><circle cx="88" cy="25" r="3"/><circle cx="72" cy="45" r="3"/>
+    <circle cx="155" cy="55" r="3"/><circle cx="165" cy="48" r="3"/><circle cx="160" cy="35" r="3"/>
+    <circle cx="175" cy="45" r="3"/><circle cx="185" cy="35" r="3"/><circle cx="192" cy="48" r="3"/>
+    <circle cx="180" cy="25" r="3"/><circle cx="170" cy="25" r="3"/><circle cx="190" cy="30" r="3"/>
+    <circle cx="120" cy="40" r="3"/><circle cx="130" cy="30" r="3"/><circle cx="125" cy="20" r="3"/>
+    <circle cx="150" cy="40" r="3"/><circle cx="148" cy="25" r="3"/><circle cx="155" cy="18" r="3"/>
+    <circle cx="135" cy="15" r="3"/><circle cx="145" cy="12" r="3"/><circle cx="140" cy="8" r="3"/>
+  </g>
+  <text x="140" y="270" font-size="9.5" fill="#4ade80" text-anchor="middle">✅ 27个叶子在边缘<b>均匀分散</b>，互不重叠</text>
+</svg>
+<div class="verdict good">✅ 完美展开，无失真，可无限深</div>
+<p class="small">面积 = 2π(cosh(r)−1) <b>指数增长</b>。第3层的27个节点在边缘<b>有充足空间均匀分散</b>。层级越深，边缘空间越多，<b>永远不会挤</b>。</p>
+</div>
+
+</div>
+
+<div class="warn">
+<b>🎯 看明白了吗？</b> 三个图用的<b>是完全相同的树结构</b>（同样的4层、同样的分叉）。
+- <b>平面</b>：第3层27个叶子挤成一团，区分不开（面积线性增长，边缘不够用）
+- <b>球面</b>：总面积有限，越深越挤，还会"撞墙"（球面无法装无限树）
+- <b>双曲</b>：第3层27个叶子<b>均匀分散</b>，每个都有自己的位置（面积指数膨胀）
+<br><b>这就是"为什么只有双曲能装下树"的视觉证明。</b>
+</div>
+
+<!-- ====== 面积公式对比 ====== -->
+<h2>② 数学根源：三种几何的"面积增长速度"</h2>
+<div class="card">
+<p style="margin-top:0">同样半径 r 处的<b>可用面积</b>（决定能装多少节点）：</p>
+<table>
+<tr><th>几何</th><th>半径r处的圆周长</th><th>增长速度</th><th>直观</th></tr>
+<tr><td>平面 ℝ²</td><td>2πr</td><td><b>线性</b></td><td>越往外，空间<b>匀速</b>增加 → 深层节点挤</td></tr>
+<tr><td>球面 S²</td><td>2π·sin(r)</td><td><b>先增后减，有限</b></td><td>赤道最大，两极收窄到0 → <b>撞墙</b></td></tr>
+<tr><td style="color:var(--green)">双曲 ℍ²</td><td>2π·sinh(r)</td><td style="color:var(--green)"><b>指数！</b></td><td>越往外空间<b>爆炸式</b>增加 → <b>无限装</b></td></tr>
+</table>
+<div class="note">
+<b>关键：sinh(r) 是指数函数。</b> 当 r=3 时，平面周长≈6π，双曲周长≈200。
+<b>同样的"半径3"，双曲能装的节点数是平面的30倍。</b> 这就是为什么深层 skill（具体 patch）在双曲里有充足空间，在平面里挤成一团。
+</div>
+</div>
+
+<!-- ====== B. 2D vs 3D ====== -->
+<h2>③ B部分：2D 双曲 ℍ² vs 3D 双曲 ℍ³ 该选哪个？</h2>
+
+<div class="grid2">
+<div class="card">
+<h3 style="color:var(--acc);margin-top:0">2D 双曲 ℍ²（Poincaré圆盘）</h3>
+<p><b>坐标</b>：(r, θ) — 半径 + 1个角度</p>
+<p><b>能表达</b>：</p>
+<ul>
+  <li>✅ 层级深度（r）</li>
+  <li>✅ 一个语义轴（θ）</li>
+</ul>
+<p><b>适合</b>：skill 数量 &lt; 500，语义类别单一（如纯 MLE 方法）</p>
+<p><b>优点</b>：简单、稳定、可视化（圆盘图）</p>
+<p><b>缺点</b>：只能表达一个正交语义轴</p>
+</div>
+
+<div class="card">
+<h3 style="color:var(--acc);margin-top:0">3D 双曲 ℍ³（Poincaré球）</h3>
+<p><b>坐标</b>：(r, θ, φ) — 半径 + 2个角度</p>
+<p><b>能表达</b>：</p>
+<ul>
+  <li>✅ 层级深度（r）</li>
+  <li>✅ 两个正交语义轴（θ, φ）</li>
+</ul>
+<p><b>适合</b>：skill 数量 &gt; 500，需要区分多种正交语义（领域×类型）</p>
+<p><b>优点</b>：能表达两个正交语义轴</p>
+<p><b>缺点</b>：计算贵，无法直接2D可视化</p>
+</div>
+</div>
+
+<h3>推荐维度数（基于你的 skill 数量）</h3>
+<div class="card">
+<table>
+<tr><th>你的 skill 规模</th><th>推荐几何</th><th>理由</th></tr>
+<tr><td>&lt; 100 个</td><td style="color:var(--green)">ℍ² (2D)</td><td>够用，简单</td></tr>
+<tr><td>100–500 个</td><td style="color:var(--green)">ℍ² (2D)</td><td>仍够用，一个语义轴足够</td></额外的语义轴分不开</td></tr>
+<tr><td>500–2000 个</td><td style="color:var(--amber)">ℍ³ (3D) 或 ℍ⁵</td><td>需要多个正交语义轴来区分</td></tr>
+<tr><td>&gt; 2000 个</td><td style="记忆库很大)">ℍ⁵ (5D)</td><td>多语义轴避免不同类 skill 重叠</td></tr>
+</table>
+<p class="small">⚠️ <b>注意：维度不是越多越好</b>。双曲的高维会指数级增加计算成本，且数值不稳定。你的 skill 库如果只有几百个，2D 完全够用。盲目上高维是过度工程。</p>
+</div>
+
+<!-- ====== C. 坐标定义 ====== -->
+<h2>④ C部分：ℍ³ / ℍ⁵ 的具体坐标轴怎么定义？</h2>
+
+<p>如果你要从 2D 升级到多维双曲，每个正交轴该放什么？核心原则：<b>每个角度轴放一个"正交的语义类别"</b>，避免重叠。</p>
+
+<div class="card">
+<h3 style="color:var(--green);margin-top:0">ℍ² 推荐定义（你的起步方案）</h3>
+<div class="grid2">
+<div>
+<p style="margin-top:0"><b>r（半径）</b></p>
+<p>层级深度，由 <code>metric</code> 监督<br>
+<span class="small">log loss 低（有效）→ r 小（靠核心）<br>log loss 高（无效）→ r 大（靠边缘）</span></p>
+</div>
+<div>
+<p style="margin-top:0"><b>θ（角度）</b></p>
+<p>skill 的主语义类别<br>
+<span class="small">来自 skill 文本的 embedding 投影<br>如：0°=优化, 120°=数据, 240°=特征</span></p>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h3 style="color:var(--amber);margin-top:0">ℍ³ 推荐定义（加一个正交轴）</h3>
+<div class="grid3" style="grid-template-columns:repeat(3,1fr)">
+<div>
+<p style="margin-top:0"><b>r（半径）</b></p>
+<p>层级深度<br><span class="small">metric_delta 监督</span></p>
+</div>
+<div>
+<p style="margin-top:0"><b>θ₁（水平角）</b></p>
+<p>skill 领域<br><span class="small">优化/数据/特征/模型...</span></p>
+</div>
+<div>
+<p style="margin-top:0"><b>θ₂（垂直角）</b></p>
+<p>skill 类型<br><span class="small">Skill/SOP/Condition/FailureMode</span></p>
+</div>
+</div>
+<p class="small" style="margin-top:8px">这样"领域×类型"两个维度正交分离。如 "优化领域的 SOP" 和 "数据领域的 FailureMode" 在不同位置，不混淆。</p>
+</div>
+
+<div class="card">
+<h3 style="color:var(--purple);margin-top:0">ℍ⁵ 推荐定义（4个正交角度轴，skill 库很大时）</h3>
+<table>
+<tr><th>轴</th><th>放什么</th><th>怎么取值</th></tr>
+<tr><td><b>r</b>（半径）</td><td>层级深度</td><td><code>metric_delta</code> 监督</td></tr>
+<tr><td><b>θ₁</b>（角1）</td><td>skill 领域</td><td>优化/数据/特征/模型/集成</td></tr>
+<Tr><td><b>θ₂</b>（角2）</td><td>skill 类型</td><td>Skill/SOP/Condition/FailureMode/Evidence</td></tr>
+<tr><td><b>θ₃</b>（角3）</td><td>数据模态</td><td>表格/图像/文本/时间序列</td></tr>
+<tr><td><b>θ₄</b>（角4）</td><td>计算成本</td><td>轻量/中等/昂贵</td></tr>
+</table>
+<p class="small" style="margin-top:8px">⚠️ <b>但别盲目上 ℍ⁵</b>。只有当你的 skill 库真的有 2000+ 个且这些轴都<b>真实存在差异</b>时才用。
+否则高维双曲的数值不稳定和计算成本会拖垮你。先用 ℍ² 跑通，验证有效后再升级。</p>
+</div>
+
+<!-- ====== 总结 ====== -->
+<h2>⑤ 一页纸总结</h2>
+<div class="card" style="border-color:var(--acc)">
+<p style="margin-top:0;margin-bottom:6px"><b>🌳 A部分：为什么只有双曲能装下树</b></p>
+<p style="margin-bottom:6px">平面(面积∝r，线性)→深层挤；球面(面积有限)→撞墙；双曲(面积∝sinh(r)，指数)→无限装。</p>
+<p style="margin-bottom:6px"><b>📐 B部分：2D vs 3D 怎么选</b></p>
+<p style="margin-bottom:6px">看 skill 数量：&lt;500 用 ℍ² 足够；500–2000 考虑 ℍ³；&gt;2000 才考虑 ℍ⁵。<b>先用 2D 跑通。</b></p>
+<p style="margin-bottom:0"><b>🎯 C部分：坐标轴怎么分配</b></p>
+<p style="margin-bottom:0">每个角度轴 = 一个<b>正交语义类别</b>。半径永远 = 层级(metric监督)。ℍ²: r+领域；ℍ³: r+领域+类型；ℍ⁵: r+领域+类型+模态+成本。<b>先从 ℍ² 起步。</b></p>
+</div>
+
+</div>
+</body>
+</html>

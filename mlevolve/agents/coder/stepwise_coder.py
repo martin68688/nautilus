@@ -12,6 +12,7 @@ Main entry: stepwise_plan_and_code_query()
 from __future__ import annotations
 
 import logging
+import json
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Any
 
@@ -33,6 +34,8 @@ class StepwiseContext:
     memory: str = ""
     previous_code: str = ""
     execution_output: str = ""
+    draft_role: str = ""
+    role_contract: Dict[str, Any] | None = None
 
 
 @dataclass
@@ -256,10 +259,20 @@ class StepAgent:
         if context.stage == "improve" and "Previous solution" in prompt:
             previous_solution_section = f"\n# Previous solution\n{prompt['Previous solution']['Code']}\n"
 
+        role_contract_section = ""
+        if context.draft_role:
+            role_contract_section = (
+                "\n# Draft role contract\n"
+                f"Role: {context.draft_role}\n"
+                f"{json.dumps(context.role_contract or {}, ensure_ascii=False, indent=2)}\n"
+                "This contract applies to this step and must remain consistent with every other step.\n"
+            )
+
         user_prompt = (
             f"\n# Task description\n{prompt['Task description']}\n\n"
             f"{memory_section}\n"
             f"{external_skill_section}\n"
+            f"{role_contract_section}\n"
             f"{previous_solution_section}"
             f"# Previous steps\n{prompt['Previous steps']}\n\n"
             f"# Current step: {prompt['Current step']['Name']}\n{prompt['Current step']['Description']}\n\n"
@@ -405,10 +418,20 @@ class MetaAgent:
                 f"{prompt_base['External Skill Memory']}\n"
             )
 
+        role_contract_section = ""
+        if context.draft_role:
+            role_contract_section = (
+                "\n# Draft role contract\n"
+                f"Role: {context.draft_role}\n"
+                f"{json.dumps(context.role_contract or {}, ensure_ascii=False, indent=2)}\n"
+                "The merged program must preserve this contract exactly.\n"
+            )
+
         user_prompt = (
             f"\n# Task description\n{prompt['Task description']}\n\n"
             f"{memory_section}\n\n"
             f"{external_skill_section}\n\n"
+            f"{role_contract_section}\n\n"
             f"# Step results\n{prompt['Step results']}\n\n"
             f"{instructions}"
         )
@@ -486,6 +509,8 @@ def stepwise_plan_and_code_query(
         memory=context.get("memory", ""),
         previous_code=context.get("previous_code", ""),
         execution_output=context.get("execution_output", ""),
+        draft_role=context.get("draft_role", ""),
+        role_contract=context.get("role_contract") or {},
     )
 
     step_agents = create_default_step_agents()

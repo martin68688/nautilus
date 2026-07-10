@@ -85,14 +85,19 @@ def run():
     if initial_draft_count > 0 and total_steps > 0:
         logger.info(f"📝 Phase 1: Sequential draft generation (code only, {initial_draft_count} drafts)")
 
-        def step_task_generate_only():
+        def step_task_generate_only(draft_idx):
             logger.info(f"[step_task_generate_only] Generating draft from virtual root")
-            return agent.step(exec_callback=exec_callback, node=None, execute_immediately=False)
+            return agent.step(
+                exec_callback=exec_callback,
+                node=None,
+                execute_immediately=False,
+                draft_role=agent.configured_draft_role(draft_idx),
+            )
 
         for draft_idx in range(min(initial_draft_count, total_steps)):
             try:
                 logger.info(f"🔨 Generating draft {draft_idx + 1}/{min(initial_draft_count, total_steps)} (code only)")
-                cur_node = step_task_generate_only()
+                cur_node = step_task_generate_only(draft_idx)
                 pending_draft_nodes.append(cur_node)
                 logger.info(f"✅ Draft {draft_idx + 1} code generated: node.id={cur_node.id}, added to virtual_root.children")
 

@@ -89,6 +89,17 @@ def clean_text(text: Any) -> str:
     return re.sub(r"\s+", " ", str(text or "")).strip()
 
 
+def as_list(value: Any) -> list[Any]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
+        return list(value)
+    text = clean_text(value)
+    return [text] if text else []
+
+
 def tokenize(text: str) -> set[str]:
     return set(re.findall(r"[a-zA-Z][a-zA-Z0-9_+-]{2,}", (text or "").lower()))
 
@@ -107,7 +118,7 @@ def display_path(path: Path) -> str:
 def radius_band(radius: float) -> str:
     if radius <= 0.35:
         return "core"
-    if radius <= 0.70:
+    if radius <= 0.60:
         return "middle"
     return "edge"
 
@@ -139,10 +150,20 @@ def direction_to_angles(directions: np.ndarray) -> tuple[np.ndarray, np.ndarray]
 
 
 def node_text_for_direction(node: dict[str, Any]) -> str:
-    return " ".join(
-        clean_text(node.get(k, ""))
-        for k in ("title", "principle", "condition", "category", "scope")
-    )
+    structured = [
+        clean_text(node.get("title")),
+        clean_text(node.get("principle")),
+        clean_text(node.get("action")),
+        clean_text(node.get("condition")),
+        " ".join(clean_text(x) for x in as_list(node.get("applies_when"))),
+        " ".join(clean_text(x) for x in as_list(node.get("prevents"))),
+        " ".join(clean_text(x) for x in as_list(node.get("failure_modes"))),
+        clean_text(node.get("category")),
+        clean_text(node.get("scope")),
+        " ".join(clean_text(x) for x in as_list(node.get("implementation_ids"))),
+        " ".join(clean_text(x) for x in as_list(node.get("reference_ids"))),
+    ]
+    return " ".join(x for x in structured if x)
 
 
 def infer_failure_modes(node: dict[str, Any]) -> list[str]:
@@ -156,11 +177,26 @@ def infer_failure_modes(node: dict[str, Any]) -> list[str]:
     return list(dict.fromkeys(modes))[:3]
 
 
-def build_text_directions(nodes: list[dict[str, Any]], dims: int = 16) -> tuple[np.ndarray, dict[str, Any], dict[str, Any]]:
-    corpus = [
-        node_text_for_direction(n)
-        for n in nodes
-    ]
+def _normalize_directions(dense: np.ndarray, nodes: list[dict[str, Any]], dims: int) -> np.ndarray:
+    if dense.shape[1] < dims:
+        dense = np.pad(dense, ((0, 0), (0, dims - dense.shape[1])), constant_values=0.0)
+    directions = normalize(dense, norm="l2")
+    for i, row in enumerate(directions):
+        if not np.isfinite(row).all() or np.linalg.norm(row) < 1e-8:
+            seed = int(hashlib.md5(nodes[i]["id"].encode("utf-8")).hexdigest()[:8], 16)
+            rng = np.random.default_rng(seed)
+            fallback = rng.normal(size=dims)
+            directions[i] = fallback / np.linalg.norm(fallback)
+    return directions.astype(np.float32)
+
+
+def _build_tfidf_directions(
+    *,
+    nodes: list[dict[str, Any]],
+    corpus: list[str],
+    dims: int,
+    fallback_reason: str = "",
+) -> tuple[np.ndarray, dict[str, Any], dict[str, Any]]:
     vectorizer = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), max_features=4096)
     tfidf = vectorizer.fit_transform(corpus)
     n_components = min(dims, max(1, min(tfidf.shape) - 1))
@@ -172,32 +208,229 @@ def build_text_directions(nodes: list[dict[str, Any]], dims: int = 16) -> tuple[
     else:
         dense = tfidf.toarray()[:, :1]
         explained = []
-    if dense.shape[1] < dims:
-        dense = np.pad(dense, ((0, 0), (0, dims - dense.shape[1])), constant_values=0.0)
-
-    directions = normalize(dense, norm="l2")
-    for i, row in enumerate(directions):
-        if not np.isfinite(row).all() or np.linalg.norm(row) < 1e-8:
-            seed = int(hashlib.md5(nodes[i]["id"].encode("utf-8")).hexdigest()[:8], 16)
-            rng = np.random.default_rng(seed)
-            fallback = rng.normal(size=dims)
-            directions[i] = fallback / np.linalg.norm(fallback)
+    directions = _normalize_directions(dense, nodes, dims)
     meta = {
         "method": "tfidf_truncated_svd",
         "dims": dims,
         "actual_components": int(n_components),
         "n_terms": int(tfidf.shape[1]),
         "explained_variance_ratio": explained,
+        "embedding_quality_confidence": "low" if fallback_reason else "medium",
     }
+    if fallback_reason:
+        meta["fallback_reason"] = fallback_reason
     text_model = {
-        "version": "hyper_text_model_v1",
+        "version": "hyper_text_model_v2",
         "method": "tfidf_truncated_svd",
-        "fields": ["title", "principle", "condition", "category", "scope"],
+        "fields": ["title", "action/principle", "condition/applies_when", "prevents/failure_modes", "category", "scope", "implementation/reference ids"],
         "dims": dims,
         "vectorizer": vectorizer,
         "svd": svd,
+        "fallback_reason": fallback_reason,
     }
-    return directions.astype(np.float32), meta, text_model
+    return directions, meta, text_model
+
+
+def _build_sentence_embedding_directions(
+    *,
+    nodes: list[dict[str, Any]],
+    corpus: list[str],
+    dims: int,
+    embedding_model: str,
+) -> tuple[np.ndarray, dict[str, Any], dict[str, Any]]:
+    try:
+        from sentence_transformers import SentenceTransformer
+
+        encoder = SentenceTransformer(embedding_model, local_files_only=True)
+        embeddings = np.asarray(
+            encoder.encode(corpus, normalize_embeddings=False, show_progress_bar=False),
+            dtype=np.float32,
+        )
+        if embeddings.ndim != 2 or embeddings.shape[0] != len(nodes) or embeddings.shape[1] < 2:
+            raise RuntimeError(f"unexpected sentence embedding shape: {embeddings.shape}")
+    except Exception as exc:
+        raise RuntimeError(f"sentence embedding backend unavailable locally: {exc}") from exc
+
+    n_components = min(dims, max(1, min(embeddings.shape) - 1))
+    projection = TruncatedSVD(n_components=n_components, random_state=42)
+    dense = projection.fit_transform(embeddings)
+    explained = [float(x) for x in getattr(projection, "explained_variance_ratio_", [])]
+    directions = _normalize_directions(dense, nodes, dims)
+    meta = {
+        "method": "sentence_embedding_svd",
+        "embedding_model": embedding_model,
+        "dims": dims,
+        "actual_components": int(n_components),
+        "source_embedding_dims": int(embeddings.shape[1]),
+        "explained_variance_ratio": explained,
+        "embedding_quality_confidence": "high",
+    }
+    text_model = {
+        "version": "hyper_text_model_v2",
+        "method": "sentence_embedding_svd",
+        "fields": ["title", "action/principle", "condition/applies_when", "prevents/failure_modes", "category", "scope", "implementation/reference ids"],
+        "dims": dims,
+        "embedding_model": embedding_model,
+        "projection": projection,
+    }
+    return directions, meta, text_model
+
+
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def _benchmark_query_text(row: dict[str, Any]) -> str:
+    return "\n".join(
+        [
+            str(row.get("context", "")),
+            "Stage: " + str(row.get("stage", "")),
+            "Query kind: " + str(row.get("query_kind", "")),
+            "Query specificity: " + str(row.get("query_specificity", "")),
+            "Conditions: " + "; ".join(row.get("condition") or []),
+            "Failure modes: " + "; ".join(row.get("failure_mode") or []),
+            "Task type: " + str(row.get("task_type", "")),
+        ]
+    ).strip()
+
+
+def _build_contrastive_projection_directions(
+    *,
+    nodes: list[dict[str, Any]],
+    corpus: list[str],
+    dims: int,
+    embedding_model: str,
+    benchmark_path: Path | None,
+    gold_path: Path | None,
+) -> tuple[np.ndarray, dict[str, Any], dict[str, Any]]:
+    if benchmark_path is None or gold_path is None:
+        raise RuntimeError("contrastive_projection requires --contrastive-benchmark and --contrastive-gold")
+    try:
+        from sentence_transformers import SentenceTransformer
+
+        encoder = SentenceTransformer(embedding_model, local_files_only=True)
+        sop_embeddings = np.asarray(
+            encoder.encode(corpus, normalize_embeddings=False, show_progress_bar=False),
+            dtype=np.float32,
+        )
+    except Exception as exc:
+        raise RuntimeError(f"embedding_backend_unavailable: sentence embedding backend unavailable locally: {exc}") from exc
+    if sop_embeddings.ndim != 2 or sop_embeddings.shape[0] != len(nodes) or sop_embeddings.shape[1] < 2:
+        raise RuntimeError(f"unexpected sentence embedding shape: {sop_embeddings.shape}")
+
+    benchmark = _read_jsonl(benchmark_path)
+    gold_by_query = {str(row["query_id"]): row for row in _read_jsonl(gold_path)}
+    node_index = {str(node["id"]): idx for idx, node in enumerate(nodes)}
+    query_texts: list[str] = []
+    gold_indices: list[int] = []
+    hard_negative_indices: list[int] = []
+    for row in benchmark:
+        if str(row.get("split", "")) != "dev":
+            continue
+        qid = str(row.get("query_id", ""))
+        gold = gold_by_query.get(qid, {})
+        gold_sid = ""
+        for item in gold.get("gold_sops", []) or []:
+            if item.get("relevance") in {"required", "helpful", "risk_warning"}:
+                gold_sid = str(item.get("sop_id", ""))
+                break
+        if gold_sid not in node_index:
+            continue
+        query_texts.append(_benchmark_query_text(row))
+        gold_indices.append(node_index[gold_sid])
+        for did in row.get("distractor_sops", []) or []:
+            if str(did) in node_index:
+                hard_negative_indices.append(node_index[str(did)])
+    if not query_texts:
+        raise RuntimeError("contrastive_projection requires at least one dev query-gold pair")
+    query_embeddings = np.asarray(
+        encoder.encode(query_texts, normalize_embeddings=False, show_progress_bar=False),
+        dtype=np.float32,
+    )
+    gold_embeddings = sop_embeddings[np.asarray(gold_indices, dtype=int)]
+    supervised_parts = [
+        sop_embeddings,
+        query_embeddings,
+        0.5 * (query_embeddings + gold_embeddings),
+        gold_embeddings - query_embeddings,
+    ]
+    if hard_negative_indices:
+        negative_embeddings = sop_embeddings[np.asarray(hard_negative_indices[: len(query_embeddings)], dtype=int)]
+        repeated_queries = query_embeddings[: len(negative_embeddings)]
+        supervised_parts.append(repeated_queries - negative_embeddings)
+    projection_input = np.vstack(supervised_parts)
+    n_components = min(dims, max(1, min(projection_input.shape) - 1))
+    projection = TruncatedSVD(n_components=n_components, random_state=42)
+    projection.fit(projection_input)
+    dense = projection.transform(sop_embeddings)
+    directions = _normalize_directions(dense, nodes, dims)
+    explained = [float(x) for x in getattr(projection, "explained_variance_ratio_", [])]
+    meta = {
+        "method": "contrastive_projection",
+        "embedding_model": embedding_model,
+        "projection_method": "sentence_embedding_supervised_svd_with_dev_query_gold_pairs",
+        "dims": dims,
+        "actual_components": int(n_components),
+        "source_embedding_dims": int(sop_embeddings.shape[1]),
+        "dev_pairs": len(query_texts),
+        "hard_negative_vectors": len(hard_negative_indices),
+        "explained_variance_ratio": explained,
+        "embedding_quality_confidence": "high",
+    }
+    text_model = {
+        "version": "hyper_text_model_v3",
+        "method": "contrastive_projection",
+        "fields": ["sentence embeddings over structured SOP text, supervised by dev query-gold pairs"],
+        "dims": dims,
+        "embedding_model": embedding_model,
+        "projection": projection,
+        "benchmark": str(benchmark_path),
+        "gold": str(gold_path),
+        "train_split": "dev",
+    }
+    return directions, meta, text_model
+
+
+def build_text_directions(
+    nodes: list[dict[str, Any]],
+    dims: int = 16,
+    backend: str = "sentence_embedding",
+    embedding_model: str = "BAAI/bge-base-en-v1.5",
+    allow_embedding_fallback: bool = True,
+    contrastive_benchmark_path: Path | None = None,
+    contrastive_gold_path: Path | None = None,
+) -> tuple[np.ndarray, dict[str, Any], dict[str, Any]]:
+    corpus = [node_text_for_direction(n) for n in nodes]
+    backend = (backend or "sentence_embedding").lower()
+    if backend in {"sentence_embedding", "sentence", "bge"}:
+        try:
+            return _build_sentence_embedding_directions(
+                nodes=nodes,
+                corpus=corpus,
+                dims=dims,
+                embedding_model=embedding_model,
+            )
+        except Exception as exc:
+            if not allow_embedding_fallback:
+                raise RuntimeError(f"embedding_backend_unavailable: {exc}") from exc
+            return _build_tfidf_directions(
+                nodes=nodes,
+                corpus=corpus,
+                dims=dims,
+                fallback_reason=str(exc),
+            )
+    if backend in {"contrastive_projection", "contrastive"}:
+        return _build_contrastive_projection_directions(
+            nodes=nodes,
+            corpus=corpus,
+            dims=dims,
+            embedding_model=embedding_model,
+            benchmark_path=contrastive_benchmark_path,
+            gold_path=contrastive_gold_path,
+        )
+    if backend not in {"tfidf", "tfidf_svd", "tfidf_truncated_svd"}:
+        raise ValueError(f"Unsupported direction backend: {backend}")
+    return _build_tfidf_directions(nodes=nodes, corpus=corpus, dims=dims)
 
 
 def coordinate_quality_report(
@@ -284,30 +517,142 @@ def coordinate_quality_report(
         "neighbor_category_or_failure_coherence": nn_coherence,
         "random_category_or_failure_coherence": random_coherence,
         "neighbor_coherence_lift": coherence_lift,
+        "query_aware_gate": {
+            "status": "not_evaluated",
+            "required_inputs": ["benchmark dev queries", "gold SOP labels", "runner output"],
+            "note": "Query-aware checks are computed by the offline ablation evaluator because they need query/gold pairs.",
+        },
         "note": "Geometry ablation is not claim-grade unless this report passes.",
     }
 
 
-def compute_radii(nodes: list[dict[str, Any]]) -> tuple[np.ndarray, dict[str, Any]]:
+SPECIFIC_IMPLEMENTATION_TERMS = {
+    "api", "checkpoint", "shape", "dimension", "dtype", "cuda", "device", "path",
+    "file", "column", "csv", "undefined", "duplicate", "base_estimator",
+    "estimator", "argument", "parameter", "attribute", "import", "version",
+    "oom", "nan", "exception", "error", "traceback", "sample_submission",
+}
+
+GENERIC_FAILURE_LABELS = {
+    "general execution failure",
+}
+
+
+def _wilson_lower_bound(successes: float, total: float, fallback: float) -> float:
+    if total <= 0:
+        return clamp(fallback, 0.0, 1.0)
+    p = clamp(successes / total, 0.0, 1.0)
+    z = 1.96
+    z2 = z * z
+    denom = 1.0 + z2 / total
+    center = p + z2 / (2.0 * total)
+    margin = z * math.sqrt((p * (1.0 - p) + z2 / (4.0 * total)) / total)
+    return clamp((center - margin) / denom, 0.0, 1.0)
+
+
+def _specificity_features(node: dict[str, Any], *, max_level: float, max_category_count: float, category_counts: collections.Counter[str]) -> dict[str, float]:
+    title = clean_text(node.get("title"))
+    principle = clean_text(node.get("principle") or node.get("action"))
+    condition = clean_text(node.get("condition"))
+    text = " ".join([title, principle, condition]).lower()
+    cond_tokens = tokenize(condition)
+    all_tokens = tokenize(text)
+    failure_modes = infer_failure_modes(node)
+
+    condition_specificity = clamp((len(cond_tokens) - 3) / 18.0, 0.0, 1.0)
+    if any(tok in cond_tokens for tok in {"missing", "cuda", "shape", "path", "column", "checkpoint", "undefined"}):
+        condition_specificity = clamp(condition_specificity + 0.20, 0.0, 1.0)
+
+    non_generic_failures = [
+        f for f in failure_modes
+        if f not in GENERIC_FAILURE_LABELS and not f.endswith(" method failure")
+    ]
+    failure_specificity = clamp(0.25 * len(non_generic_failures), 0.0, 0.75)
+    if any(any(needle in text for needle in needles) for label, needles in FAILURE_RULES if label in non_generic_failures):
+        failure_specificity = clamp(failure_specificity + 0.25, 0.0, 1.0)
+
+    implementation_hits = len(all_tokens & SPECIFIC_IMPLEMENTATION_TERMS)
+    code_like_hits = len(re.findall(r"\b[a-zA-Z_]+(?:_[a-zA-Z0-9_]+)+\b|\b[A-Za-z]+Error\b|[/\\.][A-Za-z0-9_/-]+", text))
+    implementation_specificity = clamp((implementation_hits + 0.5 * code_like_hits) / 4.0, 0.0, 1.0)
+
+    category = str(node.get("category") or "unknown")
+    scope = str(node.get("scope") or "")
+    if category == "general" or scope == "universal_general":
+        task_coverage_norm = 1.0
+    else:
+        task_coverage_norm = clamp(float(category_counts.get(category, 1)) / max_category_count, 0.0, 1.0)
+
+    level = float(node.get("level", 0) or 0.0)
+    graph_centrality_norm = clamp(1.0 - (level / max_level if max_level > 0 else 0.0), 0.0, 1.0)
+
+    specificity_score = clamp(
+        0.30 * condition_specificity
+        + 0.25 * failure_specificity
+        + 0.20 * implementation_specificity
+        + 0.15 * (1.0 - task_coverage_norm)
+        + 0.10 * (1.0 - graph_centrality_norm),
+        0.0,
+        1.0,
+    )
+    return {
+        "condition_specificity": condition_specificity,
+        "failure_specificity": failure_specificity,
+        "implementation_specificity": implementation_specificity,
+        "task_coverage_norm": task_coverage_norm,
+        "graph_centrality_norm": graph_centrality_norm,
+        "specificity_score": specificity_score,
+    }
+
+
+def compute_radii(nodes: list[dict[str, Any]]) -> tuple[np.ndarray, dict[str, Any], list[dict[str, Any]]]:
     max_use = max(float(n.get("n_use", 0) or 0) for n in nodes) or 1.0
     max_level = max(float(n.get("level", 0) or 0) for n in nodes) or 1.0
+    category_counts = collections.Counter(str(n.get("category") or "unknown") for n in nodes)
+    non_general_counts = [v for k, v in category_counts.items() if k != "general"]
+    max_category_count = float(max(non_general_counts or list(category_counts.values()) or [1]))
     radii = []
-    core_scores = []
+    features: list[dict[str, Any]] = []
     for n in nodes:
+        specificity = _specificity_features(
+            n,
+            max_level=max_level,
+            max_category_count=max_category_count,
+            category_counts=category_counts,
+        )
+        radius = clamp(0.12 + 0.78 * specificity["specificity_score"], 0.12, 0.90)
+        n_use = float(n.get("n_use", 0) or 0.0)
+        n_succ = float(n.get("n_succ", 0) or 0.0)
         p_hat = clamp(float(n.get("p_hat", 0.0) or 0.0), 0.0, 1.0)
-        support = math.log1p(float(n.get("n_use", 0) or 0.0)) / math.log1p(max_use)
-        level_norm = float(n.get("level", 0) or 0.0) / max_level
-        general_bonus = 0.05 if n.get("category") == "general" or n.get("scope") == "universal_general" else 0.0
-        core = clamp(0.65 * p_hat + 0.25 * support + 0.10 * (1.0 - level_norm) + general_bonus, 0.0, 1.0)
-        radius = clamp(0.08 + 0.84 * (1.0 - core), 0.08, 0.92)
-        core_scores.append(core)
+        support_score = math.log1p(n_use) / math.log1p(max_use)
+        source_certification = 1.0 if (n.get("source_branches") or n.get("evidence_turns")) else 0.0
+        reliability_score = clamp(
+            0.65 * _wilson_lower_bound(n_succ, n_use, p_hat)
+            + 0.25 * support_score
+            + 0.10 * source_certification,
+            0.0,
+            1.0,
+        )
+        evidence_confidence = "high" if reliability_score >= 0.67 else ("medium" if reliability_score >= 0.34 else "low")
+        features.append({
+            **specificity,
+            "support_score": support_score,
+            "source_certification": source_certification,
+            "reliability_score": reliability_score,
+            "evidence_confidence": evidence_confidence,
+            "wilson_or_p_hat": _wilson_lower_bound(n_succ, n_use, p_hat),
+        })
         radii.append(radius)
     meta = {
-        "formula": "radius=clamp(0.08+0.84*(1-(0.65*p_hat+0.25*support+0.10*(1-level_norm)+general_bonus)))",
+        "model": "specificity_radius_v2",
+        "formula": "radius=clamp(0.12+0.78*(0.30*condition_specificity+0.25*failure_specificity+0.20*implementation_specificity+0.15*(1-task_coverage_norm)+0.10*(1-graph_centrality_norm)))",
+        "radius_reliability_decoupled": True,
+        "reliability_formula": "reliability_score=0.65*wilson_or_p_hat+0.25*support_score+0.10*source_certification",
         "max_n_use": max_use,
         "max_level": max_level,
+        "max_category_count": max_category_count,
+        "note": "p_hat/n_use/support_score/reliability_score are not used to place SOPs on the radius; they are stored as scorer features only.",
     }
-    return np.asarray(radii, dtype=np.float32), meta
+    return np.asarray(radii, dtype=np.float32), meta, features
 
 
 @dataclass
@@ -558,7 +903,9 @@ def build_sop_node(
     phi: float,
     poincare: np.ndarray,
     lorentz: np.ndarray,
+    geometry_features: dict[str, Any],
 ) -> dict[str, Any]:
+    evidence_confidence = str(geometry_features.get("evidence_confidence") or "low")
     return {
         "id": node["id"],
         "type": "SOP",
@@ -582,7 +929,18 @@ def build_sop_node(
             "level": node.get("level", 0),
             "signal": "skillgraph_trace_proxy",
         },
-        "confidence": "high" if float(node.get("p_hat", 0) or 0) >= 0.67 else ("medium" if float(node.get("p_hat", 0) or 0) >= 0.34 else "low"),
+        "confidence": evidence_confidence,
+        "evidence_confidence": evidence_confidence,
+        "radius_model": "specificity_radius_v2",
+        "specificity_score": round(float(geometry_features.get("specificity_score", 0.0)), 6),
+        "condition_specificity": round(float(geometry_features.get("condition_specificity", 0.0)), 6),
+        "failure_specificity": round(float(geometry_features.get("failure_specificity", 0.0)), 6),
+        "implementation_specificity": round(float(geometry_features.get("implementation_specificity", 0.0)), 6),
+        "task_coverage_norm": round(float(geometry_features.get("task_coverage_norm", 0.0)), 6),
+        "graph_centrality_norm": round(float(geometry_features.get("graph_centrality_norm", 0.0)), 6),
+        "support_score": round(float(geometry_features.get("support_score", 0.0)), 6),
+        "source_certification": round(float(geometry_features.get("source_certification", 0.0)), 6),
+        "reliability_score": round(float(geometry_features.get("reliability_score", 0.0)), 6),
         "radius": round(float(radius), 6),
         "radius_band": radius_band(float(radius)),
         "angle_theta": round(float(theta), 6),
@@ -713,7 +1071,17 @@ def provenance_report(graph: dict[str, Any], source_nodes: list[dict[str, Any]])
     }
 
 
-def build(input_path: Path, output_dir: Path, dims: int = 16, require_clean_provenance: bool = False) -> dict[str, Any]:
+def build(
+    input_path: Path,
+    output_dir: Path,
+    dims: int = 16,
+    require_clean_provenance: bool = False,
+    direction_backend: str = "sentence_embedding",
+    embedding_model: str = "BAAI/bge-base-en-v1.5",
+    allow_embedding_fallback: bool = True,
+    contrastive_benchmark_path: Path | None = None,
+    contrastive_gold_path: Path | None = None,
+) -> dict[str, Any]:
     graph = json.loads(input_path.read_text(encoding="utf-8"))
     source_nodes = graph.get("nodes", [])
     source_edges = graph.get("edges", [])
@@ -724,18 +1092,27 @@ def build(input_path: Path, output_dir: Path, dims: int = 16, require_clean_prov
     if require_clean_provenance and not provenance["paper_grade"]:
         raise ValueError(f"Input graph lacks clean provenance: {provenance}")
 
-    directions, direction_meta, text_model = build_text_directions(source_nodes, dims=dims)
-    radii, radius_meta = compute_radii(source_nodes)
+    directions, direction_meta, text_model = build_text_directions(
+        source_nodes,
+        dims=dims,
+        backend=direction_backend,
+        embedding_model=embedding_model,
+        allow_embedding_fallback=allow_embedding_fallback,
+        contrastive_benchmark_path=contrastive_benchmark_path,
+        contrastive_gold_path=contrastive_gold_path,
+    )
+    radii, radius_meta, geometry_features = compute_radii(source_nodes)
     theta, phi = direction_to_angles(directions)
     quality = coordinate_quality_report(nodes=source_nodes, directions=directions, theta=theta)
     poincare = directions * radii[:, None]
     lorentz = poincare_to_lorentz(poincare)
     flat_twin = poincare.copy()
+    euclidean = directions.copy()
 
     hyper_nodes: dict[str, dict[str, Any]] = {}
     node_ids = []
     for i, node in enumerate(source_nodes):
-        sop = build_sop_node(node, radii[i], directions[i], theta[i], phi[i], poincare[i], lorentz[i])
+        sop = build_sop_node(node, radii[i], directions[i], theta[i], phi[i], poincare[i], lorentz[i], geometry_features[i])
         hyper_nodes[sop["id"]] = sop
         node_ids.append(sop["id"])
 
@@ -748,7 +1125,7 @@ def build(input_path: Path, output_dir: Path, dims: int = 16, require_clean_prov
     edge_kind_counts = dict(collections.Counter(e.get("kind", "unknown") for e in hyper_edges))
     hyper_graph = {
         "meta": {
-            "schema": "hyperbolic-sop-memory-v0",
+            "schema": "hyperbolic-sop-memory-v2",
             "source_graph": display_path(input_path),
             "source_schema": graph.get("meta", {}).get("schema"),
             "source_runs": provenance["source_runs"],
@@ -759,8 +1136,11 @@ def build(input_path: Path, output_dir: Path, dims: int = 16, require_clean_prov
             "paper_grade": provenance["paper_grade"],
             "builder": "GraphBuilderAgent(heuristic_patch_v1)+programmatic_validation",
             "coordinate_model": f"Poincare ball + Lorentz hyperboloid, curvature=1, dims={dims}",
-            "angle_model": "theta/phi spherical angles over TF-IDF-SVD direction; radius from p_hat/n_use/level",
+            "angle_model": f"theta/phi spherical angles over {direction_meta.get('method')} direction; structured SOP text fields",
+            "radius_model": "specificity_radius_v2",
+            "radius_reliability_decoupled": True,
             "flat_twin_model": "same coordinates as poincare; Flat-Twin swaps only the distance function at runtime",
+            "euclidean_model": "independent flat direction coordinates with L2-normalized direction; no support-radius scaling",
             "node_count": len(hyper_nodes),
             "edge_count": len(hyper_edges),
             "note": "Bootstrap artifact from SkillGraph-C compact cards; metric is p_hat/n_use proxy, not transition-level metric_delta.",
@@ -784,7 +1164,11 @@ def build(input_path: Path, output_dir: Path, dims: int = 16, require_clean_prov
         poincare=poincare.astype(np.float32),
         lorentz=lorentz.astype(np.float32),
         flat_twin=flat_twin.astype(np.float32),
+        euclidean=euclidean.astype(np.float32),
         radius=radii.astype(np.float32),
+        specificity_score=np.asarray([float(x["specificity_score"]) for x in geometry_features], dtype=np.float32),
+        support_score=np.asarray([float(x["support_score"]) for x in geometry_features], dtype=np.float32),
+        reliability_score=np.asarray([float(x["reliability_score"]) for x in geometry_features], dtype=np.float32),
         theta=theta.astype(np.float32),
         phi=phi.astype(np.float32),
         angle=np.stack([theta, phi], axis=1).astype(np.float32),
@@ -829,11 +1213,22 @@ def build(input_path: Path, output_dir: Path, dims: int = 16, require_clean_prov
                 "phi": "polar angle arccos(z / ||direction||)",
             },
             "radius": radius_meta,
+            "radius_reliability_decoupled": bool(radius_meta.get("radius_reliability_decoupled")),
+            "specificity_score_mean": float(np.mean([float(x["specificity_score"]) for x in geometry_features])),
+            "reliability_score_mean": float(np.mean([float(x["reliability_score"]) for x in geometry_features])),
             "radius_min": min(radius_values),
             "radius_max": max(radius_values),
             "radius_mean": sum(radius_values) / len(radius_values),
             "radius_bands": dict(collections.Counter(radius_band(r) for r in radius_values)),
             "poincare_max_norm": float(np.linalg.norm(poincare, axis=1).max()),
+            "euclidean_norm_min": float(np.linalg.norm(euclidean, axis=1).min()),
+            "euclidean_norm_max": float(np.linalg.norm(euclidean, axis=1).max()),
+            "euclidean_model": {
+                "coordinates": "L2-normalized TF-IDF-SVD directions in Euclidean R^d",
+                "distance": "Euclidean L2 distance",
+                "independent_from_poincare": bool(not np.array_equal(euclidean.astype(np.float32), poincare.astype(np.float32))),
+                "note": "This is the independent flat-coordinate baseline; Flat-Twin remains the same-coordinate distance-function control.",
+            },
             "lorentz_minkowski_error_max": float(np.max(np.abs(-(lorentz[:, 0] ** 2) + np.sum(lorentz[:, 1:] ** 2, axis=1) + 1.0))),
             "flat_twin_identity": bool(np.array_equal(flat_twin.astype(np.float32), poincare.astype(np.float32))),
             "quality_report": quality,
@@ -881,7 +1276,10 @@ def build(input_path: Path, output_dir: Path, dims: int = 16, require_clean_prov
                 for e in hyper_edges
             ),
             "flat_twin_same_coordinates_as_poincare": bool(np.array_equal(flat_twin.astype(np.float32), poincare.astype(np.float32))),
+            "euclidean_independent_coordinates": bool(not np.array_equal(euclidean.astype(np.float32), poincare.astype(np.float32))),
+            "euclidean_unit_norm_coordinates": bool(np.allclose(np.linalg.norm(euclidean, axis=1), 1.0, atol=1e-5)),
             "coordinate_quality_gate_passed": quality["passed"],
+            "radius_reliability_decoupled": bool(radius_meta.get("radius_reliability_decoupled")),
             "paper_grade_provenance": provenance["paper_grade"],
         },
     }
@@ -895,10 +1293,46 @@ def main() -> None:
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--dims", type=int, default=16)
+    parser.add_argument(
+        "--direction-backend",
+        choices=["sentence_embedding", "tfidf", "tfidf_svd", "tfidf_truncated_svd", "contrastive_projection"],
+        default="sentence_embedding",
+    )
+    parser.add_argument("--embedding-model", default="BAAI/bge-base-en-v1.5")
+    parser.add_argument("--allow-embedding-fallback", action="store_true")
+    parser.add_argument("--contrastive-benchmark", type=Path, default=None)
+    parser.add_argument("--contrastive-gold", type=Path, default=None)
     parser.add_argument("--require-clean-provenance", action="store_true")
     args = parser.parse_args()
 
-    report = build(args.input, args.output_dir, dims=args.dims, require_clean_provenance=args.require_clean_provenance)
+    try:
+        report = build(
+            args.input,
+            args.output_dir,
+            dims=args.dims,
+            require_clean_provenance=args.require_clean_provenance,
+            direction_backend=args.direction_backend,
+            embedding_model=args.embedding_model,
+            allow_embedding_fallback=args.allow_embedding_fallback,
+            contrastive_benchmark_path=args.contrastive_benchmark,
+            contrastive_gold_path=args.contrastive_gold,
+        )
+    except RuntimeError as exc:
+        if "embedding_backend_unavailable" in str(exc):
+            args.output_dir.mkdir(parents=True, exist_ok=True)
+            unavailable = {
+                "status": "embedding_backend_unavailable",
+                "not_run": True,
+                "direction_backend": args.direction_backend,
+                "embedding_model": args.embedding_model,
+                "error": str(exc),
+                "note": "V3 strict embedding mode does not silently fall back to TF-IDF.",
+            }
+            path = args.output_dir / "embedding_backend_report.json"
+            path.write_text(json.dumps(unavailable, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            print(json.dumps(unavailable, ensure_ascii=False, indent=2))
+            raise SystemExit(2) from exc
+        raise
     print(f"hyper_graph: {report['outputs']['hyper_graph']}")
     print(f"hyper_index: {report['outputs']['hyper_index']}")
     print(f"hyper_text_model: {report['outputs']['hyper_text_model']}")

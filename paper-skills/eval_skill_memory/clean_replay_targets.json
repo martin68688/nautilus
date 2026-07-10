@@ -1,0 +1,24 @@
+{
+  "schema": "run-forest-replay-targets-v1",
+  "targets": [
+    {
+      "task_id": "spooky-author-identification",
+      "run_id": "20260509_185008_spooky-author-identification",
+      "original_node_id": "d93b4c2acaa8461c808350bca6fe3b48",
+      "sop_ids": [
+        "sop::sg_0108",
+        "sop::sg_0202",
+        "sop::sg_0204"
+      ],
+      "historical_metric": 0.2013,
+      "code_sha256": "4a203d242d5a349aa25c879a02b6667d55b62e0aa9d4ef68ca5eec4416802b63",
+      "audit_status": "candidate_replay",
+      "metric_status": "historical_selected_validation_score",
+      "known_issue_codes": [
+        "TRANSFORM_FIT_ON_HOLDOUT",
+        "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+      ],
+      "selection_basis": "Historically strong DeBERTa-v3-large + XGBoost + Logistic Regression method template. The original code is retained for provenance, but exact execution is blocked until preprocessing is train-only and evaluation uses an untouched holdout."
+    }
+  ]
+}

@@ -14,6 +14,7 @@ EVAL_REPORT = REPO / "paper-skills" / "eval_skill_memory" / "reports" / "run_for
 ALLOWLIST = REPO / "paper-skills" / "eval_skill_memory" / "clean_run_allowlist.json"
 RUN_FOREST_CONFIG = REPO / "mlevolve" / "config" / "config_run_forest_agentic.yaml"
 METHODOLOGY_MAP = REPO / "mlevolve" / "engine" / "coldstart" / "methodology_map.json"
+REPLAY_TARGETS = REPO / "paper-skills" / "eval_skill_memory" / "clean_replay_targets.json"
 
 
 def _short_run_id(value: object) -> str:
@@ -53,7 +54,10 @@ def test_run_forest_artifacts_are_clean_certified():
     allowed = {entry["run_id"] for entry in allowlist["entries"] if entry.get("allowed")}
 
     meta = graph["meta"]
-    assert meta["provenance_status"] == "clean_certified"
+    assert meta["provenance_status"] == "source_allowlisted_and_code_audited"
+    assert meta["source_membership_verified"] is True
+    assert meta["leak_audited"] is True
+    assert meta["positive_admission_enforced"] is True
     assert meta["leak_verified"] is True
     assert meta["paper_grade"] is True
     assert report["paper_grade_provenance"] is True
@@ -65,6 +69,12 @@ def test_run_forest_artifacts_are_clean_certified():
     node_runs = {_short_run_id(node.get("run_short_id") or node.get("run_id")) for node in run_nodes}
     assert node_runs == allowed
     assert not any(run_id.startswith("20260512") for run_id in node_runs)
+
+    run_nodes = [node for node in graph["nodes"] if node.get("type") == "RunNode" and node.get("code_length", 0) > 0]
+    assert run_nodes
+    assert all(len(node.get("code_sha256", "")) == 64 for node in run_nodes)
+    assert all(node.get("leakage_audit", {}).get("schema") == "mlevolve_leakage_audit_v1" for node in run_nodes)
+    assert report["failure_pattern_count"] > 0
 
 
 def test_run_forest_builder_requires_allowlist_for_clean_mode():
@@ -100,6 +110,46 @@ def test_run_forest_online_config_disables_contaminated_methodology():
     assert "winning-recipe-nlp-classification" not in spooky_entries
     assert "ensemble-diversity-vs-validation-gap" not in spooky_entries
     assert "small-data-transformer-finetuning" not in spooky_entries
+
+
+def test_run_forest_config_assigns_explicit_draft_roles():
+    from omegaconf import OmegaConf
+
+    cfg = OmegaConf.load(RUN_FOREST_CONFIG)
+    policy = cfg.agent.draft_role_policy
+    assert policy.enabled is True
+    assert list(policy.roles) == [
+        "coldstart_baseline",
+        "memory_reproduction",
+        "novel_exploration",
+    ]
+    assert policy.extra_role == "novel_exploration"
+    assert Path(policy.replay_targets_path).name == REPLAY_TARGETS.name
+
+
+def test_draft_role_policy_validates_capacity_and_extra_role():
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.agent_search import AgentSearch
+
+    policy = SimpleNamespace(
+        enabled=True,
+        roles=["coldstart_baseline", "memory_reproduction", "novel_exploration"],
+        extra_role="novel_exploration",
+    )
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.acfg = SimpleNamespace(initial_drafts=3, draft_role_policy=policy)
+    agent.scfg = SimpleNamespace(num_drafts=5)
+    AgentSearch._validate_draft_role_policy(agent)
+    assert AgentSearch.configured_draft_role(agent, 0) == "coldstart_baseline"
+    assert AgentSearch.configured_draft_role(agent, 1) == "memory_reproduction"
+    assert AgentSearch.configured_draft_role(agent, 2) == "novel_exploration"
+    assert AgentSearch.configured_draft_role(agent, 4) == "novel_exploration"
+
+    agent.acfg.initial_drafts = 2
+    with pytest.raises(ValueError, match="initial_drafts >= 3"):
+        AgentSearch._validate_draft_role_policy(agent)
 
 
 def test_run_forest_evaluation_supports_lineage_claim_but_not_all_tasks():
@@ -159,6 +209,109 @@ def test_run_forest_runtime_layer_returns_map_path_pack():
     assert external_memory_section_title(layer.source_name) == "Agentic Run-Forest Memory Navigation"
 
 
+def _replay_agent(targets_path=REPLAY_TARGETS):
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents.memory.external_skill_memory import RunForestMemoryLayer
+
+    layer = RunForestMemoryLayer(
+        graph_path=str(GRAPH),
+        index_path=str(INDEX),
+        source_name="run_forest_agentic_memory",
+        mode="run_forest_agentic",
+        scoring_mode="poincare",
+        enable_agentic=False,
+        top_k=4,
+    )
+    return SimpleNamespace(
+        cfg=SimpleNamespace(exp_id="spooky-author-identification"),
+        acfg=SimpleNamespace(
+            draft_role_policy=SimpleNamespace(replay_targets_path=str(targets_path))
+        ),
+        external_skill_memory=layer,
+    )
+
+
+def test_exact_replay_rejects_historical_three_model_source_with_known_protocol_issues():
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents.memory.run_forest_replay import load_exact_replay
+
+    manifest = json.loads(REPLAY_TARGETS.read_text(encoding="utf-8"))
+    target = manifest["targets"][0]
+    assert target["audit_status"] == "candidate_replay"
+    assert set(target["known_issue_codes"]) == {
+        "TRANSFORM_FIT_ON_HOLDOUT",
+        "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION",
+    }
+    with pytest.raises(ValueError, match="TRANSFORM_FIT_ON_HOLDOUT"):
+        load_exact_replay(_replay_agent())
+
+
+def test_exact_replay_fails_closed_on_hash_or_provenance_mismatch(tmp_path):
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents.memory.run_forest_replay import load_exact_replay
+
+    manifest = json.loads(REPLAY_TARGETS.read_text(encoding="utf-8"))
+    manifest["targets"][0]["code_sha256"] = "0" * 64
+    bad_manifest = tmp_path / "bad_replay_targets.json"
+    bad_manifest.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="manifest hash"):
+        load_exact_replay(_replay_agent(bad_manifest))
+
+    agent = _replay_agent()
+    agent.external_skill_memory.graph["meta"]["paper_grade"] = False
+    with pytest.raises(ValueError, match="clean-certified"):
+        load_exact_replay(agent)
+
+
+def test_role_metadata_is_inherited_by_debug_and_improve_nodes():
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents.triggers import register_node
+    from engine.search_node import SearchNode
+
+    parent = SearchNode(
+        code="print('source')",
+        plan="source",
+        stage="draft",
+        branch_id=2,
+        draft_role="memory_reproduction",
+        role_contract={"role": "memory_reproduction"},
+        source_ref_ids=["sop::sg_0108"],
+        replay_source={"code_sha256": "abc"},
+        replay_status="exact_source_loaded",
+    )
+    child = SearchNode(code="print('fixed')", plan="fix", stage="debug", parent=parent)
+    fake_agent = SimpleNamespace(
+        _serialize_prompt=lambda prompt: str(prompt),
+        next_branch_id=3,
+        branch_all_nodes={2: [parent]},
+        branch_successful_nodes={2: []},
+    )
+    register_node(fake_agent, child, "debug", parent_node=parent)
+    assert child.branch_id == 2
+    assert child.draft_role == "memory_reproduction"
+    assert child.role_contract == parent.role_contract
+    assert child.source_ref_ids == parent.source_ref_ids
+    assert child.replay_source == parent.replay_source
+    assert child.replay_status == "exact_source_loaded"
+
+
+def test_role_specific_prompt_rules_are_not_global():
+    source = (REPO / "mlevolve" / "agents" / "draft_agent.py").read_text(encoding="utf-8")
+    assert "This first solution design should be relatively simple" not in source
+    assert "Your solution MUST be NOVEL compared to ALL existing attempts" not in source
+    assert 'draft_role == "novel_exploration"' in source
+    assert 'draft_role == "coldstart_baseline"' in source
+    assert 'draft_role != "coldstart_baseline"' in source
+
+
 def test_run_forest_coldstart_does_not_modify_model_template():
     import sys
 
@@ -193,3 +346,6 @@ def test_run_forest_coldstart_does_not_modify_model_template():
     assert "Map Path Pack" not in text
     assert "Run-Forest Cold-Start Map Path Pack" in knowledge._LAST_RUN_FOREST_TEXT
     assert knowledge._LAST_RUN_FOREST_REF_IDS
+    assert knowledge._LAST_PRIMARY_MODEL_NAME == "ModernBERT"
+    assert "answerdotai/ModernBERT-large" in knowledge._LAST_PRIMARY_MODEL_TEXT
+    assert "microsoft/deberta-v3-large" not in knowledge._LAST_PRIMARY_MODEL_TEXT

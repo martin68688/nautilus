@@ -56,6 +56,10 @@ class AgentSearch:
         self.start_time = time.time()
         self.use_stepwise_generation = True
 
+        self._draft_role_lock = threading.Lock()
+        self._draft_generation_count = 0
+        self._validate_draft_role_policy()
+
         self.next_branch_id = 1
         self.branch_all_nodes: Dict[int, List[SearchNode]] = {}
         self.branch_successful_nodes: Dict[int, List[SearchNode]] = {}
@@ -68,6 +72,10 @@ class AgentSearch:
         self.coldstart_external_ref_ids: list[str] = list(getattr(_kb, "_LAST_RUN_FOREST_REF_IDS", []))
         self.coldstart_external_source: str = str(getattr(_kb, "_LAST_RUN_FOREST_SOURCE", "") or "")
         self.coldstart_external_memory_text: str = str(getattr(_kb, "_LAST_RUN_FOREST_TEXT", "") or "")
+        self.coldstart_primary_model_name: str = str(getattr(_kb, "_LAST_PRIMARY_MODEL_NAME", "") or "")
+        self.coldstart_primary_description: str = str(
+            getattr(_kb, "_LAST_PRIMARY_MODEL_TEXT", "") or self.coldstart_description
+        )
         self.adoption_tracking_enabled: bool = cfg.adoption_tracking.enable
 
         # Top-N candidates
@@ -177,6 +185,36 @@ class AgentSearch:
         else:
             logger.info("[AgentSearch] External skill memory is disabled by config")
 
+    def _validate_draft_role_policy(self) -> None:
+        policy = getattr(self.acfg, "draft_role_policy", None)
+        if policy is None or not bool(getattr(policy, "enabled", False)):
+            return
+        expected = ["coldstart_baseline", "memory_reproduction", "novel_exploration"]
+        roles = [str(role) for role in list(getattr(policy, "roles", []) or [])]
+        if roles[:3] != expected:
+            raise ValueError(f"RunForest draft roles must start with {expected}; got {roles}")
+        if int(self.acfg.initial_drafts) < len(expected):
+            raise ValueError("RunForest draft role policy requires agent.initial_drafts >= 3")
+        if int(self.scfg.num_drafts) < len(expected):
+            raise ValueError("RunForest draft role policy requires agent.search.num_drafts >= 3")
+
+    def configured_draft_role(self, draft_index: int) -> str:
+        policy = getattr(self.acfg, "draft_role_policy", None)
+        if policy is None or not bool(getattr(policy, "enabled", False)):
+            return "general_draft"
+        roles = [str(role) for role in list(getattr(policy, "roles", []) or [])]
+        if 0 <= draft_index < len(roles):
+            return roles[draft_index]
+        return str(getattr(policy, "extra_role", "novel_exploration") or "novel_exploration")
+
+    def claim_draft_role(self, explicit_role: str | None = None) -> str:
+        with self._draft_role_lock:
+            draft_index = self._draft_generation_count
+            self._draft_generation_count += 1
+        role = explicit_role or self.configured_draft_role(draft_index)
+        logger.info("[draft-role] index=%s role=%s", draft_index, role)
+        return role
+
     def _serialize_prompt(self, prompt_complete) -> str | None:
         """Serialize prompt (str or dict) to string for saving in node."""
         if prompt_complete is None:
@@ -202,12 +240,25 @@ class AgentSearch:
     def is_root(self, node: SearchNode):
         return node.id is self.virtual_root.id
 
+    def _finalize_preflight_block(self, node: SearchNode, parent_node: SearchNode) -> bool:
+        """Record a deterministically blocked node without launching its training process."""
+        node.finish_time = time.strftime("%Y-%m-%dT%H:%M:%S")
+        should_backpropagate = evaluation.check_improvement(self, node, parent_node)
+        with self.journal_lock:
+            self.journal.append(node)
+        logger.warning(
+            "Node %s was journaled as a pre-execution leakage failure; GPU execution was skipped",
+            node.id,
+        )
+        return should_backpropagate
+
     def _run_single_step(
         self,
         parent_node: SearchNode,
         exec_callback: ExecCallbackType,
         execute_immediately: bool = True,
         init_solution_path: Optional[str] = None,
+        draft_role: Optional[str] = None,
     ):
         """Run one search step: select action (draft/debug/improve), execute, parse, validate."""
         result_node = None
@@ -226,7 +277,11 @@ class AgentSearch:
                             logger.info("Aggregation failed or limit reached, skipping. Will continue normal search.")
                             result_node = None
                     else:
-                        result_node = draft_agent.run(self, init_solution_path=init_solution_path)
+                        result_node = draft_agent.run(
+                            self,
+                            init_solution_path=init_solution_path,
+                            draft_role=draft_role,
+                        )
                         result_node.lock = True
                         logger.info(f"[_run_single_step] Draft node {result_node.id} is locked.")
                 elif parent_node.is_buggy or parent_node.is_valid is False:
@@ -262,8 +317,8 @@ class AgentSearch:
                     logger.warning(f"[_run_single_step] node {parent_node.id} is_buggy is None.")
 
                 if result_node:
-                    if init_solution_path:
-                        logger.info(f"Node {result_node.id} from init_solution, skipping code review")
+                    if init_solution_path or result_node.skip_code_review:
+                        logger.info(f"Node {result_node.id} uses immutable source code, skipping code review")
                     else:
                         reviewed_code = code_review_agent.run(self, result_node)
                         if reviewed_code.strip() != result_node.code.strip():
@@ -272,31 +327,34 @@ class AgentSearch:
                         else:
                             logger.info(f"Node {result_node.id} passed code review without changes")
 
-                    if not execute_immediately:
+                    if result_parse_agent.run_pre_execution_leakage_audit(self, result_node):
+                        _root = self._finalize_preflight_block(result_node, parent_node)
+                    elif not execute_immediately:
                         logger.info(f"Node {result_node.id} code generated and reviewed, execution deferred")
                         result_node.pending_execution = True
                         return _root, result_node
-                    exe_res = exec_callback(result_node.code, result_node.id, True)
-                    result_node = result_parse_agent.run(self,
-                        node=result_node,
-                        exec_result=exe_res
-                    )
-                    execution.validate_executed_node(self, result_node)
-                    logger.info(f"The metric value of node {result_node.id} is {result_node.metric.value}.")
-                    result_node.finish_time = time.strftime("%Y-%m-%dT%H:%M:%S")
+                    else:
+                        exe_res = exec_callback(result_node.code, result_node.id, True)
+                        result_node = result_parse_agent.run(self,
+                            node=result_node,
+                            exec_result=exe_res
+                        )
+                        execution.validate_executed_node(self, result_node)
+                        logger.info(f"The metric value of node {result_node.id} is {result_node.metric.value}.")
+                        result_node.finish_time = time.strftime("%Y-%m-%dT%H:%M:%S")
 
-                    if parent_node.is_buggy and result_node.is_buggy is False:
-                        parent_node.is_debug_success = True
+                        if parent_node.is_buggy and result_node.is_buggy is False:
+                            parent_node.is_debug_success = True
 
-                    _root = evaluation.check_improvement(self, result_node, parent_node)
-                    with self.journal_lock:
-                        if self.best_node and result_node.metric.maximize and self.best_node.metric.maximize != result_node.metric.maximize:
-                            logger.warning(
-                                "New node's metric is inconsistent with metrics in the journal. Returning to the parent node to regenerate.")
-                            raise ValueError(
-                                "New node's metric is inconsistent with metrics in the journal. Returning to the parent node to regenerate.")
-                        else:
-                            self.journal.append(result_node)
+                        _root = evaluation.check_improvement(self, result_node, parent_node)
+                        with self.journal_lock:
+                            if self.best_node and result_node.metric.maximize and self.best_node.metric.maximize != result_node.metric.maximize:
+                                logger.warning(
+                                    "New node's metric is inconsistent with metrics in the journal. Returning to the parent node to regenerate.")
+                                raise ValueError(
+                                    "New node's metric is inconsistent with metrics in the journal. Returning to the parent node to regenerate.")
+                            else:
+                                self.journal.append(result_node)
 
             except Exception as e:
                 logger.warning(f"Step failed for parent {parent_node.id}, rolling back expected child count and propagating zero reward.")
@@ -315,6 +373,7 @@ class AgentSearch:
         exec_callback: ExecCallbackType,
         execute_immediately: bool = True,
         init_solution_path: Optional[str] = None,
+        draft_role: Optional[str] = None,
     ) -> SearchNode:
         if not self.journal.nodes or self.data_preview is None:
             self.update_data_preview()
@@ -328,6 +387,7 @@ class AgentSearch:
             exec_callback=exec_callback,
             execute_immediately=execute_immediately,
             init_solution_path=init_solution_path,
+            draft_role=draft_role,
         )
 
         if result_node:
@@ -361,6 +421,10 @@ class AgentSearch:
         parent_node = node.parent
 
         try:
+            if result_parse_agent.run_pre_execution_leakage_audit(self, node):
+                self._finalize_preflight_block(node, parent_node)
+                node.pending_execution = False
+                return node
             exe_res = exec_callback(node.code, node.id, True)
             node = result_parse_agent.run(self,
                 node=node,

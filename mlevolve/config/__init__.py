@@ -42,6 +42,14 @@ class DecayConfig:
     lower_bound: float
     alpha: float
     phase_ratios: list
+
+
+@dataclass
+class DraftRolePolicyConfig:
+    enabled: bool = False
+    roles: list[str] = field(default_factory=list)
+    extra_role: str = "novel_exploration"
+    replay_targets_path: str = ""
     
 
 @dataclass
@@ -98,6 +106,7 @@ class AgentConfig:
     search: SearchConfig
     decay: DecayConfig
     use_diff_mode: bool = True
+    draft_role_policy: DraftRolePolicyConfig = field(default_factory=DraftRolePolicyConfig)
 @dataclass
 class ExecConfig:
     timeout: int

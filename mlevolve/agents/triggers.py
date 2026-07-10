@@ -65,6 +65,7 @@ def get_patience_counter(agent, parent_node: SearchNode) -> tuple:
 
 
 def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch: bool = False):
+    import copy
     import time
 
     node.prompt_input = agent._serialize_prompt(prompt)
@@ -77,5 +78,15 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
         agent.branch_successful_nodes[node.branch_id] = []
     else:
         node.branch_id = parent_node.branch_id
+        if node.draft_role is None:
+            node.draft_role = parent_node.draft_role
+        if not node.role_contract:
+            node.role_contract = copy.deepcopy(parent_node.role_contract)
+        if not node.source_ref_ids:
+            node.source_ref_ids = list(parent_node.source_ref_ids)
+        if not node.replay_source:
+            node.replay_source = copy.deepcopy(parent_node.replay_source)
+        if node.replay_status is None:
+            node.replay_status = parent_node.replay_status
         if node.branch_id in agent.branch_all_nodes:
             agent.branch_all_nodes[node.branch_id].append(node)

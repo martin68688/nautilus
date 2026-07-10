@@ -58,8 +58,23 @@ DATA_LEAKAGE_CHECK_SPEC = FunctionSpec(
                     "- low: Task might be simple or code is unclear, uncertain about leakage"
                 ),
             },
+            "classification": {
+                "type": "string",
+                "enum": [
+                    "hard_leakage",
+                    "transductive_contamination",
+                    "selection_bias",
+                    "warning",
+                    "clean",
+                ],
+                "description": (
+                    "Classify the finding precisely. hard_leakage exposes targets, future information, or row identity; "
+                    "transductive_contamination fits learned preprocessing on validation/test inputs; selection_bias "
+                    "reuses a tuning set for the reported metric; warning is suspicious but unproven; clean has no issue."
+                ),
+            },
         },
-        "required": ["has_leakage", "leakage_reason", "confidence"],
+        "required": ["has_leakage", "leakage_reason", "confidence", "classification"],
     },
     description="Detect data leakage issues that lead to unrealistically high validation metrics.",
 )
@@ -88,6 +103,10 @@ def run(agent, node: SearchNode) -> dict:
             "ALSO FLAG: ensemble weight optimization / model selection on the SAME val set used to report the "
             "final metric (select+score same set) -> over-optimistic val, not classic leakage but inflates the "
             "reported number vs test.\n"
+            "Classify that case as selection_bias, not hard_leakage. Ordinary early stopping on a validation "
+            "set is allowed when a separate untouched holdout is used for the final reported result. Do not "
+            "reject sound augmentation, frozen feature extraction, or model capacity merely because a metric "
+            "looks unusually strong; identify a concrete data-flow violation.\n"
             "Note: Some tasks are genuinely simple and achieving perfect or near-perfect scores is reasonable. "
             "For example, binary classification with clear visual patterns (like cactus detection) can legitimately "
             "achieve 0.99-1.0 accuracy. Consider the task complexity before declaring leakage."
@@ -116,6 +135,7 @@ def run(agent, node: SearchNode) -> dict:
         has_leakage = response["has_leakage"]
         confidence = response["confidence"]
         reason = response["leakage_reason"]
+        classification = str(response.get("classification") or ("hard_leakage" if has_leakage else "clean"))
 
         logger.info(
             f"Data leakage check for node {node.id}: "
@@ -127,6 +147,7 @@ def run(agent, node: SearchNode) -> dict:
             "has_leakage": has_leakage,
             "reason": reason,
             "confidence": confidence,
+            "classification": classification,
         }
     except Exception as e:
         logger.error(f"Data leakage check failed for node {node.id}: {e}")
@@ -134,4 +155,5 @@ def run(agent, node: SearchNode) -> dict:
             "has_leakage": False,
             "reason": f"Leakage check failed due to error: {str(e)}",
             "confidence": "low",
+            "classification": "audit_unavailable",
         }

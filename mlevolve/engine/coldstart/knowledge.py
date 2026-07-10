@@ -13,6 +13,8 @@ _LAST_REF_IDS: list[str] = []
 _LAST_RUN_FOREST_REF_IDS: list[str] = []
 _LAST_RUN_FOREST_SOURCE: str = ""
 _LAST_RUN_FOREST_TEXT: str = ""
+_LAST_PRIMARY_MODEL_NAME: str = ""
+_LAST_PRIMARY_MODEL_TEXT: str = ""
 
 
 def _looks_like_run_forest_memory(ext_cfg: Any) -> bool:
@@ -95,6 +97,16 @@ def collect_models_for_task(
     return matched
 
 
+def _format_model_guidance(model: Dict[str, str], index: int) -> str:
+    return "".join([
+        f"\nModel{index}: {model['model_name']}\n",
+        f"Description:{model['description']}\n",
+        "Code template (MUST copy exactly — do NOT change model variant names or file paths):\n```python\n",
+        model["code_template"],
+        "\n```",
+    ])
+
+
 def _build_guidance_text(task_name: str, tasks: Dict, models: Dict) -> str:
     """Build guidance text from task name and knowledge."""
     model_list = collect_models_for_task(task_name, tasks, models)
@@ -102,9 +114,7 @@ def _build_guidance_text(task_name: str, tasks: Dict, models: Dict) -> str:
         return "None model"
     lines = []
     for i, m in enumerate(model_list):
-        lines.append(f"\nModel{i+1}: {m['model_name']}\n")
-        lines.append(f"Description:{m['description']}\n")
-        lines.append("Code template (MUST copy exactly — do NOT change model variant names or file paths):\n```python\n" + m["code_template"] + "\n```")
+        lines.append(_format_model_guidance(m, i + 1))
     return "\n".join(lines)
 
 
@@ -180,6 +190,7 @@ def build_guidance_description(cfg: Any, task_desc: str = "") -> str:
 
     tasks = _load_json(cfg.coldstart.task_json_path)
     models = _load_json(cfg.coldstart.model_json_path)
+    primary_models = collect_models_for_task(cfg.exp_id, tasks, models)
     text = _build_guidance_text(cfg.exp_id, tasks, models)
     torch_hub_dir = getattr(cfg, "torch_hub_dir", "") or ""
     if torch_hub_dir:
@@ -204,8 +215,19 @@ def build_guidance_description(cfg: Any, task_desc: str = "") -> str:
     run_forest_text, run_forest_ref_ids, run_forest_source = _build_run_forest_coldstart_text(cfg, task_desc)
 
     global _LAST_REF_IDS, _LAST_RUN_FOREST_REF_IDS, _LAST_RUN_FOREST_SOURCE, _LAST_RUN_FOREST_TEXT
+    global _LAST_PRIMARY_MODEL_NAME, _LAST_PRIMARY_MODEL_TEXT
     _LAST_REF_IDS = ref_ids  # side-channel snapshot for adoption tracking
     _LAST_RUN_FOREST_REF_IDS = list(run_forest_ref_ids)
     _LAST_RUN_FOREST_SOURCE = run_forest_source
     _LAST_RUN_FOREST_TEXT = run_forest_text
+    if primary_models:
+        _LAST_PRIMARY_MODEL_NAME = primary_models[0]["model_name"]
+        _LAST_PRIMARY_MODEL_TEXT = _format_model_guidance(primary_models[0], 1)
+        if torch_hub_dir:
+            _LAST_PRIMARY_MODEL_TEXT = _LAST_PRIMARY_MODEL_TEXT.replace(
+                "{TORCH_HUB_DIR}", torch_hub_dir.rstrip("/")
+            )
+    else:
+        _LAST_PRIMARY_MODEL_NAME = ""
+        _LAST_PRIMARY_MODEL_TEXT = "None model"
     return text

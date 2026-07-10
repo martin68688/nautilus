@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>四象限 skill 内容详单</title>
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --line:#2a2f3e;
+    --txt:#e8eaf0; --mut:#9aa3b8; --acc:#6ee7ff;
+    --green:#4ade80; --red:#fb7185; --amber:#fbbf24; --blue:#60a5fa; --teal:#2dd4bf;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;line-height:1.65}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 70px}
+  h1{font-size:24px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:14px;margin-bottom:22px}
+  h2{font-size:20px;margin:30px 0 12px;padding:10px 14px;border-radius:8px}
+  .h-q1{background:rgba(74,222,128,.12);border-left:4px solid var(--green)}
+  .h-q2{background:rgba(45,212,191,.12);border-left:4px solid var(--teal)}
+  .h-q3{background:rgba(251,191,36,.12);border-left:4px solid var(--amber)}
+  .h-q4{background:rgba(251,113,133,.12);border-left:4px solid var(--red)}
+  .quad-meta{font-size:12.5px;color:var(--mut);margin:-4px 0 14px 16px}
+  .skill-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;margin:10px 0;font-size:13.5px}
+  .skill-card .head{display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:6px;flex-wrap:wrap;gap:6px}
+  .badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;font-family:monospace}
+  .b-step{background:#0c0e14;color:var(--acc)}
+  .b-stage{background:#1e2230;color:var(--mut)}
+  .b-metric{background:#0c0e14;font-weight:700}
+  .row{margin:4px 0}
+  .row .label{color:var(--mut);font-size:12px;display:inline-block;width:54px}
+  .row .val{color:var(--txt)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:860px){.grid2{grid-template-columns:1fr}}
+  .note{border-left:3px solid var(--acc);background:rgba(110,231,255,.07);padding:11px 15px;border-radius:0 9px 9px 0;margin:14px 0;font-size:13px}
+  .insight{padding:10px 14px;border-radius:8px;font-size:12.5px;margin-top:10px}
+  .legend-bar{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>📋 四象限 skill 内容详单</h1>
+<p class="sub">每个象限的<b>具体 skill</b>（code_summary + plan + metric + step + stage）。<br>
+数据：6 个后期 spooky run（已修复数据泄露）· 124 节点 · <b>metric 是 log loss，越低越好</b>。切分线 log loss=0.350 / step=36。每象限取代表节点。</p>
+
+<div class="legend-bar">
+  <span class="badge b-step">step = 搜索步数（演化时序）</span>
+  <span class="badge b-stage">stage = draft/improve/debug/evolution/fusion</span>
+  <span class="badge b-metric" style="color:var(--green)">metric = 验证集 log loss（越低越好）</span>
+</div>
+
+<!-- ==================== Q1 ==================== -->
+<h2 class="h-q1">🟢 Q1 · 核心·基石（旧 + 有效）33 个</h2>
+<p class="quad-meta"><b>特征</b>：step &lt; 36 + log loss &lt; 0.350（低=好）。<b>含义</b>：演化根基，早期发现且 log loss 低。<b>双曲位置</b>：靠球心（r 小），检索权重最高。</p>
+
+<div class="skill-card">
+  <div class="head"><b>原生 AutoModel 微调（删手工特征）</b>
+    <span><span class="badge b-step">step 16</span> <span class="badge b-stage">improve</span> <span class="badge b-metric" style="color:var(--green)">log loss 0.387</span></span></div>
+  <div class="row"><span class="label">summary</span><span class="val">标准 AutoModelForSequenceClassification + DeBERTa-v3-large + cosine annealing</span></div>
+  <div class="row"><span class="label">plan</span><span class="val">"hand-crafted features drown out the transformer signal → 删手工特征用原生模型"</span></div>
+  <div class="insight" style="background:rgba(74,222,128,.08);color:var(--green)"><b>★ 关键转折</b>：从 step10 的 1.09 暴降到 0.39。删手工特征是核心洞察。</div>
+</div>
+
+<div class="skill-card">
+  <div class="head"><b>修复 head_mask bug + mean pooling</b>
+    <span><span class="badge b-step">step 22</span> <span class="badge b-stage">debug</span> <span class="badge b-metric" style="color:var(--green)">log loss 0.320</span></span></div>
+  <div class="row"><span class="label">plan</span><span class="val">修复 DebertaV2Model.forward 不接受 head_mask 的 bug + mean pooling</span></div>
+  <div class="insight" style="background:rgba(74,222,128,.08);color:var(--green)"><b>★ 本路径最低 log loss</b>。debug 修复后达到 0.32。</div>
+</div>
+
+<div class="skill-card">
+  <div class="head"><b>混合方法（特征+TF-IDF+DeBERTa）</b>
+    <span><span class="badge b-step">step 19</span> <span class="badge b-stage">debug</span> <span class="badge b-metric" style="color:var(--green)">log loss 0.307</span></span></div>
+  <div class="row"><span class="label">summary</span><span class="val">混合：手工特征 + TF-IDF + DeBERTa 融合</span></div>
+</div>
+
+<div class="note">
+<b>📊 Q1 特征</b>：以 debug/improve 为主（修好的有效方案）。log loss 集中在 0.19-0.35。<b>核心区 = 低 log loss 的有效方案</b>。
+</div>
+
+<!-- ==================== Q2 ==================== -->
+<h2 class="h-q2">🔵 Q2 · 前沿（新 + 有效）29 个</h2>
+<p class="quad-meta"><b>特征</b>：step ≥ 36 + log loss &lt; 0.350。<b>含义</b>：演化前沿，后期产生的低 log loss 方案。<b>★ evolution/fusion 占比高于 Q1</b>。</p>
+
+<div class="skill-card">
+  <div class="head"><b>DeBERTa 端到端微调（后期最优）</b>
+    <span><span class="badge b-step">step 56</span> <span class="badge b-stage">improve</span> <span class="badge b-metric" style="color:var(--teal)">log loss 0.287</span></span></div>
+  <div class="row"><span class="label">summary</span><span class="val">DeBERTa-v3-large 端到端微调</span></div>
+  <div class="insight" style="background:rgba(45,212,191,.08);color:var(--teal)"><b>★ 全路径最低 log loss</b>（0.287）。后期达到，证明 spooky 任务确实能持续优化。</div>
+</div>
+
+<div class="skill-card">
+  <div class="head"><b>DeBERTa-v3-base + 多采样 dropout</b>
+    <span><span class="badge b-step">step 40</span> <span class="badge b-stage">improve</span> <span class="badge b-metric" style="color:var(--teal)">log loss 0.296</span></span></div>
+  <div class="row"><span class="label">plan</span><span class="val">加多采样 dropout 防过拟合</span></div>
+</div>
+
+<div class="note">
+<b>📊 Q2 vs Q1</b>：Q2 的 evolution/fusion 占比显著高于 Q1——<b>后期确实更特化</b>。这是"新=特化"假设的实证支撑。
+</div>
+
+<!-- ==================== Q3 ==================== -->
+<h2 class="h-q3">🟡 Q3 · 试探（新 + 无效）34 个</h2>
+<p class="quad-meta"><b>特征</b>：step ≥ 36 + log loss ≥ 0.350。<b>含义</b>：后期尝试的新方法 log loss 没降下去。<b>双曲位置</b>：边缘（r 大），但保护可达性。<b>★ vs SkillGraph 差异化弹药</b>。</p>
+
+<div class="skill-card">
+  <div class="head"><b>attention pooling 补救小模型（部分恢复）</b>
+    <span><span class="badge b-step">step 49</span> <span class="badge b-stage">improve</span> <span class="badge b-metric" style="color:var(--amber)">log loss 0.428</span></span></div>
+  <div class="row"><span class="label">summary</span><span class="val">multi-head attention pooling 试图弥补小模型容量损失</span></div>
+  <div class="row"><span class="label">plan</span><span class="val">"add multi-head attention pooling to better capture author-specific signals"</span></div>
+  <div class="insight" style="background:rgba(251,191,36,.08);color:var(--amber)"><b>★ 部分恢复，非最优</b>。从 step46 的 0.61 降到 0.43，但没回到 step22 的 0.32。条件不对（已换小模型）。</div>
+</div>
+
+<div class="skill-card">
+  <div class="head"><b>现代BERT 过拟合</b>
+    <span><span class="badge b-step">step 44</span> <span class="badge b-stage">improve</span> <span class="badge b-metric" style="color:var(--amber)">log loss 0.387</span></span></div>
+  <div class="row"><span class="label">plan</span><span class="val">"severe overfitting: ModernBERT training loss 低但 val 上升"</span></div>
+</div>
+
+<div class="note">
+<b>📊 Q3 的"无效"成因</b>：① 过拟合（ModernBERT/DeBERTa 训练过头）；② 小模型容量不足（step46 换 small 退化）；③ 复杂注意力机制未达预期。<b>关键</b>：这些 skill 的失败往往是"条件不对"——保留待激活。
+</div>
+
+<!-- ==================== Q4 ==================== -->
+<h2 class="h-q4">🔴 Q4 · 淘汰（旧 + 无效）28 个</h2>
+<p class="quad-meta"><b>特征</b>：step &lt; 36 + log loss ≥ 0.350。<b>含义</b>：早期 log loss 高的方案，被演化淘汰。<b>双曲位置</b>：最边缘（r 最大），可追溯。</p>
+
+<div class="skill-card">
+  <div class="head"><b>多分辨率分类器（严重欠拟合）</b>
+    <span><span class="badge b-step">step 10</span> <span class="badge b-stage">draft</span> <span class="badge b-metric" style="color:var(--red)">log loss 1.090</span></span></div>
+  <div class="row"><span class="label">summary</span><span class="val">MultiResolutionAuthorClassifier + 63 手工特征 + DeBERTa</span></div>
+  <div class="insight" style="background:rgba(251,113,133,.08);color:var(--red)"><b>★ 最差解（log loss 1.09，接近随机）</b>。手工特征 + 自定义架构 = 欠拟合。记录→未来跳过这类组合。</div>
+</div>
+
+<div class="skill-card">
+  <div class="head"><b>超时换小模型（退化）</b>
+    <span><span class="badge b-step">step 17</span> <span class="badge b-stage">debug</span> <span class="badge b-metric" style="color:var(--red)">log loss 0.389</span></span></div>
+  <div class="row"><span class="label">plan</span><span class="val">"DistilBERT 模型实际没在学习——val log loss 不降"</span></div>
+  <div class="insight" style="background:rgba(251,113,133,.08);color:var(--red)"><b>★ 方法选择错误</b>：DistilBERT 在 spooky 上效果差。反面知识。</div>
+</div>
+
+<div class="note">
+<b>📊 Q4 的价值</b>：记录了<b>哪些方法在 spooky 上 log loss 高</b>（多分辨率分类器、DistilBERT、欠拟合的 DeBERTa）。<b>保留 = 避免重复踩坑</b>。
+</div>
+
+<!-- ==================== 横向洞察 ==================== -->
+<h2 style="background:rgba(110,231,255,.1);border-left:4px solid var(--acc);padding:10px 14px;border-radius:8px">🔎 横向洞察</h2>
+
+<div class="grid2">
+<div class="skill-card">
+<h3 style="color:var(--green);margin:0 0 8px">Q1 vs Q2：有效解的"代际差异"</h3>
+<p style="margin:0;font-size:13px"><b>Q1（旧有效）</b>：原生 AutoModel + 修 bug 为主（debug/improve）<br>
+<b>Q2（新有效）</b>：DeBERTa 端到端微调 + 多采样 dropout（improve/evolution）<br>
+→ <b>有效方法随时间演化</b>：从修架构 bug → 大模型精细微调。</p>
+</div>
+<div class="skill-card">
+<h3 style="color:var(--amber);margin:0 0 8px">Q3 vs Q4：无效解的"性质差异"</h3>
+<p style="margin:0;font-size:13px"><b>Q3（新无效）</b>：过拟合/小模型容量不足（方法可能对，条件不对）→ <b>值得保留待激活</b><br>
+<b>Q4（旧无效）</b>：方法本质错（多分辨率/DistilBERT）→ <b>反面教材</b><br>
+→ <b>两类无效性质不同</b>，双曲边缘都保留但含义不同。</p>
+</div>
+</div>
+
+<div class="note" style="margin-top:14px">
+<b>🎯 论文直接可用</b>：① <b>"代际差异"</b>是"演化深度"的实证；② <b>Q3 的 34 个"条件不对"skill</b>是双曲保护低频的弹药；③ <b>Q4 反面知识</b>说明保留失败的价值。注意 metric 是 log loss（越低越好），Q1/Q2 的 log loss 低（0.19-0.35），Q3/Q4 高（0.35-1.09）。
+</div>
+
+</div>
+</body>
+</html>

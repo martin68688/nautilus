@@ -118,27 +118,45 @@
         0.009282352068990564,
         0.008944443226098029,
         0.008499598197703745
-      ]
+      ],
+      "embedding_quality_confidence": "low",
+      "fallback_reason": "sentence embedding backend unavailable locally: We couldn't connect to 'https://huggingface.co' to load the files, and couldn't find them in the cached files.\nCheck your internet connection or see how to run the library in offline mode at 'https://huggingface.co/docs/transformers/installation#offline-mode'."
     },
     "angle": {
       "theta": "azimuth atan2(y, x), normalized to [0, 2*pi)",
       "phi": "polar angle arccos(z / ||direction||)"
     },
     "radius": {
-      "formula": "radius=clamp(0.08+0.84*(1-(0.65*p_hat+0.25*support+0.10*(1-level_norm)+general_bonus)))",
+      "model": "specificity_radius_v2",
+      "formula": "radius=clamp(0.12+0.78*(0.30*condition_specificity+0.25*failure_specificity+0.20*implementation_specificity+0.15*(1-task_coverage_norm)+0.10*(1-graph_centrality_norm)))",
+      "radius_reliability_decoupled": true,
+      "reliability_formula": "reliability_score=0.65*wilson_or_p_hat+0.25*support_score+0.10*source_certification",
       "max_n_use": 15.0,
-      "max_level": 10.0
+      "max_level": 10.0,
+      "max_category_count": 199.0,
+      "note": "p_hat/n_use/support_score/reliability_score are not used to place SOPs on the radius; they are stored as scorer features only."
     },
-    "radius_min": 0.21518947184085846,
-    "radius_max": 0.8675000071525574,
-    "radius_mean": 0.5140494598718724,
+    "radius_reliability_decoupled": true,
+    "specificity_score_mean": 0.40729185667364104,
+    "reliability_score_mean": 0.2579253957018932,
+    "radius_min": 0.1615999937057495,
+    "radius_max": 0.7667238712310791,
+    "radius_mean": 0.43768764814872335,
     "radius_bands": {
-      "core": 122,
-      "edge": 110,
-      "middle": 49
+      "core": 56,
+      "middle": 202,
+      "edge": 23
     },
-    "poincare_max_norm": 0.8674999475479126,
-    "lorentz_minkowski_error_max": 7.62939453125e-06,
+    "poincare_max_norm": 0.7667238712310791,
+    "euclidean_norm_min": 0.9999999403953552,
+    "euclidean_norm_max": 1.0,
+    "euclidean_model": {
+      "coordinates": "L2-normalized TF-IDF-SVD directions in Euclidean R^d",
+      "distance": "Euclidean L2 distance",
+      "independent_from_poincare": true,
+      "note": "This is the independent flat-coordinate baseline; Flat-Twin remains the same-coordinate distance-function control."
+    },
+    "lorentz_minkowski_error_max": 1.9073486328125e-06,
     "flat_twin_identity": true,
     "quality_report": {
       "status": "passed",
@@ -181,6 +199,15 @@
       "neighbor_category_or_failure_coherence": 0.8658362989323843,
       "random_category_or_failure_coherence": 0.5825622775800712,
       "neighbor_coherence_lift": 0.28327402135231317,
+      "query_aware_gate": {
+        "status": "not_evaluated",
+        "required_inputs": [
+          "benchmark dev queries",
+          "gold SOP labels",
+          "runner output"
+        ],
+        "note": "Query-aware checks are computed by the offline ablation evaluator because they need query/gold pairs."
+      },
       "note": "Geometry ablation is not claim-grade unless this report passes."
     }
   },
@@ -222,7 +249,10 @@
     "conflicts_have_opposition_terms": true,
     "conflicts_have_condition_or_failure_context": true,
     "flat_twin_same_coordinates_as_poincare": true,
+    "euclidean_independent_coordinates": true,
+    "euclidean_unit_norm_coordinates": true,
     "coordinate_quality_gate_passed": true,
+    "radius_reliability_decoupled": true,
     "paper_grade_provenance": true
   }
 }
