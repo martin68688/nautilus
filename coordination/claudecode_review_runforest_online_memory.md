@@ -30,6 +30,158 @@ SOP = signpost distilled from transitions
 Evidence = code/metric/error proof attached to transitions
 ```
 
+## Low-frequency checkpoint: 2026-07-10 01:37 CST
+
+Scope: read-only monitor pass for `runforest-online-a100x3-clean-r5`. Per user request, monitoring cadence is now 10 minutes and this checkpoint did not mutate Kubernetes resources.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 23m
+  Pod:
+    name: runforest-online-a100x3-clean-r5-t6hb6
+    ready: 1/1
+    status: Running
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+current process/state:
+  Main matrix process is still running:
+    python ../paper-skills/hyper_memory/run_runforest_online_matrix.py --tag runforest_online_a100x3_clean_r5_20260709_171303 --num-gpus 3 --cpu-number 12 --runs-dir /workspace/nautilus/mlevolve/runs
+  Current task process:
+    run.py exp_id=spooky-author-identification ... external_skill_memory.mode=run_forest_agentic ... scoring_mode=poincare ... adoption_tracking.enable=True ... coldstart.use_coldstart=True
+  Current run:
+    /workspace/nautilus/mlevolve/runs/20260709_173038_runforest_online_a100x3_clean_r5_20260709_171303_spooky-author-identification_runforest
+
+progress:
+  The matrix manifest exists but still has 0 lines, so no task has completed yet.
+  `journal.json` is still missing.
+  No `runfile_*.py` exists yet in the current run workspace.
+  Adoption artifacts are not created yet:
+    adoption_report.json missing
+    adoption_events.jsonl missing
+    external_memory_adoption_events.jsonl missing
+
+memory/retrieval evidence:
+  RunForest memory remains loaded:
+    4212 nodes / 10429 edges
+    scoring=poincare
+    agentic=True
+  External memory source:
+    run_forest_agentic_memory
+  Additional draft retrievals observed since the previous checkpoint:
+    stage=draft
+    strategy=draft_successful_branches
+    refs include clean run-transition references plus SOP cards, for example:
+      run::20260517_151325_spooky-author-identification::transition::5fffd41185::423a8dfe1b
+      run::20260509_185008_spooky-author-identification::transition::0d800b57b4::d93b4c2aca
+      run::20260510_095558_spooky-author-identification::transition::2dd4fc7db8::c41c29fa04
+      sop::sg_0088, sop::sg_0087, sop::sg_0221, sop::sg_0223
+
+GPU state:
+  GPU0:
+    about 897 MiB used by the main python process, 0% utilization
+  GPU1/GPU2:
+    about 4 MiB each, 0% utilization
+  Interpretation:
+    The run is still in generation/review before training execution; no worker has started consuming the A100s yet.
+
+current interpretation:
+  This is not yet evidence of model quality or adoption rate because no executable runfile, journal node, metric, or adoption artifact exists.
+  The important positive evidence is that the clean r5 job is healthy, original cold-start template is active, RunForest memory is enabled in the live run command, and draft-stage memory retrieval has fired multiple times.
+  Next check should remain low-frequency/read-only.
+
+## Low-frequency checkpoint: 2026-07-10 01:40 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 26m
+  Pod:
+    name: runforest-online-a100x3-clean-r5-t6hb6
+    ready: 1/1
+    status: Running
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+new milestone:
+  Phase 1 draft generation completed:
+    3 draft codes generated.
+  Phase 2 pipelined parallel execution started:
+    pending draft executions: 3
+    remaining steps: 80
+  The three draft nodes were submitted:
+    ed490cf91a0f4e888d6c5b82d810cc11
+    fa3f9b400c934c0e8499edabc7fd8683
+    4f4b676d563b442582aa0b39f9fc2594
+
+GPU/process assignment evidence:
+  Logs show explicit executor assignment:
+    process_id=0 -> GPU 0
+    process_id=1 -> GPU 1
+    process_id=2 -> GPU 2
+  Live processes:
+    runfile_0.py running
+    runfile_1.py running
+    runfile_2.py running
+  Live GPU snapshot:
+    GPU0: 4441 MiB, about 92% utilization
+    GPU1: 4 MiB, 0% utilization at snapshot time
+    GPU2: 4 MiB, 0% utilization at snapshot time
+  Interpretation:
+    all three workers have started, but only GPU0 was actively training at the exact sample. GPU1/GPU2 processes were alive and may still have been in data/model load, compile, or initialization.
+
+runfile/model scheme evidence:
+  runfile_0.py:
+    imports StratifiedKFold.
+    uses answerdotai/ModernBERT-large.
+    extracts ModernBERT embeddings.
+    has 5-fold StratifiedKFold.
+    also contains a ModernBERT fine-tuning setup with batch size 16 and EPOCHS=20.
+  runfile_1.py:
+    imports StratifiedKFold and TfidfVectorizer.
+    uses answerdotai/ModernBERT-large via ModernBertForSequenceClassification.
+    has 5-fold StratifiedKFold.
+    trains for num_epochs=10, batch size 16.
+  runfile_2.py:
+    imports ModernBertModel/ModernBertConfig, StratifiedKFold, and TfidfVectorizer.
+    uses answerdotai/ModernBERT-large.
+    has 5-fold StratifiedKFold.
+    trains for num_epochs=10, batch size 16.
+
+memory/adoption state:
+  The live command still has:
+    external_skill_memory.enable=True
+    external_skill_memory.mode=run_forest_agentic
+    external_skill_memory.source_name=run_forest_agentic_memory
+    external_skill_memory.scoring_mode=poincare
+    external_skill_memory.enable_agentic=True
+    adoption_tracking.enable=True
+    adoption_tracking.enable_analysis=True
+    adoption_tracking.judge_mode=llm-all
+    coldstart.use_coldstart=True
+  Retrieval logs are still draft-stage only so far.
+  No adoption files yet:
+    adoption_report.json missing
+    adoption_events.jsonl missing
+    external_memory_adoption_events.jsonl missing
+
+metric/journal state:
+  Matrix manifest still has 0 rows.
+  journal.json still missing.
+  No metric is available yet.
+
+current interpretation:
+  This checkpoint proves the run has moved past LLM draft generation into real code execution.
+  It does not yet prove quality or memory adoption because no node has finished execution.
+  Next checkpoint should watch whether GPU1/GPU2 become active, whether the first journal appears, and whether adoption artifacts are written after the first completed node.
+
 Runtime uses `RunForestMemoryLayer` read-only:
 
 ```json
@@ -4689,3 +4841,2882 @@ clean-r2 tag: runforest_online_a100x3_clean_r2_20260709_143945
 clean-r2 checkout mode: seed_archive from /workspace/nautilus
 No clean online RunForest retrieval/adoption metrics exist yet.
 ```
+
+## 2026-07-09 low-frequency monitoring note
+
+User requested lower pull/checkout monitoring frequency.
+
+Latest lightweight check:
+
+```text
+job: runforest-online-a100x3-clean-r2
+pod: runforest-online-a100x3-clean-r2-k6pp2
+status: Running
+age: 17m
+log milestones seen:
+  checkout_mode=seed_archive seed=/workspace/nautilus
+  From https://github.com/martin68688/nautilus
+log milestones not yet seen:
+  checked_out_commit
+  clean_graph_ok
+  Running multi-task clean memory matrix
+  RunForestMemory retrieval/adoption lines
+```
+
+Monitoring policy after this point:
+
+```text
+Use low-frequency milestone checks rather than dense log polling.
+Primary milestones:
+  checkout completed
+  clean graph preflight passed
+  matrix started
+  per-task completion/failure
+  final job completion/failure
+```
+
+Follow-up read-only diagnostic:
+
+```text
+age: 18m
+pod: Running, restarts=0, node=rci-nrp-gpu-02.sdsu.edu
+active process:
+  tar -x -C /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r2_20260709_143945
+workdir size:
+  179M
+.source_commit:
+  not present yet
+interpretation:
+  checkout/archive extraction is still in progress on PVC.
+  No clean graph build, retrieval, training, or adoption metrics have started yet.
+```
+
+Second low-frequency diagnostic:
+
+```text
+age: 23m
+pod: Running, restarts=0
+active process:
+  tar -x -C /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r2_20260709_143945
+workdir size:
+  218M
+.source_commit:
+  not present yet
+interpretation:
+  archive extraction is still progressing slowly on the PVC.
+  clean graph build and online memory matrix have not started yet.
+```
+
+Third low-frequency diagnostic:
+
+```text
+age: 24m
+pod: Running, restarts=0
+active process:
+  tar -x -C /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r2_20260709_143945
+workdir size:
+  231M
+.source_commit:
+  not present yet
+interpretation:
+  extraction is still alive but slow.
+  no clean Run-Forest graph, retrieval, training, or adoption evidence exists yet.
+```
+
+Fourth low-frequency checkpoint: r2 failed due to cluster preemption, not code/runtime.
+
+```text
+job: runforest-online-a100x3-clean-r2
+status: Failed
+conditions:
+  FailureTarget=True reason=BackoffLimitExceeded
+  Failed=True reason=BackoffLimitExceeded
+pod status:
+  0 Active / 0 Succeeded / 1 Failed
+event evidence:
+  Preempted pod/runforest-online-a100x3-clean-r2-k6pp2
+  message: Preempted by pod e22cda40-4ee6-40dc-8751-799dd03ba9b3 on node rci-nrp-gpu-02.sdsu.edu
+  then: Job has reached the specified backoff limit
+why this killed the job:
+  job spec had backoffLimit: 0, so one preemption was enough to mark the Job failed.
+stage reached before failure:
+  logs only showed checkout_mode=seed_archive and GitHub fetch.
+  no checked_out_commit
+  no preflight compile
+  no clean_graph_ok
+  no matrix start
+  no RunForestMemory retrieval/adoption evidence
+interpretation:
+  clean-r2 produced no online memory result.
+  It failed during slow PVC archive extraction because the pod was preempted.
+```
+
+Recommended retry adjustment:
+
+```text
+Do not change the memory condition or model-template condition.
+Submit a clean-r3 retry only after reducing checkout/PVC extraction overhead.
+Key fix: avoid archiving tracked mlevolve/runs and data payload into the workdir; symlink PVC data/runs instead.
+Also use a small nonzero backoffLimit so a single cluster preemption does not erase the whole run.
+```
+
+clean-r3 manifest prepared:
+
+```text
+file: job-runforest-online-a100x3-clean-r3.yaml
+resource request unchanged:
+  3x A100, 6 CPU, 64Gi
+memory condition unchanged:
+  MLEVOLVE_CONFIG=./config/config_run_forest_agentic.yaml
+  external_skill_memory.mode=run_forest_agentic
+  external_skill_memory.scoring_mode=poincare
+  adoption_tracking.judge_mode=llm-all
+main differences vs r2:
+  job name: runforest-online-a100x3-clean-r3
+  backoffLimit: 1
+  RUN_TAG default: runforest_online_a100x3_clean_r3_...
+  checkout_mode: seed_archive_excluding_runs_data
+  git archive excludes:
+    mlevolve/runs
+    mlevolve/data
+  after checkout:
+    WORKDIR/mlevolve/data -> /workspace/nautilus/mlevolve/data
+    WORKDIR/mlevolve/runs -> /workspace/nautilus/mlevolve/runs
+validation:
+  kubectl apply --dry-run=client -f job-runforest-online-a100x3-clean-r3.yaml
+  passed
+```
+
+clean-r3 submitted:
+
+```text
+command:
+  kubectl apply -f job-runforest-online-a100x3-clean-r3.yaml
+result:
+  job.batch/runforest-online-a100x3-clean-r3 created
+job status:
+  Running
+pod:
+  runforest-online-a100x3-clean-r3-tkzwt
+node:
+  node-1-1.sdsc.optiputer.net
+initial log:
+  === Run-Forest clean-source online memory job ===
+  branch=codex/hyperbolic-structural-memory
+  run_tag=runforest_online_a100x3_clean_r3_20260709_151528
+  resources=3x A100, 6 CPU, 64Gi
+  checkout_mode=seed_archive_excluding_runs_data seed=/workspace/nautilus
+status:
+  r3 has not yet reached checked_out_commit, clean_graph_ok, matrix, retrieval, or adoption.
+```
+
+clean-r3 checkout diagnostic:
+
+```text
+age: about 6m
+status: Running
+pod: runforest-online-a100x3-clean-r3-tkzwt
+active process:
+  tar -x -C /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r3_20260709_151528
+workdir size:
+  46M
+large children:
+  paper-skills: 38M
+  mlevolve: 7.9M
+.source_commit:
+  not present yet
+interpretation:
+  r3 optimized checkout is working: data and runs are no longer being expanded into the workdir.
+  It is still extracting smaller project files, mostly paper-skills and mlevolve.
+  No preflight, clean graph, matrix, retrieval, or adoption evidence yet.
+```
+
+clean-r3 later checkout diagnostic:
+
+```text
+age: about 11m
+status: Running
+active process:
+  tar -x -C /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r3_20260709_151528
+workdir size:
+  73M
+large children:
+  paper-skills: 65M
+  mlevolve: 7.9M
+paper-skills children:
+  paper-skills/node_modules: 42M
+  paper-skills/hyper_memory: 22M
+.source_commit:
+  not present yet
+interpretation:
+  r3 removed the huge data/runs payload, but archive extraction is still slowed by tracked paper-skills/node_modules.
+  Current r3 is still alive and should not be killed unless explicitly requested.
+  If r3 fails or is preempted before checkout, the next retry should also exclude paper-skills/node_modules.
+```
+
+clean-r3 continued checkout diagnostic:
+
+```text
+age: about 14m
+status: Running
+active process:
+  tar -x -C /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r3_20260709_151528
+workdir size:
+  79M
+large children:
+  paper-skills: 70M
+  mlevolve: 7.9M
+paper-skills children:
+  paper-skills/node_modules: 43M
+  paper-skills/hyper_memory: 22M
+  paper-skills/output: 4.0M
+.source_commit:
+  not present yet
+interpretation:
+  r3 is still alive and still writing slowly.
+  The remaining startup tax is tracked paper-skills content, especially node_modules.
+  No runtime memory test result exists yet.
+```
+
+clean-r3 checkout completed:
+
+```text
+age: about 23m
+job: runforest-online-a100x3-clean-r3
+pod: runforest-online-a100x3-clean-r3-tkzwt
+checked_out_commit:
+  d63a67d5d6e3233f7e0e5c2493bbf5ff75ab2790
+next log milestones reached:
+  === Preflight compile ===
+  === Build clean Run-Forest graph from allowlist ===
+interpretation:
+  r3 successfully passed the slow checkout/archive phase.
+  The online run has now entered code preflight and clean Run-Forest graph construction.
+  Still no matrix, retrieval, or adoption evidence yet.
+```
+
+clean-r3 clean graph passed:
+
+```text
+log milestones:
+  Wrote run_forest_graph.json
+  Wrote run_forest_index.npz
+  Wrote run_forest_builder_report.json
+  === Clean graph preflight check ===
+  clean_graph_ok 22 runs 4212 nodes
+  === Evaluate and test clean Run-Forest artifacts ===
+builder report:
+  provenance_status: clean_certified
+  leak_verified: True
+  journal_count: 22
+  node_count: 4212
+  edge_count: 10429
+  allowlist_hash: a98b26b2152574f32fcad98a007b2e1fcfac3da80d7ecf9c32df49e69ec45cc7
+graph meta verification:
+  schema: hyperbolic_run_forest_memory_v1
+  provenance_status: clean_certified
+  leak_verified: True
+  paper_grade: True
+  source_run_count: 22
+  allow_run_count: 22
+  source_equals_allowlist: True
+  has_20260512: False
+  node_count: 4212
+  edge_count: 10429
+interpretation:
+  clean provenance gate passed.
+  The graph used by runtime is clean-certified and excludes the known leaked 20260512 family.
+  The job is currently evaluating/testing the artifacts before matrix launch.
+```
+
+clean-r3 matrix started and runtime memory verified:
+
+```text
+pytest:
+  8 passed, 3 warnings in 11.94s
+matrix:
+  tag=runforest_online_a100x3_clean_r3_20260709_151528
+  tasks=[
+    spooky-author-identification,
+    aerial-cactus-identification,
+    leaf-classification,
+    new-york-city-taxi-fare-prediction
+  ]
+  num_gpus=3
+  cpu_number=6
+  steps=config-default
+  manifest=/workspace/nautilus/mlevolve/runs/runforest_online_a100x3_clean_r3_20260709_151528_matrix/runforest_online_manifest.jsonl
+current task:
+  spooky-author-identification
+current run dir:
+  /workspace/nautilus/mlevolve/runs/20260709_154110_runforest_online_a100x3_clean_r3_20260709_151528_spooky-author-identification_runforest
+GPU:
+  3x A100-SXM4-80GB visible
+  initial active process on GPU0:
+    /usr/local/bin/python
+runtime memory evidence:
+  [RunForestMemory] loaded 4212 nodes / 10429 edges
+  scoring=poincare
+  agentic=True
+  [AgentSearch] External skill memory enabled: source=run_forest_agentic_memory
+first retrieval:
+  stage=draft
+  strategy=draft_successful_branches
+  refs include clean transition refs and SOP refs:
+    run::20260515_173948_spooky-author-identification::transition::2a14416a9d::b74f997873
+    run::20260516_104127_spooky-author-identification::transition::51d591325f::f1cc39d3e1
+    run::20260517_151325_spooky-author-identification::transition::5fffd41185::16114ca8db
+    sop::sg_0202
+    sop::sg_0204
+    sop::sg_0210
+    sop::sg_0267
+first draft scheme observed:
+  DeBERTa-v3-large fine-tuning
+  XGBoost on DeBERTa embeddings + handcrafted features
+  Logistic Regression on TF-IDF n-gram features
+  weighted ensemble with validation log-loss grid search
+interpretation:
+  Runtime Run-Forest memory is now verified online before draft generation.
+  The first generated plan matches the historically plausible three-model ensemble family.
+  No valid metric or adoption report exists yet; the task is still in draft generation/training.
+```
+
+clean-r3 spooky draft progress:
+
+```text
+current task:
+  spooky-author-identification
+draft 1:
+  RunForestMemory fired before draft generation:
+    stage=draft
+    strategy=draft_successful_branches
+    refs include transition refs and SOP refs
+  generated node:
+    36286ca6b40a4bf5b6bb40e646224736
+  code review:
+    needs_revision=False
+    code approved, original code used
+  execution:
+    deferred
+  metric:
+    None
+draft 2:
+  RunForestMemory fired again before generation:
+    stage=draft
+    strategy=draft_successful_branches
+    refs include:
+      run::20260515_173948_spooky-author-identification::transition::2a14416a9d::b74f997873
+      run::20260517_151325_spooky-author-identification::transition::5fffd41185::423a8dfe1b
+      run::20260517_151325_spooky-author-identification::transition::5fffd41185::16114ca8db
+      sop::sg_0202
+      sop::sg_0204
+      sop::sg_0210
+      sop::sg_0267
+  current phase:
+    Step 3/3 completed and merging all steps
+GPU:
+  3x A100 visible
+  only main run.py process active on GPU0 so far
+artifacts not yet present:
+  runfile_*.py
+  journal.json
+  metric
+  adoption_report.json
+  manifest row
+interpretation:
+  Runtime memory has fired repeatedly in draft mode.
+  The run is still in sequential draft generation, not training/execution yet.
+```
+
+clean-r3 spooky execution/debug checkpoint:
+
+```text
+time checked:
+  2026-07-09 15:56 CST pod time
+job:
+  runforest-online-a100x3-clean-r3
+pod:
+  runforest-online-a100x3-clean-r3-tkzwt
+status:
+  Job Running, pod Running, restarts=0
+current task:
+  spooky-author-identification
+run dir:
+  /workspace/nautilus/mlevolve/runs/20260709_154110_runforest_online_a100x3_clean_r3_20260709_151528_spooky-author-identification_runforest
+
+draft/execution state:
+  all three initial drafts were generated and code-reviewed
+  phase moved to pipelined parallel execution
+  runfiles now present:
+    workspace/runfile_0.py
+    workspace/runfile_1.py
+    workspace/runfile_2.py
+  active processes include:
+    run.py spooky-author-identification
+    runfile_0.py
+    runfile_1.py
+    runfile_2.py
+
+GPU snapshot:
+  3x A100 visible
+  GPU0 active:
+    runfile_0.py using about 34.7GiB
+    util about 96%
+  GPU1/GPU2 visible but idle in this sample
+
+first parsed execution result:
+  node: 78b16b5e83f74f6e829fe763ea693b38
+  stage: draft execution
+  result: FAIL
+  metric: None
+  failure class: AttributeError
+  parser message:
+    execution error detected; exception raised: AttributeError; no metric value reported; submission file not found
+
+runtime memory after failure:
+  RunForestMemory fired immediately in debug stage:
+    stage=debug
+    strategy=debug_failure_recovery
+  retrieved refs:
+    run::20260509_185008_spooky-author-identification::transition::0d800b57b4::cbe7d283fe
+    run::20260510_162636_spooky-author-identification::transition::03e876bd32::a18ddddfed
+    run::20260510_162636_spooky-author-identification::transition::a14e9ba18f::03e876bd32
+    run::20260510_095558_spooky-author-identification::transition::69c50c6a0c::b2ad2f2dfb
+    run::20260510_095558_spooky-author-identification::transition::2dd4fc7db8::69c50c6a0c
+    run::20260509_042918_spooky-author-identification::transition::5ef44d95ba::d0a1b62896
+    sop::sg_0112
+    sop::sg_0085
+    sop::sg_0147
+    sop::sg_0152
+
+debug child:
+  parent: 78b16b5e83f74f6e829fe763ea693b38
+  child: 6465ff5288b74186afa106c55b2f5ea5
+  code review:
+    needs_revision=False
+    passed without changes
+
+artifacts now present:
+  logs/journal.json
+  logs/filtered_journal.json
+  logs/config.yaml
+  workspace/runfile_0.py
+  workspace/runfile_1.py
+  workspace/runfile_2.py
+
+artifacts still absent / not final:
+  task-level manifest row not yet written
+  adoption_report.json not yet observed
+  no successful metric in this clean-r3 task yet
+  cactus/leaf/taxi not started yet
+
+interpretation:
+  clean-r3 has moved beyond checkout, graph build, and draft generation into real execution.
+  Runtime Run-Forest memory is now verified in both draft and debug modes on the clean-certified graph.
+  The first parsed branch failed with an AttributeError, then the navigator switched to debug_failure_recovery and supplied historical transition/SOP refs before generating a debug child.
+  This is useful runtime wiring evidence, but not yet an effectiveness/adoption result; the full matrix and adoption reports are still pending.
+```
+
+clean-r3 low-frequency liveness checkpoint:
+
+```text
+time checked:
+  job age about 43m
+job/pod:
+  runforest-online-a100x3-clean-r3 remains Running
+  pod runforest-online-a100x3-clean-r3-tkzwt remains Running
+  restarts: 0
+current task:
+  still spooky-author-identification
+
+active process state:
+  matrix runner still alive
+  run.py still alive for spooky-author-identification
+  runfile_0.py, runfile_1.py, and runfile_2.py still present/alive
+  runfile_2.py has torch inductor compile workers, indicating model code is still doing setup/compile/training work
+
+journal/adoption state:
+  journal.json exists
+  journal nodes: 2
+  valid metrics: 0
+  top metrics: none yet
+  runforest_online_manifest.jsonl exists but size is 0
+  adoption_report.json: absent
+  adoption_events.jsonl: absent
+  external_memory_adoption_events.jsonl: absent
+
+interpretation:
+  This is a live execution wait state, not a completed task and not a scheduler/Pending issue.
+  There is still no effectiveness, adoption-rate, or multi-task matrix conclusion to report.
+  Continue read-only monitoring at the lower requested cadence unless metric/adoption/task-transition/error signals appear.
+```
+
+clean-r3 chained debug checkpoint:
+
+```text
+time checked:
+  pod time around 2026-07-09 16:01
+job/pod:
+  runforest-online-a100x3-clean-r3 remains Running
+  pod runforest-online-a100x3-clean-r3-tkzwt remains Running
+  restarts: 0
+current task:
+  still spooky-author-identification
+
+new parsed result:
+  previous debug child:
+    6465ff5288b74186afa106c55b2f5ea5
+  stage:
+    debug
+  result:
+    FAIL
+  metric:
+    None
+  failure:
+    RuntimeError; no metric value reported; submission file not found
+  journal after parse:
+    nodes: 3
+    valid_metrics: 0
+
+runtime memory after second failure:
+  RunForestMemory fired again:
+    stage=debug
+    strategy=debug_failure_recovery
+  refs:
+    run::20260510_162636_spooky-author-identification::transition::77dd4e6447::42d95e9bcf
+    run::20260510_162636_spooky-author-identification::transition::a14e9ba18f::77dd4e6447
+    run::20260509_154039_spooky-author-identification::transition::dc633aebfe::1852b63b5b
+    run::20260511_102550_spooky-author-identification::transition::60e09c7afd::fe4e60b85d
+    run::20260511_102550_spooky-author-identification::transition::db5c1984b4::60e09c7afd
+    run::20260511_014836_spooky-author-identification::transition::31e12b2fef::5be1911c1a
+    sop::sg_0148
+    sop::sg_0149
+    sop::sg_0161
+    sop::sg_0165
+
+new debug child:
+  parent:
+    6465ff5288b74186afa106c55b2f5ea5
+  child:
+    17f0d4bba0624f6cb30b7108b530fc0f
+  code review:
+    passed without changes
+
+GPU/process sample:
+  3x A100 visible
+  GPU0:
+    active, about 34.7GiB allocated, about 93% utilization
+  GPU1/GPU2:
+    visible but idle in this sample
+  active runfile processes:
+    runfile_0.py
+    runfile_1.py
+    runfile_2.py
+  interpretation of GPU state:
+    only one branch is currently heavy on GPU in this sample; the others may be CPU-side, failed, waiting, or in setup/compile.
+
+artifacts:
+  manifest still empty
+  adoption_report.json absent
+  adoption_events.jsonl absent
+  external_memory_adoption_events.jsonl absent
+
+interpretation:
+  The online run is alive but still has zero valid metrics on spooky.
+  The most useful evidence so far is runtime behavior rather than performance: RunForest navigation keeps switching into debug_failure_recovery after concrete generated-code failures and supplies new transition/SOP refs for each debug child.
+  No adoption-rate or multi-task comparison can be claimed yet.
+```
+
+clean-r3 third debug failure and patched child checkpoint:
+
+```text
+time checked:
+  pod log through about 2026-07-09 16:03
+job/pod:
+  runforest-online-a100x3-clean-r3 remains Running
+  pod remains Running
+  restarts: 0
+current task:
+  still spooky-author-identification
+
+new parsed result:
+  node:
+    17f0d4bba0624f6cb30b7108b530fc0f
+  stage:
+    debug
+  result:
+    FAIL
+  metric:
+    None
+  failure:
+    RuntimeError; no metric value reported; submission file not found
+  journal snapshot:
+    nodes: 4
+    valid_metrics: 0
+    last nodes:
+      root
+      78b16b... draft buggy
+      6465ff... debug buggy
+      17f0d4... debug buggy
+
+runtime memory after third failure:
+  RunForestMemory fired again:
+    stage=debug
+    strategy=debug_failure_recovery
+  refs:
+    run::20260510_162636_spooky-author-identification::transition::77dd4e6447::42d95e9bcf
+    run::20260510_162636_spooky-author-identification::transition::a14e9ba18f::77dd4e6447
+    run::20260509_154039_spooky-author-identification::transition::dc633aebfe::1852b63b5b
+    run::20260511_014836_spooky-author-identification::transition::31e12b2fef::5be1911c1a
+    run::20260511_014836_spooky-author-identification::transition::171c1aa3a2::31e12b2fef
+    run::20260514_023457_spooky-author-identification::transition::11dd8825fa::4c59ca9769
+    sop::sg_0148
+    sop::sg_0149
+    sop::sg_0156
+    sop::sg_0157
+
+patch behavior:
+  debug agent attempted diff method on 17f0d4...
+  patch result:
+    Successfully applied 2 diff patch(es)
+  new child:
+    e035e3aef8534d4cb826adc457ffd878
+
+artifacts:
+  manifest still empty
+  adoption_report.json absent
+  adoption_events.jsonl absent
+  external_memory_adoption_events.jsonl absent
+
+interpretation:
+  The live run is still not producing valid spooky metrics, but the runtime memory loop is clearly active and repeatedly steering debug recovery.
+  This checkpoint is especially useful for audit because it shows not just retrieval, but actual patch application after memory-guided debug navigation.
+  Still no effectiveness or adoption-rate claim can be made until a valid metric and adoption artifacts exist.
+```
+
+clean-r3 fourth debug failure and return-to-draft checkpoint:
+
+```text
+time checked:
+  pod log through about 2026-07-09 16:06
+job/pod:
+  runforest-online-a100x3-clean-r3 remains Running
+  pod remains Running
+  restarts: 0
+current task:
+  still spooky-author-identification
+
+new parsed result:
+  node:
+    e035e3aef8534d4cb826adc457ffd878
+  stage:
+    debug
+  result:
+    FAIL
+  metric:
+    None
+  failure:
+    AssertionError; no metric value reported; submission file not found
+  journal snapshot:
+    nodes: 5
+    valid_metrics: 0
+
+debug chain summary so far:
+  78b16b... draft failed:
+    AttributeError
+  6465ff... debug failed:
+    RuntimeError
+  17f0d4... debug failed:
+    RuntimeError
+  e035e3... debug failed:
+    AssertionError
+
+patch/retrieval behavior:
+  RunForest debug recovery fired before each debug child.
+  The debug agent successfully applied patches on the previous failures:
+    78b16b... -> 6465ff...: 1 diff patch
+    6465ff... -> 17f0d4...: 2 diff patches
+    17f0d4... -> e035e3...: 2 diff patches
+  However, those patches did not yet produce a valid metric.
+
+search behavior after chain:
+  After e035e3... failed, the system backpropagated reward=-1 and returned to draft expansion.
+  RunForestMemory fired again:
+    stage=draft
+    strategy=draft_successful_branches
+  refs:
+    run::20260515_173948_spooky-author-identification::transition::2a14416a9d::b74f997873
+    run::20260517_151325_spooky-author-identification::transition::5fffd41185::423a8dfe1b
+    run::20260517_151325_spooky-author-identification::transition::5fffd41185::16114ca8db
+    run::20260517_151325_spooky-author-identification::transition::5fffd41185::8efd3270e8
+    run::20260509_185008_spooky-author-identification::transition::0d800b57b4::d93b4c2aca
+    run::20260516_104127_spooky-author-identification::transition::51d591325f::f1cc39d3e1
+    sop::sg_0202
+    sop::sg_0204
+    sop::sg_0267
+    sop::sg_0271
+
+artifacts:
+  manifest still empty
+  adoption_report.json absent
+  adoption_events.jsonl absent
+  external_memory_adoption_events.jsonl absent
+
+interpretation:
+  The memory system is behaving as a stage-aware navigator: draft -> debug chain -> back to draft after repeated failure.
+  This is good wiring evidence, but it also exposes a current weakness: memory-guided debug patches are repairing code mechanically enough to produce children, but not enough to reach a valid spooky metric yet.
+  No effect/adoption conclusion is available until at least one valid metric and final artifacts appear.
+```
+
+clean-r3 new draft branch after failed debug chain:
+
+```text
+time checked:
+  pod log through about 2026-07-09 16:09
+job/pod:
+  runforest-online-a100x3-clean-r3 remains Running
+  pod remains Running
+  restarts: 0
+current task:
+  still spooky-author-identification
+
+state before new branch:
+  e035e3... failed with AssertionError
+  best remained None
+  stats after failure:
+    step=5
+    nodes=5
+    branches=3
+    best=None
+
+search behavior:
+  system backpropagated reward=-1 for e035e3...
+  selected root node again for expansion:
+    3e5460518ed343e3945f25f93c000f29
+  mode:
+    Exploration mode
+  RunForestMemory fired:
+    stage=draft
+    strategy=draft_successful_branches
+  refs:
+    run::20260515_173948_spooky-author-identification::transition::2a14416a9d::b74f997873
+    run::20260517_151325_spooky-author-identification::transition::5fffd41185::423a8dfe1b
+    run::20260517_151325_spooky-author-identification::transition::5fffd41185::16114ca8db
+    run::20260517_151325_spooky-author-identification::transition::5fffd41185::8efd3270e8
+    run::20260509_185008_spooky-author-identification::transition::0d800b57b4::d93b4c2aca
+    run::20260516_104127_spooky-author-identification::transition::51d591325f::f1cc39d3e1
+    sop::sg_0202
+    sop::sg_0204
+    sop::sg_0267
+    sop::sg_0271
+
+new draft branch:
+  generated node:
+    63e8ab1871d54dffb995e395d14cecf9
+  branch:
+    4
+  generation route:
+    stepwise generation
+    Step 1/3: data_processing_and_feature_engineering
+    Step 2/3: model_design
+    Step 3/3: training_evaluation
+  code review:
+    needs_revision=True
+    diff format returned
+    Successfully applied 1 review patch
+  execution:
+    submitted via subprocess
+    assigned process_id=2
+    assigned CPU set: {125, 126}
+    assigned GPU: 2
+
+artifacts/result state:
+  no parse result yet for 63e8...
+  no valid metric yet
+  manifest still not known to contain a completed task row
+  adoption report still pending
+
+interpretation:
+  After the failed debug chain, the system did not remain trapped on that branch; it returned to draft exploration and used RunForest draft memory again.
+  The new branch also shows code-review actuation: one review patch was applied before execution.
+  This is stronger runtime-behavior evidence, but still not an effectiveness result because no valid spooky metric has appeared yet.
+```
+
+clean-r3 branch-4 draft failure and debug handoff:
+
+```text
+time checked:
+  pod log through about 2026-07-09 16:12
+job/pod:
+  runforest-online-a100x3-clean-r3 remains Running
+  pod remains Running
+  restarts: 0
+current task:
+  still spooky-author-identification
+
+branch-4 result:
+  node:
+    63e8ab1871d54dffb995e395d14cecf9
+  stage:
+    draft
+  generation:
+    RunForest-guided draft after the failed debug chain
+    code review required a patch
+    Successfully applied 1 review patch before execution
+  execution result:
+    FAIL
+  metric:
+    None
+  failure:
+    ValueError; no metric value reported; submission file not found
+  stats after parse:
+    step=6
+    nodes=6
+    branches=4
+    best=None
+    valid_metrics=0
+
+runtime memory after branch-4 failure:
+  RunForestMemory fired:
+    stage=debug
+    strategy=debug_failure_recovery
+  refs:
+    run::20260515_173948_spooky-author-identification::transition::6653f911ef::7c5a9917de
+    run::20260515_173948_spooky-author-identification::transition::2a14416a9d::6653f911ef
+    run::20260511_014836_spooky-author-identification::transition::171c1aa3a2::8209eb9301
+    run::20260509_185008_spooky-author-identification::transition::0d800b57b4::019b32ecba
+    run::20260516_125444_spooky-author-identification::transition::2aeb8453d8::347d68bc6c
+    run::20260516_125444_spooky-author-identification::transition::cc9848eb59::2aeb8453d8
+    sop::sg_0202
+    sop::sg_0204
+    sop::sg_0160
+    sop::sg_0155
+
+patch behavior:
+  debug agent attempted diff method on 63e8...
+  patch result:
+    Successfully applied 1 diff patch
+  new debug child:
+    c0728d996cea44a685dc7517dd44edaa
+
+artifacts/result state:
+  no parse result yet for c0728...
+  no valid metric yet
+  manifest still empty
+  adoption report still absent
+
+interpretation:
+  The fourth draft branch also failed before producing a metric, but RunForest again supplied debug recovery refs and the debug agent produced a patched child.
+  Current online evidence remains mostly about runtime actuation and recovery behavior, not performance.
+  The first task is still blocked on reaching any valid metric.
+```
+
+clean-r3 c0728 debug child execution pending:
+
+```text
+time checked:
+  pod log through about 2026-07-09 16:12
+job/pod:
+  runforest-online-a100x3-clean-r3 remains Running
+  pod remains Running
+  restarts: 0
+current task:
+  still spooky-author-identification
+
+debug child:
+  node:
+    c0728d996cea44a685dc7517dd44edaa
+  parent:
+    63e8ab1871d54dffb995e395d14cecf9
+  code review:
+    needs_revision=False
+    passed without changes
+
+result state:
+  no parse line observed yet for c0728...
+  no metric observed yet
+  no best node yet
+  manifest/adoption final artifacts still not observed
+
+interpretation:
+  The branch-4 debug child has moved past generation and review into execution/pending parse.
+  As of this checkpoint, the online run remains active but still has no valid spooky score.
+```
+
+clean-r3 active runfile/model scheme checkpoint:
+
+```text
+time checked:
+  cluster time around 2026-07-09 16:21-16:24
+
+job/pod:
+  job:
+    runforest-online-a100x3-clean-r3
+    status: Running
+    age: about 66m
+  pod:
+    runforest-online-a100x3-clean-r3-tkzwt
+    status: Running
+    restarts: 0
+  GPUs:
+    GPU0 active, about 36 GiB, runfile_0.py
+    GPU1 idle in nvidia-smi sample
+    GPU2 active, about 35 GiB, runfile_2.py
+
+active processes:
+  PID 594:
+    runfile_0.py
+    elapsed about 32m
+    GPU-backed
+    node: 36286ca6b40a4bf5b6bb40e646224736
+    stage: draft
+  PID 598:
+    runfile_1.py
+    elapsed about 32m
+    CPU-active but not holding GPU memory in the nvidia-smi sample
+    node: adfc711c91ec4ed8b6694fffcbf4bbbf
+    stage: draft
+  PID 1160:
+    runfile_2.py
+    elapsed about 12m
+    GPU-backed
+    node: c0728d996cea44a685dc7517dd44edaa
+    stage: debug child of 63e8ab1871d54dffb995e395d14cecf9
+
+model schemes:
+  runfile_0.py:
+    DeBERTa-v3-large fine-tuning
+    label_smoothing=0.1, max_length=512, batch_size=16, lr=2e-5, weight_decay=0.01, epochs=40, patience=5
+    stylometric + readability + POS approximation dense features
+    char TF-IDF ngrams (2-4, 4-6, 5-7)
+    word TF-IDF ngrams (1-3)
+    punctuation CountVectorizer
+    XGBoost on DeBERTa CLS embeddings + dense features
+    LogisticRegression on sparse ngram features
+    validation-grid weighted ensemble of DeBERTa + XGBoost + LR
+
+  runfile_1.py:
+    same primary DeBERTa-v3-large + XGBoost + LR weighted ensemble
+    adds graph similarity and period/era linguistic features before the same ensemble stack
+    header mentions contrastive ModernBERT design, but actual main model is still microsoft/deberta-v3-large
+    currently CPU-active without GPU memory in sampled nvidia-smi output
+
+  runfile_2.py:
+    debug child model remains DeBERTa-v3-large + XGBoost + LR weighted ensemble
+    includes expanded author-specific thematic features
+    current debug patch fixed the prior CountVectorizer duplicate-index style failure by vectorizing each author word list separately
+    still no parse result at this checkpoint
+
+current result state:
+  valid_metrics: still 0
+  best: None
+  no improve/evolution/fusion stage observed yet
+
+interpretation:
+  The active candidates are not random/simple baselines; they are all variants of the historically strong spooky template.
+  The system has retrieved and adopted the DeBERTa-v3-large + handcrafted-feature + XGBoost + LR ensemble direction, but the run has not yet produced a valid metric.
+  The main uncertainty is execution completion and parser result, not whether the strong template was retrieved at all.
+```
+
+clean-r3 low-frequency monitor checkpoint:
+
+```text
+time checked:
+  cluster time around 2026-07-09 16:26
+
+job/pod:
+  job:
+    runforest-online-a100x3-clean-r3
+    status: Running
+    completions: 0/1
+    duration/age: about 71m
+  pod:
+    runforest-online-a100x3-clean-r3-tkzwt
+    status: Running
+    ready: 1/1
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+GPU/process state:
+  GPU0:
+    about 36 GiB used
+    utilization about 94%
+    active runfile_0.py, PID 594
+  GPU1:
+    idle in this sample
+  GPU2:
+    about 35 GiB used
+    utilization about 96%
+    active runfile_2.py, PID 1160
+  run.py:
+    still running with external_skill_memory.enable=True
+    mode=run_forest_agentic
+    scoring_mode=poincare
+    enable_agentic=True
+    adoption_tracking.enable=True
+    adoption_tracking.judge_mode=llm-all
+    coldstart.use_coldstart=True
+
+structured result state:
+  journal:
+    nodes parsed: 6
+    valid_metrics: 0
+    best: None
+  last parsed nodes:
+    78b16b5e83f74f6e829fe763ea693b38 draft FAIL metric=None
+    6465ff5288b74186afa106c55b2f5ea5 debug FAIL metric=None
+    17f0d4bba0624f6cb30b7108b530fc0f debug FAIL metric=None
+    e035e3aef8534d4cb826adc457ffd878 debug FAIL metric=None
+    63e8ab1871d54dffb995e395d14cecf9 draft FAIL metric=None
+  currently executing but not parsed:
+    runfile_0.py / 36286ca6...
+    runfile_1.py / adfc711...
+    runfile_2.py / c0728...
+
+matrix/adoption artifacts:
+  runforest_online_manifest.jsonl:
+    exists but still empty
+  adoption_report.json:
+    absent
+  adoption_events.jsonl:
+    absent
+  external_memory_adoption_events.jsonl:
+    absent
+
+memory retrieval evidence in current log window:
+  RunForestMemory loaded:
+    4212 nodes / 10429 edges
+    scoring=poincare
+    agentic=True
+  cold-start and draft memory retrieved strong spooky historical template:
+    DeBERTa-v3-large + Stylometric/Readability/POS/N-gram features + XGBoost + Logistic Regression + Weighted Ensemble
+  runtime draft/debug memory continues to fire:
+    stage=draft strategy=draft_successful_branches
+    stage=debug strategy=debug_failure_recovery
+
+interpretation:
+  No new metric or task transition has appeared since the prior checkpoint.
+  This is still a waiting/training state, not a conclusion about performance.
+  The important positive evidence remains wiring/adoption intent: clean RunForest memory is active in cold-start and runtime retrieval, and the strong historical spooky template was selected.
+  The missing evidence remains outcome/adoption artifacts: no valid score, no completed manifest row, and no final adoption report yet.
+```
+
+clean-r3 low-frequency monitor checkpoint:
+
+```text
+time checked:
+  local time around 2026-07-10 00:30 Asia/Shanghai
+  cluster log still around 2026-07-09 16:xx UTC-like pod time
+
+kubectl/API behavior:
+  Several read-only kubectl calls returned transient EOF / context deadline messages from the API discovery path.
+  The job and pod status commands still returned usable resource state.
+  No mutation commands were run.
+
+job/pod:
+  job:
+    runforest-online-a100x3-clean-r3
+    status: Running
+    completions: 0/1
+    duration: about 74m
+  pod:
+    runforest-online-a100x3-clean-r3-tkzwt
+    status: Running
+    ready: 1/1
+    restarts: 0
+    age: about 75m
+    node: node-1-1.sdsc.optiputer.net
+
+GPU/process check:
+  nvidia-smi read failed twice with transient EOF in this checkpoint.
+  Prior checkpoint had GPU0 and GPU2 actively training; no evidence of pod restart or process failure appeared in job/pod/log/journal state.
+
+log evidence:
+  matrix is still on:
+    spooky-author-identification
+  configured matrix remains:
+    spooky-author-identification
+    aerial-cactus-identification
+    leaf-classification
+    new-york-city-taxi-fare-prediction
+  RunForestMemory still shown as loaded:
+    4212 nodes / 10429 edges
+    scoring=poincare
+    agentic=True
+  AgentSearch external memory still shown enabled:
+    source=run_forest_agentic_memory
+  cold-start memory retrieved the original-compatible strong spooky template:
+    DeBERTa-v3-large + Stylometric/Readability/POS/N-gram features + XGBoost + Logistic Regression + Weighted Ensemble
+
+structured result state:
+  journal nodes parsed: 6
+  valid_metrics: 0
+  best: None
+  parsed failures remain:
+    78b16b5e83f74f6e829fe763ea693b38 draft FAIL metric=None
+    6465ff5288b74186afa106c55b2f5ea5 debug FAIL metric=None
+    17f0d4bba0624f6cb30b7108b530fc0f debug FAIL metric=None
+    e035e3aef8534d4cb826adc457ffd878 debug FAIL metric=None
+    63e8ab1871d54dffb995e395d14cecf9 draft FAIL metric=None
+
+matrix/adoption artifacts:
+  runforest_online_manifest.jsonl:
+    exists but still 0 lines
+  adoption_report.json:
+    absent
+  adoption_events.jsonl:
+    absent
+  external_memory_adoption_events.jsonl:
+    absent
+
+interpretation:
+  No new parsed metric, no best node, and no task transition appeared in this interval.
+  This remains a waiting/training state, not a performance result.
+  Continue low-frequency read-only monitoring. Do not delete, replace, resubmit, or mutate the active job.
+```
+
+validation-scheme check for active spooky candidates:
+
+```text
+time checked:
+  local time around 2026-07-10 00:36 Asia/Shanghai
+
+question:
+  Are the active DeBERTa-v3-large ensemble candidates using 5-fold validation?
+
+answer:
+  No. The currently active runfiles use a single stratified 90/10 validation split.
+
+evidence:
+  runfile_0.py:
+    imports train_test_split
+    uses:
+      train_test_split(..., test_size=0.1, stratify=y_train_full)
+    no KFold/StratifiedKFold loop found
+
+  runfile_1.py:
+    imports StratifiedKFold and train_test_split
+    but actual split is:
+      train_test_split(..., test_size=0.1, stratify=train_df["author_encoded"].values)
+    no active n_splits=5 loop found
+
+  runfile_2.py:
+    imports train_test_split
+    uses:
+      train_idx, val_idx = train_test_split(..., test_size=0.1, stratify=y_train_full)
+    no KFold/StratifiedKFold loop found
+
+interpretation:
+  The current candidates preserve the original-compatible strong template style: one held-out validation split, then optimize ensemble weights on that validation set.
+  This keeps runtime manageable for DeBERTa-v3-large, but the reported validation metric will be less stable than a 5-fold out-of-fold ensemble.
+  Since the user requested not to mutate the active job, no running process was edited. If 5-fold is desired, it should be introduced by a future generated/improve candidate or by a separate controlled run, not patched into the active job mid-flight.
+```
+
+follow-up on StratifiedKFold import vs memory adoption:
+
+```text
+question:
+  runfile_1.py imports StratifiedKFold but does not actually use it. Did this come from retrieved memory, and why was it not adopted as 5-fold?
+
+evidence from runfile_1.py:
+  import line:
+    from sklearn.model_selection import StratifiedKFold, train_test_split
+  actual validation code:
+    X_train_texts, X_val_texts, y_train_labels, y_val_labels = train_test_split(
+        train_df["text"].values,
+        train_df["author_encoded"].values,
+        test_size=0.1,
+        random_state=RANDOM_STATE,
+        stratify=train_df["author_encoded"].values,
+    )
+
+evidence from verbose generation:
+  During stepwise generation branch 2, the Step 1 feature-engineering draft did say:
+    "I'll use 5-fold stratified cross-validation."
+  It also emitted:
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
+    train_idx, val_idx = next(skf.split(train_df, train_df['author']))
+
+  However, the final merged runfile_1.py main training path uses train_test_split with test_size=0.1.
+  So the import survived from an intermediate step, but the actual 5-fold loop did not survive into the final executable path.
+
+evidence from retrieved memory refs for branch 2:
+  RunForest retrieved:
+    sop::sg_0202
+      title: Use ensemble of DeBERTa-v3-large, XGBoost, and Logistic Regression with weight optimization
+      action: optimize ensemble weights via grid search on validation log loss
+      mentions_fold: False
+    sop::sg_0204
+      title: Use TF-IDF n-gram features with character and word ranges
+      mentions_fold: False
+    sop::sg_0210
+      title: Use stratified train/validation split to maintain class distribution
+      action: Use StratifiedShuffleSplit or StratifiedKFold with random_state to split data while preserving class proportions
+      mentions_fold: True
+    sop::sg_0267
+      title: Use temporal ensemble of top-K checkpoints for transformer predictions
+      mentions_fold: False
+
+interpretation:
+  Memory did retrieve a stratified-validation SOP, but it did not retrieve a strict "must run 5-fold OOF" instruction.
+  The agent partially adopted sg_0210 by preserving class-balanced validation through train_test_split(..., stratify=...).
+  It did not fully adopt the StratifiedKFold option, likely because the dominant retrieved template sg_0202 is a single-validation weighted ensemble template and because 5-fold DeBERTa-v3-large would multiply runtime substantially.
+  Code review also approved the final train_test_split implementation as leakage-safe and did not require converting it back to 5-fold.
+
+status:
+  This is a partial adoption case:
+    adopted: stratified validation / no index-bug split
+    not adopted: actual 5-fold OOF loop
+  No active job mutation was performed.
+```
+
+cold-start template provenance / originality check:
+
+```text
+question:
+  Is the cold-start model template the original baseline-compatible template, or was it modified/mixed with RunForest memory?
+
+answer:
+  The cold-start model template itself is the original local template from engine/coldstart/models_guidance_classified.json.
+  It is not dynamically pulled from a third-party source during the job.
+  RunForest cold-start memory is retrieved separately and stored/injected as external memory, not merged into or rewriting the original model-template block.
+
+evidence from current job code:
+  file:
+    /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r3_20260709_151528/mlevolve/engine/coldstart/knowledge.py
+  relevant behavior:
+    _build_guidance_text(...) loads:
+      cfg.coldstart.task_json_path
+      cfg.coldstart.model_json_path
+    and emits:
+      Model1: ...
+      Description: ...
+      Code template (MUST copy exactly ...)
+
+  code comment:
+    "Keep model-template cold start byte-compatible with the original path.
+     Run-Forest cold-start memory is injected later as a separate external
+     memory section so the 'copy template exactly' rule still refers only to
+     the original model template text."
+
+  side-channel fields:
+    _LAST_RUN_FOREST_REF_IDS
+    _LAST_RUN_FOREST_SOURCE
+    _LAST_RUN_FOREST_TEXT
+  AgentSearch reads these side-channel fields separately.
+
+evidence from current job log:
+  MLEvolve.verbose.log shows the cold-start model block:
+    Model1:
+      microsoft/deberta-v3-large+ Stylometric/Readability/POS/N-gram features + XGBoost + Logistic Regression + Weighted Ensemble
+    Description:
+      DeBERTa-v3-large fine-tuning + Stylometric/Readability/POS/N-gram features + XGBoost + Logistic Regression + Weighted Ensemble.
+      Achieved Log Loss ~0.2013 on Spooky Author Identification.
+    Code template header:
+      Run 20260509_185008 Train+Inference Script
+      LogLoss: ~0.2013 (真实 log_loss, 无 INDEX_BUG)
+      模型: DeBERTa-v3-large fine-tuning + XGBoost + Logistic Regression + 集成
+      用法: python infer_0509_185008_0201.py
+
+  The log also shows RunForestMemory retrieval immediately before the model block:
+    stage=draft
+    strategy=draft_successful_branches
+    refs=run::..., sop::...
+  This proves RunForest cold-start navigation fired, but the visible "Guidance description" model-template block remains the original model template.
+
+hash evidence:
+  current job template entry:
+    Description len=1026 sha256=64310659a180428f5fb9114f17510e98f34ca701cbc9192e08a08094131fd27a
+    Code_template len=19934 sha256=bf7bc3db4bea83c0fc17a728953d9939c90e8605110c9e2a1138766a85e4e59e
+
+  local workspace template entry:
+    Description len=1026 sha256=64310659a180428f5fb9114f17510e98f34ca701cbc9192e08a08094131fd27a
+    Code_template len=19934 sha256=bf7bc3db4bea83c0fc17a728953d9939c90e8605110c9e2a1138766a85e4e59e
+
+interpretation:
+  The job uses the same checked-in cold-start template as the local workspace.
+  It is "original" relative to this project cold-start template and remains baseline-compatible.
+  It is not "third-party pulled live" during the run; the only external model pull implied by the template is the standard HuggingFace model name microsoft/deberta-v3-large.
+  The generated runfiles are not byte-for-byte copies of the template because the agent fills functions, changes node-specific output paths, and may merge extra ideas, but the cold-start template injected into the prompt is unchanged.
+```
+
+clean-r3 low-frequency monitor checkpoint:
+
+```text
+time checked:
+  local time around 2026-07-10 00:46 Asia/Shanghai
+  pod time around 2026-07-09 16:46
+
+kubectl/API behavior:
+  OIDC discovery produced transient EOF messages, but read-only commands eventually returned job/pod/GPU/log/journal state.
+  No Kubernetes mutation commands were run.
+
+job/pod:
+  job:
+    runforest-online-a100x3-clean-r3
+    status: Running
+    completions: 0/1
+    duration: about 91m
+  pod:
+    runforest-online-a100x3-clean-r3-tkzwt
+    status: Running
+    ready: 1/1
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+GPU state:
+  GPU0:
+    memory: about 36 GiB
+    utilization: about 99%
+    active PID: 594 runfile_0.py
+  GPU1:
+    idle
+  GPU2:
+    memory: about 35 GiB
+    utilization: about 96%
+    active PID: 1160 runfile_2.py
+
+structured result state:
+  journal:
+    nodes: 6
+    stages:
+      root: 1
+      draft: 2
+      debug: 3
+    valid_metrics: 0
+    best: None
+  parsed failures unchanged:
+    78b16b5e83f74f6e829fe763ea693b38 draft FAIL metric=None
+    6465ff5288b74186afa106c55b2f5ea5 debug FAIL metric=None
+    17f0d4bba0624f6cb30b7108b530fc0f debug FAIL metric=None
+    e035e3aef8534d4cb826adc457ffd878 debug FAIL metric=None
+    63e8ab1871d54dffb995e395d14cecf9 draft FAIL metric=None
+
+matrix/adoption artifacts:
+  runforest_online_manifest.jsonl:
+    exists but still 0 lines
+  adoption_report.json:
+    absent
+  adoption_events.jsonl:
+    absent
+  external_memory_adoption_events.jsonl:
+    absent
+
+memory/retrieval evidence:
+  RunForestMemory still shown as loaded:
+    4212 nodes / 10429 edges
+    scoring=poincare
+    agentic=True
+  AgentSearch external memory enabled:
+    source=run_forest_agentic_memory
+  Current log still shows only draft/debug retrieval stages, no improve/evolution/fusion yet.
+  Cold-start model template remains the original DeBERTa-v3-large + XGBoost + LR ensemble block.
+
+interpretation:
+  No new parsed metric, no best node, no completed task manifest row, and no adoption report appeared in this interval.
+  The active job remains healthy and training-heavy rather than failed.
+  Continue wait-only monitoring; do not mutate, delete, replace, or resubmit the job.
+```
+
+Previous killed contaminated job cold-start/model-drift audit:
+
+```text
+question:
+  Was the previous killed job using the same cold-start template?
+  If yes, why did the first step not use the large-model template?
+
+old run inspected on PVC:
+  /workspace/nautilus/mlevolve/runs/20260709_053545_runforest_online_a100x3_r3_20260709_045537_spooky-author-identification_runforest
+
+verified facts:
+  1. The old contaminated r3 run did receive the large cold-start template.
+     MLEvolve.log lines 10-15 show:
+       Guidance description:
+       Model1: microsoft/deberta-v3-large + Stylometric/Readability/POS/N-gram features + XGBoost + Logistic Regression + Weighted Ensemble
+       Description: ... Achieved Log Loss ~0.2013 ...
+       Do NOT use ModernBERT, DeBERTa-small/base, or full freezing.
+       Code template (MUST copy exactly...)
+     So this was not a retrieval-miss of the cold-start template.
+
+  2. The first three draft nodes actually did use microsoft/deberta-v3-large.
+     journal.json node audit:
+       9074a44d9e... stage=draft MODEL_NAME=microsoft/deberta-v3-large
+       fe6beb7438... stage=draft MODEL_NAME=microsoft/deberta-v3-large
+       758c132e22... stage=draft MODEL_NAME=microsoft/deberta-v3-large
+     Their failures were:
+       AttributeError on nonexistent DebertaV2Model.rel_embeddings
+       long training / timeout-truncated run
+       incompatible checkpoint/state_dict architecture
+
+  3. The drift to small/base happened after those draft failures, mainly in debug/improve/evolution.
+     Examples:
+       bd5021e06... stage=debug plan explicitly says the large model is too slow and switches to microsoft/deberta-v3-small.
+       5bb660d4... valid debug metric=0.37155 uses microsoft/deberta-v3-small.
+       37243e86 / 24ba5082 / 0ea5cb31 improve nodes continue with DeBERTa-v3-small.
+       3aced0e0 / e0d3ef01 evolution/debug nodes use microsoft/deberta-v3-base.
+
+  4. The old run was contaminated and conflicted with the clean thesis.
+     It loaded 6666 nodes / 15040 edges from a non-clean graph and retrieved blocked 20260512 references, including the leaked 0.0725 lineage.
+     This polluted the prompt with strong but unsafe guidance and additional methodology cards. Some later generated code was then flagged for embedding leakage or validation-set ensemble tuning leakage.
+
+interpretation:
+  The old killed job did not fail because the cold-start large template was absent.
+  It first attempted large-template branches, those branches failed or timed out, and the normal debug/improve agent was allowed to treat the template as advice rather than a locked replay target.
+  Once a small-model debug node produced a valid metric, search pressure followed that valid local-best lineage even though it was worse than the intended large ensemble.
+
+current clean-r3 contrast:
+  clean-r3 keeps the original cold-start template separate from RunForest memory and current active candidates are again DeBERTa-v3-large + XGBoost + LR variants.
+
+recommended hardening if the user wants guaranteed behavior:
+  Add a template-lock/replay mode for high-confidence cold-start templates:
+    lock MODEL_NAME=microsoft/deberta-v3-large
+    preserve XGBoost + LogisticRegression + weighted ensemble branches
+    fail review if base/small appears while the template says not to use them
+    optionally copy the full reference skeleton instead of letting the generator rewrite the architecture from memory
+```
+
+clean-r5 restart after user requested original third-party cold-start template:
+
+```text
+user request:
+  Kill the current job.
+  Replace the cold-start model template library with the complete third-party original pulled into the local repo.
+  Verify it and restart with 3x A100, 12 CPU, 64Gi.
+
+actions taken:
+  1. Deleted the active clean-r3 job:
+       kubectl delete job runforest-online-a100x3-clean-r3 -n ecepxie
+     Result:
+       job.batch "runforest-online-a100x3-clean-r3" deleted
+
+  2. Located the third-party original template:
+       third_party/MLEvolve/engine/coldstart/models_guidance_classified.json
+
+  3. Replaced the runtime template library:
+       mlevolve/engine/coldstart/models_guidance_classified.json
+     with the third-party original.
+
+  4. Verified byte identity:
+       sha256 current runtime template:
+         5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+       sha256 third-party original:
+         5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+       byte_equal=True
+
+  5. Verified Spooky cold-start category now uses the original NLP template set:
+       spooky_category=NLP
+       spooky_models=["ModernBERT", "DeBERTa-v3-large"]
+       has_historical_ensemble_template=False
+       has_deberta_large_original=True
+       has_modernbert_original=True
+
+  6. Ran local regression:
+       python -m pytest tests/test_run_forest_memory.py -q
+       result: 8 passed
+
+  7. Created a new job spec:
+       job-runforest-online-a100x3-clean-r5.yaml
+     Key differences:
+       job name: runforest-online-a100x3-clean-r5
+       branch: codex/dual-time-procedural-memory
+       resources: 3x A100, 12 CPU, 64Gi
+       RUNFOREST_CPU_NUMBER=12
+       run_runforest_online_matrix.py --num-gpus 3 --cpu-number 12
+       pod-side cold-start template sha check before training
+
+  8. Committed and pushed code for PVC checkout:
+       branch: codex/dual-time-procedural-memory
+       commit: 709e4cd91392dd354b98d555fcadb5700b94fc65
+       commit message: Restore original cold-start model templates for RunForest test
+
+  9. Created new Kubernetes job:
+       kubectl apply -f job-runforest-online-a100x3-clean-r5.yaml
+       result: job.batch/runforest-online-a100x3-clean-r5 created
+
+current r5 state at creation checkpoint:
+  job:
+    runforest-online-a100x3-clean-r5
+    status: Running
+  pod:
+    runforest-online-a100x3-clean-r5-t6hb6
+    status: Running
+    node: node-1-1.sdsc.optiputer.net
+  startup log confirms:
+    branch=codex/dual-time-procedural-memory
+    run_tag=runforest_online_a100x3_clean_r5_20260709_171303
+    resources=3x A100, 12 CPU, 64Gi
+    checkout_mode=seed_archive_excluding_runs_data_node_modules
+    fetched codex/dual-time-procedural-memory from github.com/martin68688/nautilus
+  process check confirms:
+    git archive is unpacking commit 709e4cd91392dd354b98d555fcadb5700b94fc65
+    GPU training has not started yet.
+
+important interpretation:
+  The previous runtime template was not third-party original: it contained a custom historical Spooky DeBERTa-v3-large + XGBoost + Logistic Regression weighted-ensemble template with 20260509_185008 / ~0.2013 text.
+  The new runtime template is the third-party original: generic ModernBERT and DeBERTa-v3-large templates only.
+  This means cold-start is now baseline-compatible/original-template-compatible again; RunForest memory remains injected separately through the configured memory layer.
+```
+
+clean-r5 10-minute low-frequency monitor checkpoint:
+
+```text
+time checked:
+  local thread heartbeat after user requested monitoring frequency reduced to 10 minutes.
+
+monitoring policy:
+  User explicitly requested no continuous monitoring.
+  Automation runforest-online-job-monitor was updated to one read-only checkpoint every 10 minutes for job runforest-online-a100x3-clean-r5.
+  No Kubernetes mutation commands were run in this checkpoint.
+
+job/pod:
+  job:
+    runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    age: about 8m39s at external check
+  pod:
+    runforest-online-a100x3-clean-r5-t6hb6
+    status: Running
+    ready: 1/1
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+startup/log state:
+  log still shows the checkout/archive stage:
+    branch=codex/dual-time-procedural-memory
+    run_tag=runforest_online_a100x3_clean_r5_20260709_171303
+    resources=3x A100, 12 CPU, 64Gi
+    checkout_mode=seed_archive_excluding_runs_data_node_modules
+    fetched codex/dual-time-procedural-memory from GitHub
+
+pod process state:
+  still running:
+    git -C /workspace/nautilus archive --format=tar 709e4cd91392dd354b98d555fcadb5700b94fc65 ...
+    tar -x -C /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r5_20260709_171303
+  workdir progress:
+    files: 3671
+    size: about 40M
+    .source_commit not written yet, so archive/tar has not fully completed.
+
+cold-start template verification inside the unpacked workdir:
+  file:
+    /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r5_20260709_171303/mlevolve/engine/coldstart/models_guidance_classified.json
+  sha256:
+    5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+  interpretation:
+    The unpacked runtime template matches the third-party original template.
+    Training has not reached the scripted coldstart_template_ok print yet because checkout is still completing.
+
+GPU/matrix state:
+  GPU0/GPU1/GPU2:
+    0 MiB used, 0% utilization
+  matrix manifest:
+    missing
+  current run dir:
+    none yet
+  journal/adoption:
+    none yet
+
+interpretation:
+  The job is healthy but still in PVC archive extraction, not model training.
+  No task has started, no RunForest retrieval/adoption event is available yet.
+  Continue wait-only monitoring at the requested 10-minute cadence.
+```
+
+clean-r5 follow-up low-frequency monitor checkpoint:
+
+```text
+monitoring policy:
+  One read-only checkpoint only; no Kubernetes mutation commands were run.
+
+job/pod:
+  job:
+    runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    age: about 10m at external check
+  pod:
+    runforest-online-a100x3-clean-r5-t6hb6
+    status: Running
+    ready: 1/1
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+log/startup:
+  Tail still shows the initial checkout/archive stage:
+    branch=codex/dual-time-procedural-memory
+    run_tag=runforest_online_a100x3_clean_r5_20260709_171303
+    resources=3x A100, 12 CPU, 64Gi
+    checkout_mode=seed_archive_excluding_runs_data_node_modules
+    fetched codex/dual-time-procedural-memory from GitHub
+
+pod process state:
+  Still running:
+    git -C /workspace/nautilus archive --format=tar 709e4cd91392dd354b98d555fcadb5700b94fc65 ...
+    tar -x -C /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r5_20260709_171303
+  workdir progress:
+    files: 5641
+    size: about 45M
+    .source_commit not written yet.
+  Interpretation:
+    Checkout/archive is slow on PVC but still progressing compared with previous checkpoint (3671 files -> 5641 files).
+
+cold-start template check:
+  Runtime template path exists in unpacked workdir:
+    /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r5_20260709_171303/mlevolve/engine/coldstart/models_guidance_classified.json
+  sha256:
+    5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+  This still matches the third-party original template.
+
+GPU/matrix/run state:
+  GPU0/GPU1/GPU2:
+    0 MiB used, 0% utilization
+  matrix manifest:
+    missing
+  current run dir:
+    none
+  journal:
+    missing
+  adoption:
+    no events yet
+
+interpretation:
+  The job is healthy and still in source checkout/unpack, not training.
+  No task has started and no Memory Navigator retrieval/adoption evidence exists yet.
+  Continue waiting; do not mutate or restart.
+```
+
+clean-r5 low-frequency monitor checkpoint 3:
+
+```text
+monitoring policy:
+  One read-only checkpoint only; no Kubernetes mutation commands were run.
+
+job/pod:
+  job:
+    runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    age: about 13m at external check
+  pod:
+    runforest-online-a100x3-clean-r5-t6hb6
+    status: Running
+    ready: 1/1
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+log/startup:
+  Tail still shows the initial checkout/archive stage, not training:
+    branch=codex/dual-time-procedural-memory
+    run_tag=runforest_online_a100x3_clean_r5_20260709_171303
+    resources=3x A100, 12 CPU, 64Gi
+    checkout_mode=seed_archive_excluding_runs_data_node_modules
+
+pod process state:
+  Still running:
+    git -C /workspace/nautilus archive --format=tar 709e4cd91392dd354b98d555fcadb5700b94fc65 ...
+    tar -x -C /workspace/nautilus_runforest_online_runforest_online_a100x3_clean_r5_20260709_171303
+  workdir progress:
+    files: 7193
+    size: about 49M
+    .source_commit not written yet.
+  Interpretation:
+    PVC checkout/archive remains slow but continues progressing:
+      previous: 5641 files / 45M
+      current: 7193 files / 49M
+
+cold-start template check:
+  Runtime template sha remains:
+    5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+  It still matches the third-party original template.
+
+GPU/matrix/run state:
+  GPU0/GPU1/GPU2:
+    0 MiB used, 0% utilization
+  matrix manifest:
+    missing
+  current run dir:
+    none
+  journal:
+    missing
+  adoption:
+    no events yet
+
+interpretation:
+  The job is healthy and still in source checkout/unpack.
+  No task has started and no Memory Navigator retrieval/adoption evidence exists yet.
+  Continue waiting at the 10-minute cadence; do not mutate or restart.
+```
+
+clean-r5 low-frequency monitor checkpoint 4:
+
+```text
+monitoring policy:
+  One read-only checkpoint only; no Kubernetes mutation commands were run.
+
+job/pod:
+  job:
+    runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    age: about 15-16m
+  pod:
+    runforest-online-a100x3-clean-r5-t6hb6
+    status: Running
+    ready: 1/1
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+major progress:
+  Checkout/archive completed.
+  checked_out_commit:
+    709e4cd91392dd354b98d555fcadb5700b94fc65
+  Cold-start template provenance check passed:
+    coldstart_template_ok 5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff ["ModernBERT", "DeBERTa-v3-large"]
+  Preflight compile completed.
+  Clean Run-Forest graph build completed and passed preflight:
+    clean_graph_ok 22 runs 4212 nodes
+
+current pod process:
+  Running:
+    python ../paper-skills/hyper_memory/evaluate_run_forest_memory.py
+  This means the job is evaluating/testing the clean Run-Forest artifacts before launching the multi-task matrix.
+
+generated artifacts:
+  run_forest_graph.json:
+    exists, about 18M
+  run_forest_index.npz:
+    exists, about 673K
+  run_forest_memory_evaluation.json:
+    exists, about 13K at checkpoint time, but evaluation process is still running so final status not yet recorded here.
+
+GPU/matrix/run state:
+  GPU0/GPU1/GPU2:
+    0 MiB used, 0% utilization
+  matrix manifest:
+    missing
+  current run dir:
+    none
+  journal:
+    missing
+  adoption:
+    no events yet
+
+interpretation:
+  The slow PVC checkout bottleneck is past.
+  Provenance and original cold-start template checks have passed.
+  The job has not started the actual task matrix yet; therefore no Memory Navigator retrieval/adoption evidence exists yet.
+  Continue waiting at the 10-minute cadence; do not mutate or restart.
+```
+
+clean-r5 low-frequency monitor checkpoint 5:
+
+```text
+monitoring policy:
+  One read-only checkpoint only; no Kubernetes mutation commands were run.
+
+job/pod:
+  job:
+    runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    age: about 17-18m
+  pod:
+    runforest-online-a100x3-clean-r5-t6hb6
+    status: Running
+    ready: 1/1
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+artifact/test stage completed:
+  Run-Forest graph build:
+    Wrote run_forest_graph.json
+    Wrote run_forest_index.npz
+    Wrote run_forest_builder_report.json
+  Clean graph preflight:
+    clean_graph_ok 22 runs 4212 nodes
+  Artifact evaluation:
+    Wrote run_forest_memory_evaluation.json
+    Wrote coordination/run_forest_memory_experiment_report.md
+  Runtime tests:
+    tests/test_run_forest_memory.py
+    result: 8 passed, 3 warnings in 10.73s
+
+matrix stage:
+  Multi-task matrix started:
+    tasks:
+      spooky-author-identification
+      aerial-cactus-identification
+      leaf-classification
+      new-york-city-taxi-fare-prediction
+    num_gpus=3
+    cpu_number=12
+    steps=config-default
+  Current task:
+    spooky-author-identification
+  Current run:
+    /workspace/nautilus/mlevolve/runs/20260709_173038_runforest_online_a100x3_clean_r5_20260709_171303_spooky-author-identification_runforest
+  Matrix manifest:
+    exists but currently 0 lines; no completed task row yet.
+
+runtime memory/cold-start evidence:
+  RunForestMemory loaded:
+    4212 nodes / 10429 edges
+    scoring=poincare
+    agentic=True
+  First draft-stage retrieval occurred:
+    strategy=draft_successful_branches
+    refs:
+      run::20260509_042918_spooky-author-identification::transition::5ef44d95ba::6407f18c70
+      run::20260509_042918_spooky-author-identification::transition::6407f18c70::b7c552a9fd
+      run::20260511_102550_spooky-author-identification::transition::8fa40b1647::dd6126c1cf
+      run::20260510_025317_spooky-author-identification::transition::a7f4cd59aa::44ca78311a
+      run::20260516_104127_spooky-author-identification::transition::6b53283255::f0283e8171
+      run::20260516_125444_spooky-author-identification::transition::1512118372::5a9c22c3e6
+      sop::sg_0088
+      sop::sg_0087
+      sop::sg_0001
+      sop::sg_0164
+  Cold-start guidance shown in log now comes from the original third-party NLP model template:
+    Model1: ModernBERT
+    Model2 is expected to be DeBERTa-v3-large in the same original template block.
+  This confirms RunForest memory is separate from the model-template cold start.
+
+current execution state:
+  Running processes:
+    run_runforest_online_matrix.py
+    run.py exp_id=spooky-author-identification ... external_skill_memory.enable=True ... adoption_tracking.enable=True ...
+  GPU0/GPU1/GPU2:
+    0 MiB used, 0% utilization
+  Interpretation:
+    The solver is still in planning/generation/pre-training setup. No runfile_* GPU worker is active yet.
+
+run artifacts:
+  Logs present:
+    MLEvolve.log
+    MLEvolve.verbose.log
+  journal:
+    missing at checkpoint time
+  adoption_report/adoption_events/external_memory_adoption_events:
+    missing at checkpoint time
+
+interpretation:
+  The job has successfully entered the actual online memory pilot.
+  Clean RunForest memory is active in runtime, and cold-start model templates are original third-party templates.
+  No metric/adoption rate can be computed yet because no node has finished and no adoption artifacts have been written.
+  Continue waiting at the 10-minute cadence; do not mutate or restart.
+```
+
+clean-r5 low-frequency monitor checkpoint 6:
+
+```text
+monitoring policy:
+  One read-only checkpoint only; no Kubernetes mutation commands were run.
+
+job/pod:
+  job:
+    runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    age: about 19-20m
+  pod:
+    runforest-online-a100x3-clean-r5-t6hb6
+    status: Running
+    ready: 1/1
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+current matrix/task:
+  Matrix is running:
+    runforest_online_a100x3_clean_r5_20260709_171303
+  Current task:
+    spooky-author-identification
+  Current run:
+    /workspace/nautilus/mlevolve/runs/20260709_173038_runforest_online_a100x3_clean_r5_20260709_171303_spooky-author-identification_runforest
+  Manifest:
+    exists but still 0 lines because spooky has not completed.
+
+cold-start/template evidence:
+  The full original NLP template block is visible in the log:
+    Model1: ModernBERT
+    Model2: DeBERTa-v3-large
+  This confirms the historical custom Spooky ensemble template is no longer the model-template cold start.
+
+RunForest/runtime memory evidence:
+  Runtime memory loaded:
+    [RunForestMemory] loaded 4212 nodes / 10429 edges
+    scoring=poincare
+    agentic=True
+  External memory enabled:
+    source=run_forest_agentic_memory
+  Retrieval events observed:
+    1. Cold-start/draft guidance retrieval:
+       stage=draft
+       strategy=draft_successful_branches
+       refs include:
+         run::20260509_042918...::5ef44d95ba::6407f18c70
+         run::20260509_042918...::6407f18c70::b7c552a9fd
+         run::20260511_102550...::8fa40b1647::dd6126c1cf
+         run::20260510_025317...::a7f4cd59aa::44ca78311a
+         run::20260516_104127...::6b53283255::f0283e8171
+         run::20260516_125444...::1512118372::5a9c22c3e6
+         sop::sg_0088, sop::sg_0087, sop::sg_0001, sop::sg_0164
+    2. Runtime draft child-memory retrieval:
+       stage=draft
+       strategy=draft_successful_branches
+       refs include:
+         run::20260509_042918...::5ef44d95ba::6407f18c70
+         run::20260516_125444...::1512118372::5a9c22c3e6
+         run::20260517_132158...::3b45a24d2a::628e1d09e5
+         run::20260516_125444...::92989935c3::669be7d1fe
+         run::20260516_104127...::6b53283255::cf0ec1a7f2
+         run::20260516_125444...::cc9848eb59::323518e35d
+         sop::sg_0088, sop::sg_0087, sop::sg_0221, sop::sg_0223
+
+generation/execution state:
+  Logs show stepwise draft generation:
+    Step 1/3: data_processing_and_feature_engineering
+    Step 2/3: model_design
+    Step 3/3: training_evaluation
+  Current processes:
+    run_runforest_online_matrix.py
+    run.py exp_id=spooky-author-identification ...
+  No runfile_*.py exists yet.
+  journal.json:
+    missing
+  adoption artifacts:
+    adoption_report.json missing
+    adoption_events.jsonl missing
+    external_memory_adoption_events.jsonl missing
+
+GPU state:
+  GPU0:
+    about 897 MiB used by run.py, 0% utilization
+  GPU1/GPU2:
+    about 4 MiB each, 0% utilization
+  Interpretation:
+    run.py has lightly initialized CUDA or torch state, but no training worker is active yet.
+
+interpretation:
+  The online memory pilot is active and has already performed both cold-start and runtime draft retrieval.
+  No finished node, metric, runfile, journal, or adoption rate is available yet.
+  Continue waiting at the 10-minute cadence; do not mutate or restart.
+```
+
+## Low-frequency checkpoint: 2026-07-10 01:42 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 28m
+  Pod:
+    name: runforest-online-a100x3-clean-r5-t6hb6
+    ready: 1/1
+    status: Running
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+new milestone:
+  The first executed draft finished and was parsed.
+  Node:
+    ed490cf91a0f4e888d6c5b82d810cc11
+  Result:
+    metric=None
+    is_buggy=True
+    failure=AttributeError
+    no submission file found
+  Journal now exists and currently contains 2 nodes:
+    root node
+    failed draft node ed490cf91a0f4e888d6c5b82d810cc11
+
+failure diagnosis from journal:
+  The failed draft tried to configure layer-wise optimizer groups using:
+    model.bert.encoder.layer
+  For ModernBertForSequenceClassification, the actual module path is:
+    model.model.encoder.layer
+  The error happened before training produced a validation metric or submission.
+
+runtime memory behavior:
+  After the failed draft was parsed, the system submitted a debug task:
+    [debug] ed490cf91a0f4e888d6c5b82d810cc11 -> 37e2d6d1360e4627967f3a3733c51ed2
+  RunForest memory switched from draft retrieval to debug retrieval:
+    stage=debug
+    strategy=debug_failure_recovery
+  Debug retrieval refs included:
+    run::20260509_042918_spooky-author-identification::transition::d0a1b62896::ed24b07d10
+    run::20260509_042918_spooky-author-identification::transition::5ef44d95ba::d0a1b62896
+    run::20260509_185008_spooky-author-identification::transition::0d800b57b4::cbe7d283fe
+    run::20260509_042918_spooky-author-identification::transition::5ef44d95ba::8cc305a104
+    run::20260510_025317_spooky-author-identification::transition::95eb3fc7ae::72d7f18660
+    run::20260510_025317_spooky-author-identification::transition::a7f4cd59aa::95eb3fc7ae
+    sop::sg_0001, sop::sg_0092, sop::sg_0086, sop::sg_0088
+
+debug follow-up:
+  The debug patch was applied:
+    Successfully applied 1 diff patch for failed draft.
+  Code review then requested more changes on debug child:
+    needs_revision=True
+    Successfully applied 3 review patches.
+  Debug child began execution on GPU0.
+
+GPU/process state:
+  Focused snapshot:
+    GPU0: 897 MiB, 0% utilization at exact sample, running debug child / main process
+    GPU1: 11165 MiB, 55% utilization, runfile_1 active
+    GPU2: 4217 MiB, 42% utilization, runfile_2 active
+  Interpretation:
+    initial runfile_0 failed quickly; runfile_1 and runfile_2 are genuinely training, and GPU0 is now being reused for the debug child.
+
+adoption state:
+  Adoption files are still missing:
+    adoption_report.json
+    adoption_events.jsonl
+    external_memory_adoption_events.jsonl
+  This is expected early in the run. We have retrieval evidence, but no completed adoption analysis yet.
+
+current interpretation:
+  The online runtime memory path is now verified beyond draft: it handled a real execution failure, selected debug_failure_recovery references, generated a debug child, and relaunched execution.
+  No quality comparison can be made yet because there is still no valid metric.
+
+## Low-frequency checkpoint: 2026-07-10 01:46 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 32m
+  Pod:
+    name: runforest-online-a100x3-clean-r5-t6hb6
+    ready: 1/1
+    status: Running
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+new milestone:
+  The first debug child also finished and was parsed.
+  Node:
+    37e2d6d1360e4627967f3a3733c51ed2
+  Result:
+    metric=None
+    is_buggy=True
+    failure=IndexError
+    no submission file found
+
+journal state:
+  journal.json exists.
+  Current node count:
+    3
+  Stage distribution:
+    root: 1
+    draft: 1
+    debug: 1
+  Valid metrics:
+    0
+  No best metric yet.
+
+failure chain:
+  Draft node ed490cf91a0f4e888d6c5b82d810cc11:
+    failed with AttributeError from ModernBERT module-path access:
+      model.bert.encoder.layer
+    expected ModernBERT path:
+      model.model.encoder.layer
+  Debug node 37e2d6d1360e4627967f3a3733c51ed2:
+    failed with IndexError from fold/index handling.
+    Journal analysis says train_all_features was created from one StratifiedKFold training split, then indexed with indices from another fold split, causing out-of-bounds positional indexing.
+
+runtime memory behavior:
+  After the first debug failure, RunForest memory again used debug recovery:
+    stage=debug
+    strategy=debug_failure_recovery
+  Second debug retrieval refs included:
+    run::20260509_042918_spooky-author-identification::transition::4ffedd6abb::6c8908620e
+    run::20260509_042918_spooky-author-identification::transition::ed24b07d10::4ffedd6abb
+    run::20260509_042918_spooky-author-identification::transition::d0a1b62896::ed24b07d10
+    run::20260510_162636_spooky-author-identification::transition::52e3799473::740ebb2738
+    run::20260510_025317_spooky-author-identification::transition::a7f4cd59aa::66de7706c1
+    run::20260510_025317_spooky-author-identification::transition::95eb3fc7ae::72d7f18660
+    sop::sg_0001, sop::sg_0086, sop::sg_0092, sop::sg_0088
+  A second debug child was generated:
+    [debug] 37e2d6d1360e4627967f3a3733c51ed2 -> 40536309d9de415f87e517629a30a855
+
+GPU/process state:
+  GPU0:
+    897 MiB, 0% utilization at sample time
+  GPU1:
+    11165 MiB, about 53% utilization, runfile_1 active
+  GPU2:
+    4219 MiB, about 40% utilization, runfile_2 active
+  Interpretation:
+    two original draft branches remain genuinely training on GPU1/GPU2.
+    GPU0 has been cycling through fast-failing debug attempts for branch 1.
+
+adoption state:
+  Still no adoption artifacts:
+    adoption_report.json missing
+    adoption_events.jsonl missing
+    external_memory_adoption_events.jsonl missing
+  We have retrieval evidence, but no completed adoption scoring yet.
+
+current interpretation:
+  The live system is exercising runtime memory in the intended way: failures trigger debug-oriented RunForest retrieval and new repair attempts.
+  However, the first branch has not recovered yet, and there is still no valid metric, so no performance comparison or adoption-rate conclusion is possible at this point.
+
+## Low-frequency checkpoint: 2026-07-10 01:48 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 34m
+  Pod:
+    name: runforest-online-a100x3-clean-r5-t6hb6
+    ready: 1/1
+    status: Running
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+progress since previous checkpoint:
+  No new completed node yet.
+  Second debug child is executing:
+    40536309d9de415f87e517629a30a855
+  Last visible execution assignment:
+    process_id=0 -> GPU0
+  Matrix manifest:
+    still 0 rows, so spooky task has not completed.
+
+journal state:
+  journal.json exists.
+  Current node count:
+    3
+  Stage distribution:
+    root: 1
+    draft: 1
+    debug: 1
+  Valid metrics:
+    0
+  Best metric:
+    none yet
+
+GPU/process state:
+  GPU0:
+    4503 MiB, about 38% utilization, running branch-1 second debug attempt.
+  GPU1:
+    11165 MiB, about 55% utilization, original runfile_1 still training.
+  GPU2:
+    4219 MiB, about 33% utilization, original runfile_2 still training.
+  Interpretation:
+    all three A100s are now actively doing work in the same sample.
+    GPU0 is no longer idle; it is running the second repair attempt after the earlier AttributeError/IndexError chain.
+
+memory/adoption state:
+  No additional RunForest retrieval event after the 17:44 debug retrieval in this sample.
+  Adoption artifacts still missing:
+    adoption_report.json
+    adoption_events.jsonl
+    external_memory_adoption_events.jsonl
+
+current interpretation:
+  This checkpoint does not add performance evidence, but it confirms the job is healthy and all three GPUs are active.
+  We still need to wait for the first valid metric and for adoption artifacts before any quality/adoption conclusions.
+
+## Low-frequency checkpoint: 2026-07-10 01:51 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 37m
+  Pod:
+    name: runforest-online-a100x3-clean-r5-t6hb6
+    ready: 1/1
+    status: Running
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+new milestone:
+  Second debug child finished and was parsed:
+    40536309d9de415f87e517629a30a855
+  Result:
+    metric=None
+    is_buggy=True
+    failure=AttributeError
+    no submission file found
+  Next debug child generated:
+    [debug] 40536309d9de415f87e517629a30a855 -> 1e66fdcde43d43dca62b3f54a5c53b49
+  The new child was assigned to GPU0.
+
+journal state:
+  journal.json exists.
+  Current node count:
+    4
+  Stage distribution:
+    root: 1
+    draft: 1
+    debug: 2
+  Valid metrics:
+    0
+  Best metric:
+    none yet
+
+failure chain update:
+  Branch 1 has now failed three consecutive executions:
+    1. Draft ed490cf91a0f4e888d6c5b82d810cc11:
+       AttributeError from trying to access model.bert.encoder.layer on ModernBERT.
+    2. Debug 37e2d6d1360e4627967f3a3733c51ed2:
+       IndexError from using indices from one StratifiedKFold split against feature rows produced from another split.
+    3. Debug 40536309d9de415f87e517629a30a855:
+       AttributeError from trying to access model.model.encoder.layer on a ModernBertModel object. Journal says ModernBERT does not expose encoder as expected, so setup failed before training.
+
+runtime memory behavior:
+  After the third branch-1 failure, RunForest memory again selected debug recovery:
+    stage=debug
+    strategy=debug_failure_recovery
+  Latest debug retrieval refs included:
+    run::20260509_042918_spooky-author-identification::transition::d0a1b62896::ed24b07d10
+    run::20260509_042918_spooky-author-identification::transition::4ffedd6abb::6c8908620e
+    run::20260509_042918_spooky-author-identification::transition::ed24b07d10::4ffedd6abb
+    run::20260509_042918_spooky-author-identification::transition::5ef44d95ba::d0a1b62896
+    run::20260510_162636_spooky-author-identification::transition::52e3799473::740ebb2738
+    run::20260514_023457_spooky-author-identification::transition::bdcb77ac47::bef409bbb7
+    sop::sg_0001, sop::sg_0092, sop::sg_0086, sop::sg_0088
+
+GPU/process state:
+  GPU0:
+    4361 MiB, about 34% utilization, running latest branch-1 debug child.
+  GPU1:
+    11165 MiB, about 53% utilization, original runfile_1 still training.
+  GPU2:
+    4219 MiB, about 31% utilization, original runfile_2 still training.
+
+adoption state:
+  Still no adoption artifacts:
+    adoption_report.json
+    adoption_events.jsonl
+    external_memory_adoption_events.jsonl
+
+current interpretation:
+  Runtime memory is repeatedly invoked for branch-1 recovery, but branch 1 has not recovered and no valid metric exists yet.
+  Two original draft branches are still training, so the run is not stalled overall.
+  No effect/adoption-rate conclusion is possible until at least one node returns a valid metric or adoption artifacts appear.
+
+## Low-frequency checkpoint: 2026-07-10 01:54 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 40m
+  Pod:
+    name: runforest-online-a100x3-clean-r5-t6hb6
+    ready: 1/1
+    status: Running
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+progress:
+  No new completed node since the 01:51 checkpoint.
+  Latest branch-1 debug child is still executing:
+    1e66fdcde43d43dca62b3f54a5c53b49
+  Matrix manifest:
+    still 0 rows.
+  Current task:
+    spooky-author-identification.
+
+journal state:
+  journal.json exists.
+  Current node count:
+    4
+  Stage distribution:
+    root: 1
+    draft: 1
+    debug: 2
+  Valid metrics:
+    0
+  Best metric:
+    none yet
+
+GPU/process state:
+  GPU0:
+    4361 MiB, about 40% utilization, branch-1 debug child still running.
+  GPU1:
+    11165 MiB, about 36% utilization, original runfile_1 still training.
+  GPU2:
+    4285 MiB, about 33% utilization, original runfile_2 still training.
+  Interpretation:
+    all three A100s remain active. The job is not stuck at the scheduler/resource level.
+
+memory/adoption state:
+  No new RunForest retrieval event after the 17:48 debug retrieval in this sample.
+  Adoption artifacts still missing:
+    adoption_report.json
+    adoption_events.jsonl
+    external_memory_adoption_events.jsonl
+
+current interpretation:
+  No quality/adoption conclusion yet. Continue waiting for first valid metric, adoption artifacts, or task transition.
+
+## Low-frequency checkpoint: 2026-07-10 01:59 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated. A first `kubectl exec` attempt returned a transient EOF; the same read-only summary was retried once and succeeded.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 45m
+  Pod:
+    name: runforest-online-a100x3-clean-r5-t6hb6
+    ready: 1/1
+    status: Running
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+current task/run:
+  Current task:
+    spooky-author-identification
+  Current run dir:
+    /workspace/nautilus/mlevolve/runs/20260709_173038_runforest_online_a100x3_clean_r5_20260709_171303_spooky-author-identification_runforest
+  Matrix manifest:
+    still 0 rows
+
+journal state:
+  journal.json exists.
+  Current node count:
+    5
+  Stage distribution:
+    root: 1
+    draft: 2
+    debug: 2
+  Valid metrics:
+    0
+  Best metric:
+    none yet
+
+new completed node since prior checkpoint:
+  Draft branch 2:
+    node: fa3f9b400c934c0e8499edabc7fd8683
+    stage: draft
+    metric: None
+    is_buggy: True
+  Parser analysis says this code reached a best validation log loss of 0.3221, but was still marked buggy. The analysis notes strong overfitting and a non-standard submission filename/hash issue; the log line says `marked as buggy: execution error detected`, so no valid metric was accepted into the journal.
+  A debug child was generated:
+    fa3f9b400c934c0e8499edabc7fd8683 -> 1476c8b9bb6e4935b44f606281189aa8
+  Code review patch application for this child failed with count=0, so it kept the original code to avoid writing raw diff into the runfile.
+
+still-running processes:
+  runfile_2:
+    original branch 3 process, running for about 20m38s.
+  runfile_0:
+    latest branch-1 debug chain process, running for about 10m26s.
+  runfile_1:
+    branch-2 debug child, running for about 3m33s.
+
+GPU/process state:
+  GPU0:
+    4361 MiB, 0% instantaneous utilization in the sampled query; pmon showed run.py and runfile_0 attached.
+  GPU1:
+    10993 MiB, 54% utilization; pmon showed runfile_1 active.
+  GPU2:
+    4285 MiB, 36% utilization; pmon showed runfile_2 active.
+  Interpretation:
+    the job is still computing; no scheduler/resource stall.
+
+runtime memory behavior:
+  RunForest memory continues to be invoked in both draft and debug stages.
+  Latest branch-2 debug retrieval:
+    stage=debug
+    strategy=debug_failure_recovery
+    refs included:
+      run::20260509_185008_spooky-author-identification::transition::0d800b57b4::cbe7d283fe
+      run::20260509_042918_spooky-author-identification::transition::5ef44d95ba::8cc305a104
+      run::20260510_025317_spooky-author-identification::transition::dfc14b2515::37a8940f1d
+      run::20260510_025317_spooky-author-identification::transition::dfc14b2515::38abb40e45
+      run::20260510_025317_spooky-author-identification::transition::20f7d46926::dfc14b2515
+      run::20260510_025317_spooky-author-identification::transition::95eb3fc7ae::72d7f18660
+      sop::sg_0112, sop::sg_0085, sop::sg_0001, sop::sg_0121
+
+provenance note:
+  `20260509_185008` is not coming from the cold-start template; the template check still verifies the original third-party template and excludes the old custom ensemble text. However, `20260509_185008` is currently listed in `paper-skills/eval_skill_memory/clean_run_allowlist.json` as:
+    audit_status: verified_clean_from_shared_memory
+    allowed: true
+  The job preflight also only explicitly quarantines `20260512`, so this retrieval is consistent with the current allowlist. If `20260509_185008` is later judged leaked/contaminated, the allowlist and graph must be revised; I did not mutate it during this monitor pass.
+
+adoption state:
+  Still no adoption artifacts:
+    adoption_report.json
+    adoption_events.jsonl
+    external_memory_adoption_events.jsonl
+
+current interpretation:
+  The run has made progress from 4 to 5 journal nodes, but still has no accepted valid metric and no adoption report. Memory retrieval is active, but we cannot yet judge adoption rate or performance benefit. The main thing to watch next is whether any of the three running runfiles returns an accepted metric, and whether adoption artifacts appear after that.
+
+## Low-frequency checkpoint: 2026-07-10 02:02 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 48m
+  Pod:
+    name: runforest-online-a100x3-clean-r5-t6hb6
+    ready: 1/1
+    status: Running
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+progress:
+  No new completed node since the 01:59 checkpoint.
+  Matrix manifest:
+    still 0 rows.
+  Current task:
+    spooky-author-identification.
+
+journal state:
+  journal.json exists.
+  Current node count:
+    5
+  Stage distribution:
+    root: 1
+    draft: 2
+    debug: 2
+  Valid metrics:
+    0
+  Best metric:
+    none yet
+
+still-running processes:
+  runfile_2:
+    original branch 3 process, running for about 23m13s.
+  runfile_0:
+    branch-1 debug chain process, running for about 13m00s.
+  runfile_1:
+    branch-2 debug child, running for about 6m08s.
+
+GPU/process state:
+  GPU0:
+    4361 MiB, about 43% utilization; pmon showed runfile_0 active.
+  GPU1:
+    10993 MiB, about 56% utilization; pmon showed runfile_1 active.
+  GPU2:
+    4285 MiB, about 41% utilization; pmon showed runfile_2 active.
+  Interpretation:
+    all three A100s remain active. The run is waiting on training/execution, not stuck in scheduling.
+
+memory/adoption state:
+  No new RunForest retrieval event after the 17:55 branch-2 debug retrieval in this sample.
+  Adoption artifacts still missing:
+    adoption_report.json
+    adoption_events.jsonl
+    external_memory_adoption_events.jsonl
+
+current interpretation:
+  No accepted metric or adoption-rate evidence yet. Continue low-frequency monitoring; next meaningful milestone is a valid metric, a new parsed failure, adoption artifacts, or transition from spooky to the next matrix task.
+
+## Low-frequency checkpoint: 2026-07-10 02:05 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 51m
+  Pod:
+    name: runforest-online-a100x3-clean-r5-t6hb6
+    ready: 1/1
+    status: Running
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+progress:
+  No new completed node since the 02:02 checkpoint.
+  Matrix manifest:
+    still 0 rows.
+  Current task:
+    spooky-author-identification.
+
+journal state:
+  Current node count:
+    5
+  Stage distribution:
+    root: 1
+    draft: 2
+    debug: 2
+  Valid metrics:
+    0
+  Best metric:
+    none yet
+
+still-running processes:
+  runfile_2:
+    original branch 3 process, running for about 26m03s.
+  runfile_0:
+    branch-1 debug chain process, running for about 15m50s.
+  runfile_1:
+    branch-2 debug child, running for about 8m58s.
+
+GPU/process state:
+  GPU0:
+    4361 MiB, about 43% utilization; pmon showed runfile_0 active.
+  GPU1:
+    10993 MiB, about 54% utilization; pmon showed runfile_1 active.
+  GPU2:
+    4285 MiB, about 37% utilization; pmon showed runfile_2 active.
+
+memory/adoption state:
+  No new RunForest retrieval event after the 17:55 branch-2 debug retrieval in this sample.
+  Adoption artifacts still missing:
+    adoption_report.json
+    adoption_events.jsonl
+    external_memory_adoption_events.jsonl
+
+current interpretation:
+  Still no accepted metric or adoption-rate evidence. The job remains healthy and compute-active, so continue low-frequency waiting rather than intervening.
+
+## Low-frequency checkpoint: 2026-07-10 02:17-02:18 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated. A first long `kubectl exec`
+summary hit a transient `EOF`; per NRP monitoring rules, it was retried once with a shorter
+read-only summary and succeeded.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 64m
+  Pod:
+    name: runforest-online-a100x3-clean-r5-t6hb6
+    ready: 1/1
+    status: Running
+    restarts: 0
+    node: node-1-1.sdsc.optiputer.net
+
+current task:
+  spooky-author-identification.
+
+runtime command evidence:
+  The active `run.py` process is still the intended clean RunForest memory run:
+    external_skill_memory.enable=True
+    external_skill_memory.mode=run_forest_agentic
+    external_skill_memory.source_name=run_forest_agentic_memory
+    external_skill_memory.scoring_mode=poincare
+    external_skill_memory.enable_agentic=True
+    adoption_tracking.enable=True
+    adoption_tracking.enable_analysis=True
+    adoption_tracking.judge_mode=llm-all
+    coldstart.use_coldstart=True
+    agent.search.num_gpus=3
+    agent.search.parallel_search_num=3
+    cpu_number=12
+
+progress:
+  Matrix manifest:
+    still 0 rows.
+  MLEvolve log:
+    progress reached 4/80 completed steps, 3 tasks running.
+  No task transition yet; still on spooky.
+
+journal state:
+  Current node count:
+    5
+  Stage distribution:
+    root: 1
+    draft: 2
+    debug: 2
+  Valid metrics:
+    0
+  Best metric:
+    none yet
+
+latest parsed nodes:
+  ed490cf91a0f4e888d6c5b82d810cc11:
+    stage=draft, buggy=True, metric=None.
+    Failure: AttributeError during ModernBERT internals access; no submission file.
+  37e2d6d1360e4627967f3a3733c51ed2:
+    stage=debug, buggy=True, metric=None.
+    Failure: IndexError from fold/index mismatch in feature split handling.
+  40536309d9de415f87e517629a30a855:
+    stage=debug, buggy=True, metric=None.
+    Failure: AttributeError from another ModernBERT internal-layer access path.
+  fa3f9b400c934c0e8499edabc7fd8683:
+    stage=draft, buggy=True, metric=None in journal.
+    Parser note says code ran and reached best validation log loss 0.3221, but was still rejected/buggy;
+    noted overfitting, ModernBERT-only usage despite handcrafted features, and possible non-standard
+    submission filename/hash issue.
+
+still-running processes:
+  runfile_2:
+    original branch-3 process, running about 40m48s.
+  runfile_0:
+    branch-1 debug-chain process, running about 30m36s.
+  runfile_1:
+    branch-2 debug child, running about 23m43s.
+
+GPU/process state:
+  GPU0:
+    4361 MiB used, about 3% utilization at this instant.
+  GPU1:
+    10993 MiB used, about 45% utilization.
+  GPU2:
+    4155 MiB used, about 41% utilization.
+  Interpretation:
+    all three A100s still have active Python workers; the job is compute-active, not Pending or dead.
+
+memory retrieval evidence:
+  RunForest memory remains loaded:
+    4212 nodes / 10429 edges, scoring=poincare, agentic=True.
+  Draft retrievals used strategy=draft_successful_branches and returned clean transition refs plus SOPs
+    such as sg_0088, sg_0087, sg_0221, sg_0223.
+  Debug retrievals used strategy=debug_failure_recovery and returned transition refs plus SOPs such as
+    sg_0001, sg_0092, sg_0086, sg_0088, sg_0112, sg_0085, sg_0121.
+  Latest sampled retrieval event remains the 17:55 branch-2 debug retrieval.
+
+adoption state:
+  Adoption artifacts still missing:
+    adoption_report.json
+    adoption_events.jsonl
+    external_memory_adoption_events.jsonl
+  Interpretation:
+    retrieval is active, but adoption-rate evidence is not available yet. It may appear only after
+    additional node parsing or final reporting.
+
+current interpretation:
+  The run is healthy but still stuck in early spooky debugging with no accepted metric. The memory
+  navigator is being called in both draft and debug, but the generated/debugged code has not yet produced
+  an accepted node. Continue 10-minute low-frequency monitoring; do not intervene while the job is active.
+
+## Low-frequency checkpoint: 2026-07-10 02:28 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Running
+    completions: 0/1
+    duration: 76m
+    pod status from `describe job`:
+      1 Active (0 Ready) / 0 Succeeded / 1 Failed
+    backoffLimit:
+      1
+  Current pod:
+    name: runforest-online-a100x3-clean-r5-kl949
+    ready: 0/1
+    status: Pending
+    restarts: 0
+    age: about 2 minutes
+    node: none yet
+
+important transition:
+  The previously running pod `runforest-online-a100x3-clean-r5-t6hb6` is no longer returned by the
+  job label selector. Kubernetes has created a replacement pod, `runforest-online-a100x3-clean-r5-kl949`.
+  The job now reports 1 failed pod and 1 active pending pod. This means the first run attempt ended
+  unsuccessfully before completing the 4-task matrix.
+
+pending reason:
+  The replacement pod is unscheduled:
+    PodScheduled=False
+    FailedScheduling
+    0/526 nodes are available ...
+  The event text lists many unavailable/tainted/reserved nodes and is truncated by Kubernetes output.
+  No node has been assigned yet. Per the user's explicit instruction, this is a wait-only state.
+
+resource/template evidence:
+  The replacement pod still requests exactly:
+    nvidia.com/a100: 3
+    cpu: 12
+    memory: 64Gi
+  The command still uses the intended clean RunForest online memory path:
+    RUNFOREST_BRANCH=codex/dual-time-procedural-memory
+    resources=3x A100, 12 CPU, 64Gi
+    cold-start SHA check against 5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+    memory matrix runner `run_runforest_online_matrix.py`
+
+log/journal/adoption visibility:
+  `kubectl logs job/runforest-online-a100x3-clean-r5 --tail=220` returned no current output because the
+  active replacement pod is still Pending.
+  `kubectl exec` into the current pod is impossible while Pending, so this checkpoint could not read
+  live journal, GPU, matrix manifest, or adoption files from inside the pod.
+
+current interpretation:
+  The online test is no longer actively training at this moment. It is waiting for Kubernetes to schedule
+  the replacement 3xA100 pod. Since the user specifically said that if the job is Pending we should do
+  nothing and wait, the correct action is to continue low-frequency read-only monitoring without changing
+  resources or resubmitting.
+
+## Low-frequency checkpoint: 2026-07-10 13:32 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: FailureTarget
+    completions: 0/1
+    duration: about 12h
+    failed: 2
+    succeeded: none
+    terminating: 1
+    condition reason: BackoffLimitExceeded
+    condition message: Job has reached the specified backoff limit
+  Current pod:
+    name: runforest-online-a100x3-clean-r5-kl949
+    status: Terminating / Running in detailed phase output
+    ready: 1/1 in latest pod list
+    node: node-1-3.sdsc.optiputer.net
+    pod IP: 10.244.135.243
+
+important transition:
+  The replacement pod was finally scheduled after the long Pending period:
+    Scheduled on node-1-3.sdsc.optiputer.net
+    volume attached successfully
+    image pull started
+    image pulled successfully
+    container created and started
+  Immediately after that, Kubernetes emitted multiple Preempted events and then Killing:
+    Preempted by pod a7750063-b3e8-40a4-b394-8f7d9a7ef601
+    Preempted by pod c261ba3f-b630-4509-9f97-e3e225b2e74a
+    Preempted by pod 38171054-eb20-4993-aec2-8c5eafd8a994
+    Stopping container: runforest-online-clean
+
+log/journal/adoption visibility:
+  `kubectl logs` could not retrieve fresh logs for the replacement pod because the pod disappeared
+  during termination:
+    error from server (NotFound): pods "runforest-online-a100x3-clean-r5-kl949" not found
+  No new parse metrics, task transitions, manifest rows, or adoption artifacts were observed in this
+  checkpoint.
+
+current interpretation:
+  The online memory test has effectively failed at the Kubernetes job level, not because of a completed
+  model/evaluation result. The first pod failed earlier after partial spooky progress; the replacement pod
+  waited for A100 capacity for many hours, briefly started, and was then preempted. Because `backoffLimit=1`,
+  the job now reports `FailureTarget` / `BackoffLimitExceeded`. This is not evidence about RunForest memory
+  quality; it is an infrastructure/scheduling failure.
+
+## Final monitor checkpoint: 2026-07-10 13:54 CST
+
+Scope: read-only monitor pass. No Kubernetes resources were mutated.
+
+cluster state:
+  Job:
+    name: runforest-online-a100x3-clean-r5
+    status: Failed
+    completions: 0/1
+    duration: about 12h
+    failed: 2
+    active: none
+    terminating: 0
+    conditions: FailureTarget, Failed
+    reason: BackoffLimitExceeded
+    message: Job has reached the specified backoff limit
+  Pods:
+    no pods remain under the job label selector
+
+current interpretation:
+  This monitor is complete. The job ended in terminal `Failed` state after exhausting the retry limit.
+  The observed failure path is infrastructure/scheduling/preemption rather than a completed online memory
+  experiment. There are no new parse metrics, task transitions, manifest rows, or adoption artifacts from
+  the replacement pod to analyze.
+
+## A40x2 clean-r6 launch preparation: 2026-07-10 15:13 CST
+
+Purpose:
+  Retry the same complete RunForest online-memory experiment on the requested 2x A40 resource profile
+  after clean-r5 ended because of A100 scheduling/preemption. This is a resource-profile retry, not a
+  change to the memory treatment, task matrix, cold-start template, or evaluation policy.
+
+new manifest:
+  `job-runforest-online-a40x2-clean-r6.yaml`
+
+resource contract:
+  Job name: runforest-online-a40x2-clean-r6
+  namespace: ecepxie
+  GPU request/limit: nvidia.com/a40=2
+  CPU request/limit: 12
+  memory request/limit: 64Gi
+  required product label: NVIDIA-A40
+  large-GPU toleration: nautilus.io/hardware=large-gpu:NoSchedule
+  runtime GPU count: RUNFOREST_NUM_GPUS=2
+  matrix runner GPU count: --num-gpus 2
+  runtime CPU count: RUNFOREST_CPU_NUMBER=12 / --cpu-number 12
+
+controlled variables retained from clean-r5:
+  Branch: codex/dual-time-procedural-memory
+  source checkout: fetch branch from remote into a fresh PVC-backed workdir, using a local seed archive
+    only as a transfer accelerator; the archived commit is still resolved from the remote branch.
+  cold-start template SHA256:
+    5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+  required NLP template keys:
+    ModernBERT
+    DeBERTa-v3-large
+  clean graph source:
+    clean_run_allowlist.json with --require-clean-provenance
+  memory runtime:
+    external_skill_memory.mode=run_forest_agentic
+    external_skill_memory.source_name=run_forest_agentic_memory
+    external_skill_memory.scoring_mode=poincare
+    external_skill_memory.enable_agentic=True
+  adoption instrumentation:
+    adoption_tracking.enable=True
+    adoption_tracking.enable_analysis=True
+    adoption_tracking.judge_mode=llm-all
+  cold-start injection:
+    coldstart.use_coldstart=True
+  task matrix:
+    spooky-author-identification
+    aerial-cactus-identification
+    leaf-classification
+    new-york-city-taxi-fare-prediction
+
+manifest diff versus clean-r5:
+  metadata/job tag:
+    a100x3-clean-r5 -> a40x2-clean-r6
+  GPU profile:
+    a100x3 -> a40x2
+  affinity:
+    A100 product variants -> NVIDIA-A40
+  GPU resource key/count:
+    nvidia.com/a100=3 -> nvidia.com/a40=2
+  executor/matrix GPU count:
+    3 -> 2
+  added:
+    large-GPU node toleration used by the repository's A40 reference Job
+  unchanged:
+    12 CPU, 64Gi RAM, backoffLimit=1, opportunistic priority, PVC, image, branch, provenance gates,
+    test suite, four tasks, memory mode, Poincare scoring, cold start, and llm-all adoption tracking.
+
+pre-submit validation evidence:
+  Python YAML/resource assertions: passed
+  embedded Bash `bash -n`: passed
+  `kubectl create --dry-run=client`: passed
+  observed A40-labelled nodes:
+    bak-hpc1.csub.edu: allocatable nvidia.com/a40=8
+    k8s-usra-01.calit2.optiputer.net: allocatable nvidia.com/a40=2
+    rci-nautilus01.msu.montana.edu: allocatable nvidia.com/a40=2
+  Note: allocatable capacity and product labels do not guarantee immediate free capacity.
+
+pending policy:
+  After submission, if Kubernetes reports Pending, do not patch, delete, resubmit, or change the GPU
+  profile. Perform only low-frequency read-only checkpoints and wait for scheduling.
