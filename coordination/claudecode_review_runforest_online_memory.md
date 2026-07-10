@@ -8250,6 +8250,9 @@ live state and configuration:
   max_chars=6500, navigator_max_steps=3, and query-radius mode predicted_distribution.
   Draft, improve, evolution, debug, and fusion injection are enabled. Adoption logging and post-run analysis
   are enabled with judge_mode=llm-all.
+  Important implementation caveat: RunForestMemoryLayer does not consume geometry_query_radius_mode; the
+  extra configuration field is swallowed by its catch-all kwargs. The live RunForest path therefore does not
+  use a learned/predicted radius model despite the saved config value.
 
 retrieval path verified from code and live prompts:
   1. The query is assembled from the task description plus stage-specific context.
@@ -8260,7 +8263,7 @@ retrieval path verified from code and live prompts:
      debug_failure_recovery. Deterministic map tools then execute the chosen strategy.
   3. Candidate run nodes are ranked by 0.50 * Poincare geometry similarity + 0.32 * lexical overlap +
      task match + stage/outcome/positive-metric bonuses. The query anchor is a lexical-weighted average of
-     up to eight candidate Poincare coordinates.
+     up to eight candidate Poincare coordinates, not a separately predicted query radius.
   4. The returned prompt pack contains up to four matched paths, six transition cards, six attached SOPs,
      six risk warnings, and six evidence excerpts. Cold start uses a separate capped 4,500-character pack;
      runtime packs are capped at 6,500 characters.
