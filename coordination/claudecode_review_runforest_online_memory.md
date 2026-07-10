@@ -8235,3 +8235,77 @@ memory/adoption interpretation:
   The first node now provides a real accepted metric, but adoption artifacts were not yet visible at the
   transition checkpoint. A causal memory/adoption conclusion still requires the adoption report/events and
   completion of comparison tasks.
+
+## Live retrieval and agent-injection audit: 2026-07-10 17:05 CST
+
+Scope:
+  Read-only inspection of clean-r9 Job/Pod logs, the live run config, journal.json prompt/adoption fields,
+  generated plans/code signatures, and the checked-out retrieval implementation. No Kubernetes or PVC state
+  was modified.
+
+live state and configuration:
+  Job runforest-online-a100x1-clean-r9 remains Active; Pod runforest-online-a100x1-clean-r9-lr6nr is Running
+  with zero restarts.
+  External memory mode is run_forest_agentic, source run_forest_agentic_memory, scoring poincare, top_k=6,
+  max_chars=6500, navigator_max_steps=3, and query-radius mode predicted_distribution.
+  Draft, improve, evolution, debug, and fusion injection are enabled. Adoption logging and post-run analysis
+  are enabled with judge_mode=llm-all.
+
+retrieval path verified from code and live prompts:
+  1. The query is assembled from the task description plus stage-specific context.
+     Draft adds current run memory, data preview, and cold-start guidance; improve adds parent plan/code summary
+     and execution output; debug adds parent plan/analysis, terminal output, and exception type.
+  2. The navigator inspects the read-only 4,212-node/10,429-edge RunForest and makes one LLM strategy choice.
+     Observed strategies are draft_successful_branches, improve_local_best_lineage, and
+     debug_failure_recovery. Deterministic map tools then execute the chosen strategy.
+  3. Candidate run nodes are ranked by 0.50 * Poincare geometry similarity + 0.32 * lexical overlap +
+     task match + stage/outcome/positive-metric bonuses. The query anchor is a lexical-weighted average of
+     up to eight candidate Poincare coordinates.
+  4. The returned prompt pack contains up to four matched paths, six transition cards, six attached SOPs,
+     six risk warnings, and six evidence excerpts. Cold start uses a separate capped 4,500-character pack;
+     runtime packs are capped at 6,500 characters.
+  5. DraftAgent prepends the cold-start pack and then appends a fresh runtime draft pack. ImproveAgent and
+     DebugAgent inject fresh stage-specific packs into their user prompts before generation.
+
+observed live retrievals:
+  Eight retrieval events were visible at this checkpoint: four draft-oriented calls (one cold-start plus
+  three runtime draft calls), one improve call, and three debug calls. Every visible pack reports
+  llm_tool_calls=1 and uses the stage-appropriate strategy.
+  Draft repeatedly retrieved ModernBERT/DeBERTa regularization and hybrid-feature SOPs, including sg_0088,
+  sg_0087, sg_0221, sg_0223, sg_0202, and sg_0204. This means the historical DeBERTa-v3-large + XGBoost +
+  Logistic Regression ensemble SOP was retrieved for the third draft.
+  Improve retrieved sg_0133, sg_0130, sg_0164, sg_0165, and sg_0108: attention pooling, transformer plus
+  stylometric/TF-IDF fusion, LightGBM, and the DeBERTa + XGBoost + Logistic Regression ensemble.
+  Debug retrieval switched to failure-recovery paths and SOPs such as script-order checking (sg_0002),
+  correct transformer-backbone attribute access (sg_0092), generated-code cleanup (sg_0001), and smaller or
+  frozen-backbone alternatives.
+
+injection records and concrete reflection:
+  Each of the three journaled draft nodes has 36 injection records: 18 cold-start and 18 runtime-draft refs,
+  split evenly into six transition, six SOP, and six evidence refs per pack. Their prompts contain all 30,
+  30, and 32 unique logged refs respectively.
+  The journaled improve node has 17 records (9 run refs, 5 SOPs, 3 evidence refs). Its generated plan directly
+  cites sg_0133, sg_0130, and sg_0164 and implements the suggested attention pooling plus LightGBM path. This
+  is strong evidence of prompt reflection, although the resulting code failed on a non-contiguous tensor
+  `.view()` RuntimeError before producing a metric.
+  Each of the two journaled debug nodes has 18 records (10 run refs, 6 SOPs, 2 evidence refs). The first debug
+  correctly targeted the undefined train_idx ordering error, but introduced an AutoModel constructor TypeError.
+  The second targeted ModernBERT backbone access as suggested by sg_0092, but its next attribute guess used
+  word_embeddings instead of tok_embeddings and failed again. A third debug pack was retrieved and its node
+  was still in flight at the checkpoint.
+
+tracking caveat:
+  adoption_log is an injection ledger only; it has source/ref_id/stage/timestamp and no adopted=true/false
+  decision. The llm-all adoption_report.json is produced only after the task run exits, so no final adoption
+  rate exists yet.
+  There is also a bookkeeping mismatch for improve/debug: 6 improve run-node refs and 4 debug run-node refs
+  are returned through the side channel, but the formatted prompt exposes them only as shortened path
+  breadcrumbs rather than their full node text/ref id. The post-run analyzer later re-fetches full node text,
+  so those entries must be excluded or marked path-only before treating its adoption rate as paper-grade.
+
+checkpoint conclusion:
+  Retrieval and agent injection are working and are directly evidenced in prompt_input and adoption_log.
+  The current bottleneck is not failure to retrieve the strong historical templates. It is selective adoption
+  plus execution reliability: the agent reflected several retrieved ideas, but did not build the full
+  DeBERTa + XGBoost + Logistic Regression ensemble in the first successful draft, and the more ambitious
+  improve/debug branches have so far crashed before evaluation.
