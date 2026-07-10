@@ -8166,3 +8166,72 @@ current interpretation:
   The requested cold-start template, clean RunForest graph, runtime retrieval, and real GPU execution are
   all now verified. The experiment has not produced its first evaluated node, so no quality comparison or
   adoption conclusion is valid yet. Continue low-frequency read-only monitoring.
+
+## User-requested live scheme/template audit: 2026-07-10 16:52 CST
+
+Scope:
+  Read-only inspection of the active clean-r9 Job, current journal code, and three cold-start template
+  copies. No Kubernetes or PVC state was modified.
+
+cold-start template byte-identity check:
+  Local restored third-party original:
+    path: mlevolve/engine/coldstart/models_guidance_classified.json
+    SHA256: 5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+    bytes: 9271
+    NLP keys in order: ModernBERT, DeBERTa-v3-large
+    provenance commit: 709e4cd9 Restore original cold-start model templates for RunForest test
+  PVC base repository copy:
+    SHA256: 5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+    bytes: 9271
+    NLP keys in order: ModernBERT, DeBERTa-v3-large
+  Active isolated clean-r9 checkout copy:
+    SHA256: 5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+    bytes: 9271
+    NLP keys in order: ModernBERT, DeBERTa-v3-large
+  conclusion:
+    All three copies are byte-for-byte identical by SHA256 and size. The active Job is using the restored
+    original third-party template, not a summarized or historically contaminated replacement.
+
+first completed draft:
+  node: e6f39008f31e46648e2e64064096e985
+  parse result: PASS
+  validation metric: log loss 0.35532684322228614
+  model: microsoft/deberta-v3-large
+  architecture: mean-pooled DeBERTa classifier
+  features: character and word TF-IDF plus stylometric features
+  training: batch size 8, up to 10 epochs
+  split implementation:
+    StratifiedKFold(n_splits=5) is instantiated, but only `next(skf.split(...))` is used.
+    This is one stratified 80/20 holdout, not five-fold cross-validation or OOF training.
+  engine leakage verdict: has_leakage=False, confidence=high
+  stricter audit caveat:
+    both TF-IDF vectorizers are fitted on combined train and test text. The live leakage judge called this
+    a mild, commonly accepted competition practice, but it is transductive test-distribution access and
+    should not be described as fully clean under a strict paper-grade protocol.
+
+current second draft:
+  node: afad3ee02cdb47b3a620fcd2291c7d96
+  model: microsoft/deberta-v3-large
+  architecture: DeBERTa with stylometric attention pooling/fusion
+  features: character and word TF-IDF plus stylometric features
+  training: batch size 16, gradient accumulation 2, 15 epochs
+  split implementation:
+    StratifiedKFold(n_splits=5) is created, then `list(skf.split(...))[0]` selects only the first fold.
+    This is again a single 80/20 holdout, not full five-fold validation.
+  state at audit:
+    the engine had just transitioned from the first completed node into this deferred second draft.
+
+queued third draft:
+  node: dc6491a4e9d54c76888e540199d5f966
+  model: answerdotai/ModernBERT-large
+  architecture: ModernBERT plus stylometric feature fusion
+  features: character and word TF-IDF plus stylometric features
+  training: batch size 8, gradient accumulation 2, up to 10 epochs
+  split implementation:
+    uses only `next(skf.split(...))`; also a single holdout rather than full five-fold training.
+
+memory/adoption interpretation:
+  The model templates were definitely injected into live guidance, and RunForest draft retrievals fired.
+  The first node now provides a real accepted metric, but adoption artifacts were not yet visible at the
+  transition checkpoint. A causal memory/adoption conclusion still requires the adoption report/events and
+  completion of comparison tasks.
