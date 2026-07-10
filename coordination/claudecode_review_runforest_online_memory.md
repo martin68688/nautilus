@@ -8312,3 +8312,165 @@ checkpoint conclusion:
   plus execution reliability: the agent reflected several retrieved ideas, but did not build the full
   DeBERTa + XGBoost + Logistic Regression ensemble in the first successful draft, and the more ambitious
   improve/debug branches have so far crashed before evaluation.
+
+## Comprehensive ClaudeCode audit handoff: 2026-07-10 17:33 CST
+
+Purpose:
+  This section is the consolidated delta for a full ClaudeCode audit. It covers committed RunForest work from
+  the clean-source restart through the latest live retrieval/injection diagnosis. It intentionally separates
+  committed RunForest changes from unrelated uncommitted Hyperbolic SOP V3 work in the shared worktree.
+
+Audit boundary:
+  branch: codex/dual-time-procedural-memory
+  remote branch: origin/codex/dual-time-procedural-memory
+  conservative start: 44065b1c^ (the parent of the clean-source rebuild)
+  current audited HEAD: a603d87b
+  recommended diff: git diff 44065b1c^..a603d87b
+  committed delta: 19 files; 103,184 insertions and 177,017 deletions, dominated by regenerated graph JSON.
+  HEAD and the remote branch were synchronized before this handoff update.
+
+Behavior-changing commits:
+  44065b1c Clean run-forest memory source for online restart
+    Added allowlist-only RunForest construction and clean-provenance metadata.
+    Added runtime rejection of graphs without leak_verified=true and paper_grade=true.
+    Disabled the old methodology KB path/dynamic methodology for the RunForest online config.
+    Cleared spooky methodology_map entries that referenced legacy/contaminated recipe categories.
+    Regenerated the RunForest graph/index/reports from the clean source set and added provenance tests.
+  17ee1815 Fix clean run-forest restart path handling
+    Added display_path() so journals outside the isolated checkout can be represented safely.
+    Added the seed-archive checkout pattern used by subsequent clean Jobs.
+  709e4cd9 Restore original cold-start model templates for RunForest test
+    Replaced the contaminated spooky-specific 0.2013 three-model template with the byte-identical third-party
+    original model library. NLP now contains only ModernBERT and DeBERTa-v3-large.
+    Added a Job-side SHA256/key-order/forbidden-string provenance gate.
+  33405b1f, a2e49caf, 2f2c92ac
+    Added clean A40x2, RTX A6000x3, and A100x1 Job manifests as scheduling alternatives while preserving the
+    experiment logic and four-task matrix.
+  e81cc0cd Fall back to remote clone for locked RunForest seed
+    Added shallow.lock detection, guarded seed fetch/archive steps, three-attempt shallow remote-clone fallback,
+    and authoritative .source_commit recording for the active clean-r9 Job.
+
+Evidence/documentation-only commits after the active Job launch:
+  1f71671d: clean-r9 launch checkpoint.
+  6bc9a90f: checkout progress and provenance checkpoint.
+  2d9a4b3b: matrix-start and clean graph/test checkpoint.
+  0c3ab1b7: live cold-start template and generated training-scheme audit.
+  83619585: live retrieval, prompt injection, and adoption-ledger audit.
+  a603d87b: correction that the runtime RunForest query does not use the configured radius predictor.
+
+Committed implementation surface for review:
+  mlevolve/agents/memory/external_skill_memory.py
+    RunForestMemoryLayer now refuses uncertified graphs. The existing retrieval implementation remains the
+    runtime path: an LLM chooses one stage strategy, then deterministic tools rank and format map packs.
+  paper-skills/hyper_memory/build_run_forest_memory.py
+    Adds clean allowlist loading, blocked-prefix handling, journal/SOP provenance filtering, missing-run checks,
+    clean metadata, audit reports, and --allowlist/--require-clean-provenance CLI flags.
+  mlevolve/config/config_run_forest_agentic.yaml
+    Disables legacy methodology injection while retaining RunForest cold-start/runtime memory and llm-all
+    adoption tracking.
+  mlevolve/engine/coldstart/methodology_map.json
+    Removes spooky mappings to contaminated methodology categories.
+  mlevolve/engine/coldstart/models_guidance_classified.json
+    Restores the original third-party model template file. Verified SHA256:
+    5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff.
+  tests/test_run_forest_memory.py
+    Tests clean certification, exact allowlist source coverage, blocked-run exclusion, clean-mode fail-closed
+    behavior, disabled legacy methodology, coordinate controls, and existing topology/evaluation invariants.
+  job-runforest-online-*-clean-r*.yaml
+    Reproducible cluster launch history for clean A100/A40/A6000 profiles. The active design is clean-r9.
+  paper-skills/hyper_memory/run_forest_graph.json and run_forest_index.npz
+    Regenerated clean artifacts: 22 source runs, 4,212 nodes, and 10,429 edges.
+
+Current experiment design:
+  Carrier:
+    Run/journal tree is the primary memory. SOPs are signposts attached to transitions; evidence records are
+    leaves. The online agent receives path packs rather than treating all SOP cards as the main geometry.
+  Source hygiene:
+    Build only from clean_run_allowlist.json; reject blocked/non-allowlisted runs and uncertified artifacts;
+    disable the legacy methodology KB; use the untouched third-party cold-start model templates.
+  Retrieval:
+    mode=run_forest_agentic, source=run_forest_agentic_memory, scoring=poincare, top_k=6, max_chars=6500,
+    navigator_max_steps=3. Cold-start gets a separate 4,500-character path pack. Runtime injection is enabled
+    for draft, improve, evolution, debug, and fusion.
+  Adoption:
+    adoption_tracking.enable=true, enable_analysis=true, judge_mode=llm-all. Per-node adoption_log records the
+    refs presented to generation; the semantic adoption report is generated only at run exit.
+  Matrix:
+    spooky-author-identification, aerial-cactus-identification, leaf-classification, and
+    new-york-city-taxi-fare-prediction, executed by the deterministic search runtime with identical memory
+    configuration. Active resource profile is one A100, eight CPUs, and 64Gi memory.
+
+Verified active clean-r9 milestones:
+  checked-out source commit: e81cc0cdb47ebd4706ff23236fbdb31afb7acb0b
+  original cold-start template: exact expected SHA and NLP key order.
+  graph provenance: clean_certified, 22 source runs, 4,212 nodes, 10,429 edges.
+  preflight compile/evaluation/tests: passed before matrix start.
+  online retrieval: confirmed at cold-start, draft, improve, and debug stages.
+  prompt injection: confirmed directly in journal prompt_input and per-node adoption_log.
+  first accepted node: e6f39008f31e46648e2e64064096e985, validation log loss 0.35532684322228614.
+  first-node scheme: DeBERTa-v3-large + character/word TF-IDF + stylometric features.
+  strong historical ensemble: sg_0202/sg_0108 was retrieved, but the first successful node did not implement
+  the complete DeBERTa + XGBoost + Logistic Regression ensemble.
+
+Highest-priority audit findings:
+  P0 - Config/runtime radius mismatch:
+    The saved config says geometry_query_radius_mode=predicted_distribution, but RunForestMemoryLayer has no
+    corresponding constructor field and absorbs it through **_. Runtime retrieval builds a lexical-weighted
+    coordinate anchor and applies Poincare distance. No learned/predicted query-radius model participates.
+    Audit whether the config field should be removed, implemented, or explicitly marked unsupported.
+  P0 - Adoption accounting mismatch:
+    retrieve_for_node() returns transitions + SOPs + evidence + selected run nodes. _format_pack() prints
+    transition/SOP/evidence content and shortened matched-path labels, but not the full selected-run-node text.
+    For the observed improve/debug nodes, 6 and 4 run-node refs respectively were logged as injected even
+    though only abbreviated path breadcrumbs were exposed. The post-run analyzer re-fetches full node text,
+    which can misattribute adoption. Add exposure type or log only content actually presented.
+  P0 - Clean certification semantics:
+    paper_grade/leak_verified are currently asserted from allowlist membership plus structural provenance
+    checks. That is source certification, not an independent leakage audit of every node/SOP/metric. Review
+    whether field names overstate what was proven and whether suspicious ultra-low historical metrics require
+    a second certification/quarantine layer.
+  P1 - Validation hygiene:
+    The first accepted generated script fits TF-IDF vectorizers on combined train+test text. The live leakage
+    judge passed it, but this is transductive test-distribution access under a strict paper protocol.
+  P1 - Five-fold claim drift:
+    Generated drafts instantiate StratifiedKFold(n_splits=5) but consume only the first split via next(...) or
+    list(...)[0]. This is a single holdout, not full five-fold CV/OOF training, despite retrieved SOP guidance.
+  P1 - Retrieval versus execution:
+    Strong ensemble and hybrid SOPs are present and retrieved. The improve plan directly cited sg_0133,
+    sg_0130, and sg_0164, then added attention pooling and LightGBM, but crashed on non-contiguous tensor view.
+    Subsequent debug branches selected relevant repair memories but introduced new constructor/attribute errors.
+    The current bottleneck is selective implementation and code reliability, not retrieval absence.
+  P1 - Adoption analysis timing:
+    adoption_report.json is written only after an entire task run exits. A preempted or long-running task has
+    detailed ledgers but no semantic summary. Review checkpoint-safe incremental reporting.
+  P2 - Generated artifact reviewability:
+    The graph JSON dominates the diff. Verify that graph/index/report can be deterministically rebuilt from the
+    allowlist and source journals, and decide whether generated binaries should remain committed.
+  P2 - Job checkout and secret boundaries:
+    The Job intentionally links the PVC data/runs/.env into an isolated source checkout. Audit that logs never
+    print credential-bearing remotes, environment values, or full process arguments, and that fallback clone
+    behavior cannot silently consume a stale branch.
+
+Files intentionally outside this RunForest audit delta:
+  The current worktree contains many modified/untracked Hyperbolic SOP V2/V3 benchmark, radius-hint,
+  sentence-embedding, evaluator, report, generated-index, and experiment-output files. It also contains older
+  probe/Job manifests and unrelated review artifacts. These were already present as shared-worktree research
+  changes and are not staged or attributed to the committed clean-r9 RunForest delta. ClaudeCode should audit
+  them as a separate workstream rather than mixing them into this commit-range review.
+
+Verification performed for this handoff:
+  python -m py_compile mlevolve/agents/memory/external_skill_memory.py \
+    paper-skills/hyper_memory/build_run_forest_memory.py \
+    paper-skills/hyper_memory/run_runforest_online_matrix.py \
+    paper-skills/hyper_memory/summarize_runforest_online_matrix.py
+  pytest -q tests/test_run_forest_memory.py
+  result: 8 passed in 3.86s.
+
+Requested ClaudeCode review output:
+  1. Findings first, ordered by severity, with file/line references and concrete failure modes.
+  2. Confirm or reject the clean-provenance and paper-grade semantics.
+  3. Trace exactly what text each adoption ref exposed and propose a non-inflating ledger schema.
+  4. Trace the actual query-coordinate/radius path and reconcile it with config/report claims.
+  5. Review whether retrieved ensemble guidance is being suppressed by draft novelty/simple-solution prompts.
+  6. Review generated-code validation hygiene, real five-fold behavior, and debug repair regressions.
+  7. Separate required correctness fixes from research follow-ups and generated-artifact cleanup.
