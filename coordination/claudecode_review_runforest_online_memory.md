@@ -7929,3 +7929,77 @@ validation evidence:
 pending policy:
   Once submitted, an unscheduled Pending state is wait-only. Do not patch, change GPU type, delete/resubmit,
   or continuously poll the A100 Job.
+
+## A100x1 clean-r8 terminal startup failure: 2026-07-10 15:39 CST
+
+submission and scheduling:
+  Job: runforest-online-a100x1-clean-r8
+  requested resources: 1x A100 / 8 CPU / 64Gi
+  first pod: runforest-online-a100x1-clean-r8-cl9bq
+  second pod: runforest-online-a100x1-clean-r8-g7hbf
+  both pods scheduled on node-1-3.sdsc.optiputer.net
+  both pods reached the container and then exited Error
+  final Job status: Failed / BackoffLimitExceeded
+
+root cause:
+  The startup path preferred `/workspace/nautilus` as a local seed archive.
+  That PVC repository contained:
+    `/workspace/nautilus/.git/shallow.lock`
+  The seed `git fetch` could not create the lock and failed.
+
+first-pod evidence:
+  checkout_mode=seed_archive_excluding_runs_data_node_modules seed=/workspace/nautilus
+  fatal: Unable to create '/workspace/nautilus/.git/shallow.lock': File exists.
+
+second-pod evidence:
+  The same lock failure repeated.
+  The original function then continued after failed fetch:
+    FETCH_HEAD was unresolved
+    git archive used an invalid object
+    tar received no valid archive
+    checked_out_commit was printed as the literal `FETCH_HEAD`
+    the cold-start template file was absent from the empty workdir
+  Terminal exception:
+    FileNotFoundError: mlevolve/engine/coldstart/models_guidance_classified.json
+
+interpretation:
+  This is a checkout-control bug before any experiment code ran.
+  It is not an A100 failure, cold-start-template mismatch, graph provenance failure, model-training result,
+  retrieval result, metric result, or adoption result.
+  No PVC lock was removed and the shared source repository was not modified.
+
+## A100x1 clean-r9 checkout fallback fix
+
+new manifest:
+  `job-runforest-online-a100x1-clean-r9.yaml`
+
+resource and experiment treatment:
+  unchanged from clean-r8:
+    1x A100 / 8 CPU / 64Gi
+    original cold-start template SHA gate
+    clean allowlist/provenance gate
+    four-task matrix
+    RunForest agentic retrieval
+    Poincare scoring
+    cold-start memory enabled
+    llm-all adoption analysis
+
+checkout-control diff:
+  before:
+    seed fetch was unconditional
+    failed fetch could leave invalid FETCH_HEAD usage
+    failed archive could leave an empty workdir
+  after:
+    if `${seed}/.git/shallow.lock` exists, log `seed_checkout_skipped` and continue
+    if seed fetch fails, log `seed_fetch_failed` and continue
+    if FETCH_HEAD cannot be resolved, log `seed_fetch_head_invalid` and continue
+    if archive extraction fails, log `seed_archive_failed`, remove only the new incomplete workdir, continue
+    if no seed succeeds, invoke the existing three-attempt remote shallow clone
+  shared PVC source repository:
+    remains read-only from the Job's recovery perspective; no lock deletion or reset is performed.
+
+validation:
+  Python YAML/resource/fallback assertions: passed
+  embedded Bash `bash -n`: passed
+  `kubectl create --dry-run=client`: passed
+  r8-to-r9 diff is limited to job/run tag and robust checkout fallback logic.
