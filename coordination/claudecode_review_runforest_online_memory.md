@@ -7858,3 +7858,74 @@ current interpretation:
   The requested Job exists with the exact 3x RTX A6000 / 5 CPU / 64Gi contract and has not started its
   container. Therefore no source checkout, cold-start check, graph build, task run, retrieval trace,
   journal metric, or adoption artifact exists yet.
+
+## Resource objective revision: A100x1 clean-r8, 2026-07-10 15:33 CST
+
+user-directed change:
+  The requested resource profile superseded RTX A6000x3/5 CPU with:
+    1x A100
+    8 CPU
+    64Gi RAM
+
+retired superseded queue entry:
+  Job: runforest-online-rtxa6000x3-clean-r7
+  last observed state: Pending / unscheduled / no container start
+  deletion result: job.batch "runforest-online-rtxa6000x3-clean-r7" deleted
+  old heartbeat automation: runforest-rtx-a6000-monitor deleted
+  No source checkout, graph build, model training, retrieval, journal, metric, or adoption artifact had
+  started in the RTX A6000 pod.
+
+replacement manifest:
+  `job-runforest-online-a100x1-clean-r8.yaml`
+
+replacement resource contract:
+  Job name: runforest-online-a100x1-clean-r8
+  GPU request/limit: nvidia.com/a100=1
+  CPU request/limit: 8
+  memory request/limit: 64Gi
+  accepted product labels:
+    NVIDIA-A100-SXM4-80GB
+    NVIDIA-A100-PCIE-40GB
+    NVIDIA-A100-80GB-PCIe
+  runtime GPU count: RUNFOREST_NUM_GPUS=1
+  matrix runner GPU count: --num-gpus 1
+  runtime CPU count: RUNFOREST_CPU_NUMBER=8 / --cpu-number 8
+
+controlled experiment fields retained:
+  branch: codex/dual-time-procedural-memory
+  source commit resolved from the pushed remote branch into a fresh PVC-backed workdir
+  original cold-start template SHA256:
+    5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff
+  required template keys: ModernBERT, DeBERTa-v3-large
+  clean allowlist graph build with --require-clean-provenance
+  four-task matrix: spooky, aerial cactus, leaf, NYC taxi fare
+  RunForest agentic runtime retrieval with Poincare scoring
+  coldstart.use_coldstart=True
+  adoption_tracking.enable=True
+  adoption_tracking.enable_analysis=True
+  adoption_tracking.judge_mode=llm-all
+
+manifest diff versus clean-r5:
+  job/tag/profile:
+    a100x3-clean-r5 -> a100x1-clean-r8
+  GPU count:
+    nvidia.com/a100=3 -> nvidia.com/a100=1
+  executor/matrix GPU count:
+    3 -> 1
+  CPU:
+    12 -> 8
+  unchanged:
+    A100 affinity variants, 64Gi RAM, backoffLimit=1, opportunistic priority, PVC, image, branch,
+    provenance gates, tests, four tasks, memory mode, Poincare scoring, cold start, and adoption tracking.
+
+validation evidence:
+  Python YAML/resource assertions: passed
+  embedded Bash `bash -n`: passed
+  `kubectl create --dry-run=client`: passed
+  requests and limits match exactly for GPU, CPU, and memory.
+  Multiple currently labelled A100 nodes advertise one or more nvidia.com/a100 resources; this label and
+  allocatable evidence does not guarantee immediate free capacity.
+
+pending policy:
+  Once submitted, an unscheduled Pending state is wait-only. Do not patch, change GPU type, delete/resubmit,
+  or continuously poll the A100 Job.

@@ -1,0 +1,217 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: runforest-online-a100x1-clean-r8
+  namespace: ecepxie
+  labels:
+    app: runforest-online-memory
+    memory-system: run-forest-clean
+    gpu-profile: a100x1
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: runforest-online-memory
+        memory-system: run-forest-clean
+        gpu-profile: a100x1
+    spec:
+      restartPolicy: Never
+      priorityClassName: opportunistic
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: nvidia.com/gpu.product
+                operator: In
+                values:
+                - NVIDIA-A100-SXM4-80GB
+                - NVIDIA-A100-PCIE-40GB
+                - NVIDIA-A100-80GB-PCIe
+      containers:
+      - name: runforest-online-clean
+        image: haomingwang22/mlevolve:v1
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "-lc"]
+        args:
+        - |
+          set -euo pipefail
+          export PATH="/opt/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
+          export OPENAI_COMPAT_TIMEOUT="${OPENAI_COMPAT_TIMEOUT:-1200}"
+
+          BRANCH="${RUNFOREST_BRANCH:-codex/dual-time-procedural-memory}"
+          RUN_TAG="${RUNFOREST_ONLINE_TAG:-runforest_online_a100x1_clean_r8_$(date +%Y%m%d_%H%M%S)}"
+          SRC_BASE="/workspace/nautilus"
+          WORKDIR="/workspace/nautilus_runforest_online_${RUN_TAG}"
+          RUNS_DIR="/workspace/nautilus/mlevolve/runs"
+          MATRIX_LOG_DIR="${RUNS_DIR}/${RUN_TAG}_job_logs"
+          mkdir -p "${MATRIX_LOG_DIR}"
+          exec > >(tee -a "${MATRIX_LOG_DIR}/job.log") 2>&1
+
+          checkout_from_seed_archive() {
+            local seed commit
+            for seed in "${SRC_BASE}" /workspace/nautilus_runforest_online_runforest_online_a100x3_r3_*; do
+              if [ ! -d "${seed}/.git" ]; then
+                continue
+              fi
+              echo "checkout_mode=seed_archive_excluding_runs_data_node_modules seed=${seed}"
+              git -C "${seed}" fetch --depth=1 origin "${BRANCH}"
+              commit="$(git -C "${seed}" rev-parse FETCH_HEAD)"
+              rm -rf "${WORKDIR}"
+              mkdir -p "${WORKDIR}"
+              git -C "${seed}" archive --format=tar "${commit}" -- . \
+                ':(exclude)mlevolve/runs' \
+                ':(exclude)mlevolve/data' \
+                ':(exclude)paper-skills/node_modules' \
+                | tar -x -C "${WORKDIR}"
+              printf '%s\n' "${commit}" > "${WORKDIR}/.source_commit"
+              return 0
+            done
+            return 1
+          }
+
+          checkout_from_remote() {
+            local attempt
+            for attempt in 1 2 3; do
+              echo "clone_attempt=${attempt} mode=remote_shallow"
+              rm -rf "${WORKDIR}"
+              if git -c http.version=HTTP/1.1 \
+                clone --depth=1 --single-branch --branch "${BRANCH}" "${REMOTE}" "${WORKDIR}"; then
+                return 0
+              fi
+              echo "remote shallow clone failed on attempt ${attempt}"
+            done
+            return 1
+          }
+
+          echo "=== Run-Forest clean-source online memory job ==="
+          echo "date=$(date)"
+          echo "branch=${BRANCH}"
+          echo "run_tag=${RUN_TAG}"
+          echo "workdir=${WORKDIR}"
+          echo "runs_dir=${RUNS_DIR}"
+          echo "resources=1x A100, 8 CPU, 64Gi"
+
+          test -d "${SRC_BASE}/.git" || { echo "ERROR: missing source repo at ${SRC_BASE}"; exit 2; }
+          REMOTE="$(git -C "${SRC_BASE}" remote get-url origin)"
+          checkout_from_seed_archive || checkout_from_remote
+          cd "${WORKDIR}"
+          if [ -d "${WORKDIR}/.git" ]; then
+            git config --global --add safe.directory "${WORKDIR}" || true
+            echo "checked_out_commit=$(git rev-parse HEAD)"
+          else
+            echo "checked_out_commit=$(cat "${WORKDIR}/.source_commit")"
+          fi
+
+          echo "=== Cold-start template provenance check ==="
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          expected = "5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff"
+          path = Path("mlevolve/engine/coldstart/models_guidance_classified.json")
+          raw = path.read_bytes()
+          actual = hashlib.sha256(raw).hexdigest()
+          models = json.loads(raw)
+          nlp_keys = list(models.get("NLP", {}).keys())
+          assert actual == expected, (actual, expected)
+          assert nlp_keys == ["ModernBERT", "DeBERTa-v3-large"], nlp_keys
+          assert b"20260509_185008" not in raw
+          assert b"Weighted Ensemble. Achieved Log Loss ~0.2013" not in raw
+          print("coldstart_template_ok", actual, nlp_keys)
+          PY
+
+          rm -rf "${WORKDIR}/mlevolve/data" "${WORKDIR}/mlevolve/runs"
+          ln -s "${SRC_BASE}/mlevolve/data" "${WORKDIR}/mlevolve/data"
+          ln -s "${RUNS_DIR}" "${WORKDIR}/mlevolve/runs"
+          ln -sf "${SRC_BASE}/mlevolve/.env" "${WORKDIR}/mlevolve/.env"
+
+          cd "${WORKDIR}/mlevolve"
+          set -a
+          . ./.env
+          set +a
+          export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+          export RUNFOREST_ONLINE_TAG="${RUN_TAG}"
+          export RUNFOREST_NUM_GPUS=1
+          export RUNFOREST_CPU_NUMBER=8
+          export RUNFOREST_RUNS_DIR="${RUNS_DIR}"
+
+          echo "=== Preflight compile ==="
+          python -m py_compile \
+            ../paper-skills/hyper_memory/build_run_forest_memory.py \
+            ../paper-skills/hyper_memory/run_runforest_online_matrix.py \
+            ../paper-skills/hyper_memory/summarize_runforest_online_matrix.py \
+            agents/memory/external_skill_memory.py \
+            engine/coldstart/knowledge.py \
+            engine/agent_search.py \
+            agents/draft_agent.py
+
+          echo "=== Build clean Run-Forest graph from allowlist ==="
+          python ../paper-skills/hyper_memory/build_run_forest_memory.py \
+            --runs-dir "${RUNS_DIR}" \
+            --sop-graph "${WORKDIR}/paper-skills/hyper_memory/hyper_graph.json" \
+            --out-dir "${WORKDIR}/paper-skills/hyper_memory" \
+            --allowlist "${WORKDIR}/paper-skills/eval_skill_memory/clean_run_allowlist.json" \
+            --require-clean-provenance
+
+          echo "=== Clean graph preflight check ==="
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path.cwd().parents[0]
+          graph = json.loads((root / "paper-skills/hyper_memory/run_forest_graph.json").read_text())
+          allowlist = json.loads((root / "paper-skills/eval_skill_memory/clean_run_allowlist.json").read_text())
+          allowed = {entry["run_id"] for entry in allowlist["entries"] if entry.get("allowed")}
+          source_runs = set(graph["meta"].get("source_runs", []))
+          assert graph["meta"].get("leak_verified") is True
+          assert graph["meta"].get("paper_grade") is True
+          assert graph["meta"].get("provenance_status") == "clean_certified"
+          assert source_runs == allowed, (sorted(source_runs ^ allowed))
+          assert not any(run.startswith("20260512") for run in source_runs)
+          print("clean_graph_ok", len(source_runs), "runs", len(graph.get("nodes", [])), "nodes")
+          PY
+
+          echo "=== Evaluate and test clean Run-Forest artifacts ==="
+          python ../paper-skills/hyper_memory/evaluate_run_forest_memory.py \
+            --graph "${WORKDIR}/paper-skills/hyper_memory/run_forest_graph.json" \
+            --index "${WORKDIR}/paper-skills/hyper_memory/run_forest_index.npz" \
+            --output "${WORKDIR}/paper-skills/eval_skill_memory/reports/run_forest_memory_evaluation.json" \
+            --report "${WORKDIR}/coordination/run_forest_memory_experiment_report.md"
+          pytest -q ../tests/test_run_forest_memory.py
+
+          echo "=== Running multi-task clean memory matrix ==="
+          python ../paper-skills/hyper_memory/run_runforest_online_matrix.py \
+            --tag "${RUN_TAG}" \
+            --num-gpus 1 \
+            --cpu-number 8 \
+            --runs-dir "${RUNS_DIR}"
+
+          echo "=== Summarizing matrix ==="
+          python ../paper-skills/hyper_memory/summarize_runforest_online_matrix.py \
+            --runs-dir "${RUNS_DIR}" \
+            --manifest "${RUNS_DIR}/${RUN_TAG}_matrix/runforest_online_manifest.jsonl"
+          echo "=== Job complete ==="
+        env:
+        - name: RUNFOREST_BRANCH
+          value: "codex/dual-time-procedural-memory"
+        resources:
+          requests:
+            cpu: "8"
+            memory: "64Gi"
+            nvidia.com/a100: "1"
+          limits:
+            cpu: "8"
+            memory: "64Gi"
+            nvidia.com/a100: "1"
+        volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+      volumes:
+      - name: workspace
+        persistentVolumeClaim:
+          claimName: haoming-storage
