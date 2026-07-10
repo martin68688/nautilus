@@ -7815,3 +7815,46 @@ manifest validation:
 pending policy:
   Once the RTX A6000 Job is submitted, an unscheduled Pending state is wait-only. Do not patch the Job,
   switch GPU types, delete/resubmit it, or poll continuously.
+
+## RTX A6000x3 clean-r7 submission checkpoint: 2026-07-10 15:23 CST
+
+source provenance:
+  branch: codex/dual-time-procedural-memory
+  pushed commit: a2e49caf
+  commit subject: Retarget RunForest clean test to three RTX A6000s
+
+submission:
+  result: job.batch/runforest-online-rtxa6000x3-clean-r7 created
+  namespace: ecepxie
+
+first read-only checkpoint:
+  Job:
+    name: runforest-online-rtxa6000x3-clean-r7
+    controller status: Running
+    completions: 0/1
+  Pod:
+    name: runforest-online-rtxa6000x3-clean-r7-hdqjp
+    phase: Pending
+    ready: 0/1
+    scheduled: false
+    node: none
+  rendered resources:
+    requests/limits nvidia.com/rtxa6000: 3
+    requests/limits cpu: 5
+    requests/limits memory: 64Gi
+  scheduler state:
+    FailedScheduling
+    0/526 nodes available in the current event summary; no node has been selected.
+    The displayed event is truncated after listing taints/reservations and other excluded nodes, so this
+    checkpoint does not infer a more specific capacity cause beyond the authoritative Pending state.
+
+monitoring:
+  Heartbeat automation: runforest-rtx-a6000-monitor
+  cadence: once every 10 minutes
+  policy: exactly one read-only checkpoint per heartbeat, then stop until the next window.
+  Pending/slow training is wait-only. No patch, deletion, kill, GPU switch, or resubmission is allowed.
+
+current interpretation:
+  The requested Job exists with the exact 3x RTX A6000 / 5 CPU / 64Gi contract and has not started its
+  container. Therefore no source checkout, cold-start check, graph build, task run, retrieval trace,
+  journal metric, or adoption artifact exists yet.
