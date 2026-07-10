@@ -8044,3 +8044,40 @@ credential-hygiene observation:
   embedded credential. The credential is intentionally omitted from this report and must never be copied
   into logs or user-facing output. This does not change the experiment result, but the remote configuration
   should be sanitized or the credential rotated outside this running experiment.
+
+## Low-frequency checkpoint: 2026-07-10 15:59 CST
+
+Scope:
+  One read-only checkpoint for clean-r9. No Job, Pod, PVC repository, lock, or process was mutated.
+
+cluster state:
+  Job: runforest-online-a100x1-clean-r9
+  status: Running
+  completions: 0/1
+  age: about 17 minutes
+  Pod: runforest-online-a100x1-clean-r9-lr6nr
+  ready: 1/1
+  restarts: 0
+  node: hcc-gpengine-shor-c5303.unl.edu
+
+checkout milestone:
+  The locked shared seed remained skipped.
+  Fetch from the alternate seed's sanitized GitHub remote completed successfully:
+    branch codex/dual-time-procedural-memory -> FETCH_HEAD
+  The active processes are now `git archive` and `tar` extraction into the fresh clean-r9 workdir.
+  Both processes remained alive after roughly 15 minutes of extraction.
+  `.source_commit` had not yet been written, so the authoritative checked-out commit is still pending.
+
+runtime state:
+  GPU: NVIDIA A100-SXM4-80GB
+  GPU memory: 0 MiB
+  GPU utilization: 0%
+  matrix manifest: not created
+  cold-start SHA gate: not reached
+  clean graph preflight: not reached
+  retrieval/journal/adoption artifacts: none
+
+interpretation:
+  The source fetch has succeeded and the job is alive in a slow PVC archive-extraction phase. This is not
+  yet model execution or memory-system evidence. The correct action is low-frequency wait-only monitoring;
+  do not interrupt or replace the pod while `git archive` and `tar` remain active.
