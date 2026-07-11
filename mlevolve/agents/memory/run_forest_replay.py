@@ -151,7 +151,7 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
         "run_id": run_id,
         "original_node_id": original_node_id,
         "graph_node_id": graph_node_id,
-        "journal_path": str(journal_path.relative_to(repo_root)),
+        "journal_path": str(Path("mlevolve/runs") / journal_path.relative_to(allowed_root)),
         "historical_metric": metric,
         "maximize": maximize,
         "code_sha256": code_sha256,

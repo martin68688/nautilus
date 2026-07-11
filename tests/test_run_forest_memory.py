@@ -253,6 +253,9 @@ def test_exact_replay_loads_historical_three_model_source_as_blocked_repair_seed
     assert replay["adoption_mode"] == "blocked_exact_source_repair_seed"
     assert replay["replay_source"]["target_audit_status"] == "candidate_replay"
     assert replay["replay_source"]["repair_seed_only"] is True
+    assert replay["replay_source"]["journal_path"] == (
+        "mlevolve/runs/20260509_185008_spooky-author-identification/logs/journal.json"
+    )
     assert replay["leakage_audit"]["hard_block"] is True
     assert set(replay["replay_source"]["known_issue_codes"]) == {
         "TRANSFORM_FIT_ON_HOLDOUT",
