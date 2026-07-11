@@ -1,4 +1,5 @@
 import json
+import hashlib
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -550,12 +551,34 @@ X = v.fit_transform(all_texts)
         "action": "Fit vectorizers on train only",
         "source_branches": [["20260101_000000", "1"]],
     }]}), encoding="utf-8")
+    taxonomy_path = tmp_path / "sop_taxonomy.json"
+    taxonomy_path.write_text(json.dumps({
+        "schema": "runforest_sop_taxonomy_v1",
+        "source_graph_sha256": hashlib.sha256(sop_graph.read_bytes()).hexdigest(),
+        "sop_count": 1,
+        "coverage": 1.0,
+        "abstraction_counts": {"L3_repair": 1},
+        "reviewed_l1_count": 0,
+        "reviewed_l1_ids": [],
+        "entries": {
+            "sg_test": {
+                "abstraction_level": "L3_repair",
+                "sop_kind": "debug_fix",
+                "method_family": "general",
+                "task_families": ["text_classification"],
+                "decision_stages": ["debug", "repair"],
+                "compute_profile": "cpu_light",
+                "classification_source": "test_fixture"
+            }
+        }
+    }), encoding="utf-8")
 
     graph, index, report = build_artifact(
         tmp_path / "runs",
         sop_graph,
         allowlist_path=allowlist,
         require_clean_provenance=True,
+        sop_taxonomy_path=taxonomy_path,
     )
     assert report["failure_pattern_count"] == 1
     patterns = [node for node in graph["nodes"] if node.get("type") == "FailurePattern"]

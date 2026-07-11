@@ -34,10 +34,12 @@ if str(MLEVOLVE_ROOT) not in sys.path:
     sys.path.insert(0, str(MLEVOLVE_ROOT))
 
 from agents.leakage_audit import AUDIT_SCHEMA, DETECTOR_VERSION, audit_code, merge_audits
+from build_sop_taxonomy import validate_entry as validate_taxonomy_entry
 
 
 DEFAULT_RUNS_DIR = REPO / "mlevolve" / "runs"
 DEFAULT_SOP_GRAPH = REPO / "paper-skills" / "hyper_memory" / "hyper_graph.json"
+DEFAULT_SOP_TAXONOMY = REPO / "paper-skills" / "hyper_memory" / "sop_taxonomy.json"
 DEFAULT_OUT_DIR = REPO / "paper-skills" / "hyper_memory"
 DEFAULT_ALLOWLIST = REPO / "paper-skills" / "eval_skill_memory" / "clean_run_allowlist.json"
 
@@ -394,6 +396,7 @@ def sop_provenance_status(sop: dict[str, Any], provenance: dict[str, Any] | None
 
 def load_sops(
     graph_path: Path,
+    taxonomy_path: Path = DEFAULT_SOP_TAXONOMY,
     provenance: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[tuple[str, str], list[str]], dict[str, Any]]:
     if not graph_path.exists():
@@ -402,6 +405,42 @@ def load_sops(
     if not isinstance(graph, dict):
         return [], {}, {"total_sops": 0, "included_sops": 0, "excluded_sops": []}
     raw_sops = [n for n in graph.get("nodes", []) if isinstance(n, dict) and n.get("type") == "SOP"]
+    if not taxonomy_path.exists():
+        raise FileNotFoundError(f"SOP taxonomy not found: {taxonomy_path}")
+    taxonomy = read_json(taxonomy_path)
+    if not isinstance(taxonomy, dict) or taxonomy.get("schema") != "runforest_sop_taxonomy_v1":
+        raise ValueError("SOP taxonomy has an unsupported schema")
+    expected_hash = file_sha256(graph_path)
+    if taxonomy.get("source_graph_sha256") != expected_hash:
+        raise ValueError(
+            "SOP taxonomy is stale for the supplied SOP graph: "
+            f"expected {expected_hash}, got {taxonomy.get('source_graph_sha256')}"
+        )
+    taxonomy_entries = taxonomy.get("entries")
+    if not isinstance(taxonomy_entries, dict):
+        raise ValueError("SOP taxonomy entries must be a mapping")
+    raw_ids = {str(sop.get("id")) for sop in raw_sops}
+    taxonomy_ids = {str(sop_id) for sop_id in taxonomy_entries}
+    if raw_ids != taxonomy_ids or taxonomy.get("sop_count") != len(raw_ids):
+        raise ValueError(
+            "SOP taxonomy coverage mismatch: "
+            f"missing={sorted(raw_ids - taxonomy_ids)[:5]} "
+            f"extra={sorted(taxonomy_ids - raw_ids)[:5]}"
+        )
+    for sop_id, entry in taxonomy_entries.items():
+        if not isinstance(entry, dict):
+            raise ValueError(f"SOP taxonomy entry {sop_id} must be a mapping")
+        validate_taxonomy_entry(str(sop_id), entry)
+    actual_l1_ids = sorted(
+        str(sop_id)
+        for sop_id, entry in taxonomy_entries.items()
+        if entry.get("abstraction_level") == "L1_strategy"
+    )
+    reviewed_l1_ids = sorted(str(value) for value in taxonomy.get("reviewed_l1_ids") or [])
+    if actual_l1_ids != reviewed_l1_ids or taxonomy.get("reviewed_l1_count") != len(actual_l1_ids):
+        raise ValueError("SOP taxonomy manual L1 review metadata is incomplete or stale")
+    if any(taxonomy_entries[sop_id].get("manual_reviewed") is not True for sop_id in actual_l1_ids):
+        raise ValueError("SOP taxonomy contains an L1 strategy without manual review")
     sops: list[dict[str, Any]] = []
     excluded_sops: list[dict[str, Any]] = []
     for sop in raw_sops:
@@ -416,7 +455,9 @@ def load_sops(
                 }
             )
             continue
-        sops.append(sop)
+        enriched = dict(sop)
+        enriched.update(taxonomy_entries[str(sop.get("id"))])
+        sops.append(enriched)
     branch_to_sops: dict[tuple[str, str], list[str]] = collections.defaultdict(list)
     for sop in sops:
         sop_id = str(sop.get("id"))
@@ -432,6 +473,14 @@ def load_sops(
         "excluded_sops": excluded_sops,
         "excluded_sop_count": len(excluded_sops),
         "excluded_sops_by_reason": dict(sorted(collections.Counter(item["reason"] for item in excluded_sops).items())),
+        "taxonomy_schema": taxonomy.get("schema"),
+        "taxonomy_source_graph_sha256": taxonomy.get("source_graph_sha256"),
+        "taxonomy_sop_count": taxonomy.get("sop_count"),
+        "taxonomy_coverage": taxonomy.get("coverage"),
+        "taxonomy_abstraction_counts": taxonomy.get("abstraction_counts") or {},
+        "taxonomy_classifier_version": taxonomy.get("classifier_version"),
+        "taxonomy_override_version": taxonomy.get("override_version"),
+        "taxonomy_reviewed_l1_count": taxonomy.get("reviewed_l1_count"),
     }
     return sops, dict(branch_to_sops), report
 
@@ -507,15 +556,21 @@ def build_artifact(
     sop_graph_path: Path,
     allowlist_path: Path | None = None,
     require_clean_provenance: bool = False,
+    sop_taxonomy_path: Path = DEFAULT_SOP_TAXONOMY,
 ) -> tuple[dict[str, Any], dict[str, np.ndarray], dict[str, Any]]:
     runs_dir = Path(runs_dir).resolve()
     sop_graph_path = Path(sop_graph_path).resolve()
+    sop_taxonomy_path = Path(sop_taxonomy_path).resolve()
     allowlist_path = Path(allowlist_path).resolve() if allowlist_path is not None else None
     if require_clean_provenance and allowlist_path is None:
         raise ValueError("--require-clean-provenance requires --allowlist")
     provenance = load_clean_allowlist(allowlist_path) if allowlist_path is not None else None
     journals, journal_report = load_journals(runs_dir, provenance)
-    sops, branch_to_sops, sop_report = load_sops(sop_graph_path, provenance)
+    sops, branch_to_sops, sop_report = load_sops(
+        sop_graph_path,
+        taxonomy_path=sop_taxonomy_path,
+        provenance=provenance,
+    )
     if require_clean_provenance:
         if not journals:
             raise ValueError("Clean provenance requested but no allowlisted journals were included")
@@ -620,6 +675,15 @@ def build_artifact(
             static_audit = audit_code(raw_code)
             stored_audit = raw_node.get("leakage_audit") if isinstance(raw_node.get("leakage_audit"), dict) else None
             leakage_audit = merge_audits(raw_code, static_audit, stored_audit)
+            selected_strategy = raw_node.get("selected_strategy") if isinstance(raw_node.get("selected_strategy"), dict) else {}
+            strategy_alignment = raw_node.get("strategy_alignment") if isinstance(raw_node.get("strategy_alignment"), dict) else {}
+            strategy_alignment_eligible = bool(
+                not selected_strategy
+                or (
+                    strategy_alignment.get("status") == "verified"
+                    and strategy_alignment.get("rank_eligible") is True
+                )
+            )
             if raw_code:
                 audited_code_node_count += 1
                 audit_status_counts[str(leakage_audit.get("status", "unknown"))] += 1
@@ -660,6 +724,13 @@ def build_artifact(
                 "code_sha256": hashlib.sha256(raw_code.encode("utf-8")).hexdigest() if raw_code else "",
                 "code_length": len(raw_code),
                 "analysis": short_text(raw_node.get("analysis"), 900),
+                "draft_role": raw_node.get("draft_role"),
+                "task_profile": raw_node.get("task_profile") or {},
+                "selected_strategy": selected_strategy,
+                "excluded_method_families": raw_node.get("excluded_method_families") or [],
+                "l2_tactic_refs": raw_node.get("l2_tactic_refs") or [],
+                "strategy_alignment": strategy_alignment,
+                "strategy_alignment_eligible": strategy_alignment_eligible,
                 "leakage_audit": leakage_audit,
                 "audit_status": leakage_audit.get("status"),
                 "paper_grade_eligible": leakage_audit.get("paper_grade_eligible"),
@@ -857,7 +928,18 @@ def build_artifact(
                 "applies_when": sop.get("applies_when") or [sop.get("condition")],
                 "prevents": sop.get("prevents"),
                 "skill_id": sop.get("skill_id"),
+                "category": sop.get("category"),
+                "scope": sop.get("scope"),
                 "radius_band": sop.get("radius_band"),
+                "abstraction_level": sop.get("abstraction_level"),
+                "sop_kind": sop.get("sop_kind"),
+                "method_family": sop.get("method_family"),
+                "task_families": sop.get("task_families") or [],
+                "decision_stages": sop.get("decision_stages") or [],
+                "compute_profile": sop.get("compute_profile"),
+                "taxonomy_source": sop.get("classification_source"),
+                "manual_reviewed": sop.get("manual_reviewed", False),
+                "manual_review_version": sop.get("manual_review_version"),
                 "source_branches": sop.get("source_branches") or [],
                 "evidence_turns": sop.get("evidence_turns") or [],
                 "attached_transition_count": len(attached),
@@ -886,6 +968,14 @@ def build_artifact(
             "audit_detector_version": DETECTOR_VERSION,
             "runs_dir": str(runs_dir.relative_to(REPO)) if runs_dir.is_relative_to(REPO) else str(runs_dir),
             "sop_graph": str(sop_graph_path.relative_to(REPO)) if sop_graph_path.exists() and sop_graph_path.is_relative_to(REPO) else str(sop_graph_path),
+            "sop_taxonomy": display_path(sop_taxonomy_path),
+            "sop_taxonomy_schema": sop_report.get("taxonomy_schema"),
+            "sop_taxonomy_source_graph_sha256": sop_report.get("taxonomy_source_graph_sha256"),
+            "sop_taxonomy_sop_count": sop_report.get("taxonomy_sop_count"),
+            "sop_taxonomy_coverage": sop_report.get("taxonomy_coverage"),
+            "sop_taxonomy_classifier_version": sop_report.get("taxonomy_classifier_version"),
+            "sop_taxonomy_override_version": sop_report.get("taxonomy_override_version"),
+            "sop_taxonomy_reviewed_l1_count": sop_report.get("taxonomy_reviewed_l1_count"),
             "journal_count": len(journals),
             "source_runs": sorted({run_short_id(run_id) for run_id, _path, _journal in journals}),
             "allowlist": provenance.get("allowed_run_ids", []) if provenance else [],
@@ -945,6 +1035,14 @@ def build_artifact(
         "blocked_run_prefixes": graph["meta"]["blocked_run_prefixes"],
         "journal_filter_report": journal_report,
         "sop_filter_report": sop_report,
+        "sop_taxonomy_path": graph["meta"]["sop_taxonomy"],
+        "sop_taxonomy_schema": graph["meta"]["sop_taxonomy_schema"],
+        "sop_taxonomy_source_graph_sha256": graph["meta"]["sop_taxonomy_source_graph_sha256"],
+        "sop_taxonomy_sop_count": graph["meta"]["sop_taxonomy_sop_count"],
+        "sop_taxonomy_coverage": graph["meta"]["sop_taxonomy_coverage"],
+        "sop_taxonomy_classifier_version": graph["meta"]["sop_taxonomy_classifier_version"],
+        "sop_taxonomy_override_version": graph["meta"]["sop_taxonomy_override_version"],
+        "sop_taxonomy_reviewed_l1_count": graph["meta"]["sop_taxonomy_reviewed_l1_count"],
         "journal_count": len(journals),
         "node_count": len(nodes),
         "edge_count": len(edges),
@@ -975,6 +1073,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runs-dir", type=Path, default=DEFAULT_RUNS_DIR)
     parser.add_argument("--sop-graph", type=Path, default=DEFAULT_SOP_GRAPH)
+    parser.add_argument("--sop-taxonomy", type=Path, default=DEFAULT_SOP_TAXONOMY)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--allowlist", type=Path, default=None)
     parser.add_argument("--require-clean-provenance", action="store_true")
@@ -985,6 +1084,7 @@ def main() -> None:
         args.sop_graph,
         allowlist_path=args.allowlist,
         require_clean_provenance=args.require_clean_provenance,
+        sop_taxonomy_path=args.sop_taxonomy,
     )
     args.out_dir.mkdir(parents=True, exist_ok=True)
     graph_path = args.out_dir / "run_forest_graph.json"

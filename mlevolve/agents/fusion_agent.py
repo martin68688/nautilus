@@ -138,6 +138,10 @@ def fuse_two_nodes(agent, source_node: SearchNode, target_node: SearchNode) -> S
         current_analysis=source_node.analysis or "",
         reference_solution=reference_trajectory,
         draft_role=getattr(source_node, "draft_role", None),
+        strategy_context={
+            "selected_strategy": getattr(source_node, "selected_strategy", {}) or {},
+            "task_profile": getattr(source_node, "task_profile", {}) or {},
+        },
     )
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text
@@ -304,6 +308,10 @@ def _fuse_with_multiple_references(
         current_analysis=parent_node.analysis or "",
         reference_solutions=reference_memory,
         draft_role=getattr(parent_node, "draft_role", None),
+        strategy_context={
+            "selected_strategy": getattr(parent_node, "selected_strategy", {}) or {},
+            "task_profile": getattr(parent_node, "task_profile", {}) or {},
+        },
     )
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text

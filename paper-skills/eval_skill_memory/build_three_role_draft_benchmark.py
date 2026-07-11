@@ -110,10 +110,11 @@ def build_three_role_records(graph: dict, replay_manifest: dict) -> tuple[list[d
                 "run_id": replay["run_id"],
                 "original_node_id": replay["original_node_id"],
                 "audit_status": replay["audit_status"],
+                "method_family": replay.get("method_family"),
                 "known_issue_codes": replay.get("known_issue_codes") or [],
             },
             "novel_exploration": {
-                "compared_conditions": ["tree_only", "stage_hybrid"],
+                "compared_conditions": ["tree_only", "stage_hybrid", "layered_strategy"],
                 "must_exclude_query_split_runs": True,
             },
         }

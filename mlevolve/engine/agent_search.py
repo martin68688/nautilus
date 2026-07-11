@@ -29,6 +29,11 @@ logger = logging.getLogger("MLEvolve")
 
 ExecCallbackType = Callable[[str, bool], ExecutionResult]
 
+
+class DraftRoleReservationError(ValueError):
+    """Raised before generation when a fixed root Draft slot cannot be reserved."""
+
+
 class AgentSearch:
     def __init__(
             self,
@@ -60,6 +65,7 @@ class AgentSearch:
 
         self._draft_role_lock = threading.Lock()
         self._draft_generation_count = 0
+        self._search_condition = threading.Condition()
         self._validate_draft_role_policy()
         self._init_mandatory_repair_scheduler()
 
@@ -124,7 +130,7 @@ class AgentSearch:
 
         # External persistent SkillGraph memory
         self.external_skill_memory = None
-        ext_cfg = getattr(self.cfg, "external_skill_memory", None)
+        ext_cfg = getattr(getattr(self, "cfg", None), "external_skill_memory", None)
         if ext_cfg is not None and getattr(ext_cfg, "enable", False):
             ext_mode = getattr(ext_cfg, "mode", "skillgraph")
             try:
@@ -203,10 +209,18 @@ class AgentSearch:
         roles = [str(role) for role in list(getattr(policy, "roles", []) or [])]
         if roles[:3] != expected:
             raise ValueError(f"RunForest draft roles must start with {expected}; got {roles}")
-        if int(self.acfg.initial_drafts) < len(expected):
-            raise ValueError("RunForest draft role policy requires agent.initial_drafts >= 3")
-        if int(self.scfg.num_drafts) < len(expected):
-            raise ValueError("RunForest draft role policy requires agent.search.num_drafts >= 3")
+        if len(roles) != len(expected):
+            raise ValueError(f"RunForest draft role policy requires exactly {len(expected)} roles")
+        if int(self.acfg.initial_drafts) != len(expected):
+            raise ValueError("RunForest draft role policy requires agent.initial_drafts == 3")
+        if int(self.scfg.num_drafts) != len(expected):
+            raise ValueError("RunForest draft role policy requires agent.search.num_drafts == 3")
+        ext_cfg = getattr(getattr(self, "cfg", None), "external_skill_memory", None)
+        if (
+            str(getattr(ext_cfg, "retrieval_control", "")) == "layered_strategy"
+            and not getattr(self, "use_stepwise_generation", True)
+        ):
+            raise ValueError("Layered Novel Draft retrieval requires stepwise generation")
 
     def configured_draft_role(self, draft_index: int) -> str:
         policy = getattr(self.acfg, "draft_role_policy", None)
@@ -215,13 +229,25 @@ class AgentSearch:
         roles = [str(role) for role in list(getattr(policy, "roles", []) or [])]
         if 0 <= draft_index < len(roles):
             return roles[draft_index]
-        return str(getattr(policy, "extra_role", "novel_exploration") or "novel_exploration")
+        raise DraftRoleReservationError(
+            f"Draft role index {draft_index} exceeds the fixed three-role policy"
+        )
 
     def claim_draft_role(self, explicit_role: str | None = None) -> str:
         with self._draft_role_lock:
             draft_index = self._draft_generation_count
+            configured_role = self.configured_draft_role(draft_index)
+            policy = getattr(self.acfg, "draft_role_policy", None)
+            if (
+                explicit_role is not None
+                and bool(getattr(policy, "enabled", False))
+                and explicit_role != configured_role
+            ):
+                raise DraftRoleReservationError(
+                    f"Draft role slot {draft_index} requires {configured_role}; got {explicit_role}"
+                )
             self._draft_generation_count += 1
-        role = explicit_role or self.configured_draft_role(draft_index)
+        role = explicit_role or configured_role
         logger.info("[draft-role] index=%s role=%s", draft_index, role)
         return role
 
@@ -312,6 +338,12 @@ class AgentSearch:
         else:
             return str(prompt_complete)
 
+    def _notify_search_state(self) -> None:
+        condition = getattr(self, "_search_condition", None)
+        if condition is not None:
+            with condition:
+                condition.notify_all()
+
     def update_data_preview(self):
         base_preview = data_preview.generate(self.cfg.workspace_dir)
         submission_format_warning = """
@@ -333,6 +365,7 @@ class AgentSearch:
         with self.journal_lock:
             self.journal.append(node)
         self._enqueue_mandatory_repair(node)
+        self._notify_search_state()
         logger.warning(
             "Node %s was journaled as a pre-execution leakage failure; GPU execution was skipped",
             node.id,
@@ -355,14 +388,21 @@ class AgentSearch:
             try:
                 if self.is_root(parent_node):
                     if parent_node.reached_child_limit(scfg=self.scfg):
-                        logger.info("🎯 Regular draft limit reached, triggering multi-branch aggregation (conditions already checked in select())")
-                        result_node = aggregation_agent.run(self, mode="node", parent_node=parent_node)
-                        if result_node:
-                            result_node.lock = True
-                            logger.info(f"[_run_single_step] Aggregation branch node {result_node.id} is locked.")
+                        aggregation_requested = bool(
+                            getattr(parent_node, "_aggregation_requested", False)
+                        )
+                        parent_node._aggregation_requested = False
+                        if aggregation_requested:
+                            logger.info("🎯 Selector approved multi-branch aggregation")
+                            result_node = aggregation_agent.run(self, mode="node", parent_node=parent_node)
+                            if result_node:
+                                result_node.lock = True
+                                logger.info(f"[_run_single_step] Aggregation branch node {result_node.id} is locked.")
+                            else:
+                                logger.info("Aggregation failed or limit reached; returning to search.")
                         else:
-                            logger.info("Aggregation failed or limit reached, skipping. Will continue normal search.")
-                            result_node = None
+                            logger.info("Root draft limit reached without aggregation approval; worker will wait.")
+                            _root = True
                     else:
                         result_node = draft_agent.run(
                             self,
@@ -470,11 +510,15 @@ class AgentSearch:
                             else:
                                 self.journal.append(result_node)
                         self._enqueue_mandatory_repair(result_node)
+                        self._notify_search_state()
 
             except Exception as e:
-                logger.warning(f"Step failed for parent {parent_node.id}, rolling back expected child count and propagating zero reward.")
+                logger.warning("Step failed for parent %s; propagating zero reward", parent_node.id)
                 evaluation.backpropagate(node=parent_node, value=0, add_to_tree=False)
-                parent_node.sub_expected_child_count()
+                if not isinstance(e, DraftRoleReservationError):
+                    parent_node.sub_expected_child_count()
+                else:
+                    logger.info("Draft role reservation was rejected before child-count mutation")
                 raise e
 
         else:
@@ -489,7 +533,7 @@ class AgentSearch:
         execute_immediately: bool = True,
         init_solution_path: Optional[str] = None,
         draft_role: Optional[str] = None,
-    ) -> SearchNode:
+    ) -> Optional[SearchNode]:
         if not self.journal.nodes or self.data_preview is None:
             self.update_data_preview()
             self.search_start_time = time.time()
@@ -509,6 +553,15 @@ class AgentSearch:
 
         if not node or node.stage == "root":
             node = node_selection.select_with_soft_switch(self)
+            if node is None:
+                condition = getattr(self, "_search_condition", None)
+                if condition is not None:
+                    with condition:
+                        condition.wait(timeout=1.0)
+                node = node_selection.select_with_soft_switch(self)
+                if node is None:
+                    logger.info("[step] No expandable node after bounded wait")
+                    return None
 
         try:
             _root, result_node = self._run_single_step(
@@ -589,6 +642,7 @@ class AgentSearch:
                     self.journal.append(node)
                     logger.info(f"Node {node.id} added to journal")
             self._enqueue_mandatory_repair(node)
+            self._notify_search_state()
 
             node.pending_execution = False
             solution_manager.update_best_solution(self, node)

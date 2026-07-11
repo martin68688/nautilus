@@ -81,6 +81,7 @@ def log_adoption(
     """
     if not getattr(agent, "adoption_tracking_enabled", False):
         return
+    ref_ids = [ref_id for ref_id in (ref_ids or []) if ref_id]
     if not ref_ids:
         return
     ts = time.strftime("%Y-%m-%dT%H:%M:%S")
@@ -99,7 +100,12 @@ def log_adoption(
             "stage": stage,
             "injected_at": ts,
             "adoption_mode": adoption_mode,
-            "adoption_outcome": "pending_analysis",
+            "adoption_outcome": (
+                "rejected_after_inspection"
+                if adoption_mode == "strategy_candidate_inspection"
+                and trace.get("selection_state") == "rejected"
+                else "pending_analysis"
+            ),
         }
         for key in (
             "retrieval_channel",

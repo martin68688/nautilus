@@ -171,6 +171,9 @@ class ExternalSkillMemoryConfig:
     include_debug: bool = True
     include_fusion: bool = True
     retrieval_control: str = "stage_hybrid"
+    strategy_candidate_limit: int = 12
+    strategy_route_count: int = 3
+    l2_tactic_limit: int = 4
     stage_quotas: dict = field(default_factory=dict)
     rrf_weights: dict = field(default_factory=dict)
     blocked_run_prefixes: list[str] = field(default_factory=list)

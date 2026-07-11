@@ -5,7 +5,7 @@
     "structured_config": {
       "ok": true,
       "mode": "run_forest_stage_hybrid",
-      "retrieval_control": "stage_hybrid",
+      "retrieval_control": "layered_strategy",
       "roles": [
         "coldstart_baseline",
         "memory_reproduction",
@@ -28,14 +28,14 @@
           "control": "naive_concat",
           "stage": "draft",
           "ok": true,
-          "ref_count": 15,
+          "ref_count": 14,
           "blocked_positive_count": 0
         },
         {
           "control": "naive_concat",
           "stage": "improve",
           "ok": true,
-          "ref_count": 12,
+          "ref_count": 11,
           "blocked_positive_count": 0
         },
         {
@@ -49,28 +49,28 @@
           "control": "naive_concat",
           "stage": "evolution",
           "ok": true,
-          "ref_count": 15,
+          "ref_count": 14,
           "blocked_positive_count": 0
         },
         {
           "control": "naive_concat",
           "stage": "fusion",
           "ok": true,
-          "ref_count": 12,
+          "ref_count": 11,
           "blocked_positive_count": 0
         },
         {
           "control": "sop_only",
           "stage": "draft",
           "ok": true,
-          "ref_count": 15,
+          "ref_count": 14,
           "blocked_positive_count": 0
         },
         {
           "control": "sop_only",
           "stage": "improve",
           "ok": true,
-          "ref_count": 12,
+          "ref_count": 11,
           "blocked_positive_count": 0
         },
         {
@@ -84,28 +84,28 @@
           "control": "sop_only",
           "stage": "evolution",
           "ok": true,
-          "ref_count": 15,
+          "ref_count": 14,
           "blocked_positive_count": 0
         },
         {
           "control": "sop_only",
           "stage": "fusion",
           "ok": true,
-          "ref_count": 12,
+          "ref_count": 11,
           "blocked_positive_count": 0
         },
         {
           "control": "stage_hybrid",
           "stage": "draft",
           "ok": true,
-          "ref_count": 15,
+          "ref_count": 14,
           "blocked_positive_count": 0
         },
         {
           "control": "stage_hybrid",
           "stage": "improve",
           "ok": true,
-          "ref_count": 12,
+          "ref_count": 11,
           "blocked_positive_count": 0
         },
         {
@@ -119,14 +119,14 @@
           "control": "stage_hybrid",
           "stage": "evolution",
           "ok": true,
-          "ref_count": 15,
+          "ref_count": 14,
           "blocked_positive_count": 0
         },
         {
           "control": "stage_hybrid",
           "stage": "fusion",
           "ok": true,
-          "ref_count": 12,
+          "ref_count": 11,
           "blocked_positive_count": 0
         },
         {
@@ -166,6 +166,69 @@
         }
       ]
     },
+    "layered_three_role": {
+      "ok": true,
+      "schema": "layered_three_role_preflight_v1",
+      "status": "passed",
+      "roles": [
+        "coldstart_baseline",
+        "memory_reproduction",
+        "novel_exploration"
+      ],
+      "root_draft_limit": 3,
+      "role_bypass": {
+        "coldstart_baseline": {
+          "text_empty": true,
+          "refs_empty": true
+        },
+        "memory_reproduction": {
+          "text_empty": true,
+          "refs_empty": true
+        }
+      },
+      "strategy_routes": [
+        {
+          "sop_id": "sop::sg_0221",
+          "method_family": "deberta_multisample_focal_cv",
+          "evidence_node_id": "run::20260516_125444_spooky-author-identification::node::210ca037dcae4757baf8dd988ac28930",
+          "metric": 0.405297
+        },
+        {
+          "sop_id": "sop::sg_0213",
+          "method_family": "deberta_finetune",
+          "evidence_node_id": "run::20260516_104127_spooky-author-identification::node::cf0ec1a7f20f40c8b47e062fcadc8831",
+          "metric": 0.296175
+        },
+        {
+          "sop_id": "sop::sg_0118",
+          "method_family": "frozen_transformer_tree",
+          "evidence_node_id": "run::20260510_025317_spooky-author-identification::node::d3057f2027d542a79ccf2f956f061b09",
+          "metric": 0.454066
+        }
+      ],
+      "selected_method_family": "deberta_multisample_focal_cv",
+      "l2_tactic_refs": [
+        "sop::sg_0225",
+        "run::20260516_125444_spooky-author-identification::transition::36c4b8ae7b::16dbb61458",
+        "run::20260516_125444_spooky-author-identification::node::16dbb61458c440a1a1607fb31e28850b",
+        "sop::sg_0087",
+        "run::20260509_042918_spooky-author-identification::transition::3467bbffdb::e699eb693a",
+        "run::20260509_042918_spooky-author-identification::node::e699eb693a0249a197d0aa1f02e3ffa3",
+        "sop::sg_0227",
+        "run::20260516_125444_spooky-author-identification::transition::1512118372::5a9c22c3e6",
+        "run::20260516_125444_spooky-author-identification::node::5a9c22c3e60f4faca773a97b3402bcc9",
+        "sop::sg_0114",
+        "run::20260509_185008_spooky-author-identification::transition::a1bc9e4685::fbfd77c484",
+        "run::20260509_185008_spooky-author-identification::node::fbfd77c48436421c821557a4b884516e"
+      ],
+      "taxonomy_coverage": 1.0,
+      "taxonomy_reviewed_l1_count": 28,
+      "taxonomy_abstraction_counts": {
+        "L1_strategy": 28,
+        "L2_tactic": 101,
+        "L3_repair": 152
+      }
+    },
     "held_out_benchmark": {
       "ok": true,
       "schema": "stage_hybrid_benchmark_validation_v1",
@@ -189,54 +252,7 @@
     },
     "offline_claim_gates": {
       "ok": true,
-      "claim_gates_computed": true,
-      "claim_gates": {
-        "best_single_channel": "tree_only",
-        "by_stage": {
-          "debug": {
-            "best_single_channel": "tree_only",
-            "query_count": 31,
-            "execution_mrr_comparison": {
-              "delta": -0.006528417818740398,
-              "p_value": 0.5977011494252874
-            },
-            "allowed": false
-          },
-          "draft": {
-            "best_single_channel": "tree_only",
-            "query_count": 6,
-            "execution_mrr_comparison": {
-              "delta": -0.23196881091617935,
-              "p_value": 1.0
-            },
-            "allowed": false
-          },
-          "evolution": {
-            "best_single_channel": "tree_only",
-            "query_count": 2,
-            "execution_mrr_comparison": {
-              "delta": -0.011904761904761918,
-              "p_value": 0.7526236881559221
-            },
-            "allowed": false
-          },
-          "improve": {
-            "best_single_channel": "tree_only",
-            "query_count": 17,
-            "execution_mrr_comparison": {
-              "delta": 0.0715686274509804,
-              "p_value": 0.1489255372313843
-            },
-            "allowed": false
-          }
-        },
-        "offline_retrieval_claim_allowed": false,
-        "hyperbolic_geometry_claim_allowed": false,
-        "online_downstream_claim_allowed": false,
-        "online_gate_reason": "No concurrent online downstream experiment is part of this offline evaluator.",
-        "adoption_precision_available": false,
-        "downstream_metric_available": false
-      }
+      "claim_gates_computed": false
     }
   },
   "online_training_started": false

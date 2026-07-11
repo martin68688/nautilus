@@ -11,6 +11,7 @@
         "sop::sg_0204"
       ],
       "historical_metric": 0.2013,
+      "method_family": "deberta_xgb_lr_ensemble",
       "code_sha256": "4a203d242d5a349aa25c879a02b6667d55b62e0aa9d4ef68ca5eec4416802b63",
       "audit_status": "candidate_replay",
       "metric_status": "historical_selected_validation_score",

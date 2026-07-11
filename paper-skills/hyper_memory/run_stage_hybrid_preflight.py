@@ -71,7 +71,7 @@ def run_preflight(*, evaluate_offline: bool = True) -> dict:
     }
 
     route_checks = []
-    for control in sorted(RETRIEVAL_CONTROLS):
+    for control in sorted(RETRIEVAL_CONTROLS - {"layered_strategy"}):
         layer = StageAwareHybridMemoryLayer(
             graph_path=str(GRAPH),
             index_path=str(INDEX),
@@ -120,6 +120,14 @@ def run_preflight(*, evaluate_offline: bool = True) -> dict:
         "ok": all(item["ok"] and item["blocked_positive_count"] == 0 for item in route_checks),
         "cases": route_checks,
     }
+    layered_smoke = _load_module(
+        REPO / "paper-skills" / "hyper_memory" / "smoke_layered_three_role.py",
+        "layered_three_role_preflight",
+    ).run_smoke()
+    checks["layered_three_role"] = {
+        "ok": layered_smoke.get("status") == "passed",
+        **layered_smoke,
+    }
 
     builder = _load_module(
         REPO / "paper-skills" / "eval_skill_memory" / "build_stage_hybrid_benchmark.py",
@@ -145,7 +153,7 @@ def run_preflight(*, evaluate_offline: bool = True) -> dict:
 
     required = (
         "structured_config", "coldstart_template", "clean_graph_provenance", "runtime_routes",
-        "held_out_benchmark", "offline_claim_gates",
+        "layered_three_role", "held_out_benchmark", "offline_claim_gates",
     )
     return {
         "schema": "stage_hybrid_preflight_v1",

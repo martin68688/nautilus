@@ -1,4 +1,5 @@
 import json
+import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
@@ -8,9 +9,12 @@ import pytest
 
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "mlevolve"))
 GRAPH = REPO / "paper-skills" / "hyper_memory" / "run_forest_graph.json"
 INDEX = REPO / "paper-skills" / "hyper_memory" / "run_forest_index.npz"
 HYBRID_CONFIG = REPO / "mlevolve" / "config" / "config_run_forest_stage_hybrid.yaml"
+TAXONOMY = REPO / "paper-skills" / "hyper_memory" / "sop_taxonomy.json"
+RESEARCH_NOTE = REPO / "coordination" / "stage_aware_sop_gateway_runforest_research_note.md"
 
 
 def _clean_audit():
@@ -19,6 +23,7 @@ def _clean_audit():
         "status": "clean",
         "memory_disposition": "positive_eligible",
         "paper_grade_eligible": True,
+        "rank_eligible": True,
         "issues": [],
     }
 
@@ -34,10 +39,10 @@ def _write_fixture(tmp_path: Path, *, clean=True, blocked=False):
     run_id = "blocked_run" if blocked else "clean_run"
     nodes = [
         {"id": "run::1", "type": "Run", "run_id": run_id},
-        {"id": "n0", "type": "RunNode", "run_id": run_id, "run_short_id": run_id, "stage": "draft", "step": 0, "text": "text baseline", "leakage_audit": _clean_audit()},
-        {"id": "n1", "type": "RunNode", "run_id": run_id, "run_short_id": run_id, "stage": "improve", "step": 1, "parent_id": "n0", "local_best_node_id": "n1", "text": "transformer validation ensemble", "leakage_audit": child_audit},
+        {"id": "n0", "type": "RunNode", "run_id": run_id, "run_short_id": run_id, "task": "task", "stage": "draft", "step": 0, "text": "text baseline", "metric": 0.5, "is_buggy": False, "is_valid": True, "leakage_audit": _clean_audit()},
+        {"id": "n1", "type": "RunNode", "run_id": run_id, "run_short_id": run_id, "task": "task", "stage": "improve", "step": 1, "parent_id": "n0", "local_best_node_id": "n1", "text": "transformer validation ensemble", "metric": 0.4, "is_buggy": False, "is_valid": True, "leakage_audit": child_audit},
         {"id": "n_bad", "type": "RunNode", "run_id": run_id, "run_short_id": run_id, "stage": "debug", "step": 2, "parent_id": "n0", "is_buggy": True, "text": "failure", "leakage_audit": {"status": "blocked", "memory_disposition": "warning_only", "paper_grade_eligible": False}},
-        {"id": "t1", "type": "Transition", "run_id": run_id, "run_short_id": run_id, "parent_node_id": "n0", "child_node_id": "n1", "stage_pair": "draft->improve", "outcome": "metric_improved", "text": "transformer validation ensemble"},
+        {"id": "t1", "type": "Transition", "run_id": run_id, "run_short_id": run_id, "task": "task", "parent_node_id": "n0", "child_node_id": "n1", "stage_pair": "draft->improve", "outcome": "metric_improved", "metric_improvement": 0.1, "text": "transformer validation ensemble"},
         {"id": "s1", "type": "SOP", "title": "validation ensemble", "action": "use transformer ensemble", "applies_when": ["text classification"], "prevents": ["overfit"], "evidence_turns": ["B0.T1"], "text": "validation ensemble transformer"},
         {"id": "s2", "type": "SOP", "title": "unattached method", "action": "try another feature", "applies_when": ["draft"], "prevents": [], "text": "unattached feature"},
         {"id": "e1", "type": "Evidence", "transition_id": "t1", "text": "metric improved"},
@@ -112,7 +117,8 @@ def test_exact_stage_quotas_and_config_roles():
     assert list(cfg.agent.draft_role_policy.roles) == [
         "coldstart_baseline", "memory_reproduction", "novel_exploration"
     ]
-    assert cfg.agent.draft_role_policy.extra_role == "novel_exploration"
+    assert cfg.agent.initial_drafts == 3
+    assert cfg.agent.search.num_drafts == 3
 
 
 def test_hybrid_config_passes_structured_runtime_schema():
@@ -127,7 +133,7 @@ def test_hybrid_config_passes_structured_runtime_schema():
     cfg.desc_file = None
     merged = OmegaConf.merge(OmegaConf.structured(Config), cfg)
     assert merged.external_skill_memory.mode == "run_forest_stage_hybrid"
-    assert merged.external_skill_memory.retrieval_control == "stage_hybrid"
+    assert merged.external_skill_memory.retrieval_control == "layered_strategy"
 
 
 def test_real_graph_reverse_index_uses_distills_to():
@@ -392,3 +398,218 @@ def test_aggregation_is_an_explicit_novel_exploration_branch():
     source = (REPO / "mlevolve" / "agents" / "aggregation_agent.py").read_text(encoding="utf-8")
     assert 'draft_role="novel_exploration"' in source
     assert 'draft_role="novel_exploration",' in source
+
+
+def _real_layered():
+    from config import _load_cfg
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    cfg = _load_cfg(HYBRID_CONFIG, use_cli_args=False)
+    cfg.exp_id = "spooky-author-identification"
+    cfg.agent.search.num_gpus = 7
+    return StageAwareHybridMemoryLayer(
+        graph_path=str(GRAPH),
+        index_path=str(INDEX),
+        source_name="run_forest_stage_hybrid_memory",
+        mode="run_forest_stage_hybrid",
+        retrieval_control="layered_strategy",
+        enable_agentic=False,
+        top_k=10,
+        max_chars=0,
+        cfg=cfg,
+    )
+
+
+def test_taxonomy_is_complete_and_known_levels_are_pinned():
+    taxonomy = json.loads(TAXONOMY.read_text(encoding="utf-8"))
+    graph = json.loads((REPO / "paper-skills" / "hyper_memory" / "hyper_graph.json").read_text(encoding="utf-8"))
+    sop_ids = {node["id"] for node in graph["nodes"] if node.get("type") == "SOP"}
+    assert taxonomy["schema"] == "runforest_sop_taxonomy_v1"
+    assert taxonomy["coverage"] == 1.0
+    assert taxonomy["sop_count"] == len(sop_ids) == 281
+    assert set(taxonomy["entries"]) == sop_ids
+    l1_ids = {
+        sop_id
+        for sop_id, entry in taxonomy["entries"].items()
+        if entry["abstraction_level"] == "L1_strategy"
+    }
+    assert taxonomy["reviewed_l1_count"] == len(l1_ids) == 28
+    assert set(taxonomy["reviewed_l1_ids"]) == l1_ids
+    assert all(taxonomy["entries"][sop_id]["manual_reviewed"] is True for sop_id in l1_ids)
+    from agents.memory.stage_aware_hybrid_memory import FAMILY_CODE_SIGNATURES
+
+    assert {taxonomy["entries"][sop_id]["method_family"] for sop_id in l1_ids} <= set(FAMILY_CODE_SIGNATURES)
+    for sop_id in ("sg_0089", "sg_0221", "sg_0164"):
+        assert taxonomy["entries"][sop_id]["abstraction_level"] == "L1_strategy"
+    assert taxonomy["entries"]["sg_0227"]["abstraction_level"] == "L2_tactic"
+    for sop_id in ("sg_0069", "sg_0115"):
+        assert taxonomy["entries"][sop_id]["abstraction_level"] == "L3_repair"
+
+
+def test_research_note_has_current_layered_flow_without_stale_draft_claims():
+    text = RESEARCH_NOTE.read_text(encoding="utf-8")
+    for stale in ("Status at baseline: design only", "Additional initial drafts default", "run_forest_stage_hybrid is not implemented"):
+        assert stale not in text
+    assert "L1 Strategy Retriever" in text
+    assert "进入 model_design 时才检索 L2 tactic" in text
+    assert "initial_drafts = 3" in text
+    assert "claim_allowed=false" in text
+
+
+def test_layered_novel_draft_returns_three_clean_distinct_strategy_families():
+    layer = _real_layered()
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="spooky-author-identification",
+        task_desc="Small-data text classification evaluated by multiclass log loss.",
+        query_parts=["Seven GPUs are available."],
+        draft_role="novel_exploration",
+        context={
+            "baseline_model": "ModernBERT",
+            "coldstart": "answerdotai/ModernBERT-large",
+            "data_preview": "Train shape: (17621, 3)",
+            "excluded_method_families": ["modernbert_finetune", "deberta_xgb_lr_ensemble"],
+        },
+    )
+    pack = layer.current_navigation_pack()
+    routes = pack["strategy_routes"]
+    assert pack["schema"] == "layered_strategy_memory_pack_v1"
+    assert len(routes) == 3
+    assert len({route["method_family"] for route in routes}) == 3
+    assert not ({route["method_family"] for route in routes} & set(pack["excluded_method_families"]))
+    assert all(layer.nodes[route["sop_id"]]["abstraction_level"] == "L1_strategy" for route in routes)
+    assert all(route["best_tree_evidence"]["audit_status"] == "clean" for route in routes)
+    assert all(route["best_tree_evidence"]["rank_eligible"] is True for route in routes)
+    assert not {"sop::sg_0227", "sop::sg_0069", "sop::sg_0115"} & {route["sop_id"] for route in routes}
+    assert "Frozen Novel Strategy Contract" in text
+    assert len(refs) == 3
+
+
+def test_layered_l1_l2_are_isolated_from_baseline_and_replay():
+    layer = _real_layered()
+    for role in ("coldstart_baseline", "memory_reproduction"):
+        text, refs = layer.retrieve_for_node(
+            stage="draft",
+            task_id="spooky-author-identification",
+            task_desc="Text classification evaluated by log loss.",
+            draft_role=role,
+        )
+        assert text == ""
+        assert refs == []
+
+
+def test_layered_l2_is_family_compatible_and_excludes_repair_sops():
+    layer = _real_layered()
+    layer.retrieve_for_node(
+        stage="draft",
+        task_id="spooky-author-identification",
+        task_desc="Text classification evaluated by log loss.",
+        draft_role="novel_exploration",
+        context={
+            "excluded_method_families": ["modernbert_finetune", "deberta_xgb_lr_ensemble"],
+        },
+    )
+    strategy = layer.current_navigation_pack()
+    text, refs, l2 = layer.retrieve_model_design_tactics(
+        task_id="spooky-author-identification",
+        task_desc="Text classification evaluated by log loss.",
+        strategy_context=strategy,
+    )
+    assert len(l2["selected_tactics"]) <= 4
+    assert all(
+        layer._family_compatible(l2["method_family"], item["method_family"])
+        for item in l2["selected_tactics"]
+    )
+    assert all(layer.nodes[item["sop_id"]]["abstraction_level"] == "L2_tactic" for item in l2["selected_tactics"])
+    assert not {"sop::sg_0069", "sop::sg_0115"} & {item["sop_id"] for item in l2["selected_tactics"]}
+    assert "L2 Model-Design Tactics" in text
+    for tactic in l2["selected_tactics"]:
+        evidence = tactic["best_tree_evidence"]
+        assert tactic["sop_id"] in refs
+        assert evidence["transition_id"] in refs
+        assert evidence["node_id"] in refs
+
+
+def test_stepwise_retrieves_l2_only_when_model_design_starts(monkeypatch):
+    from agents.coder import stepwise_coder
+
+    seen = []
+
+    class FakeLayer:
+        retrieval_control = "layered_strategy"
+
+        def _format_selected_strategy(self, _context):
+            return "L1_ONLY"
+
+        def retrieve_model_design_tactics(self, **_kwargs):
+            seen.append("retrieve_l2")
+            return "L1_PLUS_L2", ["sop::l2"], {"selected_tactics": [{"sop_id": "sop::l2"}]}
+
+    def fake_generate(self, **kwargs):
+        seen.append((self.name, kwargs["prompt_base"].get("External Skill Memory")))
+        return f"plan-{self.name}", f"code_{self.name} = True"
+
+    def fake_merge(self, **kwargs):
+        seen.append(("merge", kwargs["prompt_base"].get("External Skill Memory")))
+        return "merged", "print('done')"
+
+    monkeypatch.setattr(stepwise_coder.StepAgent, "generate", fake_generate)
+    monkeypatch.setattr(stepwise_coder.MetaAgent, "merge", fake_merge)
+    fake_agent = SimpleNamespace(
+        external_skill_memory=FakeLayer(),
+        cfg=SimpleNamespace(exp_id="spooky-author-identification"),
+    )
+    _plan, _code, metadata = stepwise_coder.stepwise_plan_and_code_query(
+        fake_agent,
+        {
+            "Task description": "text classification",
+            "Instructions": {},
+            "External Skill Memory": "must not be reused",
+        },
+        "preview",
+        {
+            "stage": "draft",
+            "draft_role": "novel_exploration",
+            "strategy_context": {
+                "selected_strategy": {"method_family": "deberta_finetune"},
+                "task_profile": {"task_family": "text_classification"},
+            },
+        },
+    )
+    assert seen == [
+        ("data_processing_and_feature_engineering", "L1_ONLY"),
+        "retrieve_l2",
+        ("model_design", "L1_PLUS_L2"),
+        ("training_evaluation", "L1_PLUS_L2"),
+        ("merge", "L1_PLUS_L2"),
+    ]
+    assert metadata["l2_ref_ids"] == ["sop::l2"]
+
+
+def test_selected_strategy_code_alignment_controls_certified_ranking():
+    from agents.leakage_audit import audit_code, rank_eligible
+    from agents.memory.stage_aware_hybrid_memory import strategy_alignment_for_code
+    from engine.search_node import SearchNode
+
+    strategy = {"method_family": "deberta_xgb_lr_ensemble"}
+    code = "DebertaModel(); XGBClassifier(); LogisticRegression()"
+    node = SearchNode(
+        code=code,
+        plan="aligned",
+        stage="draft",
+        draft_role="novel_exploration",
+        selected_strategy=strategy,
+        is_buggy=False,
+        is_valid=True,
+    )
+    node.leakage_audit = audit_code(code)
+    node.strategy_alignment = strategy_alignment_for_code(strategy, code)
+    agent = SimpleNamespace(acfg=SimpleNamespace(check_data_leakage=True))
+    assert node.strategy_alignment["status"] == "verified"
+    assert rank_eligible(agent, node) is True
+
+    node.code = "DebertaModel()"
+    node.leakage_audit = audit_code(node.code)
+    node.strategy_alignment = strategy_alignment_for_code(strategy, node.code)
+    assert node.strategy_alignment["status"] == "partial"
+    assert rank_eligible(agent, node) is False

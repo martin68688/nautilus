@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import json
+import copy
 from dataclasses import dataclass
 from typing import List, Tuple, Dict, Any
 
@@ -36,6 +37,10 @@ class StepwiseContext:
     execution_output: str = ""
     draft_role: str = ""
     role_contract: Dict[str, Any] | None = None
+    strategy_context: Dict[str, Any] | None = None
+    l2_memory: str = ""
+    l2_ref_ids: List[str] | None = None
+    l2_pack: Dict[str, Any] | None = None
 
 
 @dataclass
@@ -501,7 +506,7 @@ def stepwise_plan_and_code_query(
     prompt_base: Dict[str, Any],
     data_preview: str,
     context: Dict[str, Any],
-    ) -> Tuple[str, str]:
+    ) -> Tuple[str, str, Dict[str, Any]]:
     logger.info("Using stepwise generation route.")
 
     stepwise_context = StepwiseContext(
@@ -511,20 +516,48 @@ def stepwise_plan_and_code_query(
         execution_output=context.get("execution_output", ""),
         draft_role=context.get("draft_role", ""),
         role_contract=context.get("role_contract") or {},
+        strategy_context=context.get("strategy_context") or {},
+        l2_ref_ids=[],
+        l2_pack={},
     )
 
     step_agents = create_default_step_agents()
     meta_agent = MetaAgent()
 
     step_results: List[Dict[str, str]] = []
+    layer = getattr(agent_instance, "external_skill_memory", None)
+    layered_novel = bool(
+        stepwise_context.draft_role == "novel_exploration"
+        and stepwise_context.strategy_context
+        and str(getattr(layer, "retrieval_control", "")) == "layered_strategy"
+    )
     for idx, agent in enumerate(step_agents, 1):
         logger.info(f"Step {idx}/{len(step_agents)}: {agent.name}")
+
+        step_prompt_base = copy.deepcopy(prompt_base)
+        if layered_novel:
+            strategy_text = layer._format_selected_strategy(stepwise_context.strategy_context)
+            if agent.name == "data_processing_and_feature_engineering":
+                step_prompt_base["External Skill Memory"] = strategy_text
+            elif agent.name == "model_design":
+                if not stepwise_context.l2_memory:
+                    l2_text, l2_refs, l2_pack = layer.retrieve_model_design_tactics(
+                        task_id=getattr(agent_instance.cfg, "exp_id", "") or "",
+                        task_desc=prompt_base["Task description"],
+                        strategy_context=stepwise_context.strategy_context,
+                    )
+                    stepwise_context.l2_memory = l2_text
+                    stepwise_context.l2_ref_ids = l2_refs
+                    stepwise_context.l2_pack = l2_pack
+                step_prompt_base["External Skill Memory"] = stepwise_context.l2_memory
+            else:
+                step_prompt_base["External Skill Memory"] = stepwise_context.l2_memory or strategy_text
 
         plan, code = agent.generate(
             task_desc=prompt_base["Task description"],
             data_preview=data_preview,
             previous_steps=step_results,
-            prompt_base=prompt_base,
+            prompt_base=step_prompt_base,
             agent_instance=agent_instance,
             context=stepwise_context,
         )
@@ -536,15 +569,25 @@ def stepwise_plan_and_code_query(
         })
 
     logger.info("Merging all steps...")
+    merge_prompt_base = copy.deepcopy(prompt_base)
+    if layered_novel:
+        merge_prompt_base["External Skill Memory"] = (
+            stepwise_context.l2_memory
+            or layer._format_selected_strategy(stepwise_context.strategy_context)
+        )
     final_plan, final_code = meta_agent.merge(
         task_desc=prompt_base["Task description"],
         data_preview_str=data_preview,
         step_results=step_results,
-        prompt_base=prompt_base,
+        prompt_base=merge_prompt_base,
         agent_instance=agent_instance,
         context=stepwise_context,
     )
 
     logger.info("Stepwise generation completed.")
 
-    return final_plan, final_code
+    return final_plan, final_code, {
+        "strategy_context": copy.deepcopy(stepwise_context.strategy_context or {}),
+        "l2_ref_ids": list(stepwise_context.l2_ref_ids or []),
+        "l2_pack": copy.deepcopy(stepwise_context.l2_pack or {}),
+    }

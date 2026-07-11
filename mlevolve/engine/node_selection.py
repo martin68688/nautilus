@@ -3,7 +3,7 @@
 import logging
 import random
 import time
-from typing import List
+from typing import List, Optional
 
 from engine.search_node import SearchNode
 from engine.conditions import should_trigger_branch_fusion
@@ -37,20 +37,22 @@ def _compute_exploration_constant(agent):
     )
 
 
-def select(agent, node: SearchNode):
+def select(agent, node: SearchNode) -> Optional[SearchNode]:
     """UCT selection: recurse from node, return node to expand (root lock for drafts)."""
-    def _best_child(n: SearchNode) -> SearchNode:
+    def _best_child(n: SearchNode) -> Optional[SearchNode]:
         C = _compute_exploration_constant(agent)
         if agent.is_root(n):
             filtered_children = [child for child in n.children if not child.lock]
-            selected_node = n
-            if len(filtered_children) > 0:
-                selected_node = max(filtered_children,
-                                    key=lambda child: child.uct_value(exploration_constant=C))
+            if not filtered_children:
+                return None
+            selected_node = max(filtered_children,
+                                key=lambda child: child.uct_value(exploration_constant=C))
             if selected_node.stage in ["draft", "fusion_draft"]:
                 selected_node.lock = True
             return selected_node
         else:
+            if not n.children:
+                return None
             return max(n.children, key=lambda child: child.uct_value(exploration_constant=C))
 
     while node and not node.is_terminal:
@@ -63,14 +65,26 @@ def select(agent, node: SearchNode):
                 logger.info(f"[select] → node {node.id} (method=expand)")
                 return node
         else:
-            if agent.is_root(node) and should_trigger_branch_fusion(agent) and random.random() < agent.acfg.branch_fusion_trigger_prob:
+            fixed_roles = bool(
+                getattr(getattr(agent.acfg, "draft_role_policy", None), "enabled", False)
+            )
+            if (
+                agent.is_root(node)
+                and not fixed_roles
+                and should_trigger_branch_fusion(agent)
+                and random.random() < agent.acfg.branch_fusion_trigger_prob
+            ):
                 logger.info(f"Root node {node.id} is fully expanded for regular drafts, aggregation conditions met (including probability), returning root")
+                node._aggregation_requested = True
                 return node
             next_node = _best_child(node)
-            if next_node.id == node.id:
-                logger.info(f"[select] → node {node.id} (method=forced_return, all children locked)")
-                return node
+            if next_node is None:
+                logger.info("[select] → wait (all expandable root children are in flight)")
+                return None
             node = next_node
+    if node is None:
+        logger.info("[select] → wait (no selectable node)")
+        return None
     logger.info(f"[select] → node {node.id} (method=uct)")
     return node
 
@@ -146,7 +160,7 @@ def get_top_k_nodes_global(agent, k: int, max_from_same_branch: int) -> List[dic
     return selected
 
 
-def select_from_top_k_weighted(agent, top_k_nodes: List[dict]) -> SearchNode:
+def select_from_top_k_weighted(agent, top_k_nodes: List[dict]) -> Optional[SearchNode]:
     """Weighted random choice from top-k nodes (weight = 1/rank)."""
     if not top_k_nodes:
         return select(agent, agent.virtual_root)
@@ -162,7 +176,7 @@ def select_from_top_k_weighted(agent, top_k_nodes: List[dict]) -> SearchNode:
     return selected['node']
 
 
-def select_with_soft_switch(agent) -> SearchNode:
+def select_with_soft_switch(agent) -> Optional[SearchNode]:
     """Soft switch: exploration (UCT) vs exploitation (Top-K) by time progress."""
     if agent.search_start_time is None:
         logger.info("📊 Search not started yet, using standard UCT")
@@ -219,13 +233,19 @@ def select_with_soft_switch(agent) -> SearchNode:
 
         if available_nodes:
             selected_node = select_from_top_k_weighted(agent, available_nodes)
+            if selected_node is None:
+                return None
             logger.info(f"✅ Selected unexpanded Top-K node {selected_node.id} (from {len(available_nodes)}/{len(top_k_nodes)} available)")
             selected_node._topk_triggered = True
             return selected_node
         else:
             logger.info(f"⚠️ All Top-{len(top_k_nodes)} nodes fully expanded, will apply UCT from selected node")
             selected_node = select_from_top_k_weighted(agent, top_k_nodes)
+            if selected_node is None:
+                return None
             logger.info(f"Selected fully expanded node {selected_node.id}, applying UCT from it")
             uct_node = select(agent, selected_node)
+            if uct_node is None:
+                return None
             uct_node._topk_triggered = True
             return uct_node

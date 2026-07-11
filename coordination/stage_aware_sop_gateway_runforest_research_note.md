@@ -1,247 +1,235 @@
-# Stage-Aware SOP Gateway + Hyperbolic RunForest Research Note
+# RunForest 三角色与分层记忆检索研究笔记
 
-> Baseline: `99b457c0`  
-> Status at baseline: design only; `run_forest_stage_hybrid` is not implemented.
+> 更新时间：2026-07-11
+>
+> 当前版本：本文所在的 `Layer Novel Draft strategy retrieval` 提交
+>
+> 升级前 checkpoint：`5cbeb562`
+>
+> 当前状态：实现完成，本地测试与 no-GPU preflight 通过；尚无新的同期在线训练结论
 
-## One-Sentence Goal
+## 我现在到底在做什么
 
-Build a stage-aware memory router in which SOPs serve as semantic road signs into an auditable RunForest of real execution paths, while preserving exact replay, leakage repair, and clean comparison controls.
+一句话目标：让 Agent 在 Novel Draft 阶段先选择一条有真实成功运行支撑的整体模型路线，再在写 `model_design` 时读取与该路线兼容的实现细节，而不是一开始就被路径、API、pooling 等零碎 SOP 带偏。
 
-## Mental Model
+形象地说：
 
-- **RunForest is the expedition map**: every real run, branch, success, failure, and local-best lineage.
-- **Transition is a footprint**: the concrete parent-to-child change and its outcome.
-- **SOP is a road sign**: a distilled method that points toward relevant footprints; it is not the terrain itself.
-- **Evidence and FailurePattern are receipts and warnings**: metrics, errors, audit findings, and remediation context.
-- **The Navigator reads them differently by stage**: Draft and Evolution read signs first; Improve and Debug inspect the map more heavily; every recommendation must still open its receipts and warnings.
+- **RunForest 是完整探险地图**：保存 run、节点、父子变化、成功、失败、metric、代码和 local-best 路径。
+- **Transition 是脚印**：说明从父节点到子节点具体改了什么，以及结果变好、变差还是崩溃。
+- **SOP 是路牌**：概括一类方法或修复，但路牌本身不是成功证据。
+- **Evidence 是录像和收据**：代码 hash、metric、错误、泄漏审计和执行状态。
+- **Taxonomy 是路牌分区**：明确哪些是整体路线、哪些是模型细节、哪些只是故障修复。
 
-## Current System: What Exists
+## 为什么要做这次升级
 
-The current `run_forest_agentic` path builds a heterogeneous graph containing `Run`, `RunNode`, `Transition`, `SOP`, `Evidence`, and `FailurePattern` records. A `distills_to` edge connects a Transition to an attached SOP. Runtime retrieval starts from RunForest/tree candidates and then carries attached SOPs into the returned pack.
+旧 Stage Hybrid 在第三个 Draft 中实际选过：
 
-The three initial draft roles already have distinct contracts:
+- `sg_0227`：Transformer mean pooling。
+- `sg_0069`：正确数据路径。
+- `sg_0115`：ModernBERT dropout API 配置。
 
-| Role | Contract |
-|---|---|
-| `coldstart_baseline` | Use the original third-party cold-start template; inject no SOP or RunForest memory. |
-| `memory_reproduction` | Perform exact replay or create a blocked repair seed; bypass ordinary/hybrid retrieval. |
-| `novel_exploration` | Receive ordinary external memory and, after this plan is implemented, stage-aware hybrid memory. |
+这些建议本身不一定错误，但它们回答的是“某个部件怎么写”或“报错怎么修”，没有回答 Draft 最重要的问题：**整体采用什么模型训练方案**。
 
-Additional initial drafts default to `novel_exploration`. Every child inherits its actual parent role.
+问题根因不是简单的 SOP 权重 0.70 太高，而是旧检索没有方法层级门禁。一个路径修复 SOP 只要词面匹配，就可能和完整 DeBERTa、XGBoost、Transformer ensemble 路线争夺同一个前三名位置。
 
-For replay, a clean exact target may execute the stored code after provenance/hash checks. A known-problem source becomes `blocked_exact_source_repair_seed`: the source itself is not executed or ranked. A `mandatory_audit_repair` child inherits the frozen preservation contract, may change only leakage/evaluation protocol, and must pass a fresh leakage and preservation audit before GPU execution. Repair attempts remain FIFO, deduplicated, and limited to two.
+## 三角色现在如何分工
 
-## Current Geometry: What It Does Not Prove
+| 顺序 | 角色 | 记忆行为 |
+|---|---|---|
+| 1 | `coldstart_baseline` | 只使用第三方原版 cold-start 第一个适用模型；不接收 RunForest L1/L2。 |
+| 2 | `memory_reproduction` | 精确读取 replay 源代码；有泄漏风险时只作为 blocked repair seed；不接收普通策略检索。 |
+| 3 | `novel_exploration` | 执行 L1 方法路线检索、clean Tree 展开、策略选择和 model-design-time L2 检索。 |
 
-RunForest coordinates are deterministic, not learned. The builder derives radius from depth and angle from leaf-span allocation. There is no embedding loss, gradient, or training procedure. Deep nodes can saturate near the ball boundary, and single-child chains or equivalent spans can produce duplicate or nearly duplicate coordinates.
+启用角色策略时：
 
-The current offline evaluator often queries with a node's stored coordinate. Runtime does not possess that oracle coordinate: it constructs a pseudo-anchor from text direction plus heuristic radius/band prediction. This train/serve skew means an offline distance result does not directly prove the same mechanism helps an online Agent.
+- `initial_drafts = 3`。
+- `num_drafts = 3`。
+- 根节点只能生成以上三个 Draft。
+- 多余 GPU worker 等待或扩展已经完成的节点，不能再创建第四个 Novel 根节点。
+- baseline/replay 子节点继续继承各自隔离规则。
 
-Therefore the current evidence can support only narrow statements about a deterministic tree layout and selected structural lookup tasks. It does not yet prove a learned hyperbolic embedding, general retrieval superiority, or downstream online improvement.
-
-## Proposed Opt-In Mode
-
-Add `run_forest_stage_hybrid` as an explicit mode. Existing `run_forest_agentic` behavior must remain unchanged. Only `novel_exploration` uses the hybrid path; baseline and replay continue to bypass it.
-
-### Stage Routes And Quotas
-
-The quota tuple is always **SOP candidates / selected gateways / independent Tree candidates**.
-
-| Stage | Route | Quota | Rationale |
-|---|---|---:|---|
-| Draft | SOP-first | `6/3/2` | Begin with broad methods instead of copying one old path. |
-| Improve | Tree-heavy | `4/2/6` | Prefer real metric-improving lineage and inspect its SOP explanation. |
-| Debug | Tree-first | `2/1/8` | Search similar failures, fixes, and failed siblings first. |
-| Evolution | SOP-first | `6/3/3` | Prefer reusable principles across branches/tasks. |
-| Fusion | Balanced | `4/2/4` | Combine method-level and execution-level evidence. |
-
-These quotas and fusion weights are explicit heuristics. They are not learned and must be evaluated rather than described as optimal.
-
-## SOP Gateway Flow
+## Novel Draft 的真实检索顺序
 
 ```mermaid
-flowchart LR
-    Q["Natural-language stage query"] --> S["Direct SOP ranking"]
-    S --> G["Select eligible gateway SOPs"]
-    G --> T["Reverse-expand distills_to to Transitions"]
-    T --> X["Expand execution lineage and evidence"]
-    Q --> R["Independent Tree retrieval"]
-    X --> F["Weighted RRF over common execution IDs"]
-    R --> F
-    F --> P["Prompt pack and adoption trace"]
+flowchart TD
+    Q["任务画像：模态、数据量、metric、GPU/CPU/RAM、checkpoint"]
+    Q --> L1["L1 Strategy Retriever：只允许整体方法 SOP"]
+    L1 --> X["排除 baseline 与 replay method_family"]
+    X --> D["按 method_family 去重"]
+    D --> R["选择 3 条不同整体路线"]
+    R --> T["每条路线展开 1 个最佳 clean 成功 Tree 节点"]
+    T --> A["Strategy Agent 选择 1 个 primary route"]
+    A --> P["data_processing：只看到冻结后的 L1 路线"]
+    P --> M["进入 model_design 时才检索 L2 tactic"]
+    M --> E["training_evaluation 与 merge 继承冻结 L1/L2"]
 ```
 
-1. Rank SOP cards directly using semantic text plus structured conditions, failures, stage, and evidence fields.
-2. A formal gateway is a selected SOP with at least one code-audited clean supporting Transition/RunNode.
-3. Reverse the real `Transition -> SOP` `distills_to` relation.
-4. Expand supporting Transitions into parent, child, ancestors, local-best lineage, failed siblings, existing Evidence, and existing FailurePattern records.
-5. Independently retrieve Tree execution candidates using the current RunForest logic.
-6. Fuse the SOP-derived execution ranking and Tree-derived execution ranking over common execution IDs with weighted RRF (`k=60`). SOP card IDs are not fused directly with RunNode IDs.
+重要边界：这套 L1/L2 流程只属于第三个 `novel_exploration` 角色。它不是全局 Prompt，也不会进入 baseline 或 replay。
 
-When agentic gateway selection is enabled, exactly one structured LLM call chooses from eligible IDs and records reasons/goals. Returned IDs are validated. Invalid output, tool failure, or disabled agentic mode uses a transparent deterministic fallback.
+## SOP Taxonomy
 
-## Safety And Candidate Classes
+当前 `hyper_graph.json` 中 281 条 SOP 已全部分类：
 
-`leak_verified: true` is not sufficient by itself. Positive gateway support requires code-audited provenance and clean static/post-execution leakage disposition. Blocked, quarantined, or protocol-biased sources may appear only in `risk_warnings` or repair evidence, never as positive recommendations.
+| 层级 | 数量 | 用途 |
+|---|---:|---|
+| `L1_strategy` | 28 | 完整模型路线、主要模型家族、整体 ensemble 或端到端 pipeline。 |
+| `L2_tactic` | 101 | pooling、loss、optimizer、feature、CV、训练协议等实现细节。 |
+| `L3_repair` | 152 | API、路径、shape、OOM、代码顺序、泄漏修复等。 |
 
-The three candidate classes are:
+每条 SOP 都有：
 
-- `sop_transition_matches`: execution candidates reached through an eligible SOP gateway.
-- `sop_only_candidates`: SOP cards without eligible execution support; useful only as unverified method references.
-- `tree_only_candidates`: clean execution candidates reached only through independent Tree retrieval.
+- `abstraction_level`
+- `sop_kind`
+- `method_family`
+- `task_families`
+- `decision_stages`
+- `compute_profile`
 
-## Pack And Trace Contract
+分类由确定性规则和显式 override 生成，运行时不让 LLM 临时猜。28 条 L1 全部列在 `reviewed_l1_ids` 人工复核清单中；规则变化导致 L1 集合与清单不一致时会直接失败。taxonomy 保存源图 SHA；缺失 SOP、非法字段、覆盖率不足或源图 hash 变化都会在 preflight fail closed。
 
-The new schema is `stage_hybrid_memory_pack_v1` with these required fields:
+已人工钉死的关键例子：
 
-- `stage_route`
-- `direct_sop_candidates`
-- `selected_sop_gateways`
-- `gateway_transitions`
-- `tree_candidates`
-- `sop_transition_matches`
-- `sop_only_candidates`
-- `tree_only_candidates`
-- `evidence_refs`
-- `failure_patterns`
-- `risk_warnings`
-- `navigation_trace`
+- `sg_0089`、`sg_0221`、`sg_0164` 是 L1。
+- `sg_0227` 是 L2，只有路线选定后才能出现。
+- `sg_0069`、`sg_0115` 是 L3，Draft 方法选择时禁止出现。
+- `sg_0108`、`sg_0202` 属于 replay 的 `deberta_xgb_lr_ensemble`，会被 Novel L1 排除。
 
-Each navigation item records:
+## L1 如何选三条路线
 
-- `retrieval_channel`
-- `candidate_class`
-- `gateway_sop_id`
-- `supporting_transition_ids`
-- `selection_reason`
-- `selection_state`: `candidate`, `selected`, `expanded`, or `injected`
+硬门禁：
 
-Final adoption outcomes are separate from retrieval lifecycle state:
+1. 必须是 `L1_strategy + model_strategy + draft`。
+2. `method_family` 不能等于 cold-start baseline 或 replay family。
+3. 必须存在同任务的 clean、执行成功、metric 有效、rank-eligible Tree 节点。
+4. Transition/RunNode 不能是 buggy、quarantined、protocol-biased 或 metric 缺失。
+5. 三条路线必须属于三个不同 method family。
 
+固定评分：
+
+| 项目 | 权重 |
+|---|---:|
+| 任务匹配 | 0.30 |
+| 语义匹配 | 0.20 |
+| clean 成功证据 | 0.25 |
+| 任务内 improvement percentile rank | 0.15 |
+| 算力匹配 | 0.10 |
+
+原始 metric 只作为证据展示，不进入跨任务评分。0.15 的提升项使用同一任务候选之间的 percentile rank，不直接比较 log loss、AUC、RMSE 的数值尺度。少于三个合法 family 时返回 `insufficient_strategy_coverage`，不能用细节 SOP 补齐名额。
+
+## L2 如何工作
+
+L2 只在 `model_design` 即将开始时调用一次：
+
+- `data_processing` 只收到选定的 L1 路线和任务画像。
+- `model_design` 收到最多四条 family-compatible 的 architecture、feature、loss、optimizer 或训练 tactic。
+- 模型专属 L2 会标记亲缘关系，例如 `deberta_family`、`roberta_family`；不能把 DistilRoBERTa 细节塞进 DeBERTa 路线。
+- 真正通用的 focal loss、mean pooling 等可以标为 `general`。
+- `training_evaluation` 和 merge 只能继承这份冻结决策，不进行第三次检索。
+- Improve 继续 Tree-heavy `0.40/0.60`，但围绕 inherited family。
+- Debug 继续 `0.25/0.75`，只看 L3 故障与修复。
+
+## 当前 smoke 中实际拿到的方案
+
+Spooky no-GPU smoke 中，排除 `modernbert_finetune` baseline 和 `deberta_xgb_lr_ensemble` replay 后，L1 返回：
+
+1. `sg_0221`：`deberta_multisample_focal_cv`，clean evidence metric `0.405297`。
+2. `sg_0213`：`deberta_finetune`，clean evidence metric `0.296175`。
+3. `sg_0118`：`frozen_transformer_tree`，clean evidence metric `0.454066`。
+
+确定性 smoke 选择第一条 `deberta_multisample_focal_cv` 路线后，L2 返回 DeBERTa-compatible 或通用细节：`sg_0225`、`sg_0087`、`sg_0227` 和 `sg_0114`。这说明 mean pooling 仍然可用，但它已从“整体路线候选”降回正确的“路线内实现细节”。
+
+## 审计、执行和 adoption
+
+每个 Novel 节点保存：任务画像、三条候选路线、排除 family、最终策略、L2 refs、Tree evidence 和 navigation trace。
+
+adoption 状态区分：
+
+- `strategy_candidate_inspection`
+- `strategy_prompt_injection`
+- `tree_evidence_expansion`
+- `tactic_prompt_injection`
 - `fully_adopted`
 - `partially_adopted`
-- `adopted_with_constraints`
 - `rejected_after_inspection`
 - `not_adopted`
 
-Prompts must distinguish candidates, verified evidence, and risk warnings. A weak SOP-only reference must never be worded as a proven successful recipe.
+代码生成后会检查实际组件是否符合 selected method family。缺少关键模型/ensemble 成员时可以继续执行以保留诊断证据，但不能进入 certified ranking，也不能标成完整采纳。
 
-## Held-Out Evaluation
+泄漏与 repair 门禁：
 
-Build natural-language queries from real journal contexts and group splits by run ID so variants from one run never cross dev/test. Test these concurrent controls:
+- pre-execution audit 只有 `status=clean` 才允许 GPU 执行。
+- `protocol_biased` 即使不是原来的 hard block，也会在执行前被拦截。
+- mandatory repair 必须同时通过 leakage 和 preservation audit。
+- blocked replay seed 永不执行、永不排名。
+- repair FIFO 去重、最多两轮，原模型 preservation contract 不能逐轮缩水。
 
-1. No memory.
-2. SOP-only.
-3. Tree-only.
-4. Naive SOP+Tree concatenation.
-5. Stage-aware hybrid.
-6. Flat-Twin hybrid: same graph, SOPs, coordinates, navigator, and scorer; only Poincare distance becomes Euclidean distance.
-7. Independently built Euclidean memory with its own flat coordinates.
+## 当前离线证据
 
-Core metrics:
+原 240-query、21-run 的执行检索结果：
 
-- Gateway Recall@K and MRR.
-- Supporting-Transition Recall@K.
-- Local-best and debug-path recall.
-- Evidence precision.
-- Blocked exposure and positive-adoption rate.
-- Retrieval latency and token cost.
-- Adoption precision.
-- Downstream task metric and convergence speed.
-- NDCG as a supplementary ranking metric.
+| 系统 | Execution MRR |
+|---|---:|
+| Tree-only | 0.3741 |
+| Flat-Twin Hybrid | 0.3709 |
+| Stage Hybrid | 0.3670 |
+| Independent Euclidean | 0.3380 |
+| Naive Concat | 0.1151 |
+| SOP-only | 0.0500 |
 
-### Claim Gates
+因此旧结论仍然是：Stage Hybrid 没有打赢 Tree-only，Poincare 没有打赢 Flat-Twin。
 
-A stage-aware retrieval claim requires all of the following:
+新的三角色 route benchmark 目前只有 2 个 held-out test query：
 
-- Hybrid is at least as good as the best single channel for the relevant stage.
-- Paired bootstrap gives `p < 0.05` for the claimed improvement.
-- Blocked positive adoption is zero.
-- Evidence/leakage precision does not decline.
-- Concurrent online controls show a downstream win.
+| Novel 检索 | Strategy Precision@3 | Distinct families@3 | Detail intrusion@3 | Clean expansion@3 | Gate pass |
+|---|---:|---:|---:|---:|---:|
+| Tree-only | 0.3333 | 3.0 | 0.6667 | 1.0000 | 0.0 |
+| 旧 Stage Hybrid | 0.3333 | 3.0 | 0.6667 | 1.0000 | 0.0 |
+| Layered Strategy | 1.0000 | 3.0 | 0.0000 | 1.0000 | 1.0 |
 
-A hyperbolic-geometry claim additionally requires beating both Flat-Twin and independently built Euclidean memory. If semantic improvements raise all systems but Poincare does not beat those controls, the valid conclusion is better representation, not proven hyperbolic benefit.
+这只能证明新门禁在当前小样本中成功把“方法路线”和“实现细节”分开。测试集只有 2 条，没有同期在线训练对照，所以 `claim_allowed=false`。
 
-## Novelty Position
+## 双曲几何仍然不能怎么说
 
-Individual ingredients are not novel:
+- RunForest 坐标是按深度和叶子跨度确定性布局，不是通过 loss/gradient 学出的 embedding。
+- 深层节点存在半径饱和，单孩子链可能产生重复或近重复坐标。
+- offline evaluator 可使用节点自身坐标，runtime 只能从文本和规则构造 pseudo-anchor，存在 train/serve skew。
+- 目前不能声称 learned hyperbolic embedding、Poincare 普遍优于 Euclidean、或双曲距离提升下游训练。
+- 只有在同期 online control 中胜过 Tree-only、Flat-Twin 和独立 Euclidean，才允许升级 geometry claim。
 
-- [Poincare Embeddings](https://arxiv.org/abs/1705.08039)
-- [HyperbolicRAG](https://arxiv.org/abs/2511.18808)
-- [HyRAG](https://arxiv.org/abs/2606.03307)
-- [MemORAI](https://aclanthology.org/2026.findings-acl.1408/)
-- [GAM](https://aclanthology.org/2026.acl-long.1600/)
-- [A-MEM](https://arxiv.org/abs/2502.12110)
-- [HippoRAG](https://arxiv.org/abs/2405.14831)
-- [PRAXIS](https://openreview.net/forum?id=MKG4BaSieN)
-- [H-EPM](https://openreview.net/forum?id=PJ0GpmFYrR)
-- [Memp](https://openreview.net/forum?id=aaij11qBCl)
-- [Voyager](https://arxiv.org/abs/2305.16291)
-- [Reflexion](https://arxiv.org/abs/2303.11366)
+## 已验证内容
 
-The strongest contribution candidate is the combination of:
+- Taxonomy：281/281，覆盖率 100%。
+- 分类数量：L1 28、L2 101、L3 152；28 条 L1 全部通过显式人工复核清单门禁。
+- `pytest -q`：112 passed。
+- no-GPU preflight：structured config、cold-start SHA、clean provenance、legacy routes、layered three-role、held-out benchmark 和 claim gate 七项通过。
+- R20 manifest YAML 可解析，资源仍是 7 A40、8 CPU、64Gi、默认 priority。
+- R20 正在运行的旧进程不会被这些提交热更新；checkpoint 保存在 `5cbeb562`。
 
-1. Stage-conditioned heterogeneous memory routing.
-2. SOP gateways into provenance-bearing execution lineage.
-3. Audit-aware exact replay and leakage-only repair with model preservation.
+## 仍未解决的限制
 
-This is a contribution hypothesis until the held-out and online gates pass.
+- replay manifest 当前只有 Spooky 的 audited target；其他任务会因缺少 replay family/target 而 fail closed，不能假装三角色完整运行。
+- 新 route benchmark 的 test 只有 2 条，远低于 claim 所需数量。
+- 尚未运行同 Job 的 Tree-only、旧 Hybrid、Layered 三臂在线训练对照。
+- Strategy Agent 的选择质量仍需从实际生成代码、adoption 和最终 metric 判断。
+- 当前 deterministic taxonomy 需要在新增 SOP 后重新生成和复核。
 
-## Safe And Unsupported Statements
+## 下一次运行先检查什么
 
-Safe current statements:
+1. 根节点是否严格只有 baseline、replay、novel 三个角色。
+2. Novel L1 是否恰好返回三个不同 method family。
+3. 是否完全排除了 baseline/replay family。
+4. 每条路线是否有 clean、metric 有效、rank-eligible Tree evidence。
+5. `sg_0069/sg_0115` 是否没有进入 L1。
+6. L2 是否只在 `model_design` 前触发一次。
+7. L2 是否与 primary family 兼容，是否出现模型家族偷换。
+8. 代码实际组件是否通过 strategy alignment。
+9. protocol-biased/blocked repair 是否在 GPU 前被拦截。
+10. 多余 worker 是否等待，而不是生成第四个 Draft 或空转 aggregation。
+11. adoption 是否区分候选、选中、Tree 展开、L2、部分采纳和拒绝。
+12. 最终 metric 是否来自 clean audit，并与同期 Tree-only/no-memory 对照比较。
 
-- The graph stores execution lineage, distilled SOP attachments, evidence, and failure records.
-- Coordinates are deterministic closed-form layout coordinates, not learned embeddings.
-- The system has explicit baseline, reproduction, and exploration roles.
-- Replay/leakage/preservation gates exist, while provenance certification still requires stronger runtime evidence.
+## 论文 claim 状态
 
-Unsupported until experiments pass:
+当前允许说：系统实现了三角色隔离、分层 SOP taxonomy、Novel-only L1/L2 检索、clean Tree evidence 展开、泄漏/preservation 执行门禁和可审计 adoption trace。
 
-- Stage-aware hybrid retrieval improves downstream task performance.
-- RRF is better than naive concatenation.
-- Tree-first Debug or SOP-first Draft is optimal.
-- Poincare distance is better than Flat-Twin or independent Euclidean memory.
-- The memory system prevents all leakage or guarantees clean reuse.
-
-## Implementation And Audit Checklist
-
-### Core Routing
-
-- [ ] Add opt-in `run_forest_stage_hybrid`; preserve old mode constructor and output behavior.
-- [ ] Enforce exact stage quotas and explicit heuristic weights.
-- [ ] Preserve role order, extra-draft default, child inheritance, and baseline/replay bypass.
-- [ ] Build the reverse `distills_to` SOP-to-Transition index from the real graph schema.
-- [ ] Implement field-aware SOP ranking and independent Tree retrieval.
-- [ ] Implement one-call gateway selection, ID validation, and deterministic fallback.
-- [ ] Expand lineage/evidence conservatively; never invent missing records.
-- [ ] Fuse common execution IDs with weighted RRF (`k=60`).
-- [ ] Keep blocked/quarantined/protocol-biased sources warning-only.
-
-### Prompt And Adoption
-
-- [ ] Produce all `stage_hybrid_memory_pack_v1` fields.
-- [ ] Record structured candidate lifecycle trace.
-- [ ] Pass role contract and candidate/evidence/risk wording through Draft, Improve, Debug, Evolution, and Fusion prompts.
-- [ ] Record final adoption outcomes without labeling partial use as exact replay.
-
-### Evaluation
-
-- [ ] Build run-grouped held-out natural-language benchmark.
-- [ ] Implement all seven controls and stage-specific metrics.
-- [ ] Implement paired-bootstrap gates and geometry-specific controls.
-- [ ] Generate a readiness report that allows or rejects each claim explicitly.
-
-### Non-Regression And Preflight
-
-- [ ] Test exact role order and routing/bypass behavior.
-- [ ] Test real `distills_to` reverse expansion.
-- [ ] Test gateway eligibility, one-call selection, invalid-ID fallback, and zero-eligible fail-closed behavior.
-- [ ] Test blocked/quarantine/protocol warning-only behavior.
-- [ ] Test common-ID RRF ordering and tie determinism.
-- [ ] Test pack classes, trace fields, prompt wording, and adoption outcomes.
-- [ ] Re-run exact replay, leakage repair, preservation contract, FIFO deduplication, and max-two-attempt tests.
-- [ ] Run `py_compile`, focused unit tests, the RunForest suite, and a no-GPU preflight smoke.
-- [ ] Run concurrent online controls before making a downstream or geometry claim.
-
-The implementation is complete only when every applicable checkbox has direct code/test/report evidence. A passing narrow unit test cannot substitute for a missing held-out or online result.
+当前不允许说：Layered Hybrid 已提升下游 metric、Stage Hybrid 胜过 Tree-only、Poincare 胜过 Flat-Twin、或该系统已证明双曲几何优势。

@@ -572,11 +572,20 @@ def rank_eligible(agent: Any, node: Any) -> bool:
         return False
     if audit.get("code_sha256") != code_sha256(getattr(node, "code", "")):
         return False
-    return bool(
+    leakage_clean = bool(
         audit.get("status") == "clean"
         and audit.get("metric_disposition") == "accept"
         and audit.get("paper_grade_eligible") is True
     )
+    if not leakage_clean:
+        return False
+    if (
+        getattr(node, "draft_role", None) == "novel_exploration"
+        and getattr(node, "selected_strategy", None)
+    ):
+        alignment = getattr(node, "strategy_alignment", None) or {}
+        return alignment.get("status") == "verified" and alignment.get("rank_eligible") is True
+    return True
 
 
 def failure_pattern_audit(code: str, patterns: Iterable[dict[str, Any]]) -> dict[str, Any]:

@@ -1,0 +1,389 @@
+{
+  "schema": "layered_novel_strategy_evaluation_v1",
+  "split": "test",
+  "query_count": 2,
+  "held_out_run_ids": [
+    "20260509_185008",
+    "20260510_095558"
+  ],
+  "role_protocol": {
+    "fixed_roles": [
+      "coldstart_baseline",
+      "memory_reproduction"
+    ],
+    "changed_role": "novel_exploration",
+    "conditions": [
+      "tree_only",
+      "stage_hybrid",
+      "layered_strategy"
+    ],
+    "excluded_method_families": [
+      "modernbert_finetune",
+      "deberta_xgb_lr_ensemble"
+    ]
+  },
+  "controls": {
+    "tree_only": {
+      "query_count": 2,
+      "strategy_precision_at_3": 0.3333333333333333,
+      "mean_distinct_method_families_at_3": 3.0,
+      "detail_intrusion_at_3": 0.6666666666666666,
+      "clean_expansion_precision_at_3": 1.0,
+      "excluded_family_violation_count": 2,
+      "route_gate_pass_rate": 0.0,
+      "error_count": 0
+    },
+    "stage_hybrid": {
+      "query_count": 2,
+      "strategy_precision_at_3": 0.3333333333333333,
+      "mean_distinct_method_families_at_3": 3.0,
+      "detail_intrusion_at_3": 0.6666666666666666,
+      "clean_expansion_precision_at_3": 1.0,
+      "excluded_family_violation_count": 0,
+      "route_gate_pass_rate": 0.0,
+      "error_count": 0
+    },
+    "layered_strategy": {
+      "query_count": 2,
+      "strategy_precision_at_3": 1.0,
+      "mean_distinct_method_families_at_3": 3.0,
+      "detail_intrusion_at_3": 0.0,
+      "clean_expansion_precision_at_3": 1.0,
+      "excluded_family_violation_count": 0,
+      "route_gate_pass_rate": 1.0,
+      "error_count": 0
+    }
+  },
+  "per_query": {
+    "tree_only": [
+      {
+        "query_id": "three-role-draft::d46c5740ac691eaf",
+        "run_id": "20260509_185008",
+        "condition": "tree_only",
+        "schemes": [
+          {
+            "sop_id": "sop::sg_0183",
+            "title": "Use DistilRoBERTa with 5-fold cross-validation and cosine warmup scheduler for text classification",
+            "action": "Use DistilRoBERTa (distilroberta-base) with a classification head. Train with 5-fold stratified cross-validation, AdamW optimizer (learning_rate=2e-5), cosine schedule with warmup (warmup_steps=500), gradient accumulation (2 steps), mixed precision via Accelerator, early stopping (patience=3) based on validation log loss. Tokenize with max_length=256.",
+            "abstraction_level": "L2_tactic",
+            "sop_kind": "validation_protocol",
+            "method_family": "roberta_family",
+            "evidence_node_id": "run::20260514_023457_spooky-author-identification::node::aca1e8780ed54ec6aaa1f97e16ee050d",
+            "evidence_run_id": "20260514_023457_spooky-author-identification",
+            "evidence_metric": 0.4380950529607263,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0182",
+            "title": "Use XGBoost with handcrafted stylometric features and Sentence-BERT embeddings for text classification",
+            "action": "Combine 32 handcrafted stylometric features (text statistics, punctuation ratios, POS-like patterns, emotional tone indicators) with 384-dimensional Sentence-BERT embeddings (all-MiniLM-L6-v2). Scale features with StandardScaler. Train XGBoost with multi:softprob objective, max_depth=6, learning_rate=0.1, n_estimators=500, subsample=0.8, colsample_bytree=0.8, early_stopping_rounds=50, using 5-fold stratified cross-validation.",
+            "abstraction_level": "L3_repair",
+            "sop_kind": "infrastructure",
+            "method_family": "bert_family",
+            "evidence_node_id": "run::20260514_023457_spooky-author-identification::node::aca1e8780ed54ec6aaa1f97e16ee050d",
+            "evidence_run_id": "20260514_023457_spooky-author-identification",
+            "evidence_metric": 0.4380950529607263,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0088",
+            "title": "Use ModernBERT-large with proper training regularization",
+            "action": "Fine-tune ModernBERT-large with AdamW (lr=2e-5, weight_decay=0.01), cosine annealing with warm restarts, gradient accumulation (2 steps), gradient clipping (max_norm=1.0), mixed precision, and early stopping (patience=3). Use stratified 85/15 split.",
+            "abstraction_level": "L1_strategy",
+            "sop_kind": "model_strategy",
+            "method_family": "modernbert_finetune",
+            "evidence_node_id": "run::20260509_042918_spooky-author-identification::node::fb97ad8f78734183822b10c9724eae5d",
+            "evidence_run_id": "20260509_042918_spooky-author-identification",
+            "evidence_metric": 0.3808756215966935,
+            "clean_rank_eligible_evidence": true
+          }
+        ],
+        "quality": {
+          "route_count": 3,
+          "strategy_precision_at_3": 0.3333333333333333,
+          "distinct_method_families_at_3": 3,
+          "detail_intrusion_at_3": 0.6666666666666666,
+          "clean_expansion_precision_at_3": 1.0,
+          "excluded_family_violations": [
+            "modernbert_finetune"
+          ],
+          "passes_route_gate": false
+        },
+        "error": null
+      },
+      {
+        "query_id": "three-role-draft::b5519eb09200d292",
+        "run_id": "20260510_095558",
+        "condition": "tree_only",
+        "schemes": [
+          {
+            "sop_id": "sop::sg_0183",
+            "title": "Use DistilRoBERTa with 5-fold cross-validation and cosine warmup scheduler for text classification",
+            "action": "Use DistilRoBERTa (distilroberta-base) with a classification head. Train with 5-fold stratified cross-validation, AdamW optimizer (learning_rate=2e-5), cosine schedule with warmup (warmup_steps=500), gradient accumulation (2 steps), mixed precision via Accelerator, early stopping (patience=3) based on validation log loss. Tokenize with max_length=256.",
+            "abstraction_level": "L2_tactic",
+            "sop_kind": "validation_protocol",
+            "method_family": "roberta_family",
+            "evidence_node_id": "run::20260514_023457_spooky-author-identification::node::aca1e8780ed54ec6aaa1f97e16ee050d",
+            "evidence_run_id": "20260514_023457_spooky-author-identification",
+            "evidence_metric": 0.4380950529607263,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0182",
+            "title": "Use XGBoost with handcrafted stylometric features and Sentence-BERT embeddings for text classification",
+            "action": "Combine 32 handcrafted stylometric features (text statistics, punctuation ratios, POS-like patterns, emotional tone indicators) with 384-dimensional Sentence-BERT embeddings (all-MiniLM-L6-v2). Scale features with StandardScaler. Train XGBoost with multi:softprob objective, max_depth=6, learning_rate=0.1, n_estimators=500, subsample=0.8, colsample_bytree=0.8, early_stopping_rounds=50, using 5-fold stratified cross-validation.",
+            "abstraction_level": "L3_repair",
+            "sop_kind": "infrastructure",
+            "method_family": "bert_family",
+            "evidence_node_id": "run::20260514_023457_spooky-author-identification::node::aca1e8780ed54ec6aaa1f97e16ee050d",
+            "evidence_run_id": "20260514_023457_spooky-author-identification",
+            "evidence_metric": 0.4380950529607263,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0088",
+            "title": "Use ModernBERT-large with proper training regularization",
+            "action": "Fine-tune ModernBERT-large with AdamW (lr=2e-5, weight_decay=0.01), cosine annealing with warm restarts, gradient accumulation (2 steps), gradient clipping (max_norm=1.0), mixed precision, and early stopping (patience=3). Use stratified 85/15 split.",
+            "abstraction_level": "L1_strategy",
+            "sop_kind": "model_strategy",
+            "method_family": "modernbert_finetune",
+            "evidence_node_id": "run::20260509_042918_spooky-author-identification::node::fb97ad8f78734183822b10c9724eae5d",
+            "evidence_run_id": "20260509_042918_spooky-author-identification",
+            "evidence_metric": 0.3808756215966935,
+            "clean_rank_eligible_evidence": true
+          }
+        ],
+        "quality": {
+          "route_count": 3,
+          "strategy_precision_at_3": 0.3333333333333333,
+          "distinct_method_families_at_3": 3,
+          "detail_intrusion_at_3": 0.6666666666666666,
+          "clean_expansion_precision_at_3": 1.0,
+          "excluded_family_violations": [
+            "modernbert_finetune"
+          ],
+          "passes_route_gate": false
+        },
+        "error": null
+      }
+    ],
+    "stage_hybrid": [
+      {
+        "query_id": "three-role-draft::d46c5740ac691eaf",
+        "run_id": "20260509_185008",
+        "condition": "stage_hybrid",
+        "schemes": [
+          {
+            "sop_id": "sop::sg_0196",
+            "title": "Use TF-IDF features with n-grams up to 3",
+            "action": "Extract character n-grams (2-5) and word n-grams (1-3) using TF-IDF vectorization, limiting to 500-1000 features. Fit the vectorizer on the training fold only to prevent data leakage.",
+            "abstraction_level": "L3_repair",
+            "sop_kind": "debug_fix",
+            "method_family": "general",
+            "evidence_node_id": "run::20260514_052334_spooky-author-identification::node::5016403dde584e198e173685e5f716c8",
+            "evidence_run_id": "20260514_052334_spooky-author-identification",
+            "evidence_metric": 0.40750749852913043,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0041",
+            "title": "Use SigLIP2 vision transformer with two-stage fine-tuning for leaf classification",
+            "action": "Use SigLIP2 (google/siglip2-so400m-patch16-256) as image feature extractor. In Stage 1, freeze SigLIP2 and train only an MLP classifier head. In Stage 2, fine-tune the last 2 transformer blocks of SigLIP2 along with the head using a lower learning rate. Use differential learning rates, label smoothing, and early stopping.",
+            "abstraction_level": "L1_strategy",
+            "sop_kind": "model_strategy",
+            "method_family": "vision_transformer_finetune",
+            "evidence_node_id": "run::20260701_155016_leaf-classification::node::0879da11389242298b1d0c1f05add652",
+            "evidence_run_id": "20260701_155016_leaf-classification",
+            "evidence_metric": 0.10133425749879976,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0016",
+            "title": "Ensure SigLIP model receives both pixel_values and input_ids for forward pass",
+            "action": "When using a multimodal SigLIP model (vision-language), provide both pixel_values and input_ids to the forward method. For vision-only tasks, use a vision-only backbone (e.g., from timm) or extract image features using the vision encoder separately.",
+            "abstraction_level": "L3_repair",
+            "sop_kind": "debug_fix",
+            "method_family": "vision_transformer_family",
+            "evidence_node_id": "run::20260701_145250_aerial-cactus-identification::node::b46118ffb9ca4e399e92f19e2645c168",
+            "evidence_run_id": "20260701_145250_aerial-cactus-identification",
+            "evidence_metric": 0.9988079524830886,
+            "clean_rank_eligible_evidence": true
+          }
+        ],
+        "quality": {
+          "route_count": 3,
+          "strategy_precision_at_3": 0.3333333333333333,
+          "distinct_method_families_at_3": 3,
+          "detail_intrusion_at_3": 0.6666666666666666,
+          "clean_expansion_precision_at_3": 1.0,
+          "excluded_family_violations": [],
+          "passes_route_gate": false
+        },
+        "error": null
+      },
+      {
+        "query_id": "three-role-draft::b5519eb09200d292",
+        "run_id": "20260510_095558",
+        "condition": "stage_hybrid",
+        "schemes": [
+          {
+            "sop_id": "sop::sg_0196",
+            "title": "Use TF-IDF features with n-grams up to 3",
+            "action": "Extract character n-grams (2-5) and word n-grams (1-3) using TF-IDF vectorization, limiting to 500-1000 features. Fit the vectorizer on the training fold only to prevent data leakage.",
+            "abstraction_level": "L3_repair",
+            "sop_kind": "debug_fix",
+            "method_family": "general",
+            "evidence_node_id": "run::20260514_052334_spooky-author-identification::node::5016403dde584e198e173685e5f716c8",
+            "evidence_run_id": "20260514_052334_spooky-author-identification",
+            "evidence_metric": 0.40750749852913043,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0041",
+            "title": "Use SigLIP2 vision transformer with two-stage fine-tuning for leaf classification",
+            "action": "Use SigLIP2 (google/siglip2-so400m-patch16-256) as image feature extractor. In Stage 1, freeze SigLIP2 and train only an MLP classifier head. In Stage 2, fine-tune the last 2 transformer blocks of SigLIP2 along with the head using a lower learning rate. Use differential learning rates, label smoothing, and early stopping.",
+            "abstraction_level": "L1_strategy",
+            "sop_kind": "model_strategy",
+            "method_family": "vision_transformer_finetune",
+            "evidence_node_id": "run::20260701_155016_leaf-classification::node::0879da11389242298b1d0c1f05add652",
+            "evidence_run_id": "20260701_155016_leaf-classification",
+            "evidence_metric": 0.10133425749879976,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0016",
+            "title": "Ensure SigLIP model receives both pixel_values and input_ids for forward pass",
+            "action": "When using a multimodal SigLIP model (vision-language), provide both pixel_values and input_ids to the forward method. For vision-only tasks, use a vision-only backbone (e.g., from timm) or extract image features using the vision encoder separately.",
+            "abstraction_level": "L3_repair",
+            "sop_kind": "debug_fix",
+            "method_family": "vision_transformer_family",
+            "evidence_node_id": "run::20260701_145250_aerial-cactus-identification::node::b46118ffb9ca4e399e92f19e2645c168",
+            "evidence_run_id": "20260701_145250_aerial-cactus-identification",
+            "evidence_metric": 0.9988079524830886,
+            "clean_rank_eligible_evidence": true
+          }
+        ],
+        "quality": {
+          "route_count": 3,
+          "strategy_precision_at_3": 0.3333333333333333,
+          "distinct_method_families_at_3": 3,
+          "detail_intrusion_at_3": 0.6666666666666666,
+          "clean_expansion_precision_at_3": 1.0,
+          "excluded_family_violations": [],
+          "passes_route_gate": false
+        },
+        "error": null
+      }
+    ],
+    "layered_strategy": [
+      {
+        "query_id": "three-role-draft::d46c5740ac691eaf",
+        "run_id": "20260509_185008",
+        "condition": "layered_strategy",
+        "schemes": [
+          {
+            "sop_id": "sop::sg_0118",
+            "title": "Combine multiple frozen transformer embeddings with XGBoost stacking",
+            "action": "Extract embeddings from several pretrained transformers (e.g., RoBERTa, DeBERTa, ALBERT) using mean pooling, then train an XGBoost classifier on the concatenated embeddings with probability outputs from base models as additional features.",
+            "abstraction_level": "L1_strategy",
+            "sop_kind": "model_strategy",
+            "method_family": "frozen_transformer_tree",
+            "evidence_node_id": "run::20260510_025317_spooky-author-identification::node::d3057f2027d542a79ccf2f956f061b09",
+            "evidence_run_id": "20260510_025317_spooky-author-identification",
+            "evidence_metric": 0.454066,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0213",
+            "title": "Use DeBERTa-v3-large with standard AutoModelForSequenceClassification for strong performance",
+            "action": "Use microsoft/deberta-v3-large with HuggingFace's AutoModelForSequenceClassification, CLS pooling, dropout, and linear classifier, fine-tuned with AdamW, cosine schedule, label smoothing, gradient clipping, and early stopping.",
+            "abstraction_level": "L1_strategy",
+            "sop_kind": "model_strategy",
+            "method_family": "deberta_finetune",
+            "evidence_node_id": "run::20260516_104127_spooky-author-identification::node::cf0ec1a7f20f40c8b47e062fcadc8831",
+            "evidence_run_id": "20260516_104127_spooky-author-identification",
+            "evidence_metric": 0.296175,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0119",
+            "title": "Use weighted ensemble averaging of transformer predictions",
+            "action": "Average the softmax probabilities from multiple fine-tuned transformers (e.g., 0.5 DistilBERT + 0.5 RoBERTa) to produce final predictions; tune weights on validation set.",
+            "abstraction_level": "L1_strategy",
+            "sop_kind": "model_strategy",
+            "method_family": "multi_transformer_ensemble",
+            "evidence_node_id": "run::20260510_025317_spooky-author-identification::node::5d836ea1d06d4a198c24ecc8ac9ee46e",
+            "evidence_run_id": "20260510_025317_spooky-author-identification",
+            "evidence_metric": 0.353015,
+            "clean_rank_eligible_evidence": true
+          }
+        ],
+        "quality": {
+          "route_count": 3,
+          "strategy_precision_at_3": 1.0,
+          "distinct_method_families_at_3": 3,
+          "detail_intrusion_at_3": 0.0,
+          "clean_expansion_precision_at_3": 1.0,
+          "excluded_family_violations": [],
+          "passes_route_gate": true
+        },
+        "error": null
+      },
+      {
+        "query_id": "three-role-draft::b5519eb09200d292",
+        "run_id": "20260510_095558",
+        "condition": "layered_strategy",
+        "schemes": [
+          {
+            "sop_id": "sop::sg_0118",
+            "title": "Combine multiple frozen transformer embeddings with XGBoost stacking",
+            "action": "Extract embeddings from several pretrained transformers (e.g., RoBERTa, DeBERTa, ALBERT) using mean pooling, then train an XGBoost classifier on the concatenated embeddings with probability outputs from base models as additional features.",
+            "abstraction_level": "L1_strategy",
+            "sop_kind": "model_strategy",
+            "method_family": "frozen_transformer_tree",
+            "evidence_node_id": "run::20260510_025317_spooky-author-identification::node::d3057f2027d542a79ccf2f956f061b09",
+            "evidence_run_id": "20260510_025317_spooky-author-identification",
+            "evidence_metric": 0.454066,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0213",
+            "title": "Use DeBERTa-v3-large with standard AutoModelForSequenceClassification for strong performance",
+            "action": "Use microsoft/deberta-v3-large with HuggingFace's AutoModelForSequenceClassification, CLS pooling, dropout, and linear classifier, fine-tuned with AdamW, cosine schedule, label smoothing, gradient clipping, and early stopping.",
+            "abstraction_level": "L1_strategy",
+            "sop_kind": "model_strategy",
+            "method_family": "deberta_finetune",
+            "evidence_node_id": "run::20260516_104127_spooky-author-identification::node::cf0ec1a7f20f40c8b47e062fcadc8831",
+            "evidence_run_id": "20260516_104127_spooky-author-identification",
+            "evidence_metric": 0.296175,
+            "clean_rank_eligible_evidence": true
+          },
+          {
+            "sop_id": "sop::sg_0119",
+            "title": "Use weighted ensemble averaging of transformer predictions",
+            "action": "Average the softmax probabilities from multiple fine-tuned transformers (e.g., 0.5 DistilBERT + 0.5 RoBERTa) to produce final predictions; tune weights on validation set.",
+            "abstraction_level": "L1_strategy",
+            "sop_kind": "model_strategy",
+            "method_family": "multi_transformer_ensemble",
+            "evidence_node_id": "run::20260510_025317_spooky-author-identification::node::5d836ea1d06d4a198c24ecc8ac9ee46e",
+            "evidence_run_id": "20260510_025317_spooky-author-identification",
+            "evidence_metric": 0.353015,
+            "clean_rank_eligible_evidence": true
+          }
+        ],
+        "quality": {
+          "route_count": 3,
+          "strategy_precision_at_3": 1.0,
+          "distinct_method_families_at_3": 3,
+          "detail_intrusion_at_3": 0.0,
+          "clean_expansion_precision_at_3": 1.0,
+          "excluded_family_violations": [],
+          "passes_route_gate": true
+        },
+        "error": null
+      }
+    ]
+  },
+  "claim_allowed": false,
+  "claim_note": "This benchmark exposes actual method routes. Downstream superiority still requires a concurrent online control."
+}

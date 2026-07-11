@@ -88,6 +88,18 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
             node.role_contract = copy.deepcopy(parent_node.role_contract)
         if not node.source_ref_ids:
             node.source_ref_ids = list(parent_node.source_ref_ids)
+        if not node.task_profile:
+            node.task_profile = copy.deepcopy(parent_node.task_profile)
+        if not node.strategy_candidates:
+            node.strategy_candidates = copy.deepcopy(parent_node.strategy_candidates)
+        if not node.selected_strategy:
+            node.selected_strategy = copy.deepcopy(parent_node.selected_strategy)
+        if not node.excluded_method_families:
+            node.excluded_method_families = list(parent_node.excluded_method_families)
+        if not node.l2_tactic_refs:
+            node.l2_tactic_refs = list(parent_node.l2_tactic_refs)
+        if not node.strategy_alignment:
+            node.strategy_alignment = copy.deepcopy(parent_node.strategy_alignment)
         if not node.replay_source:
             node.replay_source = copy.deepcopy(parent_node.replay_source)
         if node.replay_status is None:

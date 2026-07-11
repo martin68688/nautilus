@@ -201,6 +201,10 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         parent_plan=parent_node.plan or "",
         execution_output=parent_node.term_out or "",
         draft_role=getattr(parent_node, "draft_role", None),
+        strategy_context={
+            "selected_strategy": getattr(parent_node, "selected_strategy", {}) or {},
+            "task_profile": getattr(parent_node, "task_profile", {}) or {},
+        },
     )
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text

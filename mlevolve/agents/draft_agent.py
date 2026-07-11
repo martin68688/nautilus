@@ -239,12 +239,39 @@ def run(
             run_memory=prompt.get("Memory", ""),
             data_preview=agent.data_preview or "",
             coldstart=getattr(agent, "coldstart_description", ""),
+            baseline_model=getattr(agent, "coldstart_primary_model_name", ""),
             draft_role=draft_role,
+        )
+    layered_novel = bool(
+        draft_role == "novel_exploration"
+        and str(getattr(getattr(agent, "external_skill_memory", None), "retrieval_control", ""))
+        == "layered_strategy"
+    )
+    strategy_context = {}
+    if layered_novel:
+        strategy_context = agent.external_skill_memory.current_navigation_pack()
+        selected_strategy = strategy_context.get("selected_strategy") or {}
+        if not selected_strategy:
+            raise RuntimeError("Layered Novel Draft retrieval returned no selected strategy")
+        role_contract.update(
+            {
+                "selected_method_family": selected_strategy.get("method_family"),
+                "selected_strategy_sop_id": selected_strategy.get("sop_id"),
+                "strategy_requirement": (
+                    "Implement the selected L1 method family. L2 tactics may refine it, but no step may "
+                    "replace it with the excluded baseline or replay family."
+                ),
+            }
         )
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text
     coldstart_external_text = getattr(agent, "coldstart_external_memory_text", "")
-    if draft_role != "coldstart_baseline" and coldstart_external_text and str(coldstart_external_text).strip():
+    if (
+        draft_role != "coldstart_baseline"
+        and not layered_novel
+        and coldstart_external_text
+        and str(coldstart_external_text).strip()
+    ):
         existing_external = prompt.get("External Skill Memory", "")
         prompt["External Skill Memory"] = (
             f"{coldstart_external_text.strip()}\n\n"
@@ -276,8 +303,9 @@ def run(
     )
     agent.virtual_root.add_expected_child_count()
 
+    generation_metadata = {}
     if agent.use_stepwise_generation:
-        plan, code = stepwise_plan_and_code_query(
+        plan, code, generation_metadata = stepwise_plan_and_code_query(
             agent_instance=agent,
             prompt_base=prompt,
             data_preview=agent.data_preview,
@@ -286,10 +314,19 @@ def run(
                 "memory": prompt.get("Memory", ""),
                 "draft_role": draft_role,
                 "role_contract": role_contract,
+                "strategy_context": strategy_context,
             },
         )
     else:
         plan, code = plan_and_code_query(agent, prompt_complete)
+    l2_ref_ids = list(generation_metadata.get("l2_ref_ids") or [])
+    all_source_refs = list(dict.fromkeys(list(external_skill_ref_ids) + l2_ref_ids))
+    selected_strategy = strategy_context.get("selected_strategy") or {}
+    strategy_alignment = {}
+    if selected_strategy:
+        from agents.memory.stage_aware_hybrid_memory import strategy_alignment_for_code
+
+        strategy_alignment = strategy_alignment_for_code(selected_strategy, code)
     new_node = SearchNode(
         plan=plan,
         code=code,
@@ -298,7 +335,13 @@ def run(
         local_best_node=agent.virtual_root,
         draft_role=draft_role,
         role_contract=role_contract,
-        source_ref_ids=list(external_skill_ref_ids),
+        source_ref_ids=all_source_refs,
+        task_profile=dict(strategy_context.get("task_profile") or {}),
+        strategy_candidates=list(strategy_context.get("strategy_routes") or []),
+        selected_strategy=dict(selected_strategy),
+        excluded_method_families=list(strategy_context.get("excluded_method_families") or []),
+        l2_tactic_refs=l2_ref_ids,
+        strategy_alignment=strategy_alignment,
     )
     register_node(agent, new_node, prompt_complete, new_branch=True)
 
@@ -312,7 +355,43 @@ def run(
             getattr(agent, "coldstart_external_ref_ids", []),
             "coldstart",
         )
-    log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "draft")
+    if layered_novel:
+        route_ids = [item["sop_id"] for item in strategy_context.get("strategy_routes", [])]
+        selected_evidence = selected_strategy.get("best_tree_evidence") or {}
+        log_adoption(
+            new_node,
+            agent,
+            external_skill_source,
+            route_ids,
+            "draft",
+            adoption_mode="strategy_candidate_inspection",
+        )
+        log_adoption(
+            new_node,
+            agent,
+            external_skill_source,
+            [selected_strategy.get("sop_id")],
+            "draft",
+            adoption_mode="strategy_prompt_injection",
+        )
+        log_adoption(
+            new_node,
+            agent,
+            external_skill_source,
+            [selected_evidence.get("transition_id"), selected_evidence.get("node_id")],
+            "draft",
+            adoption_mode="tree_evidence_expansion",
+        )
+        log_adoption(
+            new_node,
+            agent,
+            external_skill_source,
+            l2_ref_ids,
+            "model_design",
+            adoption_mode="tactic_prompt_injection",
+        )
+    else:
+        log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "draft")
 
     logger.info(f"[draft] → node {new_node.id} (branch={new_node.branch_id} role={draft_role})")
     return new_node

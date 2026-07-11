@@ -75,6 +75,7 @@ def run():
     max_workers = interpreter.max_parallel_run
     total_steps = cfg.agent.steps
     initial_draft_count = cfg.agent.initial_drafts
+    strict_draft_roles = bool(getattr(getattr(cfg.agent, "draft_role_policy", None), "enabled", False))
     logger.info(f"🚀 ThreadPool max_workers set to: {max_workers} (matching interpreter capacity)")
     logger.info(f"🎯 Initial draft count: {initial_draft_count} (will be executed sequentially for diversity)")
 
@@ -103,6 +104,10 @@ def run():
 
             except Exception as e:
                 logger.exception(f"❌ Exception during draft {draft_idx + 1} generation: {e}")
+                if strict_draft_roles:
+                    raise RuntimeError(
+                        f"Fixed three-role Draft generation failed at slot {draft_idx}; refusing a partial root set"
+                    ) from e
 
         logger.info(f"✅ Phase 1 complete: {len(pending_draft_nodes)} draft codes generated")
 

@@ -4,13 +4,15 @@ methodology_kb_path: ""
 methodology_dynamic: False
 
 agent:
+  initial_drafts: 3
+  search:
+    num_drafts: 3
   draft_role_policy:
     enabled: True
     roles:
       - coldstart_baseline
       - memory_reproduction
       - novel_exploration
-    extra_role: novel_exploration
     replay_targets_path: "../paper-skills/eval_skill_memory/clean_replay_targets.json"
 
 adoption_tracking:

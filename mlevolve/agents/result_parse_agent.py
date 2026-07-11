@@ -339,6 +339,18 @@ def _persist_leakage_audit(agent, node: SearchNode) -> None:
 
 def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
     """Audit reviewed code before GPU execution. Return True when execution is blocked."""
+    if node.draft_role == "novel_exploration" and node.selected_strategy:
+        from agents.memory.stage_aware_hybrid_memory import strategy_alignment_for_code
+
+        node.strategy_alignment = strategy_alignment_for_code(node.selected_strategy, node.code)
+        if node.strategy_alignment.get("status") != "verified":
+            logger.warning(
+                "Node %s does not fully implement selected method_family=%s; status=%s. "
+                "Execution may continue, but certified ranking is disabled.",
+                node.id,
+                node.strategy_alignment.get("method_family"),
+                node.strategy_alignment.get("status"),
+            )
     if not getattr(agent.acfg, "check_data_leakage", False):
         return False
     audit = leakage_audit.audit_code(node.code)
@@ -393,24 +405,21 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
         if replay_repair_child:
             node.replay_status = "mandatory_audit_repair_clean_pending_execution"
     leakage_audit.persist_audit(agent, node)
-    if not audit.get("hard_block") and not repair_seed_only:
-        if audit.get("status") != "clean":
-            logger.warning(
-                "Node %s preflight leakage audit: status=%s issues=%s",
-                node.id,
-                audit.get("status"),
-                [item.get("issue_code") for item in audit.get("issues", [])],
-            )
+    if audit.get("status") == "clean" and not repair_seed_only:
         return False
 
-    if repair_seed_only:
-        audit["execution_disposition"] = "block"
-        audit["search_disposition"] = "repair_only"
+    audit["execution_disposition"] = "block"
+    audit["search_disposition"] = "repair_only"
+    if not audit.get("hard_block"):
         audit["memory_disposition"] = "negative_only"
-        audit["metric_disposition"] = "reject"
-        audit["rank_eligible"] = False
-        audit["paper_grade_eligible"] = False
-        audit["repair_required"] = True
+    audit["metric_disposition"] = "reject"
+    audit["rank_eligible"] = False
+    audit["paper_grade_eligible"] = False
+    audit["repair_required"] = True
+    audit["pre_execution_gate_reason"] = (
+        "immutable_repair_seed" if repair_seed_only else "audit_status_not_clean"
+    )
+    if repair_seed_only:
         audit["repair_seed_execution_blocked"] = True
 
     audit_text = leakage_audit.format_audit(audit, heading="PRE-EXECUTION LEAKAGE AUDIT")

@@ -1,0 +1,159 @@
+{
+  "schema": "runforest_sop_taxonomy_overrides_v1",
+  "version": "v1",
+  "reviewed_l1_ids": [
+    "sg_0007",
+    "sg_0009",
+    "sg_0011",
+    "sg_0012",
+    "sg_0040",
+    "sg_0041",
+    "sg_0044",
+    "sg_0081",
+    "sg_0088",
+    "sg_0089",
+    "sg_0105",
+    "sg_0108",
+    "sg_0111",
+    "sg_0118",
+    "sg_0119",
+    "sg_0130",
+    "sg_0144",
+    "sg_0164",
+    "sg_0175",
+    "sg_0202",
+    "sg_0207",
+    "sg_0213",
+    "sg_0221",
+    "sg_0242",
+    "sg_0243",
+    "sg_0270",
+    "sg_0279",
+    "sg_0280"
+  ],
+  "entries": {
+    "sg_0007": {
+      "method_family": "convnext_finetune"
+    },
+    "sg_0009": {
+      "method_family": "vision_transformer_finetune"
+    },
+    "sg_0011": {
+      "method_family": "multi_cnn_ensemble"
+    },
+    "sg_0040": {
+      "method_family": "vision_tabular_fusion"
+    },
+    "sg_0041": {
+      "method_family": "vision_transformer_finetune"
+    },
+    "sg_0044": {
+      "method_family": "heterogeneous_multimodal_ensemble"
+    },
+    "sg_0069": {
+      "abstraction_level": "L3_repair",
+      "sop_kind": "infrastructure",
+      "method_family": "general",
+      "task_families": ["general"],
+      "decision_stages": ["debug", "repair"],
+      "compute_profile": "cpu_light"
+    },
+    "sg_0089": {
+      "abstraction_level": "L1_strategy",
+      "sop_kind": "model_strategy",
+      "method_family": "multi_frozen_transformer_xgboost",
+      "task_families": ["text_classification"],
+      "decision_stages": ["draft", "evolution"],
+      "compute_profile": "multi_gpu_preferred"
+    },
+    "sg_0108": {
+      "abstraction_level": "L1_strategy",
+      "sop_kind": "model_strategy",
+      "method_family": "deberta_xgb_lr_ensemble",
+      "task_families": ["text_classification"],
+      "decision_stages": ["draft", "evolution"],
+      "compute_profile": "single_gpu_large"
+    },
+    "sg_0111": {
+      "method_family": "sentence_embedding_mlp"
+    },
+    "sg_0115": {
+      "abstraction_level": "L3_repair",
+      "sop_kind": "infrastructure",
+      "method_family": "general",
+      "task_families": ["text_classification"],
+      "decision_stages": ["debug", "repair"],
+      "compute_profile": "single_gpu_large"
+    },
+    "sg_0164": {
+      "abstraction_level": "L1_strategy",
+      "sop_kind": "model_strategy",
+      "method_family": "transformer_engineered_feature_hybrid",
+      "task_families": ["text_classification"],
+      "decision_stages": ["draft", "evolution"],
+      "compute_profile": "single_gpu_standard"
+    },
+    "sg_0175": {
+      "method_family": "textcnn_stylometry"
+    },
+    "sg_0193": {
+      "abstraction_level": "L2_tactic",
+      "sop_kind": "training_protocol",
+      "method_family": "general",
+      "task_families": ["text_classification"],
+      "decision_stages": ["model_design", "improve"],
+      "compute_profile": "single_gpu_standard"
+    },
+    "sg_0202": {
+      "abstraction_level": "L1_strategy",
+      "sop_kind": "model_strategy",
+      "method_family": "deberta_xgb_lr_ensemble",
+      "task_families": ["text_classification"],
+      "decision_stages": ["draft", "evolution"],
+      "compute_profile": "single_gpu_large"
+    },
+    "sg_0204": {
+      "abstraction_level": "L2_tactic",
+      "sop_kind": "feature",
+      "method_family": "deberta_xgb_lr_ensemble",
+      "task_families": ["text_classification"],
+      "decision_stages": ["model_design", "improve"],
+      "compute_profile": "cpu_light"
+    },
+    "sg_0221": {
+      "abstraction_level": "L1_strategy",
+      "sop_kind": "model_strategy",
+      "method_family": "deberta_multisample_focal_cv",
+      "task_families": ["text_classification"],
+      "decision_stages": ["draft", "evolution"],
+      "compute_profile": "single_gpu_large"
+    },
+    "sg_0227": {
+      "abstraction_level": "L2_tactic",
+      "sop_kind": "feature",
+      "method_family": "general",
+      "task_families": ["text_classification"],
+      "decision_stages": ["model_design", "improve"],
+      "compute_profile": "single_gpu_standard"
+    },
+    "sg_0267": {
+      "abstraction_level": "L2_tactic",
+      "sop_kind": "training_protocol",
+      "method_family": "general",
+      "task_families": ["text_classification"],
+      "decision_stages": ["model_design", "improve"],
+      "compute_profile": "single_gpu_standard"
+    },
+    "sg_0270": {
+      "method_family": "stylometry_boosted_tree"
+    },
+    "sg_0271": {
+      "abstraction_level": "L2_tactic",
+      "sop_kind": "validation_protocol",
+      "method_family": "general",
+      "task_families": ["text_classification"],
+      "decision_stages": ["model_design", "improve"],
+      "compute_profile": "cpu_light"
+    }
+  }
+}

@@ -58,6 +58,13 @@ CONDITIONS = {
         "external_skill_memory.scoring_mode=poincare",
         "external_skill_memory.retrieval_control=stage_hybrid",
     ],
+    "layered_strategy": [
+        "external_skill_memory.enable=True",
+        "external_skill_memory.mode=run_forest_stage_hybrid",
+        "external_skill_memory.source_name=run_forest_stage_hybrid_memory",
+        "external_skill_memory.scoring_mode=poincare",
+        "external_skill_memory.retrieval_control=layered_strategy",
+    ],
     "flat_twin_hybrid": [
         "external_skill_memory.enable=True",
         "external_skill_memory.mode=run_forest_stage_hybrid",
@@ -115,8 +122,8 @@ def main() -> int:
     parser.add_argument("--num-gpus", type=int, default=int(os.environ.get("RUNFOREST_NUM_GPUS", "4")))
     parser.add_argument("--cpu-number", type=int, default=int(os.environ.get("RUNFOREST_CPU_NUMBER", "12")))
     parser.add_argument("--steps", type=int, default=int(os.environ["RUNFOREST_STEPS"]) if os.environ.get("RUNFOREST_STEPS") else None)
-    parser.add_argument("--config-path", default="./config/config_run_forest_agentic.yaml")
-    parser.add_argument("--conditions", default="stage_hybrid")
+    parser.add_argument("--config-path", default="./config/config_run_forest_stage_hybrid.yaml")
+    parser.add_argument("--conditions", default="layered_strategy")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--runs-dir", default=os.environ.get("RUNFOREST_RUNS_DIR", ""))
     args = parser.parse_args()

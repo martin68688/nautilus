@@ -45,6 +45,10 @@ def test_run_forest_artifacts_exist_and_preserve_topology():
     assert edge_kinds["transition_to"] == node_types["Transition"]
     assert report["run_node_topology_preserved"] is True
     assert report["transitions_with_sop_attachments"] > 0
+    assert graph["meta"]["sop_taxonomy_schema"] == "runforest_sop_taxonomy_v1"
+    assert graph["meta"]["sop_taxonomy_coverage"] == 1.0
+    assert graph["meta"]["sop_taxonomy_sop_count"] == node_types["SOP"]
+    assert graph["meta"]["sop_taxonomy_reviewed_l1_count"] == 28
 
 
 def test_run_forest_artifacts_are_clean_certified():
@@ -87,6 +91,58 @@ def test_run_forest_builder_requires_allowlist_for_clean_mode():
         build_artifact(REPO / "mlevolve" / "runs", REPO / "paper-skills" / "hyper_memory" / "hyper_graph.json", require_clean_provenance=True)
 
 
+def test_sop_taxonomy_stale_hash_fails_closed(tmp_path):
+    import sys
+
+    sys.path.insert(0, str(REPO / "paper-skills" / "hyper_memory"))
+    from build_run_forest_memory import load_sops
+
+    graph_path = REPO / "paper-skills" / "hyper_memory" / "hyper_graph.json"
+    taxonomy = json.loads(
+        (REPO / "paper-skills" / "hyper_memory" / "sop_taxonomy.json").read_text(encoding="utf-8")
+    )
+    taxonomy["source_graph_sha256"] = "0" * 64
+    stale = tmp_path / "stale_taxonomy.json"
+    stale.write_text(json.dumps(taxonomy), encoding="utf-8")
+    with pytest.raises(ValueError, match="taxonomy is stale"):
+        load_sops(graph_path, taxonomy_path=stale)
+
+
+def test_sop_taxonomy_illegal_entry_fails_closed(tmp_path):
+    import sys
+
+    sys.path.insert(0, str(REPO / "paper-skills" / "hyper_memory"))
+    from build_run_forest_memory import load_sops
+
+    graph_path = REPO / "paper-skills" / "hyper_memory" / "hyper_graph.json"
+    taxonomy = json.loads(
+        (REPO / "paper-skills" / "hyper_memory" / "sop_taxonomy.json").read_text(encoding="utf-8")
+    )
+    taxonomy["entries"]["sg_0001"]["compute_profile"] = "unbounded_cluster"
+    invalid = tmp_path / "invalid_taxonomy.json"
+    invalid.write_text(json.dumps(taxonomy), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="invalid compute_profile"):
+        load_sops(graph_path, taxonomy_path=invalid)
+
+
+def test_sop_taxonomy_requires_complete_manual_l1_review(tmp_path):
+    import sys
+
+    sys.path.insert(0, str(REPO / "paper-skills" / "hyper_memory"))
+    from build_sop_taxonomy import build_taxonomy
+
+    graph_path = REPO / "paper-skills" / "hyper_memory" / "hyper_graph.json"
+    source = REPO / "paper-skills" / "hyper_memory" / "sop_taxonomy_overrides.json"
+    overrides = json.loads(source.read_text(encoding="utf-8"))
+    overrides["reviewed_l1_ids"] = overrides["reviewed_l1_ids"][1:]
+    incomplete = tmp_path / "incomplete_l1_review.json"
+    incomplete.write_text(json.dumps(overrides), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Manual L1 review coverage mismatch"):
+        build_taxonomy(graph_path, incomplete)
+
+
 def test_run_forest_coordinates_have_clean_controls():
     index = np.load(INDEX, allow_pickle=True)
     poincare = index["poincare"]
@@ -123,11 +179,12 @@ def test_run_forest_config_assigns_explicit_draft_roles():
         "memory_reproduction",
         "novel_exploration",
     ]
-    assert policy.extra_role == "novel_exploration"
+    assert cfg.agent.initial_drafts == 3
+    assert cfg.agent.search.num_drafts == 3
     assert Path(policy.replay_targets_path).name == REPLAY_TARGETS.name
 
 
-def test_draft_role_policy_validates_capacity_and_extra_role():
+def test_draft_role_policy_validates_fixed_three_roles():
     import sys
 
     sys.path.insert(0, str(REPO / "mlevolve"))
@@ -140,16 +197,85 @@ def test_draft_role_policy_validates_capacity_and_extra_role():
     )
     agent = AgentSearch.__new__(AgentSearch)
     agent.acfg = SimpleNamespace(initial_drafts=3, draft_role_policy=policy)
-    agent.scfg = SimpleNamespace(num_drafts=5)
+    agent.scfg = SimpleNamespace(num_drafts=3)
     AgentSearch._validate_draft_role_policy(agent)
     assert AgentSearch.configured_draft_role(agent, 0) == "coldstart_baseline"
     assert AgentSearch.configured_draft_role(agent, 1) == "memory_reproduction"
     assert AgentSearch.configured_draft_role(agent, 2) == "novel_exploration"
-    assert AgentSearch.configured_draft_role(agent, 4) == "novel_exploration"
+    with pytest.raises(ValueError, match="exceeds the fixed three-role policy"):
+        AgentSearch.configured_draft_role(agent, 3)
 
     agent.acfg.initial_drafts = 2
-    with pytest.raises(ValueError, match="initial_drafts >= 3"):
+    with pytest.raises(ValueError, match="initial_drafts == 3"):
         AgentSearch._validate_draft_role_policy(agent)
+
+
+def test_seven_workers_atomically_claim_only_three_root_roles():
+    import sys
+    import threading
+    from concurrent.futures import ThreadPoolExecutor
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.agent_search import AgentSearch
+
+    policy = SimpleNamespace(
+        enabled=True,
+        roles=["coldstart_baseline", "memory_reproduction", "novel_exploration"],
+    )
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.acfg = SimpleNamespace(initial_drafts=3, draft_role_policy=policy)
+    agent.scfg = SimpleNamespace(num_drafts=3)
+    agent._draft_role_lock = threading.Lock()
+    agent._draft_generation_count = 0
+
+    def claim(_worker):
+        try:
+            return "claimed", AgentSearch.claim_draft_role(agent)
+        except ValueError as exc:
+            return "blocked", str(exc)
+
+    with ThreadPoolExecutor(max_workers=7) as pool:
+        results = list(pool.map(claim, range(7)))
+
+    claimed = [value for status, value in results if status == "claimed"]
+    blocked = [value for status, value in results if status == "blocked"]
+    assert set(claimed) == {"coldstart_baseline", "memory_reproduction", "novel_exploration"}
+    assert len(claimed) == 3
+    assert len(blocked) == 4
+
+    agent._draft_generation_count = 0
+    with pytest.raises(ValueError, match="slot 0 requires coldstart_baseline"):
+        AgentSearch.claim_draft_role(agent, "novel_exploration")
+    assert agent._draft_generation_count == 0
+
+
+def test_rejected_draft_role_reservation_does_not_steal_child_count(monkeypatch):
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.agent_search import AgentSearch, DraftRoleReservationError
+    from engine.search_node import SearchNode
+    from utils.metric import WorstMetricValue
+
+    root = SearchNode(code="", plan="root", stage="root", step=0, metric=WorstMetricValue())
+    root.expected_child_count = 2
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.virtual_root = root
+    agent.scfg = SimpleNamespace(num_drafts=3)
+    agent.is_root = lambda node: node is root
+
+    def reject_role(*_args, **_kwargs):
+        raise DraftRoleReservationError("full")
+
+    monkeypatch.setattr(
+        "engine.agent_search.draft_agent.run",
+        reject_role,
+    )
+    monkeypatch.setattr("engine.agent_search.evaluation.backpropagate", lambda *_args, **_kwargs: None)
+
+    with pytest.raises(DraftRoleReservationError):
+        AgentSearch._run_single_step(agent, root, exec_callback=lambda *_args, **_kwargs: None)
+    assert root.expected_child_count == 2
 
 
 def test_run_forest_evaluation_supports_lineage_claim_but_not_all_tasks():
@@ -669,6 +795,133 @@ def test_role_specific_prompt_rules_are_not_global():
     assert 'draft_role == "novel_exploration"' in source
     assert 'draft_role == "coldstart_baseline"' in source
     assert 'draft_role != "coldstart_baseline"' in source
+
+
+def test_three_locked_drafts_return_wait_instead_of_forced_root(monkeypatch):
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine import node_selection
+    from engine.search_node import SearchNode
+    from utils.metric import WorstMetricValue
+
+    root = SearchNode(code="", plan="root", stage="root", step=0, metric=WorstMetricValue())
+    for role in ("coldstart_baseline", "memory_reproduction", "novel_exploration"):
+        SearchNode(code="print(1)", plan=role, stage="draft", parent=root, draft_role=role, lock=True)
+    root.expected_child_count = 3
+    agent = SimpleNamespace(
+        virtual_root=root,
+        scfg=SimpleNamespace(num_drafts=3),
+        acfg=SimpleNamespace(
+            draft_role_policy=SimpleNamespace(enabled=True),
+            branch_fusion_trigger_prob=1.0,
+        ),
+        is_root=lambda node: node is root,
+    )
+    monkeypatch.setattr(node_selection, "_compute_exploration_constant", lambda _agent: 1.0)
+    assert node_selection.select(agent, root) is None
+    assert getattr(root, "_aggregation_requested", False) is False
+
+
+def test_agent_step_returns_explicit_wait_signal(monkeypatch):
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.agent_search import AgentSearch
+    from engine.search_node import SearchNode
+    from utils.metric import WorstMetricValue
+
+    class NoWaitCondition:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def wait(self, timeout=None):
+            return None
+
+    root = SearchNode(code="", plan="root", stage="root", step=0, metric=WorstMetricValue())
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.virtual_root = root
+    agent.journal = SimpleNamespace(nodes=[root])
+    agent.data_preview = "ready"
+    agent._search_condition = NoWaitCondition()
+    monkeypatch.setattr("engine.node_selection.select_with_soft_switch", lambda _agent: None)
+
+    result = AgentSearch.step(
+        agent,
+        root,
+        exec_callback=lambda *_args, **_kwargs: None,
+        execute_immediately=False,
+        draft_role="novel_exploration",
+    )
+    assert result is None
+
+
+def test_topk_fully_expanded_selection_propagates_wait(monkeypatch):
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine import node_selection
+
+    selected = SimpleNamespace(
+        id="selected",
+        reached_child_limit=lambda *_args, **_kwargs: True,
+    )
+    agent = SimpleNamespace(
+        search_start_time=0.0,
+        acfg=SimpleNamespace(time_limit=1.0),
+        scfg=SimpleNamespace(
+            explore_switch_start=0.0,
+            explore_switch_end=0.0,
+            min_exploration_weight=0.0,
+            topk_early_k=1,
+            topk_early_max_per_branch=1,
+            topk_late_k=1,
+            topk_late_max_per_branch=1,
+        ),
+    )
+    top_k = [{"node": selected, "branch_id": 1, "metric": 0.2, "rank": 1}]
+    monkeypatch.setattr(node_selection, "get_top_k_nodes_global", lambda *_args, **_kwargs: top_k)
+    monkeypatch.setattr(node_selection, "select_from_top_k_weighted", lambda *_args, **_kwargs: selected)
+    monkeypatch.setattr(node_selection, "select", lambda *_args, **_kwargs: None)
+
+    assert node_selection.select_with_soft_switch(agent) is None
+
+
+def test_protocol_biased_preflight_is_blocked_before_execution(tmp_path):
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents import result_parse_agent
+    from engine.search_node import SearchNode
+
+    code = """
+val_probas = {"a": a_val_probs, "b": b_val_probs}
+best_weights = None
+best_ll = 99
+for w1 in np.arange(0.1, 0.9, 0.1):
+    candidate = w1 * val_probas["a"] + (1 - w1) * val_probas["b"]
+    ll = log_loss(y_val, candidate)
+    if ll < best_ll:
+        best_ll = ll
+        best_weights = (w1, 1 - w1)
+print("optimized ensemble weights", best_weights)
+print("validation log loss", best_ll)
+"""
+    node = SearchNode(code=code, plan="biased repair", stage="debug")
+    agent = SimpleNamespace(
+        acfg=SimpleNamespace(check_data_leakage=True),
+        cfg=SimpleNamespace(workspace_dir=tmp_path),
+        global_memory=None,
+        external_skill_memory=None,
+    )
+    assert result_parse_agent.run_pre_execution_leakage_audit(agent, node) is True
+    assert node.leakage_audit["status"] == "protocol_biased"
+    assert node.leakage_audit["execution_disposition"] == "block"
+    assert node.leakage_audit["rank_eligible"] is False
+    assert node.metric.value is None
 
 
 def test_repair_contract_is_high_priority_in_debug_and_improve_prompts():

@@ -1,0 +1,4067 @@
+{
+  "abstraction_counts": {
+    "L1_strategy": 28,
+    "L2_tactic": 101,
+    "L3_repair": 152
+  },
+  "classifier_version": "deterministic_rules_v1",
+  "coverage": 1.0,
+  "entries": {
+    "sg_0001": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "architecture",
+      "task_families": [
+        "general"
+      ]
+    },
+    "sg_0002": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "general"
+      ]
+    },
+    "sg_0003": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0004": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0005": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "cnn_vision_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0006": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "cnn_vision_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0007": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "convnext_finetune",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0008": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "cnn_vision_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0009": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "vision_transformer_finetune",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0010": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "cnn_vision_family",
+      "sop_kind": "feature",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0011": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "multi_cnn_ensemble",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0012": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "cnn_handcrafted_hybrid",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0013": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0014": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0015": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "vision_transformer_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0016": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "vision_transformer_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0017": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0018": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0019": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0020": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "cnn_vision_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0021": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "cnn_vision_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0022": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0023": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0024": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "vision_transformer_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0025": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "vision_transformer_family",
+      "sop_kind": "feature",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0026": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "image_binary_classification"
+      ]
+    },
+    "sg_0027": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0028": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0029": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "architecture",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0030": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "architecture",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0031": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0032": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0033": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "vision_transformer_family",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0034": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "vision_transformer_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0035": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0036": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0037": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0038": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0039": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "image_restoration"
+      ]
+    },
+    "sg_0040": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "vision_tabular_fusion",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0041": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "vision_transformer_finetune",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0042": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0043": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "vision_transformer_family",
+      "sop_kind": "feature",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0044": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "heterogeneous_multimodal_ensemble",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0045": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0046": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0047": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0048": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0049": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "vision_transformer_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0050": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "vision_transformer_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0051": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0052": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0053": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0054": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0055": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0056": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0057": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0058": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0059": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0060": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0061": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0062": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0063": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0064": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0065": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0066": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0067": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0068": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0069": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "general"
+      ]
+    },
+    "sg_0070": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "tabular_multiclass",
+        "image_classification"
+      ]
+    },
+    "sg_0071": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0072": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0073": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0074": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "architecture",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0075": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0076": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0077": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0078": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0079": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0080": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0081": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "gradient_boosted_trees",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0082": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0083": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0084": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "tabular_regression"
+      ]
+    },
+    "sg_0085": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0086": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0087": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0088": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "modernbert_finetune",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0089": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "multi_gpu_preferred",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "multi_frozen_transformer_xgboost",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0090": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0091": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0092": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0093": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0094": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "bert_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0095": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0096": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0097": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0098": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0099": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "bert_family",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0100": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0101": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0102": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0103": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0104": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "multi_gpu_preferred",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0105": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "transformer_classical_hybrid",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0106": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0107": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0108": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "deberta_xgb_lr_ensemble",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0109": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "roberta_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0110": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "bert_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0111": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "sentence_embedding_mlp",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0112": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0113": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0114": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0115": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0116": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0117": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0118": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "multi_gpu_preferred",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "frozen_transformer_tree",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0119": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "multi_transformer_ensemble",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0120": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0121": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0122": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0123": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0124": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0125": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0126": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0127": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0128": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0129": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0130": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "transformer_classical_hybrid",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0131": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "bert_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0132": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "bert_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0133": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0134": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "multi_gpu_preferred",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "roberta_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0135": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "roberta_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0136": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0137": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "bert_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0138": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "roberta_family",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0139": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0140": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "roberta_family",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0141": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0142": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0143": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0144": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "tfidf_stylometry_linear",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0145": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "bert_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0146": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0147": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0148": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0149": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0150": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0151": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0152": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "architecture",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0153": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0154": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0155": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0156": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0157": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0158": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0159": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0160": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "architecture",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0161": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0162": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0163": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "architecture",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0164": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "transformer_engineered_feature_hybrid",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0165": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0166": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0167": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0168": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0169": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0170": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0171": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0172": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0173": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "bert_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0174": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0175": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "textcnn_stylometry",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0176": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0177": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0178": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0179": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0180": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0181": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0182": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "bert_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0183": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "roberta_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0184": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0185": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0186": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0187": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0188": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0189": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0190": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0191": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0192": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0193": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0194": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0195": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "bert_family",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0196": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0197": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0198": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0199": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0200": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0201": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0202": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "deberta_xgb_lr_ensemble",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0203": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0204": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "deberta_xgb_lr_ensemble",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0205": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0206": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0207": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "transformer_classical_hybrid",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0208": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0209": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0210": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0211": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0212": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0213": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "deberta_finetune",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0214": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0215": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0216": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0217": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0218": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0219": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0220": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0221": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "deberta_multisample_focal_cv",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0222": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0223": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "roberta_family",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0224": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0225": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0226": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0227": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0228": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0229": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0230": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0231": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0232": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0233": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0234": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0235": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0236": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0237": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0238": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0239": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0240": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0241": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0242": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "transformer_classical_hybrid",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0243": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "transformer_classical_hybrid",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0244": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0245": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0246": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0247": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0248": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0249": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0250": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0251": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0252": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "deberta_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0253": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0254": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0255": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0256": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0257": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0258": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "modernbert_family",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0259": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0260": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0261": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0262": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0263": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0264": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0265": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0266": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0267": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "training_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0268": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0269": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0270": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "stylometry_boosted_tree",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0271": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "explicit_override_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0272": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0273": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "feature",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0274": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_large",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0275": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "infrastructure",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0276": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0277": {
+      "abstraction_level": "L3_repair",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "debug",
+        "repair"
+      ],
+      "method_family": "general",
+      "sop_kind": "debug_fix",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0278": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "boosted_tree_family",
+      "sop_kind": "validation_protocol",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0279": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "single_gpu_standard",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "transformer_classical_hybrid",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0280": {
+      "abstraction_level": "L1_strategy",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_light",
+      "decision_stages": [
+        "draft",
+        "evolution"
+      ],
+      "manual_review_version": "v1",
+      "manual_reviewed": true,
+      "method_family": "tfidf_stylometry_linear",
+      "sop_kind": "model_strategy",
+      "task_families": [
+        "text_classification"
+      ]
+    },
+    "sg_0281": {
+      "abstraction_level": "L2_tactic",
+      "classification_source": "deterministic_rules_v1",
+      "compute_profile": "cpu_or_single_gpu",
+      "decision_stages": [
+        "model_design",
+        "improve"
+      ],
+      "method_family": "general",
+      "sop_kind": "architecture",
+      "task_families": [
+        "text_classification"
+      ]
+    }
+  },
+  "override_version": "v1",
+  "reviewed_l1_count": 28,
+  "reviewed_l1_ids": [
+    "sg_0007",
+    "sg_0009",
+    "sg_0011",
+    "sg_0012",
+    "sg_0040",
+    "sg_0041",
+    "sg_0044",
+    "sg_0081",
+    "sg_0088",
+    "sg_0089",
+    "sg_0105",
+    "sg_0108",
+    "sg_0111",
+    "sg_0118",
+    "sg_0119",
+    "sg_0130",
+    "sg_0144",
+    "sg_0164",
+    "sg_0175",
+    "sg_0202",
+    "sg_0207",
+    "sg_0213",
+    "sg_0221",
+    "sg_0242",
+    "sg_0243",
+    "sg_0270",
+    "sg_0279",
+    "sg_0280"
+  ],
+  "schema": "runforest_sop_taxonomy_v1",
+  "sop_count": 281,
+  "source_graph": "hyper_graph.json",
+  "source_graph_sha256": "9f83d90e9b7a09b2baf3ca1d27f3ad339326827ec00961fd72a883d7bff7a2ff"
+}

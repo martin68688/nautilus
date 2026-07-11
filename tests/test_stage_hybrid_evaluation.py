@@ -81,11 +81,13 @@ def test_evaluator_has_all_controls_and_stage_level_gates():
 
 
 def test_online_matrix_exposes_the_same_seven_controls():
-    assert set(matrix.CONDITIONS) == set(evaluator.CONTROL_NAMES)
+    assert set(evaluator.CONTROL_NAMES) <= set(matrix.CONDITIONS)
+    assert "layered_strategy" in matrix.CONDITIONS
     assert "external_skill_memory.enable=False" in matrix.CONDITIONS["no_memory"]
     assert "agent.draft_role_policy.enabled=False" in matrix.CONDITIONS["no_memory"]
     for control in ("sop_only", "tree_only", "naive_concat", "stage_hybrid"):
         assert f"external_skill_memory.retrieval_control={control}" in matrix.CONDITIONS[control]
+    assert "external_skill_memory.retrieval_control=layered_strategy" in matrix.CONDITIONS["layered_strategy"]
     assert "external_skill_memory.scoring_mode=flat_twin" in matrix.CONDITIONS["flat_twin_hybrid"]
     assert "external_skill_memory.scoring_mode=euclidean" in matrix.CONDITIONS["independent_euclidean"]
 
@@ -97,3 +99,5 @@ def test_no_gpu_preflight_covers_config_provenance_routes_and_benchmark():
     assert report["checks"]["coldstart_template"]["sha256"] == preflight.COLDSTART_SHA256
     assert len(report["checks"]["runtime_routes"]["cases"]) == 20
     assert all(case["blocked_positive_count"] == 0 for case in report["checks"]["runtime_routes"]["cases"])
+    assert report["checks"]["layered_three_role"]["status"] == "passed"
+    assert len(report["checks"]["layered_three_role"]["strategy_routes"]) == 3

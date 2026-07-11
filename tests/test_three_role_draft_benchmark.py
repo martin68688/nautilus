@@ -48,7 +48,9 @@ def test_three_role_protocol_changes_only_novel_slot():
             "fixed_across_conditions": True,
         }
         assert roles["memory_reproduction"]["fixed_across_conditions"] is True
-        assert roles["novel_exploration"]["compared_conditions"] == ["tree_only", "stage_hybrid"]
+        assert roles["novel_exploration"]["compared_conditions"] == [
+            "tree_only", "stage_hybrid", "layered_strategy"
+        ]
 
 
 def test_evaluation_excludes_every_run_in_held_out_split():

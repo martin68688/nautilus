@@ -41,7 +41,7 @@ spec:
           export OPENAI_COMPAT_TIMEOUT="${OPENAI_COMPAT_TIMEOUT:-1200}"
 
           BRANCH="${RUNFOREST_BRANCH:-codex/dual-time-procedural-memory}"
-          RUN_TAG="${RUNFOREST_ONLINE_TAG:-runforest_online_a40x7_clean_r19_$(date +%Y%m%d_%H%M%S)}"
+          RUN_TAG="${RUNFOREST_ONLINE_TAG:-runforest_online_a40x7_clean_r20_$(date +%Y%m%d_%H%M%S)}"
           SRC_BASE="/workspace/nautilus"
           WORKDIR="/workspace/nautilus_runforest_online_${RUN_TAG}"
           RUNS_DIR="${SRC_BASE}/mlevolve/runs"
@@ -102,28 +102,43 @@ spec:
           export RUNFOREST_ONLINE_TAG="${RUN_TAG}"
           export RUNFOREST_NUM_GPUS=7
           export RUNFOREST_CPU_NUMBER=8
+          export RUNFOREST_RAM_GB=64
           export RUNFOREST_RUNS_DIR="${RUNS_DIR}"
 
           echo "=== Preflight compile and audit tests ==="
           python -m py_compile \
+            run.py \
             ../paper-skills/hyper_memory/build_run_forest_memory.py \
+            ../paper-skills/hyper_memory/build_sop_taxonomy.py \
+            ../paper-skills/hyper_memory/smoke_layered_three_role.py \
+            ../paper-skills/hyper_memory/evaluate_layered_novel_strategy.py \
+            ../paper-skills/hyper_memory/run_stage_hybrid_preflight.py \
             ../paper-skills/hyper_memory/run_runforest_online_matrix.py \
             ../paper-skills/hyper_memory/summarize_runforest_online_matrix.py \
             agents/leakage_audit.py \
+            agents/coder/stepwise_coder.py \
             agents/memory/external_skill_memory.py \
+            agents/memory/stage_aware_hybrid_memory.py \
             agents/memory/run_forest_replay.py \
             agents/draft_agent.py \
             agents/debug_agent.py \
             agents/improve_agent.py \
             agents/result_parse_agent.py \
             agents/triggers.py \
-            engine/agent_search.py
-          pytest -q ../tests/test_leakage_audit.py ../tests/test_run_forest_memory.py
+            engine/agent_search.py \
+            engine/node_selection.py \
+            engine/search_node.py
+          pytest -q \
+            ../tests/test_leakage_audit.py \
+            ../tests/test_run_forest_memory.py \
+            ../tests/test_stage_aware_hybrid_memory.py \
+            ../tests/test_layered_novel_strategy_benchmark.py
 
           echo "=== Build clean Run-Forest graph from allowlist ==="
           python ../paper-skills/hyper_memory/build_run_forest_memory.py \
             --runs-dir "${RUNS_DIR}" \
             --sop-graph "${WORKDIR}/paper-skills/hyper_memory/hyper_graph.json" \
+            --sop-taxonomy "${WORKDIR}/paper-skills/hyper_memory/sop_taxonomy.json" \
             --out-dir "${WORKDIR}/paper-skills/hyper_memory" \
             --allowlist "${WORKDIR}/paper-skills/eval_skill_memory/clean_run_allowlist.json" \
             --require-clean-provenance
@@ -147,6 +162,17 @@ spec:
           assert source_runs == allowed, sorted(source_runs ^ allowed)
           assert not any(run.startswith("20260512") for run in source_runs)
           assert report.get("audited_code_node_count", 0) > 0
+          assert graph["meta"].get("sop_taxonomy_schema") == "runforest_sop_taxonomy_v1"
+          assert graph["meta"].get("sop_taxonomy_coverage") == 1.0
+          assert graph["meta"].get("sop_taxonomy_sop_count") == sum(
+              node.get("type") == "SOP" for node in graph.get("nodes", [])
+          )
+          l1_sops = [
+              node for node in graph.get("nodes", [])
+              if node.get("type") == "SOP" and node.get("abstraction_level") == "L1_strategy"
+          ]
+          assert graph["meta"].get("sop_taxonomy_reviewed_l1_count") == len(l1_sops)
+          assert l1_sops and all(node.get("manual_reviewed") is True for node in l1_sops)
           print("clean_graph_ok", len(source_runs), len(graph.get("nodes", [])), report.get("audit_status_counts"))
           PY
 
@@ -157,11 +183,17 @@ spec:
             --output "${WORKDIR}/paper-skills/eval_skill_memory/reports/run_forest_memory_evaluation.json" \
             --report "${WORKDIR}/coordination/run_forest_memory_experiment_report.md"
 
+          echo "=== Layered three-role no-GPU smoke ==="
+          python ../paper-skills/hyper_memory/smoke_layered_three_role.py \
+            --output "${WORKDIR}/paper-skills/eval_skill_memory/reports/layered_three_role_preflight.json"
+
           echo "=== Running four-task latest-code matrix ==="
           python ../paper-skills/hyper_memory/run_runforest_online_matrix.py \
             --tag "${RUN_TAG}" \
             --num-gpus 7 \
             --cpu-number 8 \
+            --config-path "./config/config_run_forest_stage_hybrid.yaml" \
+            --conditions layered_strategy \
             --runs-dir "${RUNS_DIR}"
 
           echo "=== Summarizing matrix ==="

@@ -1909,6 +1909,8 @@ class RunForestMemoryLayer:
         }
 
     def _positive_memory_eligible(self, node: dict[str, Any]) -> bool:
+        if node.get("strategy_alignment_eligible") is False:
+            return False
         audit = node.get("leakage_audit")
         if isinstance(audit, dict) and audit:
             return (
@@ -2292,11 +2294,29 @@ def fetch_external_skill_memory(agent: Any, stage: str, **kwargs: Any) -> tuple[
     if draft_role in {"coldstart_baseline", "memory_reproduction"}:
         return "", [], getattr(layer, "source_name", "skillgraph")
     try:
+        query_values = list(kwargs.values())
+        if str(getattr(layer, "mode", "")).lower() == "run_forest_stage_hybrid":
+            query_values = [
+                value
+                for key, value in kwargs.items()
+                if key not in {"coldstart", "baseline_model", "strategy_context", "excluded_method_families"}
+            ]
+        call_kwargs = {
+            "stage": stage,
+            "task_id": getattr(agent.cfg, "exp_id", "") or "",
+            "task_desc": getattr(agent, "task_desc", "") or "",
+            "query_parts": [str(v) for v in query_values if v],
+        }
+        if str(getattr(layer, "mode", "")).lower() == "run_forest_stage_hybrid":
+            call_kwargs.update(
+                {
+                    "draft_role": draft_role,
+                    "context": kwargs,
+                    "strategy_context": kwargs.get("strategy_context"),
+                }
+            )
         text, ref_ids = layer.retrieve_for_node(
-            stage=stage,
-            task_id=getattr(agent.cfg, "exp_id", "") or "",
-            task_desc=getattr(agent, "task_desc", "") or "",
-            query_parts=[str(v) for v in kwargs.values() if v],
+            **call_kwargs,
         )
         return text, ref_ids, layer.source_name
     except Exception as exc:
