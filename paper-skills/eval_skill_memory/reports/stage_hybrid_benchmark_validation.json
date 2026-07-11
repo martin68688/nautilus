@@ -1,0 +1,20 @@
+{
+  "schema": "stage_hybrid_benchmark_validation_v1",
+  "valid": true,
+  "errors": [],
+  "query_count": 240,
+  "run_count": 21,
+  "split_counts": {
+    "train": 120,
+    "dev": 64,
+    "test": 56
+  },
+  "stage_counts": {
+    "draft": 42,
+    "debug": 129,
+    "improve": 67,
+    "evolution": 2
+  },
+  "grouped_by_run": true,
+  "natural_language_no_gold_coordinates": true
+}
