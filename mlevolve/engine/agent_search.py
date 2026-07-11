@@ -462,6 +462,7 @@ class AgentSearch:
                                     "New node's metric is inconsistent with metrics in the journal. Returning to the parent node to regenerate.")
                             else:
                                 self.journal.append(result_node)
+                        self._enqueue_mandatory_repair(result_node)
 
             except Exception as e:
                 logger.warning(f"Step failed for parent {parent_node.id}, rolling back expected child count and propagating zero reward.")
@@ -580,6 +581,7 @@ class AgentSearch:
                 else:
                     self.journal.append(node)
                     logger.info(f"Node {node.id} added to journal")
+            self._enqueue_mandatory_repair(node)
 
             node.pending_execution = False
             solution_manager.update_best_solution(self, node)

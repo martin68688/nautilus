@@ -490,6 +490,71 @@ def test_mandatory_repair_scheduler_prevents_duplicate_parallel_expansion():
     assert duplicate is False
 
 
+def test_post_execution_audit_failure_is_requeued_for_mandatory_repair(monkeypatch):
+    import sys
+    import threading
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.agent_search import AgentSearch
+    from engine.search_node import Journal, SearchNode
+    from utils.metric import WorstMetricValue
+
+    parent = SearchNode(
+        code="print('parent')",
+        plan="parent",
+        stage="draft",
+        branch_id=1,
+        is_buggy=False,
+        is_valid=True,
+    )
+    child = SearchNode(
+        code="print('executed repair')",
+        plan="repair",
+        stage="debug",
+        parent=parent,
+        branch_id=1,
+        leakage_repair_attempt=1,
+    )
+    child.pending_execution = True
+
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.journal = Journal(nodes=[parent], audit_enforced=True)
+    agent.journal_lock = threading.Lock()
+    agent.best_node = None
+    AgentSearch._init_mandatory_repair_scheduler(agent)
+
+    monkeypatch.setattr(
+        "agents.result_parse_agent.run_pre_execution_leakage_audit",
+        lambda *_args, **_kwargs: False,
+    )
+
+    def fail_post_execution_audit(_agent, node, exec_result):
+        node.metric = WorstMetricValue()
+        node.is_buggy = True
+        node.is_valid = False
+        node.audit_repair_required = True
+        node.leakage_audit = {
+            "status": "blocked",
+            "repair_required": True,
+            "hard_block": True,
+        }
+        return node
+
+    monkeypatch.setattr("agents.result_parse_agent.run", fail_post_execution_audit)
+    monkeypatch.setattr("engine.execution.validate_executed_node", lambda *_args: None)
+    monkeypatch.setattr("engine.evaluation.check_improvement", lambda *_args: False)
+    monkeypatch.setattr("engine.solution_manager.update_best_solution", lambda *_args: None)
+
+    result = AgentSearch.execute_deferred_node(
+        agent,
+        child,
+        exec_callback=lambda *_args, **_kwargs: object(),
+    )
+    assert result is child
+    assert list(agent._mandatory_repair_queue) == [child]
+    assert child.leakage_audit["repair_queue_status"] == "queued"
+
+
 def test_exact_replay_fails_closed_on_hash_or_provenance_mismatch(tmp_path):
     import sys
 
