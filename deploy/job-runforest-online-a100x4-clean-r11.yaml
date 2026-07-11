@@ -1,12 +1,12 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: runforest-online-a100x2-clean-r10
+  name: runforest-online-a100x4-clean-r11
   namespace: ecepxie
   labels:
     app: runforest-online-memory
     memory-system: run-forest-clean
-    gpu-profile: a100x2
+    gpu-profile: a100x4
 spec:
   backoffLimit: 1
   template:
@@ -14,10 +14,9 @@ spec:
       labels:
         app: runforest-online-memory
         memory-system: run-forest-clean
-        gpu-profile: a100x2
+        gpu-profile: a100x4
     spec:
       restartPolicy: Never
-      priorityClassName: opportunistic
       tolerations:
       - key: nvidia.com/gpu
         operator: Exists
@@ -44,7 +43,7 @@ spec:
           export OPENAI_COMPAT_TIMEOUT="${OPENAI_COMPAT_TIMEOUT:-1200}"
 
           BRANCH="${RUNFOREST_BRANCH:-codex/dual-time-procedural-memory}"
-          RUN_TAG="${RUNFOREST_ONLINE_TAG:-runforest_online_a100x2_clean_r10_$(date +%Y%m%d_%H%M%S)}"
+          RUN_TAG="${RUNFOREST_ONLINE_TAG:-runforest_online_a100x4_clean_r11_$(date +%Y%m%d_%H%M%S)}"
           SRC_BASE="/workspace/nautilus"
           WORKDIR="/workspace/nautilus_runforest_online_${RUN_TAG}"
           RUNS_DIR="${SRC_BASE}/mlevolve/runs"
@@ -56,7 +55,7 @@ spec:
           echo "date=$(date)"
           echo "branch=${BRANCH}"
           echo "run_tag=${RUN_TAG}"
-          echo "resources=2x A100, 16 CPU, 64Gi"
+          echo "resources=4x A100, 16 CPU, 64Gi, default priority"
 
           test -d "${SRC_BASE}/.git" || { echo "ERROR: missing source repo"; exit 2; }
           rm -f "${SRC_BASE}/.git/shallow.lock"
@@ -103,7 +102,7 @@ spec:
           set +a
           export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
           export RUNFOREST_ONLINE_TAG="${RUN_TAG}"
-          export RUNFOREST_NUM_GPUS=2
+          export RUNFOREST_NUM_GPUS=4
           export RUNFOREST_CPU_NUMBER=16
           export RUNFOREST_RUNS_DIR="${RUNS_DIR}"
 
@@ -141,10 +140,12 @@ spec:
           source_runs = set(graph["meta"].get("source_runs", []))
           assert graph["meta"].get("leak_verified") is True
           assert graph["meta"].get("paper_grade") is True
-          assert graph["meta"].get("provenance_status") == "clean_certified"
+          expected_status = "source_allowlisted_and_code_audited"
+          assert graph["meta"].get("provenance_status") == expected_status
+          assert report.get("provenance_status") == expected_status
           assert source_runs == allowed, sorted(source_runs ^ allowed)
           assert not any(run.startswith("20260512") for run in source_runs)
-          assert report.get("audited_code_nodes", 0) > 0
+          assert report.get("audited_code_node_count", 0) > 0
           print("clean_graph_ok", len(source_runs), len(graph.get("nodes", [])), report.get("audit_status_counts"))
           PY
 
@@ -158,7 +159,7 @@ spec:
           echo "=== Running four-task latest-code matrix ==="
           python ../paper-skills/hyper_memory/run_runforest_online_matrix.py \
             --tag "${RUN_TAG}" \
-            --num-gpus 2 \
+            --num-gpus 4 \
             --cpu-number 16 \
             --runs-dir "${RUNS_DIR}"
 
@@ -174,11 +175,11 @@ spec:
           requests:
             cpu: "16"
             memory: "64Gi"
-            nvidia.com/a100: "2"
+            nvidia.com/a100: "4"
           limits:
             cpu: "16"
             memory: "64Gi"
-            nvidia.com/a100: "2"
+            nvidia.com/a100: "4"
         volumeMounts:
         - name: workspace
           mountPath: /workspace
