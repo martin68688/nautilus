@@ -371,14 +371,29 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
             )
     node.leakage_audit = audit
     node.audit_repair_required = audit.get("status") != "clean"
+    replay_repair_child = bool(
+        node.replay_source
+        and node.replay_source.get("requires_repair") is True
+        and node.leakage_repair_context
+    )
+    repair_seed_only = bool(
+        node.replay_source
+        and node.replay_source.get("requires_repair") is True
+        and node.replay_source.get(
+            "repair_seed_only",
+            not bool(node.leakage_repair_context),
+        ) is True
+    )
     if audit.get("status") == "clean" and node.leakage_repair_context:
         node.resolved_issue_codes = [
             str(item.get("issue_code"))
             for item in node.leakage_repair_context.get("issues", [])
             if item.get("issue_code")
         ]
+        if replay_repair_child:
+            node.replay_status = "mandatory_audit_repair_clean_pending_execution"
     leakage_audit.persist_audit(agent, node)
-    if not audit.get("hard_block"):
+    if not audit.get("hard_block") and not repair_seed_only:
         if audit.get("status") != "clean":
             logger.warning(
                 "Node %s preflight leakage audit: status=%s issues=%s",
@@ -388,13 +403,28 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
             )
         return False
 
+    if repair_seed_only:
+        audit["execution_disposition"] = "block"
+        audit["search_disposition"] = "repair_only"
+        audit["memory_disposition"] = "negative_only"
+        audit["metric_disposition"] = "reject"
+        audit["rank_eligible"] = False
+        audit["paper_grade_eligible"] = False
+        audit["repair_required"] = True
+        audit["repair_seed_execution_blocked"] = True
+
     audit_text = leakage_audit.format_audit(audit, heading="PRE-EXECUTION LEAKAGE AUDIT")
     node.is_buggy = True
     node.is_valid = False
     node.metric = WorstMetricValue()
     node.analysis = audit_text
     node._term_out = [audit_text]
-    node.replay_status = "blocked_by_leakage_audit" if node.replay_source else node.replay_status
+    if repair_seed_only:
+        node.replay_status = "blocked_exact_source_repair_seed"
+    elif replay_repair_child:
+        node.replay_status = "mandatory_audit_repair_blocked"
+    elif node.replay_source:
+        node.replay_status = "blocked_by_leakage_audit"
     _persist_leakage_audit(agent, node)
     logger.error("Node %s blocked before execution by deterministic leakage audit", node.id)
     return True
@@ -425,6 +455,12 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
             for item in node.leakage_repair_context.get("issues", [])
             if item.get("issue_code")
         ]
+        if (
+            node.replay_source
+            and node.replay_source.get("requires_repair") is True
+            and node.leakage_repair_context
+        ):
+            node.replay_status = "mandatory_audit_repair_executed_clean"
 
     if merged_audit.get("hard_block"):
         logger.error(
@@ -435,7 +471,14 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
         node.is_buggy = True
         node.is_valid = False
         node.metric = WorstMetricValue()
-        node.replay_status = "blocked_by_leakage_audit" if node.replay_source else node.replay_status
+        if (
+            node.replay_source
+            and node.replay_source.get("requires_repair") is True
+            and node.leakage_repair_context
+        ):
+            node.replay_status = "mandatory_audit_repair_blocked"
+        elif node.replay_source:
+            node.replay_status = "blocked_by_leakage_audit"
     else:
         logger.info(
             "Node %s leakage audit completed: status=%s metric=%s memory=%s",

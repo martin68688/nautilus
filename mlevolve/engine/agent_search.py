@@ -3,6 +3,7 @@
 import logging
 import random
 import time
+from collections import deque
 from typing import Callable, List, Dict, Optional
 
 from engine.executor import ExecutionResult
@@ -60,6 +61,7 @@ class AgentSearch:
         self._draft_role_lock = threading.Lock()
         self._draft_generation_count = 0
         self._validate_draft_role_policy()
+        self._init_mandatory_repair_scheduler()
 
         self.next_branch_id = 1
         self.branch_all_nodes: Dict[int, List[SearchNode]] = {}
@@ -216,6 +218,82 @@ class AgentSearch:
         logger.info("[draft-role] index=%s role=%s", draft_index, role)
         return role
 
+    def _init_mandatory_repair_scheduler(self) -> None:
+        """Initialize the process-local queue that forces blocked nodes into repair."""
+        self._mandatory_repair_lock = threading.Lock()
+        self._mandatory_repair_queue = deque()
+        self._mandatory_repair_queued_ids: set[str] = set()
+        self._mandatory_repair_inflight_ids: set[str] = set()
+
+    @staticmethod
+    def _is_mandatory_repair_parent(node: SearchNode | None) -> bool:
+        if node is None or node.stage == "root" or node.is_terminal:
+            return False
+        audit = node.leakage_audit or {}
+        return audit.get("status") not in {None, "clean"} and bool(
+            node.audit_repair_required or audit.get("repair_required")
+        )
+
+    def _enqueue_mandatory_repair(self, node: SearchNode) -> None:
+        """Queue one blocked node exactly once, independently of UCT/root locks."""
+        if not self._is_mandatory_repair_parent(node):
+            return
+        with self._mandatory_repair_lock:
+            if (
+                node.id in self._mandatory_repair_queued_ids
+                or node.id in self._mandatory_repair_inflight_ids
+            ):
+                return
+            self._mandatory_repair_queue.append(node)
+            self._mandatory_repair_queued_ids.add(node.id)
+            node.leakage_audit["repair_queue_status"] = "queued"
+        logger.warning(
+            "Node %s queued for mandatory leakage repair (attempt=%s)",
+            node.id,
+            node.leakage_repair_attempt + 1,
+        )
+
+    def _claim_mandatory_repair_parent(
+        self,
+        requested_node: SearchNode | None,
+    ) -> tuple[SearchNode | None, bool]:
+        """Claim the oldest repair parent; report duplicate concurrent requests."""
+        with self._mandatory_repair_lock:
+            while self._mandatory_repair_queue:
+                candidate = self._mandatory_repair_queue.popleft()
+                self._mandatory_repair_queued_ids.discard(candidate.id)
+                if not self._is_mandatory_repair_parent(candidate):
+                    continue
+                self._mandatory_repair_inflight_ids.add(candidate.id)
+                candidate.leakage_audit["repair_queue_status"] = "in_flight"
+                return candidate, False
+
+            if requested_node and requested_node.id in self._mandatory_repair_inflight_ids:
+                return None, True
+            if self._is_mandatory_repair_parent(requested_node):
+                self._mandatory_repair_inflight_ids.add(requested_node.id)
+                requested_node.leakage_audit["repair_queue_status"] = "in_flight"
+                return requested_node, False
+        return None, False
+
+    def _release_mandatory_repair_parent(
+        self,
+        node: SearchNode,
+        *,
+        retry: bool = False,
+    ) -> None:
+        with self._mandatory_repair_lock:
+            self._mandatory_repair_inflight_ids.discard(node.id)
+            if retry and self._is_mandatory_repair_parent(node):
+                if node.id not in self._mandatory_repair_queued_ids:
+                    self._mandatory_repair_queue.appendleft(node)
+                    self._mandatory_repair_queued_ids.add(node.id)
+                node.leakage_audit["repair_queue_status"] = "queued_after_error"
+            elif node.leakage_repair_attempt >= 2 and node.is_terminal:
+                node.leakage_audit["repair_queue_status"] = "exhausted"
+            else:
+                node.leakage_audit["repair_queue_status"] = "expanded"
+
     def _serialize_prompt(self, prompt_complete) -> str | None:
         """Serialize prompt (str or dict) to string for saving in node."""
         if prompt_complete is None:
@@ -247,6 +325,7 @@ class AgentSearch:
         should_backpropagate = evaluation.check_improvement(self, node, parent_node)
         with self.journal_lock:
             self.journal.append(node)
+        self._enqueue_mandatory_repair(node)
         logger.warning(
             "Node %s was journaled as a pre-execution leakage failure; GPU execution was skipped",
             node.id,
@@ -291,6 +370,8 @@ class AgentSearch:
                     and parent_node.leakage_repair_attempt >= 2
                 ):
                     parent_node.is_terminal = True
+                    parent_node.continue_improve = False
+                    parent_node.leakage_audit["repair_queue_status"] = "exhausted"
                     evaluation.backpropagate(parent_node, 0)
                     _root = True
                     logger.error(
@@ -405,16 +486,40 @@ class AgentSearch:
             self.update_data_preview()
             self.search_start_time = time.time()
 
+        claimed_repair_parent = None
+        duplicate_repair_request = False
+        # Phase 1 must still create the three declared draft roles in order.
+        # Mandatory repairs take priority only once normal execution/search begins.
+        if execute_immediately and draft_role is None and init_solution_path is None:
+            claimed_repair_parent, duplicate_repair_request = (
+                self._claim_mandatory_repair_parent(node)
+            )
+            if claimed_repair_parent is not None:
+                node = claimed_repair_parent
+            elif duplicate_repair_request:
+                node = None
+
         if not node or node.stage == "root":
             node = node_selection.select_with_soft_switch(self)
 
-        _root, result_node = self._run_single_step(
-            node,
-            exec_callback=exec_callback,
-            execute_immediately=execute_immediately,
-            init_solution_path=init_solution_path,
-            draft_role=draft_role,
-        )
+        try:
+            _root, result_node = self._run_single_step(
+                node,
+                exec_callback=exec_callback,
+                execute_immediately=execute_immediately,
+                init_solution_path=init_solution_path,
+                draft_role=draft_role,
+            )
+        except Exception:
+            if claimed_repair_parent is not None:
+                self._release_mandatory_repair_parent(
+                    claimed_repair_parent,
+                    retry=True,
+                )
+            raise
+        else:
+            if claimed_repair_parent is not None:
+                self._release_mandatory_repair_parent(claimed_repair_parent)
 
         if result_node:
             metric_value = result_node.metric.value if result_node.metric else None

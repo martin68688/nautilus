@@ -227,13 +227,14 @@ def _replay_agent(targets_path=REPLAY_TARGETS):
     return SimpleNamespace(
         cfg=SimpleNamespace(exp_id="spooky-author-identification"),
         acfg=SimpleNamespace(
-            draft_role_policy=SimpleNamespace(replay_targets_path=str(targets_path))
+            draft_role_policy=SimpleNamespace(replay_targets_path=str(targets_path)),
+            check_data_leakage=True,
         ),
         external_skill_memory=layer,
     )
 
 
-def test_exact_replay_rejects_historical_three_model_source_with_known_protocol_issues():
+def test_exact_replay_loads_historical_three_model_source_as_blocked_repair_seed():
     import sys
 
     sys.path.insert(0, str(REPO / "mlevolve"))
@@ -246,8 +247,247 @@ def test_exact_replay_rejects_historical_three_model_source_with_known_protocol_
         "TRANSFORM_FIT_ON_HOLDOUT",
         "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION",
     }
-    with pytest.raises(ValueError, match="TRANSFORM_FIT_ON_HOLDOUT"):
-        load_exact_replay(_replay_agent())
+    replay = load_exact_replay(_replay_agent())
+    assert replay["requires_repair"] is True
+    assert replay["replay_status"] == "blocked_exact_source_repair_seed"
+    assert replay["adoption_mode"] == "blocked_exact_source_repair_seed"
+    assert replay["replay_source"]["target_audit_status"] == "candidate_replay"
+    assert replay["replay_source"]["repair_seed_only"] is True
+    assert replay["leakage_audit"]["hard_block"] is True
+    assert set(replay["replay_source"]["known_issue_codes"]) == {
+        "TRANSFORM_FIT_ON_HOLDOUT",
+        "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION",
+    }
+    for required in ("XGBClassifier", "LogisticRegression", "TfidfVectorizer"):
+        assert required in replay["code"]
+
+
+def test_replay_repair_seed_is_blocked_before_execution_and_freezes_original_design(tmp_path):
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents import result_parse_agent
+    from agents.triggers import register_node
+    from engine.search_node import SearchNode
+
+    loader_agent = _replay_agent()
+    replay = __import__(
+        "agents.memory.run_forest_replay", fromlist=["load_exact_replay"]
+    ).load_exact_replay(loader_agent)
+    seed = SearchNode(
+        code=replay["code"], plan=replay["plan"], stage="draft", branch_id=1,
+        draft_role="memory_reproduction", role_contract=replay["role_contract"],
+        source_ref_ids=replay["source_ref_ids"], replay_source=replay["replay_source"],
+        replay_status=replay["replay_status"], skip_code_review=True,
+    )
+    audit_agent = SimpleNamespace(
+        acfg=SimpleNamespace(check_data_leakage=True),
+        cfg=SimpleNamespace(workspace_dir=tmp_path),
+        global_memory=None,
+        external_skill_memory=loader_agent.external_skill_memory,
+    )
+    assert result_parse_agent.run_pre_execution_leakage_audit(audit_agent, seed) is True
+    assert seed.replay_status == "blocked_exact_source_repair_seed"
+    assert seed.leakage_audit["repair_seed_execution_blocked"] is True
+    assert seed.is_buggy is True
+    assert seed.metric.value is None
+
+    child = SearchNode(code=seed.code, plan="repair only", stage="debug", parent=seed)
+    branch_agent = SimpleNamespace(
+        _serialize_prompt=str, next_branch_id=2,
+        branch_all_nodes={1: [seed]}, branch_successful_nodes={1: []},
+    )
+    register_node(branch_agent, child, "repair", parent_node=seed)
+    contract = child.leakage_repair_context["preservation_contract"]
+    assert child.audit_repair_required is True
+    assert child.leakage_repair_attempt == 1
+    assert contract["source_code_sha256"] == replay["replay_source"]["code_sha256"]
+    assert contract["component_calls"]["XGBClassifier"] == 1
+    assert contract["component_calls"]["LogisticRegression"] == 1
+    assert contract["component_calls"]["TfidfVectorizer"] == 4
+    assert child.replay_source["repair_seed_only"] is False
+    assert child.replay_status == "mandatory_audit_repair"
+
+
+def test_candidate_replay_fails_closed_when_runtime_audit_is_disabled():
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents.memory.run_forest_replay import load_exact_replay
+
+    agent = _replay_agent()
+    agent.acfg.check_data_leakage = False
+    with pytest.raises(ValueError, match="requires deterministic leakage auditing"):
+        load_exact_replay(agent)
+
+
+def test_clean_repair_child_passes_pre_execution_gate(tmp_path):
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents import result_parse_agent
+    from agents.leakage_audit import audit_code
+    from agents.triggers import register_node
+    from engine.search_node import SearchNode
+
+    parent_code = """
+X_train, X_val = train_test_split(texts, test_size=0.2)
+all_texts = np.concatenate([X_train, X_val, test_texts])
+vectorizer = CountVectorizer(analyzer="char")
+features = vectorizer.fit_transform(all_texts)
+"""
+    repaired_code = """
+X_train, X_val = train_test_split(texts, test_size=0.2)
+vectorizer = CountVectorizer(analyzer="char")
+train_features = vectorizer.fit_transform(X_train)
+val_features = vectorizer.transform(X_val)
+test_features = vectorizer.transform(test_texts)
+"""
+    seed = SearchNode(
+        code=parent_code,
+        plan="blocked source",
+        stage="draft",
+        branch_id=1,
+        replay_source={
+            "requires_repair": True,
+            "repair_seed_only": True,
+            "code_sha256": "source-hash",
+        },
+        replay_status="blocked_exact_source_repair_seed",
+    )
+    seed.leakage_audit = audit_code(parent_code)
+    child = SearchNode(
+        code=repaired_code,
+        plan="repair",
+        stage="debug",
+        parent=seed,
+    )
+    branch_agent = SimpleNamespace(
+        _serialize_prompt=str,
+        next_branch_id=2,
+        branch_all_nodes={1: [seed]},
+        branch_successful_nodes={1: []},
+    )
+    register_node(branch_agent, child, "repair", parent_node=seed)
+    assert child.replay_source["repair_seed_only"] is False
+    assert child.replay_status == "mandatory_audit_repair"
+
+    audit_agent = SimpleNamespace(
+        acfg=SimpleNamespace(check_data_leakage=True),
+        cfg=SimpleNamespace(workspace_dir=tmp_path),
+        global_memory=None,
+        external_skill_memory=None,
+    )
+    assert result_parse_agent.run_pre_execution_leakage_audit(audit_agent, child) is False
+    assert child.leakage_audit["status"] == "clean"
+    assert child.replay_status == "mandatory_audit_repair_clean_pending_execution"
+    assert child.resolved_issue_codes == ["TRANSFORM_FIT_ON_HOLDOUT"]
+
+
+def test_mandatory_repair_scheduler_preserves_initial_roles_and_forces_runtime_repair(monkeypatch):
+    import sys
+    from types import MethodType
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.agent_search import AgentSearch
+    from engine.search_node import Journal, SearchNode
+    from utils.metric import WorstMetricValue
+
+    root = SearchNode(
+        parent=None, plan="root", code="", metric=WorstMetricValue(), stage="root"
+    )
+    seed = SearchNode(
+        parent=root,
+        plan="repair seed",
+        code="XGBClassifier()",
+        metric=WorstMetricValue(),
+        stage="draft",
+        branch_id=1,
+        draft_role="memory_reproduction",
+        is_buggy=True,
+        is_valid=False,
+        audit_repair_required=True,
+        leakage_audit={"status": "blocked", "repair_required": True},
+    )
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.virtual_root = root
+    agent.journal = Journal(nodes=[root, seed], audit_enforced=True)
+    agent.data_preview = "ready"
+    agent.search_start_time = 1.0
+    agent.current_step = 0
+    agent.branch_all_nodes = {1: [seed]}
+    agent.best_node = None
+    AgentSearch._init_mandatory_repair_scheduler(agent)
+    AgentSearch._enqueue_mandatory_repair(agent, seed)
+
+    selected = []
+
+    def fake_run_single_step(self, parent_node, **kwargs):
+        selected.append(parent_node)
+        return False, None
+
+    agent._run_single_step = MethodType(fake_run_single_step, agent)
+    monkeypatch.setattr(
+        "engine.node_selection.select_with_soft_switch",
+        lambda _agent: root,
+    )
+
+    # Sequential draft generation must not consume the repair queue or replace
+    # the declared third (novel) role with a repair child.
+    AgentSearch.step(
+        agent,
+        root,
+        exec_callback=lambda *_args, **_kwargs: None,
+        execute_immediately=False,
+        draft_role="novel_exploration",
+    )
+    assert selected == [root]
+    assert list(agent._mandatory_repair_queue) == [seed]
+
+    selected.clear()
+    AgentSearch.step(
+        agent,
+        root,
+        exec_callback=lambda *_args, **_kwargs: None,
+    )
+    assert selected == [seed]
+    assert not agent._mandatory_repair_queue
+    assert not agent._mandatory_repair_inflight_ids
+
+
+def test_mandatory_repair_scheduler_prevents_duplicate_parallel_expansion():
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.agent_search import AgentSearch
+    from engine.search_node import SearchNode
+    from utils.metric import WorstMetricValue
+
+    seed = SearchNode(
+        plan="repair seed",
+        code="XGBClassifier()",
+        metric=WorstMetricValue(),
+        stage="draft",
+        is_buggy=True,
+        is_valid=False,
+        audit_repair_required=True,
+        leakage_audit={"status": "blocked", "repair_required": True},
+    )
+    agent = AgentSearch.__new__(AgentSearch)
+    AgentSearch._init_mandatory_repair_scheduler(agent)
+    AgentSearch._enqueue_mandatory_repair(agent, seed)
+
+    claimed, duplicate = AgentSearch._claim_mandatory_repair_parent(agent, None)
+    assert claimed is seed
+    assert duplicate is False
+    claimed_again, duplicate = AgentSearch._claim_mandatory_repair_parent(agent, seed)
+    assert claimed_again is None
+    assert duplicate is True
+
+    AgentSearch._release_mandatory_repair_parent(agent, seed, retry=True)
+    claimed_after_retry, duplicate = AgentSearch._claim_mandatory_repair_parent(agent, None)
+    assert claimed_after_retry is seed
+    assert duplicate is False
 
 
 def test_exact_replay_fails_closed_on_hash_or_provenance_mismatch(tmp_path):
@@ -303,8 +543,10 @@ def test_role_metadata_is_inherited_by_debug_and_improve_nodes():
     assert child.draft_role == "memory_reproduction"
     assert child.role_contract == parent.role_contract
     assert child.source_ref_ids == parent.source_ref_ids
-    assert child.replay_source == parent.replay_source
-    assert child.replay_status == "exact_source_loaded"
+    assert child.replay_source["code_sha256"] == parent.replay_source["code_sha256"]
+    assert child.replay_source["repair_seed_only"] is False
+    assert child.replay_source["repair_parent_node_id"] == parent.id
+    assert child.replay_status == "mandatory_audit_repair"
     assert child.leakage_audit == {}
     assert child.audit_repair_required is True
     assert child.leakage_repair_attempt == 1

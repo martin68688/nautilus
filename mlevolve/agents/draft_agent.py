@@ -47,7 +47,7 @@ def run(
             role_contract=replay["role_contract"],
             source_ref_ids=replay["source_ref_ids"],
             replay_source=replay["replay_source"],
-            replay_status="exact_source_loaded",
+            replay_status=replay["replay_status"],
             skip_code_review=True,
         )
         register_node(agent, new_node, replay["role_contract"], new_branch=True)
@@ -57,7 +57,7 @@ def run(
             "run_forest_agentic_memory",
             replay["source_ref_ids"],
             "draft",
-            adoption_mode="exact_code_replay",
+            adoption_mode=replay["adoption_mode"],
         )
         logger.info(
             "[draft] → node %s (branch=%s role=%s source=%s sha256=%s)",

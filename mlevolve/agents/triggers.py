@@ -108,5 +108,11 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
             }
             node.leakage_repair_attempt = parent_node.leakage_repair_attempt + 1
             node.audit_repair_required = True
+            if node.replay_source:
+                # `requires_repair` describes the replay lineage. Only the
+                # immutable source node is a non-executable repair seed.
+                node.replay_source["repair_seed_only"] = False
+                node.replay_source["repair_parent_node_id"] = parent_node.id
+                node.replay_status = "mandatory_audit_repair"
         if node.branch_id in agent.branch_all_nodes:
             agent.branch_all_nodes[node.branch_id].append(node)

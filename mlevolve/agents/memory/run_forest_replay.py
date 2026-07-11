@@ -30,7 +30,7 @@ def _metric_value(raw_node: dict[str, Any]) -> tuple[float | None, bool | None]:
 
 
 def load_exact_replay(agent: Any) -> dict[str, Any]:
-    """Load one configured replay target and verify every provenance boundary."""
+    """Load a verified replay or an immutable, non-executable repair seed."""
     policy = getattr(agent.acfg, "draft_role_policy", None)
     targets_value = str(getattr(policy, "replay_targets_path", "") or "")
     if not targets_value:
@@ -102,18 +102,32 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
     registry_audit = load_registry_audit(agent, code_sha256)
     replay_audit = merge_audits(code, static_audit, registry_audit)
     issue_codes = [str(item.get("issue_code")) for item in replay_audit.get("issues", [])]
-    if replay_audit.get("hard_block"):
-        raise ValueError(
-            "Replay source failed deterministic leakage audit: " + ", ".join(issue_codes)
-        )
-    if target.get("audit_status") != "verified_clean":
-        raise ValueError(
-            f"Replay target is not verified_clean (status={target.get('audit_status')})"
-        )
-    if replay_audit.get("paper_grade_eligible") is not True:
-        raise ValueError(
-            "Replay source is not paper-grade eligible: " + ", ".join(issue_codes)
-        )
+    target_audit_status = str(target.get("audit_status") or "")
+    if target_audit_status not in {"verified_clean", "candidate_replay"}:
+        raise ValueError(f"Unsupported replay audit status: {target_audit_status}")
+
+    requires_repair = target_audit_status == "candidate_replay"
+    if requires_repair:
+        if not bool(getattr(getattr(agent, "acfg", None), "check_data_leakage", False)):
+            raise ValueError("candidate_replay requires deterministic leakage auditing to be enabled")
+        expected_issues = {str(item) for item in target.get("known_issue_codes", []) if item}
+        detected_issues = set(issue_codes)
+        if not expected_issues:
+            raise ValueError("candidate_replay requires explicit known_issue_codes")
+        if not expected_issues.issubset(detected_issues):
+            missing = sorted(expected_issues - detected_issues)
+            raise ValueError(f"Replay repair seed audit does not reproduce known issues: {missing}")
+        if replay_audit.get("status") == "clean" or replay_audit.get("repair_required") is not True:
+            raise ValueError("candidate_replay unexpectedly passed the fresh leakage audit")
+    else:
+        if replay_audit.get("hard_block"):
+            raise ValueError(
+                "Verified replay source failed deterministic leakage audit: " + ", ".join(issue_codes)
+            )
+        if replay_audit.get("paper_grade_eligible") is not True:
+            raise ValueError(
+                "Verified replay source is not paper-grade eligible: " + ", ".join(issue_codes)
+            )
 
     metric, maximize = _metric_value(raw_node)
     expected_metric = target.get("historical_metric")
@@ -144,15 +158,35 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
         "sop_ids": sop_ids,
         "selection_basis": str(target.get("selection_basis") or ""),
         "leakage_audit": replay_audit,
+        "target_audit_status": target_audit_status,
+        "requires_repair": requires_repair,
+        "repair_seed_only": requires_repair,
+        "known_issue_codes": sorted({str(item) for item in target.get("known_issue_codes", []) if item}),
     }
+    if requires_repair:
+        replay_status = "blocked_exact_source_repair_seed"
+        adoption_mode = "blocked_exact_source_repair_seed"
+        requirement = (
+            "Preserve this historical source byte-for-byte as a non-executable repair seed. "
+            "Create a child that fixes only the audited data/evaluation protocol while preserving "
+            "the complete model, feature, ensemble, checkpoint, and training design."
+        )
+    else:
+        replay_status = "exact_source_loaded"
+        adoption_mode = "exact_code_replay"
+        requirement = "Execute the audited source code byte-for-byte without LLM redesign or code review."
     return {
         "code": code,
-        "plan": str(raw_node.get("plan") or "Exact replay of audited RunForest source node."),
+        "plan": str(raw_node.get("plan") or "Exact source from an audited RunForest target."),
         "source_ref_ids": source_ref_ids,
         "replay_source": replay_source,
+        "leakage_audit": replay_audit,
+        "requires_repair": requires_repair,
+        "replay_status": replay_status,
+        "adoption_mode": adoption_mode,
         "role_contract": {
             "role": "memory_reproduction",
-            "requirement": "Execute the audited source code byte-for-byte without LLM redesign or code review.",
+            "requirement": requirement,
             "source": replay_source,
         },
     }

@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: runforest-online-a100x4-clean-r11
+  name: runforest-online-a100x4-clean-r12
   namespace: ecepxie
   labels:
     app: runforest-online-memory
@@ -43,7 +43,7 @@ spec:
           export OPENAI_COMPAT_TIMEOUT="${OPENAI_COMPAT_TIMEOUT:-1200}"
 
           BRANCH="${RUNFOREST_BRANCH:-codex/dual-time-procedural-memory}"
-          RUN_TAG="${RUNFOREST_ONLINE_TAG:-runforest_online_a100x4_clean_r11_$(date +%Y%m%d_%H%M%S)}"
+          RUN_TAG="${RUNFOREST_ONLINE_TAG:-runforest_online_a100x4_clean_r12_$(date +%Y%m%d_%H%M%S)}"
           SRC_BASE="/workspace/nautilus"
           WORKDIR="/workspace/nautilus_runforest_online_${RUN_TAG}"
           RUNS_DIR="${SRC_BASE}/mlevolve/runs"
@@ -113,9 +113,12 @@ spec:
             ../paper-skills/hyper_memory/summarize_runforest_online_matrix.py \
             agents/leakage_audit.py \
             agents/memory/external_skill_memory.py \
+            agents/memory/run_forest_replay.py \
             agents/draft_agent.py \
             agents/debug_agent.py \
             agents/improve_agent.py \
+            agents/result_parse_agent.py \
+            agents/triggers.py \
             engine/agent_search.py
           pytest -q ../tests/test_leakage_audit.py ../tests/test_run_forest_memory.py
 
