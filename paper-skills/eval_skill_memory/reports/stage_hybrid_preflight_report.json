@@ -1,0 +1,243 @@
+{
+  "schema": "stage_hybrid_preflight_v1",
+  "ok": true,
+  "checks": {
+    "structured_config": {
+      "ok": true,
+      "mode": "run_forest_stage_hybrid",
+      "retrieval_control": "stage_hybrid",
+      "roles": [
+        "coldstart_baseline",
+        "memory_reproduction",
+        "novel_exploration"
+      ]
+    },
+    "coldstart_template": {
+      "ok": true,
+      "sha256": "5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff"
+    },
+    "clean_graph_provenance": {
+      "ok": true,
+      "provenance_status": "source_allowlisted_and_code_audited",
+      "source_runs": 22
+    },
+    "runtime_routes": {
+      "ok": true,
+      "cases": [
+        {
+          "control": "naive_concat",
+          "stage": "draft",
+          "ok": true,
+          "ref_count": 15,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "naive_concat",
+          "stage": "improve",
+          "ok": true,
+          "ref_count": 12,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "naive_concat",
+          "stage": "debug",
+          "ok": true,
+          "ref_count": 9,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "naive_concat",
+          "stage": "evolution",
+          "ok": true,
+          "ref_count": 15,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "naive_concat",
+          "stage": "fusion",
+          "ok": true,
+          "ref_count": 12,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "sop_only",
+          "stage": "draft",
+          "ok": true,
+          "ref_count": 15,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "sop_only",
+          "stage": "improve",
+          "ok": true,
+          "ref_count": 12,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "sop_only",
+          "stage": "debug",
+          "ok": true,
+          "ref_count": 9,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "sop_only",
+          "stage": "evolution",
+          "ok": true,
+          "ref_count": 15,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "sop_only",
+          "stage": "fusion",
+          "ok": true,
+          "ref_count": 12,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "stage_hybrid",
+          "stage": "draft",
+          "ok": true,
+          "ref_count": 15,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "stage_hybrid",
+          "stage": "improve",
+          "ok": true,
+          "ref_count": 12,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "stage_hybrid",
+          "stage": "debug",
+          "ok": true,
+          "ref_count": 9,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "stage_hybrid",
+          "stage": "evolution",
+          "ok": true,
+          "ref_count": 15,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "stage_hybrid",
+          "stage": "fusion",
+          "ok": true,
+          "ref_count": 12,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "tree_only",
+          "stage": "draft",
+          "ok": true,
+          "ref_count": 2,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "tree_only",
+          "stage": "improve",
+          "ok": true,
+          "ref_count": 6,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "tree_only",
+          "stage": "debug",
+          "ok": true,
+          "ref_count": 6,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "tree_only",
+          "stage": "evolution",
+          "ok": true,
+          "ref_count": 3,
+          "blocked_positive_count": 0
+        },
+        {
+          "control": "tree_only",
+          "stage": "fusion",
+          "ok": true,
+          "ref_count": 4,
+          "blocked_positive_count": 0
+        }
+      ]
+    },
+    "held_out_benchmark": {
+      "ok": true,
+      "schema": "stage_hybrid_benchmark_validation_v1",
+      "valid": true,
+      "errors": [],
+      "query_count": 240,
+      "run_count": 21,
+      "split_counts": {
+        "train": 120,
+        "dev": 64,
+        "test": 56
+      },
+      "stage_counts": {
+        "draft": 42,
+        "debug": 129,
+        "improve": 67,
+        "evolution": 2
+      },
+      "grouped_by_run": true,
+      "natural_language_no_gold_coordinates": true
+    },
+    "offline_claim_gates": {
+      "ok": true,
+      "claim_gates_computed": true,
+      "claim_gates": {
+        "best_single_channel": "tree_only",
+        "by_stage": {
+          "debug": {
+            "best_single_channel": "tree_only",
+            "query_count": 31,
+            "execution_mrr_comparison": {
+              "delta": -0.006528417818740398,
+              "p_value": 0.5977011494252874
+            },
+            "allowed": false
+          },
+          "draft": {
+            "best_single_channel": "tree_only",
+            "query_count": 6,
+            "execution_mrr_comparison": {
+              "delta": -0.23196881091617935,
+              "p_value": 1.0
+            },
+            "allowed": false
+          },
+          "evolution": {
+            "best_single_channel": "tree_only",
+            "query_count": 2,
+            "execution_mrr_comparison": {
+              "delta": -0.011904761904761918,
+              "p_value": 0.7526236881559221
+            },
+            "allowed": false
+          },
+          "improve": {
+            "best_single_channel": "tree_only",
+            "query_count": 17,
+            "execution_mrr_comparison": {
+              "delta": 0.0715686274509804,
+              "p_value": 0.1489255372313843
+            },
+            "allowed": false
+          }
+        },
+        "offline_retrieval_claim_allowed": false,
+        "hyperbolic_geometry_claim_allowed": false,
+        "online_downstream_claim_allowed": false,
+        "online_gate_reason": "No concurrent online downstream experiment is part of this offline evaluator.",
+        "adoption_precision_available": false,
+        "downstream_metric_available": false
+      }
+    }
+  },
+  "online_training_started": false
+}

@@ -140,7 +140,7 @@ class ExternalSkillMemoryConfig:
     index_path: str = ""
     text_model_path: str = ""
     source_name: str = "skillgraph"
-    mode: str = "skillgraph"  # skillgraph | agentic_hyperbolic | flat_twin_agentic | agentic_euclidean | run_forest_agentic | run_forest_flat_twin | run_forest_euclidean
+    mode: str = "skillgraph"  # includes opt-in run_forest_stage_hybrid
     scoring_mode: str = "lexical"  # lexical | poincare | flat_twin | euclidean
     geometry_distance_weight: float = 0.30
     geometry_semantic_weight: float = 0.20
@@ -170,6 +170,10 @@ class ExternalSkillMemoryConfig:
     include_evolution: bool = True
     include_debug: bool = True
     include_fusion: bool = True
+    retrieval_control: str = "stage_hybrid"
+    stage_quotas: dict = field(default_factory=dict)
+    rrf_weights: dict = field(default_factory=dict)
+    blocked_run_prefixes: list[str] = field(default_factory=list)
 
 
 @dataclass

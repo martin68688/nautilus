@@ -115,6 +115,21 @@ def test_exact_stage_quotas_and_config_roles():
     assert cfg.agent.draft_role_policy.extra_role == "novel_exploration"
 
 
+def test_hybrid_config_passes_structured_runtime_schema():
+    from omegaconf import OmegaConf
+    from config import Config, _load_cfg
+
+    cfg = _load_cfg(HYBRID_CONFIG, use_cli_args=False)
+    cfg.exp_name = "smoke"
+    cfg.exp_id = "smoke"
+    cfg.data_dir = "./data"
+    cfg.goal = "smoke"
+    cfg.desc_file = None
+    merged = OmegaConf.merge(OmegaConf.structured(Config), cfg)
+    assert merged.external_skill_memory.mode == "run_forest_stage_hybrid"
+    assert merged.external_skill_memory.retrieval_control == "stage_hybrid"
+
+
 def test_real_graph_reverse_index_uses_distills_to():
     from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
 
@@ -209,6 +224,14 @@ def test_invalid_config_fails_closed(tmp_path):
         _layer(tmp_path, stage_quotas={"draft": {"sop_candidates": 0}})
     with pytest.raises(ValueError, match="sum to 1"):
         _layer(tmp_path / "weights", rrf_weights={"draft": {"sop": 0.9, "tree": 0.9}})
+
+
+def test_empty_config_does_not_clear_graph_blocked_prefixes(tmp_path):
+    cfg = SimpleNamespace(external_skill_memory=SimpleNamespace(blocked_run_prefixes=[]))
+    layer = _layer(tmp_path, blocked=True, cfg=cfg)
+    assert layer._blocked_run_prefixes == ("blocked",)
+    pack = layer._hybrid_pack(stage="draft", task_id="task", task_desc="text", query_text="ensemble")
+    assert pack["selected_sop_gateways"] == []
 
 
 def test_existing_run_forest_mode_remains_separate():
@@ -315,6 +338,26 @@ def test_prompt_separates_evidence_sop_only_and_risk(tmp_path):
         stage="draft", task_id="task", task_desc="text", query_parts=["transformer ensemble"]
     )
     assert "Risk Warnings (do not adopt as positive recipes)" in text
+
+
+@pytest.mark.parametrize(
+    ("control", "has_sop", "has_tree"),
+    [
+        ("stage_hybrid", True, True),
+        ("sop_only", True, False),
+        ("tree_only", False, True),
+        ("naive_concat", True, True),
+    ],
+)
+def test_runtime_retrieval_controls_are_isolated(tmp_path, control, has_sop, has_tree):
+    layer = _layer(tmp_path, retrieval_control=control)
+    pack = layer._hybrid_pack(stage="draft", task_id="task", task_desc="text", query_text="transformer ensemble")
+    assert bool(pack["selected_sop_gateways"]) is has_sop
+    assert bool(pack["tree_candidates"]) is has_tree
+    assert pack["stage_route"]["control"] == control
+    if control == "tree_only":
+        assert pack["direct_sop_candidates"] == []
+        assert pack["sop_only_candidates"] == []
 
 
 def test_final_adoption_outcome_taxonomy():

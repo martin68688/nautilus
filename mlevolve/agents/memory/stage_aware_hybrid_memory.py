@@ -48,6 +48,8 @@ STAGE_ALIASES = {
     "aggregation": "fusion",
 }
 
+RETRIEVAL_CONTROLS = {"stage_hybrid", "sop_only", "tree_only", "naive_concat"}
+
 
 def _plain_mapping(value: Any) -> dict[str, Any]:
     if value is None:
@@ -133,6 +135,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         rrf_weights: Any = None,
         blocked_run_prefixes: list[str] | None = None,
         gateway_selector: Callable[..., dict[str, Any]] | None = None,
+        retrieval_control: str | None = None,
         **kwargs: Any,
     ) -> None:
         self._trace_local = threading.local()
@@ -143,7 +146,14 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if rrf_weights is None and ext_cfg is not None:
             rrf_weights = getattr(ext_cfg, "rrf_weights", None)
         if blocked_run_prefixes is None and ext_cfg is not None:
-            blocked_run_prefixes = getattr(ext_cfg, "blocked_run_prefixes", None)
+            configured_prefixes = list(getattr(ext_cfg, "blocked_run_prefixes", None) or [])
+            if configured_prefixes:
+                blocked_run_prefixes = configured_prefixes
+        if retrieval_control is None and ext_cfg is not None:
+            retrieval_control = getattr(ext_cfg, "retrieval_control", None)
+        self.retrieval_control = str(retrieval_control or "stage_hybrid")
+        if self.retrieval_control not in RETRIEVAL_CONTROLS:
+            raise ValueError(f"Unsupported stage-hybrid retrieval_control: {self.retrieval_control}")
         self.stage_quotas = _merge_quotas(stage_quotas)
         self.rrf_weights = _merge_weights(rrf_weights)
         self._injected_gateway_selector = gateway_selector
@@ -417,12 +427,41 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             limit=quotas["tree_candidates"],
         )
         weights = self.rrf_weights[stage]
-        fused = weighted_rrf(
-            sop_execution,
-            tree_ids,
-            sop_weight=weights["sop"],
-            tree_weight=weights["tree"],
-        )
+        if self.retrieval_control == "sop_only":
+            tree_ids = []
+            fused = [
+                {"id": node_id, "rrf_score": 0.0, "sop_rank": rank, "tree_rank": None, "candidate_class": "sop_transition_matches"}
+                for rank, node_id in enumerate(sop_execution, 1)
+            ]
+        elif self.retrieval_control == "tree_only":
+            selected = []
+            gateway_transitions = {}
+            sop_execution = []
+            sop_candidates = []
+            evidence_refs = []
+            failure_patterns = []
+            trace = []
+            fused = [
+                {"id": node_id, "rrf_score": 0.0, "sop_rank": None, "tree_rank": rank, "candidate_class": "tree_only_candidates"}
+                for rank, node_id in enumerate(tree_ids, 1)
+            ]
+        elif self.retrieval_control == "naive_concat":
+            fused = [
+                {"id": node_id, "rrf_score": 0.0, "sop_rank": rank, "tree_rank": None, "candidate_class": "sop_transition_matches"}
+                for rank, node_id in enumerate(sop_execution, 1)
+            ]
+            for rank, node_id in enumerate(tree_ids, 1):
+                if node_id not in {item["id"] for item in fused}:
+                    fused.append(
+                        {"id": node_id, "rrf_score": 0.0, "sop_rank": None, "tree_rank": rank, "candidate_class": "tree_only_candidates"}
+                    )
+        else:
+            fused = weighted_rrf(
+                sop_execution,
+                tree_ids,
+                sop_weight=weights["sop"],
+                tree_weight=weights["tree"],
+            )
         selected_sop_ids = {item["id"] for item in selected}
         for item in sop_candidates:
             trace.append(
@@ -468,7 +507,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         sop_only = [item for item in sop_candidates if item["id"] not in selected_sop_ids]
         return {
             "schema": PACK_SCHEMA,
-            "stage_route": {"stage": stage, "route": STAGE_ROUTE[stage], "quotas": quotas, "rrf": weights},
+            "stage_route": {"stage": stage, "route": STAGE_ROUTE[stage], "control": self.retrieval_control, "quotas": quotas, "rrf": weights},
             "direct_sop_candidates": sop_candidates,
             "selected_sop_gateways": selected,
             "gateway_transitions": gateway_transitions,

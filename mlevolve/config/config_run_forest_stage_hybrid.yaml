@@ -1,4 +1,7 @@
-extends: config_run_forest_agentic.yaml
+extends: config.yaml
+
+methodology_kb_path: ""
+methodology_dynamic: False
 
 agent:
   draft_role_policy:
@@ -10,12 +13,30 @@ agent:
     extra_role: novel_exploration
     replay_targets_path: "../paper-skills/eval_skill_memory/clean_replay_targets.json"
 
+adoption_tracking:
+  enable: True
+  enable_analysis: True
+  judge_mode: llm-all
+
 external_skill_memory:
   enable: True
+  graph_path: "../paper-skills/hyper_memory/run_forest_graph.json"
+  index_path: "../paper-skills/hyper_memory/run_forest_index.npz"
+  text_model_path: ""
   source_name: "run_forest_stage_hybrid_memory"
   mode: "run_forest_stage_hybrid"
   scoring_mode: "poincare"
   enable_agentic: True
+  navigator_max_steps: 3
+  navigator_reference_budget: 1200
+  top_k: 6
+  max_chars: 6500
+  include_draft: True
+  include_improve: True
+  include_evolution: True
+  include_debug: True
+  include_fusion: True
+  retrieval_control: "stage_hybrid"
   stage_quotas:
     draft: {sop_candidates: 6, sop_gateways: 3, tree_candidates: 2}
     improve: {sop_candidates: 4, sop_gateways: 2, tree_candidates: 6}

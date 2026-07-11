@@ -6,6 +6,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 BUILDER_PATH = REPO / "paper-skills" / "eval_skill_memory" / "build_stage_hybrid_benchmark.py"
 EVALUATOR_PATH = REPO / "paper-skills" / "hyper_memory" / "evaluate_stage_hybrid_retrieval.py"
+MATRIX_PATH = REPO / "paper-skills" / "hyper_memory" / "run_runforest_online_matrix.py"
+PREFLIGHT_PATH = REPO / "paper-skills" / "hyper_memory" / "run_stage_hybrid_preflight.py"
 GRAPH_PATH = REPO / "paper-skills" / "hyper_memory" / "run_forest_graph.json"
 INDEX_PATH = REPO / "paper-skills" / "hyper_memory" / "run_forest_index.npz"
 
@@ -20,6 +22,8 @@ def _load(path, name):
 
 builder = _load(BUILDER_PATH, "stage_hybrid_benchmark_builder")
 evaluator = _load(EVALUATOR_PATH, "stage_hybrid_evaluator")
+matrix = _load(MATRIX_PATH, "stage_hybrid_online_matrix")
+preflight = _load(PREFLIGHT_PATH, "stage_hybrid_preflight")
 
 
 def test_benchmark_is_natural_language_and_grouped_by_run():
@@ -74,3 +78,22 @@ def test_evaluator_has_all_controls_and_stage_level_gates():
     for stage, gate in report["claim_gates"]["by_stage"].items():
         assert gate["best_single_channel"] in {"sop_only", "tree_only"}
         assert gate["query_count"] > 0
+
+
+def test_online_matrix_exposes_the_same_seven_controls():
+    assert set(matrix.CONDITIONS) == set(evaluator.CONTROL_NAMES)
+    assert "external_skill_memory.enable=False" in matrix.CONDITIONS["no_memory"]
+    assert "agent.draft_role_policy.enabled=False" in matrix.CONDITIONS["no_memory"]
+    for control in ("sop_only", "tree_only", "naive_concat", "stage_hybrid"):
+        assert f"external_skill_memory.retrieval_control={control}" in matrix.CONDITIONS[control]
+    assert "external_skill_memory.scoring_mode=flat_twin" in matrix.CONDITIONS["flat_twin_hybrid"]
+    assert "external_skill_memory.scoring_mode=euclidean" in matrix.CONDITIONS["independent_euclidean"]
+
+
+def test_no_gpu_preflight_covers_config_provenance_routes_and_benchmark():
+    report = preflight.run_preflight(evaluate_offline=False)
+    assert report["ok"] is True
+    assert report["online_training_started"] is False
+    assert report["checks"]["coldstart_template"]["sha256"] == preflight.COLDSTART_SHA256
+    assert len(report["checks"]["runtime_routes"]["cases"]) == 20
+    assert all(case["blocked_positive_count"] == 0 for case in report["checks"]["runtime_routes"]["cases"])
