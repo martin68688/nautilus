@@ -1,0 +1,30 @@
+extends: config_run_forest_agentic.yaml
+
+agent:
+  draft_role_policy:
+    enabled: True
+    roles:
+      - coldstart_baseline
+      - memory_reproduction
+      - novel_exploration
+    extra_role: novel_exploration
+    replay_targets_path: "../paper-skills/eval_skill_memory/clean_replay_targets.json"
+
+external_skill_memory:
+  enable: True
+  source_name: "run_forest_stage_hybrid_memory"
+  mode: "run_forest_stage_hybrid"
+  scoring_mode: "poincare"
+  enable_agentic: True
+  stage_quotas:
+    draft: {sop_candidates: 6, sop_gateways: 3, tree_candidates: 2}
+    improve: {sop_candidates: 4, sop_gateways: 2, tree_candidates: 6}
+    debug: {sop_candidates: 2, sop_gateways: 1, tree_candidates: 8}
+    evolution: {sop_candidates: 6, sop_gateways: 3, tree_candidates: 3}
+    fusion: {sop_candidates: 4, sop_gateways: 2, tree_candidates: 4}
+  rrf_weights:
+    draft: {sop: 0.70, tree: 0.30}
+    improve: {sop: 0.40, tree: 0.60}
+    debug: {sop: 0.25, tree: 0.75}
+    evolution: {sop: 0.70, tree: 0.30}
+    fusion: {sop: 0.50, tree: 0.50}

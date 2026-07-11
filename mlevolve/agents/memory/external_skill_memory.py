@@ -2281,6 +2281,9 @@ def fetch_external_skill_memory(agent: Any, stage: str, **kwargs: Any) -> tuple[
     layer = getattr(agent, "external_skill_memory", None)
     if layer is None:
         return "", [], "skillgraph"
+    draft_role = kwargs.pop("draft_role", None)
+    if draft_role in {"coldstart_baseline", "memory_reproduction"}:
+        return "", [], getattr(layer, "source_name", "skillgraph")
     try:
         text, ref_ids = layer.retrieve_for_node(
             stage=stage,
@@ -2290,5 +2293,7 @@ def fetch_external_skill_memory(agent: Any, stage: str, **kwargs: Any) -> tuple[
         )
         return text, ref_ids, layer.source_name
     except Exception as exc:
+        if str(getattr(layer, "mode", "")).lower() == "run_forest_stage_hybrid":
+            raise RuntimeError(f"Stage-hybrid memory retrieval failed: {exc}") from exc
         logger.warning("[ExternalSkillMemory] retrieval failed: %s", exc)
         return "", [], getattr(layer, "source_name", "skillgraph")

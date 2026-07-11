@@ -185,6 +185,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         parent_analysis=parent_node.analysis or "",
         execution_output=parent_node.term_out or "",
         error_type=getattr(parent_node, "exc_type", "") or "",
+        draft_role=getattr(parent_node, "draft_role", None),
     )
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text

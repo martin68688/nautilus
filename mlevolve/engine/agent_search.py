@@ -126,18 +126,23 @@ class AgentSearch:
         self.external_skill_memory = None
         ext_cfg = getattr(self.cfg, "external_skill_memory", None)
         if ext_cfg is not None and getattr(ext_cfg, "enable", False):
+            ext_mode = getattr(ext_cfg, "mode", "skillgraph")
             try:
                 from agents.memory.external_skill_memory import ExternalSkillMemoryLayer, RunForestMemoryLayer
-                ext_mode = getattr(ext_cfg, "mode", "skillgraph")
                 ext_source = getattr(ext_cfg, "source_name", "skillgraph")
                 ext_graph_path = getattr(ext_cfg, "graph_path", "")
-                memory_layer_cls = (
-                    RunForestMemoryLayer
-                    if "run_forest" in str(ext_mode).lower()
-                    or "run_forest" in str(ext_source).lower()
-                    or "run_forest" in str(ext_graph_path).lower()
-                    else ExternalSkillMemoryLayer
-                )
+                if str(ext_mode).lower() == "run_forest_stage_hybrid":
+                    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+                    memory_layer_cls = StageAwareHybridMemoryLayer
+                else:
+                    memory_layer_cls = (
+                        RunForestMemoryLayer
+                        if "run_forest" in str(ext_mode).lower()
+                        or "run_forest" in str(ext_source).lower()
+                        or "run_forest" in str(ext_graph_path).lower()
+                        else ExternalSkillMemoryLayer
+                    )
                 self.external_skill_memory = memory_layer_cls(
                     graph_path=getattr(ext_cfg, "graph_path", ""),
                     source_name=ext_source,
@@ -182,6 +187,8 @@ class AgentSearch:
                 )
             except Exception as e:
                 import traceback
+                if str(ext_mode).lower() == "run_forest_stage_hybrid":
+                    raise RuntimeError(f"Failed to initialize required stage-hybrid memory: {e}") from e
                 logger.warning(f"[AgentSearch] Failed to initialize external skill memory: {e}")
                 logger.debug(f"[AgentSearch] External skill memory traceback: {traceback.format_exc()}")
                 self.external_skill_memory = None
