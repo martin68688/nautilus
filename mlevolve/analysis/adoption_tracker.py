@@ -19,6 +19,33 @@ from typing import Callable, Optional
 
 logger = logging.getLogger("MLEvolve")
 
+FINAL_ADOPTION_OUTCOMES = {
+    "fully_adopted",
+    "partially_adopted",
+    "adopted_with_constraints",
+    "rejected_after_inspection",
+    "not_adopted",
+}
+
+
+def classify_adoption_outcome(record: dict, *, adopted: bool, inspected: bool) -> str:
+    """Map post-run evidence to the auditable outcome taxonomy."""
+    existing = record.get("adoption_outcome")
+    if existing in FINAL_ADOPTION_OUTCOMES:
+        return str(existing)
+    mode = str(record.get("adoption_mode") or "prompt_injection")
+    if mode == "exact_code_replay":
+        return "fully_adopted"
+    if mode == "blocked_exact_source_repair_seed":
+        return "rejected_after_inspection"
+    if adopted and mode == "mandatory_audit_repair":
+        return "adopted_with_constraints"
+    if adopted:
+        return "fully_adopted"
+    if inspected:
+        return "rejected_after_inspection"
+    return "not_adopted"
+
 
 def _fetch_methodology_text(ref_id: str, methodology_kb_path: str) -> str:
     """Re-read original text of a methodology reference by ref_id.
@@ -306,12 +333,17 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
             else:
                 mem_text = _fetch_methodology_text(rid, methodology_kb_path)
             if not mem_text:
+                rec["adoption_outcome"] = classify_adoption_outcome(
+                    rec, adopted=False, inspected=False
+                )
                 continue
 
             # Cheap signal (all modes): IDF keyword hit at min_hits=1 (a logged evidence signal).
             if _code_reflects(code, mem_text, judge_fn, idf=idf, min_hits=1):
                 by_ref[ref_key]["keyword_hit_count"] += 1
             kw_strict = _code_reflects(code, mem_text, judge_fn, idf=idf, min_hits=2)
+            llm_judged_this = False
+            embedding_checked_this = False
 
             # Adoption decision by mode.
             if mode == "keyword":
@@ -321,6 +353,7 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
                 # (XGBoost↔XGBClassifier) that keyword cannot; keyword stays a logged signal only.
                 adopted = _llm_judge(code, mem_text, cfg)
                 by_ref[ref_key]["llm_judged_count"] += 1
+                llm_judged_this = True
             else:  # hybrid
                 # KEY FIX: embedding similarity is a RECALL signal, not an adoption signal.
                 # Same-domain code/memory are always cosine-similar (both ML text), so a high
@@ -335,11 +368,24 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
                     adopted = _llm_judge(code, mem_text, cfg)
                     by_ref[ref_key]["llm_judged_count"] += 1
                 by_ref[ref_key]["emb_signal_count"] += 1
+                embedding_checked_this = True
+                llm_judged_this = emb_norm > 0.20 or kw_strict
 
             if adopted:
                 by_ref[ref_key]["adopted_count"] += 1
+            rec["adoption_outcome"] = classify_adoption_outcome(
+                rec,
+                adopted=bool(adopted),
+                inspected=bool(kw_strict or llm_judged_this or embedding_checked_this),
+            )
 
     per_memory = list(by_ref.values())
+    outcome_counts = {}
+    for node in nodes:
+        for rec in getattr(node, "adoption_log", None) or []:
+            outcome = rec.get("adoption_outcome")
+            if outcome in FINAL_ADOPTION_OUTCOMES:
+                outcome_counts[outcome] = outcome_counts.get(outcome, 0) + 1
     for m in per_memory:
         m["adoption_rate"] = round(m["adopted_count"] / m["injected_count"], 3) if m["injected_count"] else 0.0
     per_memory.sort(key=lambda x: -x["adoption_rate"])
@@ -377,6 +423,7 @@ def run_adoption_analysis(cfg, journal, judge_fn: Optional[Callable] = None) -> 
             "overall_adoption_rate": round(total_adopt / total_inj, 3) if total_inj else 0.0,
             "keyword_hit_rate": round(total_kw / total_inj, 3) if total_inj else 0.0,
             "judge_mode": mode,
+            "adoption_outcome_counts": outcome_counts,
             "external_memory": {
                 "injected": external_inj,
                 "keyword_hit": external_kw,

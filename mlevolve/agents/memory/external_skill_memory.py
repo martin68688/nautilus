@@ -106,6 +106,8 @@ def read_skillgraph_node_text(ref_id: str, graph_path: str | Path) -> str:
 
 def external_memory_section_title(source_name: str) -> str:
     source = (source_name or "").lower()
+    if "stage_hybrid" in source:
+        return "Stage-Aware SOP Gateway and Run-Forest Memory"
     if "run_forest" in source:
         return "Agentic Run-Forest Memory Navigation"
     if "agentic" in source:
@@ -115,6 +117,11 @@ def external_memory_section_title(source_name: str) -> str:
 
 def external_memory_section_intro(source_name: str, context: str) -> str:
     source = (source_name or "").lower()
+    if "stage_hybrid" in source:
+        return (
+            f"Below is a stage-routed memory pack retrieved before {context}. "
+            "Treat execution candidates, SOP-only references, verified evidence, and risk warnings as distinct classes."
+        )
     if "run_forest" in source:
         return (
             f"Below is a read-only run-forest map path pack retrieved before {context}: "

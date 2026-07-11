@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -266,3 +267,85 @@ def test_baseline_and_reproduction_roles_bypass_hybrid():
     text, refs, _source = fetch_external_skill_memory(agent, "improve", draft_role="novel_exploration")
     assert text == "memory" and refs == ["ref"]
     assert layer.calls == 1
+
+
+def test_hybrid_trace_is_thread_local_and_logged_on_node(tmp_path):
+    from agents.adoption import log_adoption
+
+    layer = _layer(tmp_path)
+
+    def retrieve(stage):
+        _text, refs = layer.retrieve_for_node(
+            stage=stage,
+            task_id="task",
+            task_desc="text classification",
+            query_parts=["transformer validation ensemble"],
+        )
+        return stage, refs, layer.current_navigation_pack()["stage_route"]["stage"]
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        rows = list(executor.map(retrieve, ["draft", "improve"]))
+    assert {(stage, observed) for stage, _refs, observed in rows} == {("draft", "draft"), ("improve", "improve")}
+
+    _text, refs = layer.retrieve_for_node(
+        stage="draft", task_id="task", task_desc="text", query_parts=["transformer ensemble"]
+    )
+    node = SimpleNamespace(adoption_log=[], memory_navigation_trace=[])
+    agent = SimpleNamespace(adoption_tracking_enabled=True, external_skill_memory=layer)
+    log_adoption(node, agent, layer.source_name, refs, "draft")
+    assert node.memory_navigation_trace
+    assert node.adoption_log
+    assert all(record["adoption_outcome"] == "pending_analysis" for record in node.adoption_log)
+    required = {"retrieval_channel", "candidate_class", "gateway_sop_id", "supporting_transition_ids", "selection_reason", "selection_state"}
+    assert all(required <= record.keys() for record in node.adoption_log)
+    assert all(record["retrieval_channel"] for record in node.adoption_log)
+
+
+def test_prompt_separates_evidence_sop_only_and_risk(tmp_path):
+    clean = _layer(tmp_path)
+    text, _refs = clean.retrieve_for_node(
+        stage="draft", task_id="task", task_desc="text", query_parts=["transformer ensemble"]
+    )
+    assert "Selected SOP Gateways (clean supporting execution required)" in text
+    assert "SOP-Only Method References (unverified here)" in text
+    assert "Verified Evidence Refs" in text
+
+    blocked = _layer(tmp_path / "blocked_prompt", blocked=True)
+    text, _refs = blocked.retrieve_for_node(
+        stage="draft", task_id="task", task_desc="text", query_parts=["transformer ensemble"]
+    )
+    assert "Risk Warnings (do not adopt as positive recipes)" in text
+
+
+def test_final_adoption_outcome_taxonomy():
+    from analysis.adoption_tracker import classify_adoption_outcome
+
+    assert classify_adoption_outcome({"adoption_mode": "exact_code_replay"}, adopted=False, inspected=False) == "fully_adopted"
+    assert classify_adoption_outcome({"adoption_mode": "mandatory_audit_repair"}, adopted=True, inspected=True) == "adopted_with_constraints"
+    assert classify_adoption_outcome({"adoption_mode": "prompt_injection"}, adopted=True, inspected=True) == "fully_adopted"
+    assert classify_adoption_outcome({"adoption_mode": "prompt_injection"}, adopted=False, inspected=True) == "rejected_after_inspection"
+    assert classify_adoption_outcome({"adoption_mode": "prompt_injection"}, adopted=False, inspected=False) == "not_adopted"
+    assert classify_adoption_outcome({"adoption_outcome": "partially_adopted"}, adopted=False, inspected=True) == "partially_adopted"
+
+
+def test_hybrid_prompt_labels_and_diff_wording_are_evidence_aware():
+    from agents.memory.external_skill_memory import external_memory_section_intro, external_memory_section_title
+
+    source = "run_forest_stage_hybrid_memory"
+    assert external_memory_section_title(source) == "Stage-Aware SOP Gateway and Run-Forest Memory"
+    intro = external_memory_section_intro(source, "improvement")
+    assert "distinct classes" in intro
+    for relative in (
+        "mlevolve/agents/improve_agent.py",
+        "mlevolve/agents/evolution_agent.py",
+        "mlevolve/agents/fusion_agent.py",
+    ):
+        text = (REPO / relative).read_text(encoding="utf-8")
+        assert "do not treat SOP-only references as proven recipes" in text
+        assert "persistent SOP memories as constraints" not in text
+
+
+def test_aggregation_is_an_explicit_novel_exploration_branch():
+    source = (REPO / "mlevolve" / "agents" / "aggregation_agent.py").read_text(encoding="utf-8")
+    assert 'draft_role="novel_exploration"' in source
+    assert 'draft_role="novel_exploration",' in source

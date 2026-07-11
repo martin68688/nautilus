@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import collections
+import copy
 import json
 import logging
 import math
+import threading
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -133,6 +135,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         gateway_selector: Callable[..., dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> None:
+        self._trace_local = threading.local()
         cfg = kwargs.get("cfg")
         ext_cfg = getattr(cfg, "external_skill_memory", None) if cfg is not None else None
         if stage_quotas is None and ext_cfg is not None:
@@ -482,27 +485,57 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         }
 
     def _format_hybrid_pack(self, pack: dict[str, Any]) -> str:
-        compact = {
-            key: pack[key]
-            for key in (
-                "stage_route",
-                "selected_sop_gateways",
-                "gateway_transitions",
-                "sop_transition_matches",
-                "sop_only_candidates",
-                "tree_only_candidates",
-                "evidence_refs",
-                "failure_patterns",
-                "risk_warnings",
-            )
-        }
-        return "\n".join(
-            [
-                "## Stage-Aware Hybrid Run-Forest Memory",
-                "Candidates are suggestions; verified evidence and risk warnings are separate. Do not treat SOP-only references as proven successful recipes.",
-                json.dumps(compact, ensure_ascii=False, indent=2),
-            ]
-        )
+        lines = [
+            "## Stage-Aware Hybrid Run-Forest Memory",
+            "Candidates are suggestions. Verified execution evidence and risk warnings are separate.",
+            "Never present an SOP-only reference as a proven successful recipe.",
+            f"Stage route: {json.dumps(pack['stage_route'], ensure_ascii=False)}",
+        ]
+        if pack["risk_warnings"]:
+            lines += ["", "### Risk Warnings (do not adopt as positive recipes)"]
+            for warning in pack["risk_warnings"][:6]:
+                lines.append(
+                    f"- SOP {warning['sop_id']} / transition {warning['transition_id']}: "
+                    f"{warning['reason']} [{warning['disposition']}]"
+                )
+        if pack["selected_sop_gateways"]:
+            lines += ["", "### Selected SOP Gateways (clean supporting execution required)"]
+            for gateway in pack["selected_sop_gateways"]:
+                node = self.nodes[gateway["id"]]
+                lines.append(f"- {gateway['id']}: {node.get('title', '')}")
+                lines.append(f"  Action: {node.get('action', '')}")
+                lines.append(f"  When: {'; '.join(_as_list(node.get('applies_when')))}")
+                lines.append(
+                    f"  Supporting transitions: {', '.join(pack['gateway_transitions'].get(gateway['id'], []))}"
+                )
+        if pack["sop_transition_matches"] or pack["tree_only_candidates"]:
+            lines += ["", "### Execution Candidates"]
+            for item in pack["fused_execution_candidates"][: self.top_k]:
+                node = self.nodes.get(item["id"], {})
+                lines.append(
+                    f"- [{item['candidate_class']}] {item['id']} "
+                    f"stage={node.get('stage') or node.get('stage_pair')} "
+                    f"outcome={node.get('outcome')} metric_improvement={node.get('metric_improvement')}"
+                )
+        if pack["sop_only_candidates"]:
+            lines += ["", "### SOP-Only Method References (unverified here)"]
+            for candidate in pack["sop_only_candidates"][:4]:
+                node = self.nodes[candidate["id"]]
+                lines.append(f"- {candidate['id']}: {node.get('title', '')}; action={node.get('action', '')}")
+        if pack["evidence_refs"]:
+            lines += ["", "### Verified Evidence Refs"]
+            for evidence_id in pack["evidence_refs"][:6]:
+                lines.append(f"- {evidence_id}: {str(self.nodes.get(evidence_id, {}).get('text', ''))[:400]}")
+        if pack["failure_patterns"]:
+            lines += ["", "### Failure Patterns"]
+            for pattern_id in pack["failure_patterns"][:6]:
+                node = self.nodes.get(pattern_id, {})
+                lines.append(f"- {pattern_id}: {node.get('issue_code')} {str(node.get('text', ''))[:300]}")
+        return "\n".join(lines)
+
+    def current_navigation_pack(self) -> dict[str, Any]:
+        """Return a defensive copy of this thread's latest retrieval pack."""
+        return copy.deepcopy(getattr(self._trace_local, "pack", {}))
 
     def retrieve_for_node(
         self,
@@ -517,6 +550,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         query_text = "\n".join([task_desc or "", *(query_parts or [])])
         pack = self._hybrid_pack(stage=stage, task_id=task_id, task_desc=task_desc, query_text=query_text)
         self._last_agentic_pack = pack
+        self._trace_local.pack = pack
         refs = [item["id"] for item in pack["fused_execution_candidates"][: self.top_k]]
         refs += [item["id"] for item in pack["selected_sop_gateways"]]
         refs += pack["evidence_refs"] + pack["failure_patterns"]

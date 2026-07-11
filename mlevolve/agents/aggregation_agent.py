@@ -158,6 +158,7 @@ def run(
         agent,
         "fusion_draft",
         branch_experiences=reference_experiences,
+        draft_role="novel_exploration",
     )
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text
@@ -199,6 +200,8 @@ def run(
         parent=agent.virtual_root,
         stage="fusion_draft",
         local_best_node=agent.virtual_root,
+        draft_role="novel_exploration",
+        role_contract={"role": "novel_exploration", "requirement": "Explore a distinct memory-informed direction."},
     )
     register_node(agent, aggregation_node, prompt_complete, new_branch=True)
 

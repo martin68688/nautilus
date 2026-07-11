@@ -402,7 +402,7 @@ def _diff_improve(agent, prompt_base, data_preview, parent_node):
     if prompt_base.get("External Skill Memory", "").strip():
         extra_user_sections = (
             "# External Skill Memory\n"
-            "Use these persistent SOP memories as constraints while implementing the diff:\n"
+            "Use retrieved candidates only when their execution evidence matches; obey risk warnings and do not treat SOP-only references as proven recipes:\n"
             f"{prompt_base['External Skill Memory']}\n"
         )
 
