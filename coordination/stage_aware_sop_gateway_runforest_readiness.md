@@ -34,5 +34,13 @@ Held-out split: `test`; queries: 56.
 - Stage Hybrid minus `flat_twin_hybrid` Execution MRR: `-0.0039` (`p=0.5762`).
 - Stage Hybrid minus `independent_euclidean` Execution MRR: `0.0290` (`p=0.1119`).
 
+> Superseded Draft diagnostic (2026-07-11): the row above treated sibling Draft
+> children as mutually exclusive single-gold answers and did not remove held-out
+> runs from retrieval memory. Do not use its `-0.2320` delta as evidence about the
+> three-role Draft system. The replacement benchmark fixes cold-start and replay,
+> compares only the novel slot, uses one multi-gold episode per root run, and
+> excludes every evaluated run from retrieval. See
+> `coordination/three_role_draft_tree_vs_hybrid_report.md`.
+
 Offline retrieval results cannot establish adoption precision or downstream task improvement.
 A paper-grade geometry claim additionally requires concurrent online controls and both geometry comparisons to pass.

@@ -1,0 +1,236 @@
+{
+  "schema": "three_role_draft_retrieval_evaluation_v1",
+  "split": "test",
+  "query_count": 2,
+  "role_protocol": {
+    "order": [
+      "coldstart_baseline",
+      "memory_reproduction",
+      "novel_exploration"
+    ],
+    "coldstart_fixed_across_conditions": true,
+    "replay_fixed_across_conditions": true,
+    "only_changed_role": "novel_exploration",
+    "novel_conditions": [
+      "tree_only",
+      "stage_hybrid"
+    ],
+    "held_out_memory_run_ids": [
+      "20260509_185008",
+      "20260510_095558"
+    ]
+  },
+  "method_similarity": {
+    "metric": "Jaccard over SOP title/action/condition/prevention tokens",
+    "threshold": 0.2,
+    "threshold_tuned_on_test": false
+  },
+  "statistical_adequacy": {
+    "minimum_claim_queries": 20,
+    "enough_queries": false
+  },
+  "controls": {
+    "tree_only": {
+      "query_count": 2,
+      "method_mrr": 0.0,
+      "method_recall_at_5": 0.0,
+      "exact_sop_recall_at_5": 0.0,
+      "task_precision_at_5": 1.0,
+      "cross_task_contamination_at_5": 0.0,
+      "replay_overlap_at_5": 0.0,
+      "blocked_positive_count": 0.0,
+      "latency_sec": 0.018224896164610982
+    },
+    "stage_hybrid": {
+      "query_count": 2,
+      "method_mrr": 0.0,
+      "method_recall_at_5": 0.0,
+      "exact_sop_recall_at_5": 0.0,
+      "task_precision_at_5": 0.8,
+      "cross_task_contamination_at_5": 0.19999999999999996,
+      "replay_overlap_at_5": 0.0,
+      "blocked_positive_count": 0.0,
+      "latency_sec": 0.023585312883369625
+    }
+  },
+  "comparisons_stage_hybrid_minus_tree_only": {
+    "method_mrr": {
+      "delta": 0.0,
+      "p_value": 1.0
+    },
+    "method_recall_at_5": {
+      "delta": 0.0,
+      "p_value": 1.0
+    },
+    "task_precision_at_5": {
+      "delta": -0.19999999999999996,
+      "p_value": 1.0
+    }
+  },
+  "claim_allowed": false,
+  "claim_limitations": [
+    "Cold-start and replay roles are fixed protocol slots; this offline test scores only the novel slot retrieval.",
+    "Gold is a multi-SOP method family from all clean root Draft children, not one historical child node.",
+    "All runs in the evaluated split are excluded from positive retrieval.",
+    "A superiority claim requires at least 20 held-out queries; this split has 2.",
+    "Draft root context does not identify one uniquely correct method, so semantic method-family recall is primary and exact SOP-ID recall is diagnostic only.",
+    "Final generated code, training metric, and downstream adoption require an online three-role run."
+  ],
+  "per_query": {
+    "tree_only": [
+      {
+        "query_id": "three-role-draft::d46c5740ac691eaf",
+        "run_id": "20260509_185008",
+        "method_mrr": 0.0,
+        "method_recall_at_5": 0.0,
+        "exact_sop_recall_at_5": 0.0,
+        "task_precision_at_5": 1.0,
+        "cross_task_contamination_at_5": 0.0,
+        "replay_overlap_at_5": 0.0,
+        "blocked_positive_count": 0,
+        "ranking": [
+          "run::20260510_025317_spooky-author-identification::node::95eb3fc7aee94cbe8e79ead1aca950cb",
+          "run::20260511_014836_spooky-author-identification::node::429115cb051b4e718ac754cdcc66bec1"
+        ],
+        "semantically_covered_gold_sop_ids_at_5": [],
+        "exactly_covered_sop_ids_at_5": [],
+        "gold_sop_count": 6
+      },
+      {
+        "query_id": "three-role-draft::b5519eb09200d292",
+        "run_id": "20260510_095558",
+        "method_mrr": 0.0,
+        "method_recall_at_5": 0.0,
+        "exact_sop_recall_at_5": 0.0,
+        "task_precision_at_5": 1.0,
+        "cross_task_contamination_at_5": 0.0,
+        "replay_overlap_at_5": 0.0,
+        "blocked_positive_count": 0,
+        "ranking": [
+          "run::20260510_025317_spooky-author-identification::node::95eb3fc7aee94cbe8e79ead1aca950cb",
+          "run::20260511_014836_spooky-author-identification::node::429115cb051b4e718ac754cdcc66bec1"
+        ],
+        "semantically_covered_gold_sop_ids_at_5": [],
+        "exactly_covered_sop_ids_at_5": [],
+        "gold_sop_count": 4
+      }
+    ],
+    "stage_hybrid": [
+      {
+        "query_id": "three-role-draft::d46c5740ac691eaf",
+        "run_id": "20260509_185008",
+        "method_mrr": 0.0,
+        "method_recall_at_5": 0.0,
+        "exact_sop_recall_at_5": 0.0,
+        "task_precision_at_5": 0.8,
+        "cross_task_contamination_at_5": 0.19999999999999996,
+        "replay_overlap_at_5": 0.0,
+        "blocked_positive_count": 0,
+        "ranking": [
+          "run::20260514_052334_spooky-author-identification::transition::682c1cad66::ff650b353a",
+          "run::20260514_052334_spooky-author-identification::node::682c1cad66f249d9a97d081ff7197411",
+          "run::20260514_052334_spooky-author-identification::node::ff650b353ac6464ebd497ecb206d0fd9",
+          "run::20260514_052334_spooky-author-identification::transition::fd12bd84fa::682c1cad66",
+          "run::20260701_155016_leaf-classification::transition::0879da1138::12caeb05d9",
+          "run::20260701_155016_leaf-classification::node::0879da11389242298b1d0c1f05add652",
+          "run::20260701_155016_leaf-classification::node::12caeb05d94b422ea480e60088ee74a2",
+          "run::20260701_155016_leaf-classification::node::0aa8d6125c624af38aa5b6b92fe7ed8a",
+          "run::20260701_155016_leaf-classification::node::8002cd5a220444b78734f31899ab2cc8",
+          "run::20260701_155016_leaf-classification::node::176b3302b8694e1d86d9772cb9ed1829",
+          "run::20260701_155016_leaf-classification::transition::0879da1138::5497b48121",
+          "run::20260701_155016_leaf-classification::node::5497b481214d453299eed2f072bc3c12",
+          "run::20260701_145250_aerial-cactus-identification::transition::0e9c57ef00::3c3688e56c",
+          "run::20260701_145250_aerial-cactus-identification::node::0e9c57ef00e745c0a17643dfecca5755",
+          "run::20260701_145250_aerial-cactus-identification::node::3c3688e56cfd47ffb7c5fe2b0e0c1f9d",
+          "run::20260701_145250_aerial-cactus-identification::node::9083d61a9de54f2791a67b07ea76e89c",
+          "run::20260701_145250_aerial-cactus-identification::node::48c77ae4f0cc4e1fb8f81b99080a9aa4",
+          "run::20260701_145250_aerial-cactus-identification::transition::3c3688e56c::b46118ffb9",
+          "run::20260701_145250_aerial-cactus-identification::node::b46118ffb9ca4e399e92f19e2645c168",
+          "run::20260510_025317_spooky-author-identification::node::95eb3fc7aee94cbe8e79ead1aca950cb",
+          "run::20260511_014836_spooky-author-identification::node::429115cb051b4e718ac754cdcc66bec1"
+        ],
+        "semantically_covered_gold_sop_ids_at_5": [],
+        "exactly_covered_sop_ids_at_5": [],
+        "gold_sop_count": 6
+      },
+      {
+        "query_id": "three-role-draft::b5519eb09200d292",
+        "run_id": "20260510_095558",
+        "method_mrr": 0.0,
+        "method_recall_at_5": 0.0,
+        "exact_sop_recall_at_5": 0.0,
+        "task_precision_at_5": 0.8,
+        "cross_task_contamination_at_5": 0.19999999999999996,
+        "replay_overlap_at_5": 0.0,
+        "blocked_positive_count": 0,
+        "ranking": [
+          "run::20260514_052334_spooky-author-identification::transition::682c1cad66::ff650b353a",
+          "run::20260514_052334_spooky-author-identification::node::682c1cad66f249d9a97d081ff7197411",
+          "run::20260514_052334_spooky-author-identification::node::ff650b353ac6464ebd497ecb206d0fd9",
+          "run::20260514_052334_spooky-author-identification::transition::fd12bd84fa::682c1cad66",
+          "run::20260701_155016_leaf-classification::transition::0879da1138::12caeb05d9",
+          "run::20260701_155016_leaf-classification::node::0879da11389242298b1d0c1f05add652",
+          "run::20260701_155016_leaf-classification::node::12caeb05d94b422ea480e60088ee74a2",
+          "run::20260701_155016_leaf-classification::node::0aa8d6125c624af38aa5b6b92fe7ed8a",
+          "run::20260701_155016_leaf-classification::node::8002cd5a220444b78734f31899ab2cc8",
+          "run::20260701_155016_leaf-classification::node::176b3302b8694e1d86d9772cb9ed1829",
+          "run::20260701_155016_leaf-classification::transition::0879da1138::5497b48121",
+          "run::20260701_155016_leaf-classification::node::5497b481214d453299eed2f072bc3c12",
+          "run::20260701_145250_aerial-cactus-identification::transition::0e9c57ef00::3c3688e56c",
+          "run::20260701_145250_aerial-cactus-identification::node::0e9c57ef00e745c0a17643dfecca5755",
+          "run::20260701_145250_aerial-cactus-identification::node::3c3688e56cfd47ffb7c5fe2b0e0c1f9d",
+          "run::20260701_145250_aerial-cactus-identification::node::9083d61a9de54f2791a67b07ea76e89c",
+          "run::20260701_145250_aerial-cactus-identification::node::48c77ae4f0cc4e1fb8f81b99080a9aa4",
+          "run::20260701_145250_aerial-cactus-identification::transition::3c3688e56c::b46118ffb9",
+          "run::20260701_145250_aerial-cactus-identification::node::b46118ffb9ca4e399e92f19e2645c168",
+          "run::20260510_025317_spooky-author-identification::node::95eb3fc7aee94cbe8e79ead1aca950cb",
+          "run::20260511_014836_spooky-author-identification::node::429115cb051b4e718ac754cdcc66bec1"
+        ],
+        "semantically_covered_gold_sop_ids_at_5": [],
+        "exactly_covered_sop_ids_at_5": [],
+        "gold_sop_count": 4
+      }
+    ]
+  },
+  "development_diagnostic": {
+    "query_count": 3,
+    "controls": {
+      "tree_only": {
+        "query_count": 3,
+        "method_mrr": 0.3333333333333333,
+        "method_recall_at_5": 0.3333333333333333,
+        "exact_sop_recall_at_5": 0.0,
+        "task_precision_at_5": 1.0,
+        "cross_task_contamination_at_5": 0.0,
+        "replay_overlap_at_5": 0.0,
+        "blocked_positive_count": 0.0,
+        "latency_sec": 0.017398708267137408
+      },
+      "stage_hybrid": {
+        "query_count": 3,
+        "method_mrr": 0.08333333333333333,
+        "method_recall_at_5": 0.06666666666666667,
+        "exact_sop_recall_at_5": 0.0,
+        "task_precision_at_5": 0.8000000000000002,
+        "cross_task_contamination_at_5": 0.19999999999999996,
+        "replay_overlap_at_5": 0.0,
+        "blocked_positive_count": 0.0,
+        "latency_sec": 0.0217114999735107
+      }
+    },
+    "comparisons_stage_hybrid_minus_tree_only": {
+      "method_mrr": {
+        "delta": -0.25,
+        "p_value": 0.743128435782109
+      },
+      "method_recall_at_5": {
+        "delta": -0.26666666666666666,
+        "p_value": 0.743128435782109
+      },
+      "task_precision_at_5": {
+        "delta": -0.19999999999999996,
+        "p_value": 1.0
+      }
+    }
+  }
+}

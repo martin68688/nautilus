@@ -86,6 +86,14 @@ Test split contains 56 queries.
 
 Stage Hybrid does not beat Tree-only overall. It also does not beat Flat-Twin. Improve has a positive MRR delta over its best single channel, but it is not statistically significant (`p=0.1489`). Draft, Debug, and Evolution do not pass their stage gates.
 
+The original Draft stage comparison is now retained only as a transition-level
+diagnostic. It used mutually exclusive sibling-child gold labels and retrieval
+memory containing evaluated runs, so it cannot evaluate the three-role Draft
+protocol. The replacement fixes `coldstart_baseline` and `memory_reproduction`,
+changes only `novel_exploration`, uses multi-gold method families, and removes
+held-out runs from both Tree and SOP-gateway retrieval. Its small test split is
+not claim-grade; see `coordination/three_role_draft_tree_vs_hybrid_report.md`.
+
 ## Claim Decision
 
 - Offline stage-aware retrieval claim: **rejected**.

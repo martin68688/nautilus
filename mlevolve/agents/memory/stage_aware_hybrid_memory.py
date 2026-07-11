@@ -136,6 +136,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         blocked_run_prefixes: list[str] | None = None,
         gateway_selector: Callable[..., dict[str, Any]] | None = None,
         retrieval_control: str | None = None,
+        excluded_run_ids: list[str] | None = None,
         **kwargs: Any,
     ) -> None:
         self._trace_local = threading.local()
@@ -154,6 +155,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         self.retrieval_control = str(retrieval_control or "stage_hybrid")
         if self.retrieval_control not in RETRIEVAL_CONTROLS:
             raise ValueError(f"Unsupported stage-hybrid retrieval_control: {self.retrieval_control}")
+        self.excluded_run_ids = {str(value) for value in (excluded_run_ids or [])}
         self.stage_quotas = _merge_quotas(stage_quotas)
         self.rrf_weights = _merge_weights(rrf_weights)
         self._injected_gateway_selector = gateway_selector
@@ -186,6 +188,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if transition.get("type") != "Transition":
             return False, "not_transition"
         run_id = str(transition.get("run_short_id") or transition.get("run_id") or "")
+        if run_id in self.excluded_run_ids:
+            return False, "held_out_run"
         if any(run_id.startswith(prefix) for prefix in self._blocked_run_prefixes):
             return False, "blocked_run_prefix"
         if transition.get("quarantined") is True or transition.get("protocol_biased") is True:
@@ -378,7 +382,13 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         )
 
     def _rank_tree(self, *, stage: str, query_text: str, task_id: str, task_desc: str, limit: int) -> list[str]:
-        candidates = [node_id for node_id in self._run_nodes if self._positive_memory_eligible(self.nodes[node_id])]
+        candidates = [
+            node_id
+            for node_id in self._run_nodes
+            if self._positive_memory_eligible(self.nodes[node_id])
+            and str(self.nodes[node_id].get("run_short_id") or self.nodes[node_id].get("run_id") or "")
+            not in self.excluded_run_ids
+        ]
         stage_bonus = {
             "draft": {"draft": 0.08},
             "improve": {"improve": 0.10, "evolution": 0.05},

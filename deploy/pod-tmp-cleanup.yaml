@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tmp-cleanup
+  namespace: ecepxie
+spec:
+  restartPolicy: Never
+  tolerations:
+  - {key: nvidia.com/gpu, operator: Exists}
+  - {key: nautilus.io/issue, operator: Exists}
+  - {key: nautilus.io/reservation, operator: Exists}
+  containers:
+  - name: r
+    image: haomingwang22/mlevolve:v1
+    command: ["sleep", "infinity"]
+    resources:
+      limits: {nvidia.com/gpu: 1, cpu: "2", memory: "2Gi"}
+      requests: {nvidia.com/gpu: 1, cpu: "2", memory: "2Gi"}
+    volumeMounts:
+    - {name: s, mountPath: /workspace}
+  volumes:
+  - name: s
+    persistentVolumeClaim: {claimName: haoming-storage}
