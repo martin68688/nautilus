@@ -100,6 +100,8 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
             node.l2_tactic_refs = list(parent_node.l2_tactic_refs)
         if not node.strategy_alignment:
             node.strategy_alignment = copy.deepcopy(parent_node.strategy_alignment)
+        if not node.protocol_repair:
+            node.protocol_repair = copy.deepcopy(parent_node.protocol_repair)
         if not node.replay_source:
             node.replay_source = copy.deepcopy(parent_node.replay_source)
         if node.replay_status is None:

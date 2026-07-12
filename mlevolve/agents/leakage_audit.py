@@ -98,6 +98,14 @@ _TRAINING_HYPERPARAMETER_PATTERN = re.compile(
     r"warmup_steps|warmup_ratio|max_length|seed)$",
     re.IGNORECASE,
 )
+_MODEL_ASSIGNMENT_TARGET_PATTERN = re.compile(
+    r"(?:^|_)(?:model|backbone|encoder|decoder|classifier|regressor|estimator|network|net|head|learner)(?:$|_)",
+    re.IGNORECASE,
+)
+_MODEL_IDENTITY_TARGET_PATTERN = re.compile(
+    r"(?:model|backbone|encoder|decoder|checkpoint|pretrained|weights?|architecture)(?:_?name|_?path|_?id)?$",
+    re.IGNORECASE,
+)
 
 
 def _is_model_identity_literal(value: str) -> bool:
@@ -161,13 +169,31 @@ def build_repair_preservation_contract(code: str) -> dict[str, Any]:
             "error": f"source AST parse failed at line {exc.lineno}: {exc.msg}",
         }
 
+    semantic_model_call_ids: set[int] = set()
+    semantic_model_literals: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        target_names = [name for target in targets for name in _target_names(target)]
+        if isinstance(node.value, ast.Call) and any(
+            _MODEL_ASSIGNMENT_TARGET_PATTERN.search(name) for name in target_names
+        ):
+            semantic_model_call_ids.add(id(node.value))
+        if (
+            isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+            and any(_MODEL_IDENTITY_TARGET_PATTERN.search(name) for name in target_names)
+        ):
+            semantic_model_literals.add(node.value.value)
+
     component_calls: dict[str, int] = {}
     component_call_hashes: dict[str, list[str]] = {}
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         name = _call_name(node.func)
-        if _is_repair_protected_call(name):
+        if _is_repair_protected_call(name) or id(node) in semantic_model_call_ids:
             component_calls[name] = component_calls.get(name, 0) + 1
             component_call_hashes.setdefault(name, []).append(
                 structural_sha256(ast.unparse(node))
@@ -207,7 +233,7 @@ def build_repair_preservation_contract(code: str) -> dict[str, Any]:
         and isinstance(node.value, str)
         and len(node.value) <= 240
         and _is_model_identity_literal(node.value)
-    })
+    } | semantic_model_literals)
     return {
         "schema": "mlevolve_repair_preservation_v1",
         "source_code_sha256": source_hash,

@@ -8,7 +8,7 @@ from engine.executor import ExecutionResult
 from utils.metric import MetricValue, WorstMetricValue
 from utils.response import wrap_code
 from engine.validation import call_validate, _validate_submission_with_retry, validate_submission_content_quality
-from agents import data_leakage_agent, leakage_audit
+from agents import data_leakage_agent, leakage_audit, protocol_repair
 from agents.triggers import should_check_data_leakage
 
 logger = logging.getLogger("MLEvolve")
@@ -353,15 +353,18 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
             )
     if not getattr(agent.acfg, "check_data_leakage", False):
         return False
-    audit = leakage_audit.audit_code(node.code)
+    static_audit = leakage_audit.audit_code(node.code)
+    preservation_audit = None
+    audit = static_audit
     if node.leakage_repair_context:
+        preservation_audit = leakage_audit.audit_repair_preservation(
+            node.code,
+            node.leakage_repair_context.get("preservation_contract", {}),
+        )
         audit = leakage_audit.merge_audits(
             node.code,
             audit,
-            leakage_audit.audit_repair_preservation(
-                node.code,
-                node.leakage_repair_context.get("preservation_contract", {}),
-            ),
+            preservation_audit,
         )
     layer = getattr(agent, "external_skill_memory", None)
     if layer is not None and hasattr(layer, "structural_failure_patterns"):
@@ -383,6 +386,106 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
             )
     node.leakage_audit = audit
     node.audit_repair_required = audit.get("status") != "clean"
+
+    # Protocol repair is a transaction, not a normal debug retry.  Every
+    # intermediate stage is journaled and requeued but cannot consume GPU.
+    # The final stage must satisfy static leakage, preservation, and its own
+    # protocol contract before execution is allowed.
+    protocol_tx = node.protocol_repair or {}
+    if protocol_repair.is_active(protocol_tx):
+        stage = protocol_repair.current_stage(protocol_tx)
+        stage_audit = protocol_repair.audit_stage(node.code, protocol_tx)
+        scope_gate = protocol_repair.stage_scope_gate(static_audit, protocol_tx)
+        preservation_clean = (
+            preservation_audit is None
+            or preservation_audit.get("status") == "clean"
+        )
+        final_stage = stage == "final_holdout"
+        stage_passed = bool(
+            stage_audit.get("status") == "clean"
+            and scope_gate.get("status") == "clean"
+            and preservation_clean
+        )
+        if final_stage and audit.get("status") != "clean":
+            stage_passed = False
+            stage_audit = dict(stage_audit)
+            stage_audit["status"] = "blocked"
+            stage_audit["issues"] = list(stage_audit.get("issues") or []) + [{
+                "issue_code": "PROTOCOL_FINAL_STATIC_AUDIT_NOT_CLEAN",
+                "category": "protocol_repair_stage",
+                "severity": "critical",
+                "line": 0,
+                "evidence": f"Final protocol stage still has leakage/preservation status={audit.get('status')}",
+                "remediation": "Resolve every static leakage and preservation issue before final execution.",
+                "execution_disposition": "block",
+                "detector": "protocol_stage_v1",
+            }]
+        node.protocol_repair = protocol_repair.apply_stage_result(
+            protocol_tx,
+            {**stage_audit, "status": "clean" if stage_passed else "blocked"},
+            node.id,
+        )
+        audit["protocol_stage_audit"] = stage_audit
+        audit["protocol_scope_gate"] = scope_gate
+        audit["protocol_preservation_clean"] = preservation_clean
+        audit["protocol_transaction_id"] = protocol_tx.get("transaction_id")
+        audit["protocol_stage"] = stage
+
+        if final_stage and stage_passed:
+            audit["runtime_protocol_required"] = bool(
+                protocol_tx.get("require_runtime_provenance", True)
+            )
+            node.leakage_audit = audit
+            node.audit_repair_required = False
+            node.replay_status = "staged_protocol_repair_clean_pending_execution"
+            leakage_audit.persist_audit(agent, node)
+            return False
+
+        if stage_passed:
+            audit["status"] = "protocol_stage_complete"
+            audit["completed_protocol_stage"] = stage
+            audit["next_protocol_stage"] = protocol_repair.current_stage(node.protocol_repair)
+        else:
+            audit = leakage_audit.merge_audits(node.code, audit, stage_audit)
+            audit["protocol_stage_audit"] = stage_audit
+            audit["protocol_transaction_id"] = protocol_tx.get("transaction_id")
+            audit["protocol_stage"] = stage
+            audit["protocol_scope_gate"] = scope_gate
+            audit["protocol_preservation_clean"] = preservation_clean
+        audit["execution_disposition"] = "block"
+        audit["search_disposition"] = "repair_only"
+        audit["memory_disposition"] = "negative_only"
+        audit["metric_disposition"] = "reject"
+        audit["rank_eligible"] = False
+        audit["paper_grade_eligible"] = False
+        audit["repair_required"] = node.protocol_repair.get("state") != "exhausted"
+        node.leakage_audit = audit
+        node.audit_repair_required = audit["repair_required"]
+        if node.protocol_repair.get("state") == "exhausted":
+            node.is_terminal = True
+        node.is_buggy = True
+        node.is_valid = False
+        node.metric = WorstMetricValue()
+        node.analysis = (
+            f"STAGED PROTOCOL REPAIR: stage={stage} "
+            f"status={'passed' if stage_passed else 'failed'} "
+            f"next={protocol_repair.current_stage(node.protocol_repair)}"
+        )
+        node._term_out = [node.analysis]
+        node.replay_status = (
+            "staged_protocol_repair_exhausted"
+            if node.protocol_repair.get("state") == "exhausted"
+            else "staged_protocol_repair_stage_complete"
+            if stage_passed
+            else "staged_protocol_repair_stage_blocked"
+        )
+        _persist_leakage_audit(agent, node)
+        logger.warning(
+            "Node %s protocol stage %s %s before GPU execution",
+            node.id, stage, "passed" if stage_passed else "failed",
+        )
+        return True
+
     replay_repair_child = bool(
         node.replay_source
         and node.replay_source.get("requires_repair") is True
@@ -455,6 +558,25 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
         leakage_result = data_leakage_agent.run(agent, node)
     llm_audit = leakage_audit.llm_result_to_audit(node.code, leakage_result)
     merged_audit = leakage_audit.merge_audits(node.code, static_audit, llm_audit)
+    if (node.protocol_repair or {}).get("state") == "ready_for_execution":
+        runtime_result = protocol_repair.runtime_provenance_audit(
+            "".join(node._term_out or []),
+            node.protocol_repair,
+        )
+        runtime_audit = protocol_repair.runtime_result_as_audit(node.code, runtime_result)
+        merged_audit = leakage_audit.merge_audits(node.code, merged_audit, runtime_audit)
+        merged_audit["runtime_protocol_provenance"] = runtime_result
+        if runtime_result.get("status") == "clean" and merged_audit.get("status") == "clean":
+            node.protocol_repair["state"] = "completed"
+            node.protocol_repair["runtime_provenance"] = runtime_result
+            node.replay_status = "staged_protocol_repair_executed_clean"
+        else:
+            node.protocol_repair = protocol_repair.rollback_final_runtime_failure(
+                node.protocol_repair,
+                node.id,
+                str(runtime_result.get("reason") or "runtime provenance failed"),
+            )
+            node.replay_status = "staged_protocol_repair_runtime_blocked"
     merged_audit["observed_metric"] = response.get("metric")
     node.leakage_audit = merged_audit
     node.audit_repair_required = merged_audit.get("status") != "clean"
@@ -465,6 +587,11 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
             if item.get("issue_code")
         ]
         if (
+            node.protocol_repair
+            and node.protocol_repair.get("state") == "completed"
+        ):
+            node.replay_status = "staged_protocol_repair_executed_clean"
+        elif (
             node.replay_source
             and node.replay_source.get("requires_repair") is True
             and node.leakage_repair_context
@@ -480,7 +607,9 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
         node.is_buggy = True
         node.is_valid = False
         node.metric = WorstMetricValue()
-        if (
+        if node.protocol_repair:
+            node.replay_status = "staged_protocol_repair_runtime_blocked"
+        elif (
             node.replay_source
             and node.replay_source.get("requires_repair") is True
             and node.leakage_repair_context
@@ -572,6 +701,22 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
             node.analysis = response["summary"]
             _save_code_summary(agent, node, response)
             _determine_buggy(node, response, has_csv_submission)
+
+            if (
+                node.is_buggy
+                and (node.protocol_repair or {}).get("state") == "ready_for_execution"
+            ):
+                node.protocol_repair = protocol_repair.rollback_final_runtime_failure(
+                    node.protocol_repair,
+                    node.id,
+                    "final protocol program failed before clean runtime provenance",
+                )
+                node.audit_repair_required = node.protocol_repair.get("state") != "exhausted"
+                node.replay_status = (
+                    "staged_protocol_repair_exhausted"
+                    if node.protocol_repair.get("state") == "exhausted"
+                    else "staged_protocol_repair_runtime_blocked"
+                )
 
             if not node.is_buggy:
                 _validate_format_with_retry(agent, node)

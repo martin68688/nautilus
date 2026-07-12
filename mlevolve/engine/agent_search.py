@@ -17,9 +17,10 @@ import json
 from agents import (
     draft_agent, improve_agent, debug_agent,
     evolution_agent, fusion_agent, aggregation_agent,
-    code_review_agent,
+    code_review_agent, protocol_repair_agent,
     result_parse_agent,
 )
+from agents import protocol_repair
 from engine import node_selection, evaluation, execution, solution_manager
 from engine.conditions import is_branch_stagnant
 from utils.data_preview import clean_task_desc
@@ -262,6 +263,8 @@ class AgentSearch:
     def _is_mandatory_repair_parent(node: SearchNode | None) -> bool:
         if node is None or node.stage == "root" or node.is_terminal:
             return False
+        if protocol_repair.is_active(getattr(node, "protocol_repair", None)):
+            return True
         audit = node.leakage_audit or {}
         return audit.get("status") not in {None, "clean"} and bool(
             node.audit_repair_required or audit.get("repair_required")
@@ -269,6 +272,7 @@ class AgentSearch:
 
     def _enqueue_mandatory_repair(self, node: SearchNode) -> None:
         """Queue one blocked node exactly once, independently of UCT/root locks."""
+        protocol_repair.ensure_transaction(self, node)
         if not self._is_mandatory_repair_parent(node):
             return
         with self._mandatory_repair_lock:
@@ -317,12 +321,36 @@ class AgentSearch:
     ) -> None:
         with self._mandatory_repair_lock:
             self._mandatory_repair_inflight_ids.discard(node.id)
+            journal_ids = {
+                item.id for item in getattr(getattr(self, "journal", None), "nodes", [])
+            }
+            tx_id = (node.protocol_repair or {}).get("transaction_id")
+            successors = [
+                child for child in node.children
+                if child.id in journal_ids
+                and tx_id
+                and (child.protocol_repair or {}).get("transaction_id") == tx_id
+            ]
+            if successors and not retry:
+                successor = max(successors, key=lambda child: child.ctime)
+                node.protocol_repair["state"] = (
+                    "abandoned"
+                    if (successor.protocol_repair or {}).get("state") == "exhausted"
+                    else "superseded"
+                )
+                node.protocol_repair["successor_node_id"] = successor.id
+                node.audit_repair_required = False
+                node.leakage_audit["repair_required"] = False
+                node.is_terminal = True
             if retry and self._is_mandatory_repair_parent(node):
                 if node.id not in self._mandatory_repair_queued_ids:
                     self._mandatory_repair_queue.appendleft(node)
                     self._mandatory_repair_queued_ids.add(node.id)
                 node.leakage_audit["repair_queue_status"] = "queued_after_error"
-            elif node.leakage_repair_attempt >= 2 and node.is_terminal:
+            elif (
+                (node.protocol_repair or {}).get("state") == "exhausted"
+                or (node.leakage_repair_attempt >= 2 and node.is_terminal)
+            ):
                 node.leakage_audit["repair_queue_status"] = "exhausted"
             else:
                 node.leakage_audit["repair_queue_status"] = "expanded"
@@ -411,6 +439,24 @@ class AgentSearch:
                         )
                         result_node.lock = True
                         logger.info(f"[_run_single_step] Draft node {result_node.id} is locked.")
+                elif (parent_node.protocol_repair or {}).get("state") == "exhausted":
+                    parent_node.is_terminal = True
+                    parent_node.continue_improve = False
+                    parent_node.leakage_audit["repair_queue_status"] = "exhausted"
+                    evaluation.backpropagate(parent_node, 0)
+                    _root = True
+                    logger.error(
+                        "Protocol repair transaction %s exhausted at stage %s",
+                        parent_node.protocol_repair.get("transaction_id"),
+                        protocol_repair.current_stage(parent_node.protocol_repair),
+                    )
+                elif protocol_repair.is_active(parent_node.protocol_repair):
+                    logger.warning(
+                        "Node %s is in staged protocol repair (stage=%s)",
+                        parent_node.id,
+                        protocol_repair.current_stage(parent_node.protocol_repair),
+                    )
+                    result_node = protocol_repair_agent.run(self, parent_node)
                 elif (
                     parent_node.leakage_audit
                     and parent_node.leakage_audit.get("status") != "clean"

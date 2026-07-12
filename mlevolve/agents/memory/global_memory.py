@@ -102,6 +102,9 @@ class GlobalMemoryLayer:
                 "parent_metric": parent_metric,
                 "current_metric": current_metric,
             }
+            if (getattr(node, "protocol_repair", None) or {}).get("state") == "completed":
+                metadata["protocol_repair"] = node.protocol_repair
+                metadata["memory_type"] = "protocol_repair_success"
             if node.stage == "debug" and parent_node:
                 parent_error = getattr(parent_node, "term_out", "") or getattr(
                     parent_node, "execution_output", ""
@@ -160,6 +163,8 @@ class GlobalMemoryLayer:
                 occurrences.append(node.id)
             metadata["source_node_ids"] = occurrences
             metadata["leakage_audit"] = audit
+            if getattr(node, "protocol_repair", None):
+                metadata["protocol_repair"] = node.protocol_repair
             self._save_memory()
             return False
 
@@ -176,6 +181,7 @@ class GlobalMemoryLayer:
             "source_node_ids": [node.id],
             "code_sha256": digest,
             "leakage_audit": audit,
+            "protocol_repair": getattr(node, "protocol_repair", None) or {},
         }
         self._update_index(record)
         self._save_memory()

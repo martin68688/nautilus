@@ -14,6 +14,10 @@ agent:
       - memory_reproduction
       - novel_exploration
     replay_targets_path: "../paper-skills/eval_skill_memory/clean_replay_targets.json"
+  protocol_repair:
+    enabled: True
+    per_stage_attempt_limit: 2
+    require_runtime_provenance: True
 
 adoption_tracking:
   enable: True

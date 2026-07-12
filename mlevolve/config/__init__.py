@@ -50,6 +50,13 @@ class DraftRolePolicyConfig:
     roles: list[str] = field(default_factory=list)
     extra_role: str = "novel_exploration"
     replay_targets_path: str = ""
+
+
+@dataclass
+class ProtocolRepairConfig:
+    enabled: bool = True
+    per_stage_attempt_limit: int = 2
+    require_runtime_provenance: bool = True
     
 
 @dataclass
@@ -107,6 +114,7 @@ class AgentConfig:
     decay: DecayConfig
     use_diff_mode: bool = True
     draft_role_policy: DraftRolePolicyConfig = field(default_factory=DraftRolePolicyConfig)
+    protocol_repair: ProtocolRepairConfig = field(default_factory=ProtocolRepairConfig)
 @dataclass
 class ExecConfig:
     timeout: int

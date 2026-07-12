@@ -93,6 +93,10 @@ class SearchNode(DataClassJsonMixin):
     leakage_repair_attempt: int = field(default=0, kw_only=True)
     resolved_issue_codes: list[str] = field(default_factory=list, kw_only=True)
     audit_repair_required: bool = field(default=False, kw_only=True)
+    # Multi-stage transaction for protocol-biased but methodologically useful
+    # solutions.  This is intentionally separate from ordinary debug depth:
+    # intermediate stages are journaled and audited, but never executed/ranked.
+    protocol_repair: dict = field(default_factory=dict, kw_only=True)
 
     def __post_init__(self) -> None:
         if self.parent is not None:

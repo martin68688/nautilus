@@ -71,6 +71,14 @@ agent:
     extra_role: novel_exploration
     replay_targets_path: ""
 
+  # Protocol-biased solutions need a staged evaluation-protocol migration,
+  # not repeated free-form debugging.  Each stage keeps the frozen model
+  # design and is blocked from GPU execution until the final gate.
+  protocol_repair:
+    enabled: True
+    per_stage_attempt_limit: 2
+    require_runtime_provenance: True
+
   # --- Branch strategy ---
   fusion_vs_evolution_prob: 0.3
   branch_fusion_trigger_prob: 1.0
