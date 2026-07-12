@@ -1,4 +1,5 @@
 import logging
+import copy
 
 from agents.leakage_audit import rank_eligible
 from engine.search_node import SearchNode
@@ -102,6 +103,11 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
             node.strategy_alignment = copy.deepcopy(parent_node.strategy_alignment)
         if not node.protocol_repair:
             node.protocol_repair = copy.deepcopy(parent_node.protocol_repair)
+        if node.protocol_repair:
+            # Keep the legacy counter frozen for the whole protocol
+            # transaction, including stages whose parent audit was already
+            # normalized to protocol_stage_complete.
+            node.leakage_repair_attempt = parent_node.leakage_repair_attempt
         if not node.replay_source:
             node.replay_source = copy.deepcopy(parent_node.replay_source)
         if node.replay_status is None:
@@ -120,7 +126,8 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
                 "issues": copy.deepcopy(parent_audit.get("issues") or []),
                 "preservation_contract": preservation_contract,
             }
-            node.leakage_repair_attempt = parent_node.leakage_repair_attempt + 1
+            if not node.protocol_repair:
+                node.leakage_repair_attempt = parent_node.leakage_repair_attempt + 1
             node.audit_repair_required = True
             if node.replay_source:
                 # `requires_repair` describes the replay lineage. Only the

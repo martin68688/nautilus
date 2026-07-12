@@ -105,6 +105,7 @@ def generate(
     json_schema=None,
     max_retries=20,
     retry_delay=3,
+    request_timeout=None,
 ):
     """Streaming text generation. Dispatches by cfg.agent.code.model: Gemini / Anthropic (glm) / OpenAI-compatible."""
     model = getattr(cfg.agent.code, "model", "") or ""
@@ -119,6 +120,7 @@ def generate(
             json_schema=json_schema,
             max_retries=max_retries,
             retry_delay=retry_delay,
+            request_timeout=request_timeout,
         )
     if provider == "anthropic":
         return _anthropic.generate(
@@ -130,6 +132,7 @@ def generate(
             json_schema=json_schema,
             max_retries=max_retries,
             retry_delay=retry_delay,
+            request_timeout=request_timeout,
         )
     return _gemini.generate(
         prompt=prompt,
@@ -140,4 +143,5 @@ def generate(
         json_schema=json_schema,
         max_retries=max_retries,
         retry_delay=retry_delay,
+        request_timeout=request_timeout,
     )

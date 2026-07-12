@@ -184,6 +184,7 @@ def generate(
     json_schema: dict | None = None,
     max_retries: int = 20,
     retry_delay: float = 3,
+    request_timeout: float | None = None,
 ) -> str:
     """Text generation via the Anthropic Messages API.
 
@@ -200,7 +201,7 @@ def generate(
     client = anthropic.Anthropic(
         api_key=stage.api_key,
         base_url=stage.base_url or None,
-        timeout=1200.0,
+        timeout=request_timeout if request_timeout is not None else 1200.0,
     )
 
     use_thinking = json_schema is None

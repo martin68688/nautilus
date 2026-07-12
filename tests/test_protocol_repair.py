@@ -1,5 +1,6 @@
 import json
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -13,6 +14,7 @@ from agents.leakage_audit import audit_code, build_repair_preservation_contract
 from agents.protocol_repair_runtime import ProtocolProvenanceGuard
 from agents import result_parse_agent
 from agents import protocol_repair_agent
+from agents.triggers import register_node
 from engine.search_node import SearchNode
 from engine.agent_search import AgentSearch
 from engine.search_node import Journal
@@ -354,7 +356,11 @@ def test_protocol_repair_agent_skips_context_free_code_review(monkeypatch):
         is_buggy=True,
         is_valid=False,
     )
-    monkeypatch.setattr(protocol_repair_agent, "plan_and_code_query", lambda *_args: ("repair", parent.code))
+    monkeypatch.setattr(
+        protocol_repair_agent,
+        "plan_and_code_query",
+        lambda *_args, **_kwargs: ("repair", parent.code),
+    )
     monkeypatch.setattr(protocol_repair_agent, "register_node", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(protocol_repair_agent, "log_adoption", lambda *_args, **_kwargs: None)
     agent = SimpleNamespace(
@@ -364,6 +370,148 @@ def test_protocol_repair_agent_skips_context_free_code_review(monkeypatch):
     child = protocol_repair_agent.run(agent, parent)
     assert child.skip_code_review is True
     assert child.protocol_repair["transaction_id"] == "tx-agent"
+
+
+def test_five_protocol_stages_do_not_consume_legacy_repair_attempts(monkeypatch):
+    stages = [
+        "data_scope",
+        "validation_provenance",
+        "cross_fit",
+        "selection_freeze",
+        "final_holdout",
+    ]
+    root = SearchNode(code="", plan="root", stage="root")
+    parent = SearchNode(
+        code="source", plan="seed", stage="draft", parent=root,
+        leakage_repair_attempt=1,
+        leakage_audit={"status": "protocol_biased", "issues": []},
+        protocol_repair={
+            "schema": protocol_repair.PROTOCOL_REPAIR_SCHEMA,
+            "transaction_id": "tx-five-stage",
+            "protocol_plan": {"stages": stages},
+            "current_stage_index": 0,
+            "stage_attempts": {},
+            "stage_generation_attempts": {},
+            "state": "pending",
+            "max_attempts_per_stage": 2,
+            "max_generation_attempts_per_stage": 2,
+        },
+    )
+    agent = SimpleNamespace(
+        next_branch_id=1,
+        branch_all_nodes={1: [parent]},
+        branch_successful_nodes={1: []},
+        _serialize_prompt=lambda prompt: str(prompt),
+    )
+
+    for index, stage in enumerate(stages):
+        generation = protocol_repair.begin_stage_generation(parent.protocol_repair)
+        child = SearchNode(
+            code=f"stage-{stage}", plan=stage, stage="debug", parent=parent,
+            protocol_repair=protocol_repair.finish_stage_generation(generation),
+        )
+        register_node(agent, child, "prompt", parent_node=parent)
+        assert child.leakage_repair_attempt == 1
+        assert child.protocol_repair["stage_generation_attempts"][stage] == 1
+        child.protocol_repair = protocol_repair.apply_stage_result(
+            child.protocol_repair,
+            {"status": "clean", "code_sha256": f"sha-{index}", "issues": []},
+            child.id,
+        )
+        parent = child
+
+    assert parent.protocol_repair["state"] == "ready_for_execution"
+    assert parent.leakage_repair_attempt == 1
+    assert set(parent.protocol_repair["stage_generation_attempts"]) == set(stages)
+
+
+def test_protocol_generation_failures_have_per_stage_budget():
+    tx = {
+        "schema": protocol_repair.PROTOCOL_REPAIR_SCHEMA,
+        "transaction_id": "tx-generation-budget",
+        "protocol_plan": {"stages": ["data_scope", "cross_fit"]},
+        "current_stage_index": 0,
+        "stage_attempts": {},
+        "stage_generation_attempts": {},
+        "history": [],
+        "state": "pending",
+        "max_generation_attempts_per_stage": 2,
+    }
+    first = protocol_repair.begin_stage_generation(tx)
+    first = protocol_repair.record_stage_generation_failure(first, "n1", "timeout")
+    assert first["state"] == "pending"
+    assert first["stage_generation_attempts"] == {"data_scope": 1}
+
+    second = protocol_repair.begin_stage_generation(first)
+    second = protocol_repair.record_stage_generation_failure(second, "n2", "timeout")
+    assert second["state"] == "exhausted"
+    assert second["terminal_reason"] == "stage_generation_attempts_exhausted:data_scope"
+    assert [entry["status"] for entry in second["history"]] == [
+        "generation_failed", "generation_failed"
+    ]
+
+
+def test_duplicate_inflight_repair_waits_without_falling_back_to_uct(monkeypatch):
+    root = SearchNode(code="", plan="root", stage="root", step=0)
+    parent = SearchNode(
+        code="source", plan="repair", stage="draft", parent=root,
+        leakage_audit={"status": "blocked", "repair_required": True},
+        audit_repair_required=True,
+    )
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.journal = Journal(nodes=[root, parent])
+    agent.data_preview = "ready"
+    agent.search_start_time = 1.0
+    AgentSearch._init_mandatory_repair_scheduler(agent)
+    agent._mandatory_repair_inflight_ids.add(parent.id)
+    selected = []
+    monkeypatch.setattr(
+        "engine.agent_search.node_selection.select_with_soft_switch",
+        lambda _agent: selected.append(True) or root,
+    )
+
+    result = AgentSearch.step(agent, parent, exec_callback=lambda *_args: None)
+    assert result is None
+    assert selected == []
+
+
+def test_uct_excludes_repair_only_children():
+    from engine import node_selection
+
+    root = SearchNode(code="", plan="root", stage="root", step=0)
+    repair = SearchNode(
+        code="repair", plan="repair", stage="draft", parent=root,
+        audit_repair_required=True,
+        protocol_repair={
+            "schema": protocol_repair.PROTOCOL_REPAIR_SCHEMA,
+            "protocol_plan": {"stages": ["data_scope"]},
+            "current_stage_index": 0,
+            "state": "pending",
+        },
+    )
+    normal = SearchNode(
+        code="normal", plan="normal", stage="draft", parent=root,
+        is_buggy=False,
+    )
+    agent = SimpleNamespace(
+        cfg=SimpleNamespace(agent=SimpleNamespace(
+            decay=SimpleNamespace(
+                phase_ratios=[0.2, 0.7], exploration_constant=1.414,
+                alpha=0.01, lower_bound=0.7,
+            )
+        )),
+        scfg=SimpleNamespace(num_drafts=2, num_improves=2),
+        acfg=SimpleNamespace(
+            steps=80,
+            draft_role_policy=SimpleNamespace(enabled=True),
+        ),
+        current_step=1,
+        is_root=lambda node: node is root,
+    )
+
+    selected = node_selection.select(agent, root)
+    assert selected is normal
+    assert selected is not repair
 
 
 def test_agent_search_routes_active_transaction_only_to_protocol_agent(monkeypatch):
@@ -404,6 +552,8 @@ def test_releasing_repair_parent_marks_consumed_transaction_superseded():
         "protocol_plan": {"stages": ["data_scope", "final_holdout"]},
         "current_stage_index": 0,
         "state": "pending",
+        "active_stage": "data_scope",
+        "active_generation_attempt": 1,
     }
     parent = SearchNode(
         code="parent", plan="parent", stage="draft", protocol_repair=parent_tx,
@@ -421,6 +571,8 @@ def test_releasing_repair_parent_marks_consumed_transaction_superseded():
     AgentSearch._release_mandatory_repair_parent(agent, parent)
     assert parent.protocol_repair["state"] == "abandoned"
     assert parent.protocol_repair["successor_node_id"] == child.id
+    assert "active_stage" not in parent.protocol_repair
+    assert "active_generation_attempt" not in parent.protocol_repair
     assert parent.is_terminal is True
     assert parent.audit_repair_required is False
 
@@ -439,7 +591,48 @@ def test_releasing_repair_parent_marks_consumed_transaction_superseded():
     AgentSearch._release_mandatory_repair_parent(agent, active_parent)
     assert active_parent.protocol_repair["state"] == "superseded"
     assert active_parent.protocol_repair["successor_node_id"] == active_child.id
+    assert "active_stage" not in active_parent.protocol_repair
+    assert "active_generation_attempt" not in active_parent.protocol_repair
     assert active_parent.is_terminal is True
+
+
+def test_concurrent_parent_release_is_idempotent():
+    tx = {
+        "schema": protocol_repair.PROTOCOL_REPAIR_SCHEMA,
+        "transaction_id": "tx-concurrent-release",
+        "protocol_plan": {"stages": ["data_scope", "final_holdout"]},
+        "current_stage_index": 0,
+        "state": "stage_in_progress",
+        "active_stage": "data_scope",
+        "active_generation_attempt": 1,
+    }
+    parent = SearchNode(
+        code="parent", plan="parent", stage="draft", protocol_repair=tx,
+        leakage_audit={"status": "blocked", "repair_required": True},
+        audit_repair_required=True,
+    )
+    child = SearchNode(
+        code="child", plan="child", stage="debug", parent=parent,
+        protocol_repair={**tx, "state": "pending"},
+    )
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.journal = Journal(nodes=[parent, child])
+    AgentSearch._init_mandatory_repair_scheduler(agent)
+    agent._mandatory_repair_inflight_ids.add(parent.id)
+
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        list(pool.map(
+            lambda _index: AgentSearch._release_mandatory_repair_parent(agent, parent),
+            range(8),
+        ))
+
+    assert parent.protocol_repair["state"] == "superseded"
+    assert parent.protocol_repair["successor_node_id"] == child.id
+    assert "active_stage" not in parent.protocol_repair
+    assert "active_generation_attempt" not in parent.protocol_repair
+    assert parent.is_terminal is True
+    assert not agent._mandatory_repair_inflight_ids
+    assert not agent._mandatory_repair_queue
 
 
 def test_postexecution_runtime_provenance_completes_or_rolls_back(monkeypatch, tmp_path):

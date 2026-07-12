@@ -225,10 +225,17 @@ def ensure_transaction(agent: Any, node: Any) -> dict:
         "preservation_contract": contract,
         "protocol_plan": plan,
         "current_stage_index": 0,
+        # Audit attempts count generated children that fail the current
+        # protocol contract. Generation attempts count LLM/API failures before
+        # a child exists. Neither counter consumes leakage_repair_attempt.
         "stage_attempts": {},
+        "stage_generation_attempts": {},
         "history": [],
         "state": "pending",
         "max_attempts_per_stage": int(_cfg(agent, "per_stage_attempt_limit", 2)),
+        "max_generation_attempts_per_stage": int(
+            _cfg(agent, "stage_generation_attempt_limit", 2)
+        ),
         "require_runtime_provenance": bool(_cfg(agent, "require_runtime_provenance", True)),
     }
     node.protocol_repair = tx
@@ -251,6 +258,65 @@ def is_active(transaction: dict | None) -> bool:
         and transaction.get("state") in {"pending", "stage_in_progress", "final_pending"}
         and current_stage(transaction)
     )
+
+
+def begin_stage_generation(transaction: dict) -> dict:
+    """Claim one bounded code-generation attempt for the current stage."""
+    tx = copy.deepcopy(transaction)
+    stage = current_stage(tx)
+    if not stage or tx.get("state") not in {"pending", "final_pending"}:
+        raise ValueError("Protocol repair stage is not available for generation")
+    attempts = dict(tx.get("stage_generation_attempts") or {})
+    attempts[stage] = int(attempts.get(stage, 0)) + 1
+    limit = int(tx.get("max_generation_attempts_per_stage", 2))
+    if attempts[stage] > limit:
+        tx["state"] = "exhausted"
+        tx["terminal_reason"] = f"stage_generation_attempts_exhausted:{stage}"
+        return tx
+    tx["stage_generation_attempts"] = attempts
+    tx["state"] = "stage_in_progress"
+    tx["active_stage"] = stage
+    tx["active_generation_attempt"] = attempts[stage]
+    return tx
+
+
+def record_stage_generation_failure(
+    transaction: dict,
+    node_id: str,
+    reason: str,
+) -> dict:
+    """Return a failed generation to its stage or exhaust only that stage."""
+    tx = copy.deepcopy(transaction)
+    stage = current_stage(tx) or tx.get("active_stage")
+    attempt = int((tx.get("stage_generation_attempts") or {}).get(stage, 0))
+    limit = int(tx.get("max_generation_attempts_per_stage", 2))
+    tx.setdefault("history", []).append({
+        "node_id": node_id,
+        "stage": stage,
+        "attempt": attempt,
+        "status": "generation_failed",
+        "reason": reason,
+    })
+    tx.pop("active_stage", None)
+    tx.pop("active_generation_attempt", None)
+    if attempt >= limit:
+        tx["state"] = "exhausted"
+        tx["terminal_reason"] = f"stage_generation_attempts_exhausted:{stage}"
+    else:
+        tx["state"] = "final_pending" if stage == "final_holdout" else "pending"
+    return tx
+
+
+def finish_stage_generation(transaction: dict) -> dict:
+    """Clear the transient generation lease carried into the child."""
+    tx = copy.deepcopy(transaction)
+    tx.pop("active_stage", None)
+    tx.pop("active_generation_attempt", None)
+    if tx.get("state") == "stage_in_progress":
+        tx["state"] = (
+            "final_pending" if current_stage(tx) == "final_holdout" else "pending"
+        )
+    return tx
 
 
 def stage_scope_gate(audit: dict, transaction: dict) -> dict:

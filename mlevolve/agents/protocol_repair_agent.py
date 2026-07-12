@@ -9,7 +9,12 @@ from agents.adoption import log_adoption
 from agents.coder import plan_and_code_query
 from agents.leakage_audit import format_audit, format_repair_preservation_contract
 from agents.planner import build_chat_prompt_for_model
-from agents.protocol_repair import current_stage, stage_instructions
+from agents.protocol_repair import (
+    begin_stage_generation,
+    current_stage,
+    finish_stage_generation,
+    stage_instructions,
+)
 from agents.triggers import register_node
 from engine.search_node import SearchNode
 from utils.response import wrap_code
@@ -18,7 +23,8 @@ logger = logging.getLogger("MLEvolve")
 
 
 def run(agent, parent_node: SearchNode) -> SearchNode:
-    transaction = copy.deepcopy(parent_node.protocol_repair)
+    transaction = begin_stage_generation(parent_node.protocol_repair)
+    parent_node.protocol_repair = copy.deepcopy(transaction)
     stage = current_stage(transaction)
     if not stage:
         raise ValueError("Protocol repair has no pending stage")
@@ -49,7 +55,17 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     )
 
     parent_node.add_expected_child_count()
-    repair_plan, code = plan_and_code_query(agent, prompt)
+    config = getattr(agent.acfg, "protocol_repair", None)
+    repair_plan, code = plan_and_code_query(
+        agent,
+        prompt,
+        retries=1,
+        generation_retries=int(getattr(config, "stage_generation_backend_retries", 2)),
+        request_timeout=float(getattr(config, "stage_generation_timeout_seconds", 300)),
+    )
+    if not repair_plan or not code:
+        raise RuntimeError(f"Protocol repair code generation returned no usable program for {stage}")
+    transaction = finish_stage_generation(transaction)
     child = SearchNode(
         plan=f"[staged_protocol_repair:{stage}] {repair_plan}",
         code=code,

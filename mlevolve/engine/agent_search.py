@@ -284,11 +284,19 @@ class AgentSearch:
             self._mandatory_repair_queue.append(node)
             self._mandatory_repair_queued_ids.add(node.id)
             node.leakage_audit["repair_queue_status"] = "queued"
-        logger.warning(
-            "Node %s queued for mandatory leakage repair (attempt=%s)",
-            node.id,
-            node.leakage_repair_attempt + 1,
-        )
+        if node.protocol_repair:
+            logger.warning(
+                "Node %s queued for staged protocol repair (stage=%s, generation_attempts=%s)",
+                node.id,
+                protocol_repair.current_stage(node.protocol_repair),
+                node.protocol_repair.get("stage_generation_attempts", {}),
+            )
+        else:
+            logger.warning(
+                "Node %s queued for mandatory leakage repair (attempt=%s)",
+                node.id,
+                node.leakage_repair_attempt + 1,
+            )
 
     def _claim_mandatory_repair_parent(
         self,
@@ -338,6 +346,8 @@ class AgentSearch:
                     if (successor.protocol_repair or {}).get("state") == "exhausted"
                     else "superseded"
                 )
+                node.protocol_repair.pop("active_stage", None)
+                node.protocol_repair.pop("active_generation_attempt", None)
                 node.protocol_repair["successor_node_id"] = successor.id
                 node.audit_repair_required = False
                 node.leakage_audit["repair_required"] = False
@@ -354,6 +364,25 @@ class AgentSearch:
                 node.leakage_audit["repair_queue_status"] = "exhausted"
             else:
                 node.leakage_audit["repair_queue_status"] = "expanded"
+
+    @staticmethod
+    def _record_protocol_generation_failure(node: SearchNode, error: Exception) -> None:
+        tx = node.protocol_repair or {}
+        if tx.get("state") != "stage_in_progress":
+            return
+        node.protocol_repair = protocol_repair.record_stage_generation_failure(
+            tx,
+            node.id,
+            f"{type(error).__name__}: {error}",
+        )
+        if node.protocol_repair.get("state") == "exhausted":
+            node.is_terminal = True
+            node.continue_improve = False
+            node.audit_repair_required = False
+            node.leakage_audit["repair_required"] = False
+            node.leakage_audit["repair_queue_status"] = "exhausted"
+        else:
+            node.leakage_audit["repair_queue_status"] = "generation_retry"
 
     def _serialize_prompt(self, prompt_complete) -> str | None:
         """Serialize prompt (str or dict) to string for saving in node."""
@@ -560,6 +589,7 @@ class AgentSearch:
 
             except Exception as e:
                 logger.warning("Step failed for parent %s; propagating zero reward", parent_node.id)
+                self._record_protocol_generation_failure(parent_node, e)
                 evaluation.backpropagate(node=parent_node, value=0, add_to_tree=False)
                 if not isinstance(e, DraftRoleReservationError):
                     parent_node.sub_expected_child_count()
@@ -595,7 +625,10 @@ class AgentSearch:
             if claimed_repair_parent is not None:
                 node = claimed_repair_parent
             elif duplicate_repair_request:
-                node = None
+                logger.info(
+                    "[step] Mandatory repair parent is already in flight; worker will wait"
+                )
+                return None
 
         if not node or node.stage == "root":
             node = node_selection.select_with_soft_switch(self)
@@ -621,7 +654,7 @@ class AgentSearch:
             if claimed_repair_parent is not None:
                 self._release_mandatory_repair_parent(
                     claimed_repair_parent,
-                    retry=True,
+                    retry=not claimed_repair_parent.is_terminal,
                 )
             raise
         else:

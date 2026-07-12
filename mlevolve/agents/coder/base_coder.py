@@ -31,6 +31,8 @@ def plan_and_code_query(
     agent_instance,
     prompt,
     retries: int = 3,
+    generation_retries: int = 20,
+    request_timeout: float | None = None,
 ) -> Tuple[str, str]:
     """Generate plan + code in one LLM call; returns (nl_text, code). On failure returns ("", raw_completion_text)."""
     completion_text = None
@@ -39,6 +41,8 @@ def plan_and_code_query(
             prompt=prompt,
             temperature=agent_instance.acfg.code.temp,
             cfg=agent_instance.cfg,
+            max_retries=generation_retries,
+            request_timeout=request_timeout,
         )
         code = extract_code(completion_text)
         nl_text = extract_text_up_to_code(completion_text)

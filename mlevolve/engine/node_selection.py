@@ -10,6 +10,22 @@ from engine.conditions import should_trigger_branch_fusion
 logger = logging.getLogger("MLEvolve")
 
 
+def _is_repair_only(node: SearchNode) -> bool:
+    transaction = getattr(node, "protocol_repair", None) or {}
+    protocol_active = transaction.get("state") in {
+        "pending", "stage_in_progress", "final_pending"
+    }
+    return bool(
+        protocol_active
+        or getattr(node, "audit_repair_required", False)
+        or (getattr(node, "leakage_audit", None) or {}).get("search_disposition") == "repair_only"
+    )
+
+
+def _uct_selectable(node: SearchNode) -> bool:
+    return not node.is_terminal and not _is_repair_only(node)
+
+
 def _piecewise_decay(t, initial_C=1.414, T1=100, T2=200, alpha=0.01, lower_bound=0.7):
     """Piecewise decay: initial_C until T1, linear to lower_bound by T2, then lower_bound."""
     if t < T1:
@@ -42,7 +58,10 @@ def select(agent, node: SearchNode) -> Optional[SearchNode]:
     def _best_child(n: SearchNode) -> Optional[SearchNode]:
         C = _compute_exploration_constant(agent)
         if agent.is_root(n):
-            filtered_children = [child for child in n.children if not child.lock]
+            filtered_children = [
+                child for child in n.children
+                if not child.lock and _uct_selectable(child)
+            ]
             if not filtered_children:
                 return None
             selected_node = max(filtered_children,
@@ -51,9 +70,13 @@ def select(agent, node: SearchNode) -> Optional[SearchNode]:
                 selected_node.lock = True
             return selected_node
         else:
-            if not n.children:
+            filtered_children = [child for child in n.children if _uct_selectable(child)]
+            if not filtered_children:
                 return None
-            return max(n.children, key=lambda child: child.uct_value(exploration_constant=C))
+            return max(
+                filtered_children,
+                key=lambda child: child.uct_value(exploration_constant=C),
+            )
 
     while node and not node.is_terminal:
         if not node.reached_child_limit(scfg=agent.scfg):

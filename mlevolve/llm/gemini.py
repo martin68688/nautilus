@@ -208,6 +208,7 @@ def generate(
     json_schema: dict | None = None,
     max_retries: int = 20,
     retry_delay: float = 3,
+    request_timeout: float | None = None,
 ) -> str:
     """Streaming text generation via Gemini API.
 
@@ -224,6 +225,8 @@ def generate(
     Returns:
         The generated text (with <think> blocks stripped).
     """
+    # The Gemini SDK client owns its transport timeout. Keep the common
+    # signature so protocol-repair callers can use one bounded interface.
     _setup_gemini_client(cfg)
 
     # Convert dict/list prompts to markdown string

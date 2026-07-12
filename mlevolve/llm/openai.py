@@ -221,6 +221,7 @@ def generate(
     json_schema: dict | None = None,
     max_retries: int = 20,
     retry_delay: float = 3,
+    request_timeout: float | None = None,
 ) -> str:
     """Streaming text generation via OpenAI-compatible Chat API. Supports chat format {system, user, assistant} for Qwen."""
     stage = cfg.agent.code
@@ -229,7 +230,7 @@ def generate(
     client = OpenAI(
         api_key=stage.api_key,
         base_url=stage.base_url or None,
-        timeout=1200.0,
+        timeout=request_timeout if request_timeout is not None else 1200.0,
     )
     # Qwen: thinking + json_schema are mutually exclusive — drop schema, keep thinking.
     if json_schema is not None and thinking_json_incompatible(model):

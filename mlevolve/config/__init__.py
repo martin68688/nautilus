@@ -56,6 +56,9 @@ class DraftRolePolicyConfig:
 class ProtocolRepairConfig:
     enabled: bool = True
     per_stage_attempt_limit: int = 2
+    stage_generation_attempt_limit: int = 2
+    stage_generation_timeout_seconds: int = 300
+    stage_generation_backend_retries: int = 2
     require_runtime_provenance: bool = True
     
 
