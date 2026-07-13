@@ -1,5 +1,6 @@
 import atexit
 import logging
+import os
 import sys
 import shutil
 import time
@@ -82,7 +83,44 @@ def run():
     lock = threading.Lock()
     completed = 0
 
+    dev_execution_role = os.environ.get("RUNFOREST_DEV_EXECUTION_ROLE", "").strip()
+    draft_indices = list(range(min(initial_draft_count, total_steps)))
+    if dev_execution_role:
+        configured_roles = [
+            agent.configured_draft_role(index)
+            for index in range(initial_draft_count)
+        ]
+        if dev_execution_role not in configured_roles:
+            raise RuntimeError(
+                "RUNFOREST_DEV_EXECUTION_ROLE must name one configured Draft role; "
+                f"role={dev_execution_role!r}, configured={configured_roles}"
+            )
+        target_index = configured_roles.index(dev_execution_role)
+        agent._draft_generation_count = target_index
+        draft_indices = [target_index]
+        logger.warning(
+            "DEV role filter active: generating and executing only role=%s (slot=%s)",
+            dev_execution_role,
+            target_index,
+        )
+
     pending_draft_nodes = []
+    dev_protocol_transaction_seen = False
+
+    def dev_protocol_run_finished() -> bool:
+        nonlocal dev_protocol_transaction_seen
+        if not dev_execution_role:
+            return False
+        states = {
+            str((getattr(node, "protocol_repair", None) or {}).get("state") or "")
+            for node in agent.journal.nodes
+            if getattr(node, "protocol_repair", None)
+        }
+        if states:
+            dev_protocol_transaction_seen = True
+        if not dev_protocol_transaction_seen:
+            return False
+        return not (states & {"pending", "stage_in_progress", "final_pending"})
     if initial_draft_count > 0 and total_steps > 0:
         logger.info(f"📝 Phase 1: Sequential draft generation (code only, {initial_draft_count} drafts)")
 
@@ -95,7 +133,7 @@ def run():
                 draft_role=agent.configured_draft_role(draft_idx),
             )
 
-        for draft_idx in range(min(initial_draft_count, total_steps)):
+        for draft_idx in draft_indices:
             try:
                 logger.info(f"🔨 Generating draft {draft_idx + 1}/{min(initial_draft_count, total_steps)} (code only)")
                 cur_node = step_task_generate_only(draft_idx)
@@ -110,6 +148,28 @@ def run():
                     ) from e
 
         logger.info(f"✅ Phase 1 complete: {len(pending_draft_nodes)} draft codes generated")
+
+        if dev_execution_role:
+            matching_nodes = [
+                node for node in pending_draft_nodes
+                if getattr(node, "draft_role", None) == dev_execution_role
+            ]
+            if len(matching_nodes) != 1:
+                raise RuntimeError(
+                    "RUNFOREST_DEV_EXECUTION_ROLE must match exactly one generated Draft; "
+                    f"role={dev_execution_role!r}, matches={len(matching_nodes)}"
+                )
+            skipped_roles = [
+                getattr(node, "draft_role", None)
+                for node in pending_draft_nodes
+                if node not in matching_nodes
+            ]
+            pending_draft_nodes = matching_nodes
+            logger.warning(
+                "DEV role filter active: executing only role=%s; skipped=%s",
+                dev_execution_role,
+                skipped_roles,
+            )
 
     if pending_draft_nodes or completed < total_steps:
         logger.info(f"🚀 Phase 2: Pipelined parallel execution")
@@ -163,6 +223,11 @@ def run():
                     with lock:
                         save_run(cfg, journal)
                         completed = len(journal) - 1  # Exclude virtual node
+                        if dev_protocol_run_finished():
+                            logger.warning(
+                                "DEV role filter completed its protocol transaction; stopping search"
+                            )
+                            completed = total_steps
                         if completed == total_steps:
                             logger.info(journal_to_string_tree(journal))
 

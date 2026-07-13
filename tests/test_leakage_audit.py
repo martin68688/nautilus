@@ -437,6 +437,30 @@ print("validation log loss", best_ll)
     assert audit["memory_disposition"] == "negative_only"
 
 
+def test_static_audit_accepts_guarded_oof_ensemble_selection():
+    code = """
+oof_predictions_a = make_oof_a()
+oof_predictions_b = make_oof_b()
+protocol_guard.record_global_oof(oof_predictions_a, outer_train_ids)
+best_weights = None
+best_ll = 99
+for w1 in np.arange(0.1, 0.9, 0.1):
+    candidate = w1 * oof_predictions_a + (1 - w1) * oof_predictions_b
+    ll = log_loss(y_outer_train, candidate)
+    if ll < best_ll:
+        best_ll = ll
+        best_weights = (w1, 1 - w1)
+protocol_guard.record_selection("ensemble_weights", outer_train_ids)
+frozen_ensemble_weights = best_weights
+protocol_guard.freeze()
+"""
+    audit = audit_code(code)
+    assert not any(
+        issue["issue_code"] == "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+        for issue in audit["issues"]
+    )
+
+
 def test_preflight_block_is_structured_persisted_and_saved_as_negative_memory(tmp_path):
     class FakeGlobalMemory:
         def __init__(self):

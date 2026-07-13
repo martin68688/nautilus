@@ -406,6 +406,29 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
             and scope_gate.get("status") == "clean"
             and preservation_clean
         )
+        semantic_protocol_review = None
+        if final_stage and stage_passed and audit.get("status") == "clean":
+            semantic_protocol_review = data_leakage_agent.run_pre_execution_protocol_review(
+                agent, node, protocol_tx
+            )
+            if semantic_protocol_review.get("status") != "clean":
+                stage_passed = False
+                stage_audit = dict(stage_audit)
+                stage_audit["status"] = "blocked"
+                stage_audit["issues"] = list(stage_audit.get("issues") or []) + [{
+                    "issue_code": "PROTOCOL_FINAL_SEMANTIC_SPLIT_NOT_CLEAN",
+                    "category": "protocol_repair_stage",
+                    "severity": "critical",
+                    "line": 0,
+                    "evidence": (
+                        f"{semantic_protocol_review.get('reason')} "
+                        f"prediction_source={semantic_protocol_review.get('prediction_source')} "
+                        f"label_source={semantic_protocol_review.get('label_source')}"
+                    ),
+                    "remediation": semantic_protocol_review.get("required_fix"),
+                    "execution_disposition": "block",
+                    "detector": "protocol_semantic_agent_v1",
+                }]
         if final_stage and audit.get("status") != "clean":
             stage_passed = False
             stage_audit = dict(stage_audit)
@@ -420,14 +443,29 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
                 "execution_disposition": "block",
                 "detector": "protocol_stage_v1",
             }]
+        feedback_issues = list(stage_audit.get("issues") or [])
+        blocking_codes = set(scope_gate.get("blocking_issue_codes") or [])
+        feedback_issues.extend(
+            issue
+            for issue in static_audit.get("issues", [])
+            if issue.get("issue_code") in blocking_codes
+        )
+        if not preservation_clean and preservation_audit is not None:
+            feedback_issues.extend(preservation_audit.get("issues") or [])
+        stage_result = {
+            **stage_audit,
+            "status": "clean" if stage_passed else "blocked",
+            "issues": feedback_issues,
+        }
         node.protocol_repair = protocol_repair.apply_stage_result(
             protocol_tx,
-            {**stage_audit, "status": "clean" if stage_passed else "blocked"},
+            stage_result,
             node.id,
         )
         audit["protocol_stage_audit"] = stage_audit
         audit["protocol_scope_gate"] = scope_gate
         audit["protocol_preservation_clean"] = preservation_clean
+        audit["protocol_semantic_review"] = semantic_protocol_review
         audit["protocol_transaction_id"] = protocol_tx.get("transaction_id")
         audit["protocol_stage"] = stage
 
@@ -706,10 +744,22 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                 node.is_buggy
                 and (node.protocol_repair or {}).get("state") == "ready_for_execution"
             ):
+                exc_message = ""
+                if isinstance(node.exc_info, dict):
+                    exc_message = str(node.exc_info.get("message") or "")
+                elif node.exc_info:
+                    exc_message = str(node.exc_info)
+                traceback_tail = "".join(node._term_out or []).splitlines()[-8:]
+                runtime_reason = "; ".join(
+                    part for part in [
+                        f"{node.exc_type}: {exc_message}" if node.exc_type else exc_message,
+                        " | ".join(traceback_tail),
+                    ] if part
+                ) or "final protocol program failed before clean runtime provenance"
                 node.protocol_repair = protocol_repair.rollback_final_runtime_failure(
                     node.protocol_repair,
                     node.id,
-                    "final protocol program failed before clean runtime provenance",
+                    runtime_reason,
                 )
                 node.audit_repair_required = node.protocol_repair.get("state") != "exhausted"
                 node.replay_status = (

@@ -1,5 +1,6 @@
 """Data Leakage Agent: LLM-based data leakage check for node code."""
 
+import json
 import logging
 from typing import cast
 
@@ -78,6 +79,122 @@ DATA_LEAKAGE_CHECK_SPEC = FunctionSpec(
     },
     description="Detect data leakage issues that lead to unrealistically high validation metrics.",
 )
+
+
+PROTOCOL_SPLIT_REVIEW_SPEC = FunctionSpec(
+    name="review_evaluation_protocol",
+    json_schema={
+        "type": "object",
+        "properties": {
+            "status": {
+                "type": "string",
+                "enum": ["clean", "violation", "uncertain"],
+                "description": "clean only when the full data flow proves a trustworthy evaluation protocol",
+            },
+            "classification": {
+                "type": "string",
+                "enum": [
+                    "clean", "hard_leakage", "transductive_contamination",
+                    "selection_bias", "prediction_label_misalignment", "audit_unavailable",
+                ],
+            },
+            "reason": {
+                "type": "string",
+                "description": "Concrete data-flow explanation with the source variables and failing operation",
+            },
+            "prediction_source": {
+                "type": "string",
+                "description": "The actual dataset and index path used to produce the final reported predictions",
+            },
+            "label_source": {
+                "type": "string",
+                "description": "The actual dataset and index path used for final metric labels",
+            },
+            "required_fix": {
+                "type": "string",
+                "description": "A narrow protocol-only correction that preserves the complete model design",
+            },
+        },
+        "required": [
+            "status", "classification", "reason", "prediction_source",
+            "label_source", "required_fix",
+        ],
+    },
+    description="Trace data splits and verify final prediction/label provenance before GPU execution.",
+)
+
+
+def run_pre_execution_protocol_review(agent, node: SearchNode, transaction: dict) -> dict:
+    """Fail-closed semantic review of the complete final protocol program."""
+    try:
+        introduction = (
+            "You are the final data-protocol gate before an expensive GPU run. Trace the actual "
+            "data flow in the complete Python program. Do not trust variable names, comments, "
+            "ProtocolProvenanceGuard calls, or claimed sample IDs by themselves; verify what arrays "
+            "are actually read, transformed, predicted, selected, and scored. Focus on split integrity.\n\n"
+            "You must prove all of the following:\n"
+            "1. outer_train and outer_holdout are disjoint and fixed before learned fitting;\n"
+            "2. every OOF row is predicted by models/preprocessors that did not fit or early-stop on it;\n"
+            "3. model/ensemble selection uses complete outer_train OOF only and is frozen before holdout access;\n"
+            "4. final reported predictions are computed from the actual outer_holdout feature rows;\n"
+            "5. final metric labels are the same outer_holdout rows in exactly the same order;\n"
+            "6. external test/submission predictions are separate and are never sliced, renamed, or "
+            "paired with outer_holdout labels as a substitute for holdout predictions.\n\n"
+            "A guard call such as record_prediction(... outer_holdout_ids ...) is not proof if the "
+            "prediction array came from test data or another partition. If any source-to-metric path "
+            "cannot be proven, return status=uncertain. clean requires positive evidence, not absence "
+            "of an obvious suspicious keyword. Preserve all model components and training settings in "
+            "the required fix."
+        )
+        prompt = {
+            "Introduction": introduction,
+            "Task description": agent.task_desc,
+            # Prompt compilation recursively formats mappings but protocol metadata
+            # also contains booleans and numbers. Render it once as stable text.
+            "Protocol plan": json.dumps(
+                transaction.get("protocol_plan", {}), sort_keys=True, indent=2
+            ),
+            "Frozen preservation contract": json.dumps(
+                transaction.get("preservation_contract", {}), sort_keys=True, indent=2
+            ),
+            "Complete candidate program": wrap_code(node.code),
+        }
+        response = cast(
+            dict,
+            query(
+                system_message=prompt,
+                user_message=None,
+                func_spec=PROTOCOL_SPLIT_REVIEW_SPEC,
+                model=agent.acfg.feedback.model,
+                temperature=0.0,
+                cfg=agent.cfg,
+            ),
+        )
+        result = {
+            "status": str(response.get("status") or "uncertain"),
+            "classification": str(response.get("classification") or "audit_unavailable"),
+            "reason": str(response.get("reason") or "semantic protocol review returned no reason"),
+            "prediction_source": str(response.get("prediction_source") or "unproven"),
+            "label_source": str(response.get("label_source") or "unproven"),
+            "required_fix": str(response.get("required_fix") or "prove prediction/label alignment"),
+        }
+        logger.warning(
+            "Pre-execution protocol review for node %s: status=%s classification=%s",
+            node.id,
+            result["status"],
+            result["classification"],
+        )
+        return result
+    except Exception as exc:
+        logger.error("Pre-execution protocol review failed for node %s: %s", node.id, exc)
+        return {
+            "status": "uncertain",
+            "classification": "audit_unavailable",
+            "reason": f"semantic protocol review unavailable: {type(exc).__name__}: {exc}",
+            "prediction_source": "unproven",
+            "label_source": "unproven",
+            "required_fix": "Retry the semantic protocol review; do not execute while provenance is unproven.",
+        }
 
 
 

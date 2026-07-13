@@ -75,7 +75,8 @@ _SEVERITY_RANK = {"none": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 
 _REPAIR_UTILITY_CALLS = {
     "Counter", "DataFrame", "DataLoader", "Dataset", "GradScaler", "Path",
-    "Series", "Tensor", "TensorDataset",
+    "Series", "Tensor", "TensorDataset", "load", "loads", "load_state_dict",
+    "read_pickle",
 }
 _REPAIR_MODEL_CALLS = {
     "Adam", "AdamW", "AutoModel", "AutoModelForSequenceClassification",
@@ -106,6 +107,17 @@ _MODEL_IDENTITY_TARGET_PATTERN = re.compile(
     r"(?:model|backbone|encoder|decoder|checkpoint|pretrained|weights?|architecture)(?:_?name|_?path|_?id)?$",
     re.IGNORECASE,
 )
+_PROTOCOL_GUARD_METHODS = {
+    "assert_clean",
+    "emit",
+    "freeze",
+    "record_final_evaluation",
+    "record_fit",
+    "record_global_oof",
+    "record_prediction",
+    "record_selection",
+    "register_partition",
+}
 
 
 def _is_model_identity_literal(value: str) -> bool:
@@ -113,6 +125,32 @@ def _is_model_identity_literal(value: str) -> bool:
         return False
     stripped = value.strip()
     return bool(stripped and (not re.search(r"\s", stripped) or "/" in stripped))
+
+
+def _is_local_training_artifact_literal(value: str) -> bool:
+    """Return whether a model-like literal is a local output artifact path.
+
+    Protocol repair may need one checkpoint file per fold while preserving the
+    same pretrained model identity.  Those files are execution artifacts, not
+    replacement model identities.  Remote/vendor identifiers remain protected
+    by the stricter model-literal gate below.
+    """
+    stripped = str(value or "").strip().replace("\\", "/")
+    if not stripped or "://" in stripped:
+        return False
+    path = Path(stripped)
+    has_local_prefix = (
+        stripped.startswith(("./", "../", "/tmp/", "/workspace/"))
+        or "/working/" in f"/{stripped.lstrip('/')}"
+    )
+    artifact_suffixes = {
+        ".bin", ".ckpt", ".csv", ".joblib", ".json", ".npy", ".npz",
+        ".parquet", ".pkl", ".pt", ".pth", ".safetensors",
+    }
+    has_artifact_shape = path.suffix.lower() in artifact_suffixes or bool(
+        re.search(r"(?:^|[/_.-])(?:fold|epoch|best|last|checkpoint)(?:$|[/_.-]|\d)", stripped, re.IGNORECASE)
+    )
+    return has_local_prefix and has_artifact_shape
 
 
 def code_sha256(code: str) -> str:
@@ -171,7 +209,31 @@ def build_repair_preservation_contract(code: str) -> dict[str, Any]:
 
     semantic_model_call_ids: set[int] = set()
     semantic_model_literals: set[str] = set()
+    protocol_component_labels: set[str] = set()
+    protocol_metadata_literals: set[str] = set()
     for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and _call_name(node.func) in _PROTOCOL_GUARD_METHODS:
+            protocol_metadata_literals.update(
+                child.value
+                for arg in node.args
+                for child in ast.walk(arg)
+                if isinstance(child, ast.Constant) and isinstance(child.value, str)
+            )
+            protocol_metadata_literals.update(
+                child.value
+                for keyword in node.keywords
+                for child in ast.walk(keyword.value)
+                if isinstance(child, ast.Constant) and isinstance(child.value, str)
+            )
+        if isinstance(node, ast.Call) and _call_name(node.func) in {
+            "record_fit", "record_prediction"
+        }:
+            if (
+                node.args
+                and isinstance(node.args[0], ast.Constant)
+                and isinstance(node.args[0].value, str)
+            ):
+                protocol_component_labels.add(node.args[0].value)
         if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
             continue
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
@@ -193,7 +255,9 @@ def build_repair_preservation_contract(code: str) -> dict[str, Any]:
         if not isinstance(node, ast.Call):
             continue
         name = _call_name(node.func)
-        if _is_repair_protected_call(name) or id(node) in semantic_model_call_ids:
+        if _is_repair_protected_call(name) or (
+            id(node) in semantic_model_call_ids and name not in _REPAIR_UTILITY_CALLS
+        ):
             component_calls[name] = component_calls.get(name, 0) + 1
             component_call_hashes.setdefault(name, []).append(
                 structural_sha256(ast.unparse(node))
@@ -248,6 +312,10 @@ def build_repair_preservation_contract(code: str) -> dict[str, Any]:
             for name, hashes in sorted(training_hyperparameters.items())
         },
         "model_literals": model_literals,
+        # Provenance component names describe events; they are not model or
+        # checkpoint identities and may be introduced by protocol repair.
+        "protocol_component_labels": sorted(protocol_component_labels),
+        "protocol_metadata_literals": sorted(protocol_metadata_literals),
     }
 
 
@@ -292,6 +360,21 @@ def audit_repair_preservation(code: str, contract: dict[str, Any]) -> dict[str, 
             execution_disposition="block",
         ))
 
+    added_components = {
+        name: int(count)
+        for name, count in current.get("component_calls", {}).items()
+        if name not in contract.get("component_calls", {})
+    }
+    if added_components:
+        issues.append(_issue(
+            code=code, node=None,
+            issue_code="REPAIR_MODEL_COMPONENT_ADDED",
+            category="repair_integrity", severity="critical",
+            evidence=f"Leakage-only repair introduced new learned components: {added_components}",
+            remediation="Remove newly introduced models/features; duplicate only exact protected constructors when folds or final refits require another instance.",
+            execution_disposition="block",
+        ))
+
     changed_configurations: dict[str, int] = {}
     current_hashes = current.get("component_call_hashes", {})
     for name, required_hashes in contract.get("component_call_hashes", {}).items():
@@ -311,6 +394,24 @@ def audit_repair_preservation(code: str, contract: dict[str, Any]) -> dict[str, 
             category="repair_integrity", severity="critical",
             evidence=f"Protected component constructor/configuration changed: {changed_configurations}",
             remediation="Restore the original component arguments and hyperparameters; only data/evaluation boundaries may change.",
+            execution_disposition="block",
+        ))
+
+    unapproved_configurations: dict[str, int] = {}
+    for name, hashes in current_hashes.items():
+        allowed = set(contract.get("component_call_hashes", {}).get(name, []))
+        if not allowed:
+            continue
+        unexpected_count = sum(hash_value not in allowed for hash_value in hashes)
+        if unexpected_count:
+            unapproved_configurations[name] = unexpected_count
+    if unapproved_configurations:
+        issues.append(_issue(
+            code=code, node=None,
+            issue_code="REPAIR_UNAPPROVED_MODEL_CONFIGURATION_ADDED",
+            category="repair_integrity", severity="critical",
+            evidence=f"Additional protected component instances changed constructor/configuration: {unapproved_configurations}",
+            remediation="Every fold/final duplicate of a protected component must use an exact constructor already frozen by the source contract.",
             execution_disposition="block",
         ))
 
@@ -350,6 +451,20 @@ def audit_repair_preservation(code: str, contract: dict[str, Any]) -> dict[str, 
             execution_disposition="block",
         ))
 
+    added_architectures = sorted(
+        set(current.get("architecture_hashes", []))
+        - set(contract.get("architecture_hashes", []))
+    )
+    if added_architectures:
+        issues.append(_issue(
+            code=code, node=None,
+            issue_code="REPAIR_MODEL_ARCHITECTURE_ADDED",
+            category="repair_integrity", severity="critical",
+            evidence=f"{len(added_architectures)} new model class structure(s) appeared during leakage-only repair.",
+            remediation="Do not introduce replacement architectures during protocol repair.",
+            execution_disposition="block",
+        ))
+
     missing_literals = sorted(
         set(contract.get("model_literals", [])) - set(current.get("model_literals", []))
     )
@@ -360,6 +475,26 @@ def audit_repair_preservation(code: str, contract: dict[str, Any]) -> dict[str, 
             category="repair_integrity", severity="critical",
             evidence=f"Protected model/checkpoint identifiers were removed: {missing_literals}",
             remediation="Keep the original pretrained model names and checkpoint paths unchanged during leakage repair.",
+            execution_disposition="block",
+        ))
+
+    added_literals = sorted(
+        literal
+        for literal in (
+            set(current.get("model_literals", []))
+            - set(contract.get("model_literals", []))
+        )
+        if not _is_local_training_artifact_literal(literal)
+        and literal not in set(current.get("protocol_component_labels", []))
+        and literal not in set(current.get("protocol_metadata_literals", []))
+    )
+    if added_literals:
+        issues.append(_issue(
+            code=code, node=None,
+            issue_code="REPAIR_MODEL_IDENTITY_ADDED",
+            category="repair_integrity", severity="critical",
+            evidence=f"Leakage-only repair introduced new model/checkpoint identifiers: {added_literals}",
+            remediation="Use only model and checkpoint identifiers frozen by the source contract.",
             execution_disposition="block",
         ))
 
@@ -792,7 +927,13 @@ def audit_code(code: str) -> dict[str, Any]:
         and re.search(r"for\s+\w+\s+in\s+(?:np\.)?(?:arange|linspace)|gridsearch|optuna|minimize\s*\(", lower)
         and re.search(r"log[_\s]?loss|compute_log_loss|brier|score", lower)
     )
-    if ensemble_weight_search:
+    guarded_oof_selection = bool(
+        re.search(r"\.record_global_oof\s*\(", lower)
+        and re.search(r"\.record_selection\s*\(", lower)
+        and re.search(r"\.freeze\s*\(\s*\)", lower)
+        and re.search(r"record_selection\s*\([^\n]*(?:outer_train|oof)", lower)
+    )
+    if ensemble_weight_search and not guarded_oof_selection:
         line_match = re.search(r"(?m)^.*(?:best|optimal|optimized)[_\s]*(?:ensemble[_\s]*)?weights?.*$", code, re.IGNORECASE)
         line = code[: line_match.start()].count("\n") + 1 if line_match else 0
         issue = _issue(

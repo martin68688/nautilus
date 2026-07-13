@@ -22,6 +22,19 @@ from dataclasses_json import DataClassJsonMixin
 
 logger = logging.getLogger("MLEvolve")
 
+
+def _execution_environment() -> dict[str, str]:
+    """Expose mlevolve's internal runtime helpers to isolated runfiles."""
+    env = dict(os.environ)
+    package_root = str(Path(__file__).resolve().parents[1])
+    existing = env.get("PYTHONPATH", "")
+    paths = [path for path in existing.split(os.pathsep) if path]
+    if package_root not in paths:
+        paths.insert(0, package_root)
+    env["PYTHONPATH"] = os.pathsep.join(paths)
+    env["PYTHONUNBUFFERED"] = "1"
+    return env
+
 @dataclass
 class ExecutionResult(DataClassJsonMixin):
     """
@@ -232,7 +245,7 @@ class Interpreter:
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,
-                env={**os.environ, "PYTHONUNBUFFERED": "1"},
+                env=_execution_environment(),
             )
             with self._procs_lock:
                 self._active_procs[process_id] = proc
@@ -391,5 +404,4 @@ class Interpreter:
                 if process_id is not None:
                     self.status_map[process_id] = 0
                     self.current_parallel_run -= 1
-
 
