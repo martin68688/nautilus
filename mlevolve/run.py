@@ -15,6 +15,11 @@ from config import load_task_desc, prep_agent_workspace, save_run, load_cfg
 from utils.visualization import journal_to_string_tree
 from utils.seed import set_global_seed
 from engine.coldstart import build_guidance_description
+from engine.run_control import (
+    focused_protocol_status,
+    focused_protocol_success_error,
+    should_continue_focused_search,
+)
 from utils.logging_config import setup_logging
 import torch
 
@@ -105,22 +110,9 @@ def run():
         )
 
     pending_draft_nodes = []
-    dev_protocol_transaction_seen = False
 
-    def dev_protocol_run_finished() -> bool:
-        nonlocal dev_protocol_transaction_seen
-        if not dev_execution_role:
-            return False
-        states = {
-            str((getattr(node, "protocol_repair", None) or {}).get("state") or "")
-            for node in agent.journal.nodes
-            if getattr(node, "protocol_repair", None)
-        }
-        if states:
-            dev_protocol_transaction_seen = True
-        if not dev_protocol_transaction_seen:
-            return False
-        return not (states & {"pending", "stage_in_progress", "final_pending"})
+    def protocol_focus_status():
+        return focused_protocol_status(agent.journal.nodes, dev_execution_role)
     if initial_draft_count > 0 and total_steps > 0:
         logger.info(f"📝 Phase 1: Sequential draft generation (code only, {initial_draft_count} drafts)")
 
@@ -189,8 +181,21 @@ def run():
         interrupted = False
         try:
             futures = set()
+            focus_futures = set()
+
+            def submit_future(callable_, *args, focused=False):
+                future = executor.submit(callable_, *args)
+                futures.add(future)
+                if focused:
+                    focus_futures.add(future)
+                return future
+
             for i, node in enumerate(pending_draft_nodes):
-                futures.add(executor.submit(execute_draft_node, node))
+                submit_future(
+                    execute_draft_node,
+                    node,
+                    focused=bool(dev_execution_role and node.draft_role == dev_execution_role),
+                )
                 logger.info(f"📤 Submitted draft execution: {node.id}")
                 if i < len(pending_draft_nodes) - 1:
                     time.sleep(10)
@@ -199,17 +204,30 @@ def run():
             initial_step_tasks = min(max_workers, total_steps - completed) - len(pending_draft_nodes)
             if initial_step_tasks > 0:
                 for _ in range(initial_step_tasks):
-                    futures.add(executor.submit(step_task))
+                    submit_future(step_task)
                     logger.info(f"📤 Submitted initial step_task to fill thread pool")
 
-            while completed < total_steps:
+            while (
+                should_continue_focused_search(
+                    completed_steps=completed,
+                    total_steps=total_steps,
+                    status=protocol_focus_status(),
+                    focus_in_flight=bool(focus_futures),
+                )
+                if dev_execution_role
+                else completed < total_steps
+            ):
                 done, _ = wait(futures, return_when=FIRST_COMPLETED, timeout=1.0)
 
                 if not done:
                     continue  # timeout, no completed futures, retry (allows SIGINT handling)
 
-                for fut in done:
+                # Process the focused lane first so its newly queued repair is
+                # claimed before an ordinary worker asks for more work.
+                for fut in sorted(done, key=lambda item: item not in focus_futures):
                     futures.remove(fut)
+                    was_focused = fut in focus_futures
+                    focus_futures.discard(fut)
                     try:
                         cur_node = fut.result()
                         if cur_node:
@@ -223,16 +241,30 @@ def run():
                     with lock:
                         save_run(cfg, journal)
                         completed = len(journal) - 1  # Exclude virtual node
-                        if dev_protocol_run_finished():
+                        focus_status = protocol_focus_status()
+                        if dev_execution_role and focus_status.completed:
                             logger.warning(
                                 "DEV role filter completed its protocol transaction; stopping search"
                             )
-                            completed = total_steps
-                        if completed == total_steps:
+                        if completed >= total_steps or focus_status.completed:
                             logger.info(journal_to_string_tree(journal))
 
-                    if completed + len(futures) < total_steps:
-                        futures.add(executor.submit(step_task, cur_node))
+                    within_shared_budget = completed + len(futures) < total_steps
+                    continue_focused_replay = bool(
+                        dev_execution_role
+                        and focus_status.active
+                        and was_focused
+                        and not focus_futures
+                    )
+                    focus_has_finished = bool(
+                        dev_execution_role and focus_status.seen and not focus_status.active
+                    )
+                    if not focus_has_finished and (within_shared_budget or continue_focused_replay):
+                        next_is_focused = bool(
+                            dev_execution_role
+                            and (was_focused or getattr(cur_node, "draft_role", None) == dev_execution_role)
+                        )
+                        submit_future(step_task, cur_node, focused=next_is_focused)
                         logger.info(f"📤 Submitted next task based on node {cur_node.id if cur_node else 'None'}")
                     logger.info(f"📊 Progress: {completed}/{total_steps} steps completed, {len(futures)} tasks running")
         except KeyboardInterrupt:
@@ -244,6 +276,14 @@ def run():
         finally:
             if not interrupted:
                 executor.shutdown(wait=True)
+
+        if dev_execution_role:
+            focus_status = protocol_focus_status()
+            focus_error = focused_protocol_success_error(focus_status)
+            if focus_error:
+                raise RuntimeError(
+                    f"Focused replay role {dev_execution_role!r} did not complete cleanly: {focus_error}"
+                )
     else:
         logger.info(f"✅ All steps completed in Phase 1 (total_steps={total_steps} <= initial_draft_count={initial_draft_count})")
 

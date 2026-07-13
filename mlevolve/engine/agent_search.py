@@ -234,6 +234,18 @@ class AgentSearch:
             f"Draft role index {draft_index} exceeds the fixed three-role policy"
         )
 
+    def fixed_draft_slots_exhausted(self) -> bool:
+        """Whether every declared root Draft role has already been reserved."""
+        policy = getattr(getattr(self, "acfg", None), "draft_role_policy", None)
+        if policy is None or not bool(getattr(policy, "enabled", False)):
+            return False
+        roles = list(getattr(policy, "roles", []) or [])
+        lock = getattr(self, "_draft_role_lock", None)
+        if lock is None:
+            return int(getattr(self, "_draft_generation_count", 0)) >= len(roles)
+        with lock:
+            return int(getattr(self, "_draft_generation_count", 0)) >= len(roles)
+
     def claim_draft_role(self, explicit_role: str | None = None) -> str:
         with self._draft_role_lock:
             draft_index = self._draft_generation_count
@@ -444,7 +456,10 @@ class AgentSearch:
         if not parent_node.is_terminal:
             try:
                 if self.is_root(parent_node):
-                    if parent_node.reached_child_limit(scfg=self.scfg):
+                    if (
+                        self.fixed_draft_slots_exhausted()
+                        or parent_node.reached_child_limit(scfg=self.scfg)
+                    ):
                         aggregation_requested = bool(
                             getattr(parent_node, "_aggregation_requested", False)
                         )

@@ -79,7 +79,12 @@ def select(agent, node: SearchNode) -> Optional[SearchNode]:
             )
 
     while node and not node.is_terminal:
-        if not node.reached_child_limit(scfg=agent.scfg):
+        fixed_slots_exhausted = bool(
+            agent.is_root(node)
+            and hasattr(agent, "fixed_draft_slots_exhausted")
+            and agent.fixed_draft_slots_exhausted()
+        )
+        if not fixed_slots_exhausted and not node.reached_child_limit(scfg=agent.scfg):
             if node.is_buggy and node.is_debug_success is True:
                 node = _best_child(node)
             elif node.continue_improve and len(node.children) > 0:
