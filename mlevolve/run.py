@@ -71,12 +71,19 @@ def run():
         status.update("[green]Generating code...")
         return res
 
-    def step_task(node=None):
+    def step_task(node=None, focused=False):
         if node:
             logger.info(f"[step_task] Processing node: {node.id}")
         else:
             logger.info(f"[step_task] Processing virtual root node.")
-        return agent.step(exec_callback=exec_callback, node=node)
+        return agent.step(
+            exec_callback=exec_callback,
+            node=node,
+            mandatory_repair_role=dev_execution_role if focused else None,
+            excluded_mandatory_repair_role=(
+                dev_execution_role if dev_execution_role and not focused else None
+            ),
+        )
 
     max_workers = interpreter.max_parallel_run
     total_steps = cfg.agent.steps
@@ -264,7 +271,12 @@ def run():
                             dev_execution_role
                             and (was_focused or getattr(cur_node, "draft_role", None) == dev_execution_role)
                         )
-                        submit_future(step_task, cur_node, focused=next_is_focused)
+                        submit_future(
+                            step_task,
+                            cur_node,
+                            next_is_focused,
+                            focused=next_is_focused,
+                        )
                         logger.info(f"📤 Submitted next task based on node {cur_node.id if cur_node else 'None'}")
                     logger.info(f"📊 Progress: {completed}/{total_steps} steps completed, {len(futures)} tasks running")
         except KeyboardInterrupt:

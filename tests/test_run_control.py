@@ -128,3 +128,54 @@ def test_filtered_replay_does_not_request_illegal_fourth_root_role(monkeypatch):
 
     monkeypatch.setattr(node_selection, "_compute_exploration_constant", lambda _agent: 1.0)
     assert node_selection.select(agent, root) is None
+
+
+def test_parallel_repair_lanes_do_not_steal_each_others_roles():
+    from engine.search_node import Journal
+
+    root = SearchNode(code="", plan="root", stage="root")
+    transaction = {
+        "transaction_id": "tx",
+        "protocol_plan": {"stages": ["data_scope"]},
+        "current_stage_index": 0,
+        "state": "pending",
+    }
+    replay = SearchNode(
+        code="replay",
+        plan="replay",
+        stage="draft",
+        parent=root,
+        draft_role="memory_reproduction",
+        protocol_repair={**transaction, "transaction_id": "replay-tx"},
+        leakage_audit={"status": "blocked", "repair_required": True},
+        audit_repair_required=True,
+    )
+    novel = SearchNode(
+        code="novel",
+        plan="novel",
+        stage="draft",
+        parent=root,
+        draft_role="novel_exploration",
+        protocol_repair={**transaction, "transaction_id": "novel-tx"},
+        leakage_audit={"status": "blocked", "repair_required": True},
+        audit_repair_required=True,
+    )
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.journal = Journal(nodes=[root, replay, novel])
+    agent._init_mandatory_repair_scheduler()
+    agent._mandatory_repair_queue.extend([replay, novel])
+    agent._mandatory_repair_queued_ids.update({replay.id, novel.id})
+
+    normal_claim, duplicate = agent._claim_mandatory_repair_parent(
+        None,
+        excluded_draft_role="memory_reproduction",
+    )
+    assert duplicate is False
+    assert normal_claim is novel
+
+    replay_claim, duplicate = agent._claim_mandatory_repair_parent(
+        None,
+        required_draft_role="memory_reproduction",
+    )
+    assert duplicate is False
+    assert replay_claim is replay

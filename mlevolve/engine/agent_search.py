@@ -313,21 +313,52 @@ class AgentSearch:
     def _claim_mandatory_repair_parent(
         self,
         requested_node: SearchNode | None,
+        *,
+        required_draft_role: str | None = None,
+        excluded_draft_role: str | None = None,
     ) -> tuple[SearchNode | None, bool]:
         """Claim the oldest repair parent; report duplicate concurrent requests."""
+        if required_draft_role and excluded_draft_role:
+            raise ValueError("A repair claim cannot require and exclude a Draft role")
+
+        def role_allowed(candidate: SearchNode) -> bool:
+            role = getattr(candidate, "draft_role", None)
+            if required_draft_role and role != required_draft_role:
+                return False
+            if excluded_draft_role and role == excluded_draft_role:
+                return False
+            return True
+
         with self._mandatory_repair_lock:
+            retained = deque()
+            selected = None
             while self._mandatory_repair_queue:
                 candidate = self._mandatory_repair_queue.popleft()
-                self._mandatory_repair_queued_ids.discard(candidate.id)
                 if not self._is_mandatory_repair_parent(candidate):
+                    self._mandatory_repair_queued_ids.discard(candidate.id)
                     continue
-                self._mandatory_repair_inflight_ids.add(candidate.id)
-                candidate.leakage_audit["repair_queue_status"] = "in_flight"
-                return candidate, False
+                if selected is None and role_allowed(candidate):
+                    selected = candidate
+                    self._mandatory_repair_queued_ids.discard(candidate.id)
+                    continue
+                retained.append(candidate)
+            self._mandatory_repair_queue = retained
 
-            if requested_node and requested_node.id in self._mandatory_repair_inflight_ids:
+            if selected is not None:
+                self._mandatory_repair_inflight_ids.add(selected.id)
+                selected.leakage_audit["repair_queue_status"] = "in_flight"
+                return selected, False
+
+            if (
+                requested_node
+                and role_allowed(requested_node)
+                and requested_node.id in self._mandatory_repair_inflight_ids
+            ):
                 return None, True
-            if self._is_mandatory_repair_parent(requested_node):
+            if (
+                self._is_mandatory_repair_parent(requested_node)
+                and role_allowed(requested_node)
+            ):
                 self._mandatory_repair_inflight_ids.add(requested_node.id)
                 requested_node.leakage_audit["repair_queue_status"] = "in_flight"
                 return requested_node, False
@@ -624,6 +655,8 @@ class AgentSearch:
         execute_immediately: bool = True,
         init_solution_path: Optional[str] = None,
         draft_role: Optional[str] = None,
+        mandatory_repair_role: Optional[str] = None,
+        excluded_mandatory_repair_role: Optional[str] = None,
     ) -> Optional[SearchNode]:
         if not self.journal.nodes or self.data_preview is None:
             self.update_data_preview()
@@ -635,7 +668,11 @@ class AgentSearch:
         # Mandatory repairs take priority only once normal execution/search begins.
         if execute_immediately and draft_role is None and init_solution_path is None:
             claimed_repair_parent, duplicate_repair_request = (
-                self._claim_mandatory_repair_parent(node)
+                self._claim_mandatory_repair_parent(
+                    node,
+                    required_draft_role=mandatory_repair_role,
+                    excluded_draft_role=excluded_mandatory_repair_role,
+                )
             )
             if claimed_repair_parent is not None:
                 node = claimed_repair_parent
