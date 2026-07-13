@@ -161,10 +161,12 @@ def _canonical_partition_failures(tree: ast.AST) -> list[str]:
 _DEFAULT_STAGE_ATTEMPT_LIMITS = {
     "data_scope": 2,
     "validation_provenance": 2,
-    "cross_fit": 4,
-    "selection_freeze": 3,
-    "final_holdout": 5,
+    "cross_fit": 5,
+    "selection_freeze": 4,
+    "final_holdout": 8,
 }
+
+_DEFAULT_FINAL_RUNTIME_ATTEMPT_LIMIT = 4
 
 
 def _stage_attempt_limit(transaction: dict, stage: str | None, *, generation: bool = False) -> int:
@@ -687,13 +689,25 @@ def ensure_transaction(agent: Any, node: Any) -> dict:
         return {}
     configured_limit = int(_cfg(agent, "per_stage_attempt_limit", 2))
     configured_generation_limit = int(_cfg(agent, "stage_generation_attempt_limit", 2))
+    configured_stage_limits = dict(_cfg(agent, "stage_attempt_limits", {}) or {})
+    configured_generation_limits = dict(
+        _cfg(agent, "stage_generation_attempt_limits", {}) or {}
+    )
     stage_attempt_limits = {
-        stage: max(configured_limit, _DEFAULT_STAGE_ATTEMPT_LIMITS.get(stage, configured_limit))
+        stage: max(
+            configured_limit,
+            int(configured_stage_limits.get(stage, configured_limit)),
+            _DEFAULT_STAGE_ATTEMPT_LIMITS.get(stage, configured_limit),
+        )
         for stage in plan.get("stages", [])
     }
     stage_generation_attempt_limits = {
         stage: max(
             configured_generation_limit,
+            int(configured_generation_limits.get(
+                stage,
+                configured_generation_limit,
+            )),
             _DEFAULT_STAGE_ATTEMPT_LIMITS.get(stage, configured_generation_limit),
         )
         for stage in plan.get("stages", [])
@@ -712,6 +726,7 @@ def ensure_transaction(agent: Any, node: Any) -> dict:
         "stage_attempts": {},
         "stage_generation_attempts": {},
         "stage_generation_failures": {},
+        "stage_runtime_attempts": {},
         "history": [],
         "state": "pending",
         # Keep scalar fields so old journals remain readable. New transactions
@@ -721,6 +736,14 @@ def ensure_transaction(agent: Any, node: Any) -> dict:
         "max_generation_attempts_per_stage": configured_generation_limit,
         "stage_attempt_limits": stage_attempt_limits,
         "stage_generation_attempt_limits": stage_generation_attempt_limits,
+        "final_runtime_attempt_limit": max(
+            1,
+            int(_cfg(
+                agent,
+                "final_runtime_attempt_limit",
+                _DEFAULT_FINAL_RUNTIME_ATTEMPT_LIMIT,
+            )),
+        ),
         "require_runtime_provenance": bool(_cfg(agent, "require_runtime_provenance", True)),
     }
     node.protocol_repair = tx
@@ -1143,17 +1166,31 @@ def rollback_final_runtime_failure(transaction: dict, node_id: str, reason: str)
     """Return an executed/crashed final node to the final stage, within budget."""
     tx = copy.deepcopy(transaction)
     stages = list(tx.get("protocol_plan", {}).get("stages") or [])
-    attempts = int(tx.get("stage_attempts", {}).get("final_holdout", 0))
-    tx["current_stage_index"] = max(0, len(stages) - 1)
-    tx["state"] = (
-        "exhausted"
-        if attempts >= _stage_attempt_limit(tx, "final_holdout")
-        else "pending"
+    stage_attempts = int(tx.get("stage_attempts", {}).get("final_holdout", 0))
+    runtime_attempts = dict(tx.get("stage_runtime_attempts") or {})
+    runtime_attempts["final_holdout"] = int(runtime_attempts.get("final_holdout", 0)) + 1
+    tx["stage_runtime_attempts"] = runtime_attempts
+    runtime_limit = max(
+        1,
+        int(tx.get(
+            "final_runtime_attempt_limit",
+            _DEFAULT_FINAL_RUNTIME_ATTEMPT_LIMIT,
+        )),
     )
+    tx["current_stage_index"] = max(0, len(stages) - 1)
+    if stage_attempts >= _stage_attempt_limit(tx, "final_holdout"):
+        tx["state"] = "exhausted"
+        tx["terminal_reason"] = "stage_attempts_exhausted:final_holdout"
+    elif runtime_attempts["final_holdout"] >= runtime_limit:
+        tx["state"] = "exhausted"
+        tx["terminal_reason"] = "runtime_attempts_exhausted:final_holdout"
+    else:
+        tx["state"] = "pending"
     tx.setdefault("history", []).append({
         "node_id": node_id,
         "stage": "final_holdout_runtime",
-        "attempt": attempts,
+        "attempt": runtime_attempts["final_holdout"],
+        "stage_attempt": stage_attempts,
         "status": "failed",
         "reason": reason,
         "feedback": [{

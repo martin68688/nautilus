@@ -511,6 +511,77 @@ def test_final_runtime_failure_returns_to_final_stage_until_budget_exhausted():
     assert exhausted["state"] == "exhausted"
 
 
+def test_final_runtime_budget_is_independent_from_static_rejections():
+    tx = {
+        "schema": protocol_repair.PROTOCOL_REPAIR_SCHEMA,
+        "protocol_plan": {"stages": ["data_scope", "final_holdout"]},
+        "current_stage_index": 2,
+        "stage_attempts": {"data_scope": 1, "final_holdout": 5},
+        "stage_attempt_limits": {"final_holdout": 8},
+        "stage_runtime_attempts": {},
+        "final_runtime_attempt_limit": 4,
+        "history": [],
+        "state": "ready_for_execution",
+    }
+
+    for runtime_attempt in range(1, 4):
+        tx = protocol_repair.rollback_final_runtime_failure(
+            tx,
+            f"runtime-{runtime_attempt}",
+            f"ValueError on runtime attempt {runtime_attempt}",
+        )
+        assert tx["state"] == "pending"
+        assert tx["stage_runtime_attempts"]["final_holdout"] == runtime_attempt
+        tx["state"] = "ready_for_execution"
+
+    exhausted = protocol_repair.rollback_final_runtime_failure(
+        tx,
+        "runtime-4",
+        "ValueError on runtime attempt 4",
+    )
+    assert exhausted["state"] == "exhausted"
+    assert exhausted["terminal_reason"] == "runtime_attempts_exhausted:final_holdout"
+    assert exhausted["stage_attempts"]["final_holdout"] == 5
+
+
+def test_configured_complex_stage_budgets_are_recorded_in_transaction(tmp_path):
+    agent = _agent(tmp_path)
+    agent.acfg.protocol_repair.stage_attempt_limits = {
+        "cross_fit": 5,
+        "selection_freeze": 4,
+        "final_holdout": 8,
+    }
+    agent.acfg.protocol_repair.stage_generation_attempt_limits = {
+        "cross_fit": 5,
+        "selection_freeze": 4,
+        "final_holdout": 8,
+    }
+    agent.acfg.protocol_repair.final_runtime_attempt_limit = 4
+    code = """
+model_a = XGBClassifier()
+model_b = LogisticRegression()
+early_stopping_rounds = 10
+best_weights = minimize(objective, x0, args=(y_val, val_preds))
+"""
+    node = SearchNode(code=code, plan="ensemble", stage="draft")
+    node.leakage_audit = {
+        "status": "protocol_biased",
+        "issues": [{
+            "issue_code": "LLM_SELECTION_BIAS",
+            "category": "selection_bias",
+        }],
+    }
+
+    tx = protocol_repair.ensure_transaction(agent, node)
+
+    assert tx["stage_attempt_limits"]["cross_fit"] == 5
+    assert tx["stage_attempt_limits"]["selection_freeze"] == 4
+    assert tx["stage_attempt_limits"]["final_holdout"] == 8
+    assert tx["stage_generation_attempt_limits"]["final_holdout"] == 8
+    assert tx["final_runtime_attempt_limit"] == 4
+    assert tx["stage_runtime_attempts"] == {}
+
+
 def test_runtime_failure_feedback_is_reinjected_into_final_generation():
     tx = {
         "protocol_plan": {"stages": ["final_holdout"]},
@@ -1038,8 +1109,8 @@ def test_selection_and_final_instructions_pin_runtime_calls():
     assert "before every outer-holdout feature extraction" in final
     assert "merely delaying the metric is not enough" in final
     final_tx = {**base, "current_stage_index": 1}
-    assert protocol_repair._stage_attempt_limit(final_tx, "final_holdout") == 5
-    assert protocol_repair._stage_attempt_limit(final_tx, "final_holdout", generation=True) == 5
+    assert protocol_repair._stage_attempt_limit(final_tx, "final_holdout") == 8
+    assert protocol_repair._stage_attempt_limit(final_tx, "final_holdout", generation=True) == 8
 
 
 def test_protocol_plan_is_generic_across_task_and_model_families():
