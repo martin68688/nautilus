@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: runforest-replay-direct-a100x1-e44f-r35
+  namespace: ecepxie
+  labels:
+    app: runforest-replay-direct-a100x1-e44f-r35
+    test-scope: exact-replay-protocol
+    source-commit: e44f71ae
+spec:
+  restartPolicy: Always
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: nvidia.com/gpu.product
+            operator: In
+            values:
+            - NVIDIA-A100-SXM4-80GB
+            - NVIDIA-A100-PCIE-40GB
+            - NVIDIA-A100-80GB-PCIe
+  containers:
+  - name: replay-debug
+    image: haomingwang22/mlevolve:v1
+    imagePullPolicy: IfNotPresent
+    command: ["/bin/bash", "-lc"]
+    args:
+    - |
+      set -euo pipefail
+      work=/tmp/runforest-replay-direct-e44f-r35-pod
+      output_runs=/workspace/nautilus/mlevolve/runs
+      tag="runforest_replay_direct_dev_e44f_r35_$(date -u +%Y%m%d_%H%M%S)"
+
+      rm -rf "${work}"
+      mkdir -p "${work}" "${output_runs}"
+      tar -xzf /workspace/runforest_full_local_r31.tar.gz -C "${work}" --strip-components=1
+      test "$(sha256sum /workspace/runforest_replay_dev_overlay_e44f71ae.tar.gz | awk '{print $1}')" = "9b23285a9d3509fc80463d58c111738511f8b9f9004ebba55cda230dbf61fad3"
+      tar -xzf /workspace/runforest_replay_dev_overlay_e44f71ae.tar.gz -C "${work}"
+
+      rm -rf "${work}/mlevolve/data" "${work}/mlevolve/runs" "${work}/mlevolve/.env"
+      ln -s /workspace/nautilus/mlevolve/data "${work}/mlevolve/data"
+      ln -s /workspace/nautilus/mlevolve/.env "${work}/mlevolve/.env"
+      mkdir -p "${work}/mlevolve/runs"
+      tar -xzf /workspace/runforest_allowed_journals_r31.tar.gz -C "${work}"
+
+      cd "${work}"
+      python -m py_compile mlevolve/run.py
+      python -m pytest -q tests/test_protocol_repair.py
+      cd "${work}/mlevolve"
+      set -a
+      . ./.env
+      set +a
+      export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+      export MLEVOLVE_CONFIG="${work}/mlevolve/config/config_run_forest_stage_hybrid.yaml"
+      export RUNFOREST_DEV_EXECUTION_ROLE=memory_reproduction
+      set +e
+      python run.py \
+        exp_id=spooky-author-identification \
+        dataset_dir=./data \
+        data_dir=./data/spooky-author-identification/prepared/public \
+        desc_file=./data/spooky-author-identification/prepared/public/description.md \
+        exp_name="${tag}" \
+        log_dir="${output_runs}" \
+        workspace_dir="${output_runs}" \
+        agent.steps=10 \
+        agent.search.num_gpus=1 \
+        agent.search.parallel_search_num=1 \
+        cpu_number=8
+      status=$?
+      set -e
+      echo "=== replay runtime exited: status=${status}; dev pod remains available ==="
+      exec sleep infinity
+    resources:
+      requests:
+        cpu: "8"
+        memory: "16Gi"
+        nvidia.com/a100: "1"
+      limits:
+        cpu: "8"
+        memory: "16Gi"
+        nvidia.com/a100: "1"
+    volumeMounts:
+    - name: workspace
+      mountPath: /workspace
+  volumes:
+  - name: workspace
+    persistentVolumeClaim:
+      claimName: haoming-storage
