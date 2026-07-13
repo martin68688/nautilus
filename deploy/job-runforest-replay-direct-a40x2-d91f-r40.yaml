@@ -1,0 +1,102 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: runforest-replay-direct-a40x2-d91f-r40
+  namespace: ecepxie
+  labels:
+    app: runforest-replay-direct-a40x2-d91f-r40
+    test-scope: exact-replay-protocol
+    source-commit: d91f1f6a
+  annotations:
+    runforest/source-commit: d91f1f6ab745c3e959f0937185d698a84fd491b9
+    runforest/overlay-sha256: 2849b3d0111fee850fd507f20a646ab0a7c0232c5a1872173b4a1cb6e2d5e99e
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: runforest-replay-direct-a40x2-d91f-r40
+        test-scope: exact-replay-protocol
+        source-commit: d91f1f6a
+    spec:
+      restartPolicy: Never
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: nvidia.com/gpu.product
+                operator: In
+                values:
+                - NVIDIA-A40
+      containers:
+      - name: replay-test
+        image: haomingwang22/mlevolve:v1
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "-lc"]
+        args:
+        - |
+          set -euo pipefail
+          work=/tmp/runforest-replay-direct-d91f-r40-job
+          output_runs=/workspace/nautilus/mlevolve/runs
+          tag="runforest_replay_direct_job_d91f_r40_$(date -u +%Y%m%d_%H%M%S)"
+
+          rm -rf "${work}"
+          mkdir -p "${work}" "${output_runs}"
+          tar -xzf /workspace/runforest_full_local_r31.tar.gz -C "${work}" --strip-components=1
+          test "$(sha256sum /workspace/runforest_replay_dev_overlay_e44f71ae.tar.gz | awk '{print $1}')" = "9b23285a9d3509fc80463d58c111738511f8b9f9004ebba55cda230dbf61fad3"
+          tar -xzf /workspace/runforest_replay_dev_overlay_e44f71ae.tar.gz -C "${work}"
+          test "$(sha256sum /workspace/runforest_multigpu_overlay_d91f1f6a.tar.gz | awk '{print $1}')" = "2849b3d0111fee850fd507f20a646ab0a7c0232c5a1872173b4a1cb6e2d5e99e"
+          tar -xzf /workspace/runforest_multigpu_overlay_d91f1f6a.tar.gz -C "${work}"
+
+          rm -rf "${work}/mlevolve/data" "${work}/mlevolve/runs" "${work}/mlevolve/.env"
+          ln -s /workspace/nautilus/mlevolve/data "${work}/mlevolve/data"
+          ln -s /workspace/nautilus/mlevolve/.env "${work}/mlevolve/.env"
+          mkdir -p "${work}/mlevolve/runs"
+          tar -xzf /workspace/runforest_allowed_journals_r31.tar.gz -C "${work}"
+
+          cd "${work}"
+          python -m py_compile \
+            mlevolve/run.py \
+            mlevolve/engine/agent_search.py \
+            mlevolve/engine/node_selection.py \
+            mlevolve/engine/run_control.py
+          python -m pytest -q tests/test_protocol_repair.py tests/test_run_control.py
+          cd "${work}/mlevolve"
+          set -a
+          . ./.env
+          set +a
+          export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+          export MLEVOLVE_CONFIG="${work}/mlevolve/config/config_run_forest_stage_hybrid.yaml"
+          export RUNFOREST_DEV_EXECUTION_ROLE=memory_reproduction
+          exec python run.py \
+            exp_id=spooky-author-identification \
+            dataset_dir=./data \
+            data_dir=./data/spooky-author-identification/prepared/public \
+            desc_file=./data/spooky-author-identification/prepared/public/description.md \
+            exp_name="${tag}" \
+            log_dir="${output_runs}" \
+            workspace_dir="${output_runs}" \
+            agent.steps=10 \
+            agent.search.num_gpus=2 \
+            agent.search.parallel_search_num=2 \
+            cpu_number=16
+        resources:
+          requests:
+            cpu: "16"
+            memory: "64Gi"
+            nvidia.com/a40: "2"
+          limits:
+            cpu: "16"
+            memory: "64Gi"
+            nvidia.com/a40: "2"
+        volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+      volumes:
+      - name: workspace
+        persistentVolumeClaim:
+          claimName: haoming-storage
