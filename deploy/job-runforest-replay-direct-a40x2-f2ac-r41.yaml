@@ -1,0 +1,107 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: runforest-replay-direct-a40x2-f2ac-r41
+  namespace: ecepxie
+  labels:
+    app: runforest-replay-direct-a40x2-f2ac-r41
+    test-scope: exact-replay-protocol
+    source-commit: f2ac6b47
+  annotations:
+    runforest/source-commit: f2ac6b4754eb0144e3815a2aef3b7c1833f055f1
+    runforest/overlay-sha256: 54cb52cca8d776aabd1c202203329afba05266e2228f9322d5fd32a0a8b8caef
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: runforest-replay-direct-a40x2-f2ac-r41
+        test-scope: exact-replay-protocol
+        source-commit: f2ac6b47
+    spec:
+      restartPolicy: Never
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: nvidia.com/gpu.product
+                operator: In
+                values:
+                - NVIDIA-A40
+      containers:
+      - name: replay-test
+        image: haomingwang22/mlevolve:v1
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "-lc"]
+        args:
+        - |
+          set -euo pipefail
+          work=/tmp/runforest-replay-direct-f2ac-r41-job
+          output_runs=/workspace/nautilus/mlevolve/runs
+          tag="runforest_replay_direct_job_f2ac_r41_$(date -u +%Y%m%d_%H%M%S)"
+
+          rm -rf "${work}"
+          mkdir -p "${work}" "${output_runs}"
+          tar -xzf /workspace/runforest_full_local_r31.tar.gz -C "${work}" --strip-components=1
+          test "$(sha256sum /workspace/runforest_replay_dev_overlay_e44f71ae.tar.gz | awk '{print $1}')" = "9b23285a9d3509fc80463d58c111738511f8b9f9004ebba55cda230dbf61fad3"
+          tar -xzf /workspace/runforest_replay_dev_overlay_e44f71ae.tar.gz -C "${work}"
+          test "$(sha256sum /workspace/runforest_multigpu_overlay_d91f1f6a.tar.gz | awk '{print $1}')" = "2849b3d0111fee850fd507f20a646ab0a7c0232c5a1872173b4a1cb6e2d5e99e"
+          tar -xzf /workspace/runforest_multigpu_overlay_d91f1f6a.tar.gz -C "${work}"
+          test "$(sha256sum /workspace/runforest_retry_overlay_f2ac6b47.tar.gz | awk '{print $1}')" = "54cb52cca8d776aabd1c202203329afba05266e2228f9322d5fd32a0a8b8caef"
+          tar -xzf /workspace/runforest_retry_overlay_f2ac6b47.tar.gz -C "${work}"
+
+          rm -rf "${work}/mlevolve/data" "${work}/mlevolve/runs" "${work}/mlevolve/.env"
+          ln -s /workspace/nautilus/mlevolve/data "${work}/mlevolve/data"
+          ln -s /workspace/nautilus/mlevolve/.env "${work}/mlevolve/.env"
+          mkdir -p "${work}/mlevolve/runs"
+          tar -xzf /workspace/runforest_allowed_journals_r31.tar.gz -C "${work}"
+
+          cd "${work}"
+          python -m py_compile \
+            mlevolve/run.py \
+            mlevolve/agents/protocol_repair.py \
+            mlevolve/agents/protocol_repair_agent.py \
+            mlevolve/agents/result_parse_agent.py \
+            mlevolve/engine/agent_search.py \
+            mlevolve/engine/node_selection.py \
+            mlevolve/engine/run_control.py
+          python -m pytest -q tests/test_protocol_repair.py tests/test_run_control.py
+          cd "${work}/mlevolve"
+          set -a
+          . ./.env
+          set +a
+          export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+          export MLEVOLVE_CONFIG="${work}/mlevolve/config/config_run_forest_stage_hybrid.yaml"
+          export RUNFOREST_DEV_EXECUTION_ROLE=memory_reproduction
+          exec python run.py \
+            exp_id=spooky-author-identification \
+            dataset_dir=./data \
+            data_dir=./data/spooky-author-identification/prepared/public \
+            desc_file=./data/spooky-author-identification/prepared/public/description.md \
+            exp_name="${tag}" \
+            log_dir="${output_runs}" \
+            workspace_dir="${output_runs}" \
+            agent.steps=10 \
+            agent.search.num_gpus=2 \
+            agent.search.parallel_search_num=2 \
+            cpu_number=16
+        resources:
+          requests:
+            cpu: "16"
+            memory: "64Gi"
+            nvidia.com/a40: "2"
+          limits:
+            cpu: "16"
+            memory: "64Gi"
+            nvidia.com/a40: "2"
+        volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+      volumes:
+      - name: workspace
+        persistentVolumeClaim:
+          claimName: haoming-storage
