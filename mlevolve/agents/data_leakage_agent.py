@@ -124,6 +124,37 @@ PROTOCOL_SPLIT_REVIEW_SPEC = FunctionSpec(
 )
 
 
+def _protocol_review_consistency_issue(result: dict) -> str | None:
+    """Reject structured decisions that contradict their own remediation."""
+    status = str(result.get("status") or "uncertain").strip().lower()
+    classification = str(result.get("classification") or "audit_unavailable").strip().lower()
+    required_fix = str(result.get("required_fix") or "").strip().lower()
+    reason = str(result.get("reason") or "").strip().lower()
+
+    if status == "clean" and classification != "clean":
+        return "status=clean requires classification=clean"
+    if status == "violation" and classification in {"clean", "audit_unavailable"}:
+        return "status=violation requires a concrete violation classification"
+
+    no_fix_markers = (
+        "no fix needed",
+        "no correction needed",
+        "none needed",
+        "protocol is clean",
+    )
+    clean_conclusion_markers = (
+        "status should be clean",
+        "protocol is actually clean",
+        "protocol appears clean",
+    )
+    if status == "violation" and (
+        any(marker in required_fix for marker in no_fix_markers)
+        or any(marker in reason for marker in clean_conclusion_markers)
+    ):
+        return "violation decision says the protocol is clean or needs no fix"
+    return None
+
+
 def run_pre_execution_protocol_review(agent, node: SearchNode, transaction: dict) -> dict:
     """Fail-closed semantic review of the complete final protocol program."""
     try:
@@ -159,30 +190,72 @@ def run_pre_execution_protocol_review(agent, node: SearchNode, transaction: dict
             ),
             "Complete candidate program": wrap_code(node.code),
         }
-        response = cast(
-            dict,
-            query(
-                system_message=prompt,
-                user_message=None,
-                func_spec=PROTOCOL_SPLIT_REVIEW_SPEC,
-                model=agent.acfg.feedback.model,
-                temperature=0.0,
-                cfg=agent.cfg,
-            ),
-        )
-        result = {
-            "status": str(response.get("status") or "uncertain"),
-            "classification": str(response.get("classification") or "audit_unavailable"),
-            "reason": str(response.get("reason") or "semantic protocol review returned no reason"),
-            "prediction_source": str(response.get("prediction_source") or "unproven"),
-            "label_source": str(response.get("label_source") or "unproven"),
-            "required_fix": str(response.get("required_fix") or "prove prediction/label alignment"),
-        }
+        result = {}
+        consistency_issue = None
+        for review_attempt in range(1, 4):
+            review_prompt = dict(prompt)
+            if result:
+                review_prompt["Previous self-contradictory review"] = json.dumps(
+                    result, sort_keys=True, indent=2
+                )
+                review_prompt["Correction required"] = (
+                    f"The previous structured decision was invalid: {consistency_issue}. "
+                    "Re-read the program and return one internally consistent decision. If the "
+                    "protocol is clean, use status=clean, classification=clean, and required_fix=none. "
+                    "If it is a violation, identify one concrete failing data-flow operation and a "
+                    "real correction. Do not call clean behavior a violation."
+                )
+            response = cast(
+                dict,
+                query(
+                    system_message=review_prompt,
+                    user_message=None,
+                    func_spec=PROTOCOL_SPLIT_REVIEW_SPEC,
+                    model=agent.acfg.feedback.model,
+                    temperature=0.0,
+                    cfg=agent.cfg,
+                ),
+            )
+            result = {
+                "status": str(response.get("status") or "uncertain"),
+                "classification": str(response.get("classification") or "audit_unavailable"),
+                "reason": str(response.get("reason") or "semantic protocol review returned no reason"),
+                "prediction_source": str(response.get("prediction_source") or "unproven"),
+                "label_source": str(response.get("label_source") or "unproven"),
+                "required_fix": str(response.get("required_fix") or "prove prediction/label alignment"),
+                "review_attempts": review_attempt,
+            }
+            consistency_issue = _protocol_review_consistency_issue(result)
+            if consistency_issue is None:
+                break
+            logger.warning(
+                "Self-contradictory protocol review for node %s (attempt %d/3): %s",
+                node.id,
+                review_attempt,
+                consistency_issue,
+            )
+        if consistency_issue is not None:
+            result = {
+                "status": "uncertain",
+                "classification": "audit_unavailable",
+                "reason": (
+                    "semantic protocol reviewer returned three self-contradictory decisions: "
+                    f"{consistency_issue}"
+                ),
+                "prediction_source": "unproven",
+                "label_source": "unproven",
+                "required_fix": (
+                    "Do not modify the candidate from this contradictory review. Retry semantic "
+                    "protocol review before execution."
+                ),
+                "review_attempts": 3,
+            }
         logger.warning(
-            "Pre-execution protocol review for node %s: status=%s classification=%s",
+            "Pre-execution protocol review for node %s: status=%s classification=%s attempts=%s",
             node.id,
             result["status"],
             result["classification"],
+            result.get("review_attempts"),
         )
         return result
     except Exception as exc:

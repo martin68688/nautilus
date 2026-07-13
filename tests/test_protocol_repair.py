@@ -393,6 +393,70 @@ def test_semantic_protocol_reviewer_traces_real_prediction_and_label_sources(tmp
     assert captured["temperature"] == 0.0
 
 
+def test_semantic_protocol_reviewer_retries_self_contradictory_violation(tmp_path, monkeypatch):
+    responses = iter([
+        {
+            "status": "violation",
+            "classification": "selection_bias",
+            "reason": "The OOF selection and untouched holdout are correct; status should be clean.",
+            "prediction_source": "outer_holdout",
+            "label_source": "outer_holdout",
+            "required_fix": "No fix needed. The protocol is clean.",
+        },
+        {
+            "status": "clean",
+            "classification": "clean",
+            "reason": "OOF selection is frozen before the untouched holdout is evaluated.",
+            "prediction_source": "outer_holdout",
+            "label_source": "outer_holdout",
+            "required_fix": "none",
+        },
+    ])
+    prompts = []
+
+    def fake_query(**kwargs):
+        prompts.append(kwargs["system_message"])
+        return next(responses)
+
+    monkeypatch.setattr(result_parse_agent.data_leakage_agent, "query", fake_query)
+    result = result_parse_agent.data_leakage_agent.run_pre_execution_protocol_review(
+        _agent(tmp_path),
+        SearchNode(code=_complete_final_holdout_program(), plan="", stage="debug"),
+        _final_holdout_transaction(),
+    )
+
+    assert result["status"] == "clean"
+    assert result["classification"] == "clean"
+    assert result["review_attempts"] == 2
+    assert len(prompts) == 2
+    assert "Previous self-contradictory review" in prompts[1]
+    assert "Do not call clean behavior a violation" in prompts[1]["Correction required"]
+
+
+def test_semantic_protocol_reviewer_fails_closed_after_three_contradictions(tmp_path, monkeypatch):
+    def fake_query(**_kwargs):
+        return {
+            "status": "violation",
+            "classification": "selection_bias",
+            "reason": "The protocol appears clean and status should be clean.",
+            "prediction_source": "outer_holdout",
+            "label_source": "outer_holdout",
+            "required_fix": "No fix needed.",
+        }
+
+    monkeypatch.setattr(result_parse_agent.data_leakage_agent, "query", fake_query)
+    result = result_parse_agent.data_leakage_agent.run_pre_execution_protocol_review(
+        _agent(tmp_path),
+        SearchNode(code=_complete_final_holdout_program(), plan="", stage="debug"),
+        _final_holdout_transaction(),
+    )
+
+    assert result["status"] == "uncertain"
+    assert result["classification"] == "audit_unavailable"
+    assert result["review_attempts"] == 3
+    assert "Do not modify the candidate" in result["required_fix"]
+
+
 def test_runtime_guard_accepts_clean_generic_protocol_and_rejects_overlap():
     guard = ProtocolProvenanceGuard()
     train_ids, holdout_ids = [0, 1, 2, 3], [4, 5]
