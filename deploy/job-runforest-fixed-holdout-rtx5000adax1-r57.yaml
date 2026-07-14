@@ -1,0 +1,175 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: runforest-fixed-holdout-rtx5000adax1-r57
+  namespace: ecepxie
+  labels:
+    app: runforest-fixed-holdout-runtime-test
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 3600
+  template:
+    metadata:
+      labels:
+        app: runforest-fixed-holdout-runtime-test
+    spec:
+      restartPolicy: Never
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nvidia.com/gpu.product
+                    operator: In
+                    values: [NVIDIA-RTX-5000-Ada-Generation]
+      containers:
+        - name: test
+          image: haomingwang22/mlevolve:v1
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+              expected_bundle_sha=1d992e255d0bcb686099262e4a161a1c22ce02dd35b6df09599604f0efb4f132
+              expected_commit=36cf6c3059866428b63f399af1f7d2bffabe5d60
+              test "$(sha256sum /artifacts/runtime.tar.gz | awk '{print $1}')" = "${expected_bundle_sha}"
+
+              mkdir -p /tmp/nautilus
+              tar -xzf /artifacts/runtime.tar.gz -C /tmp/nautilus
+              test "$(cat /tmp/nautilus/SOURCE_COMMIT)" = "${expected_commit}"
+              test ! -e /fixed/train/evaluator_view
+              test -z "$(find /fixed/train -name labels.csv -print -quit)"
+
+              cd /tmp/nautilus/mlevolve
+              export PYTHONPATH=/tmp/nautilus/mlevolve
+              python - <<'PY'
+              import json
+              from pathlib import Path
+
+              from config import _load_cfg, prep_cfg
+
+              cfg = _load_cfg(
+                  Path("config/config_run_forest_fixed_holdout.yaml"),
+                  use_cli_args=False,
+              )
+              cfg.data_dir = "/fixed/train/input"
+              cfg.dataset_dir = "/fixed/train/input"
+              cfg.desc_file = "/fixed/train/input/description.md"
+              cfg.fixed_holdout.train_manifest_path = "/fixed/train/fixed_holdout_manifest.json"
+              cfg.log_dir = "/fixed/output/config-smoke"
+              cfg.workspace_dir = "/fixed/output/config-smoke"
+              cfg.exp_name = "r57"
+              cfg.agent.search.num_gpus = 1
+              cfg.agent.search.parallel_search_num = 1
+              cfg.cpu_number = 8
+              cfg = prep_cfg(cfg)
+              report = {
+                  "fixed_holdout_enabled": bool(cfg.fixed_holdout.enabled),
+                  "evaluation_mode": str(cfg.fixed_holdout.evaluation_mode),
+                  "protocol_gates_bypassed": bool(cfg.fixed_holdout.bypass_protocol_gates),
+                  "leakage_agent_enabled": bool(cfg.agent.check_data_leakage),
+                  "protocol_repair_enabled": bool(cfg.agent.protocol_repair.enabled),
+                  "num_gpus": int(cfg.agent.search.num_gpus),
+                  "parallel_search_num": int(cfg.agent.search.parallel_search_num),
+                  "cpu_number": int(cfg.cpu_number),
+              }
+              assert report == {
+                  "fixed_holdout_enabled": True,
+                  "evaluation_mode": "terminal_only",
+                  "protocol_gates_bypassed": True,
+                  "leakage_agent_enabled": False,
+                  "protocol_repair_enabled": False,
+                  "num_gpus": 1,
+                  "parallel_search_num": 1,
+                  "cpu_number": 8,
+              }
+              Path("/fixed/output/config_preflight_report.json").write_text(
+                  json.dumps(report, indent=2, sort_keys=True) + "\n",
+                  encoding="utf-8",
+              )
+              print(json.dumps(report, sort_keys=True))
+              PY
+
+              nvidia-smi --query-gpu=index,name,memory.total --format=csv,noheader
+              export EXPECTED_GPU_COUNT=1
+              export SMOKE_CPU_COUNT=8
+              python /tmp/nautilus/gpu_smoke.py
+              python - <<'PY'
+              import json
+              from pathlib import Path
+
+              from fixed_holdout.validation import validate_submission
+
+              valid, reason = validate_submission(
+                  Path("/fixed/train/fixed_holdout_manifest.json"),
+                  Path("/fixed/output/submission_gpu-smoke.csv"),
+              )
+              if not valid:
+                  raise SystemExit(reason)
+              Path("/fixed/output/training_side_validation.json").write_text(
+                  json.dumps(
+                      {
+                          "hidden_labels_visible": False,
+                          "submission_valid": True,
+                          "reason": reason,
+                      },
+                      indent=2,
+                      sort_keys=True,
+                  )
+                  + "\n",
+                  encoding="utf-8",
+              )
+              print(json.dumps({"submission_valid": True, "reason": reason}))
+              PY
+          resources:
+            requests:
+              cpu: "8"
+              memory: "32Gi"
+              ephemeral-storage: "0"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "8"
+              memory: "32Gi"
+              ephemeral-storage: "50Gi"
+              nvidia.com/gpu: "1"
+          volumeMounts:
+            - name: runtime-bundle
+              mountPath: /artifacts/runtime.tar.gz
+              subPath: runforest-fixed-holdout-36cf6c30-runtime-anygpu.tar.gz
+              readOnly: true
+            - name: train-view
+              mountPath: /fixed/train
+              subPath: runforest-fixed-holdout-v2/spooky-author-identification/spooky-author-identification-7edc8feae7e5-d0f035fed1ac/train_view
+              readOnly: true
+            - name: historical-runs
+              mountPath: /tmp/nautilus/mlevolve/runs
+              subPath: nautilus/mlevolve/runs
+              readOnly: true
+            - name: memory-graph
+              mountPath: /tmp/nautilus/paper-skills
+              subPath: nautilus/paper-skills
+              readOnly: true
+            - name: run-output
+              mountPath: /fixed/output
+              subPath: runforest-fixed-holdout-r57-output
+      volumes:
+        - name: runtime-bundle
+          persistentVolumeClaim:
+            claimName: haoming-storage
+        - name: train-view
+          persistentVolumeClaim:
+            claimName: haoming-storage
+        - name: historical-runs
+          persistentVolumeClaim:
+            claimName: haoming-storage
+        - name: memory-graph
+          persistentVolumeClaim:
+            claimName: haoming-storage
+        - name: run-output
+          persistentVolumeClaim:
+            claimName: haoming-storage
+
+
+
