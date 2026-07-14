@@ -134,39 +134,26 @@ spec:
               ephemeral-storage: "50Gi"
               nvidia.com/rtxa6000: "4"
           volumeMounts:
-            - name: runtime-bundle
+            - name: workspace
               mountPath: /artifacts/runtime.tar.gz
               subPath: runforest-fixed-holdout-36cf6c30-runtime-anygpu.tar.gz
               readOnly: true
-            - name: train-view
+            - name: workspace
               mountPath: /fixed/train
               subPath: runforest-fixed-holdout-v2/spooky-author-identification/spooky-author-identification-7edc8feae7e5-d0f035fed1ac/train_view
               readOnly: true
-            - name: historical-runs
+            - name: workspace
               mountPath: /tmp/nautilus/mlevolve/runs
               subPath: nautilus/mlevolve/runs
               readOnly: true
-            - name: memory-graph
+            - name: workspace
               mountPath: /tmp/nautilus/paper-skills
               subPath: nautilus/paper-skills
               readOnly: true
-            - name: run-output
+            - name: workspace
               mountPath: /fixed/output
               subPath: runforest-fixed-holdout-r61-output
       volumes:
-        - name: runtime-bundle
+        - name: workspace
           persistentVolumeClaim:
             claimName: haoming-storage
-        - name: train-view
-          persistentVolumeClaim:
-            claimName: haoming-storage
-        - name: historical-runs
-          persistentVolumeClaim:
-            claimName: haoming-storage
-        - name: memory-graph
-          persistentVolumeClaim:
-            claimName: haoming-storage
-        - name: run-output
-          persistentVolumeClaim:
-            claimName: haoming-storage
-
