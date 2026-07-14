@@ -9,6 +9,7 @@ from typing import Any
 
 from agents.memory.external_skill_memory import resolve_memory_path
 from agents.leakage_audit import audit_code, load_registry_audit, merge_audits
+from fixed_holdout.mode import bypass_protocol_gates
 
 
 REPLAY_SCHEMA = "run-forest-replay-targets-v1"
@@ -27,6 +28,38 @@ def _metric_value(raw_node: dict[str, Any]) -> tuple[float | None, bool | None]:
     if isinstance(metric, (int, float)):
         return float(metric), None
     return None, None
+
+
+def requires_protocol_repair(agent: Any, target_audit_status: str) -> bool:
+    """Return whether a historical candidate must enter the internal repair flow."""
+    return (
+        target_audit_status == "candidate_replay"
+        and not bypass_protocol_gates(agent.cfg)
+    )
+
+
+def validate_candidate_audit(
+    target: dict[str, Any],
+    replay_audit: dict[str, Any],
+    *,
+    external_holdout_mode: bool,
+) -> None:
+    """Validate old repair metadata only when it remains execution-authoritative."""
+    if external_holdout_mode:
+        return
+    expected_issues = {
+        str(item) for item in target.get("known_issue_codes", []) if item
+    }
+    detected_issues = {
+        str(item.get("issue_code")) for item in replay_audit.get("issues", [])
+    }
+    if not expected_issues:
+        raise ValueError("candidate_replay requires explicit known_issue_codes")
+    if not expected_issues.issubset(detected_issues):
+        missing = sorted(expected_issues - detected_issues)
+        raise ValueError(f"Replay repair seed audit does not reproduce known issues: {missing}")
+    if replay_audit.get("status") == "clean" or replay_audit.get("repair_required") is not True:
+        raise ValueError("candidate_replay unexpectedly passed the fresh leakage audit")
 
 
 def load_exact_replay(agent: Any) -> dict[str, Any]:
@@ -106,19 +139,20 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
     if target_audit_status not in {"verified_clean", "candidate_replay"}:
         raise ValueError(f"Unsupported replay audit status: {target_audit_status}")
 
-    requires_repair = target_audit_status == "candidate_replay"
-    if requires_repair:
-        if not bool(getattr(getattr(agent, "acfg", None), "check_data_leakage", False)):
+    historical_requires_repair = target_audit_status == "candidate_replay"
+    external_holdout_mode = bypass_protocol_gates(agent.cfg)
+    requires_repair = requires_protocol_repair(agent, target_audit_status)
+    if historical_requires_repair:
+        if (
+            not external_holdout_mode
+            and not bool(getattr(getattr(agent, "acfg", None), "check_data_leakage", False))
+        ):
             raise ValueError("candidate_replay requires deterministic leakage auditing to be enabled")
-        expected_issues = {str(item) for item in target.get("known_issue_codes", []) if item}
-        detected_issues = set(issue_codes)
-        if not expected_issues:
-            raise ValueError("candidate_replay requires explicit known_issue_codes")
-        if not expected_issues.issubset(detected_issues):
-            missing = sorted(expected_issues - detected_issues)
-            raise ValueError(f"Replay repair seed audit does not reproduce known issues: {missing}")
-        if replay_audit.get("status") == "clean" or replay_audit.get("repair_required") is not True:
-            raise ValueError("candidate_replay unexpectedly passed the fresh leakage audit")
+        validate_candidate_audit(
+            target,
+            replay_audit,
+            external_holdout_mode=external_holdout_mode,
+        )
     else:
         if replay_audit.get("hard_block"):
             raise ValueError(
@@ -159,6 +193,12 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
         "selection_basis": str(target.get("selection_basis") or ""),
         "leakage_audit": replay_audit,
         "target_audit_status": target_audit_status,
+        "historical_requires_protocol_repair": historical_requires_repair,
+        "evaluation_authority": (
+            "fixed_hidden_holdout_terminal_only"
+            if external_holdout_mode
+            else "internal_protocol_audit"
+        ),
         "requires_repair": requires_repair,
         "repair_seed_only": requires_repair,
         "known_issue_codes": sorted({str(item) for item in target.get("known_issue_codes", []) if item}),
@@ -170,6 +210,14 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
             "Preserve this historical source byte-for-byte as a non-executable repair seed. "
             "Create a child that fixes only the audited data/evaluation protocol while preserving "
             "the complete model, feature, ensemble, checkpoint, and training design."
+        )
+    elif historical_requires_repair and external_holdout_mode:
+        replay_status = "exact_source_loaded_fixed_holdout"
+        adoption_mode = "exact_code_replay_fixed_holdout"
+        requirement = (
+            "Execute the historical source byte-for-byte in the label-isolated train view. "
+            "Its historical and self-reported validation metrics are search-only; only the "
+            "terminal external fixed-holdout evaluator may rank this submission."
         )
     else:
         replay_status = "exact_source_loaded"

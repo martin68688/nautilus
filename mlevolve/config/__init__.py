@@ -153,6 +153,15 @@ class InitSolutionConfig:
 
 
 @dataclass
+class FixedHoldoutConfig:
+    enabled: bool = False
+    evaluation_mode: str = "terminal_only"
+    train_manifest_path: str = ""
+    bypass_protocol_gates: bool = False
+    internal_metric_disposition: str = "search_only"
+
+
+@dataclass
 class AdoptionTrackingConfig:
     enable: bool = False          # 默认关：记账与分析全 no-op，run 行为与今天一致
     enable_analysis: bool = True  # enable=True 时是否在 run 末尾跑分析
@@ -238,6 +247,7 @@ class Config(Hashable):
     methodology_dynamic: bool = False
     use_grading_server: bool = True
     init_solution: InitSolutionConfig = field(default_factory=InitSolutionConfig)
+    fixed_holdout: FixedHoldoutConfig = field(default_factory=FixedHoldoutConfig)
     adoption_tracking: AdoptionTrackingConfig = field(default_factory=AdoptionTrackingConfig)
     external_skill_memory: ExternalSkillMemoryConfig = field(default_factory=ExternalSkillMemoryConfig)
 
@@ -259,6 +269,22 @@ def _default_config_path() -> Path:
     return Path(os.environ.get("MLEVOLVE_CONFIG", Path(__file__).parent / "config.yaml"))
 
 
+def _load_config_tree(path: Path, seen: tuple[Path, ...] = ()):
+    path = Path(path).expanduser().resolve()
+    if path in seen:
+        chain = " -> ".join(str(item) for item in (*seen, path))
+        raise ValueError(f"Cyclic config inheritance detected: {chain}")
+    cfg = OmegaConf.load(path)
+    extends = cfg.pop("extends", None)
+    if not extends:
+        return cfg
+    base_path = Path(extends)
+    if not base_path.is_absolute():
+        base_path = path.parent / base_path
+    base_cfg = _load_config_tree(base_path, (*seen, path))
+    return OmegaConf.merge(base_cfg, cfg)
+
+
 def _load_cfg(
     path: Path | None = None, use_cli_args=True
 ) -> Config:
@@ -266,13 +292,7 @@ def _load_cfg(
     from dotenv import load_dotenv
     load_dotenv(Path(__file__).resolve().parent.parent / ".env")
     path = Path(path) if path is not None else _default_config_path()
-    cfg = OmegaConf.load(path)
-    extends = cfg.pop("extends", None)
-    if extends:
-        base_path = Path(extends)
-        if not base_path.is_absolute():
-            base_path = path.parent / base_path
-        cfg = OmegaConf.merge(OmegaConf.load(base_path), cfg)
+    cfg = _load_config_tree(path)
     if use_cli_args:
         cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
     return cfg
@@ -322,6 +342,34 @@ def prep_cfg(cfg: Config):
     cfg_schema: Config = OmegaConf.structured(Config)
     cfg = OmegaConf.merge(cfg_schema, cfg)
 
+    if cfg.fixed_holdout.enabled:
+        from fixed_holdout.mode import EVALUATION_MODE, train_manifest_path
+        from fixed_holdout.validation import validate_train_view
+
+        if cfg.fixed_holdout.evaluation_mode != EVALUATION_MODE:
+            raise ValueError(
+                "fixed_holdout.evaluation_mode must be terminal_only so holdout "
+                "scores cannot influence search"
+            )
+        if cfg.fixed_holdout.internal_metric_disposition != "search_only":
+            raise ValueError(
+                "fixed_holdout.internal_metric_disposition must be search_only"
+            )
+        if not cfg.fixed_holdout.bypass_protocol_gates:
+            raise ValueError(
+                "fixed_holdout requires bypass_protocol_gates=true; the external "
+                "label-isolated evaluator replaces internal protocol certification"
+            )
+        if cfg.agent.check_data_leakage:
+            raise ValueError(
+                "fixed_holdout requires agent.check_data_leakage=false"
+            )
+        if cfg.agent.protocol_repair.enabled:
+            raise ValueError(
+                "fixed_holdout requires agent.protocol_repair.enabled=false"
+            )
+        validate_train_view(train_manifest_path(cfg), Path(cfg.data_dir))
+
     return cast(Config, cfg)
 
 
@@ -340,7 +388,10 @@ def load_task_desc(cfg: Config):
             )
 
         with open(cfg.desc_file) as f:
-            return f.read()
+            task_desc = f.read()
+        if cfg.fixed_holdout.enabled:
+            task_desc += _fixed_holdout_task_note()
+        return task_desc
 
     # or generate it from the goal and eval args
     if cfg.goal is None:
@@ -352,7 +403,22 @@ def load_task_desc(cfg: Config):
     if cfg.eval is not None:
         task_desc["Task evaluation"] = cfg.eval
 
+    if cfg.fixed_holdout.enabled:
+        task_desc["Fixed holdout evaluation"] = _fixed_holdout_task_note().strip()
+
     return task_desc
+
+
+def _fixed_holdout_task_note() -> str:
+    return (
+        "\n\n## Fixed Holdout Evaluation Contract\n"
+        "The visible test rows are one immutable holdout. Their labels are not "
+        "mounted in this training environment. You may split or cross-validate "
+        "only the labeled training rows for development. Produce predictions for "
+        "every test ID in sample_submission.csv. Internal validation scores guide "
+        "search only; a separate evaluator scores all completed submissions once "
+        "after the run.\n"
+    )
 
 
 def prep_agent_workspace(cfg: Config):

@@ -1,0 +1,16 @@
+extends: config_run_forest_stage_hybrid.yaml
+
+# Paths are supplied per immutable split at launch time:
+#   data_dir=/fixed/<task>/<split>/train_view/input
+#   fixed_holdout.train_manifest_path=/fixed/<task>/<split>/train_view/fixed_holdout_manifest.json
+fixed_holdout:
+  enabled: True
+  evaluation_mode: terminal_only
+  train_manifest_path: ""
+  bypass_protocol_gates: True
+  internal_metric_disposition: search_only
+
+agent:
+  check_data_leakage: False
+  protocol_repair:
+    enabled: False

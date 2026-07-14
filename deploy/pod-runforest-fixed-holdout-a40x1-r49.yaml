@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: runforest-fixed-holdout-a40x1-r49
+  namespace: ecepxie
+  labels:
+    app: runforest-fixed-holdout-dev
+spec:
+  restartPolicy: Never
+  containers:
+    - name: dev
+      image: haomingwang22/mlevolve:v1
+      command: ["/bin/bash", "-lc"]
+      args: ["exec tail -f /dev/null"]
+      resources:
+        requests:
+          cpu: "8"
+          memory: "32Gi"
+          ephemeral-storage: "0"
+          nvidia.com/a40: "1"
+        limits:
+          cpu: "8"
+          memory: "32Gi"
+          ephemeral-storage: "50Gi"
+          nvidia.com/a40: "1"
+      volumeMounts:
+        - name: code
+          mountPath: /opt/nautilus
+        - name: train-view
+          mountPath: /fixed/train
+          subPath: runforest-fixed-holdout-v2/spooky-author-identification/spooky-author-identification-7edc8feae7e5-d0f035fed1ac/train_view
+          readOnly: true
+        - name: historical-runs
+          mountPath: /opt/nautilus/mlevolve/runs
+          subPath: nautilus/mlevolve/runs
+          readOnly: true
+        - name: memory-graph
+          mountPath: /opt/nautilus/paper-skills
+          subPath: nautilus/paper-skills
+          readOnly: true
+        - name: run-output
+          mountPath: /fixed/output
+          subPath: runforest-fixed-holdout-r49-output
+        - name: solver-env
+          mountPath: /run/secrets/mlevolve.env
+          subPath: nautilus/mlevolve/.env
+          readOnly: true
+  volumes:
+    - name: code
+      emptyDir: {}
+    - name: train-view
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: historical-runs
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: memory-graph
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: run-output
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: solver-env
+      persistentVolumeClaim:
+        claimName: haoming-storage

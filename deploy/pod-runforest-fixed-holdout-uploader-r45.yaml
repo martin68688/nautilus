@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: runforest-fixed-holdout-uploader-r45
+  namespace: ecepxie
+  labels:
+    app: runforest-fixed-holdout-uploader
+spec:
+  restartPolicy: Never
+  containers:
+    - name: uploader
+      image: haomingwang22/mlevolve:v1
+      command: ["/bin/bash", "-lc"]
+      args: ["exec tail -f /dev/null"]
+      resources:
+        requests:
+          cpu: "1"
+          memory: "2Gi"
+          ephemeral-storage: "0"
+        limits:
+          cpu: "1"
+          memory: "2Gi"
+          ephemeral-storage: "10Gi"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage

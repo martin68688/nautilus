@@ -301,6 +301,22 @@ def run():
 
     interpreter.cleanup_session(-1)
 
+    try:
+        from fixed_holdout.handoff import write_evaluation_request
+
+        evaluation_request = write_evaluation_request(
+            cfg,
+            cfg.log_dir / "journal.json",
+        )
+        if evaluation_request is not None:
+            logger.info(
+                "Fixed-holdout search finished; external evaluation request: %s",
+                evaluation_request,
+            )
+    except Exception as e:
+        logger.error("Failed to write fixed-holdout evaluation request: %s", e)
+        raise
+
     # Adoption tracking: post-run analysis (side-channel, never affects the run itself).
     # Only runs if adoption_tracking.enable + enable_analysis; failure is non-fatal.
     try:

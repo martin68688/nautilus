@@ -10,6 +10,8 @@ from utils.response import wrap_code
 from engine.validation import call_validate, _validate_submission_with_retry, validate_submission_content_quality
 from agents import data_leakage_agent, leakage_audit, protocol_repair
 from agents.triggers import should_check_data_leakage
+from fixed_holdout.mode import bypass_protocol_gates, enabled, train_manifest_path
+from fixed_holdout.validation import validate_submission as validate_fixed_submission
 
 logger = logging.getLogger("MLEvolve")
 
@@ -339,6 +341,12 @@ def _persist_leakage_audit(agent, node: SearchNode) -> None:
 
 def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
     """Audit reviewed code before GPU execution. Return True when execution is blocked."""
+    if bypass_protocol_gates(agent.cfg):
+        logger.info(
+            "Node %s uses terminal fixed-holdout evaluation; internal protocol gates are bypassed",
+            node.id,
+        )
+        return False
     if node.draft_role == "novel_exploration" and node.selected_strategy:
         from agents.memory.stage_aware_hybrid_memory import strategy_alignment_for_code
 
@@ -671,6 +679,12 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
 
 
 def _save_to_global_memory(agent, node: SearchNode):
+    if enabled(agent.cfg):
+        logger.info(
+            "Node %s is not written to positive memory before terminal fixed-holdout scoring",
+            node.id,
+        )
+        return
     audit = node.leakage_audit or {}
     if getattr(agent.acfg, "check_data_leakage", False):
         positive_eligible = (
@@ -769,7 +783,31 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                 )
 
             if not node.is_buggy:
-                _validate_format_with_retry(agent, node)
+                if enabled(agent.cfg):
+                    submission_path = (
+                        agent.cfg.workspace_dir
+                        / "submission"
+                        / f"submission_{node.id}.csv"
+                    )
+                    is_valid, reason = validate_fixed_submission(
+                        train_manifest_path(agent.cfg),
+                        submission_path,
+                    )
+                    if is_valid:
+                        node.is_valid = True
+                        logger.info(
+                            "Node %s passed label-free fixed-holdout submission validation",
+                            node.id,
+                        )
+                    else:
+                        node.is_valid = False
+                        node.is_buggy = True
+                        node.analysis = (
+                            f"FIXED_HOLDOUT_FORMAT_ERROR: {reason}"
+                        )
+                        node._term_out.append(f"\n{node.analysis}")
+                else:
+                    _validate_format_with_retry(agent, node)
 
             if node.is_buggy:
                 node.metric = WorstMetricValue()
