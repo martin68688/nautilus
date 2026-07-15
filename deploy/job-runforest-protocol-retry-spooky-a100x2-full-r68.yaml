@@ -50,7 +50,7 @@ spec:
               replay_journal=/tmp/nautilus/mlevolve/runs/20260509_185008_spooky-author-identification/logs/journal.json
 
               test -d "${source_repo}/.git"
-              if ! git -C "${source_repo}" fetch --quiet --depth=1 origin codex/dual-time-procedural-memory; then
+              if ! git -C "${source_repo}" fetch --quiet --depth=32 origin codex/dual-time-procedural-memory; then
                 echo "ERROR: unable to fetch pinned RunForest branch"
                 exit 128
               fi
