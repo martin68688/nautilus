@@ -1,12 +1,12 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: runforest-protocol-gated-spooky-rtxa6000x3-full-r64
+  name: runforest-protocol-gated-spooky-a40x3-full-r65
   namespace: ecepxie
   labels:
     app: runforest-protocol-gated-full
     memory-system: run-forest-layered-strategy
-    gpu-profile: rtxa6000x3
+    gpu-profile: a40x3
     source-checkpoint: 0ab2e3be
   annotations:
     runforest/source-commit: 0ab2e3bedaa110a1614c69d25a52de6fca373631
@@ -18,12 +18,12 @@ spec:
       labels:
         app: runforest-protocol-gated-full
         memory-system: run-forest-layered-strategy
-        gpu-profile: rtxa6000x3
+        gpu-profile: a40x3
         source-checkpoint: 0ab2e3be
     spec:
       restartPolicy: Never
       tolerations:
-        - key: nvidia.com/rtxa6000
+        - key: nvidia.com/a40
           operator: Exists
       affinity:
         nodeAffinity:
@@ -32,7 +32,7 @@ spec:
               - matchExpressions:
                   - key: nvidia.com/gpu.product
                     operator: In
-                    values: [NVIDIA-RTX-A6000]
+                    values: [NVIDIA-A40]
       containers:
         - name: runforest
           image: haomingwang22/mlevolve:v1
@@ -94,7 +94,7 @@ spec:
                 desc_file=./data/spooky-author-identification/prepared/public/description.md \
                 log_dir=/output/runs \
                 workspace_dir=/output/runs \
-                exp_name=runforest_protocol_gated_spooky_r64 \
+                exp_name=runforest_protocol_gated_spooky_r65 \
                 agent.search.num_gpus=3 \
                 agent.search.parallel_search_num=3 \
                 cpu_number=8
@@ -103,12 +103,12 @@ spec:
               cpu: "8"
               memory: "64Gi"
               ephemeral-storage: "0"
-              nvidia.com/rtxa6000: "3"
+              nvidia.com/a40: "3"
             limits:
               cpu: "8"
               memory: "64Gi"
               ephemeral-storage: "50Gi"
-              nvidia.com/rtxa6000: "3"
+              nvidia.com/a40: "3"
           volumeMounts:
             - name: workspace
               mountPath: /artifacts/runtime.tar.gz
