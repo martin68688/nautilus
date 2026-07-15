@@ -1,0 +1,102 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: runforest-fixed-holdout-spooky-rtxa6000x7-full-r62
+  namespace: ecepxie
+  labels:
+    app: runforest-fixed-holdout-runtime-test
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: runforest-fixed-holdout-runtime-test
+    spec:
+      restartPolicy: Never
+      tolerations:
+        - key: nvidia.com/rtxa6000
+          operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nvidia.com/gpu.product
+                    operator: In
+                    values: [NVIDIA-RTX-A6000]
+      containers:
+        - name: test
+          image: haomingwang22/mlevolve:v1
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+              expected_bundle_sha=1d992e255d0bcb686099262e4a161a1c22ce02dd35b6df09599604f0efb4f132
+              expected_commit=36cf6c3059866428b63f399af1f7d2bffabe5d60
+              test "$(sha256sum /artifacts/runtime.tar.gz | awk '{print $1}')" = "${expected_bundle_sha}"
+
+              mkdir -p /tmp/nautilus
+              tar -xzf /artifacts/runtime.tar.gz -C /tmp/nautilus
+              test "$(cat /tmp/nautilus/SOURCE_COMMIT)" = "${expected_commit}"
+              test ! -e /fixed/train/evaluator_view
+              test -z "$(find /fixed/train -name labels.csv -print -quit)"
+
+              cd /tmp/nautilus/mlevolve
+              set -a
+              . ./.env
+              set +a
+              export PYTHONPATH=/tmp/nautilus/mlevolve
+              export MLEVOLVE_CONFIG=/tmp/nautilus/mlevolve/config/config_run_forest_fixed_holdout.yaml
+
+              nvidia-smi --query-gpu=index,name,memory.total --format=csv,noheader
+              python run.py \
+                exp_id=spooky-author-identification \
+                data_dir=/fixed/train/input \
+                dataset_dir=/fixed/train/input \
+                desc_file=/fixed/train/input/description.md \
+                fixed_holdout.train_manifest_path=/fixed/train/fixed_holdout_manifest.json \
+                log_dir=/fixed/output/runs \
+                workspace_dir=/fixed/output/runs \
+                exp_name=runforest_spooky_fixed_holdout_r62 \
+                agent.search.num_gpus=7 \
+                agent.search.parallel_search_num=7 \
+                cpu_number=16
+          resources:
+            requests:
+              cpu: "16"
+              memory: "64Gi"
+              ephemeral-storage: "0"
+              nvidia.com/rtxa6000: "7"
+            limits:
+              cpu: "16"
+              memory: "64Gi"
+              ephemeral-storage: "50Gi"
+              nvidia.com/rtxa6000: "7"
+          volumeMounts:
+            - name: workspace
+              mountPath: /artifacts/runtime.tar.gz
+              subPath: runforest-fixed-holdout-36cf6c30-runtime-anygpu.tar.gz
+              readOnly: true
+            - name: workspace
+              mountPath: /fixed/train
+              subPath: runforest-fixed-holdout-v2/spooky-author-identification/spooky-author-identification-7edc8feae7e5-d0f035fed1ac/train_view
+              readOnly: true
+            - name: workspace
+              mountPath: /tmp/nautilus/mlevolve/runs
+              subPath: nautilus/mlevolve/runs
+              readOnly: true
+            - name: workspace
+              mountPath: /tmp/nautilus/paper-skills
+              subPath: nautilus/paper-skills
+              readOnly: true
+            - name: workspace
+              mountPath: /tmp/nautilus/mlevolve/.env
+              subPath: nautilus/mlevolve/.env
+              readOnly: true
+            - name: workspace
+              mountPath: /fixed/output
+              subPath: runforest-fixed-holdout-r62-output
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
