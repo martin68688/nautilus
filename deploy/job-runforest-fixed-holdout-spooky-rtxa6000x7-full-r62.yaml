@@ -31,8 +31,8 @@ spec:
           args:
             - |
               set -euo pipefail
-              expected_bundle_sha=1d992e255d0bcb686099262e4a161a1c22ce02dd35b6df09599604f0efb4f132
-              expected_commit=36cf6c3059866428b63f399af1f7d2bffabe5d60
+              expected_bundle_sha=ff14aee27684b14cbaa2463fa1d59c78de61b457b6280e40502f481583ec3166
+              expected_commit=5971a0324ea2829d7be4f20611b95af601760875
               test "$(sha256sum /artifacts/runtime.tar.gz | awk '{print $1}')" = "${expected_bundle_sha}"
 
               mkdir -p /tmp/nautilus
@@ -75,7 +75,7 @@ spec:
           volumeMounts:
             - name: workspace
               mountPath: /artifacts/runtime.tar.gz
-              subPath: runforest-fixed-holdout-36cf6c30-runtime-anygpu.tar.gz
+              subPath: runforest-fixed-holdout-5971a032-full-runtime.tar.gz
               readOnly: true
             - name: workspace
               mountPath: /fixed/train
@@ -84,10 +84,6 @@ spec:
             - name: workspace
               mountPath: /tmp/nautilus/mlevolve/runs
               subPath: nautilus/mlevolve/runs
-              readOnly: true
-            - name: workspace
-              mountPath: /tmp/nautilus/paper-skills
-              subPath: nautilus/paper-skills
               readOnly: true
             - name: workspace
               mountPath: /tmp/nautilus/mlevolve/.env
