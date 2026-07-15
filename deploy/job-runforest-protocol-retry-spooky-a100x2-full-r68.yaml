@@ -1,0 +1,139 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: runforest-protocol-retry-spooky-a100x2-full-r68
+  namespace: ecepxie
+  labels:
+    app: runforest-protocol-retry-full
+    memory-system: run-forest-layered-strategy
+    gpu-profile: a100x2
+    source-checkpoint: 920dd5c8
+  annotations:
+    runforest/source-commit: 920dd5c8d654a8e0ee2f7a0c258ba99fb8921372
+    runforest/runtime-source: pvc-git-fetch-archive
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: runforest-protocol-retry-full
+        memory-system: run-forest-layered-strategy
+        gpu-profile: a100x2
+        source-checkpoint: 920dd5c8
+    spec:
+      restartPolicy: Never
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nvidia.com/gpu.product
+                    operator: In
+                    values:
+                      - NVIDIA-A100-SXM4-80GB
+                      - NVIDIA-A100-PCIE-40GB
+                      - NVIDIA-A100-80GB-PCIe
+      containers:
+        - name: runforest
+          image: haomingwang22/mlevolve:v1
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+              expected_commit=920dd5c8d654a8e0ee2f7a0c258ba99fb8921372
+              source_repo=/workspace/nautilus
+              output_root=/workspace/runforest-protocol-retry-a100x2-r68-output
+              replay_journal=/tmp/nautilus/mlevolve/runs/20260509_185008_spooky-author-identification/logs/journal.json
+
+              test -d "${source_repo}/.git"
+              if ! git -C "${source_repo}" fetch --quiet --depth=1 origin codex/dual-time-procedural-memory; then
+                echo "ERROR: unable to fetch pinned RunForest branch"
+                exit 128
+              fi
+              fetched_commit="$(git -C "${source_repo}" rev-parse FETCH_HEAD)"
+              test "${fetched_commit}" = "${expected_commit}"
+              git -C "${source_repo}" cat-file -e "${fetched_commit}^{commit}"
+              rm -rf /tmp/nautilus
+              mkdir -p /tmp/nautilus "${output_root}/runs"
+              git -C "${source_repo}" archive "${fetched_commit}" | tar -x -C /tmp/nautilus
+              printf '%s\n' "${expected_commit}" > /tmp/nautilus/SOURCE_COMMIT
+
+              rm -rf /tmp/nautilus/mlevolve/data /tmp/nautilus/mlevolve/runs
+              ln -s "${source_repo}/mlevolve/data" /tmp/nautilus/mlevolve/data
+              ln -s "${source_repo}/mlevolve/runs" /tmp/nautilus/mlevolve/runs
+              ln -sf "${source_repo}/mlevolve/.env" /tmp/nautilus/mlevolve/.env
+              test -s "${replay_journal}"
+
+              cd /tmp/nautilus/mlevolve
+              set -a
+              . ./.env
+              set +a
+              export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+              export PYTHONPATH=/tmp/nautilus/mlevolve
+              export MLEVOLVE_CONFIG=/tmp/nautilus/mlevolve/config/config_run_forest_stage_hybrid.yaml
+
+              python - <<'PY'
+              from pathlib import Path
+              import yaml
+
+              config = yaml.safe_load(Path("config/config_run_forest_stage_hybrid.yaml").read_text())
+              roles = config["agent"]["draft_role_policy"]["roles"]
+              repair = config["agent"]["protocol_repair"]
+              assert roles == [
+                  "coldstart_baseline",
+                  "memory_reproduction",
+                  "novel_exploration",
+              ]
+              assert repair["enabled"] is True
+              assert repair["require_runtime_provenance"] is True
+              assert repair["stage_attempt_limits"] == {
+                  "data_scope": 3,
+                  "validation_provenance": 3,
+                  "cross_fit": 7,
+                  "selection_freeze": 6,
+                  "final_holdout": 10,
+              }
+              assert repair["stage_generation_attempt_limits"] == repair["stage_attempt_limits"]
+              assert repair["final_runtime_attempt_limit"] == 6
+              print("protocol_gate_preflight_ok", roles, repair["stage_attempt_limits"])
+              PY
+
+              python -m py_compile \
+                agents/protocol_repair.py \
+                engine/agent_search.py
+              pytest -q \
+                ../tests/test_protocol_repair.py \
+                ../tests/test_run_control.py
+
+              nvidia-smi --query-gpu=index,name,memory.total --format=csv,noheader
+              exec python run.py \
+                exp_id=spooky-author-identification \
+                dataset_dir=./data \
+                data_dir=./data/spooky-author-identification/prepared/public \
+                desc_file=./data/spooky-author-identification/prepared/public/description.md \
+                log_dir="${output_root}/runs" \
+                workspace_dir="${output_root}/runs" \
+                exp_name=runforest_protocol_retry_spooky_a100x2_r68 \
+                agent.search.num_gpus=2 \
+                agent.search.parallel_search_num=2 \
+                cpu_number=12
+          resources:
+            requests:
+              cpu: "12"
+              memory: "64Gi"
+              nvidia.com/a100: "2"
+            limits:
+              cpu: "12"
+              memory: "64Gi"
+              nvidia.com/a100: "2"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
