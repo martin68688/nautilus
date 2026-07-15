@@ -1,12 +1,12 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: runforest-protocol-retry-spooky-a40x5-full-r70
+  name: runforest-protocol-retry-spooky-a40x3-full-r71
   namespace: ecepxie
   labels:
     app: runforest-protocol-retry-full
     memory-system: run-forest-layered-strategy
-    gpu-profile: a40x5
+    gpu-profile: a40x3
     source-checkpoint: 920dd5c8
   annotations:
     runforest/source-commit: 920dd5c8d654a8e0ee2f7a0c258ba99fb8921372
@@ -18,7 +18,7 @@ spec:
       labels:
         app: runforest-protocol-retry-full
         memory-system: run-forest-layered-strategy
-        gpu-profile: a40x5
+        gpu-profile: a40x3
         source-checkpoint: 920dd5c8
     spec:
       restartPolicy: Never
@@ -44,7 +44,7 @@ spec:
               set -euo pipefail
               expected_commit=920dd5c8d654a8e0ee2f7a0c258ba99fb8921372
               source_repo=/workspace/nautilus
-              output_root=/workspace/runforest-protocol-retry-a40x5-r70-output
+              output_root=/workspace/runforest-protocol-retry-a40x3-r71-output
               replay_journal=/tmp/nautilus/mlevolve/runs/20260509_185008_spooky-author-identification/logs/journal.json
 
               test -d "${source_repo}/.git"
@@ -116,19 +116,19 @@ spec:
                 desc_file=./data/spooky-author-identification/prepared/public/description.md \
                 log_dir="${output_root}/runs" \
                 workspace_dir="${output_root}/runs" \
-                exp_name=runforest_protocol_retry_spooky_a40x5_r70 \
-                agent.search.num_gpus=5 \
-                agent.search.parallel_search_num=5 \
+                exp_name=runforest_protocol_retry_spooky_a40x3_r71 \
+                agent.search.num_gpus=3 \
+                agent.search.parallel_search_num=3 \
                 cpu_number=3
           resources:
             requests:
               cpu: "3"
               memory: "64Gi"
-              nvidia.com/a40: "5"
+              nvidia.com/a40: "3"
             limits:
               cpu: "3"
               memory: "64Gi"
-              nvidia.com/a40: "5"
+              nvidia.com/a40: "3"
           volumeMounts:
             - name: workspace
               mountPath: /workspace
