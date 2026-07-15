@@ -1,12 +1,12 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: runforest-protocol-retry-spooky-rtxa6000x3-full-r69
+  name: runforest-protocol-retry-spooky-a40x5-full-r70
   namespace: ecepxie
   labels:
     app: runforest-protocol-retry-full
     memory-system: run-forest-layered-strategy
-    gpu-profile: rtxa6000x3
+    gpu-profile: a40x5
     source-checkpoint: 920dd5c8
   annotations:
     runforest/source-commit: 920dd5c8d654a8e0ee2f7a0c258ba99fb8921372
@@ -18,7 +18,7 @@ spec:
       labels:
         app: runforest-protocol-retry-full
         memory-system: run-forest-layered-strategy
-        gpu-profile: rtxa6000x3
+        gpu-profile: a40x5
         source-checkpoint: 920dd5c8
     spec:
       restartPolicy: Never
@@ -33,7 +33,7 @@ spec:
                   - key: nvidia.com/gpu.product
                     operator: In
                     values:
-                      - NVIDIA-RTX-A6000
+                      - NVIDIA-A40
       containers:
         - name: runforest
           image: haomingwang22/mlevolve:v1
@@ -44,7 +44,7 @@ spec:
               set -euo pipefail
               expected_commit=920dd5c8d654a8e0ee2f7a0c258ba99fb8921372
               source_repo=/workspace/nautilus
-              output_root=/workspace/runforest-protocol-retry-rtxa6000x3-r69-output
+              output_root=/workspace/runforest-protocol-retry-a40x5-r70-output
               replay_journal=/tmp/nautilus/mlevolve/runs/20260509_185008_spooky-author-identification/logs/journal.json
 
               test -d "${source_repo}/.git"
@@ -116,19 +116,19 @@ spec:
                 desc_file=./data/spooky-author-identification/prepared/public/description.md \
                 log_dir="${output_root}/runs" \
                 workspace_dir="${output_root}/runs" \
-                exp_name=runforest_protocol_retry_spooky_rtxa6000x3_r69 \
-                agent.search.num_gpus=3 \
-                agent.search.parallel_search_num=3 \
-                cpu_number=12
+                exp_name=runforest_protocol_retry_spooky_a40x5_r70 \
+                agent.search.num_gpus=5 \
+                agent.search.parallel_search_num=5 \
+                cpu_number=3
           resources:
             requests:
-              cpu: "12"
+              cpu: "3"
               memory: "64Gi"
-              nvidia.com/rtxa6000: "3"
+              nvidia.com/a40: "5"
             limits:
-              cpu: "12"
+              cpu: "3"
               memory: "64Gi"
-              nvidia.com/rtxa6000: "3"
+              nvidia.com/a40: "5"
           volumeMounts:
             - name: workspace
               mountPath: /workspace
