@@ -58,20 +58,20 @@ class ProtocolRepairConfig:
     per_stage_attempt_limit: int = 2
     stage_generation_attempt_limit: int = 2
     stage_attempt_limits: dict[str, int] = field(default_factory=lambda: {
-        "data_scope": 2,
-        "validation_provenance": 2,
-        "cross_fit": 5,
-        "selection_freeze": 4,
-        "final_holdout": 8,
+        "data_scope": 3,
+        "validation_provenance": 3,
+        "cross_fit": 7,
+        "selection_freeze": 6,
+        "final_holdout": 10,
     })
     stage_generation_attempt_limits: dict[str, int] = field(default_factory=lambda: {
-        "data_scope": 2,
-        "validation_provenance": 2,
-        "cross_fit": 5,
-        "selection_freeze": 4,
-        "final_holdout": 8,
+        "data_scope": 3,
+        "validation_provenance": 3,
+        "cross_fit": 7,
+        "selection_freeze": 6,
+        "final_holdout": 10,
     })
-    final_runtime_attempt_limit: int = 4
+    final_runtime_attempt_limit: int = 6
     stage_generation_timeout_seconds: int = 300
     stage_generation_backend_retries: int = 2
     require_runtime_provenance: bool = True

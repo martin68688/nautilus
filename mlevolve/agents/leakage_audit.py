@@ -209,6 +209,7 @@ def build_repair_preservation_contract(code: str) -> dict[str, Any]:
 
     semantic_model_call_ids: set[int] = set()
     semantic_model_literals: set[str] = set()
+    contextual_model_literals: set[str] = set()
     protocol_component_labels: set[str] = set()
     protocol_metadata_literals: set[str] = set()
     for node in ast.walk(tree):
@@ -234,6 +235,25 @@ def build_repair_preservation_contract(code: str) -> dict[str, Any]:
                 and isinstance(node.args[0].value, str)
             ):
                 protocol_component_labels.add(node.args[0].value)
+        if isinstance(node, ast.Call):
+            call_name = _call_name(node.func)
+            model_context = (
+                _is_repair_protected_call(call_name)
+                or call_name in {"from_pretrained", "load_model", "load_checkpoint"}
+            )
+            if model_context:
+                contextual_model_literals.update(
+                    child.value
+                    for argument in [
+                        *node.args,
+                        *(keyword.value for keyword in node.keywords),
+                    ]
+                    for child in ast.walk(argument)
+                    if isinstance(child, ast.Constant)
+                    and isinstance(child.value, str)
+                    and len(child.value) <= 240
+                    and _is_model_identity_literal(child.value)
+                )
         if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
             continue
         targets = node.targets if isinstance(node, ast.Assign) else [node.target]
@@ -290,14 +310,7 @@ def build_repair_preservation_contract(code: str) -> dict[str, Any]:
                         structural_sha256(ast.unparse(node.value))
                     )
 
-    model_literals = sorted({
-        node.value
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Constant)
-        and isinstance(node.value, str)
-        and len(node.value) <= 240
-        and _is_model_identity_literal(node.value)
-    } | semantic_model_literals)
+    model_literals = sorted(semantic_model_literals | contextual_model_literals)
     return {
         "schema": "mlevolve_repair_preservation_v1",
         "source_code_sha256": source_hash,

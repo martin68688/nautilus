@@ -159,14 +159,14 @@ def _canonical_partition_failures(tree: ast.AST) -> list[str]:
 
 
 _DEFAULT_STAGE_ATTEMPT_LIMITS = {
-    "data_scope": 2,
-    "validation_provenance": 2,
-    "cross_fit": 5,
-    "selection_freeze": 4,
-    "final_holdout": 8,
+    "data_scope": 3,
+    "validation_provenance": 3,
+    "cross_fit": 7,
+    "selection_freeze": 6,
+    "final_holdout": 10,
 }
 
-_DEFAULT_FINAL_RUNTIME_ATTEMPT_LIMIT = 4
+_DEFAULT_FINAL_RUNTIME_ATTEMPT_LIMIT = 6
 
 
 def _stage_attempt_limit(transaction: dict, stage: str | None, *, generation: bool = False) -> int:
@@ -447,6 +447,7 @@ def _oof_selection_analysis(tree: ast.AST, start: int, end: int) -> dict:
         if isinstance(node, ast.Name) and "oof" in node.id.lower()
     }
     metric_results: set[str] = set()
+    causal_values: set[str] = set()
     causal_selection: set[str] = set()
     parent = {
         child: node
@@ -496,11 +497,14 @@ def _oof_selection_analysis(tree: ast.AST, start: int, end: int) -> dict:
             metric_formula = objective_assignment_uses_oof(targets, value)
             if metric_call or metric_formula:
                 metric_results.update(targets)
+                causal_values.update(targets)
+            if controlling_if_uses_metric(node) or bool(loaded & causal_values):
+                causal_values.update(targets)
             selected_targets = {name for name in targets if _SELECTED_STATE_NAME.search(name)}
             if selected_targets and (
                 metric_call
                 or metric_formula
-                or bool(loaded & causal_selection)
+                or bool(targets & causal_values)
                 or controlling_if_uses_metric(node)
             ):
                 causal_selection.update(selected_targets)
@@ -1140,7 +1144,7 @@ def apply_stage_result(transaction: dict, stage_audit: dict, node_id: str) -> di
         for item in stage_audit.get("issues", [])
         if isinstance(item, dict)
     ]
-    tx.setdefault("history", []).append({
+    history_entry = {
         "node_id": node_id,
         "stage": stage,
         "attempt": attempts[stage],
@@ -1148,7 +1152,28 @@ def apply_stage_result(transaction: dict, stage_audit: dict, node_id: str) -> di
         "code_sha256": stage_audit.get("code_sha256"),
         "issue_codes": [item.get("issue_code") for item in stage_audit.get("issues", [])],
         "feedback": feedback,
-    })
+    }
+    previous_failures = [
+        entry
+        for entry in tx.get("history", [])
+        if entry.get("stage") == stage and entry.get("status") == "failed"
+    ]
+    def deterministic_feedback(entry: dict) -> list[dict]:
+        return [
+            item
+            for item in entry.get("feedback", [])
+            if item.get("issue_code") != "PROTOCOL_REPAIR_REPEATED_IDENTICAL_CANDIDATE"
+        ]
+
+    repeated_identical_rejection = bool(
+        not passed
+        and history_entry["feedback"]
+        and previous_failures
+        and previous_failures[-1].get("code_sha256") == history_entry["code_sha256"]
+        and deterministic_feedback(previous_failures[-1]) == history_entry["feedback"]
+    )
+    tx.setdefault("history", []).append(history_entry)
+    tx.pop("repeated_candidate", None)
     if passed:
         tx["current_stage_index"] = int(tx.get("current_stage_index", 0)) + 1
         tx["state"] = "final_pending" if current_stage(tx) == "final_holdout" else "pending"
@@ -1157,6 +1182,26 @@ def apply_stage_result(transaction: dict, stage_audit: dict, node_id: str) -> di
     elif attempts[stage] >= _stage_attempt_limit(tx, stage):
         tx["state"] = "exhausted"
         tx["terminal_reason"] = f"stage_attempts_exhausted:{stage}"
+    elif repeated_identical_rejection:
+        tx["state"] = "pending"
+        tx["repeated_candidate"] = {
+            "stage": stage,
+            "code_sha256": history_entry["code_sha256"],
+            "issue_codes": history_entry["issue_codes"],
+            "repeated_attempts": [
+                previous_failures[-1].get("attempt"),
+                history_entry["attempt"],
+            ],
+        }
+        history_entry["feedback"].append({
+            "issue_code": "PROTOCOL_REPAIR_REPEATED_IDENTICAL_CANDIDATE",
+            "evidence": "The same code received the same deterministic rejection twice in a row.",
+            "remediation": (
+                "Produce a materially different implementation that addresses the rejection; "
+                "do not resubmit the previous candidate unchanged."
+            ),
+            "line": 0,
+        })
     else:
         tx["state"] = "pending"
     return tx

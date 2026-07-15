@@ -133,7 +133,8 @@ def test_stage_audits_advance_independently_and_exhaust_per_stage():
     assert bad["status"] == "blocked"
     tx = protocol_repair.apply_stage_result(tx, bad, "n1")
     assert protocol_repair.current_stage(tx) == "data_scope"
-    tx = protocol_repair.apply_stage_result(tx, bad, "n2")
+    second_bad = protocol_repair.audit_stage("model = AlternateResNetModel()", tx)
+    tx = protocol_repair.apply_stage_result(tx, second_bad, "n2")
     assert tx["state"] == "exhausted"
 
     clean_tx = {**tx, "state": "pending", "stage_attempts": {}, "history": []}
@@ -145,6 +146,89 @@ outer_train, outer_holdout = train_test_split(sample_ids, stratify=labels)
     assert passed["status"] == "clean"
     clean_tx = protocol_repair.apply_stage_result(clean_tx, passed, "n3")
     assert protocol_repair.current_stage(clean_tx) == "final_holdout"
+
+
+def test_identical_rejection_twice_stays_retriable_with_stronger_feedback():
+    tx = {
+        "schema": protocol_repair.PROTOCOL_REPAIR_SCHEMA,
+        "protocol_plan": {"stages": ["selection_freeze"]},
+        "current_stage_index": 0,
+        "stage_attempts": {},
+        "history": [],
+        "state": "pending",
+        "stage_attempt_limits": {"selection_freeze": 6},
+    }
+    audit = {
+        "status": "blocked",
+        "code_sha256": "same-candidate",
+        "issues": [{
+            "issue_code": "PROTOCOL_STAGE_SELECTION_FREEZE_INCOMPLETE",
+            "evidence": "selected state is not causally updated",
+            "remediation": "trace the OOF metric into the selected state",
+            "line": 0,
+        }],
+    }
+    first = protocol_repair.apply_stage_result(tx, audit, "n1")
+    assert first["state"] == "pending"
+    second = protocol_repair.apply_stage_result(first, audit, "n2")
+    assert second["state"] == "pending"
+    assert second["repeated_candidate"] == {
+        "stage": "selection_freeze",
+        "code_sha256": "same-candidate",
+        "issue_codes": ["PROTOCOL_STAGE_SELECTION_FREEZE_INCOMPLETE"],
+        "repeated_attempts": [1, 2],
+    }
+    assert second["history"][-1]["feedback"][-1]["issue_code"] == (
+        "PROTOCOL_REPAIR_REPEATED_IDENTICAL_CANDIDATE"
+    )
+    assert "materially different" in second["history"][-1]["feedback"][-1]["remediation"]
+    for attempt in range(3, 6):
+        second = protocol_repair.apply_stage_result(second, audit, f"n{attempt}")
+        assert second["state"] == "pending"
+        assert second["history"][-1]["feedback"][-1]["issue_code"] == (
+            "PROTOCOL_REPAIR_REPEATED_IDENTICAL_CANDIDATE"
+        )
+    exhausted = protocol_repair.apply_stage_result(second, audit, "n6")
+    assert exhausted["state"] == "exhausted"
+    assert exhausted["terminal_reason"] == "stage_attempts_exhausted:selection_freeze"
+
+
+def test_empty_rejection_does_not_create_repeated_candidate_metadata():
+    tx = {
+        "schema": protocol_repair.PROTOCOL_REPAIR_SCHEMA,
+        "protocol_plan": {"stages": ["cross_fit"]},
+        "current_stage_index": 0,
+        "stage_attempts": {},
+        "history": [],
+        "state": "pending",
+        "stage_attempt_limits": {"cross_fit": 7},
+    }
+    audit = {"status": "blocked", "code_sha256": "same", "issues": []}
+    first = protocol_repair.apply_stage_result(tx, audit, "n1")
+    second = protocol_repair.apply_stage_result(first, audit, "n2")
+    assert second["state"] == "pending"
+    assert "repeated_candidate" not in second
+
+
+def test_nonrepeated_failure_clears_stale_repeated_candidate_metadata():
+    tx = {
+        "schema": protocol_repair.PROTOCOL_REPAIR_SCHEMA,
+        "protocol_plan": {"stages": ["cross_fit"]},
+        "current_stage_index": 0,
+        "stage_attempts": {"cross_fit": 2},
+        "history": [],
+        "state": "pending",
+        "stage_attempt_limits": {"cross_fit": 7},
+        "repeated_candidate": {"stage": "cross_fit", "code_sha256": "old"},
+    }
+    audit = {
+        "status": "blocked",
+        "code_sha256": "new",
+        "issues": [{"issue_code": "NEW", "evidence": "new", "remediation": "fix"}],
+    }
+    updated = protocol_repair.apply_stage_result(tx, audit, "n3")
+    assert updated["state"] == "pending"
+    assert "repeated_candidate" not in updated
 
 
 def test_stage_scope_gate_defers_later_issues_but_blocks_current_or_preservation():
@@ -547,16 +631,16 @@ def test_final_runtime_budget_is_independent_from_static_rejections():
 def test_configured_complex_stage_budgets_are_recorded_in_transaction(tmp_path):
     agent = _agent(tmp_path)
     agent.acfg.protocol_repair.stage_attempt_limits = {
-        "cross_fit": 5,
-        "selection_freeze": 4,
-        "final_holdout": 8,
+        "cross_fit": 8,
+        "selection_freeze": 7,
+        "final_holdout": 12,
     }
     agent.acfg.protocol_repair.stage_generation_attempt_limits = {
-        "cross_fit": 5,
-        "selection_freeze": 4,
-        "final_holdout": 8,
+        "cross_fit": 8,
+        "selection_freeze": 7,
+        "final_holdout": 12,
     }
-    agent.acfg.protocol_repair.final_runtime_attempt_limit = 4
+    agent.acfg.protocol_repair.final_runtime_attempt_limit = 9
     code = """
 model_a = XGBClassifier()
 model_b = LogisticRegression()
@@ -574,11 +658,11 @@ best_weights = minimize(objective, x0, args=(y_val, val_preds))
 
     tx = protocol_repair.ensure_transaction(agent, node)
 
-    assert tx["stage_attempt_limits"]["cross_fit"] == 5
-    assert tx["stage_attempt_limits"]["selection_freeze"] == 4
-    assert tx["stage_attempt_limits"]["final_holdout"] == 8
-    assert tx["stage_generation_attempt_limits"]["final_holdout"] == 8
-    assert tx["final_runtime_attempt_limit"] == 4
+    assert tx["stage_attempt_limits"]["cross_fit"] == 8
+    assert tx["stage_attempt_limits"]["selection_freeze"] == 7
+    assert tx["stage_attempt_limits"]["final_holdout"] == 12
+    assert tx["stage_generation_attempt_limits"]["final_holdout"] == 12
+    assert tx["final_runtime_attempt_limit"] == 9
     assert tx["stage_runtime_attempts"] == {}
 
 
@@ -1147,8 +1231,8 @@ def test_selection_and_final_instructions_pin_runtime_calls():
     assert "before every outer-holdout feature extraction" in final
     assert "merely delaying the metric is not enough" in final
     final_tx = {**base, "current_stage_index": 1}
-    assert protocol_repair._stage_attempt_limit(final_tx, "final_holdout") == 8
-    assert protocol_repair._stage_attempt_limit(final_tx, "final_holdout", generation=True) == 8
+    assert protocol_repair._stage_attempt_limit(final_tx, "final_holdout") == 10
+    assert protocol_repair._stage_attempt_limit(final_tx, "final_holdout", generation=True) == 10
 
 
 def test_protocol_plan_is_generic_across_task_and_model_families():
@@ -1356,6 +1440,33 @@ for weights in candidates:
         best_logloss = logloss
         best_weights = weights
 frozen_protocol_state = {"weights": best_weights, "oof_logloss": best_logloss}
+protocol_guard.record_selection("protocol_state", outer_train_ids)
+protocol_guard.freeze()
+"""
+    tx = {
+        "schema": protocol_repair.PROTOCOL_REPAIR_SCHEMA,
+        "protocol_plan": {"stages": ["selection_freeze"], "task_profile": {}},
+        "current_stage_index": 0,
+        "state": "pending",
+    }
+    assert protocol_repair.audit_stage(code, tx)["status"] == "clean"
+
+
+def test_selection_stage_traces_scalar_weight_assignments_from_oof_metric():
+    code = """
+protocol_guard.record_global_oof(oof_predictions, outer_train_ids)
+best_avg_logloss = float("inf")
+best_w1, best_w2, best_w3 = 0.4, 0.35, 0.25
+for w1, w2 in candidates:
+    w3 = 1.0 - w1 - w2
+    ensemble_oof = w1 * oof_deberta + w2 * oof_xgboost + w3 * oof_logistic
+    logloss = -np.mean(np.log(ensemble_oof[np.arange(len(y_outer_train)), y_outer_train]))
+    if logloss < best_avg_logloss:
+        best_avg_logloss = logloss
+        best_w1 = w1
+        best_w2 = w2
+        best_w3 = w3
+frozen_protocol_state = {"w1": best_w1, "w2": best_w2, "w3": best_w3}
 protocol_guard.record_selection("protocol_state", outer_train_ids)
 protocol_guard.freeze()
 """
@@ -2278,6 +2389,33 @@ model = LogisticRegression(C=2.0)
     assert "REPAIR_MODEL_IDENTITY_ADDED" in {
         issue["issue_code"] for issue in suffixed_audit["issues"]
     }
+
+
+def test_preservation_ignores_model_names_used_only_in_logs():
+    source = '''
+checkpoint = "microsoft/deberta-v3-large"
+model = LogisticRegression(C=2.0)
+'''
+    contract = build_repair_preservation_contract(source)
+    repaired = source + '''
+print(f"  DeBERTa: {best_w1}, XGBoost: {best_w2}")
+logger.info("ModernBERT training finished")
+'''
+    current = build_repair_preservation_contract(repaired)
+    assert "  DeBERTa: " not in current["model_literals"]
+    assert "ModernBERT training finished" not in current["model_literals"]
+    assert audit_repair_preservation(repaired, contract)["status"] == "clean"
+
+
+def test_preservation_keeps_direct_model_loader_literals():
+    source = 'model = AutoModel.from_pretrained("vendor/deberta-large")\n'
+    contract = build_repair_preservation_contract(source)
+    assert contract["model_literals"] == ["vendor/deberta-large"]
+    repaired = 'model = AutoModel.from_pretrained("vendor/modernbert-large")\n'
+    audit = audit_repair_preservation(repaired, contract)
+    codes = {issue["issue_code"] for issue in audit["issues"]}
+    assert "REPAIR_MODEL_IDENTITY_CHANGED" in codes
+    assert "REPAIR_MODEL_IDENTITY_ADDED" in codes
 
 
 def test_preservation_allows_new_runtime_provenance_component_labels():
