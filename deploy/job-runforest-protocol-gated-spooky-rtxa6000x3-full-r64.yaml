@@ -1,0 +1,135 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: runforest-protocol-gated-spooky-rtxa6000x3-full-r64
+  namespace: ecepxie
+  labels:
+    app: runforest-protocol-gated-full
+    memory-system: run-forest-layered-strategy
+    gpu-profile: rtxa6000x3
+    source-checkpoint: 0ab2e3be
+  annotations:
+    runforest/source-commit: 0ab2e3bedaa110a1614c69d25a52de6fca373631
+    runforest/runtime-sha256: 41694cf7d09232cdc3ee68638d394b0fd4e4d142b16e06c5d2108c7e4b3dadfa
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: runforest-protocol-gated-full
+        memory-system: run-forest-layered-strategy
+        gpu-profile: rtxa6000x3
+        source-checkpoint: 0ab2e3be
+    spec:
+      restartPolicy: Never
+      tolerations:
+        - key: nvidia.com/rtxa6000
+          operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nvidia.com/gpu.product
+                    operator: In
+                    values: [NVIDIA-RTX-A6000]
+      containers:
+        - name: runforest
+          image: haomingwang22/mlevolve:v1
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+              expected_bundle_sha=41694cf7d09232cdc3ee68638d394b0fd4e4d142b16e06c5d2108c7e4b3dadfa
+              expected_commit=0ab2e3bedaa110a1614c69d25a52de6fca373631
+              replay_journal=/tmp/nautilus/mlevolve/runs/20260509_185008_spooky-author-identification/logs/journal.json
+              test "$(sha256sum /artifacts/runtime.tar.gz | awk '{print $1}')" = "${expected_bundle_sha}"
+
+              mkdir -p /tmp/nautilus /output/runs
+              tar -xzf /artifacts/runtime.tar.gz -C /tmp/nautilus
+              test "$(cat /tmp/nautilus/SOURCE_COMMIT)" = "${expected_commit}"
+              test -s "${replay_journal}"
+              test ! -e /tmp/nautilus/mlevolve/fixed_holdout
+              test ! -e /tmp/nautilus/mlevolve/config/config_run_forest_fixed_holdout.yaml
+
+              cd /tmp/nautilus/mlevolve
+              set -a
+              . ./.env
+              set +a
+              export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+              export PYTHONPATH=/tmp/nautilus/mlevolve
+              export MLEVOLVE_CONFIG=/tmp/nautilus/mlevolve/config/config_run_forest_stage_hybrid.yaml
+
+              python - <<'PY'
+              from pathlib import Path
+              import yaml
+
+              config = yaml.safe_load(Path("config/config_run_forest_stage_hybrid.yaml").read_text())
+              roles = config["agent"]["draft_role_policy"]["roles"]
+              repair = config["agent"]["protocol_repair"]
+              assert roles == [
+                  "coldstart_baseline",
+                  "memory_reproduction",
+                  "novel_exploration",
+              ]
+              assert repair["enabled"] is True
+              assert repair["require_runtime_provenance"] is True
+              assert repair["stage_attempt_limits"] == {
+                  "data_scope": 2,
+                  "validation_provenance": 2,
+                  "cross_fit": 5,
+                  "selection_freeze": 4,
+                  "final_holdout": 8,
+              }
+              assert repair["final_runtime_attempt_limit"] == 4
+              print("protocol_gate_preflight_ok", roles, repair["stage_attempt_limits"])
+              PY
+
+              nvidia-smi --query-gpu=index,name,memory.total --format=csv,noheader
+              exec python run.py \
+                exp_id=spooky-author-identification \
+                dataset_dir=./data \
+                data_dir=./data/spooky-author-identification/prepared/public \
+                desc_file=./data/spooky-author-identification/prepared/public/description.md \
+                log_dir=/output/runs \
+                workspace_dir=/output/runs \
+                exp_name=runforest_protocol_gated_spooky_r64 \
+                agent.search.num_gpus=3 \
+                agent.search.parallel_search_num=3 \
+                cpu_number=8
+          resources:
+            requests:
+              cpu: "8"
+              memory: "64Gi"
+              ephemeral-storage: "0"
+              nvidia.com/rtxa6000: "3"
+            limits:
+              cpu: "8"
+              memory: "64Gi"
+              ephemeral-storage: "50Gi"
+              nvidia.com/rtxa6000: "3"
+          volumeMounts:
+            - name: workspace
+              mountPath: /artifacts/runtime.tar.gz
+              subPath: runforest-protocol-gated-0ab2e3be-full-runtime-clean.tar.gz
+              readOnly: true
+            - name: workspace
+              mountPath: /tmp/nautilus/mlevolve/data
+              subPath: nautilus/mlevolve/data
+              readOnly: true
+            - name: workspace
+              mountPath: /tmp/nautilus/mlevolve/runs
+              subPath: nautilus/mlevolve/runs
+              readOnly: true
+            - name: workspace
+              mountPath: /tmp/nautilus/mlevolve/.env
+              subPath: nautilus/mlevolve/.env
+              readOnly: true
+            - name: workspace
+              mountPath: /output
+              subPath: runforest-protocol-gated-r63-output
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
