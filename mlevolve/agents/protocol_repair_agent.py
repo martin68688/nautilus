@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import copy
 import ast
+import json
 import logging
+import re
 
 from agents.adoption import log_adoption
 from agents.coder import plan_and_code_query
@@ -95,33 +97,27 @@ def _source_transaction_code(parent_node: SearchNode, transaction: dict) -> str:
 
 
 def _stage_generation_base(parent_node: SearchNode, stage: str) -> SearchNode:
-    """Retry a stage from its last clean input while retaining failed lineage."""
-    node = parent_node
-    while node.parent is not None:
-        history = list((node.protocol_repair or {}).get("history") or [])
-        last = history[-1] if history else {}
-        if last.get("stage") != stage or last.get("status") not in {
-            "failed", "generation_failed"
-        }:
-            break
-        node = node.parent
-    return node
+    """Continue a same-stage retry from the latest usable candidate.
+
+    Static-audit failures still contain useful protocol edits.  Starting each
+    retry from the last clean stage discarded those edits and forced the model
+    to rediscover them.  Generation failures do not create a child, so the
+    supplied parent remains the latest usable program in both cases.
+    """
+    return parent_node
 
 
-def _rejection_feedback(parent_node: SearchNode, transaction: dict, stage: str) -> str:
-    """Format all same-stage rejections as a cumulative next-attempt contract."""
+def _same_stage_rejections(transaction: dict, stage: str) -> list[dict]:
     feedback_stages = {stage}
     if stage == "final_holdout":
         feedback_stages.add("final_holdout_runtime")
-    entries = [
-        item
-        for item in reversed(list(transaction.get("history") or []))
-        if item.get("stage") in feedback_stages
-        and item.get("status") in {"failed", "generation_failed"}
-    ]
     feedback = []
     seen = set()
-    for entry in entries:
+    for entry in reversed(list(transaction.get("history") or [])):
+        if entry.get("stage") not in feedback_stages or entry.get("status") not in {
+            "failed", "generation_failed"
+        }:
+            continue
         for item in entry.get("feedback") or []:
             key = (
                 item.get("issue_code"), item.get("evidence"), item.get("remediation")
@@ -130,6 +126,76 @@ def _rejection_feedback(parent_node: SearchNode, transaction: dict, stage: str) 
                 continue
             seen.add(key)
             feedback.append(item)
+    return feedback
+
+
+def _actionable_rejection_contract(transaction: dict, stage: str) -> str:
+    """Return a machine-readable checklist for the next generation attempt."""
+    rejections = _same_stage_rejections(transaction, stage)[:32]
+    stage_calls = {
+        "data_scope": [
+            'protocol_guard.register_partition("outer_train", outer_train_ids)',
+            'protocol_guard.register_partition("outer_holdout", outer_holdout_ids)',
+        ],
+        "cross_fit": [
+            'protocol_guard.record_fit(component, inner_train_ids, purpose="cross_fit")',
+            'protocol_guard.record_prediction(component, inner_train_ids, inner_valid_ids, purpose="oof")',
+            "protocol_guard.record_global_oof(oof_predictions, outer_train_ids)",
+        ],
+        "selection_freeze": [
+            'protocol_guard.record_selection("protocol_state", outer_train_ids)',
+            "protocol_guard.freeze()",
+        ],
+        "final_holdout": [
+            'protocol_guard.record_prediction("final_predictor", outer_train_ids, outer_holdout_ids, purpose="final")',
+            "protocol_guard.record_final_evaluation(outer_holdout_ids)",
+            "protocol_guard.assert_clean()",
+            "protocol_guard.emit()",
+        ],
+    }
+    contract = {
+        "stage": stage,
+        "retry_mode": "edit_latest_candidate_in_place",
+        "rejections_to_fix": [
+            {
+                "issue_code": item.get("issue_code") or "PROTOCOL_REJECTION",
+                "evidence": item.get("evidence") or "unspecified violation",
+                "required_fix": item.get("remediation") or "remove the reported violation",
+            }
+            for item in rejections
+        ],
+        "required_runtime_calls": stage_calls.get(stage, []),
+        "acceptance_checks": [
+            "preserve every previously repaired item present in the supplied program",
+            "do not add, remove, or reconfigure protected model components",
+            "use only the shipped ProtocolProvenanceGuard API",
+        ],
+    }
+    if stage == "cross_fit":
+        missing_fit_labels = sorted({
+            match.group(1)
+            for item in rejections
+            for match in re.finditer(
+                r"fold-local preprocessor\s+([A-Za-z_][A-Za-z0-9_]*)\s+lacks record_fit",
+                str(item.get("evidence") or ""),
+            )
+        })
+        contract["required_component_fit_calls"] = [
+            f'protocol_guard.record_fit("{label}", inner_train_ids, purpose="fold_preprocess")'
+            for label in missing_fit_labels
+        ]
+        contract["acceptance_checks"].extend([
+            "assign each outer_train row exactly once through its fold validation indices",
+            "record every learned fit and every fold prediction with stable component names",
+            "record_global_oof must occur after complete OOF assignment and before any selection",
+            "do not read, transform, predict, score, or tune on outer_holdout",
+        ])
+    return json.dumps(contract, indent=2, sort_keys=True)
+
+
+def _rejection_feedback(parent_node: SearchNode, transaction: dict, stage: str) -> str:
+    """Format all same-stage rejections as a cumulative next-attempt contract."""
+    feedback = _same_stage_rejections(transaction, stage)
     if not feedback:
         feedback = [
             {
@@ -225,6 +291,17 @@ def _normalize_protocol_guard_calls(code: str) -> str:
                 node.keywords = []
                 return node
             if not isinstance(node.func, ast.Attribute):
+                return node
+            if node.func.attr in {
+                "register_global_oof",
+                "record_global_oof_coverage",
+                "register_global_oof_coverage",
+            }:
+                # These names are unambiguous aliases for the shipped API.
+                # Do not insert a missing call: coverage must still be present
+                # in the generated program and pass static/runtime audits.
+                self.changed = True
+                node.func.attr = "record_global_oof"
                 return node
             if node.func.attr in {"verify_no_leak", "assert_no_overlap"}:
                 self.changed = True
@@ -396,10 +473,12 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     plan = transaction.get("protocol_plan", {})
     contract = transaction.get("preservation_contract", {})
     generation_base = _stage_generation_base(parent_node, stage)
-    protected_snippets = _protected_constructor_snippets(generation_base.code, contract)
+    source_code = _source_transaction_code(parent_node, transaction)
+    protected_snippets = _protected_constructor_snippets(source_code, contract)
     protected_literals = [str(value) for value in (contract.get("model_literals") or [])]
     instructions = stage_instructions(transaction)
     rejection_feedback = _rejection_feedback(parent_node, transaction, stage)
+    rejection_contract = _actionable_rejection_contract(transaction, stage)
     introduction = (
         "You are a protocol-repair engineer. The model direction is frozen and useful, but its "
         "evaluation protocol is not trustworthy. Implement exactly one cumulative protocol stage. "
@@ -418,8 +497,10 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         + "\nEvery literal above must still appear verbatim in the complete program. Preserve it as a named constant even if a later stage will consume it.\n\n"
         f"# Audit evidence\n{format_audit(parent_node.leakage_audit)}\n\n"
         f"# Previous rejection feedback (mandatory)\n{rejection_feedback}\n\n"
+        f"# Executable retry contract (mandatory JSON)\n{rejection_contract}\n\n"
         "# Mandatory stage instructions\n- " + "\n- ".join(instructions) + "\n\n"
-        "# Previous complete program\n" + wrap_code(generation_base.code) + "\n\n"
+        "# Latest candidate program\n" + wrap_code(generation_base.code) + "\n\n"
+        "Edit the latest candidate cumulatively. Keep its correct partial repairs and change only what the rejection contract requires.\n\n"
         "Return a concise repair description followed by one complete Python code block."
     )
     prompt = build_chat_prompt_for_model(
@@ -453,7 +534,6 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             )
     if not repair_plan or not code:
         raise RuntimeError(f"Protocol repair code generation returned no usable program for {stage}")
-    source_code = _source_transaction_code(generation_base, transaction)
     code = _restore_protected_component_calls(code, source_code, contract)
     code = _normalize_protocol_guard_calls(code)
     code = _anchor_missing_model_literals(code, contract)

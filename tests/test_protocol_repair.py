@@ -796,7 +796,7 @@ auxiliary_criterion = CrossEntropyLoss()
     assert restored.count("CrossEntropyLoss") == 2
 
 
-def test_stage_retry_uses_last_clean_input_program():
+def test_stage_retry_uses_latest_failed_candidate_program():
     clean = SearchNode(
         code="clean_stage_input = True",
         plan="clean",
@@ -834,7 +834,45 @@ def test_stage_retry_uses_last_clean_input_program():
         second_failure,
         "validation_provenance",
     )
-    assert base is clean
+    assert base is second_failure
+    assert base.code == "bad_validation_attempt = 2"
+
+
+def test_actionable_cross_fit_contract_names_exact_runtime_calls():
+    tx = {
+        "history": [{
+            "stage": "cross_fit",
+            "status": "failed",
+            "feedback": [{
+                "issue_code": "PROTOCOL_STAGE_CROSS_FIT_INCOMPLETE",
+                "evidence": (
+                    "global OOF coverage provenance is not recorded; "
+                    "fold-local preprocessor word_vectorizer lacks record_fit "
+                    "provenance using that exact component label"
+                ),
+                "remediation": "record complete OOF coverage",
+            }],
+        }],
+    }
+    contract = json.loads(
+        protocol_repair_agent._actionable_rejection_contract(tx, "cross_fit")
+    )
+    assert contract["retry_mode"] == "edit_latest_candidate_in_place"
+    assert (
+        "protocol_guard.record_global_oof(oof_predictions, outer_train_ids)"
+        in contract["required_runtime_calls"]
+    )
+    assert contract["rejections_to_fix"][0]["issue_code"] == (
+        "PROTOCOL_STAGE_CROSS_FIT_INCOMPLETE"
+    )
+    assert contract["required_component_fit_calls"] == [
+        'protocol_guard.record_fit("word_vectorizer", inner_train_ids, '
+        'purpose="fold_preprocess")'
+    ]
+    assert any(
+        "after complete OOF assignment" in item
+        for item in contract["acceptance_checks"]
+    )
 
 
 def test_five_protocol_stages_do_not_consume_legacy_repair_attempts(monkeypatch):
@@ -1388,6 +1426,14 @@ for fold, train_ids, valid_ids in folds:
     assert "register_partition('outer_holdout', outer_holdout_ids)" in normalized
     assert "register_partition(f'fold_{fold}_train', train_ids)" in normalized
     assert "register_partition(f'fold_{fold}_valid', valid_ids)" in normalized
+
+    global_oof_aliases = protocol_repair_agent._normalize_protocol_guard_calls(
+        "protocol_guard.register_global_oof(oof_predictions, outer_train_ids)\n"
+        "protocol_guard.record_global_oof_coverage(oof_predictions, outer_train_ids)\n"
+    )
+    assert "register_global_oof" not in global_oof_aliases
+    assert "record_global_oof_coverage" not in global_oof_aliases
+    assert global_oof_aliases.count("record_global_oof(") == 2
     alias_checks = protocol_repair_agent._normalize_protocol_guard_calls(
         "protocol_guard.verify_no_leak('outer_train', 'outer_holdout')\n"
         "protocol_guard.assert_no_overlap('fold_train', 'fold_valid')\n"
@@ -1900,16 +1946,19 @@ def test_uct_excludes_repair_only_children():
     from engine import node_selection
 
     root = SearchNode(code="", plan="root", stage="root", step=0)
-    repair = SearchNode(
-        code="repair", plan="repair", stage="draft", parent=root,
-        audit_repair_required=True,
-        protocol_repair={
-            "schema": protocol_repair.PROTOCOL_REPAIR_SCHEMA,
-            "protocol_plan": {"stages": ["data_scope"]},
-            "current_stage_index": 0,
-            "state": "pending",
-        },
-    )
+    repairs = [
+        SearchNode(
+            code=f"repair-{index}", plan=f"repair-{index}", stage="draft",
+            parent=root, audit_repair_required=True,
+            protocol_repair={
+                "schema": protocol_repair.PROTOCOL_REPAIR_SCHEMA,
+                "protocol_plan": {"stages": ["data_scope"]},
+                "current_stage_index": 0,
+                "state": "pending",
+            },
+        )
+        for index in range(3)
+    ]
     normal = SearchNode(
         code="normal", plan="normal", stage="draft", parent=root,
         is_buggy=False,
@@ -1932,7 +1981,7 @@ def test_uct_excludes_repair_only_children():
 
     selected = node_selection.select(agent, root)
     assert selected is normal
-    assert selected is not repair
+    assert selected not in repairs
 
 
 def test_agent_search_routes_active_transaction_only_to_protocol_agent(monkeypatch):
