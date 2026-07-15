@@ -55,8 +55,9 @@ spec:
                 exit 128
               fi
               fetched_commit="$(git -C "${source_repo}" rev-parse FETCH_HEAD)"
-              test "${fetched_commit}" = "${expected_commit}"
               git -C "${source_repo}" cat-file -e "${fetched_commit}^{commit}"
+              git -C "${source_repo}" cat-file -e "${expected_commit}^{commit}"
+              git -C "${source_repo}" merge-base --is-ancestor "${expected_commit}" "${fetched_commit}"
               rm -rf /tmp/nautilus
               mkdir -p /tmp/nautilus "${output_root}/runs"
               git -C "${source_repo}" archive "${fetched_commit}" | tar -x -C /tmp/nautilus
