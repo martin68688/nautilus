@@ -1,0 +1,16 @@
+{
+  "protocol_id": "mlevolve-default",
+  "version": "1",
+  "parent_version": null,
+  "task_profile": {"scope": "task-local"},
+  "data_split_policy": {"fit_scope": "training_partition_only", "outer_holdout_feedback": false},
+  "preprocessing_policy": {"fit_scope": "fold_train_only"},
+  "evaluator_spec": {"source": "task_config", "immutable_during_run": true},
+  "metric_spec": {"direction": "runtime_determined", "best_seed_selection": false},
+  "selection_policy": {"freeze_before_final_evaluation": true},
+  "seed_policy": {"pairwise_min_seeds": 3, "best_seed_selection": false},
+  "holdout_policy": {"terminal_only": true, "reuse_for_search": false},
+  "promotion_policy": {"require_complete_evidence": true},
+  "compatibility_rules": {"accepted_protocol_hashes": []},
+  "canonical_hash": ""
+}

@@ -132,6 +132,28 @@ def test_load_journals_rejects_non_allowlisted_runs_before_reading(tmp_path, mon
     assert report["excluded_by_reason"] == {"not_allowlisted": 1}
 
 
+def test_sop_clause_publication_requires_lineage_and_quarantines_uncertified():
+    import sys
+
+    sys.path.insert(0, str(REPO / "paper-skills" / "hyper_memory"))
+    import build_run_forest_memory as builder
+
+    sop = {
+        "id": "s1",
+        "source_branches": [["run1", "2"]],
+        "evidence_turns": ["run::run1::node::n1"],
+    }
+    allowed = builder.clause_lineage_for_sop(sop, publication_allowed=True)
+    assert {item["field"] for item in allowed} == {"title", "action", "applies_when", "prevents"}
+    assert all(item["outcome"] == "allow" for item in allowed)
+    assert all(item["scope_widened"] is False for item in allowed)
+
+    quarantined = builder.clause_lineage_for_sop({"id": "s2"}, publication_allowed=False)
+    assert all(item["outcome"] == "quarantine" for item in quarantined)
+    with pytest.raises(ValueError, match="no parent evidence refs"):
+        builder.clause_lineage_for_sop({"id": "s3"}, publication_allowed=True)
+
+
 def test_sop_taxonomy_stale_hash_fails_closed(tmp_path):
     import sys
 

@@ -169,6 +169,19 @@ class AdoptionTrackingConfig:
 
 
 @dataclass
+class EvaluationAuthorityConfig:
+    mode: str = "shadow"  # off | shadow | enforce
+    protocol_registry: str = "config/protocols"
+    active_protocol_id: str = "mlevolve-default"
+    active_protocol_version: str = "1"
+    policy_version: str = "authority_v1"
+    fail_closed_high_risk: bool = True
+    allow_invalid_debug: bool = True
+    emit_snapshot: bool = True
+    enable_causal_actuation: bool = False
+
+
+@dataclass
 class ExternalSkillMemoryConfig:
     enable: bool = False
     graph_path: str = "../paper-skills/distillation/graph_build/graph_optimized_skillgraph.json"
@@ -249,6 +262,7 @@ class Config(Hashable):
     init_solution: InitSolutionConfig = field(default_factory=InitSolutionConfig)
     fixed_holdout: FixedHoldoutConfig = field(default_factory=FixedHoldoutConfig)
     adoption_tracking: AdoptionTrackingConfig = field(default_factory=AdoptionTrackingConfig)
+    evaluation_authority: EvaluationAuthorityConfig = field(default_factory=EvaluationAuthorityConfig)
     external_skill_memory: ExternalSkillMemoryConfig = field(default_factory=ExternalSkillMemoryConfig)
 
 

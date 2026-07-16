@@ -339,6 +339,78 @@ def _persist_leakage_audit(agent, node: SearchNode) -> None:
             logger.warning("Failed to save negative leakage memory for node %s: %s", node.id, exc)
 
 
+def _method_identity_audit(agent, node: SearchNode) -> dict:
+    """Fail closed when a protocol-only repair changes the learned method."""
+    context = node.leakage_repair_context or {}
+    transaction = node.protocol_repair or {}
+    source_id = str(
+        transaction.get("source_node_id")
+        or context.get("source_node_id")
+        or ""
+    )
+    journal = getattr(agent, "journal", None)
+    source = next(
+        (
+            candidate
+            for candidate in getattr(journal, "nodes", [])
+            if candidate.id == source_id
+        ),
+        None,
+    )
+    ancestor = node.parent
+    while source is None and ancestor is not None:
+        if ancestor.id == source_id or not source_id:
+            source = ancestor
+            break
+        ancestor = ancestor.parent
+    issue = None
+    identity_value = "source_unavailable"
+    if source is None and journal is None:
+        # Lightweight unit/integration stubs do not own a Journal. Their
+        # existing preservation-contract audit remains authoritative.
+        identity_value = "delegated_to_preservation_contract"
+    elif source is None:
+        issue = {
+            "issue_code": "PROTOCOL_REPAIR_METHOD_IDENTITY_UNAVAILABLE",
+            "category": "repair_integrity",
+            "severity": "critical",
+            "line": 0,
+            "evidence": f"Frozen source node {source_id or '<missing>'} is unavailable for method comparison.",
+            "remediation": "Restore the frozen source node before continuing protocol repair.",
+            "execution_disposition": "block",
+            "detector": "authority_method_identity_v1",
+        }
+    else:
+        from authority.replay_certifier import ReplayIdentity, certify_replay
+
+        allowed_changes = list(
+            (transaction.get("protocol_plan", {}) or {}).get("stages", [])
+            or ["split", "fit_scope", "prediction_scope", "selection_freeze", "final_holdout"]
+        )
+        identity = certify_replay(source.code, node.code, allowed_changes)
+        identity_value = identity.value
+        if identity != ReplayIdentity.METHOD_PRESERVED:
+            issue = {
+                "issue_code": "PROTOCOL_REPAIR_METHOD_CHANGED",
+                "category": "repair_integrity",
+                "severity": "critical",
+                "line": 0,
+                "evidence": (
+                    f"Protocol-only repair identity={identity.value}; source_node_id={source.id}. "
+                    "Model family, feature logic, training objective, inference pipeline, or protected "
+                    "hyperparameters changed."
+                ),
+                "remediation": "Restore the frozen method and change only evaluation-protocol code.",
+                "execution_disposition": "block",
+                "detector": "authority_method_identity_v1",
+            }
+    return {
+        "detector_status": "complete",
+        "method_identity": identity_value,
+        "issues": [issue] if issue else [],
+    }
+
+
 def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
     """Audit reviewed code before GPU execution. Return True when execution is blocked."""
     if bypass_protocol_gates(agent.cfg):
@@ -368,6 +440,11 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
         preservation_audit = leakage_audit.audit_repair_preservation(
             node.code,
             node.leakage_repair_context.get("preservation_contract", {}),
+        )
+        preservation_audit = leakage_audit.merge_audits(
+            node.code,
+            preservation_audit,
+            _method_identity_audit(agent, node),
         )
         audit = leakage_audit.merge_audits(
             node.code,
@@ -694,7 +771,20 @@ def _save_to_global_memory(agent, node: SearchNode):
         )
     else:
         positive_eligible = not audit or audit.get("memory_disposition") == "positive_eligible"
-    if agent.global_memory and positive_eligible and not node.is_buggy and node.metric and node.metric.value is not None:
+    legacy_allowed = bool(
+        positive_eligible
+        and not node.is_buggy
+        and node.metric
+        and node.metric.value is not None
+    )
+    from authority.adapters.mlevolve.memory_gate import authorize_positive_memory_write
+    authority_allowed = authorize_positive_memory_write(
+        agent,
+        node,
+        legacy_allowed=legacy_allowed,
+        component="agents.result_parse_agent._save_to_global_memory",
+    )
+    if agent.global_memory and authority_allowed:
         try:
             parent_node = node.parent
             agent.global_memory.save_node(node, parent_node)

@@ -34,6 +34,8 @@ if str(MLEVOLVE_ROOT) not in sys.path:
     sys.path.insert(0, str(MLEVOLVE_ROOT))
 
 from agents.leakage_audit import AUDIT_SCHEMA, DETECTOR_VERSION, audit_code, merge_audits
+from authority.derivation_guard import authorize_derivation_operation
+from authority.models import DecisionOutcome, Operation
 from build_sop_taxonomy import validate_entry as validate_taxonomy_entry
 
 
@@ -58,6 +60,38 @@ def short_text(value: Any, limit: int = 900) -> str:
 
 def stable_hash(text: str, n: int = 12) -> str:
     return hashlib.sha1(text.encode("utf-8")).hexdigest()[:n]
+
+
+def clause_lineage_for_sop(sop: dict[str, Any], *, publication_allowed: bool) -> list[dict[str, Any]]:
+    """Attach clause-level parents; derived publication cannot manufacture evidence."""
+    parent_refs = list(dict.fromkeys(
+        [str(value) for value in (sop.get("evidence_turns") or []) if value]
+        + [
+            f"run::{item[0]}::branch::{item[1]}"
+            for item in (sop.get("source_branches") or [])
+            if isinstance(item, (list, tuple)) and len(item) >= 2
+        ]
+    ))
+    if publication_allowed and not parent_refs:
+        raise ValueError(f"Derived SOP {sop.get('id')} has no parent evidence refs")
+    publication = authorize_derivation_operation(
+        Operation.DERIVED_PUBLICATION,
+        parent_claim_refs=parent_refs,
+        clean_ancestry=publication_allowed,
+    )
+    return [
+        {
+            "clause_id": f"sop::{sop.get('id')}::{field}",
+            "field": field,
+            "parent_claim_refs": parent_refs,
+            "transform": "copy_or_normalize_without_scope_expansion",
+            "scope_widened": False,
+            "operation": Operation.DERIVED_PUBLICATION.value,
+            "outcome": publication.outcome.value,
+            "authority_reasons": publication.reasons,
+        }
+        for field in ("title", "action", "applies_when", "prevents")
+    ]
 
 
 def file_sha256(path: Path) -> str:
@@ -892,6 +926,12 @@ def build_artifact(
                 edges.append({"src": transition_id, "dst": evidence_id, "kind": "supported_by", "weight": 0.8})
             for sop_id, quality, score in attached_pairs[:6]:
                 attachment_quality_counts[quality] += 1
+                parent_claim_refs = [transition_id, child_node_id]
+                distillation = authorize_derivation_operation(
+                    Operation.DISTILL,
+                    parent_claim_refs=parent_claim_refs,
+                    clean_ancestry=bool(require_clean_provenance),
+                )
                 edges.append(
                     {
                         "src": transition_id,
@@ -900,6 +940,10 @@ def build_artifact(
                         "weight": 0.9 if quality == "evidence_turn_match" else 0.55,
                         "quality": quality,
                         "score": score,
+                        "authority_operation": Operation.DISTILL.value,
+                        "authority_outcome": distillation.outcome.value,
+                        "authority_reasons": distillation.reasons,
+                        "parent_claim_refs": parent_claim_refs,
                     }
                 )
 
@@ -918,8 +962,15 @@ def build_artifact(
         else:
             coord = fallback_sop_coord(sop)
         coord_by_node[node_id] = coord
-        nodes.append(
-            {
+        publication_lineage = clause_lineage_for_sop(
+            sop,
+            publication_allowed=bool(require_clean_provenance),
+        )
+        publication_outcomes = {item["outcome"] for item in publication_lineage}
+        publication_reasons = sorted(
+            {reason for item in publication_lineage for reason in item["authority_reasons"]}
+        )
+        sop_record = {
                 "id": node_id,
                 "type": "SOP",
                 "sop_id": sop_id,
@@ -943,6 +994,17 @@ def build_artifact(
                 "source_branches": sop.get("source_branches") or [],
                 "evidence_turns": sop.get("evidence_turns") or [],
                 "attached_transition_count": len(attached),
+                "clause_lineage": publication_lineage,
+                "derived_publication_authority": {
+                    "operation": Operation.DERIVED_PUBLICATION.value,
+                    "outcome": (
+                        DecisionOutcome.ALLOW.value
+                        if publication_outcomes == {DecisionOutcome.ALLOW.value}
+                        else DecisionOutcome.QUARANTINE.value
+                    ),
+                    "reasons": publication_reasons,
+                    "non_escalation": "scope_copied_from_source_sop",
+                },
                 "text": "\n".join(
                     [
                         str(sop.get("title", "")),
@@ -952,7 +1014,7 @@ def build_artifact(
                     ]
                 ),
             }
-        )
+        nodes.append(sop_record)
 
     node_ids = [node["id"] for node in nodes]
     poincare = np.vstack([coord_by_node[node_id] for node_id in node_ids]).astype(np.float64)
@@ -989,6 +1051,12 @@ def build_artifact(
             "source_membership_verified": bool(provenance and require_clean_provenance),
             "leak_audited": audited_code_node_count > 0,
             "positive_admission_enforced": True,
+            "derived_publication_mediated": True,
+            "derived_publication_outcome": (
+                DecisionOutcome.ALLOW.value
+                if require_clean_provenance
+                else DecisionOutcome.QUARANTINE.value
+            ),
             "leak_verified": bool(provenance and require_clean_provenance and audited_code_node_count > 0),
             "paper_grade": bool(provenance and require_clean_provenance and audited_code_node_count > 0),
             "provenance_status": (

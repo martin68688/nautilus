@@ -108,6 +108,14 @@ class AgentSearch:
         self.metric_maximize_reasoning: str | None = None
         result_parse_agent.determine_metric_direction(self)
 
+        # One run-scoped adapter mediates every protected learning operation.
+        # It owns the immutable protocol ref, evidence graph, and hash-chained
+        # authority ledger under this run's log directory.
+        from authority.adapters.mlevolve import MLEvolveAuthorityAdapter
+        self.evaluation_authority = MLEvolveAuthorityAdapter(self)
+        self.journal.authority_enforced = self.evaluation_authority.mode == "enforce"
+        self.journal.authority_agent = self
+
         # Global memory
         self.global_memory = None
         if self.acfg.use_global_memory:
@@ -120,6 +128,8 @@ class AgentSearch:
                     embedding_device=self.acfg.memory_embedding_device,
                     similarity_threshold=self.acfg.memory_similarity_threshold,
                 )
+                self.global_memory.authority_mode = self.evaluation_authority.mode
+                self.global_memory.active_protocol_ref = self.evaluation_authority.active_protocol.key()
                 logger.info(f"[AgentSearch] Global memory enabled and initialized at {memory_dir}")
             except Exception as e:
                 import traceback

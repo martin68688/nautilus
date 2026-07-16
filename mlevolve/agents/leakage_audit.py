@@ -11,6 +11,7 @@ from __future__ import annotations
 import ast
 import hashlib
 import json
+import logging
 import os
 import re
 import threading
@@ -19,6 +20,9 @@ import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterable
+
+
+logger = logging.getLogger("MLEvolve")
 
 
 AUDIT_SCHEMA = "mlevolve_leakage_audit_v2"
@@ -731,8 +735,8 @@ def _summarize_audit(code: str, issues: Iterable[dict[str, Any]], *, detector_st
     }
 
 
-def rank_eligible(agent: Any, node: Any) -> bool:
-    """Return whether a node may influence certified ranking and artifacts."""
+def legacy_rank_eligible(agent: Any, node: Any) -> bool:
+    """Pre-authority leakage/alignment decision, retained for shadow parity."""
     if getattr(getattr(agent, "acfg", None), "check_data_leakage", False) is not True:
         return bool(
             node is not None
@@ -760,6 +764,26 @@ def rank_eligible(agent: Any, node: Any) -> bool:
         alignment = getattr(node, "strategy_alignment", None) or {}
         return alignment.get("status") == "verified" and alignment.get("rank_eligible") is True
     return True
+
+
+def rank_eligible(agent: Any, node: Any) -> bool:
+    """Authorize a node for ranking under the active operation/stage protocol."""
+    legacy_allowed = legacy_rank_eligible(agent, node)
+    try:
+        from authority.adapters.mlevolve.ranking_gate import authorize_ranking
+
+        return authorize_ranking(
+            agent,
+            node,
+            legacy_allowed=legacy_allowed,
+            component="agents.leakage_audit.rank_eligible",
+        )
+    except Exception:
+        adapter = getattr(agent, "evaluation_authority", None)
+        if getattr(adapter, "mode", "off") == "enforce":
+            logger.exception("Authority evaluation failed in enforce mode; denying rank")
+            return False
+        raise
 
 
 def failure_pattern_audit(code: str, patterns: Iterable[dict[str, Any]]) -> dict[str, Any]:

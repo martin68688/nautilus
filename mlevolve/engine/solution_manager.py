@@ -250,6 +250,16 @@ def update_best_solution(agent, node):
         )
         return
 
+    from agents.leakage_audit import legacy_rank_eligible
+    from authority.adapters.mlevolve.ranking_gate import authorize_selection
+    if not authorize_selection(
+        agent,
+        node,
+        legacy_allowed=legacy_rank_eligible(agent, node),
+        component="engine.solution_manager.update_best_solution",
+    ):
+        return
+
     submission_file_path = agent.cfg.workspace_dir / "submission" / f"submission_{node.id}.csv"
 
     update_top_candidates(agent, node)

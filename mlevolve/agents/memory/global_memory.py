@@ -61,6 +61,8 @@ class GlobalMemoryLayer:
 
         self._lock = threading.RLock()
         self._load_error: str | None = None
+        self.authority_mode: str = "off"
+        self.active_protocol_ref: str = ""
         self.records: List[MemRecord] = []
         self.node_metadata_map: Dict[str, Dict[str, Any]] = {}
         self._load_memory()
@@ -101,6 +103,8 @@ class GlobalMemoryLayer:
                 "exec_time": exec_time,
                 "parent_metric": parent_metric,
                 "current_metric": current_metric,
+                "authority_decision_refs": list(getattr(node, "authority_decision_refs", []) or []),
+                "protocol_ref": str(getattr(node, "protocol_ref", "") or ""),
             }
             if (getattr(node, "protocol_repair", None) or {}).get("state") == "completed":
                 metadata["protocol_repair"] = node.protocol_repair
@@ -221,6 +225,17 @@ class GlobalMemoryLayer:
             )
 
         all_results = self.retriever.search(query_text, top_k=len(self.records), alpha=alpha)
+        if self.authority_mode == "enforce":
+            all_results = [
+                (record, score)
+                for record, score in all_results
+                if record.label < 0
+                or (
+                    bool(self.node_metadata_map.get(record.record_id, {}).get("authority_decision_refs"))
+                    and self.node_metadata_map.get(record.record_id, {}).get("protocol_ref")
+                    == self.active_protocol_ref
+                )
+            ]
         logger.debug(f"[GlobalMemory] Retriever returned {len(all_results)} results for query (length={len(query_text)})")
 
         if label_filter is not None:

@@ -185,6 +185,19 @@ agent:
 # ============================================================
 #  Cold-start knowledge
 # ============================================================
+# Protocol-scoped authority initially observes decisions without changing the
+# established leakage gates. Switch to enforce after shadow parity is checked.
+evaluation_authority:
+  mode: shadow
+  protocol_registry: config/protocols
+  active_protocol_id: mlevolve-default
+  active_protocol_version: "1"
+  policy_version: authority_v1
+  fail_closed_high_risk: true
+  allow_invalid_debug: true
+  emit_snapshot: true
+  enable_causal_actuation: false
+
 coldstart:
   use_coldstart: True
   task_json_path: "engine/coldstart/competition_tag_classified.json"

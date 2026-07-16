@@ -22,6 +22,14 @@ def _collect_branch_representatives(agent) -> List[SearchNode]:
             logger.debug(f"Branch {branch_id} has no successful nodes, skipping")
             continue
 
+        from authority.adapters.mlevolve.ranking_gate import filter_ranked_nodes
+        successful_nodes = filter_ranked_nodes(
+            agent,
+            list(successful_nodes),
+            component="agents.aggregation_agent._collect_branch_representatives",
+        )
+        if not successful_nodes:
+            continue
         maximize = agent.metric_maximize if agent.metric_maximize is not None else True
         branch_best = max(
             successful_nodes,
@@ -34,7 +42,17 @@ def _collect_branch_representatives(agent) -> List[SearchNode]:
             logger.debug(f"Branch {branch_id} best node has no valid metric, skipping")
             continue
 
-        representatives.append(branch_best)
+        from agents.leakage_audit import legacy_rank_eligible
+        from authority.adapters.mlevolve.ranking_gate import authorize_selection
+        from authority.models import DecisionStage
+        if authorize_selection(
+            agent,
+            branch_best,
+            legacy_allowed=legacy_rank_eligible(agent, branch_best),
+            component="agents.aggregation_agent._collect_branch_representatives",
+            stage=DecisionStage.FUSION,
+        ):
+            representatives.append(branch_best)
 
     maximize = agent.metric_maximize if agent.metric_maximize is not None else True
     representatives.sort(

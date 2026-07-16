@@ -58,7 +58,7 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
     improvement = 0
     should_backpropagate = False
 
-    if getattr(agent.acfg, "check_data_leakage", False) and not rank_eligible(agent, cur_node):
+    if not rank_eligible(agent, cur_node):
         cur_node.continue_improve = True
         cur_node.is_terminal = False
         logger.warning(
@@ -106,7 +106,12 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
 
                 recent_window = scfg.recent_best_window
                 recent_nodes = [n for n in agent.journal[-recent_window:]
-                               if (not n.is_buggy and n.metric and n.metric.value is not None)]
+                               if (
+                                   not n.is_buggy
+                                   and n.metric
+                                   and n.metric.value is not None
+                                   and rank_eligible(agent, n)
+                               )]
 
                 if recent_nodes:
                     if cur_node.metric.maximize:

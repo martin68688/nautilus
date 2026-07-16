@@ -141,6 +141,16 @@ def get_top_k_nodes_global(agent, k: int, max_from_same_branch: int) -> List[dic
             if not node.is_buggy and node.metric is not None and node.metric.value is not None:
                 all_nodes.append(node)
 
+    # Complete mediation: authorize the entire candidate set before metrics are
+    # sorted or branch quotas are applied. Partial/denied paths cannot perturb
+    # legal candidates' rank positions.
+    from authority.adapters.mlevolve.ranking_gate import filter_ranked_nodes
+    all_nodes = filter_ranked_nodes(
+        agent,
+        all_nodes,
+        component="engine.node_selection.get_top_k_nodes_global",
+    )
+
     if not all_nodes:
         logger.warning("No valid nodes found for Top-K selection")
         return []
@@ -197,6 +207,17 @@ def select_from_top_k_weighted(agent, top_k_nodes: List[dict]) -> Optional[Searc
     total_weight = sum(weights)
     probabilities = [w / total_weight for w in weights]
     selected = random.choices(top_k_nodes, weights=probabilities)[0]
+
+    from agents.leakage_audit import legacy_rank_eligible
+    from authority.adapters.mlevolve.ranking_gate import authorize_selection
+    if not authorize_selection(
+        agent,
+        selected["node"],
+        legacy_allowed=legacy_rank_eligible(agent, selected["node"]),
+        component="engine.node_selection.select_from_top_k_weighted",
+    ):
+        remaining = [item for item in top_k_nodes if item is not selected]
+        return select_from_top_k_weighted(agent, remaining)
 
     logger.info(f"🎯 Selected: Rank{selected['rank']} (Branch {selected['branch_id']}, "
                 f"metric={selected['metric']:.4f}, prob={probabilities[top_k_nodes.index(selected)]:.1%})")

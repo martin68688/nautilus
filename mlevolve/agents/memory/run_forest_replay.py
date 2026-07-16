@@ -170,6 +170,17 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
     if raw_node.get("is_buggy") is True or raw_node.get("is_valid") is False:
         raise ValueError("Replay source journal node is buggy or invalid")
 
+    from authority.adapters.mlevolve.replay_gate import authorize_replay_source
+    if not authorize_replay_source(
+        agent,
+        artifact_id=graph_node_id,
+        code_sha256=code_sha256,
+        audit=replay_audit,
+        source_run_id=run_id,
+        repair_seed=requires_repair,
+    ):
+        raise ValueError("Replay source lacks CODE_SEED authority under the active protocol")
+
     sop_ids = [str(ref) for ref in target.get("sop_ids", [])]
     for sop_id in sop_ids:
         if sop_id not in layer.nodes or layer.nodes[sop_id].get("type") != "SOP":

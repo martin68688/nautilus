@@ -97,6 +97,14 @@ class SearchNode(DataClassJsonMixin):
     # solutions.  This is intentionally separate from ordinary debug depth:
     # intermediate stages are journaled and audited, but never executed/ranked.
     protocol_repair: dict = field(default_factory=dict, kw_only=True)
+    # Evaluation Authority stores stable references only. The append-only
+    # ledger/evidence graph owns the full claims, receipts, and decisions.
+    claim_refs: list[str] = field(default_factory=list, kw_only=True)
+    receipt_refs: list[str] = field(default_factory=list, kw_only=True)
+    authority_decision_refs: list[str] = field(default_factory=list, kw_only=True)
+    derived_from_refs: list[str] = field(default_factory=list, kw_only=True)
+    protocol_ref: str = field(default="", kw_only=True)
+    method_fingerprint: str = field(default="", kw_only=True)
 
     def __post_init__(self) -> None:
         if self.parent is not None:
@@ -496,6 +504,23 @@ class Journal(DataClassJsonMixin):
                     and n.leakage_audit.get("rank_eligible") is True
                 )
             ]
+            if getattr(self, "authority_enforced", False):
+                agent = getattr(self, "authority_agent", None)
+                if agent is None:
+                    return None
+                from agents.leakage_audit import legacy_rank_eligible
+                from authority.adapters.mlevolve.ranking_gate import authorize_selection
+
+                nodes = [
+                    n
+                    for n in nodes
+                    if authorize_selection(
+                        agent,
+                        n,
+                        legacy_allowed=legacy_rank_eligible(agent, n),
+                        component="engine.search_node.Journal.get_best_node",
+                    )
+                ]
             if not nodes:
                 return None
         else:

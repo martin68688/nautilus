@@ -30,6 +30,20 @@ def _get_fusion_candidates(agent, parent_node: SearchNode) -> List[SearchNode]:
         current_branch_candidates = solution_manager.get_branch_top_nodes(agent,parent_node.branch_id, top_k=2)
         candidates = [node for node in current_branch_candidates if node.id != parent_node.id]
 
+    from agents.leakage_audit import legacy_rank_eligible
+    from authority.adapters.mlevolve.ranking_gate import authorize_selection
+    from authority.models import DecisionStage
+    candidates = [
+        node
+        for node in candidates
+        if authorize_selection(
+            agent,
+            node,
+            legacy_allowed=legacy_rank_eligible(agent, node),
+            component="agents.fusion_agent._get_fusion_candidates",
+            stage=DecisionStage.FUSION,
+        )
+    ]
     logger.info(f"Found {len(candidates)} fusion candidates for node {parent_node.id}")
     return candidates
 
