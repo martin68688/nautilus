@@ -257,15 +257,6 @@ def load_journals(
     allowed = set(provenance.get("allowed_run_ids", [])) if provenance else set()
     for path in sorted(runs_dir.glob("*/logs/journal.json")):
         report["discovered_journal_count"] += 1
-        try:
-            data = read_json(path)
-        except Exception:
-            continue
-        if not isinstance(data, dict):
-            continue
-        nodes = data.get("nodes")
-        if not isinstance(nodes, list) or len(nodes) < 2:
-            continue
         run_id = path.parents[1].name
         source_status = classify_run_source(run_id, provenance)
         if provenance is not None and source_status != "allowed":
@@ -281,6 +272,15 @@ def load_journals(
             counter = collections.Counter(report["excluded_by_reason"])
             counter[reason] += 1
             report["excluded_by_reason"] = dict(sorted(counter.items()))
+            continue
+        try:
+            data = read_json(path)
+        except Exception:
+            continue
+        if not isinstance(data, dict):
+            continue
+        nodes = data.get("nodes")
+        if not isinstance(nodes, list) or len(nodes) < 2:
             continue
         seen_allowed.add(run_short_id(run_id))
         rows.append((run_id, path, data))

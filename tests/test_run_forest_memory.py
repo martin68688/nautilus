@@ -91,6 +91,47 @@ def test_run_forest_builder_requires_allowlist_for_clean_mode():
         build_artifact(REPO / "mlevolve" / "runs", REPO / "paper-skills" / "hyper_memory" / "hyper_graph.json", require_clean_provenance=True)
 
 
+def test_load_journals_rejects_non_allowlisted_runs_before_reading(tmp_path, monkeypatch):
+    import sys
+
+    sys.path.insert(0, str(REPO / "paper-skills" / "hyper_memory"))
+    import build_run_forest_memory as builder
+
+    allowed_id = "20260101_000000_allowed-task"
+    excluded_id = "20260102_000000_excluded-task"
+    allowed_path = tmp_path / allowed_id / "logs" / "journal.json"
+    excluded_path = tmp_path / excluded_id / "logs" / "journal.json"
+    allowed_path.parent.mkdir(parents=True)
+    excluded_path.parent.mkdir(parents=True)
+    allowed_path.write_text(json.dumps({"nodes": [{"id": "root"}, {"id": "child"}]}), encoding="utf-8")
+    excluded_path.write_text("must not be read", encoding="utf-8")
+
+    original_read_json = builder.read_json
+    read_paths = []
+
+    def guarded_read_json(path):
+        path = Path(path)
+        read_paths.append(path)
+        if path == excluded_path:
+            raise AssertionError("non-allowlisted journal was read")
+        return original_read_json(path)
+
+    monkeypatch.setattr(builder, "read_json", guarded_read_json)
+    rows, report = builder.load_journals(
+        tmp_path,
+        {
+            "allowed_run_ids": ["20260101_000000"],
+            "blocked_prefixes": [],
+        },
+    )
+
+    assert [row[0] for row in rows] == [allowed_id]
+    assert read_paths == [allowed_path]
+    assert report["discovered_journal_count"] == 2
+    assert report["included_journal_count"] == 1
+    assert report["excluded_by_reason"] == {"not_allowlisted": 1}
+
+
 def test_sop_taxonomy_stale_hash_fails_closed(tmp_path):
     import sys
 

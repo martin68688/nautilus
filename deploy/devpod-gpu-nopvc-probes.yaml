@@ -1,0 +1,192 @@
+# DevPod scheduling/runtime probes without PVC.
+# Each pod requests 1 GPU, 4 CPU, 8Gi memory and sleeps indefinitely.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: devnopvc-rtx3090x1
+  namespace: ecepxie
+  labels:
+    app: mlevolve-devnopvc-probe
+    gpu-probe: rtx3090
+spec:
+  restartPolicy: Always
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: nvidia.com/gpu.product
+            operator: In
+            values:
+            - NVIDIA-GeForce-RTX-3090
+  containers:
+  - name: dev
+    image: haomingwang22/mlevolve:v1
+    command: ["/bin/bash", "-c"]
+    args: ["sleep infinity"]
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        cpu: "4"
+        memory: "8Gi"
+      requests:
+        nvidia.com/gpu: 1
+        cpu: "4"
+        memory: "8Gi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: devnopvc-a10x1
+  namespace: ecepxie
+  labels:
+    app: mlevolve-devnopvc-probe
+    gpu-probe: a10
+spec:
+  restartPolicy: Always
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: nvidia.com/gpu.product
+            operator: In
+            values:
+            - NVIDIA-A10
+  containers:
+  - name: dev
+    image: haomingwang22/mlevolve:v1
+    command: ["/bin/bash", "-c"]
+    args: ["sleep infinity"]
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        cpu: "4"
+        memory: "8Gi"
+      requests:
+        nvidia.com/gpu: 1
+        cpu: "4"
+        memory: "8Gi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: devnopvc-a40x1
+  namespace: ecepxie
+  labels:
+    app: mlevolve-devnopvc-probe
+    gpu-probe: a40
+spec:
+  restartPolicy: Always
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+  - key: nautilus.io/hardware
+    operator: Equal
+    value: large-gpu
+    effect: NoSchedule
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: nvidia.com/gpu.product
+            operator: In
+            values:
+            - NVIDIA-A40
+  containers:
+  - name: dev
+    image: haomingwang22/mlevolve:v1
+    command: ["/bin/bash", "-c"]
+    args: ["sleep infinity"]
+    resources:
+      limits:
+        nvidia.com/a40: 1
+        cpu: "4"
+        memory: "8Gi"
+      requests:
+        nvidia.com/a40: 1
+        cpu: "4"
+        memory: "8Gi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: devnopvc-rtxa6000x1
+  namespace: ecepxie
+  labels:
+    app: mlevolve-devnopvc-probe
+    gpu-probe: rtxa6000
+spec:
+  restartPolicy: Always
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: nvidia.com/gpu.product
+            operator: In
+            values:
+            - NVIDIA-RTX-A6000
+  containers:
+  - name: dev
+    image: haomingwang22/mlevolve:v1
+    command: ["/bin/bash", "-c"]
+    args: ["sleep infinity"]
+    resources:
+      limits:
+        nvidia.com/rtxa6000: 1
+        cpu: "4"
+        memory: "8Gi"
+      requests:
+        nvidia.com/rtxa6000: 1
+        cpu: "4"
+        memory: "8Gi"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: devnopvc-v100x1
+  namespace: ecepxie
+  labels:
+    app: mlevolve-devnopvc-probe
+    gpu-probe: v100
+spec:
+  restartPolicy: Always
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: nvidia.com/gpu.product
+            operator: In
+            values:
+            - Tesla-V100-SXM2-16GB
+            - Tesla-V100-SXM2-32GB
+            - Tesla-V100-PCIE-16GB
+  containers:
+  - name: dev
+    image: haomingwang22/mlevolve:v1
+    command: ["/bin/bash", "-c"]
+    args: ["sleep infinity"]
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        cpu: "4"
+        memory: "8Gi"
+      requests:
+        nvidia.com/gpu: 1
+        cpu: "4"
+        memory: "8Gi"

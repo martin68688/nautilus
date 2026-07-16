@@ -1,0 +1,42 @@
+# Dev pod for adoption-tracker testing (1x RTX 4090, 8 CPU, 16Gi). Interactive (sleep).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: adoption-test-dev
+  namespace: ecepxie
+spec:
+  restartPolicy: Always
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: nvidia.com/gpu.product
+            operator: In
+            values:
+            - NVIDIA-GeForce-RTX-4090
+  containers:
+  - name: dev
+    image: haomingwang22/mlevolve:v1
+    command: ["/bin/bash", "-c"]
+    args:
+    - "sleep infinity"
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+        cpu: "8"
+        memory: "16Gi"
+      requests:
+        nvidia.com/gpu: 1
+        cpu: "8"
+        memory: "16Gi"
+    volumeMounts:
+    - name: my-storage
+      mountPath: /workspace
+  volumes:
+  - name: my-storage
+    persistentVolumeClaim:
+      claimName: haoming-storage
