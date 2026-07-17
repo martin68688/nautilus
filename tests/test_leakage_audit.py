@@ -154,6 +154,35 @@ model.fit(X_train, y_train, eval_set=[(X_val, y_val)], eval_metric="mlogloss")
     assert audit["status"] == "clean"
 
 
+def test_protocol_invariant_detectors_allow_clean_counterexamples():
+    code = """
+entity_ids = frame.entity_id
+visit_time = frame.timestamp
+groups = GroupKFold(n_splits=5)
+for train_idx, val_idx in groups.split(X, y, groups=entity_ids):
+    encoder.fit(X[train_idx], y[train_idx])
+    oof[val_idx] = model.predict_proba(X[val_idx])
+guard.record_global_oof(sample_ids, oof)
+guard.record_selection(source="oof")
+guard.freeze()
+model.fit(X_outer_train, y_outer_train, eval_set=[(X_inner_val, y_inner_val)])
+score = log_loss(y_outer_holdout, model.predict_proba(X_outer_holdout))
+deduplicated = deduplicate(frame)
+train_rows, holdout_rows = temporal_partition(deduplicated, key=visit_time)
+"""
+    audit = audit_code(code)
+    issue_codes = {item["issue_code"] for item in audit["issues"]}
+    assert not issue_codes & {
+        "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT",
+        "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE",
+        "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION",
+        "GROUP_SPLIT_LEAKAGE",
+        "TEMPORAL_SPLIT_LEAKAGE",
+        "TARGET_ENCODING_FIT_OUTSIDE_FOLD",
+        "POST_SPLIT_DUPLICATE_LEAKAGE",
+    }
+
+
 def test_train_only_fit_before_cv_is_warning_not_hard_block():
     code = """
 vectorizer = TfidfVectorizer()
@@ -163,6 +192,21 @@ folds = StratifiedKFold(n_splits=5)
     audit = audit_code(code)
     assert audit["status"] == "warning"
     assert audit["hard_block"] is False
+
+
+def test_train_only_fit_before_stratified_shuffle_split_is_not_missed():
+    code = """
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_train_all)
+splitter = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+train_idx, val_idx = next(splitter.split(X_scaled, y))
+"""
+    audit = audit_code(code)
+    assert audit["status"] == "warning"
+    assert audit["rank_eligible"] is False
+    assert {
+        item["issue_code"] for item in audit["issues"]
+    } == {"TRANSFORM_FIT_BEFORE_SPLIT"}
 
 
 def test_structural_hash_ignores_local_variable_renames():
@@ -203,6 +247,34 @@ def test_audit_enforced_journal_rejects_missing_audits():
     )
     journal = Journal(nodes=[missing], audit_enforced=True)
     assert journal.get_best_node(only_good=True) is None
+
+
+def test_local_multi_output_helper_keeps_train_val_test_taints_positional():
+    code = """
+X_train, X_val = train_test_split(X, test_size=0.2)
+X_test = load_test()
+
+def fit_and_transform(train_data, val_data, test_data):
+    scaler = StandardScaler()
+    train_scaled = scaler.fit_transform(train_data)
+    val_scaled = scaler.transform(val_data)
+    test_scaled = scaler.transform(test_data)
+    return train_scaled, val_scaled, test_scaled
+
+X_train_scaled, X_val_scaled, X_test_scaled = fit_and_transform(
+    X_train, X_val, X_test
+)
+final_scaler = StandardScaler()
+X_train_final = final_scaler.fit_transform(X_train_scaled)
+X_val_final = final_scaler.transform(X_val_scaled)
+X_test_final = final_scaler.transform(X_test_scaled)
+"""
+    audit = audit_code(code)
+    assert audit["status"] == "clean"
+    assert not any(
+        issue["issue_code"] == "TRANSFORM_FIT_ON_HOLDOUT"
+        for issue in audit["issues"]
+    )
 
 
 def test_registry_concurrent_occurrences_are_not_lost(tmp_path):

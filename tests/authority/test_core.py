@@ -246,3 +246,44 @@ def test_method_preserving_replay_and_successor_detection():
     assert certify_replay(source, hyperparameter_change) == ReplayIdentity.SUCCESSOR_METHOD
     assert certify_replay(source, changed, ["fit_scope"]) == ReplayIdentity.SUCCESSOR_METHOD
     assert certify_replay(source, hyperparameter_change, ["fit_scope"]) == ReplayIdentity.SUCCESSOR_METHOD
+
+
+def test_protocol_replay_ignores_guard_and_exact_fold_constructor_duplicates():
+    source = """
+from sklearn.linear_model import LogisticRegression
+train_data = LeafDataset(X_train, y_train)
+model = LogisticRegression(C=1)
+model.fit(X, y)
+pred = model.predict_proba(T)
+"""
+    repaired = """
+from sklearn.linear_model import LogisticRegression
+from agents.protocol_repair_runtime import ProtocolProvenanceGuard
+guard = ProtocolProvenanceGuard()
+for fold in folds:
+    train_data = LeafDataset(fold.X_train, fold.y_train)
+    model = LogisticRegression(C=1)
+    model.fit(fold.X, fold.y)
+    pred = model.predict_proba(fold.T)
+final_model = LogisticRegression(C=1)
+"""
+    assert certify_replay(source, repaired, ["cross_fit"]) == ReplayIdentity.METHOD_PRESERVED
+
+
+def test_protocol_replay_allows_fold_scoped_fit_inputs_and_error_guards():
+    source = """
+model = XGBClassifier(max_depth=6)
+pca = PCA(n_components=min(32, data.shape[1]))
+model.fit(X_train, y_train)
+pred = model.predict_proba(X_valid)
+"""
+    repaired = """
+for fold in folds:
+    model = XGBClassifier(max_depth=6)
+    pca = PCA(n_components=min(32, fold_train.shape[1]))
+    model.fit(fold_X_train, fold_y_train, eval_set=[(fold_X_valid, fold_y_valid)])
+    pred = model.predict_proba(fold_X_valid)
+    if pred is None:
+        raise ValueError("missing OOF prediction")
+"""
+    assert certify_replay(source, repaired, ["cross_fit"]) == ReplayIdentity.METHOD_PRESERVED

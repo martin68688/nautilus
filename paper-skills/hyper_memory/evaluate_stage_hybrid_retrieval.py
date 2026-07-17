@@ -123,7 +123,14 @@ def _run_control(
         selected, selection_meta = layer._select_gateways(
             sop_candidates, stage=stage, query_text=text, limit=quotas["sop_gateways"]
         )
-        sop_execution, gateway_transitions, evidence, failures, trace = layer._expand_gateways(selected)
+        (
+            sop_execution,
+            gateway_transitions,
+            evidence,
+            failures,
+            trace,
+            execution_provenance,
+        ) = layer._expand_gateways(selected)
         if control == "sop_only":
             execution = sop_execution
             tree_ids = []
@@ -150,6 +157,7 @@ def _run_control(
             "risk_warnings": layer._risk_warnings(sop_candidates),
             "gateway_selection": selection_meta,
             "navigation_trace": trace,
+            "execution_candidate_provenance": execution_provenance,
         }
         prompt_text = json.dumps(pack, ensure_ascii=False)
     elapsed = time.perf_counter() - started

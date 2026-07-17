@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
+import copy
 import hashlib
+import threading
 
 from authority.adapters.mlevolve.runtime import MLEvolveAuthorityAdapter
 from authority.adapters.mlevolve.protocol_adapter import build_registry
@@ -156,3 +158,21 @@ def test_rank_gate_internal_error_fails_closed_in_enforce_mode(monkeypatch):
 
     monkeypatch.setattr(ranking_gate, "authorize_ranking", broken)
     assert rank_eligible(agent, candidate) is False
+
+
+def test_filtered_journal_excludes_runtime_authority_agent_with_thread_locks():
+    from engine.search_node import Journal, SearchNode, filter_on_path
+
+    root = SearchNode(code="", stage="root")
+    journal = Journal([root])
+    journal.authority_agent = SimpleNamespace(lock=threading.Lock())
+    journal.authority_enforced = True
+
+    filtered = filter_on_path(journal, [root.id])
+    persisted_copy = copy.deepcopy(journal)
+
+    assert [item.id for item in filtered.nodes] == [root.id]
+    assert not hasattr(filtered, "authority_agent")
+    assert not hasattr(filtered, "authority_enforced")
+    assert [item.id for item in persisted_copy.nodes] == [root.id]
+    assert not hasattr(persisted_copy, "authority_agent")

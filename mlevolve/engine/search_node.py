@@ -7,7 +7,7 @@ import math
 import threading
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Dict, List, Literal, Optional
 
 from dataclasses_json import DataClassJsonMixin
@@ -473,6 +473,14 @@ class Journal(DataClassJsonMixin):
     nodes: list[SearchNode] = field(default_factory=list)
     audit_enforced: bool = False
 
+    def __deepcopy__(self, memo):
+        """Copy persisted dataclass state without runtime-only attachments."""
+        result = object.__new__(type(self))
+        memo[id(self)] = result
+        for item in fields(self):
+            setattr(result, item.name, copy.deepcopy(getattr(self, item.name), memo))
+        return result
+
     def __getitem__(self, idx: int) -> SearchNode:
         return self.nodes[idx]
 
@@ -548,7 +556,14 @@ def get_longest_path(journal: Journal) -> list[str]:
 
 
 def filter_on_path(journal: Journal, path: list[str]) -> Journal:
-    journal_copy = copy.deepcopy(journal)
+    # Runtime-only attributes such as authority_agent own executors, ledgers,
+    # and thread locks. Persist only declared Journal state so filtering a live
+    # authority-enabled run never attempts to deepcopy those runtime objects.
+    persisted = {
+        item.name: copy.deepcopy(getattr(journal, item.name))
+        for item in fields(journal)
+    }
+    journal_copy = type(journal)(**persisted)
     journal_copy.nodes = [n for n in journal_copy.nodes if n.id in path]
     for n in journal_copy.nodes:
         n._term_out = "<OMITTED>"

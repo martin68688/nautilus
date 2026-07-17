@@ -28,6 +28,14 @@ INDEX = REPO / "paper-skills" / "hyper_memory" / "run_forest_index.npz"
 COLDSTART = MLEVOLVE / "engine" / "coldstart" / "models_guidance_classified.json"
 COLDSTART_SHA256 = "5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff"
 REPORT = REPO / "paper-skills" / "eval_skill_memory" / "reports" / "stage_hybrid_preflight_report.json"
+REPLAY_TARGETS = REPO / "paper-skills" / "eval_skill_memory" / "clean_replay_targets.json"
+TASKS = {
+    "leaf-classification": "classify leaf species from tabular shape and texture features",
+    "aerial-cactus-identification": "binary image classification for aerial cactus imagery",
+    "mlsp-2013-birds": "multiclass bird audio classification",
+    "denoising-dirty-documents": "restore clean grayscale document images from noisy inputs",
+    "new-york-city-taxi-fare-prediction": "tabular regression for taxi fare prediction",
+}
 
 
 def _load_module(path: Path, name: str):
@@ -82,43 +90,108 @@ def run_preflight(*, evaluate_offline: bool = True) -> dict:
             enable_agentic=False,
             max_chars=6500,
         )
-        for stage in ("draft", "improve", "debug", "evolution", "fusion"):
-            text, refs = layer.retrieve_for_node(
-                stage=stage,
-                task_id="spooky-author-identification",
-                task_desc="identify the author of a text passage",
-                query_parts=["validate a robust model change without leakage"],
-            )
-            pack = layer.current_navigation_pack()
-            positive_ids = [item["id"] for item in pack.get("fused_execution_candidates", [])]
-            positive_ids += [item["id"] for item in pack.get("selected_sop_gateways", [])]
-            blocked_positive_count = 0
-            for node_id in positive_ids:
-                node = layer.nodes.get(node_id, {})
-                if node.get("type") == "Transition":
-                    eligible = layer._positive_transition(node_id)[0]
-                elif node.get("type") == "RunNode":
-                    eligible = layer._positive_memory_eligible(node)
-                elif node.get("type") == "SOP":
-                    eligible = any(
-                        layer._positive_transition(transition_id)[0]
-                        for transition_id in layer._transitions_by_sop.get(node_id, [])
-                    )
-                else:
-                    eligible = False
-                blocked_positive_count += int(not eligible)
-            route_checks.append(
-                {
-                    "control": control,
-                    "stage": stage,
-                    "ok": bool(text) and pack.get("schema") == PACK_SCHEMA and pack.get("stage_route", {}).get("control") == control,
-                    "ref_count": len(refs),
-                    "blocked_positive_count": blocked_positive_count,
-                }
-            )
+        for task_id, task_desc in TASKS.items():
+            for stage in ("draft", "improve", "debug", "evolution", "fusion"):
+                text, refs = layer.retrieve_for_node(
+                    stage=stage,
+                    task_id=task_id,
+                    task_desc=task_desc,
+                    query_parts=["validate a robust model change without leakage"],
+                )
+                pack = layer.current_navigation_pack()
+                positive_ids = [item["id"] for item in pack.get("fused_execution_candidates", [])]
+                positive_ids += [item["id"] for item in pack.get("selected_sop_gateways", [])]
+                blocked_positive_count = 0
+                source_runs = set()
+                for node_id in positive_ids:
+                    node = layer.nodes.get(node_id, {})
+                    source_run = str(node.get("run_short_id") or node.get("run_id") or "")
+                    if source_run:
+                        source_runs.add("_".join(source_run.split("_")[:2]))
+                    if node.get("type") == "Transition":
+                        eligible = layer._positive_transition(node_id)[0]
+                    elif node.get("type") == "RunNode":
+                        eligible = layer._positive_memory_eligible(node)
+                    elif node.get("type") == "SOP":
+                        eligible = any(
+                            layer._positive_transition(transition_id)[0]
+                            for transition_id in layer._transitions_by_sop.get(node_id, [])
+                        )
+                    else:
+                        eligible = False
+                    blocked_positive_count += int(not eligible)
+                route_checks.append(
+                    {
+                        "control": control,
+                        "task": task_id,
+                        "stage": stage,
+                        "ok": bool(text)
+                        and pack.get("schema") == PACK_SCHEMA
+                        and pack.get("algorithm_version") == "stage_hybrid_v2"
+                        and pack.get("stage_route", {}).get("control") == control,
+                        "ref_count": len(refs),
+                        "historical_source_runs": sorted(source_runs),
+                        "blocked_positive_count": blocked_positive_count,
+                    }
+                )
     checks["runtime_routes"] = {
         "ok": all(item["ok"] and item["blocked_positive_count"] == 0 for item in route_checks),
         "cases": route_checks,
+    }
+    layered = StageAwareHybridMemoryLayer(
+        graph_path=str(GRAPH),
+        index_path=str(INDEX),
+        source_name="run_forest_stage_hybrid_memory",
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        retrieval_control="layered_strategy",
+        enable_agentic=False,
+        max_chars=6500,
+    )
+    sparse_cases = []
+    for task_id in ("denoising-dirty-documents", "new-york-city-taxi-fare-prediction", "mlsp-2013-birds"):
+        text, refs = layered.retrieve_for_node(
+            stage="draft",
+            task_id=task_id,
+            task_desc=TASKS[task_id],
+            query_parts=["choose a robust clean model"],
+            draft_role="novel_exploration",
+            context={"excluded_method_families": []},
+        )
+        pack = layered.current_navigation_pack()
+        sparse_cases.append(
+            {
+                "task": task_id,
+                "ok": bool(text and refs)
+                and (pack.get("layered_strategy_fallback") or {}).get("activated") is True
+                and (pack.get("execution_safety_gate") or {}).get("all_outputs_clean") is True,
+                "ref_count": len(refs),
+                "fallback": pack.get("layered_strategy_fallback"),
+            }
+        )
+    transfer_text, transfer_refs = layered.retrieve_for_node(
+        stage="draft",
+        task_id="mlsp-2013-birds",
+        task_desc=TASKS["mlsp-2013-birds"],
+        query_parts=["transfer only clean historical evidence"],
+        draft_role="memory_transfer",
+    )
+    transfer_pack = layered.current_navigation_pack()
+    checks["sparse_task_memory_fallback"] = {
+        "ok": all(row["ok"] for row in sparse_cases)
+        and bool(transfer_text and transfer_refs)
+        and (transfer_pack.get("memory_transfer") or {}).get("activated") is True
+        and (transfer_pack.get("execution_safety_gate") or {}).get("all_outputs_clean") is True,
+        "novel_cases": sparse_cases,
+        "memory_transfer_ref_count": len(transfer_refs),
+    }
+    replay_manifest = json.loads(REPLAY_TARGETS.read_text(encoding="utf-8"))
+    replay_tasks = {str(row.get("task_id")) for row in replay_manifest.get("targets", [])}
+    expected_exact = set(TASKS) - {"mlsp-2013-birds"}
+    checks["exact_replay_coverage"] = {
+        "ok": expected_exact.issubset(replay_tasks) and "mlsp-2013-birds" not in replay_tasks,
+        "exact_replay_tasks": sorted(expected_exact & replay_tasks),
+        "memory_transfer_tasks": ["mlsp-2013-birds"],
     }
     layered_smoke = _load_module(
         REPO / "paper-skills" / "hyper_memory" / "smoke_layered_three_role.py",
@@ -153,7 +226,8 @@ def run_preflight(*, evaluate_offline: bool = True) -> dict:
 
     required = (
         "structured_config", "coldstart_template", "clean_graph_provenance", "runtime_routes",
-        "layered_three_role", "held_out_benchmark", "offline_claim_gates",
+        "sparse_task_memory_fallback", "exact_replay_coverage", "layered_three_role",
+        "held_out_benchmark", "offline_claim_gates",
     )
     return {
         "schema": "stage_hybrid_preflight_v1",

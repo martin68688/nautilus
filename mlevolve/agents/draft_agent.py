@@ -171,6 +171,15 @@ def run(
             "primary_model": getattr(agent, "coldstart_primary_model_name", ""),
         }
         prompt["Instructions"]["Draft role contract (MANDATORY)"] = [role_contract["requirement"]]
+    elif draft_role == "memory_transfer":
+        role_contract = {
+            "role": draft_role,
+            "requirement": (
+                "No exact clean same-task replay exists. Build a runnable solution using only the explicitly "
+                "retrieved cross-task clean RunForest/SOP evidence; do not present it as exact replay."
+            ),
+        }
+        prompt["Instructions"]["Draft role contract (MANDATORY)"] = [role_contract["requirement"]]
     elif draft_role == "novel_exploration":
         role_contract = {
             "role": draft_role,
@@ -251,18 +260,22 @@ def run(
     if layered_novel:
         strategy_context = agent.external_skill_memory.current_navigation_pack()
         selected_strategy = strategy_context.get("selected_strategy") or {}
-        if not selected_strategy:
-            raise RuntimeError("Layered Novel Draft retrieval returned no selected strategy")
-        role_contract.update(
-            {
-                "selected_method_family": selected_strategy.get("method_family"),
-                "selected_strategy_sop_id": selected_strategy.get("sop_id"),
-                "strategy_requirement": (
-                    "Implement the selected L1 method family. L2 tactics may refine it, but no step may "
-                    "replace it with the excluded baseline or replay family."
-                ),
-            }
-        )
+        if selected_strategy:
+            role_contract.update(
+                {
+                    "selected_method_family": selected_strategy.get("method_family"),
+                    "selected_strategy_sop_id": selected_strategy.get("sop_id"),
+                    "strategy_requirement": (
+                        "Implement the selected L1 method family. L2 tactics may refine it, but no step may "
+                        "replace it with the excluded baseline or replay family."
+                    ),
+                }
+            )
+        else:
+            fallback = strategy_context.get("layered_strategy_fallback") or {}
+            if not fallback.get("activated"):
+                raise RuntimeError("Layered Novel Draft retrieval returned neither a strategy nor an explicit fallback")
+            role_contract["strategy_fallback"] = fallback
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text
     coldstart_external_text = getattr(agent, "coldstart_external_memory_text", "")
@@ -355,7 +368,7 @@ def run(
             getattr(agent, "coldstart_external_ref_ids", []),
             "coldstart",
         )
-    if layered_novel:
+    if layered_novel and selected_strategy:
         route_ids = [item["sop_id"] for item in strategy_context.get("strategy_routes", [])]
         selected_evidence = selected_strategy.get("best_tree_evidence") or {}
         log_adoption(

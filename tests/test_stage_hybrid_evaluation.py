@@ -97,7 +97,14 @@ def test_no_gpu_preflight_covers_config_provenance_routes_and_benchmark():
     assert report["ok"] is True
     assert report["online_training_started"] is False
     assert report["checks"]["coldstart_template"]["sha256"] == preflight.COLDSTART_SHA256
-    assert len(report["checks"]["runtime_routes"]["cases"]) == 20
+    cases = report["checks"]["runtime_routes"]["cases"]
+    assert len(cases) == 100  # 4 controls x 5 non-spooky tasks x 5 stages
+    assert {row["task"] for row in cases} == set(preflight.TASKS)
+    assert all(row["blocked_positive_count"] == 0 for row in cases)
+    assert any(row["historical_source_runs"] for row in cases)
+    assert report["checks"]["sparse_task_memory_fallback"]["ok"] is True
+    assert report["checks"]["exact_replay_coverage"]["ok"] is True
+    assert report["checks"]["exact_replay_coverage"]["memory_transfer_tasks"] == ["mlsp-2013-birds"]
     assert all(case["blocked_positive_count"] == 0 for case in report["checks"]["runtime_routes"]["cases"])
     assert report["checks"]["layered_three_role"]["status"] == "passed"
     assert len(report["checks"]["layered_three_role"]["strategy_routes"]) == 3

@@ -47,7 +47,9 @@ external_skill_memory:
   text_model_path: ""
   source_name: "run_forest_stage_hybrid_memory"
   mode: "run_forest_stage_hybrid"
-  scoring_mode: "poincare"
+  # Flat-Twin keeps the same RunForest coordinates and Tree/SOP routing while
+  # removing Poincare distance. Keep poincare available as an explicit ablation.
+  scoring_mode: "flat_twin"
   enable_agentic: True
   navigator_max_steps: 3
   navigator_reference_budget: 1200
@@ -74,3 +76,11 @@ external_skill_memory:
     debug: {sop: 0.25, tree: 0.75}
     evolution: {sop: 0.70, tree: 0.30}
     fusion: {sop: 0.50, tree: 0.50}
+
+run_identity:
+  experiment_group: "stage_hybrid_v2_all_clean_history"
+  baseline_reference_group: "baseline_no_external_memory"
+  memory_enabled: True
+  memory_system: "run_forest_stage_hybrid"
+  memory_version: "stage_hybrid_v2"
+  identity_source: "declared_at_runtime"

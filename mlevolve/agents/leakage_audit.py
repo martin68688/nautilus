@@ -26,7 +26,7 @@ logger = logging.getLogger("MLEvolve")
 
 
 AUDIT_SCHEMA = "mlevolve_leakage_audit_v2"
-DETECTOR_VERSION = "deterministic_static_v2"
+DETECTOR_VERSION = "deterministic_static_v4"
 REGISTRY_SCHEMA = "mlevolve_leakage_registry_record_v2"
 
 try:
@@ -73,6 +73,25 @@ _STATEFUL_TRANSFORMERS = {
     "TfidfVectorizer",
     "TruncatedSVD",
     "VarianceThreshold",
+}
+
+_DATA_SPLITTERS = {
+    "GroupKFold",
+    "GroupShuffleSplit",
+    "KFold",
+    "LeaveOneGroupOut",
+    "LeaveOneOut",
+    "LeavePGroupsOut",
+    "LeavePOut",
+    "PredefinedSplit",
+    "RepeatedKFold",
+    "RepeatedStratifiedKFold",
+    "ShuffleSplit",
+    "StratifiedGroupKFold",
+    "StratifiedKFold",
+    "StratifiedShuffleSplit",
+    "TimeSeriesSplit",
+    "train_test_split",
 }
 
 _SEVERITY_RANK = {"none": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
@@ -624,6 +643,69 @@ def _split_output_taints(names: list[str], value: ast.AST) -> list[set[str]] | N
     return output
 
 
+def _function_output_taints(
+    names: list[str],
+    value: ast.AST,
+    functions: dict[str, ast.FunctionDef | ast.AsyncFunctionDef],
+    outer_taints: dict[str, set[str]],
+) -> list[set[str]] | None:
+    """Propagate taints positionally through a local multi-output helper."""
+    if not isinstance(value, ast.Call):
+        return None
+    function = functions.get(_call_name(value.func))
+    if function is None:
+        return None
+
+    local_taints: dict[str, set[str]] = {}
+    positional = list(function.args.posonlyargs) + list(function.args.args)
+    for parameter, argument in zip(positional, value.args):
+        local_taints[parameter.arg] = _expr_taints(argument, outer_taints)
+    keyword_arguments = {
+        keyword.arg: keyword.value
+        for keyword in value.keywords
+        if keyword.arg is not None
+    }
+    for parameter in positional:
+        if parameter.arg in keyword_arguments:
+            local_taints[parameter.arg] = _expr_taints(
+                keyword_arguments[parameter.arg], outer_taints
+            )
+
+    function_nodes = _nodes_in_scope(function)
+    assignments: list[tuple[list[str], ast.AST]] = []
+    for node in function_nodes:
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)) or node.value is None:
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        target_names = [name for target in targets for name in _target_names(target)]
+        if target_names:
+            assignments.append((target_names, node.value))
+    assignments.sort(key=lambda item: int(getattr(item[1], "lineno", 0) or 0))
+    for target_names, assigned_value in assignments:
+        assigned_taints = _expr_taints(assigned_value, local_taints)
+        for target_name in target_names:
+            local_taints[target_name] = _semantic_taints(target_name) | assigned_taints
+
+    positional_returns: list[list[set[str]]] = []
+    for node in function_nodes:
+        if not isinstance(node, ast.Return) or not isinstance(node.value, (ast.Tuple, ast.List)):
+            continue
+        if len(node.value.elts) != len(names):
+            continue
+        positional_returns.append([
+            _expr_taints(element, local_taints)
+            for element in node.value.elts
+        ])
+    if not positional_returns:
+        return None
+
+    output = [set() for _ in names]
+    for returned in positional_returns:
+        for index, returned_taints in enumerate(returned):
+            output[index].update(returned_taints)
+    return output
+
+
 def _issue(
     *,
     code: str,
@@ -848,6 +930,11 @@ def audit_code(code: str) -> dict[str, Any]:
     )
     for scope in scopes:
         scope_nodes = _nodes_in_scope(scope)
+        functions = {
+            node.name: node
+            for node in scope_nodes
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        }
         assignments: list[tuple[list[str], ast.AST]] = []
         constructors: dict[str, str] = {}
         for node in scope_nodes:
@@ -867,6 +954,10 @@ def audit_code(code: str) -> dict[str, Any]:
         for names, value in assignments:
             value_taints = _expr_taints(value, taints)
             split_taints = _split_output_taints(names, value)
+            if split_taints is None and len(names) > 1:
+                split_taints = _function_output_taints(
+                    names, value, functions, taints
+                )
             for index, name in enumerate(names):
                 if split_taints is not None:
                     taints[name] = set(split_taints[index])
@@ -879,7 +970,7 @@ def audit_code(code: str) -> dict[str, Any]:
             int(node.lineno)
             for node in scope_nodes
             if isinstance(node, ast.Call)
-            and _call_name(node.func) in {"train_test_split", "KFold", "StratifiedKFold", "GroupKFold"}
+            and _call_name(node.func) in _DATA_SPLITTERS
         ]
         first_split_line = min(split_lines) if split_lines else None
 
@@ -958,6 +1049,176 @@ def audit_code(code: str) -> dict[str, Any]:
             issues.append(issue)
 
     lower = code.lower()
+
+    def add_protocol_issue(
+        issue_code: str,
+        category: str,
+        evidence: str,
+        remediation: str,
+        *,
+        line: int = 0,
+        severity: str = "high",
+    ) -> None:
+        if any(row.get("issue_code") == issue_code for row in issues):
+            return
+        item = _issue(
+            code=code,
+            node=None,
+            issue_code=issue_code,
+            category=category,
+            severity=severity,
+            evidence=evidence,
+            remediation=remediation,
+            execution_disposition="block",
+        )
+        item["line"] = line
+        issues.append(item)
+
+    # Reporting rows used by early stopping are model-selection data, not an
+    # untouched estimate. This is expressed as a protocol invariant rather
+    # than tied to a particular model or metric implementation.
+    early_stop_fit = re.search(
+        r"\.fit\s*\([^\n]*(?:eval_set|validation_data|validation_set|val_set)\s*=\s*[^\n]*(?:val|valid|validation|dev|holdout)",
+        lower,
+    )
+    report_on_validation = re.search(
+        r"(?:log[_\s]?loss|accuracy|auc|f1|rmse|mae|mse|score)\s*\([^\n]*(?:y_)?(?:val|valid|validation|dev|holdout)",
+        lower,
+    )
+
+    def partition_tokens(source: str) -> set[str]:
+        values: set[str] = set()
+        for token in re.findall(r"\b[a-z_][a-z0-9_]*\b", source):
+            components = set(token.split("_"))
+            if not components & {"val", "valid", "validation", "dev", "holdout"}:
+                continue
+            normalized = re.sub(r"^[xy]_", "", token)
+            normalized = re.sub(r"_(?:pred|preds|prediction|predictions|proba|probas|label|labels)$", "", normalized)
+            values.add(normalized)
+        return values
+
+    same_selection_partition = bool(
+        early_stop_fit
+        and report_on_validation
+        and partition_tokens(early_stop_fit.group(0)) & partition_tokens(report_on_validation.group(0))
+    )
+    if same_selection_partition:
+        add_protocol_issue(
+            "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT",
+            "selection_bias",
+            "The same validation partition is supplied to model fitting/early stopping and later used for the reported score.",
+            "Use an inner validation split for early stopping and report once on a separate outer holdout.",
+            line=code[: early_stop_fit.start()].count("\n") + 1,
+        )
+
+    # A direct assignment of validation predictions to an OOF variable cannot
+    # establish cross-fitting. Legitimate OOF code writes fold predictions into
+    # indexed rows (for example oof[val_idx] = ...), which this rule permits.
+    direct_oof = re.search(
+        r"(?m)^\s*(?:reported_)?oof(?:_pred(?:iction)?s?)?\s*=\s*[^\n]*"
+        r"(?:predict|predict_proba)\s*\([^\n]*(?:val|valid|validation|dev|holdout)",
+        lower,
+    )
+    if direct_oof:
+        add_protocol_issue(
+            "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE",
+            "target_leakage",
+            "Validation predictions are directly presented as OOF predictions without fold-indexed cross-fit coverage.",
+            "Generate each training row exactly once with a model that did not fit that row and record global OOF coverage by sample_id.",
+            line=code[: direct_oof.start()].count("\n") + 1,
+        )
+
+    # Weight selection is forbidden on the final report partition regardless
+    # of whether the search is written as a loop, min(...), Optuna, or scipy.
+    holdout_weight_assignment = re.search(
+        r"(?m)^\s*(?:best|optimal|optimized)?[_\w]*weights?\s*=\s*[^\n]*"
+        r"(?:min\s*\(|max\s*\(|grid|optuna|minimize\s*\()[^\n]*"
+        r"(?:val|valid|validation|dev|holdout)",
+        lower,
+    )
+    if holdout_weight_assignment:
+        add_protocol_issue(
+            "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION",
+            "selection_bias",
+            "Ensemble weights are selected using predictions or labels from the report/holdout partition.",
+            "Select and freeze ensemble weights using cross-fitted OOF predictions before evaluating the outer holdout once.",
+            line=code[: holdout_weight_assignment.start()].count("\n") + 1,
+        )
+
+    # Group-aware tasks cannot be row-randomized while an entity/group key is
+    # present but ignored. The rule is model- and task-name independent.
+    has_group_identity = bool(re.search(r"\b(?:group|entity|patient|subject|user|session)[_\w]*(?:id|key|ids)?\b", lower))
+    uses_group_splitter = any(name.lower() in lower for name in ("groupkfold", "groupshufflesplit", "stratifiedgroupkfold", "leaveonegroupout"))
+    row_random_split = re.search(r"train_test_split\s*\(", lower)
+    if has_group_identity and row_random_split and not uses_group_splitter:
+        add_protocol_issue(
+            "GROUP_SPLIT_LEAKAGE",
+            "split_contamination",
+            "Entity/group identifiers are present, but rows are partitioned with a non-group-aware random split.",
+            "Split by group/entity so no identity appears in more than one partition and record the group-disjointness check.",
+            line=code[: row_random_split.start()].count("\n") + 1,
+        )
+
+    # Time-aware tasks require order-preserving splits. train_test_split is
+    # random unless shuffle=False is explicit, so omission is also unsafe.
+    has_order_identity = bool(re.search(r"\b(?:timestamp|datetime|date|time|order|chronolog)[_\w]*(?:key|id)?\b", lower))
+    if has_order_identity and row_random_split:
+        split_line = row_random_split.group(0)
+        call_tail = lower[row_random_split.start() : lower.find(")", row_random_split.start()) + 1]
+        if not re.search(r"shuffle\s*=\s*false", call_tail):
+            add_protocol_issue(
+                "TEMPORAL_SPLIT_LEAKAGE",
+                "split_contamination",
+                "Time/order metadata are present, but the train/validation partition is randomized.",
+                "Sort by the frozen time key and use a forward, purged, or otherwise order-preserving split.",
+                line=code[: row_random_split.start()].count("\n") + 1,
+            )
+
+    # Supervised encoders must fit only on fold-train rows. This catches target
+    # encoding expressed through arbitrary encoder classes or variable names.
+    supervised_encoder_fit = re.search(
+        r"(?m)^\s*[\w.]*encoder\.fit\s*\([^\n]*(?:val|valid|validation|dev|holdout)[^\n]*"
+        r"(?:y_|target|label)",
+        lower,
+    )
+    if supervised_encoder_fit:
+        add_protocol_issue(
+            "TARGET_ENCODING_FIT_OUTSIDE_FOLD",
+            "target_leakage",
+            "A supervised encoder is fitted with validation/holdout rows or targets.",
+            "Fit target-derived encodings inside each fold using fold-train rows only, then transform fold-validation rows.",
+            line=code[: supervised_encoder_fit.start()].count("\n") + 1,
+        )
+
+    # Deduplicating each partition independently after splitting allows near or
+    # exact duplicates to remain across partitions. Global/group-level entity
+    # resolution must precede the split.
+    dedup_partitions = {
+        match.group(1) or match.group(2)
+        for match in re.finditer(
+            r"deduplicate\s*\(\s*(?:x_)?(train|val|valid|validation|dev|holdout|test)\b|"
+            r"(?:x_)?(train|val|valid|validation|dev|holdout|test)\.drop_duplicates\s*\(",
+            lower,
+        )
+        if (match.group(1) or match.group(2))
+    }
+    has_any_split = any(
+        isinstance(node, ast.Call) and _call_name(node.func) in _DATA_SPLITTERS
+        for node in ast.walk(tree)
+    )
+    has_partition_assignments = bool(
+        re.search(r"(?m)^\s*(?:x_)?train\s*=.*(?:train|fold)[_\w]*(?:idx|indices)", lower)
+        and re.search(r"(?m)^\s*(?:x_)?(?:val|valid|validation|holdout)\s*=.*(?:val|valid|holdout|fold)[_\w]*(?:idx|indices)", lower)
+    )
+    if (has_any_split or has_partition_assignments) and len(dedup_partitions) >= 2:
+        first_dedup = re.search(r"deduplicate\s*\(|drop_duplicates\s*\(", lower)
+        add_protocol_issue(
+            "POST_SPLIT_DUPLICATE_LEAKAGE",
+            "split_contamination",
+            "Multiple partitions are deduplicated independently after the split, so cross-partition duplicates can survive.",
+            "Resolve duplicate/entity groups before splitting and keep each duplicate group in exactly one partition.",
+            line=code[: first_dedup.start()].count("\n") + 1 if first_dedup else 0,
+        )
     ensemble_weight_search = bool(
         re.search(r"(?:best|optimal|optimized)[_\s]*(?:ensemble[_\s]*)?weights?", lower)
         and re.search(r"(?:val|valid|validation|dev|holdout|oof)[_\w]*(?:proba|pred)|y_(?:val|valid|dev|holdout)", lower)

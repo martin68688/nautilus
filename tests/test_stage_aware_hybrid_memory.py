@@ -39,12 +39,12 @@ def _write_fixture(tmp_path: Path, *, clean=True, blocked=False):
     run_id = "blocked_run" if blocked else "clean_run"
     nodes = [
         {"id": "run::1", "type": "Run", "run_id": run_id},
-        {"id": "n0", "type": "RunNode", "run_id": run_id, "run_short_id": run_id, "task": "task", "stage": "draft", "step": 0, "text": "text baseline", "metric": 0.5, "is_buggy": False, "is_valid": True, "leakage_audit": _clean_audit()},
-        {"id": "n1", "type": "RunNode", "run_id": run_id, "run_short_id": run_id, "task": "task", "stage": "improve", "step": 1, "parent_id": "n0", "local_best_node_id": "n1", "text": "transformer validation ensemble", "metric": 0.4, "is_buggy": False, "is_valid": True, "leakage_audit": child_audit},
+        {"id": "n0", "type": "RunNode", "run_id": run_id, "run_short_id": run_id, "task": "task", "stage": "draft", "step": 0, "text": "text baseline", "metric": 0.5, "metric_improvement": 0.001, "is_buggy": False, "is_valid": True, "leakage_audit": _clean_audit()},
+        {"id": "n1", "type": "RunNode", "run_id": run_id, "run_short_id": run_id, "task": "task", "stage": "improve", "step": 1, "parent_id": "n0", "local_best_node_id": "n1", "text": "transformer validation ensemble", "metric": 0.4, "metric_improvement": 0.1, "is_buggy": False, "is_valid": True, "leakage_audit": child_audit},
         {"id": "n_bad", "type": "RunNode", "run_id": run_id, "run_short_id": run_id, "stage": "debug", "step": 2, "parent_id": "n0", "is_buggy": True, "text": "failure", "leakage_audit": {"status": "blocked", "memory_disposition": "warning_only", "paper_grade_eligible": False}},
         {"id": "t1", "type": "Transition", "run_id": run_id, "run_short_id": run_id, "task": "task", "parent_node_id": "n0", "child_node_id": "n1", "stage_pair": "draft->improve", "outcome": "metric_improved", "metric_improvement": 0.1, "text": "transformer validation ensemble"},
-        {"id": "s1", "type": "SOP", "title": "validation ensemble", "action": "use transformer ensemble", "applies_when": ["text classification"], "prevents": ["overfit"], "evidence_turns": ["B0.T1"], "text": "validation ensemble transformer"},
-        {"id": "s2", "type": "SOP", "title": "unattached method", "action": "try another feature", "applies_when": ["draft"], "prevents": [], "text": "unattached feature"},
+        {"id": "s1", "type": "SOP", "title": "validation ensemble", "action": "use transformer ensemble", "applies_when": ["text classification"], "prevents": ["overfit"], "evidence_turns": ["B0.T1"], "text": "validation ensemble transformer", "decision_stages": ["draft"], "task_families": ["text_classification"]},
+        {"id": "s2", "type": "SOP", "title": "unattached method", "action": "try another feature", "applies_when": ["draft"], "prevents": [], "text": "unattached feature", "decision_stages": ["debug"], "task_families": ["tabular_regression"]},
         {"id": "e1", "type": "Evidence", "transition_id": "t1", "text": "metric improved"},
         {"id": "f1", "type": "FailurePattern", "issue_code": "LEAK", "text": "blocked leakage"},
     ]
@@ -114,6 +114,8 @@ def test_exact_stage_quotas_and_config_roles():
     ]
     cfg = OmegaConf.load(HYBRID_CONFIG)
     assert cfg.external_skill_memory.mode == "run_forest_stage_hybrid"
+    assert cfg.external_skill_memory.scoring_mode == "flat_twin"
+    assert cfg.external_skill_memory.retrieval_control == "layered_strategy"
     assert list(cfg.agent.draft_role_policy.roles) == [
         "coldstart_baseline", "memory_reproduction", "novel_exploration"
     ]
@@ -133,6 +135,7 @@ def test_hybrid_config_passes_structured_runtime_schema():
     cfg.desc_file = None
     merged = OmegaConf.merge(OmegaConf.structured(Config), cfg)
     assert merged.external_skill_memory.mode == "run_forest_stage_hybrid"
+    assert merged.external_skill_memory.scoring_mode == "flat_twin"
     assert merged.external_skill_memory.retrieval_control == "layered_strategy"
 
 
@@ -145,6 +148,70 @@ def test_real_graph_reverse_index_uses_distills_to():
     assert layer._transitions_by_sop
     assert sum(len(values) for values in layer._transitions_by_sop.values()) > 0
     assert all(layer.nodes[tid]["type"] == "Transition" for values in layer._transitions_by_sop.values() for tid in values)
+
+
+@pytest.mark.parametrize(
+    ("task_id", "task_desc"),
+    [
+        ("denoising-dirty-documents", "restore noisy document images and minimize RMSE"),
+        ("new-york-city-taxi-fare-prediction", "tabular taxi fare regression and RMSE"),
+        ("mlsp-2013-birds", "multiclass bird audio classification"),
+    ],
+)
+def test_layered_novel_draft_uses_explicit_clean_v2_fallback_when_l1_coverage_is_sparse(task_id, task_desc):
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    layer = StageAwareHybridMemoryLayer(
+        graph_path=str(GRAPH),
+        index_path=str(INDEX),
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        retrieval_control="layered_strategy",
+        enable_agentic=False,
+        top_k=6,
+    )
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id=task_id,
+        task_desc=task_desc,
+        query_parts=["choose a robust clean model"],
+        draft_role="novel_exploration",
+        context={"excluded_method_families": []},
+    )
+    pack = layer.current_navigation_pack()
+    fallback = pack["layered_strategy_fallback"]
+    assert text
+    assert refs
+    assert fallback["activated"] is True
+    assert fallback["fallback_mode"] == "stage_hybrid_v2_clean_cross_task"
+    assert pack["algorithm_version"] == "stage_hybrid_v2"
+    assert pack["execution_safety_gate"]["all_outputs_clean"] is True
+
+
+def test_memory_transfer_role_is_explicit_and_clean_for_task_without_exact_replay():
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    layer = StageAwareHybridMemoryLayer(
+        graph_path=str(GRAPH),
+        index_path=str(INDEX),
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        retrieval_control="layered_strategy",
+        enable_agentic=False,
+        top_k=6,
+    )
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="mlsp-2013-birds",
+        task_desc="multiclass bird audio classification",
+        query_parts=["transfer only clean historical evidence"],
+        draft_role="memory_transfer",
+    )
+    pack = layer.current_navigation_pack()
+    assert text and refs
+    assert pack["memory_transfer"]["activated"] is True
+    assert pack["memory_transfer"]["mode"] == "stage_hybrid_v2_clean_cross_task"
+    assert pack["execution_safety_gate"]["all_outputs_clean"] is True
 
 
 def test_gateway_requires_code_audited_clean_support(tmp_path):
@@ -223,6 +290,198 @@ def test_pack_schema_classes_trace_and_stage_quota(tmp_path):
     for item in pack["navigation_trace"]:
         assert {"retrieval_channel", "candidate_class", "gateway_sop_id", "supporting_transition_ids", "selection_reason", "selection_state"} <= item.keys()
         assert item["selection_state"] in {"candidate", "selected", "expanded", "injected"}
+
+
+def test_production_hybrid_v2_scores_both_channels_and_gates_every_execution_candidate(tmp_path):
+    layer = _layer(tmp_path)
+    pack = layer._hybrid_pack(
+        stage="draft",
+        task_id="task",
+        task_desc="text classification",
+        query_text="transformer validation ensemble",
+    )
+    assert pack["algorithm_version"] == "stage_hybrid_v2"
+    assert pack["tree_candidate_details"]
+    assert all(item["audit_status"] == "clean" for item in pack["tree_candidate_details"])
+    assert all(item["rank_eligible"] is True for item in pack["tree_candidate_details"])
+    assert all(item["eligibility_reason"] == "clean_successful_run_node" for item in pack["tree_candidate_details"])
+    details = {item["id"]: item for item in pack["tree_candidate_details"]}
+    assert details["n1"]["score_components"]["task_local_improvement_percentile"] == 1.0
+    assert details["n0"]["score_components"]["task_local_improvement_percentile"] == 0.5
+    assert details["n1"]["score_components"]["metric_improvement"] > details["n0"]["score_components"]["metric_improvement"]
+    assert pack["execution_safety_gate"]["all_outputs_clean"] is True
+    assert all(
+        layer._execution_candidate_eligibility(item["id"])[0]
+        for item in pack["fused_execution_candidates"]
+    )
+    assert all(
+        item["id"] in pack["execution_candidate_provenance"]
+        for item in pack["fused_execution_candidates"]
+    )
+    sop = next(item for item in pack["direct_sop_candidates"] if item["id"] == "s1")
+    assert sop["ranking_backend"] == "stage_task_geometry_field_hybrid_v2"
+    assert set(sop["hybrid_score_components"]) == {
+        "field_relevance", "stage_fit", "task_fit", "geometry", "clean_evidence"
+    }
+    wrong_task = next(item for item in pack["direct_sop_candidates"] if item["id"] == "s2")
+    assert sop["stage_compatible"] is True and sop["task_compatible"] is True
+    assert wrong_task["stage_compatible"] is False and wrong_task["task_compatible"] is False
+
+
+def test_true_sop_hybrid_projects_tree_evidence_and_preserves_stage_weights(tmp_path):
+    layer = _layer(tmp_path)
+    pack = layer.rank_sop_hybrid(
+        stage="draft",
+        task_id="task",
+        task_desc="text classification",
+        query_text="transformer validation ensemble",
+        limit=5,
+    )
+    assert pack["schema"] == "stage_hybrid_sop_ranking_v2"
+    assert pack["stage_route"]["rrf"] == {"sop": 0.70, "tree": 0.30}
+    assert "s1" in pack["direct_clean_sop_ids"]
+    assert "s1" in pack["tree_projected_sop_ids"]
+    assert [item["id"] for item in pack["fused_sop_candidates"]] == ["s1"]
+    assert pack["safety_gate"]["all_outputs_clean"] is True
+
+
+def test_debug_tree_ranks_complete_causal_transitions_and_respects_quota():
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    layer = StageAwareHybridMemoryLayer(
+        graph_path=str(GRAPH),
+        index_path=str(INDEX),
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        enable_agentic=False,
+    )
+    query = (
+        "Text classification debug: repair a deterministic runtime or resource failure "
+        "without redesigning the model. CUDA out of memory or incompatible API calls may be involved."
+    )
+    rows = layer._rank_debug_transition_rows(
+        query_text=query,
+        task_id="spooky-author-identification",
+        task_desc="text classification",
+        limit=8,
+    )
+    assert rows
+    assert len(rows) <= 8
+    for row in rows:
+        transition = layer.nodes[row["id"]]
+        assert transition["type"] == "Transition"
+        assert transition["outcome"] == "debug_fixed"
+        assert transition["parent_buggy"] is True
+        assert transition["child_buggy"] is False
+        assert row["score_components"]["failure_signature"] > 0.0
+        assert row["score_components"]["task"] >= 0.75
+        assert row["causal_attachments"]
+        assert row["transition_evidence"]["parent_failure"]
+        assert row["transition_evidence"]["code_change"]
+        assert row["transition_evidence"]["child_result"]
+        assert all(item["quality"] == "evidence_turn_match" or item["quality_score"] >= 0.55 for item in row["causal_attachments"])
+
+
+def test_debug_prompt_expands_the_complete_causal_transition():
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    layer = StageAwareHybridMemoryLayer(
+        graph_path=str(GRAPH),
+        index_path=str(INDEX),
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        enable_agentic=False,
+    )
+    text, _refs = layer.retrieve_for_node(
+        stage="debug",
+        task_id="spooky-author-identification",
+        task_desc="text classification",
+        query_parts=["Repair a deterministic runtime resource failure such as CUDA out of memory."],
+    )
+    assert "Parent failure:" in text
+    assert "Proven code change:" in text
+    assert "Successful child result:" in text
+    assert "Causally supported SOPs only:" in text
+
+
+def test_debug_tree_confidence_controls_weight_and_can_fall_back_to_sop_only():
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    layer = StageAwareHybridMemoryLayer(
+        graph_path=str(GRAPH),
+        index_path=str(INDEX),
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        enable_agentic=False,
+    )
+    strong = layer.rank_sop_hybrid(
+        stage="debug",
+        task_id="spooky-author-identification",
+        task_desc="text classification",
+        query_text="Repair a deterministic runtime resource failure such as CUDA out of memory.",
+        limit=10,
+    )
+    strong_route = strong["stage_route"]
+    assert strong_route["fallback_reason"] is None
+    assert 0.0 < strong_route["rrf"]["tree"] <= 0.60
+    assert strong_route["rrf"]["tree"] != strong_route["configured_rrf"]["tree"]
+
+    weak = layer.rank_sop_hybrid(
+        stage="debug",
+        task_id="unknown-audio-task",
+        task_desc="audio event classification",
+        query_text="Repair sample alignment while preserving semantics.",
+        limit=10,
+    )
+    weak_route = weak["stage_route"]
+    assert weak_route["fallback_reason"] == "insufficient_causal_tree_confidence"
+    assert weak_route["rrf"] == {"sop": 1.0, "tree": 0.0}
+    assert weak["tree_projected_sop_ids"] == []
+
+
+def test_debug_failure_similarity_does_not_saturate_on_long_generic_history(tmp_path):
+    layer = _layer(tmp_path)
+    query = "repair validation fit scope leakage"
+    unrelated = " ".join(["model train validation error fix"] * 100)
+    assert layer._bounded_token_similarity(query, unrelated) < 0.50
+    assert layer._failure_signature(query) == {"fit_scope"}
+    assert "resource" in layer._failure_signature("CUDA out of memory during validation")
+    assert "exception:valueerror" in layer._failure_signature("ValueError: labels are misaligned")
+
+
+def test_debug_tree_requires_an_explicit_failure_signature(tmp_path):
+    layer = _layer(tmp_path)
+    assert layer._rank_debug_transition_rows(
+        query_text="Improve this implementation in a generally useful way.",
+        task_id="task",
+        task_desc="text classification",
+        limit=8,
+    ) == []
+
+
+def test_stage_taxonomy_is_an_effective_gate_in_real_sop_projection():
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    layer = StageAwareHybridMemoryLayer(
+        graph_path=str(GRAPH),
+        index_path=str(INDEX),
+        mode="run_forest_stage_hybrid",
+        enable_agentic=False,
+    )
+    for stage in ("draft", "improve", "debug"):
+        pack = layer.rank_sop_hybrid(
+            stage=stage,
+            task_id="spooky-author-identification",
+            task_desc="Small-data text classification evaluated by multiclass log loss.",
+            query_text="choose a robust model and avoid validation overfitting",
+            limit=10,
+        )
+        first_ten = pack["direct_clean_sop_ids"][:10]
+        assert len(first_ten) == 10
+        assert all(
+            layer._sop_stage_fit(layer.nodes[sop_id], stage)[1]
+            for sop_id in first_ten
+        )
 
 
 def test_invalid_config_fails_closed(tmp_path):
@@ -364,6 +623,25 @@ def test_runtime_retrieval_controls_are_isolated(tmp_path, control, has_sop, has
     if control == "tree_only":
         assert pack["direct_sop_candidates"] == []
         assert pack["sop_only_candidates"] == []
+        assert all(
+            item["source_channels"] == ["tree_direct"]
+            for item in pack["execution_candidate_provenance"].values()
+        )
+        assert pack["sop_transition_matches"] == []
+        assert all(
+            item["candidate_class"] == "tree_only_candidates"
+            for item in pack["fused_execution_candidates"]
+        )
+    if control == "sop_only":
+        assert pack["tree_candidate_details"] == []
+        assert all(
+            item["source_channels"] == ["sop_gateway"]
+            for item in pack["execution_candidate_provenance"].values()
+        )
+        assert pack["tree_only_candidates"] == []
+        assert set(pack["execution_candidate_provenance"]) == {
+            item["id"] for item in pack["fused_execution_candidates"]
+        }
 
 
 def test_final_adoption_outcome_taxonomy():

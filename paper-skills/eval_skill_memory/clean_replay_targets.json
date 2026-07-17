@@ -20,6 +20,58 @@
         "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
       ],
       "selection_basis": "Historically strong DeBERTa-v3-large + XGBoost + Logistic Regression method template. The original code is retained for provenance, but exact execution is blocked until preprocessing is train-only and evaluation uses an untouched holdout."
+    },
+    {
+      "task_id": "leaf-classification",
+      "run_id": "20260701_155016_leaf-classification",
+      "original_node_id": "97c95ee1e7bb4cfaa2327fa74f30dcbb",
+      "sop_ids": ["sop::sg_0040", "sop::sg_0042"],
+      "historical_metric": 0.013948359557098382,
+      "method_family": "vision_tabular_fusion",
+      "code_sha256": "2c812d04e05ebb9f2292cf72ab4468392b4efb7ec719c5eb213fe6fe8a4dd439",
+      "audit_status": "verified_clean",
+      "metric_status": "historical_selected_validation_score",
+      "known_issue_codes": [],
+      "selection_basis": "Best clean rank-eligible historical Leaf node after deterministic leakage re-audit."
+    },
+    {
+      "task_id": "aerial-cactus-identification",
+      "run_id": "20260701_145250_aerial-cactus-identification",
+      "original_node_id": "205c70349a4846719a6762d7988ea43e",
+      "sop_ids": ["sop::sg_0005", "sop::sg_0010"],
+      "historical_metric": 1.0,
+      "method_family": "efficientnet_finetune",
+      "code_sha256": "b40224c1016e7ec93e5b361c4979e77c4c964234cd40ce46a80de30b93ea596e",
+      "audit_status": "verified_clean",
+      "metric_status": "historical_selected_validation_score",
+      "known_issue_codes": [],
+      "selection_basis": "Best clean rank-eligible historical Aerial Cactus node after deterministic leakage re-audit."
+    },
+    {
+      "task_id": "denoising-dirty-documents",
+      "run_id": "20260701_145201_denoising-dirty-documents",
+      "original_node_id": "33d66a80b6a2490ea54289928fbf4c35",
+      "sop_ids": ["sop::sg_0036"],
+      "historical_metric": 0.014246700392307146,
+      "method_family": "unet_image_restoration",
+      "code_sha256": "22c4ba750bf7ec31346128f2805f24c9e182fa339368e697f745993217b11141",
+      "audit_status": "verified_clean",
+      "metric_status": "historical_selected_validation_score",
+      "known_issue_codes": [],
+      "selection_basis": "Best clean rank-eligible historical Denoising node after deterministic leakage re-audit."
+    },
+    {
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "run_id": "20260701_180038_new-york-city-taxi-fare-prediction",
+      "original_node_id": "ceccd342e6854f4e84145bbf128602f7",
+      "sop_ids": ["sop::sg_0081", "sop::sg_0002"],
+      "historical_metric": 3.294483,
+      "method_family": "gradient_boosted_trees",
+      "code_sha256": "7abf3a262dcc628edf1855587fa8c00eef29dcdb015531c6915c1c530400027a",
+      "audit_status": "verified_clean",
+      "metric_status": "historical_selected_validation_score",
+      "known_issue_codes": [],
+      "selection_basis": "Best clean rank-eligible historical NYC Taxi node after deterministic leakage re-audit."
     }
   ]
 }

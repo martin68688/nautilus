@@ -81,6 +81,40 @@ def test_run_forest_artifacts_are_clean_certified():
     assert report["failure_pattern_count"] > 0
 
 
+def test_non_spooky_exact_replay_targets_bind_to_clean_graph_and_source_journals():
+    import hashlib
+
+    graph = json.loads(GRAPH.read_text(encoding="utf-8"))
+    nodes = {str(node["id"]): node for node in graph["nodes"] if node.get("id")}
+    manifest = json.loads(REPLAY_TARGETS.read_text(encoding="utf-8"))
+    targets = {row["task_id"]: row for row in manifest["targets"]}
+    expected = {
+        "leaf-classification",
+        "aerial-cactus-identification",
+        "denoising-dirty-documents",
+        "new-york-city-taxi-fare-prediction",
+    }
+    assert expected.issubset(targets)
+    assert "mlsp-2013-birds" not in targets
+    for task_id in expected:
+        target = targets[task_id]
+        run_id = target["run_id"]
+        node_id = f"run::{run_id}::node::{target['original_node_id']}"
+        node = nodes[node_id]
+        audit = node["leakage_audit"]
+        assert node["task"] == task_id
+        assert audit["status"] == "clean"
+        assert audit["rank_eligible"] is True
+        assert audit["memory_disposition"] == "positive_eligible"
+        assert node["code_sha256"] == target["code_sha256"]
+        assert node["metric"] == target["historical_metric"]
+        run = nodes[f"run::{run_id}"]
+        journal = json.loads((REPO / run["journal_path"]).read_text(encoding="utf-8"))
+        raw = next(row for row in journal["nodes"] if row["id"] == target["original_node_id"])
+        assert hashlib.sha256(raw["code"].encode("utf-8")).hexdigest() == target["code_sha256"]
+        assert all(sop_id in nodes and nodes[sop_id]["type"] == "SOP" for sop_id in target["sop_ids"])
+
+
 def test_run_forest_builder_requires_allowlist_for_clean_mode():
     import sys
 
@@ -271,6 +305,11 @@ def test_draft_role_policy_validates_fixed_three_roles():
     agent.acfg.initial_drafts = 2
     with pytest.raises(ValueError, match="initial_drafts == 3"):
         AgentSearch._validate_draft_role_policy(agent)
+
+    agent.acfg.initial_drafts = 3
+    policy.roles = ["coldstart_baseline", "memory_transfer", "novel_exploration"]
+    AgentSearch._validate_draft_role_policy(agent)
+    assert AgentSearch.configured_draft_role(agent, 1) == "memory_transfer"
 
 
 def test_seven_workers_atomically_claim_only_three_root_roles():
@@ -910,6 +949,8 @@ def test_agent_step_returns_explicit_wait_signal(monkeypatch):
     agent.journal = SimpleNamespace(nodes=[root])
     agent.data_preview = "ready"
     agent._search_condition = NoWaitCondition()
+    agent._active_search_work_lock = __import__("threading").Lock()
+    agent._active_search_work = 1
     monkeypatch.setattr("engine.node_selection.select_with_soft_switch", lambda _agent: None)
 
     result = AgentSearch.step(
@@ -920,6 +961,85 @@ def test_agent_step_returns_explicit_wait_signal(monkeypatch):
         draft_role="novel_exploration",
     )
     assert result is None
+
+
+def test_agent_step_raises_when_search_space_is_permanently_exhausted(monkeypatch):
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.agent_search import AgentSearch, SearchSpaceExhausted
+    from engine.search_node import SearchNode
+    from utils.metric import WorstMetricValue
+
+    class NoWaitCondition:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def wait(self, timeout=None):
+            return None
+
+    root = SearchNode(code="", plan="root", stage="root", step=0, metric=WorstMetricValue())
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.virtual_root = root
+    agent.journal = SimpleNamespace(nodes=[root])
+    agent.data_preview = "ready"
+    agent._search_condition = NoWaitCondition()
+    agent._active_search_work_lock = __import__("threading").Lock()
+    agent._active_search_work = 0
+    monkeypatch.setattr("engine.node_selection.select_with_soft_switch", lambda _agent: None)
+
+    with pytest.raises(SearchSpaceExhausted, match="No expandable node"):
+        AgentSearch.step(
+            agent,
+            root,
+            exec_callback=lambda *_args, **_kwargs: None,
+            execute_immediately=False,
+            draft_role="novel_exploration",
+        )
+
+
+def test_agent_step_ignores_stale_journal_reservations_when_exhausted(monkeypatch):
+    import sys
+    import threading
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.agent_search import AgentSearch, SearchSpaceExhausted
+    from engine.search_node import SearchNode
+    from utils.metric import WorstMetricValue
+
+    class NoWaitCondition:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def wait(self, timeout=None):
+            return None
+
+    root = SearchNode(code="", plan="root", stage="root", step=0, metric=WorstMetricValue())
+    root.lock = True
+    root.expected_child_count = 99
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.virtual_root = root
+    agent.journal = SimpleNamespace(nodes=[root])
+    agent.data_preview = "ready"
+    agent._search_condition = NoWaitCondition()
+    agent._active_search_work_lock = threading.Lock()
+    agent._active_search_work = 0
+    monkeypatch.setattr("engine.node_selection.select_with_soft_switch", lambda _agent: None)
+
+    with pytest.raises(SearchSpaceExhausted, match="No expandable node"):
+        AgentSearch.step(
+            agent,
+            root,
+            exec_callback=lambda *_args, **_kwargs: None,
+            execute_immediately=False,
+            draft_role="novel_exploration",
+        )
 
 
 def test_topk_fully_expanded_selection_propagates_wait(monkeypatch):

@@ -251,3 +251,21 @@ external_skill_memory:
   include_evolution: True
   include_debug: True
   include_fusion: True
+
+# ============================================================
+#  Persisted run identity (baseline vs memory-system experiments)
+# ============================================================
+run_identity:
+  schema: mlevolve_run_identity_v1
+  experiment_group: baseline_no_external_memory
+  baseline_reference_group: ""
+  memory_enabled: false
+  memory_system: none
+  memory_version: none
+  memory_snapshot_sha256: ""
+  memory_index_sha256: ""
+  memory_source_count: 0
+  memory_source_runs: []
+  code_revision: ""
+  code_worktree_sha256: ""
+  identity_source: declared_at_runtime

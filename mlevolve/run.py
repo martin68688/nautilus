@@ -6,7 +6,7 @@ import shutil
 import time
 import threading
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
-from engine.agent_search import AgentSearch as Agent
+from engine.agent_search import AgentSearch as Agent, SearchSpaceExhausted
 from engine.executor import Interpreter
 from engine.search_node import Journal
 from omegaconf import OmegaConf
@@ -176,6 +176,7 @@ def run():
         logger.info(f"   - Remaining steps: {total_steps - completed}")
 
         def execute_draft_node(node):
+            agent.begin_search_work()
             try:
                 executed_node = agent.execute_deferred_node(node, exec_callback)
                 logger.info(f"✅ Draft node {executed_node.id} executed: metric={executed_node.metric.value}")
@@ -183,9 +184,12 @@ def run():
             except Exception as e:
                 logger.exception(f"❌ Exception during draft node {node.id} execution: {e}")
                 return None
+            finally:
+                agent.end_search_work()
 
         executor = ThreadPoolExecutor(max_workers=max_workers)
         interrupted = False
+        search_exhausted = False
         try:
             futures = set()
             focus_futures = set()
@@ -242,7 +246,11 @@ def run():
                         else:
                             logger.warning(f"⚠️  Task returned None (execution failed)")
                     except Exception as e:
-                        logger.exception(f"❌ Exception during task execution: {e}")
+                        if isinstance(e, SearchSpaceExhausted):
+                            search_exhausted = True
+                            logger.warning("Search space exhausted: %s", e)
+                        else:
+                            logger.exception(f"❌ Exception during task execution: {e}")
                         cur_node = None
 
                     with lock:
@@ -266,7 +274,11 @@ def run():
                     focus_has_finished = bool(
                         dev_execution_role and focus_status.seen and not focus_status.active
                     )
-                    if not focus_has_finished and (within_shared_budget or continue_focused_replay):
+                    if (
+                        not search_exhausted
+                        and not focus_has_finished
+                        and (within_shared_budget or continue_focused_replay)
+                    ):
                         next_is_focused = bool(
                             dev_execution_role
                             and (was_focused or getattr(cur_node, "draft_role", None) == dev_execution_role)
@@ -279,6 +291,10 @@ def run():
                         )
                         logger.info(f"📤 Submitted next task based on node {cur_node.id if cur_node else 'None'}")
                     logger.info(f"📊 Progress: {completed}/{total_steps} steps completed, {len(futures)} tasks running")
+                if search_exhausted:
+                    for pending in futures:
+                        pending.cancel()
+                    break
         except KeyboardInterrupt:
             interrupted = True
             logger.info("KeyboardInterrupt received, terminating subprocesses and shutting down...")
@@ -296,6 +312,8 @@ def run():
                 raise RuntimeError(
                     f"Focused replay role {dev_execution_role!r} did not complete cleanly: {focus_error}"
                 )
+        if search_exhausted and agent.best_node is None:
+            raise RuntimeError("Search space exhausted without a certified solution")
     else:
         logger.info(f"✅ All steps completed in Phase 1 (total_steps={total_steps} <= initial_draft_count={initial_draft_count})")
 

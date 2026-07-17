@@ -1,0 +1,51 @@
+{
+  "schema": "mlevolve_run_identity_registry_v1",
+  "description": "Explicit separation between historical baseline source runs and Stage Hybrid v2 memory-enabled evaluation runs.",
+  "groups": {
+    "baseline_no_external_memory": {
+      "memory_enabled": false,
+      "memory_system": "none",
+      "memory_version": "none",
+      "identity_source": "inferred_from_saved_config_external_skill_memory_enable_false",
+      "run_ids": [
+        "20260509_042918",
+        "20260509_154039",
+        "20260509_185008",
+        "20260510_025317",
+        "20260510_095558",
+        "20260510_162636",
+        "20260511_014836",
+        "20260511_102550",
+        "20260513_165253",
+        "20260514_023457",
+        "20260514_052334",
+        "20260515_173948",
+        "20260516_104127",
+        "20260516_125444",
+        "20260517_132158",
+        "20260517_151325",
+        "20260627_135133",
+        "20260701_145201",
+        "20260701_145250",
+        "20260701_155016",
+        "20260701_180038",
+        "20260701_180146",
+        "20260717_032623",
+        "20260717_034437",
+        "20260717_040522",
+        "20260717_042718",
+        "20260717_043943",
+        "20260717_050506",
+        "20260717_053833"
+      ]
+    },
+    "stage_hybrid_v2_all_clean_history": {
+      "memory_enabled": true,
+      "memory_system": "run_forest_stage_hybrid",
+      "memory_version": "stage_hybrid_v2",
+      "baseline_reference_group": "baseline_no_external_memory",
+      "run_ids": [],
+      "note": "New run IDs are recorded in each logs/run_identity.json and the suite-level SUITE_IDENTITY.json."
+    }
+  }
+}

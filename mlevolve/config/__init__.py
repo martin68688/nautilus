@@ -1,6 +1,7 @@
 """configuration and setup utils"""
 
 from dataclasses import dataclass, field
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -228,6 +229,25 @@ class ExternalSkillMemoryConfig:
 
 
 @dataclass
+class RunIdentityConfig:
+    """Persisted experiment identity for baseline-vs-memory comparisons."""
+
+    schema: str = "mlevolve_run_identity_v1"
+    experiment_group: str = "baseline_no_external_memory"
+    baseline_reference_group: str = ""
+    memory_enabled: bool = False
+    memory_system: str = "none"
+    memory_version: str = "none"
+    memory_snapshot_sha256: str = ""
+    memory_index_sha256: str = ""
+    memory_source_count: int = 0
+    memory_source_runs: list[str] = field(default_factory=list)
+    code_revision: str = ""
+    code_worktree_sha256: str = ""
+    identity_source: str = "declared_at_runtime"
+
+
+@dataclass
 class Config(Hashable):
     data_dir: Path
     dataset_dir: Path
@@ -264,6 +284,55 @@ class Config(Hashable):
     adoption_tracking: AdoptionTrackingConfig = field(default_factory=AdoptionTrackingConfig)
     evaluation_authority: EvaluationAuthorityConfig = field(default_factory=EvaluationAuthorityConfig)
     external_skill_memory: ExternalSkillMemoryConfig = field(default_factory=ExternalSkillMemoryConfig)
+    run_identity: RunIdentityConfig = field(default_factory=RunIdentityConfig)
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _resolve_memory_artifact(raw_path: str) -> Path:
+    path = Path(str(raw_path or "")).expanduser()
+    if path.is_absolute():
+        return path
+    candidates = [Path.cwd() / path, Path(__file__).resolve().parent.parent / path]
+    return next((candidate.resolve() for candidate in candidates if candidate.exists()), candidates[-1].resolve())
+
+
+def _populate_run_identity(cfg) -> None:
+    """Bind a run label to the exact code and clean-memory snapshot it uses."""
+    identity = cfg.run_identity
+    memory_cfg = cfg.external_skill_memory
+    identity.memory_enabled = bool(memory_cfg.enable)
+    if identity.memory_enabled:
+        graph_path = _resolve_memory_artifact(memory_cfg.graph_path)
+        index_path = _resolve_memory_artifact(memory_cfg.index_path) if memory_cfg.index_path else None
+        if not graph_path.is_file():
+            raise FileNotFoundError(f"Run identity memory graph not found: {graph_path}")
+        graph = json.loads(graph_path.read_text(encoding="utf-8"))
+        meta = graph.get("meta") or {}
+        if meta.get("source_membership_verified") is not True or meta.get("leak_verified") is not True:
+            raise ValueError("Memory-enabled runs require a source-verified and leak-verified graph")
+        identity.memory_snapshot_sha256 = _sha256_file(graph_path)
+        identity.memory_index_sha256 = _sha256_file(index_path) if index_path and index_path.is_file() else ""
+        identity.memory_source_runs = [str(value) for value in (meta.get("source_runs") or [])]
+        identity.memory_source_count = len(identity.memory_source_runs)
+    else:
+        identity.memory_system = "none"
+        identity.memory_version = "none"
+        identity.memory_snapshot_sha256 = ""
+        identity.memory_index_sha256 = ""
+        identity.memory_source_count = 0
+        identity.memory_source_runs = []
+
+    identity.code_revision = os.environ.get("MLEVOLVE_CODE_REVISION", identity.code_revision)
+    identity.code_worktree_sha256 = os.environ.get(
+        "MLEVOLVE_CODE_WORKTREE_SHA256", identity.code_worktree_sha256
+    )
 
 
 def _get_next_logindex(dir: Path) -> int:
@@ -355,6 +424,7 @@ def prep_cfg(cfg: Config):
     # validate the config
     cfg_schema: Config = OmegaConf.structured(Config)
     cfg = OmegaConf.merge(cfg_schema, cfg)
+    _populate_run_identity(cfg)
 
     if cfg.fixed_holdout.enabled:
         from fixed_holdout.mode import EVALUATION_MODE, train_manifest_path
@@ -456,6 +526,11 @@ def save_run(cfg: Config, journal):
     serialize.dump_json(filtered_journal, cfg.log_dir / "filtered_journal.json")
     # save config
     OmegaConf.save(config=cfg, f=cfg.log_dir / "config.yaml")
+    identity = OmegaConf.to_container(cfg.run_identity, resolve=True)
+    (cfg.log_dir / "run_identity.json").write_text(
+        json.dumps(identity, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
     
     # save the best found solution
     best_node = journal.get_best_node()

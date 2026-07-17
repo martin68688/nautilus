@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import copy
 import hashlib
 import json
 from dataclasses import dataclass
@@ -43,25 +44,65 @@ def _call_name(node: ast.Call) -> str:
     return ""
 
 
+def _constructor_signature(node: ast.Call) -> str:
+    """Return a constructor signature insensitive to protocol variable names."""
+    normalized = copy.deepcopy(node)
+
+    class Canonicalizer(ast.NodeTransformer):
+        def visit_Call(self, call: ast.Call) -> ast.AST:
+            # Preserve the callable identity, but canonicalize values flowing
+            # into its arguments (including nested helper calls such as min).
+            call.args = [self.visit(argument) for argument in call.args]
+            for keyword in call.keywords:
+                keyword.value = self.visit(keyword.value)
+            return call
+
+        def visit_Name(self, name: ast.Name) -> ast.AST:
+            name.id = "value"
+            return name
+
+    canonical = Canonicalizer().visit(normalized)
+    ast.fix_missing_locations(canonical)
+    return ast.dump(canonical, annotate_fields=True, include_attributes=False)
+
+
 def fingerprint_method(code: str) -> MethodFingerprint:
     tree = ast.parse(code)
     normalized = ast.dump(tree, annotate_fields=True, include_attributes=False)
     calls = sorted({_call_name(node) for node in ast.walk(tree) if isinstance(node, ast.Call)})
     model_terms = ("classifier", "regressor", "xgb", "lightgbm", "catboost", "bert", "resnet", "svm")
+    protocol_utility_calls = {
+        "ProtocolProvenanceGuard",
+    }
+
     def is_model_call(call_name: str) -> bool:
         leaf = call_name.rsplit(".", 1)[-1]
+        if (
+            leaf in protocol_utility_calls
+            or leaf.endswith("Error")
+            or leaf.endswith("Exception")
+            or leaf.endswith("Dataset")
+            or leaf.endswith("DataLoader")
+            or leaf.endswith("Sampler")
+        ):
+            return False
         return bool(
             any(term in call_name.lower() for term in model_terms)
             or (leaf and leaf[0].isupper() and leaf not in {"Path", "DataFrame", "Series"})
         )
 
     models = tuple(call for call in calls if is_model_call(call))
+    non_constructor_methods = {
+        "fit", "fit_transform", "partial_fit", "train",
+        "predict", "predict_proba", "transform", "forward",
+    }
     model_signatures = tuple(
         sorted(
-            ast.dump(node, annotate_fields=True, include_attributes=False)
+            _constructor_signature(node)
             for node in ast.walk(tree)
             if isinstance(node, ast.Call)
             and is_model_call(_call_name(node))
+            and _call_name(node).rsplit(".", 1)[-1] not in non_constructor_methods
         )
     )
     features = tuple(
@@ -111,7 +152,16 @@ def certify_replay(source_code: str, replay_code: str, allowed_protocol_changes:
         # rename scope variables. Learned component constructors and their
         # hyperparameters remain frozen; the host preservation audit checks
         # protected feature/model calls in greater detail.
-        structural_fields = ("model_families", "model_signatures")
+        # A protocol repair may instantiate an exact frozen constructor once
+        # per fold and again for the final refit. Multiplicity belongs to the
+        # evaluation protocol, while the host preservation audit separately
+        # rejects removed, added, or reconfigured protected constructors.
+        if (
+            source.model_families == replay.model_families
+            and set(source.model_signatures) == set(replay.model_signatures)
+        ):
+            return ReplayIdentity.METHOD_PRESERVED
+        return ReplayIdentity.SUCCESSOR_METHOD
     else:
         structural_fields = (
             "model_families",

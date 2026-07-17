@@ -35,6 +35,10 @@ class DraftRoleReservationError(ValueError):
     """Raised before generation when a fixed root Draft slot cannot be reserved."""
 
 
+class SearchSpaceExhausted(RuntimeError):
+    """Raised when selection has no current or future work left to claim."""
+
+
 class AgentSearch:
     def __init__(
             self,
@@ -67,6 +71,8 @@ class AgentSearch:
         self._draft_role_lock = threading.Lock()
         self._draft_generation_count = 0
         self._search_condition = threading.Condition()
+        self._active_search_work_lock = threading.Lock()
+        self._active_search_work = 0
         self._validate_draft_role_policy()
         self._init_mandatory_repair_scheduler()
 
@@ -216,15 +222,16 @@ class AgentSearch:
         policy = getattr(self.acfg, "draft_role_policy", None)
         if policy is None or not bool(getattr(policy, "enabled", False)):
             return
-        expected = ["coldstart_baseline", "memory_reproduction", "novel_exploration"]
+        allowed = {
+            ("coldstart_baseline", "memory_reproduction", "novel_exploration"),
+            ("coldstart_baseline", "memory_transfer", "novel_exploration"),
+        }
         roles = [str(role) for role in list(getattr(policy, "roles", []) or [])]
-        if roles[:3] != expected:
-            raise ValueError(f"RunForest draft roles must start with {expected}; got {roles}")
-        if len(roles) != len(expected):
-            raise ValueError(f"RunForest draft role policy requires exactly {len(expected)} roles")
-        if int(self.acfg.initial_drafts) != len(expected):
+        if tuple(roles) not in allowed:
+            raise ValueError(f"RunForest draft roles must be one of {sorted(allowed)}; got {roles}")
+        if int(self.acfg.initial_drafts) != 3:
             raise ValueError("RunForest draft role policy requires agent.initial_drafts == 3")
-        if int(self.scfg.num_drafts) != len(expected):
+        if int(self.scfg.num_drafts) != 3:
             raise ValueError("RunForest draft role policy requires agent.search.num_drafts == 3")
         ext_cfg = getattr(getattr(self, "cfg", None), "external_skill_memory", None)
         if (
@@ -453,6 +460,40 @@ class AgentSearch:
         if condition is not None:
             with condition:
                 condition.notify_all()
+
+    def begin_search_work(self) -> None:
+        """Record one process-local generation or execution that can unlock selection."""
+        active_lock = getattr(self, "_active_search_work_lock", None)
+        if active_lock is None:
+            # Some focused unit fixtures construct AgentSearch via __new__.
+            # Production instances initialize this state in __init__.
+            active_lock = threading.Lock()
+            self._active_search_work_lock = active_lock
+            self._active_search_work = 0
+        with active_lock:
+            self._active_search_work += 1
+
+    def end_search_work(self) -> None:
+        """Release a process-local work claim and wake bounded selection waiters."""
+        with self._active_search_work_lock:
+            if self._active_search_work <= 0:
+                raise RuntimeError("Search work counter underflow")
+            self._active_search_work -= 1
+        self._notify_search_state()
+
+    def _has_pending_search_work(self) -> bool:
+        """Whether a bounded selection miss can still resolve via in-flight work."""
+        repair_lock = getattr(self, "_mandatory_repair_lock", None)
+        if repair_lock is not None:
+            with repair_lock:
+                if self._mandatory_repair_queue or self._mandatory_repair_inflight_ids:
+                    return True
+
+        active_lock = getattr(self, "_active_search_work_lock", None)
+        if active_lock is None:
+            return False
+        with active_lock:
+            return int(getattr(self, "_active_search_work", 0)) > 0
 
     def update_data_preview(self):
         base_preview = data_preview.generate(self.cfg.workspace_dir)
@@ -701,27 +742,35 @@ class AgentSearch:
                         condition.wait(timeout=1.0)
                 node = node_selection.select_with_soft_switch(self)
                 if node is None:
+                    if not self._has_pending_search_work():
+                        raise SearchSpaceExhausted(
+                            "No expandable node or in-flight search work remains"
+                        )
                     logger.info("[step] No expandable node after bounded wait")
                     return None
 
+        self.begin_search_work()
         try:
-            _root, result_node = self._run_single_step(
-                node,
-                exec_callback=exec_callback,
-                execute_immediately=execute_immediately,
-                init_solution_path=init_solution_path,
-                draft_role=draft_role,
-            )
-        except Exception:
-            if claimed_repair_parent is not None:
-                self._release_mandatory_repair_parent(
-                    claimed_repair_parent,
-                    retry=not claimed_repair_parent.is_terminal,
+            try:
+                _root, result_node = self._run_single_step(
+                    node,
+                    exec_callback=exec_callback,
+                    execute_immediately=execute_immediately,
+                    init_solution_path=init_solution_path,
+                    draft_role=draft_role,
                 )
-            raise
-        else:
-            if claimed_repair_parent is not None:
-                self._release_mandatory_repair_parent(claimed_repair_parent)
+            except Exception:
+                if claimed_repair_parent is not None:
+                    self._release_mandatory_repair_parent(
+                        claimed_repair_parent,
+                        retry=not claimed_repair_parent.is_terminal,
+                    )
+                raise
+            else:
+                if claimed_repair_parent is not None:
+                    self._release_mandatory_repair_parent(claimed_repair_parent)
+        finally:
+            self.end_search_work()
 
         if result_node:
             metric_value = result_node.metric.value if result_node.metric else None
