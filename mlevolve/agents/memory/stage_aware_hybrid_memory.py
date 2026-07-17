@@ -457,7 +457,16 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             return "roberta_finetune"
         if "efficientnet" in text:
             return "efficientnet_finetune"
-        if any(token in text for token in ("siglip", "dinov2", "vision transformer")):
+        # DINO model names are versioned and commonly arrive as checkpoint or
+        # repository identifiers (for example ``DINOv3`` or
+        # ``facebook/dinov3-vitl16-pretrain``).  Match the model family rather
+        # than pinning one release name so a new numeric DINO version cannot
+        # abort the strict three-role draft path.
+        dino_family = re.search(
+            r"(?<![a-z0-9])dino(?:[\s._/-]*v?[\s._/-]*\d+)?(?![a-z0-9])",
+            text,
+        )
+        if "siglip" in text or dino_family or "vision transformer" in text:
             return "vision_transformer_finetune"
         if any(token in text for token in ("lightgbm", "xgboost")):
             return "gradient_boosted_trees"

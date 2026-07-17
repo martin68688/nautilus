@@ -763,6 +763,47 @@ def test_layered_novel_draft_returns_three_clean_distinct_strategy_families():
     assert len(refs) == 3
 
 
+@pytest.mark.parametrize(
+    "model_name",
+    [
+        "DINOv2",
+        "DINOv3",
+        "DINO-v4",
+        "DINO v12",
+        "facebook/dinov3-vitl16-pretrain",
+    ],
+)
+def test_dino_versions_and_checkpoint_names_map_to_one_model_family(model_name):
+    layer = _real_layered()
+    assert layer._model_family_from_text(model_name) == "vision_transformer_finetune"
+
+
+def test_leaf_runtime_context_with_dinov3_reaches_clean_layered_retrieval():
+    layer = _real_layered()
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="leaf-classification",
+        task_desc="Leaf image classification evaluated by multiclass log loss.",
+        query_parts=["One GPU is available."],
+        draft_role="novel_exploration",
+        context={
+            "baseline_model": "DINOv3",
+            "coldstart": "facebook/dinov3-vitl16-pretrain",
+            "data_preview": "Train shape: (990, 194)",
+        },
+    )
+    pack = layer.current_navigation_pack()
+    assert text and refs
+    assert "vision_transformer_finetune" in pack["task_profile"]["excluded_method_families"]
+    if pack.get("selected_strategy"):
+        assert pack["selected_strategy"]["method_family"] != "vision_transformer_finetune"
+        assert pack["selected_strategy"]["best_tree_evidence"]["audit_status"] == "clean"
+    else:
+        assert pack["layered_strategy_fallback"]["activated"] is True
+        assert pack["layered_strategy_fallback"]["fallback_mode"] == "stage_hybrid_v2_clean_cross_task"
+        assert pack["execution_safety_gate"]["all_outputs_clean"] is True
+
+
 def test_layered_l1_l2_are_isolated_from_baseline_and_replay():
     layer = _real_layered()
     for role in ("coldstart_baseline", "memory_reproduction"):

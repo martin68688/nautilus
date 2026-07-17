@@ -516,6 +516,19 @@ def prep_agent_workspace(cfg: Config):
         preproc_data(cfg.workspace_dir / "input")
 
 
+def save_run_identity(cfg: Config) -> Path:
+    """Persist experiment identity before any draft generation can fail."""
+    log_dir = Path(cfg.log_dir)
+    log_dir.mkdir(parents=True, exist_ok=True)
+    identity_path = log_dir / "run_identity.json"
+    identity = OmegaConf.to_container(cfg.run_identity, resolve=True)
+    identity_path.write_text(
+        json.dumps(identity, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return identity_path
+
+
 def save_run(cfg: Config, journal):
     Journal, filter_journal = _get_journal_classes()
     cfg.log_dir.mkdir(parents=True, exist_ok=True)
@@ -526,11 +539,7 @@ def save_run(cfg: Config, journal):
     serialize.dump_json(filtered_journal, cfg.log_dir / "filtered_journal.json")
     # save config
     OmegaConf.save(config=cfg, f=cfg.log_dir / "config.yaml")
-    identity = OmegaConf.to_container(cfg.run_identity, resolve=True)
-    (cfg.log_dir / "run_identity.json").write_text(
-        json.dumps(identity, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+    save_run_identity(cfg)
     
     # save the best found solution
     best_node = journal.get_best_node()

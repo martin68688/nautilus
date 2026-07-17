@@ -4,7 +4,7 @@ from pathlib import Path
 
 from omegaconf import OmegaConf
 
-from config import _populate_run_identity
+from config import _populate_run_identity, save_run_identity
 
 
 REPO = Path(__file__).resolve().parents[1]
@@ -61,6 +61,45 @@ def test_memory_run_identity_binds_exact_clean_snapshot(tmp_path, monkeypatch):
     assert cfg.run_identity.memory_source_count == 2
     assert cfg.run_identity.code_revision == "0cb6cdd2"
     assert cfg.run_identity.code_worktree_sha256 == "worktree-digest"
+
+
+def test_run_identity_is_persisted_without_waiting_for_a_journal(tmp_path):
+    cfg = OmegaConf.create(
+        {
+            "log_dir": str(tmp_path / "early-failure" / "logs"),
+            "run_identity": {
+                "schema": "mlevolve_run_identity_v1",
+                "experiment_group": "stage_hybrid_v2_all_clean_history",
+                "baseline_reference_group": "baseline_no_external_memory",
+                "memory_enabled": True,
+                "memory_system": "run_forest_stage_hybrid",
+                "memory_version": "stage_hybrid_v2",
+                "memory_snapshot_sha256": "graph-hash",
+                "memory_index_sha256": "index-hash",
+                "memory_source_count": 29,
+                "memory_source_runs": ["run-a"],
+                "code_revision": "3ac19fd3",
+                "code_worktree_sha256": "source-hash",
+                "identity_source": "declared_at_runtime",
+            },
+        }
+    )
+
+    identity_path = save_run_identity(cfg)
+
+    assert identity_path == tmp_path / "early-failure" / "logs" / "run_identity.json"
+    identity = json.loads(identity_path.read_text(encoding="utf-8"))
+    assert identity["memory_enabled"] is True
+    assert identity["memory_version"] == "stage_hybrid_v2"
+    assert identity["experiment_group"] == "stage_hybrid_v2_all_clean_history"
+
+
+def test_run_persists_identity_before_loading_task_or_generating_drafts():
+    source = (REPO / "mlevolve" / "run.py").read_text(encoding="utf-8")
+    identity_write = source.index("identity_path = save_run_identity(cfg)")
+    task_load = source.index("task_desc = load_task_desc(cfg)")
+    journal_create = source.index("journal = Journal()")
+    assert identity_write < task_load < journal_create
 
 
 def test_memory_run_identity_fails_closed_on_unclean_graph(tmp_path):

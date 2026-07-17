@@ -11,7 +11,7 @@ from engine.executor import Interpreter
 from engine.search_node import Journal
 from omegaconf import OmegaConf
 from rich.status import Status
-from config import load_task_desc, prep_agent_workspace, save_run, load_cfg
+from config import load_task_desc, prep_agent_workspace, save_run, save_run_identity, load_cfg
 from utils.visualization import journal_to_string_tree
 from utils.seed import set_global_seed
 from engine.coldstart import build_guidance_description
@@ -31,7 +31,9 @@ def run():
         torch.hub.set_dir(cfg.torch_hub_dir)
     set_global_seed(cfg.agent.seed)
     logger = setup_logging(cfg)
+    identity_path = save_run_identity(cfg)
     logger.info(f'Starting run "{cfg.exp_name}"')
+    logger.info("Run identity persisted before draft generation: %s", identity_path)
 
     task_desc = load_task_desc(cfg)
 
