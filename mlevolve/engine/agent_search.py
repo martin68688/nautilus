@@ -299,6 +299,29 @@ class AgentSearch:
             node.audit_repair_required or audit.get("repair_required")
         )
 
+    @classmethod
+    def _is_explicit_runtime_debug_parent(cls, node: SearchNode | None) -> bool:
+        """Keep a completed runtime failure on its caller-owned debug lane.
+
+        Phase-2 workers pass the node they just executed back into ``step`` so
+        that ordinary runtime failures can be debugged immediately.  The
+        mandatory audit-repair queue is allowed to replace root/selection
+        requests, but replacing this explicit continuation orphans the failed
+        draft: its root lock remains held while the worker starts following a
+        different repair transaction.
+
+        Audit/protocol failures deliberately remain under the mandatory
+        scheduler.  This guard therefore applies only to explicit, non-root
+        runtime/validation failures that are not mandatory-repair parents.
+        """
+        return bool(
+            node is not None
+            and node.stage != "root"
+            and not node.is_terminal
+            and (node.is_buggy is True or node.is_valid is False)
+            and not cls._is_mandatory_repair_parent(node)
+        )
+
     def _enqueue_mandatory_repair(self, node: SearchNode) -> None:
         """Queue one blocked node exactly once, independently of UCT/root locks."""
         protocol_repair.ensure_transaction(self, node)
@@ -717,7 +740,13 @@ class AgentSearch:
         duplicate_repair_request = False
         # Phase 1 must still create the three declared draft roles in order.
         # Mandatory repairs take priority only once normal execution/search begins.
-        if execute_immediately and draft_role is None and init_solution_path is None:
+        preserve_explicit_runtime_debug = self._is_explicit_runtime_debug_parent(node)
+        if (
+            execute_immediately
+            and draft_role is None
+            and init_solution_path is None
+            and not preserve_explicit_runtime_debug
+        ):
             claimed_repair_parent, duplicate_repair_request = (
                 self._claim_mandatory_repair_parent(
                     node,
@@ -732,6 +761,11 @@ class AgentSearch:
                     "[step] Mandatory repair parent is already in flight; worker will wait"
                 )
                 return None
+        elif preserve_explicit_runtime_debug:
+            logger.info(
+                "[step] Preserving explicit runtime-debug node %s; mandatory repairs remain queued",
+                node.id,
+            )
 
         if not node or node.stage == "root":
             node = node_selection.select_with_soft_switch(self)

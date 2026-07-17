@@ -13,7 +13,7 @@ from engine.run_control import (  # noqa: E402
     should_continue_focused_search,
 )
 from engine.agent_search import AgentSearch  # noqa: E402
-from engine.search_node import SearchNode  # noqa: E402
+from engine.search_node import Journal, SearchNode  # noqa: E402
 from utils.metric import WorstMetricValue  # noqa: E402
 
 
@@ -179,3 +179,84 @@ def test_parallel_repair_lanes_do_not_steal_each_others_roles():
     )
     assert duplicate is False
     assert replay_claim is replay
+
+
+def test_mandatory_repair_does_not_steal_explicit_runtime_debug(monkeypatch):
+    root = SearchNode(code="", plan="root", stage="root")
+    runtime_failure = SearchNode(
+        code="raise FileNotFoundError('missing model')",
+        plan="runtime failure",
+        stage="draft",
+        parent=root,
+        draft_role="memory_reproduction",
+        is_buggy=True,
+        leakage_audit={"status": "clean", "repair_required": False},
+    )
+    audit_failure = SearchNode(
+        code="fit_before_split()",
+        plan="audit failure",
+        stage="draft",
+        parent=root,
+        draft_role="memory_reproduction",
+        is_buggy=True,
+        is_valid=False,
+        audit_repair_required=True,
+        leakage_audit={"status": "blocked", "repair_required": True},
+    )
+
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.virtual_root = root
+    agent.journal = Journal(nodes=[root, runtime_failure, audit_failure])
+    agent.data_preview = "ready"
+    agent.search_start_time = 1.0
+    agent.current_step = 0
+    agent.branch_all_nodes = {}
+    agent.best_node = None
+    agent._init_mandatory_repair_scheduler()
+    agent._enqueue_mandatory_repair(audit_failure)
+
+    selected = []
+
+    def fake_run_single_step(parent_node, **_kwargs):
+        selected.append(parent_node)
+        return False, None
+
+    monkeypatch.setattr(agent, "_run_single_step", fake_run_single_step)
+
+    AgentSearch.step(
+        agent,
+        runtime_failure,
+        exec_callback=lambda *_args, **_kwargs: None,
+        mandatory_repair_role="memory_reproduction",
+    )
+
+    assert selected == [runtime_failure]
+    assert list(agent._mandatory_repair_queue) == [audit_failure]
+    assert not agent._mandatory_repair_inflight_ids
+    assert not agent._is_explicit_runtime_debug_parent(audit_failure)
+
+    AgentSearch.step(
+        agent,
+        audit_failure,
+        exec_callback=lambda *_args, **_kwargs: None,
+        mandatory_repair_role="memory_reproduction",
+    )
+    assert selected == [runtime_failure, audit_failure]
+    assert not agent._mandatory_repair_queue
+    assert not agent._mandatory_repair_inflight_ids
+
+
+def test_explicit_runtime_debug_guard_covers_invalid_and_excludes_terminal():
+    node = SearchNode(
+        code="print('invalid result')",
+        plan="invalid runtime result",
+        stage="debug",
+        is_buggy=False,
+        is_valid=False,
+        leakage_audit={"status": "clean", "repair_required": False},
+    )
+
+    assert AgentSearch._is_explicit_runtime_debug_parent(node) is True
+
+    node.is_terminal = True
+    assert AgentSearch._is_explicit_runtime_debug_parent(node) is False
