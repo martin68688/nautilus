@@ -125,6 +125,18 @@ def test_run_forest_builder_requires_allowlist_for_clean_mode():
         build_artifact(REPO / "mlevolve" / "runs", REPO / "paper-skills" / "hyper_memory" / "hyper_graph.json", require_clean_provenance=True)
 
 
+def test_builder_canonicalizes_full_orchestration_prefix_without_changing_run_id():
+    import sys
+
+    sys.path.insert(0, str(REPO / "paper-skills" / "hyper_memory"))
+    import build_run_forest_memory as builder
+
+    run_id = "20260717_032623_full-leaf-classification"
+    assert builder.run_short_id(run_id) == "20260717_032623"
+    assert builder.task_from_run_id(run_id) == "leaf-classification"
+    assert builder.canonical_task_id("full-full-aerial-cactus-identification") == "aerial-cactus-identification"
+
+
 def test_load_journals_rejects_non_allowlisted_runs_before_reading(tmp_path, monkeypatch):
     import sys
 

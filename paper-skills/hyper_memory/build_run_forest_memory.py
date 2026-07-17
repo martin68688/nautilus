@@ -224,10 +224,18 @@ def run_short_id(run_id: str) -> str:
     return run_id
 
 
+def canonical_task_id(task_id: str) -> str:
+    """Normalize orchestration-only run prefixes without changing raw run IDs."""
+    value = str(task_id or "").strip()
+    while value.startswith("full-"):
+        value = value[len("full-") :]
+    return value or "unknown"
+
+
 def task_from_run_id(run_id: str) -> str:
     prefix = run_short_id(run_id)
     task = run_id[len(prefix) :].lstrip("_")
-    return task or "unknown"
+    return canonical_task_id(task)
 
 
 def metric_value(node: dict[str, Any]) -> float | None:

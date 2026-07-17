@@ -148,6 +148,14 @@ TASK_PROFILES = {
     "new-york-city-taxi-fare-prediction": ("tabular", "tabular_regression"),
 }
 
+
+def canonical_task_id(task_id: str) -> str:
+    """Treat orchestration-only ``full-`` run names as the same benchmark."""
+    value = str(task_id or "").strip()
+    while value.startswith("full-"):
+        value = value[len("full-") :]
+    return value
+
 FAMILY_CODE_SIGNATURES = {
     "convnext_finetune": [("convnext",)],
     "modernbert_finetune": [("modernbert",)],
@@ -480,8 +488,13 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if not manifest_path.exists():
             raise FileNotFoundError(f"Replay target manifest not found: {manifest_path}")
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        canonical_task = canonical_task_id(task_id)
         target = next(
-            (item for item in manifest.get("targets", []) if str(item.get("task_id")) == task_id),
+            (
+                item
+                for item in manifest.get("targets", [])
+                if canonical_task_id(item.get("task_id")) == canonical_task
+            ),
             None,
         )
         if target is None:
@@ -504,7 +517,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         context: dict[str, Any] | None,
     ) -> dict[str, Any]:
         context = context or {}
-        modality, task_family = TASK_PROFILES.get(task_id, ("unknown", "general"))
+        canonical_task = canonical_task_id(task_id)
+        modality, task_family = TASK_PROFILES.get(canonical_task, ("unknown", "general"))
         preview = str(context.get("data_preview") or "")
         row_matches = [int(value) for value in re.findall(r"(?i)train[^\n]{0,80}?(\d{3,})", preview)]
         train_rows = max(row_matches) if row_matches else None
@@ -534,7 +548,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if not baseline:
                 raise ValueError("Layered strategy retrieval requires the cold-start primary model")
             excluded = [self._model_family_from_text(baseline)]
-            replay_family = self._replay_family(task_id)
+            replay_family = self._replay_family(canonical_task)
             if replay_family:
                 excluded.append(replay_family)
         gpu_count = 0
@@ -549,7 +563,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         checkpoint_text = str(context.get("coldstart") or context.get("baseline_model") or "")
         checkpoints = list(dict.fromkeys(re.findall(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", checkpoint_text)))[:8]
         return {
-            "task_id": task_id,
+            "task_id": canonical_task,
             "modality": modality,
             "task_family": task_family,
             "problem_type": task_family,
@@ -609,7 +623,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         rows = []
         for transition_id in self._transitions_by_sop.get(sop_id, []):
             transition = self.nodes[transition_id]
-            if str(transition.get("task") or "") != task_id:
+            if canonical_task_id(transition.get("task")) != canonical_task_id(task_id):
                 continue
             eligible, reason = self._positive_transition(transition_id)
             if not eligible:
@@ -1080,7 +1094,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         }
 
     def _task_family_for_query(self, task_id: str, task_desc: str) -> str:
-        configured = TASK_PROFILES.get(str(task_id or ""))
+        task_id = canonical_task_id(task_id)
+        configured = TASK_PROFILES.get(task_id)
         if configured:
             return configured[1]
         text = f"{task_id} {task_desc}".lower()
@@ -1439,7 +1454,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         task_id: str,
         task_family: str,
     ) -> float:
-        source_task = str(transition.get("task") or "")
+        source_task = canonical_task_id(transition.get("task"))
+        task_id = canonical_task_id(task_id)
         if source_task and source_task == task_id:
             return 1.0
         source_family = self._task_family_for_query(source_task, source_task.replace("-", " "))
@@ -1454,6 +1470,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if any(self._task_families_compatible(task_family, value) for value in attached_families):
             return 0.75
         return 0.0
+
+    def _task_score(self, node: dict[str, Any], task_id: str, task_desc: str) -> float:
+        canonical_node = dict(node)
+        canonical_node["task"] = canonical_task_id(node.get("task"))
+        return super()._task_score(canonical_node, canonical_task_id(task_id), task_desc)
 
     def _debug_parent_failure_text(self, transition: dict[str, Any]) -> str:
         parent = self.nodes.get(str(transition.get("parent_node_id") or ""), {})
@@ -1676,7 +1697,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 and math.isfinite(float(improvement))
                 and improvement > 0
             ):
-                positive_improvements_by_task[str(candidate.get("task") or "unknown")].append(float(improvement))
+                positive_improvements_by_task[canonical_task_id(candidate.get("task") or "unknown")].append(
+                    float(improvement)
+                )
         for values in positive_improvements_by_task.values():
             values.sort()
         rows: list[dict[str, Any]] = []
@@ -1699,7 +1722,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 and math.isfinite(float(improvement))
                 and improvement > 0
             ):
-                task_improvements = positive_improvements_by_task.get(str(node.get("task") or "unknown"), [])
+                task_improvements = positive_improvements_by_task.get(
+                    canonical_task_id(node.get("task") or "unknown"), []
+                )
                 metric_quality = (
                     sum(value <= float(improvement) for value in task_improvements) / len(task_improvements)
                     if task_improvements else 0.0

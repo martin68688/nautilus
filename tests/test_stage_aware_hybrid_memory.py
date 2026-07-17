@@ -804,6 +804,19 @@ def test_leaf_runtime_context_with_dinov3_reaches_clean_layered_retrieval():
         assert pack["execution_safety_gate"]["all_outputs_clean"] is True
 
 
+def test_full_prefixed_historical_tasks_are_task_local_for_runtime_retrieval():
+    layer = _real_layered()
+    assert layer._task_score(
+        {"task": "full-leaf-classification"},
+        "leaf-classification",
+        "leaf image classification",
+    ) == pytest.approx(0.35)
+    assert layer._task_family_for_query(
+        "full-aerial-cactus-identification",
+        "binary image classification",
+    ) == "image_binary_classification"
+
+
 def test_layered_l1_l2_are_isolated_from_baseline_and_replay():
     layer = _real_layered()
     for role in ("coldstart_baseline", "memory_reproduction"):
