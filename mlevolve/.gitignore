@@ -96,6 +96,12 @@ runs/20260502_041127_openadmet-expansionrx/logs/journal.json
 !runs/**/node_id.txt
 !runs/**/best_solution.py
 !runs/**/config.yaml
+# Security boundary: runtime journals and rendered configs can contain
+# interpolated credentials. They stay local/PVC-only even though other compact
+# run artifacts remain eligible for explicit versioning.
+runs/**/config.yaml
+runs/**/journal.json
+runs/**/filtered_journal.json
 runs_backup/
 dataset/
 mle-bench/
