@@ -1,0 +1,33 @@
+{
+  "schema": "runforest_causal_granularity_benchmark_v2_manifest",
+  "graph_path": "/Users/haoming/Downloads/nautilus/paper-skills/hyper_memory/run_forest_graph.json",
+  "graph_sha256": "72f057236266f30359995c58de84cff71faf6e13a870d553e6987d7e8032740a",
+  "index_path": "/Users/haoming/Downloads/nautilus/paper-skills/hyper_memory/run_forest_index.npz",
+  "index_sha256": "1ca0b9d60810bb876963af291ca0449b6dc00f216f91c6b7f51cddf3df2472f1",
+  "taxonomy_sha256": "61b20bbd7e70bffaea5cfcd4a01f2a79468eb3e56f96b0b016e6a5336b1318bb",
+  "episode_count": 38,
+  "covered_episode_count": 20,
+  "coverage_gap_episode_count": 18,
+  "failure_mechanisms": {
+    "definition_order": 5,
+    "dependency_api": 4,
+    "evaluation_reuse": 1,
+    "fit_scope_leakage": 4,
+    "gradient_lifecycle": 2,
+    "numerical_instability": 5,
+    "other": 4,
+    "path_io": 1,
+    "resource_oom": 4,
+    "tensor_alignment": 8
+  },
+  "source_run_count": 12,
+  "by_split": {
+    "dev": 13,
+    "test": 25
+  },
+  "query_sha256": "7d722b109d358ddc592ed14021cc5a378ebc1dc40d85b37437784354d8e8b711",
+  "gold_sha256": "649bc90272b3a0773dff2bdabb975e49748f325a4c800b172cb69c9535e69c5a",
+  "retrospective": true,
+  "blind_test": false,
+  "failure_label_independence": "separate_code_path_but_semantically_aligned_silver_labels"
+}

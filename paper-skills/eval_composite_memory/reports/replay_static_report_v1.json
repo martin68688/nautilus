@@ -1,0 +1,22 @@
+{
+  "schema": "runforest_composite_replay_report_v1",
+  "case_count": 48,
+  "structural_template_count": 16,
+  "task_context_count": 6,
+  "expected_issue_recall": 1.0,
+  "blocked_before_execution_rate": 1.0,
+  "source_execution_count": 0,
+  "source_ranked_count": 0,
+  "candidate_count": 0,
+  "candidate_runtime_validated_count": 0,
+  "semantic_review_count": 0,
+  "full_five_stage_repair_count": 0,
+  "replay_safety_claim_allowed": true,
+  "replay_repair_success_claim_allowed": false,
+  "receipt_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/replay_static_receipts_v1.jsonl",
+  "receipt_sha256": "3e9fdd6cf52e65d99f5f39cd9ce35e176bb37cf06e39c50f8029939528f3190f",
+  "limitations": [
+    "Static detector coverage is diagnostic and does not replace runtime provenance.",
+    "No candidate is executed by this runner; final_holdout claims require a separate isolated evaluator."
+  ]
+}

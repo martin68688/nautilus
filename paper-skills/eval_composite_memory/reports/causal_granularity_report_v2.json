@@ -1,0 +1,694 @@
+{
+  "schema": "runforest_causal_granularity_benchmark_v2_report",
+  "code_commit": "422f9051a47be02cfd627766de0b9a3266b88362",
+  "memory_manifest": {
+    "schema": "runforest_causal_granularity_benchmark_v2_manifest",
+    "graph_path": "/Users/haoming/Downloads/nautilus/paper-skills/hyper_memory/run_forest_graph.json",
+    "graph_sha256": "72f057236266f30359995c58de84cff71faf6e13a870d553e6987d7e8032740a",
+    "index_path": "/Users/haoming/Downloads/nautilus/paper-skills/hyper_memory/run_forest_index.npz",
+    "index_sha256": "1ca0b9d60810bb876963af291ca0449b6dc00f216f91c6b7f51cddf3df2472f1",
+    "taxonomy_sha256": "61b20bbd7e70bffaea5cfcd4a01f2a79468eb3e56f96b0b016e6a5336b1318bb",
+    "episode_count": 38,
+    "covered_episode_count": 20,
+    "coverage_gap_episode_count": 18,
+    "failure_mechanisms": {
+      "definition_order": 5,
+      "dependency_api": 4,
+      "evaluation_reuse": 1,
+      "fit_scope_leakage": 4,
+      "gradient_lifecycle": 2,
+      "numerical_instability": 5,
+      "other": 4,
+      "path_io": 1,
+      "resource_oom": 4,
+      "tensor_alignment": 8
+    },
+    "source_run_count": 12,
+    "by_split": {
+      "dev": 13,
+      "test": 25
+    },
+    "query_sha256": "7d722b109d358ddc592ed14021cc5a378ebc1dc40d85b37437784354d8e8b711",
+    "gold_sha256": "649bc90272b3a0773dff2bdabb975e49748f325a4c800b172cb69c9535e69c5a",
+    "retrospective": true,
+    "blind_test": false,
+    "failure_label_independence": "separate_code_path_but_semantically_aligned_silver_labels"
+  },
+  "tracks": {
+    "stage_granularity": {
+      "ungated_flat": {
+        "episode_count": 120,
+        "granularity_precision_at_5": 0.4466666666666667,
+        "detail_intrusion_at_5": 0.5533333333333333,
+        "empty_result_rate": 0.0,
+        "by_stage": {
+          "draft": {
+            "granularity_precision_at_5": 0.24166666666666672,
+            "detail_intrusion_at_5": 0.7583333333333334
+          },
+          "model_design": {
+            "granularity_precision_at_5": 0.3083333333333334,
+            "detail_intrusion_at_5": 0.6916666666666668
+          },
+          "improve": {
+            "granularity_precision_at_5": 0.6666666666666667,
+            "detail_intrusion_at_5": 0.3333333333333333
+          },
+          "debug": {
+            "granularity_precision_at_5": 0.4555555555555556,
+            "detail_intrusion_at_5": 0.5444444444444445
+          }
+        },
+        "mean_latency_sec": 0.00591799266791592
+      },
+      "tree_only": {
+        "episode_count": 120,
+        "granularity_precision_at_5": 0.7583333333333333,
+        "detail_intrusion_at_5": 0.0,
+        "empty_result_rate": 0.24166666666666667,
+        "by_stage": {
+          "draft": {
+            "granularity_precision_at_5": 0.5,
+            "detail_intrusion_at_5": 0.0
+          },
+          "model_design": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          },
+          "improve": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          },
+          "debug": {
+            "granularity_precision_at_5": 0.5277777777777778,
+            "detail_intrusion_at_5": 0.0
+          }
+        },
+        "mean_latency_sec": 0.019202246815742303
+      },
+      "sop_only": {
+        "episode_count": 120,
+        "granularity_precision_at_5": 1.0,
+        "detail_intrusion_at_5": 0.0,
+        "empty_result_rate": 0.0,
+        "by_stage": {
+          "draft": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          },
+          "model_design": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          },
+          "improve": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          },
+          "debug": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          }
+        },
+        "mean_latency_sec": 0.019117671235774954
+      },
+      "stage_hybrid_dynamic": {
+        "episode_count": 120,
+        "granularity_precision_at_5": 1.0,
+        "detail_intrusion_at_5": 0.0,
+        "empty_result_rate": 0.0,
+        "by_stage": {
+          "draft": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          },
+          "model_design": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          },
+          "improve": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          },
+          "debug": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          }
+        },
+        "mean_latency_sec": 0.01774774897688379
+      },
+      "oracle_level": {
+        "episode_count": 120,
+        "granularity_precision_at_5": 1.0,
+        "detail_intrusion_at_5": 0.0,
+        "empty_result_rate": 0.0,
+        "by_stage": {
+          "draft": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          },
+          "model_design": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          },
+          "improve": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          },
+          "debug": {
+            "granularity_precision_at_5": 1.0,
+            "detail_intrusion_at_5": 0.0
+          }
+        },
+        "mean_latency_sec": 0.00011513160619263848
+      }
+    },
+    "causal_debug_transfer": {
+      "sop_only": {
+        "episode_count": 38,
+        "covered_episode_count": 20,
+        "coverage_gap_episode_count": 18,
+        "route_accuracy": 0.47368421052631576,
+        "tree_precision_on_covered": 0.0,
+        "fallback_accuracy_on_gaps": 1.0,
+        "transition_hit_at_1": 0.0,
+        "transition_recall_at_3": 0.0,
+        "transition_recall_at_5": 0.0,
+        "transition_mrr": 0.0,
+        "transition_ndcg_at_5": 0.0,
+        "causal_sop_recall_at_5": 0.0,
+        "selective_transition_success_at_1": 0.47368421052631576,
+        "selective_decision_accuracy_at_1": 0.47368421052631576,
+        "top_packet_complete_rate_when_tree": 0.0,
+        "unsafe_count": 0,
+        "source_run_escape_count": 0,
+        "mean_latency_sec": 2.3518836027697513e-06,
+        "by_split": {
+          "dev": {
+            "episode_count": 13,
+            "covered_episode_count": 8,
+            "coverage_gap_episode_count": 5,
+            "route_accuracy": 0.38461538461538464,
+            "tree_precision_on_covered": 0.0,
+            "fallback_accuracy_on_gaps": 1.0,
+            "transition_hit_at_1": 0.0,
+            "transition_recall_at_3": 0.0,
+            "transition_recall_at_5": 0.0,
+            "transition_mrr": 0.0,
+            "transition_ndcg_at_5": 0.0,
+            "causal_sop_recall_at_5": 0.0,
+            "selective_transition_success_at_1": 0.38461538461538464,
+            "selective_decision_accuracy_at_1": 0.38461538461538464,
+            "top_packet_complete_rate_when_tree": 0.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 2.371720396555387e-06
+          },
+          "test": {
+            "episode_count": 25,
+            "covered_episode_count": 12,
+            "coverage_gap_episode_count": 13,
+            "route_accuracy": 0.52,
+            "tree_precision_on_covered": 0.0,
+            "fallback_accuracy_on_gaps": 1.0,
+            "transition_hit_at_1": 0.0,
+            "transition_recall_at_3": 0.0,
+            "transition_recall_at_5": 0.0,
+            "transition_mrr": 0.0,
+            "transition_ndcg_at_5": 0.0,
+            "causal_sop_recall_at_5": 0.0,
+            "selective_transition_success_at_1": 0.52,
+            "selective_decision_accuracy_at_1": 0.52,
+            "top_packet_complete_rate_when_tree": 0.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 2.3415684700012205e-06
+          }
+        }
+      },
+      "random_transition": {
+        "episode_count": 38,
+        "covered_episode_count": 20,
+        "coverage_gap_episode_count": 18,
+        "route_accuracy": 0.5263157894736842,
+        "tree_precision_on_covered": 1.0,
+        "fallback_accuracy_on_gaps": 0.0,
+        "transition_hit_at_1": 0.0,
+        "transition_recall_at_3": 0.0,
+        "transition_recall_at_5": 0.0125,
+        "transition_mrr": 0.01,
+        "transition_ndcg_at_5": 0.007550980911390262,
+        "causal_sop_recall_at_5": 0.025,
+        "selective_transition_success_at_1": 0.0,
+        "selective_decision_accuracy_at_1": 0.0,
+        "top_packet_complete_rate_when_tree": 1.0,
+        "unsafe_count": 0,
+        "source_run_escape_count": 0,
+        "mean_latency_sec": 7.802527397871017e-05,
+        "by_split": {
+          "dev": {
+            "episode_count": 13,
+            "covered_episode_count": 8,
+            "coverage_gap_episode_count": 5,
+            "route_accuracy": 0.6153846153846154,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 0.0,
+            "transition_hit_at_1": 0.0,
+            "transition_recall_at_3": 0.0,
+            "transition_recall_at_5": 0.0,
+            "transition_mrr": 0.0,
+            "transition_ndcg_at_5": 0.0,
+            "causal_sop_recall_at_5": 0.0,
+            "selective_transition_success_at_1": 0.0,
+            "selective_decision_accuracy_at_1": 0.0,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 7.893263290707882e-05
+          },
+          "test": {
+            "episode_count": 25,
+            "covered_episode_count": 12,
+            "coverage_gap_episode_count": 13,
+            "route_accuracy": 0.48,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 0.0,
+            "transition_hit_at_1": 0.0,
+            "transition_recall_at_3": 0.0,
+            "transition_recall_at_5": 0.020833333333333332,
+            "transition_mrr": 0.016666666666666666,
+            "transition_ndcg_at_5": 0.012584968185650436,
+            "causal_sop_recall_at_5": 0.041666666666666664,
+            "selective_transition_success_at_1": 0.0,
+            "selective_decision_accuracy_at_1": 0.0,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 7.755344733595849e-05
+          }
+        }
+      },
+      "task_only_transition": {
+        "episode_count": 38,
+        "covered_episode_count": 20,
+        "coverage_gap_episode_count": 18,
+        "route_accuracy": 0.5263157894736842,
+        "tree_precision_on_covered": 1.0,
+        "fallback_accuracy_on_gaps": 0.0,
+        "transition_hit_at_1": 0.1,
+        "transition_recall_at_3": 0.3,
+        "transition_recall_at_5": 0.55,
+        "transition_mrr": 0.275,
+        "transition_ndcg_at_5": 0.33455520428609065,
+        "causal_sop_recall_at_5": 0.575,
+        "selective_transition_success_at_1": 0.05263157894736842,
+        "selective_decision_accuracy_at_1": 0.05263157894736842,
+        "top_packet_complete_rate_when_tree": 1.0,
+        "unsafe_count": 0,
+        "source_run_escape_count": 0,
+        "mean_latency_sec": 9.085093379804963e-05,
+        "by_split": {
+          "dev": {
+            "episode_count": 13,
+            "covered_episode_count": 8,
+            "coverage_gap_episode_count": 5,
+            "route_accuracy": 0.6153846153846154,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 0.0,
+            "transition_hit_at_1": 0.0,
+            "transition_recall_at_3": 0.1875,
+            "transition_recall_at_5": 0.8125,
+            "transition_mrr": 0.29166666666666663,
+            "transition_ndcg_at_5": 0.4130314098109089,
+            "causal_sop_recall_at_5": 0.8125,
+            "selective_transition_success_at_1": 0.0,
+            "selective_decision_accuracy_at_1": 0.0,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 8.988774453218166e-05
+          },
+          "test": {
+            "episode_count": 25,
+            "covered_episode_count": 12,
+            "coverage_gap_episode_count": 13,
+            "route_accuracy": 0.48,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 0.0,
+            "transition_hit_at_1": 0.16666666666666666,
+            "transition_recall_at_3": 0.375,
+            "transition_recall_at_5": 0.375,
+            "transition_mrr": 0.2638888888888889,
+            "transition_ndcg_at_5": 0.2822377339362118,
+            "causal_sop_recall_at_5": 0.4166666666666667,
+            "selective_transition_success_at_1": 0.08,
+            "selective_decision_accuracy_at_1": 0.08,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 9.135179221630097e-05
+          }
+        }
+      },
+      "lexical_transition": {
+        "episode_count": 38,
+        "covered_episode_count": 20,
+        "coverage_gap_episode_count": 18,
+        "route_accuracy": 0.5263157894736842,
+        "tree_precision_on_covered": 1.0,
+        "fallback_accuracy_on_gaps": 0.0,
+        "transition_hit_at_1": 0.2,
+        "transition_recall_at_3": 0.22916666666666669,
+        "transition_recall_at_5": 0.33333333333333337,
+        "transition_mrr": 0.3058333333333333,
+        "transition_ndcg_at_5": 0.268944819510356,
+        "causal_sop_recall_at_5": 0.35833333333333334,
+        "selective_transition_success_at_1": 0.10526315789473684,
+        "selective_decision_accuracy_at_1": 0.10526315789473684,
+        "top_packet_complete_rate_when_tree": 1.0,
+        "unsafe_count": 0,
+        "source_run_escape_count": 0,
+        "mean_latency_sec": 0.003816631573595499,
+        "by_split": {
+          "dev": {
+            "episode_count": 13,
+            "covered_episode_count": 8,
+            "coverage_gap_episode_count": 5,
+            "route_accuracy": 0.6153846153846154,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 0.0,
+            "transition_hit_at_1": 0.125,
+            "transition_recall_at_3": 0.10416666666666666,
+            "transition_recall_at_5": 0.3333333333333333,
+            "transition_mrr": 0.24375,
+            "transition_ndcg_at_5": 0.21576414382506687,
+            "causal_sop_recall_at_5": 0.3125,
+            "selective_transition_success_at_1": 0.07692307692307693,
+            "selective_decision_accuracy_at_1": 0.07692307692307693,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 0.003902618630001178
+          },
+          "test": {
+            "episode_count": 25,
+            "covered_episode_count": 12,
+            "coverage_gap_episode_count": 13,
+            "route_accuracy": 0.48,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 0.0,
+            "transition_hit_at_1": 0.25,
+            "transition_recall_at_3": 0.3125,
+            "transition_recall_at_5": 0.3333333333333333,
+            "transition_mrr": 0.34722222222222215,
+            "transition_ndcg_at_5": 0.30439860330054874,
+            "causal_sop_recall_at_5": 0.38888888888888884,
+            "selective_transition_success_at_1": 0.12,
+            "selective_decision_accuracy_at_1": 0.12,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 0.0037719183042645454
+          }
+        }
+      },
+      "legacy_success_tree": {
+        "episode_count": 38,
+        "covered_episode_count": 20,
+        "coverage_gap_episode_count": 18,
+        "route_accuracy": 0.5263157894736842,
+        "tree_precision_on_covered": 1.0,
+        "fallback_accuracy_on_gaps": 0.0,
+        "transition_hit_at_1": 0.25,
+        "transition_recall_at_3": 0.5,
+        "transition_recall_at_5": 0.525,
+        "transition_mrr": 0.38333333333333325,
+        "transition_ndcg_at_5": 0.38537845223185646,
+        "causal_sop_recall_at_5": 0.55,
+        "selective_transition_success_at_1": 0.13157894736842105,
+        "selective_decision_accuracy_at_1": 0.13157894736842105,
+        "top_packet_complete_rate_when_tree": 1.0,
+        "unsafe_count": 0,
+        "source_run_escape_count": 0,
+        "mean_latency_sec": 0.0027356678129811037,
+        "by_split": {
+          "dev": {
+            "episode_count": 13,
+            "covered_episode_count": 8,
+            "coverage_gap_episode_count": 5,
+            "route_accuracy": 0.6153846153846154,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 0.0,
+            "transition_hit_at_1": 0.125,
+            "transition_recall_at_3": 0.625,
+            "transition_recall_at_5": 0.6875,
+            "transition_mrr": 0.3541666666666667,
+            "transition_ndcg_at_5": 0.4187931131918443,
+            "causal_sop_recall_at_5": 0.6875,
+            "selective_transition_success_at_1": 0.07692307692307693,
+            "selective_decision_accuracy_at_1": 0.07692307692307693,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 0.002727198736885419
+          },
+          "test": {
+            "episode_count": 25,
+            "covered_episode_count": 12,
+            "coverage_gap_episode_count": 13,
+            "route_accuracy": 0.48,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 0.0,
+            "transition_hit_at_1": 0.3333333333333333,
+            "transition_recall_at_3": 0.4166666666666667,
+            "transition_recall_at_5": 0.4166666666666667,
+            "transition_mrr": 0.40277777777777773,
+            "transition_ndcg_at_5": 0.36310201159186456,
+            "causal_sop_recall_at_5": 0.4583333333333333,
+            "selective_transition_success_at_1": 0.16,
+            "selective_decision_accuracy_at_1": 0.16,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 0.0027400717325508596
+          }
+        }
+      },
+      "causal_tree_fixed_075": {
+        "episode_count": 38,
+        "covered_episode_count": 20,
+        "coverage_gap_episode_count": 18,
+        "route_accuracy": 0.8421052631578947,
+        "tree_precision_on_covered": 0.9,
+        "fallback_accuracy_on_gaps": 0.7777777777777778,
+        "transition_hit_at_1": 0.75,
+        "transition_recall_at_3": 0.6541666666666666,
+        "transition_recall_at_5": 0.7208333333333333,
+        "transition_mrr": 0.7625,
+        "transition_ndcg_at_5": 0.7105126601580898,
+        "causal_sop_recall_at_5": 0.7916666666666667,
+        "selective_transition_success_at_1": 0.7631578947368421,
+        "selective_decision_accuracy_at_1": 0.7631578947368421,
+        "top_packet_complete_rate_when_tree": 1.0,
+        "unsafe_count": 0,
+        "source_run_escape_count": 0,
+        "mean_latency_sec": 0.004746309064916875,
+        "by_split": {
+          "dev": {
+            "episode_count": 13,
+            "covered_episode_count": 8,
+            "coverage_gap_episode_count": 5,
+            "route_accuracy": 1.0,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 1.0,
+            "transition_hit_at_1": 0.75,
+            "transition_recall_at_3": 0.6875,
+            "transition_recall_at_5": 0.8125,
+            "transition_mrr": 0.78125,
+            "transition_ndcg_at_5": 0.7643016285134182,
+            "causal_sop_recall_at_5": 0.8125,
+            "selective_transition_success_at_1": 0.8461538461538461,
+            "selective_decision_accuracy_at_1": 0.8461538461538461,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 0.005664794669988064
+          },
+          "test": {
+            "episode_count": 25,
+            "covered_episode_count": 12,
+            "coverage_gap_episode_count": 13,
+            "route_accuracy": 0.76,
+            "tree_precision_on_covered": 0.8333333333333334,
+            "fallback_accuracy_on_gaps": 0.6923076923076923,
+            "transition_hit_at_1": 0.75,
+            "transition_recall_at_3": 0.6319444444444444,
+            "transition_recall_at_5": 0.6597222222222222,
+            "transition_mrr": 0.75,
+            "transition_ndcg_at_5": 0.6746533479212041,
+            "causal_sop_recall_at_5": 0.7777777777777778,
+            "selective_transition_success_at_1": 0.72,
+            "selective_decision_accuracy_at_1": 0.72,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 0.004268696550279855
+          }
+        }
+      },
+      "causal_tree_dynamic": {
+        "episode_count": 38,
+        "covered_episode_count": 20,
+        "coverage_gap_episode_count": 18,
+        "route_accuracy": 0.868421052631579,
+        "tree_precision_on_covered": 0.8,
+        "fallback_accuracy_on_gaps": 0.9444444444444444,
+        "transition_hit_at_1": 0.65,
+        "transition_recall_at_3": 0.5541666666666666,
+        "transition_recall_at_5": 0.6208333333333333,
+        "transition_mrr": 0.6625,
+        "transition_ndcg_at_5": 0.6105126601580898,
+        "causal_sop_recall_at_5": 0.6916666666666667,
+        "selective_transition_success_at_1": 0.7894736842105263,
+        "selective_decision_accuracy_at_1": 0.7894736842105263,
+        "top_packet_complete_rate_when_tree": 1.0,
+        "unsafe_count": 0,
+        "source_run_escape_count": 0,
+        "mean_latency_sec": 0.004566317963364877,
+        "by_split": {
+          "dev": {
+            "episode_count": 13,
+            "covered_episode_count": 8,
+            "coverage_gap_episode_count": 5,
+            "route_accuracy": 1.0,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 1.0,
+            "transition_hit_at_1": 0.75,
+            "transition_recall_at_3": 0.6875,
+            "transition_recall_at_5": 0.8125,
+            "transition_mrr": 0.78125,
+            "transition_ndcg_at_5": 0.7643016285134182,
+            "causal_sop_recall_at_5": 0.8125,
+            "selective_transition_success_at_1": 0.8461538461538461,
+            "selective_decision_accuracy_at_1": 0.8461538461538461,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 0.005367012801938332
+          },
+          "test": {
+            "episode_count": 25,
+            "covered_episode_count": 12,
+            "coverage_gap_episode_count": 13,
+            "route_accuracy": 0.8,
+            "tree_precision_on_covered": 0.6666666666666666,
+            "fallback_accuracy_on_gaps": 0.9230769230769231,
+            "transition_hit_at_1": 0.5833333333333334,
+            "transition_recall_at_3": 0.46527777777777773,
+            "transition_recall_at_5": 0.4930555555555556,
+            "transition_mrr": 0.5833333333333334,
+            "transition_ndcg_at_5": 0.5079866812545375,
+            "causal_sop_recall_at_5": 0.6111111111111112,
+            "selective_transition_success_at_1": 0.76,
+            "selective_decision_accuracy_at_1": 0.76,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 0.00414995664730668
+          }
+        }
+      },
+      "oracle_transition": {
+        "episode_count": 38,
+        "covered_episode_count": 20,
+        "coverage_gap_episode_count": 18,
+        "route_accuracy": 1.0,
+        "tree_precision_on_covered": 1.0,
+        "fallback_accuracy_on_gaps": 1.0,
+        "transition_hit_at_1": 1.0,
+        "transition_recall_at_3": 0.9875,
+        "transition_recall_at_5": 1.0,
+        "transition_mrr": 1.0,
+        "transition_ndcg_at_5": 1.0,
+        "causal_sop_recall_at_5": 1.0,
+        "selective_transition_success_at_1": 1.0,
+        "selective_decision_accuracy_at_1": 1.0,
+        "top_packet_complete_rate_when_tree": 1.0,
+        "unsafe_count": 0,
+        "source_run_escape_count": 0,
+        "mean_latency_sec": 6.559243621794801e-06,
+        "by_split": {
+          "dev": {
+            "episode_count": 13,
+            "covered_episode_count": 8,
+            "coverage_gap_episode_count": 5,
+            "route_accuracy": 1.0,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 1.0,
+            "transition_hit_at_1": 1.0,
+            "transition_recall_at_3": 1.0,
+            "transition_recall_at_5": 1.0,
+            "transition_mrr": 1.0,
+            "transition_ndcg_at_5": 1.0,
+            "causal_sop_recall_at_5": 1.0,
+            "selective_transition_success_at_1": 1.0,
+            "selective_decision_accuracy_at_1": 1.0,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 7.1795299076117e-06
+          },
+          "test": {
+            "episode_count": 25,
+            "covered_episode_count": 12,
+            "coverage_gap_episode_count": 13,
+            "route_accuracy": 1.0,
+            "tree_precision_on_covered": 1.0,
+            "fallback_accuracy_on_gaps": 1.0,
+            "transition_hit_at_1": 1.0,
+            "transition_recall_at_3": 0.9791666666666666,
+            "transition_recall_at_5": 1.0,
+            "transition_mrr": 1.0,
+            "transition_ndcg_at_5": 1.0,
+            "causal_sop_recall_at_5": 1.0,
+            "selective_transition_success_at_1": 1.0,
+            "selective_decision_accuracy_at_1": 1.0,
+            "top_packet_complete_rate_when_tree": 1.0,
+            "unsafe_count": 0,
+            "source_run_escape_count": 0,
+            "mean_latency_sec": 6.236694753170014e-06
+          }
+        }
+      }
+    }
+  },
+  "primary_comparison": {
+    "method": "causal_tree_dynamic",
+    "baseline": "legacy_success_tree",
+    "split": "test",
+    "route_accuracy_delta": 0.32000000000000006,
+    "transition_mrr_delta": 0.18055555555555564,
+    "selective_decision_accuracy_at_1_delta": 0.6
+  },
+  "fallback_ablation": {
+    "method": "causal_tree_dynamic",
+    "baseline": "causal_tree_fixed_075",
+    "split": "test",
+    "route_accuracy_delta": 0.040000000000000036,
+    "fallback_accuracy_delta": 0.23076923076923084,
+    "transition_mrr_delta": -0.16666666666666663,
+    "selective_decision_accuracy_at_1_delta": 0.040000000000000036
+  },
+  "claims": {
+    "granularity_gate_diagnostic_allowed": true,
+    "cross_run_causal_retrieval_diagnostic_allowed": true,
+    "blind_generalization_claim_allowed": false,
+    "downstream_agent_success_claim_allowed": false,
+    "reasons": [
+      "The benchmark is retrospective and the graph was visible during system development.",
+      "Failure labels are deterministic silver labels rather than blinded expert annotations.",
+      "Retrieving a historically successful transition is not the same as executing a successful new repair."
+    ]
+  },
+  "receipt_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/causal_granularity_receipts_v2.jsonl",
+  "receipt_sha256": "5a5c59bea38116c4dec86b5bde3e936ca6544abdf772809910b55ca8c1a7f636"
+}

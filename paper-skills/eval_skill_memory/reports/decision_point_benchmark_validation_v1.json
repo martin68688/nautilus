@@ -1,0 +1,34 @@
+{
+  "schema": "runforest_decision_point_benchmark_validation_v1",
+  "valid": true,
+  "errors": [],
+  "query_count": 29,
+  "seed_query_count": 60,
+  "strict_retention_rate": 0.48333333333333334,
+  "sampling_design": "deterministic convenience seeds filtered by strict evidence and safety eligibility; not a random task sample",
+  "task_family_count": 6,
+  "by_task_family": {
+    "image_binary_classification": 3,
+    "image_classification": 5,
+    "image_restoration": 5,
+    "tabular_multiclass": 3,
+    "tabular_regression": 3,
+    "text_classification": 10
+  },
+  "by_stage": {
+    "debug": 9,
+    "draft": 5,
+    "improve": 15
+  },
+  "candidate_pool_min": 286,
+  "candidate_pool_max": 286,
+  "historical_trajectory_gold_used": false,
+  "gold_sets_unique_globally": true,
+  "cross_task_gold_allowed": false,
+  "general_task_family_escape_hatch_allowed": false,
+  "blocked_distractors_per_query": 5,
+  "blocked_distractors_task_matched": true,
+  "blind_annotator_requirement": 2,
+  "paper_claim_ready": false,
+  "claim_gate_reason": "Silver labels are diagnostic only; two blind annotators and adjudication are still required."
+}

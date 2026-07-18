@@ -1,0 +1,1575 @@
+{
+  "schema": "runforest_composite_replay_matrix_v1",
+  "conditions": {
+    "R0": {
+      "label": "reject_drop",
+      "agent_generation": false,
+      "staged_protocol": false,
+      "preservation_contract_exposed": false,
+      "runtime_provenance_required": false
+    },
+    "R1": {
+      "label": "ordinary_debug",
+      "agent_generation": true,
+      "staged_protocol": false,
+      "preservation_contract_exposed": false,
+      "runtime_provenance_required": false
+    },
+    "R2": {
+      "label": "staged_without_preservation",
+      "agent_generation": true,
+      "staged_protocol": true,
+      "preservation_contract_exposed": false,
+      "runtime_provenance_required": true
+    },
+    "R3": {
+      "label": "staged_with_preservation_and_runtime",
+      "agent_generation": true,
+      "staged_protocol": true,
+      "preservation_contract_exposed": true,
+      "runtime_provenance_required": true
+    }
+  },
+  "case_count": 48,
+  "run_count": 192,
+  "runs": [
+    {
+      "run_id": "repair::group_time_aware::transductive_fit::v1::R0",
+      "case_id": "repair::group_time_aware::transductive_fit::v1",
+      "condition": "R0",
+      "task_family": "group_time_aware",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::group_time_aware::transductive_fit::v1::R1",
+      "case_id": "repair::group_time_aware::transductive_fit::v1",
+      "condition": "R1",
+      "task_family": "group_time_aware",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::group_time_aware::transductive_fit::v1::R2",
+      "case_id": "repair::group_time_aware::transductive_fit::v1",
+      "condition": "R2",
+      "task_family": "group_time_aware",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::group_time_aware::transductive_fit::v1::R3",
+      "case_id": "repair::group_time_aware::transductive_fit::v1",
+      "condition": "R3",
+      "task_family": "group_time_aware",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::image_classification::transductive_fit::v1::R0",
+      "case_id": "repair::image_classification::transductive_fit::v1",
+      "condition": "R0",
+      "task_family": "image_classification",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::image_classification::transductive_fit::v1::R1",
+      "case_id": "repair::image_classification::transductive_fit::v1",
+      "condition": "R1",
+      "task_family": "image_classification",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::image_classification::transductive_fit::v1::R2",
+      "case_id": "repair::image_classification::transductive_fit::v1",
+      "condition": "R2",
+      "task_family": "image_classification",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::image_classification::transductive_fit::v1::R3",
+      "case_id": "repair::image_classification::transductive_fit::v1",
+      "condition": "R3",
+      "task_family": "image_classification",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::image_restoration::transductive_fit::v1::R0",
+      "case_id": "repair::image_restoration::transductive_fit::v1",
+      "condition": "R0",
+      "task_family": "image_restoration",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::image_restoration::transductive_fit::v1::R1",
+      "case_id": "repair::image_restoration::transductive_fit::v1",
+      "condition": "R1",
+      "task_family": "image_restoration",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::image_restoration::transductive_fit::v1::R2",
+      "case_id": "repair::image_restoration::transductive_fit::v1",
+      "condition": "R2",
+      "task_family": "image_restoration",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::image_restoration::transductive_fit::v1::R3",
+      "case_id": "repair::image_restoration::transductive_fit::v1",
+      "condition": "R3",
+      "task_family": "image_restoration",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::transductive_fit::v2::R0",
+      "case_id": "repair::tabular_multiclass::transductive_fit::v2",
+      "condition": "R0",
+      "task_family": "tabular_multiclass",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::transductive_fit::v2::R1",
+      "case_id": "repair::tabular_multiclass::transductive_fit::v2",
+      "condition": "R1",
+      "task_family": "tabular_multiclass",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::transductive_fit::v2::R2",
+      "case_id": "repair::tabular_multiclass::transductive_fit::v2",
+      "condition": "R2",
+      "task_family": "tabular_multiclass",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::transductive_fit::v2::R3",
+      "case_id": "repair::tabular_multiclass::transductive_fit::v2",
+      "condition": "R3",
+      "task_family": "tabular_multiclass",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::tabular_regression::transductive_fit::v2::R0",
+      "case_id": "repair::tabular_regression::transductive_fit::v2",
+      "condition": "R0",
+      "task_family": "tabular_regression",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::tabular_regression::transductive_fit::v2::R1",
+      "case_id": "repair::tabular_regression::transductive_fit::v2",
+      "condition": "R1",
+      "task_family": "tabular_regression",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::tabular_regression::transductive_fit::v2::R2",
+      "case_id": "repair::tabular_regression::transductive_fit::v2",
+      "condition": "R2",
+      "task_family": "tabular_regression",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::tabular_regression::transductive_fit::v2::R3",
+      "case_id": "repair::tabular_regression::transductive_fit::v2",
+      "condition": "R3",
+      "task_family": "tabular_regression",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::text_classification::transductive_fit::v2::R0",
+      "case_id": "repair::text_classification::transductive_fit::v2",
+      "condition": "R0",
+      "task_family": "text_classification",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::text_classification::transductive_fit::v2::R1",
+      "case_id": "repair::text_classification::transductive_fit::v2",
+      "condition": "R1",
+      "task_family": "text_classification",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::text_classification::transductive_fit::v2::R2",
+      "case_id": "repair::text_classification::transductive_fit::v2",
+      "condition": "R2",
+      "task_family": "text_classification",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::text_classification::transductive_fit::v2::R3",
+      "case_id": "repair::text_classification::transductive_fit::v2",
+      "condition": "R3",
+      "task_family": "text_classification",
+      "defect": "transductive_fit",
+      "expected_issue_code": "TRANSFORM_FIT_ON_HOLDOUT"
+    },
+    {
+      "run_id": "repair::image_classification::early_stop_report_reuse::v1::R0",
+      "case_id": "repair::image_classification::early_stop_report_reuse::v1",
+      "condition": "R0",
+      "task_family": "image_classification",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::image_classification::early_stop_report_reuse::v1::R1",
+      "case_id": "repair::image_classification::early_stop_report_reuse::v1",
+      "condition": "R1",
+      "task_family": "image_classification",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::image_classification::early_stop_report_reuse::v1::R2",
+      "case_id": "repair::image_classification::early_stop_report_reuse::v1",
+      "condition": "R2",
+      "task_family": "image_classification",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::image_classification::early_stop_report_reuse::v1::R3",
+      "case_id": "repair::image_classification::early_stop_report_reuse::v1",
+      "condition": "R3",
+      "task_family": "image_classification",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::image_restoration::early_stop_report_reuse::v1::R0",
+      "case_id": "repair::image_restoration::early_stop_report_reuse::v1",
+      "condition": "R0",
+      "task_family": "image_restoration",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::image_restoration::early_stop_report_reuse::v1::R1",
+      "case_id": "repair::image_restoration::early_stop_report_reuse::v1",
+      "condition": "R1",
+      "task_family": "image_restoration",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::image_restoration::early_stop_report_reuse::v1::R2",
+      "case_id": "repair::image_restoration::early_stop_report_reuse::v1",
+      "condition": "R2",
+      "task_family": "image_restoration",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::image_restoration::early_stop_report_reuse::v1::R3",
+      "case_id": "repair::image_restoration::early_stop_report_reuse::v1",
+      "condition": "R3",
+      "task_family": "image_restoration",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::early_stop_report_reuse::v1::R0",
+      "case_id": "repair::tabular_multiclass::early_stop_report_reuse::v1",
+      "condition": "R0",
+      "task_family": "tabular_multiclass",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::early_stop_report_reuse::v1::R1",
+      "case_id": "repair::tabular_multiclass::early_stop_report_reuse::v1",
+      "condition": "R1",
+      "task_family": "tabular_multiclass",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::early_stop_report_reuse::v1::R2",
+      "case_id": "repair::tabular_multiclass::early_stop_report_reuse::v1",
+      "condition": "R2",
+      "task_family": "tabular_multiclass",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::early_stop_report_reuse::v1::R3",
+      "case_id": "repair::tabular_multiclass::early_stop_report_reuse::v1",
+      "condition": "R3",
+      "task_family": "tabular_multiclass",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::tabular_regression::early_stop_report_reuse::v2::R0",
+      "case_id": "repair::tabular_regression::early_stop_report_reuse::v2",
+      "condition": "R0",
+      "task_family": "tabular_regression",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::tabular_regression::early_stop_report_reuse::v2::R1",
+      "case_id": "repair::tabular_regression::early_stop_report_reuse::v2",
+      "condition": "R1",
+      "task_family": "tabular_regression",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::tabular_regression::early_stop_report_reuse::v2::R2",
+      "case_id": "repair::tabular_regression::early_stop_report_reuse::v2",
+      "condition": "R2",
+      "task_family": "tabular_regression",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::tabular_regression::early_stop_report_reuse::v2::R3",
+      "case_id": "repair::tabular_regression::early_stop_report_reuse::v2",
+      "condition": "R3",
+      "task_family": "tabular_regression",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::text_classification::early_stop_report_reuse::v2::R0",
+      "case_id": "repair::text_classification::early_stop_report_reuse::v2",
+      "condition": "R0",
+      "task_family": "text_classification",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::text_classification::early_stop_report_reuse::v2::R1",
+      "case_id": "repair::text_classification::early_stop_report_reuse::v2",
+      "condition": "R1",
+      "task_family": "text_classification",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::text_classification::early_stop_report_reuse::v2::R2",
+      "case_id": "repair::text_classification::early_stop_report_reuse::v2",
+      "condition": "R2",
+      "task_family": "text_classification",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::text_classification::early_stop_report_reuse::v2::R3",
+      "case_id": "repair::text_classification::early_stop_report_reuse::v2",
+      "condition": "R3",
+      "task_family": "text_classification",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::group_time_aware::early_stop_report_reuse::v2::R0",
+      "case_id": "repair::group_time_aware::early_stop_report_reuse::v2",
+      "condition": "R0",
+      "task_family": "group_time_aware",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::group_time_aware::early_stop_report_reuse::v2::R1",
+      "case_id": "repair::group_time_aware::early_stop_report_reuse::v2",
+      "condition": "R1",
+      "task_family": "group_time_aware",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::group_time_aware::early_stop_report_reuse::v2::R2",
+      "case_id": "repair::group_time_aware::early_stop_report_reuse::v2",
+      "condition": "R2",
+      "task_family": "group_time_aware",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::group_time_aware::early_stop_report_reuse::v2::R3",
+      "case_id": "repair::group_time_aware::early_stop_report_reuse::v2",
+      "condition": "R3",
+      "task_family": "group_time_aware",
+      "defect": "early_stop_report_reuse",
+      "expected_issue_code": "VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT"
+    },
+    {
+      "run_id": "repair::image_restoration::false_oof::v1::R0",
+      "case_id": "repair::image_restoration::false_oof::v1",
+      "condition": "R0",
+      "task_family": "image_restoration",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::false_oof::v1::R1",
+      "case_id": "repair::image_restoration::false_oof::v1",
+      "condition": "R1",
+      "task_family": "image_restoration",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::false_oof::v1::R2",
+      "case_id": "repair::image_restoration::false_oof::v1",
+      "condition": "R2",
+      "task_family": "image_restoration",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::false_oof::v1::R3",
+      "case_id": "repair::image_restoration::false_oof::v1",
+      "condition": "R3",
+      "task_family": "image_restoration",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::false_oof::v1::R0",
+      "case_id": "repair::tabular_multiclass::false_oof::v1",
+      "condition": "R0",
+      "task_family": "tabular_multiclass",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::false_oof::v1::R1",
+      "case_id": "repair::tabular_multiclass::false_oof::v1",
+      "condition": "R1",
+      "task_family": "tabular_multiclass",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::false_oof::v1::R2",
+      "case_id": "repair::tabular_multiclass::false_oof::v1",
+      "condition": "R2",
+      "task_family": "tabular_multiclass",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::false_oof::v1::R3",
+      "case_id": "repair::tabular_multiclass::false_oof::v1",
+      "condition": "R3",
+      "task_family": "tabular_multiclass",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::false_oof::v1::R0",
+      "case_id": "repair::tabular_regression::false_oof::v1",
+      "condition": "R0",
+      "task_family": "tabular_regression",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::false_oof::v1::R1",
+      "case_id": "repair::tabular_regression::false_oof::v1",
+      "condition": "R1",
+      "task_family": "tabular_regression",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::false_oof::v1::R2",
+      "case_id": "repair::tabular_regression::false_oof::v1",
+      "condition": "R2",
+      "task_family": "tabular_regression",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::false_oof::v1::R3",
+      "case_id": "repair::tabular_regression::false_oof::v1",
+      "condition": "R3",
+      "task_family": "tabular_regression",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::false_oof::v2::R0",
+      "case_id": "repair::text_classification::false_oof::v2",
+      "condition": "R0",
+      "task_family": "text_classification",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::false_oof::v2::R1",
+      "case_id": "repair::text_classification::false_oof::v2",
+      "condition": "R1",
+      "task_family": "text_classification",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::false_oof::v2::R2",
+      "case_id": "repair::text_classification::false_oof::v2",
+      "condition": "R2",
+      "task_family": "text_classification",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::false_oof::v2::R3",
+      "case_id": "repair::text_classification::false_oof::v2",
+      "condition": "R3",
+      "task_family": "text_classification",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::false_oof::v2::R0",
+      "case_id": "repair::group_time_aware::false_oof::v2",
+      "condition": "R0",
+      "task_family": "group_time_aware",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::false_oof::v2::R1",
+      "case_id": "repair::group_time_aware::false_oof::v2",
+      "condition": "R1",
+      "task_family": "group_time_aware",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::false_oof::v2::R2",
+      "case_id": "repair::group_time_aware::false_oof::v2",
+      "condition": "R2",
+      "task_family": "group_time_aware",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::false_oof::v2::R3",
+      "case_id": "repair::group_time_aware::false_oof::v2",
+      "condition": "R3",
+      "task_family": "group_time_aware",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::false_oof::v2::R0",
+      "case_id": "repair::image_classification::false_oof::v2",
+      "condition": "R0",
+      "task_family": "image_classification",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::false_oof::v2::R1",
+      "case_id": "repair::image_classification::false_oof::v2",
+      "condition": "R1",
+      "task_family": "image_classification",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::false_oof::v2::R2",
+      "case_id": "repair::image_classification::false_oof::v2",
+      "condition": "R2",
+      "task_family": "image_classification",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::false_oof::v2::R3",
+      "case_id": "repair::image_classification::false_oof::v2",
+      "condition": "R3",
+      "task_family": "image_classification",
+      "defect": "false_oof",
+      "expected_issue_code": "CROSS_FOLD_SUPERVISED_FEATURE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::holdout_weight_search::v1::R0",
+      "case_id": "repair::tabular_multiclass::holdout_weight_search::v1",
+      "condition": "R0",
+      "task_family": "tabular_multiclass",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::holdout_weight_search::v1::R1",
+      "case_id": "repair::tabular_multiclass::holdout_weight_search::v1",
+      "condition": "R1",
+      "task_family": "tabular_multiclass",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::holdout_weight_search::v1::R2",
+      "case_id": "repair::tabular_multiclass::holdout_weight_search::v1",
+      "condition": "R2",
+      "task_family": "tabular_multiclass",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::holdout_weight_search::v1::R3",
+      "case_id": "repair::tabular_multiclass::holdout_weight_search::v1",
+      "condition": "R3",
+      "task_family": "tabular_multiclass",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::tabular_regression::holdout_weight_search::v1::R0",
+      "case_id": "repair::tabular_regression::holdout_weight_search::v1",
+      "condition": "R0",
+      "task_family": "tabular_regression",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::tabular_regression::holdout_weight_search::v1::R1",
+      "case_id": "repair::tabular_regression::holdout_weight_search::v1",
+      "condition": "R1",
+      "task_family": "tabular_regression",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::tabular_regression::holdout_weight_search::v1::R2",
+      "case_id": "repair::tabular_regression::holdout_weight_search::v1",
+      "condition": "R2",
+      "task_family": "tabular_regression",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::tabular_regression::holdout_weight_search::v1::R3",
+      "case_id": "repair::tabular_regression::holdout_weight_search::v1",
+      "condition": "R3",
+      "task_family": "tabular_regression",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::text_classification::holdout_weight_search::v1::R0",
+      "case_id": "repair::text_classification::holdout_weight_search::v1",
+      "condition": "R0",
+      "task_family": "text_classification",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::text_classification::holdout_weight_search::v1::R1",
+      "case_id": "repair::text_classification::holdout_weight_search::v1",
+      "condition": "R1",
+      "task_family": "text_classification",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::text_classification::holdout_weight_search::v1::R2",
+      "case_id": "repair::text_classification::holdout_weight_search::v1",
+      "condition": "R2",
+      "task_family": "text_classification",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::text_classification::holdout_weight_search::v1::R3",
+      "case_id": "repair::text_classification::holdout_weight_search::v1",
+      "condition": "R3",
+      "task_family": "text_classification",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::group_time_aware::holdout_weight_search::v2::R0",
+      "case_id": "repair::group_time_aware::holdout_weight_search::v2",
+      "condition": "R0",
+      "task_family": "group_time_aware",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::group_time_aware::holdout_weight_search::v2::R1",
+      "case_id": "repair::group_time_aware::holdout_weight_search::v2",
+      "condition": "R1",
+      "task_family": "group_time_aware",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::group_time_aware::holdout_weight_search::v2::R2",
+      "case_id": "repair::group_time_aware::holdout_weight_search::v2",
+      "condition": "R2",
+      "task_family": "group_time_aware",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::group_time_aware::holdout_weight_search::v2::R3",
+      "case_id": "repair::group_time_aware::holdout_weight_search::v2",
+      "condition": "R3",
+      "task_family": "group_time_aware",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::image_classification::holdout_weight_search::v2::R0",
+      "case_id": "repair::image_classification::holdout_weight_search::v2",
+      "condition": "R0",
+      "task_family": "image_classification",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::image_classification::holdout_weight_search::v2::R1",
+      "case_id": "repair::image_classification::holdout_weight_search::v2",
+      "condition": "R1",
+      "task_family": "image_classification",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::image_classification::holdout_weight_search::v2::R2",
+      "case_id": "repair::image_classification::holdout_weight_search::v2",
+      "condition": "R2",
+      "task_family": "image_classification",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::image_classification::holdout_weight_search::v2::R3",
+      "case_id": "repair::image_classification::holdout_weight_search::v2",
+      "condition": "R3",
+      "task_family": "image_classification",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::image_restoration::holdout_weight_search::v2::R0",
+      "case_id": "repair::image_restoration::holdout_weight_search::v2",
+      "condition": "R0",
+      "task_family": "image_restoration",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::image_restoration::holdout_weight_search::v2::R1",
+      "case_id": "repair::image_restoration::holdout_weight_search::v2",
+      "condition": "R1",
+      "task_family": "image_restoration",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::image_restoration::holdout_weight_search::v2::R2",
+      "case_id": "repair::image_restoration::holdout_weight_search::v2",
+      "condition": "R2",
+      "task_family": "image_restoration",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::image_restoration::holdout_weight_search::v2::R3",
+      "case_id": "repair::image_restoration::holdout_weight_search::v2",
+      "condition": "R3",
+      "task_family": "image_restoration",
+      "defect": "holdout_weight_search",
+      "expected_issue_code": "REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION"
+    },
+    {
+      "run_id": "repair::tabular_regression::group_split_leakage::v1::R0",
+      "case_id": "repair::tabular_regression::group_split_leakage::v1",
+      "condition": "R0",
+      "task_family": "tabular_regression",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::group_split_leakage::v1::R1",
+      "case_id": "repair::tabular_regression::group_split_leakage::v1",
+      "condition": "R1",
+      "task_family": "tabular_regression",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::group_split_leakage::v1::R2",
+      "case_id": "repair::tabular_regression::group_split_leakage::v1",
+      "condition": "R2",
+      "task_family": "tabular_regression",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::group_split_leakage::v1::R3",
+      "case_id": "repair::tabular_regression::group_split_leakage::v1",
+      "condition": "R3",
+      "task_family": "tabular_regression",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::group_split_leakage::v1::R0",
+      "case_id": "repair::text_classification::group_split_leakage::v1",
+      "condition": "R0",
+      "task_family": "text_classification",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::group_split_leakage::v1::R1",
+      "case_id": "repair::text_classification::group_split_leakage::v1",
+      "condition": "R1",
+      "task_family": "text_classification",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::group_split_leakage::v1::R2",
+      "case_id": "repair::text_classification::group_split_leakage::v1",
+      "condition": "R2",
+      "task_family": "text_classification",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::group_split_leakage::v1::R3",
+      "case_id": "repair::text_classification::group_split_leakage::v1",
+      "condition": "R3",
+      "task_family": "text_classification",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::group_split_leakage::v1::R0",
+      "case_id": "repair::group_time_aware::group_split_leakage::v1",
+      "condition": "R0",
+      "task_family": "group_time_aware",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::group_split_leakage::v1::R1",
+      "case_id": "repair::group_time_aware::group_split_leakage::v1",
+      "condition": "R1",
+      "task_family": "group_time_aware",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::group_split_leakage::v1::R2",
+      "case_id": "repair::group_time_aware::group_split_leakage::v1",
+      "condition": "R2",
+      "task_family": "group_time_aware",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::group_split_leakage::v1::R3",
+      "case_id": "repair::group_time_aware::group_split_leakage::v1",
+      "condition": "R3",
+      "task_family": "group_time_aware",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::group_split_leakage::v2::R0",
+      "case_id": "repair::image_classification::group_split_leakage::v2",
+      "condition": "R0",
+      "task_family": "image_classification",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::group_split_leakage::v2::R1",
+      "case_id": "repair::image_classification::group_split_leakage::v2",
+      "condition": "R1",
+      "task_family": "image_classification",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::group_split_leakage::v2::R2",
+      "case_id": "repair::image_classification::group_split_leakage::v2",
+      "condition": "R2",
+      "task_family": "image_classification",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::group_split_leakage::v2::R3",
+      "case_id": "repair::image_classification::group_split_leakage::v2",
+      "condition": "R3",
+      "task_family": "image_classification",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::group_split_leakage::v2::R0",
+      "case_id": "repair::image_restoration::group_split_leakage::v2",
+      "condition": "R0",
+      "task_family": "image_restoration",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::group_split_leakage::v2::R1",
+      "case_id": "repair::image_restoration::group_split_leakage::v2",
+      "condition": "R1",
+      "task_family": "image_restoration",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::group_split_leakage::v2::R2",
+      "case_id": "repair::image_restoration::group_split_leakage::v2",
+      "condition": "R2",
+      "task_family": "image_restoration",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::group_split_leakage::v2::R3",
+      "case_id": "repair::image_restoration::group_split_leakage::v2",
+      "condition": "R3",
+      "task_family": "image_restoration",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::group_split_leakage::v2::R0",
+      "case_id": "repair::tabular_multiclass::group_split_leakage::v2",
+      "condition": "R0",
+      "task_family": "tabular_multiclass",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::group_split_leakage::v2::R1",
+      "case_id": "repair::tabular_multiclass::group_split_leakage::v2",
+      "condition": "R1",
+      "task_family": "tabular_multiclass",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::group_split_leakage::v2::R2",
+      "case_id": "repair::tabular_multiclass::group_split_leakage::v2",
+      "condition": "R2",
+      "task_family": "tabular_multiclass",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::group_split_leakage::v2::R3",
+      "case_id": "repair::tabular_multiclass::group_split_leakage::v2",
+      "condition": "R3",
+      "task_family": "tabular_multiclass",
+      "defect": "group_split_leakage",
+      "expected_issue_code": "GROUP_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::temporal_order_leakage::v1::R0",
+      "case_id": "repair::text_classification::temporal_order_leakage::v1",
+      "condition": "R0",
+      "task_family": "text_classification",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::temporal_order_leakage::v1::R1",
+      "case_id": "repair::text_classification::temporal_order_leakage::v1",
+      "condition": "R1",
+      "task_family": "text_classification",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::temporal_order_leakage::v1::R2",
+      "case_id": "repair::text_classification::temporal_order_leakage::v1",
+      "condition": "R2",
+      "task_family": "text_classification",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::temporal_order_leakage::v1::R3",
+      "case_id": "repair::text_classification::temporal_order_leakage::v1",
+      "condition": "R3",
+      "task_family": "text_classification",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::temporal_order_leakage::v1::R0",
+      "case_id": "repair::group_time_aware::temporal_order_leakage::v1",
+      "condition": "R0",
+      "task_family": "group_time_aware",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::temporal_order_leakage::v1::R1",
+      "case_id": "repair::group_time_aware::temporal_order_leakage::v1",
+      "condition": "R1",
+      "task_family": "group_time_aware",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::temporal_order_leakage::v1::R2",
+      "case_id": "repair::group_time_aware::temporal_order_leakage::v1",
+      "condition": "R2",
+      "task_family": "group_time_aware",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::temporal_order_leakage::v1::R3",
+      "case_id": "repair::group_time_aware::temporal_order_leakage::v1",
+      "condition": "R3",
+      "task_family": "group_time_aware",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::temporal_order_leakage::v1::R0",
+      "case_id": "repair::image_classification::temporal_order_leakage::v1",
+      "condition": "R0",
+      "task_family": "image_classification",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::temporal_order_leakage::v1::R1",
+      "case_id": "repair::image_classification::temporal_order_leakage::v1",
+      "condition": "R1",
+      "task_family": "image_classification",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::temporal_order_leakage::v1::R2",
+      "case_id": "repair::image_classification::temporal_order_leakage::v1",
+      "condition": "R2",
+      "task_family": "image_classification",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::temporal_order_leakage::v1::R3",
+      "case_id": "repair::image_classification::temporal_order_leakage::v1",
+      "condition": "R3",
+      "task_family": "image_classification",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::temporal_order_leakage::v2::R0",
+      "case_id": "repair::image_restoration::temporal_order_leakage::v2",
+      "condition": "R0",
+      "task_family": "image_restoration",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::temporal_order_leakage::v2::R1",
+      "case_id": "repair::image_restoration::temporal_order_leakage::v2",
+      "condition": "R1",
+      "task_family": "image_restoration",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::temporal_order_leakage::v2::R2",
+      "case_id": "repair::image_restoration::temporal_order_leakage::v2",
+      "condition": "R2",
+      "task_family": "image_restoration",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::temporal_order_leakage::v2::R3",
+      "case_id": "repair::image_restoration::temporal_order_leakage::v2",
+      "condition": "R3",
+      "task_family": "image_restoration",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::temporal_order_leakage::v2::R0",
+      "case_id": "repair::tabular_multiclass::temporal_order_leakage::v2",
+      "condition": "R0",
+      "task_family": "tabular_multiclass",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::temporal_order_leakage::v2::R1",
+      "case_id": "repair::tabular_multiclass::temporal_order_leakage::v2",
+      "condition": "R1",
+      "task_family": "tabular_multiclass",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::temporal_order_leakage::v2::R2",
+      "case_id": "repair::tabular_multiclass::temporal_order_leakage::v2",
+      "condition": "R2",
+      "task_family": "tabular_multiclass",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::temporal_order_leakage::v2::R3",
+      "case_id": "repair::tabular_multiclass::temporal_order_leakage::v2",
+      "condition": "R3",
+      "task_family": "tabular_multiclass",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::temporal_order_leakage::v2::R0",
+      "case_id": "repair::tabular_regression::temporal_order_leakage::v2",
+      "condition": "R0",
+      "task_family": "tabular_regression",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::temporal_order_leakage::v2::R1",
+      "case_id": "repair::tabular_regression::temporal_order_leakage::v2",
+      "condition": "R1",
+      "task_family": "tabular_regression",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::temporal_order_leakage::v2::R2",
+      "case_id": "repair::tabular_regression::temporal_order_leakage::v2",
+      "condition": "R2",
+      "task_family": "tabular_regression",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::temporal_order_leakage::v2::R3",
+      "case_id": "repair::tabular_regression::temporal_order_leakage::v2",
+      "condition": "R3",
+      "task_family": "tabular_regression",
+      "defect": "temporal_order_leakage",
+      "expected_issue_code": "TEMPORAL_SPLIT_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::target_encoding_leakage::v1::R0",
+      "case_id": "repair::group_time_aware::target_encoding_leakage::v1",
+      "condition": "R0",
+      "task_family": "group_time_aware",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::group_time_aware::target_encoding_leakage::v1::R1",
+      "case_id": "repair::group_time_aware::target_encoding_leakage::v1",
+      "condition": "R1",
+      "task_family": "group_time_aware",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::group_time_aware::target_encoding_leakage::v1::R2",
+      "case_id": "repair::group_time_aware::target_encoding_leakage::v1",
+      "condition": "R2",
+      "task_family": "group_time_aware",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::group_time_aware::target_encoding_leakage::v1::R3",
+      "case_id": "repair::group_time_aware::target_encoding_leakage::v1",
+      "condition": "R3",
+      "task_family": "group_time_aware",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::image_classification::target_encoding_leakage::v1::R0",
+      "case_id": "repair::image_classification::target_encoding_leakage::v1",
+      "condition": "R0",
+      "task_family": "image_classification",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::image_classification::target_encoding_leakage::v1::R1",
+      "case_id": "repair::image_classification::target_encoding_leakage::v1",
+      "condition": "R1",
+      "task_family": "image_classification",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::image_classification::target_encoding_leakage::v1::R2",
+      "case_id": "repair::image_classification::target_encoding_leakage::v1",
+      "condition": "R2",
+      "task_family": "image_classification",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::image_classification::target_encoding_leakage::v1::R3",
+      "case_id": "repair::image_classification::target_encoding_leakage::v1",
+      "condition": "R3",
+      "task_family": "image_classification",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::image_restoration::target_encoding_leakage::v1::R0",
+      "case_id": "repair::image_restoration::target_encoding_leakage::v1",
+      "condition": "R0",
+      "task_family": "image_restoration",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::image_restoration::target_encoding_leakage::v1::R1",
+      "case_id": "repair::image_restoration::target_encoding_leakage::v1",
+      "condition": "R1",
+      "task_family": "image_restoration",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::image_restoration::target_encoding_leakage::v1::R2",
+      "case_id": "repair::image_restoration::target_encoding_leakage::v1",
+      "condition": "R2",
+      "task_family": "image_restoration",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::image_restoration::target_encoding_leakage::v1::R3",
+      "case_id": "repair::image_restoration::target_encoding_leakage::v1",
+      "condition": "R3",
+      "task_family": "image_restoration",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::target_encoding_leakage::v2::R0",
+      "case_id": "repair::tabular_multiclass::target_encoding_leakage::v2",
+      "condition": "R0",
+      "task_family": "tabular_multiclass",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::target_encoding_leakage::v2::R1",
+      "case_id": "repair::tabular_multiclass::target_encoding_leakage::v2",
+      "condition": "R1",
+      "task_family": "tabular_multiclass",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::target_encoding_leakage::v2::R2",
+      "case_id": "repair::tabular_multiclass::target_encoding_leakage::v2",
+      "condition": "R2",
+      "task_family": "tabular_multiclass",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::target_encoding_leakage::v2::R3",
+      "case_id": "repair::tabular_multiclass::target_encoding_leakage::v2",
+      "condition": "R3",
+      "task_family": "tabular_multiclass",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::tabular_regression::target_encoding_leakage::v2::R0",
+      "case_id": "repair::tabular_regression::target_encoding_leakage::v2",
+      "condition": "R0",
+      "task_family": "tabular_regression",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::tabular_regression::target_encoding_leakage::v2::R1",
+      "case_id": "repair::tabular_regression::target_encoding_leakage::v2",
+      "condition": "R1",
+      "task_family": "tabular_regression",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::tabular_regression::target_encoding_leakage::v2::R2",
+      "case_id": "repair::tabular_regression::target_encoding_leakage::v2",
+      "condition": "R2",
+      "task_family": "tabular_regression",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::tabular_regression::target_encoding_leakage::v2::R3",
+      "case_id": "repair::tabular_regression::target_encoding_leakage::v2",
+      "condition": "R3",
+      "task_family": "tabular_regression",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::text_classification::target_encoding_leakage::v2::R0",
+      "case_id": "repair::text_classification::target_encoding_leakage::v2",
+      "condition": "R0",
+      "task_family": "text_classification",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::text_classification::target_encoding_leakage::v2::R1",
+      "case_id": "repair::text_classification::target_encoding_leakage::v2",
+      "condition": "R1",
+      "task_family": "text_classification",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::text_classification::target_encoding_leakage::v2::R2",
+      "case_id": "repair::text_classification::target_encoding_leakage::v2",
+      "condition": "R2",
+      "task_family": "text_classification",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::text_classification::target_encoding_leakage::v2::R3",
+      "case_id": "repair::text_classification::target_encoding_leakage::v2",
+      "condition": "R3",
+      "task_family": "text_classification",
+      "defect": "target_encoding_leakage",
+      "expected_issue_code": "TARGET_ENCODING_FIT_OUTSIDE_FOLD"
+    },
+    {
+      "run_id": "repair::image_classification::post_split_dedup::v1::R0",
+      "case_id": "repair::image_classification::post_split_dedup::v1",
+      "condition": "R0",
+      "task_family": "image_classification",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::post_split_dedup::v1::R1",
+      "case_id": "repair::image_classification::post_split_dedup::v1",
+      "condition": "R1",
+      "task_family": "image_classification",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::post_split_dedup::v1::R2",
+      "case_id": "repair::image_classification::post_split_dedup::v1",
+      "condition": "R2",
+      "task_family": "image_classification",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_classification::post_split_dedup::v1::R3",
+      "case_id": "repair::image_classification::post_split_dedup::v1",
+      "condition": "R3",
+      "task_family": "image_classification",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::post_split_dedup::v1::R0",
+      "case_id": "repair::image_restoration::post_split_dedup::v1",
+      "condition": "R0",
+      "task_family": "image_restoration",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::post_split_dedup::v1::R1",
+      "case_id": "repair::image_restoration::post_split_dedup::v1",
+      "condition": "R1",
+      "task_family": "image_restoration",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::post_split_dedup::v1::R2",
+      "case_id": "repair::image_restoration::post_split_dedup::v1",
+      "condition": "R2",
+      "task_family": "image_restoration",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::image_restoration::post_split_dedup::v1::R3",
+      "case_id": "repair::image_restoration::post_split_dedup::v1",
+      "condition": "R3",
+      "task_family": "image_restoration",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::post_split_dedup::v1::R0",
+      "case_id": "repair::tabular_multiclass::post_split_dedup::v1",
+      "condition": "R0",
+      "task_family": "tabular_multiclass",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::post_split_dedup::v1::R1",
+      "case_id": "repair::tabular_multiclass::post_split_dedup::v1",
+      "condition": "R1",
+      "task_family": "tabular_multiclass",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::post_split_dedup::v1::R2",
+      "case_id": "repair::tabular_multiclass::post_split_dedup::v1",
+      "condition": "R2",
+      "task_family": "tabular_multiclass",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_multiclass::post_split_dedup::v1::R3",
+      "case_id": "repair::tabular_multiclass::post_split_dedup::v1",
+      "condition": "R3",
+      "task_family": "tabular_multiclass",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::post_split_dedup::v2::R0",
+      "case_id": "repair::tabular_regression::post_split_dedup::v2",
+      "condition": "R0",
+      "task_family": "tabular_regression",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::post_split_dedup::v2::R1",
+      "case_id": "repair::tabular_regression::post_split_dedup::v2",
+      "condition": "R1",
+      "task_family": "tabular_regression",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::post_split_dedup::v2::R2",
+      "case_id": "repair::tabular_regression::post_split_dedup::v2",
+      "condition": "R2",
+      "task_family": "tabular_regression",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::tabular_regression::post_split_dedup::v2::R3",
+      "case_id": "repair::tabular_regression::post_split_dedup::v2",
+      "condition": "R3",
+      "task_family": "tabular_regression",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::post_split_dedup::v2::R0",
+      "case_id": "repair::text_classification::post_split_dedup::v2",
+      "condition": "R0",
+      "task_family": "text_classification",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::post_split_dedup::v2::R1",
+      "case_id": "repair::text_classification::post_split_dedup::v2",
+      "condition": "R1",
+      "task_family": "text_classification",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::post_split_dedup::v2::R2",
+      "case_id": "repair::text_classification::post_split_dedup::v2",
+      "condition": "R2",
+      "task_family": "text_classification",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::text_classification::post_split_dedup::v2::R3",
+      "case_id": "repair::text_classification::post_split_dedup::v2",
+      "condition": "R3",
+      "task_family": "text_classification",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::post_split_dedup::v2::R0",
+      "case_id": "repair::group_time_aware::post_split_dedup::v2",
+      "condition": "R0",
+      "task_family": "group_time_aware",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::post_split_dedup::v2::R1",
+      "case_id": "repair::group_time_aware::post_split_dedup::v2",
+      "condition": "R1",
+      "task_family": "group_time_aware",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::post_split_dedup::v2::R2",
+      "case_id": "repair::group_time_aware::post_split_dedup::v2",
+      "condition": "R2",
+      "task_family": "group_time_aware",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    },
+    {
+      "run_id": "repair::group_time_aware::post_split_dedup::v2::R3",
+      "case_id": "repair::group_time_aware::post_split_dedup::v2",
+      "condition": "R3",
+      "task_family": "group_time_aware",
+      "defect": "post_split_dedup",
+      "expected_issue_code": "POST_SPLIT_DUPLICATE_LEAKAGE"
+    }
+  ],
+  "source_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/episodes/replay_defects_v1.jsonl",
+  "source_sha256": "56eaa10b6d00ec08be6d09db402678d063b28562e3a6a44713f75115bf0a2b69"
+}

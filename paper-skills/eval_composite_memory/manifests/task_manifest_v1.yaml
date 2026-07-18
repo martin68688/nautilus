@@ -1,0 +1,111 @@
+{
+  "schema": "runforest_composite_task_manifest_v1",
+  "tasks": [
+    {
+      "task_id": "spooky-author-identification",
+      "family": "text_classification",
+      "profile": "Authorship classification with short English prose and multiclass log loss.",
+      "metric": "log_loss",
+      "direction": "minimize",
+      "source_task": "spooky-author-identification"
+    },
+    {
+      "task_id": "news-topic-classification",
+      "family": "text_classification",
+      "profile": "Topic classification with sparse lexical signals and multiclass log loss.",
+      "metric": "log_loss",
+      "direction": "minimize",
+      "source_task": "elite-peach-mayfly"
+    },
+    {
+      "task_id": "leaf-image-classification",
+      "family": "image_classification",
+      "profile": "Fine-grained leaf image classification with limited labeled images.",
+      "metric": "log_loss",
+      "direction": "minimize",
+      "source_task": "leaf-classification"
+    },
+    {
+      "task_id": "aerial-cactus-identification",
+      "family": "image_classification",
+      "profile": "Binary aerial image classification with augmentation-sensitive generalization.",
+      "metric": "log_loss",
+      "direction": "minimize",
+      "source_task": "aerial-cactus-identification",
+      "retrieval_family": "image_binary_classification"
+    },
+    {
+      "task_id": "dirty-document-denoising",
+      "family": "image_restoration",
+      "profile": "Document image restoration with patch training and RMSE evaluation.",
+      "metric": "rmse",
+      "direction": "minimize",
+      "source_task": "denoising-dirty-documents"
+    },
+    {
+      "task_id": "digit-image-denoising",
+      "family": "image_restoration",
+      "profile": "Small grayscale image denoising under a fixed synthetic corruption process.",
+      "metric": "rmse",
+      "direction": "minimize",
+      "source_task": "denoising-dirty-documents"
+    },
+    {
+      "task_id": "leaf-tabular-multiclass",
+      "family": "tabular_multiclass",
+      "profile": "Multiclass classification from structured shape and texture descriptors.",
+      "metric": "log_loss",
+      "direction": "minimize",
+      "source_task": "leaf-classification"
+    },
+    {
+      "task_id": "wine-tabular-multiclass",
+      "family": "tabular_multiclass",
+      "profile": "Small multiclass tabular classification with heterogeneous numeric scales.",
+      "metric": "log_loss",
+      "direction": "minimize",
+      "source_task": "leaf-classification"
+    },
+    {
+      "task_id": "taxi-fare-regression",
+      "family": "tabular_regression",
+      "profile": "Fare regression with spatial, categorical, and chronological features.",
+      "metric": "rmse",
+      "direction": "minimize",
+      "source_task": "new-york-city-taxi-fare-prediction"
+    },
+    {
+      "task_id": "diabetes-progression-regression",
+      "family": "tabular_regression",
+      "profile": "Moderate-dimensional numeric regression with limited samples.",
+      "metric": "rmse",
+      "direction": "minimize",
+      "source_task": "new-york-city-taxi-fare-prediction"
+    },
+    {
+      "task_id": "grouped-patient-classification",
+      "family": "group_time_aware",
+      "retrieval_family": "tabular_multiclass",
+      "profile": "Grouped classification where records from one entity must remain in one split.",
+      "metric": "log_loss",
+      "direction": "minimize",
+      "source_task": "leaf-classification"
+    },
+    {
+      "task_id": "temporal-demand-regression",
+      "family": "group_time_aware",
+      "retrieval_family": "tabular_regression",
+      "profile": "Time-ordered regression where future observations cannot inform earlier fits.",
+      "metric": "rmse",
+      "direction": "minimize",
+      "source_task": "new-york-city-taxi-fare-prediction"
+    }
+  ],
+  "task_count": 12,
+  "task_family_count": 6,
+  "replay_eligible_task_ids": [
+    "spooky-author-identification"
+  ],
+  "replay_eligible_task_count": 1,
+  "minimum_replay_eligible_for_role_claim": 8
+}

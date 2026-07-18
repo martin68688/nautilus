@@ -15,6 +15,9 @@ ALLOWLIST = REPO / "paper-skills" / "eval_skill_memory" / "clean_run_allowlist.j
 RUN_FOREST_CONFIG = REPO / "mlevolve" / "config" / "config_run_forest_agentic.yaml"
 METHODOLOGY_MAP = REPO / "mlevolve" / "engine" / "coldstart" / "methodology_map.json"
 REPLAY_TARGETS = REPO / "paper-skills" / "eval_skill_memory" / "clean_replay_targets.json"
+REPLAY_SOURCE_MANIFEST = (
+    REPO / "paper-skills" / "eval_skill_memory" / "non_spooky_replay_source_manifest_v1.json"
+)
 
 
 def _short_run_id(value: object) -> str:
@@ -81,12 +84,13 @@ def test_run_forest_artifacts_are_clean_certified():
     assert report["failure_pattern_count"] > 0
 
 
-def test_non_spooky_exact_replay_targets_bind_to_clean_graph_and_source_journals():
-    import hashlib
-
+def test_non_spooky_exact_replay_targets_bind_to_clean_graph_and_frozen_source_manifest():
     graph = json.loads(GRAPH.read_text(encoding="utf-8"))
     nodes = {str(node["id"]): node for node in graph["nodes"] if node.get("id")}
     manifest = json.loads(REPLAY_TARGETS.read_text(encoding="utf-8"))
+    source_manifest = json.loads(REPLAY_SOURCE_MANIFEST.read_text(encoding="utf-8"))
+    assert source_manifest["schema"] == "non_spooky_replay_source_manifest_v1"
+    sources = {row["run_id"]: row for row in source_manifest["entries"]}
     targets = {row["task_id"]: row for row in manifest["targets"]}
     expected = {
         "leaf-classification",
@@ -109,9 +113,14 @@ def test_non_spooky_exact_replay_targets_bind_to_clean_graph_and_source_journals
         assert node["code_sha256"] == target["code_sha256"]
         assert node["metric"] == target["historical_metric"]
         run = nodes[f"run::{run_id}"]
-        journal = json.loads((REPO / run["journal_path"]).read_text(encoding="utf-8"))
-        raw = next(row for row in journal["nodes"] if row["id"] == target["original_node_id"])
-        assert hashlib.sha256(raw["code"].encode("utf-8")).hexdigest() == target["code_sha256"]
+        source = sources[run_id]
+        assert source["task_id"] == task_id
+        assert source["original_node_id"] == target["original_node_id"]
+        assert source["journal_path"] == run["journal_path"]
+        assert source["journal_bytes"] > 0
+        assert len(source["journal_sha256"]) == 64
+        assert source["code_length"] > 0
+        assert source["code_sha256"] == target["code_sha256"]
         assert all(sop_id in nodes and nodes[sop_id]["type"] == "SOP" for sop_id in target["sop_ids"])
 
 

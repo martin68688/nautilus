@@ -1,0 +1,113 @@
+{
+  "schema": "runforest_composite_offline_report_v1",
+  "split": "test",
+  "episode_count": 120,
+  "conditions": {
+    "D2": {
+      "episode_count": 120,
+      "scored_episode_count": 70,
+      "graded_ndcg_at_10": 0.23709461954383454,
+      "adoption_ap_at_10": 0.19128684807256238,
+      "unsafe_escape_count": 0,
+      "unsafe_rate_at_10": 0.0,
+      "coverage_gap_accuracy": 0.68,
+      "latency_sec": 0.01626442675672782,
+      "available": true,
+      "by_stage": {
+        "debug": 0.16465003989193783,
+        "draft": 0.33906145005468413,
+        "improve": 0.3325128730480717,
+        "model_design": 0.18693370709440002
+      },
+      "by_task_family": {
+        "group_time_aware": 0.02234270399950175,
+        "image_classification": 0.4696869462084971,
+        "image_restoration": 0.31933946131989993,
+        "tabular_multiclass": 0.2687164951028437,
+        "tabular_regression": 0.11016496763085737,
+        "text_classification": 0.13310180982505324
+      }
+    },
+    "D3": {
+      "episode_count": 120,
+      "scored_episode_count": 70,
+      "graded_ndcg_at_10": 0.5222090687592107,
+      "adoption_ap_at_10": 0.4255952380952381,
+      "unsafe_escape_count": 0,
+      "unsafe_rate_at_10": 0.0,
+      "coverage_gap_accuracy": 0.0,
+      "latency_sec": 0.01625780757749453,
+      "available": true,
+      "by_stage": {
+        "debug": 0.5027269425683839,
+        "draft": 0.6937349623480206,
+        "improve": 0.4663807211582738,
+        "model_design": 0.3496929180873069
+      },
+      "by_task_family": {
+        "group_time_aware": 0.6364890427238865,
+        "image_classification": 0.7254966625174919,
+        "image_restoration": 0.6383400247051186,
+        "tabular_multiclass": 0.668795656497293,
+        "tabular_regression": 0.4910380005897123,
+        "text_classification": 0.20057521655680696
+      }
+    },
+    "D6": {
+      "episode_count": 120,
+      "scored_episode_count": 70,
+      "graded_ndcg_at_10": 0.5208030232889527,
+      "adoption_ap_at_10": 0.42476757369614504,
+      "unsafe_escape_count": 0,
+      "unsafe_rate_at_10": 0.0,
+      "coverage_gap_accuracy": 0.0,
+      "latency_sec": 0.015824291647489493,
+      "available": true,
+      "by_stage": {
+        "debug": 0.5095126852141605,
+        "draft": 0.7157203398456223,
+        "improve": 0.4213958864074579,
+        "model_design": 0.35454638171326625
+      },
+      "by_task_family": {
+        "group_time_aware": 0.6081955772251264,
+        "image_classification": 0.7524012226228516,
+        "image_restoration": 0.5472080506492872,
+        "tabular_multiclass": 0.7022152449895489,
+        "tabular_regression": 0.4537288674853856,
+        "text_classification": 0.23730038165532513
+      }
+    },
+    "F11": {
+      "episode_count": 120,
+      "scored_episode_count": 70,
+      "graded_ndcg_at_10": 0.511311214586016,
+      "adoption_ap_at_10": 0.4192205215419501,
+      "unsafe_escape_count": 0,
+      "unsafe_rate_at_10": 0.0,
+      "coverage_gap_accuracy": 0.38,
+      "latency_sec": 0.013134662108495832,
+      "available": true,
+      "by_stage": {
+        "debug": 0.4954474363245542,
+        "draft": 0.7134825656155342,
+        "improve": 0.4784883635808026,
+        "model_design": 0.15791918820152762
+      },
+      "by_task_family": {
+        "group_time_aware": 0.6237536501591815,
+        "image_classification": 0.7461452808200335,
+        "image_restoration": 0.5910917233304634,
+        "tabular_multiclass": 0.6715835345159998,
+        "tabular_regression": 0.44843623434541163,
+        "text_classification": 0.1928084228534578
+      }
+    }
+  },
+  "silver_labels": true,
+  "blind_annotation_complete": false,
+  "offline_relevance_claim_allowed": false,
+  "downstream_claim_allowed": false,
+  "receipt_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/debug_causal_tree_retry_20260717/offline_test_receipts_v1.jsonl",
+  "receipt_sha256": "89671186d7243b282f5938fc852a18e8f88dfa2c3457b49d1cf9da429f4ed35d"
+}

@@ -1,0 +1,38 @@
+{
+  "schema": "runforest_composite_offline_report_v1",
+  "split": "test",
+  "episode_count": 120,
+  "conditions": {
+    "D6": {
+      "episode_count": 120,
+      "scored_episode_count": 70,
+      "graded_ndcg_at_10": 0.44310684650276044,
+      "adoption_ap_at_10": 0.3508219954648526,
+      "unsafe_escape_count": 0,
+      "unsafe_rate_at_10": 0.0,
+      "coverage_gap_accuracy": 0.0,
+      "latency_sec": 0.014403790320890645,
+      "available": true,
+      "by_stage": {
+        "debug": 0.3584367859076756,
+        "draft": 0.7157203398456223,
+        "improve": 0.4213958864074579,
+        "model_design": 0.35454638171326625
+      },
+      "by_task_family": {
+        "group_time_aware": 0.3402143883946007,
+        "image_classification": 0.7844605359114756,
+        "image_restoration": 0.38753886789083075,
+        "tabular_multiclass": 0.43587936122682225,
+        "tabular_regression": 0.6476018458290597,
+        "text_classification": 0.22092227716716092
+      }
+    }
+  },
+  "silver_labels": true,
+  "blind_annotation_complete": false,
+  "offline_relevance_claim_allowed": false,
+  "downstream_claim_allowed": false,
+  "receipt_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/flat_twin_retry_20260717/offline_test_receipts_v1.jsonl",
+  "receipt_sha256": "ef2d1e9de6a063ce303a57e31eae57b18e74978421e626eac1821407ab9a7cde"
+}

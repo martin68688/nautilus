@@ -1,0 +1,10 @@
+{
+  "schema": "runforest_composite_micro_report_v1",
+  "run_count": 180,
+  "completed_count": 0,
+  "dry_run_count": 180,
+  "hidden_label_exposure_count": 0,
+  "downstream_claim_allowed": false,
+  "receipt_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/micro_execution_receipts_v1.jsonl",
+  "receipt_sha256": "5eaf57324b29cf32c14802f34ad4952d10239b485538339ce811763ca125ab4f"
+}

@@ -1,0 +1,28 @@
+{
+  "schema": "runforest_composite_adoption_pilot_report_v1",
+  "episode_count": 1,
+  "condition_count": 4,
+  "first_pass_attempt_count": 4,
+  "first_pass_completed_count": 1,
+  "all_attempt_count": 7,
+  "completed_condition_count_after_retry": 4,
+  "never_successful_count": 0,
+  "never_successful_keys": [],
+  "attempts_by_condition": {
+    "F00": 2,
+    "F01": 2,
+    "F10": 2,
+    "F11": 1
+  },
+  "family_alignment_rate": 1.0,
+  "family_alignment_n": 4,
+  "provenance_complete_rate": 1.0,
+  "claim_allowed": false,
+  "test_split_consumed_by_pilot": true,
+  "claim_blockers": [
+    "pilot_has_only_one_episode",
+    "human_adjudication_missing",
+    "test_episode_consumed_before_frozen_full_run"
+  ],
+  "candidate_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/adoption_candidates_pilot_complete_v1.jsonl"
+}

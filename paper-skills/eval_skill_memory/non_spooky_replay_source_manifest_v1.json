@@ -1,0 +1,48 @@
+{
+  "schema": "non_spooky_replay_source_manifest_v1",
+  "generated_at": "2026-07-19T01:18:00+08:00",
+  "source_worktree_head": "422f9051a47be02cfd627766de0b9a3266b88362",
+  "purpose": "Freeze source-journal and selected-code hashes without committing raw run journals or interpolated credentials.",
+  "entries": [
+    {
+      "task_id": "leaf-classification",
+      "run_id": "20260701_155016_leaf-classification",
+      "journal_path": "mlevolve/runs/20260701_155016_leaf-classification/logs/journal.json",
+      "journal_bytes": 187289604,
+      "journal_sha256": "b165ed77655b81a1cf0ce95c81afb6f56d76b7a7d7ae8ff6912395099a6d68cb",
+      "original_node_id": "97c95ee1e7bb4cfaa2327fa74f30dcbb",
+      "code_length": 19882,
+      "code_sha256": "2c812d04e05ebb9f2292cf72ab4468392b4efb7ec719c5eb213fe6fe8a4dd439"
+    },
+    {
+      "task_id": "aerial-cactus-identification",
+      "run_id": "20260701_145250_aerial-cactus-identification",
+      "journal_path": "mlevolve/runs/20260701_145250_aerial-cactus-identification/logs/journal.json",
+      "journal_bytes": 4929169,
+      "journal_sha256": "94d97929f95c4443106de3c47f324f8e932a92eef604b27acb2d37e7d15bd078",
+      "original_node_id": "205c70349a4846719a6762d7988ea43e",
+      "code_length": 12168,
+      "code_sha256": "b40224c1016e7ec93e5b361c4979e77c4c964234cd40ce46a80de30b93ea596e"
+    },
+    {
+      "task_id": "denoising-dirty-documents",
+      "run_id": "20260701_145201_denoising-dirty-documents",
+      "journal_path": "mlevolve/runs/20260701_145201_denoising-dirty-documents/logs/journal.json",
+      "journal_bytes": 6028982,
+      "journal_sha256": "b0ae4eb404c284c5d2ef0803bc90f07cb167e79d18565fcb408c6fc1fa6a0f6d",
+      "original_node_id": "33d66a80b6a2490ea54289928fbf4c35",
+      "code_length": 18707,
+      "code_sha256": "22c4ba750bf7ec31346128f2805f24c9e182fa339368e697f745993217b11141"
+    },
+    {
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "run_id": "20260701_180038_new-york-city-taxi-fare-prediction",
+      "journal_path": "mlevolve/runs/20260701_180038_new-york-city-taxi-fare-prediction/logs/journal.json",
+      "journal_bytes": 2126939,
+      "journal_sha256": "0d5e36e086be85799696b94876a31be705d4f132d10ea2fc90345fd94ab188ed",
+      "original_node_id": "ceccd342e6854f4e84145bbf128602f7",
+      "code_length": 10069,
+      "code_sha256": "7abf3a262dcc628edf1855587fa8c00eef29dcdb015531c6915c1c530400027a"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "runforest_composite_claim_gates_v1",
+  "mechanism": {
+    "minimum_test_episodes": 120,
+    "minimum_task_families": 6,
+    "minimum_per_family": 20,
+    "minimum_annotators": 2,
+    "minimum_krippendorff_alpha": 0.67,
+    "role_isolation_violations": 0,
+    "unsafe_escape_count": 0,
+    "provenance_completeness": 1.0
+  },
+  "downstream": {
+    "minimum_tasks": 10,
+    "minimum_seeds": 3,
+    "maximum_standardized_mde": 0.8,
+    "primary_comparisons": [
+      "F11-B0",
+      "F11-F10",
+      "F11-F01"
+    ],
+    "holm_correction": true
+  }
+}

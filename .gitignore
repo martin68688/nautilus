@@ -38,6 +38,11 @@ paper-skills/distillation/distill_branch3_demo/
 *.pid
 *.out
 cache/
+# Run journals/configs are local execution evidence. Keep them on PVC/local disk,
+# never in source checkpoints (configs may contain interpolated credentials).
+mlevolve/runs/*/logs/config.yaml
+mlevolve/runs/*/logs/journal.json
+mlevolve/runs/*/logs/filtered_journal.json
 
 # ===== Model weights & large binary arrays =====
 *.pth

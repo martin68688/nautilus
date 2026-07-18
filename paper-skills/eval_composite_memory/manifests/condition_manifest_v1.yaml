@@ -1,0 +1,126 @@
+{
+  "schema": "runforest_composite_condition_manifest_v1",
+  "conditions": {
+    "F00": {
+      "portfolio": "N+N+N",
+      "memory": "flat_clean",
+      "tier": "primary"
+    },
+    "F01": {
+      "portfolio": "N+N+N",
+      "memory": "stage_hybrid_v2",
+      "tier": "primary"
+    },
+    "F10": {
+      "portfolio": "B+R+N",
+      "memory": "flat_clean",
+      "tier": "primary"
+    },
+    "F11": {
+      "portfolio": "B+R+N",
+      "memory": "stage_hybrid_v2",
+      "tier": "primary"
+    },
+    "P0": {
+      "portfolio": "N+N+N",
+      "memory": "stage_hybrid_v2",
+      "tier": "portfolio"
+    },
+    "P1": {
+      "portfolio": "B+N+N",
+      "memory": "stage_hybrid_v2",
+      "tier": "portfolio"
+    },
+    "P2": {
+      "portfolio": "R+N+N",
+      "memory": "stage_hybrid_v2",
+      "tier": "portfolio"
+    },
+    "P3": {
+      "portfolio": "B+R+N",
+      "memory": "stage_hybrid_v2",
+      "tier": "portfolio"
+    },
+    "D1": {
+      "portfolio": "B+R+N",
+      "memory": "legacy_gateway",
+      "tier": "diagnostic"
+    },
+    "D2": {
+      "portfolio": "B+R+N",
+      "memory": "tree_only",
+      "tier": "diagnostic"
+    },
+    "D3": {
+      "portfolio": "B+R+N",
+      "memory": "sop_only",
+      "tier": "diagnostic"
+    },
+    "D4": {
+      "portfolio": "B+R+N",
+      "memory": "stage_hybrid_no_stage",
+      "tier": "diagnostic"
+    },
+    "D5": {
+      "portfolio": "B+R+N",
+      "memory": "stage_hybrid_no_task",
+      "tier": "diagnostic"
+    },
+    "D6": {
+      "portfolio": "B+R+N",
+      "memory": "stage_hybrid_flat_twin",
+      "tier": "diagnostic"
+    },
+    "D7": {
+      "portfolio": "B+R+N",
+      "memory": "stage_hybrid_unsafe_offline",
+      "tier": "diagnostic",
+      "execution_forbidden": true
+    },
+    "D8": {
+      "portfolio": "B+R+N",
+      "memory": "stage_hybrid_clean_universe",
+      "tier": "diagnostic"
+    },
+    "B0": {
+      "portfolio": "B+B+B",
+      "memory": "none",
+      "tier": "baseline"
+    },
+    "B1": {
+      "portfolio": "N+N+N",
+      "memory": "random_clean",
+      "tier": "baseline"
+    },
+    "B2": {
+      "portfolio": "N+N+N",
+      "memory": "flat_clean",
+      "tier": "baseline"
+    },
+    "B3": {
+      "portfolio": "B+B+B",
+      "memory": "greedy_best_valid",
+      "tier": "baseline"
+    },
+    "B4": {
+      "portfolio": "B+B+B",
+      "memory": "compatible_clean_ensemble",
+      "tier": "baseline",
+      "conditional": true
+    },
+    "O1": {
+      "portfolio": "oracle",
+      "memory": "safe_oracle",
+      "tier": "oracle",
+      "execution_forbidden": true
+    }
+  },
+  "equal_opportunity_budget": {
+    "root_slots": 3,
+    "same_wall_clock": true,
+    "same_gpu_limit": true,
+    "same_model_call_limit": true,
+    "same_output_token_limit": true,
+    "input_tokens_are_measured_cost_not_padded": true
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "schema": "runforest_composite_adoption_report_v1",
+  "candidate_count": 4,
+  "non_mock_candidate_count": 1,
+  "complete_four_condition_episode_count": 0,
+  "family_alignment_rate": 1.0,
+  "provenance_complete_rate": 1.0,
+  "adoption_claim_allowed": false,
+  "receipt_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/adoption_receipts_v1.jsonl",
+  "receipt_sha256": "8be4fab8f4288ca229e8ff6f776e8007977cfe14680b522e4493448155f23e24"
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "runforest_composite_downstream_report_v1",
+  "raw_receipt_count": 180,
+  "trusted_receipt_count": 0,
+  "task_count": 0,
+  "minimum_seeds_per_observed_arm": 0,
+  "comparisons": {
+    "F11-B0": {
+      "task_count": 0,
+      "delta": null,
+      "cluster_bootstrap_ci95": [
+        null,
+        null
+      ]
+    },
+    "F11-F10": {
+      "task_count": 0,
+      "delta": null,
+      "cluster_bootstrap_ci95": [
+        null,
+        null
+      ]
+    },
+    "F11-F01": {
+      "task_count": 0,
+      "delta": null,
+      "cluster_bootstrap_ci95": [
+        null,
+        null
+      ]
+    }
+  },
+  "standardized_mde": null,
+  "downstream_claim_allowed": false,
+  "claim_blockers": [
+    "fewer_than_10_tasks",
+    "fewer_than_3_seeds_per_arm",
+    "F11_vs_B0_cluster_CI_lower_not_positive",
+    "standardized_MDE_not_estimated"
+  ]
+}

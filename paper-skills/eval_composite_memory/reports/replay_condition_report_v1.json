@@ -1,0 +1,64 @@
+{
+  "schema": "runforest_composite_replay_condition_report_v1",
+  "by_condition": {
+    "R0": {
+      "case_count": 48,
+      "candidate_count": 0,
+      "generation_success_rate": 0.0,
+      "static_clean_rate": 0.0,
+      "preservation_clean_rate": 0.0,
+      "stage_protocol_clean_rate": 0.0,
+      "runtime_provenance_declared_clean_rate": 0.0,
+      "runtime_provenance_verified_clean_rate": 0.0,
+      "clean_repair_rate": 0.0,
+      "invalid_rank_count": 0,
+      "positive_write_violation_count": 0
+    },
+    "R1": {
+      "case_count": 48,
+      "candidate_count": 1,
+      "generation_success_rate": 0.020833333333333332,
+      "static_clean_rate": 0.020833333333333332,
+      "preservation_clean_rate": 0.020833333333333332,
+      "stage_protocol_clean_rate": 0.0,
+      "runtime_provenance_declared_clean_rate": 0.0,
+      "runtime_provenance_verified_clean_rate": 0.0,
+      "clean_repair_rate": 0.0,
+      "invalid_rank_count": 0,
+      "positive_write_violation_count": 0
+    },
+    "R2": {
+      "case_count": 48,
+      "candidate_count": 1,
+      "generation_success_rate": 0.020833333333333332,
+      "static_clean_rate": 0.0,
+      "preservation_clean_rate": 0.020833333333333332,
+      "stage_protocol_clean_rate": 0.020833333333333332,
+      "runtime_provenance_declared_clean_rate": 0.0,
+      "runtime_provenance_verified_clean_rate": 0.0,
+      "clean_repair_rate": 0.0,
+      "invalid_rank_count": 0,
+      "positive_write_violation_count": 0
+    },
+    "R3": {
+      "case_count": 48,
+      "candidate_count": 1,
+      "generation_success_rate": 0.020833333333333332,
+      "static_clean_rate": 0.020833333333333332,
+      "preservation_clean_rate": 0.020833333333333332,
+      "stage_protocol_clean_rate": 0.020833333333333332,
+      "runtime_provenance_declared_clean_rate": 0.0,
+      "runtime_provenance_verified_clean_rate": 0.0,
+      "clean_repair_rate": 0.0,
+      "invalid_rank_count": 0,
+      "positive_write_violation_count": 0
+    }
+  },
+  "candidate_count": 5,
+  "all_sources_blocked": true,
+  "source_execution_count": 0,
+  "source_rank_count": 0,
+  "repair_claim_allowed": false,
+  "receipt_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/replay_condition_receipts_v1.jsonl",
+  "receipt_sha256": "b4a162d66d4d81ae9ff258ecfeca7c96c3d19815e507d86c9e0ed66bf3c5e6fe"
+}

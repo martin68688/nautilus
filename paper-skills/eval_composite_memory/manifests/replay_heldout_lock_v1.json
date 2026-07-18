@@ -1,0 +1,6 @@
+{
+  "schema": "runforest_composite_replay_heldout_lock_v1",
+  "source_sha256": "4150ed2bb4314ecab5d039a1329dadf19092db8d9c24d4661313aa2d5da99b43",
+  "detector_source_sha256": "ae30aac332b6f62dccc784955ec2952268d8a1381085bcadb4d683b9d8f6a221",
+  "detector_version": "deterministic_static_v4"
+}

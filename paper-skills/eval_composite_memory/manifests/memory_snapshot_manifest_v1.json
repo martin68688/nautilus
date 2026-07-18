@@ -1,0 +1,40 @@
+{
+  "schema": "runforest_composite_memory_snapshot_manifest_v1",
+  "source_graph": "paper-skills/hyper_memory/run_forest_graph.json",
+  "source_graph_sha256": "89b9979eb2f871f866b66462f2099efebc5b73aa7d0695f6a4a1aa18f535e65d",
+  "source_index_sha256": "dc7ae3772679f71618e4892fa42a3291c757879ebadf66e8c9377fb416e1a4cc",
+  "taxonomy_sha256": "61b20bbd7e70bffaea5cfcd4a01f2a79468eb3e56f96b0b016e6a5336b1318bb",
+  "snapshot_path": "paper-skills/eval_composite_memory/artifacts/memory_snapshot_graph_v1.json",
+  "snapshot_sha256": "d86794285899a43c72f7cffa9d8cb74a6ca80e81110c5fd9a788f4ec023f844b",
+  "run_split": {
+    "memory_train": [
+      "20260509_042918",
+      "20260509_154039",
+      "20260509_185008",
+      "20260510_025317",
+      "20260510_095558",
+      "20260510_162636",
+      "20260511_014836",
+      "20260511_102550",
+      "20260513_165253",
+      "20260514_023457",
+      "20260627_135133",
+      "20260701_145201",
+      "20260701_145250",
+      "20260701_155016",
+      "20260701_180038"
+    ],
+    "benchmark_dev": [
+      "20260514_052334",
+      "20260515_173948",
+      "20260516_104127"
+    ],
+    "benchmark_test": [
+      "20260516_125444",
+      "20260517_132158",
+      "20260517_151325",
+      "20260701_180146"
+    ]
+  },
+  "split_unit": "source_run_short_id"
+}

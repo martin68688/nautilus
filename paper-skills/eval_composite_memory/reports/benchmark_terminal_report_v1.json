@@ -1,0 +1,99 @@
+{
+  "schema": "runforest_composite_benchmark_terminal_v1",
+  "execution_status": "completed_stopped_fail_closed",
+  "scientific_claim_status": "all_primary_claims_closed",
+  "stop_rule_triggered": "independent_replay_safety_challenge_failed",
+  "phase_status": {
+    "phase_A_protocol_and_manifests": "completed",
+    "T0_integrity": "completed",
+    "T1_offline_retrieval": "completed_diagnostic_only",
+    "phase_0_gate": "failed",
+    "T2_agent_adoption": "bounded_pilot_only_then_stopped",
+    "T3_replay": "bounded_generation_pilot_and_independent_safety_challenge_completed",
+    "T4_micro_execution": "not_started_by_preregistered_stop_rule"
+  },
+  "key_results": {
+    "test_episode_count": 120,
+    "offline_receipt_count": 2640,
+    "coverage_gap_count": 50,
+    "coverage_complete_rate": 0.5833333333333334,
+    "heldout_replay_expected_issue_recall": 0.125,
+    "heldout_replay_block_rate": 0.1875,
+    "adoption_first_pass_success_count": 1,
+    "adoption_first_pass_total_count": 4,
+    "replay_clean_repair_count": 0.0,
+    "T4_completed_count": 0
+  },
+  "claim_gates": {
+    "phase0_pass": false,
+    "mechanism_claim_allowed": false,
+    "adoption_claim_allowed": false,
+    "replay_repair_success_claim_allowed": false,
+    "downstream_claim_allowed": false,
+    "blockers": [
+      "coverage_gap_count_zero",
+      "two_blind_annotators",
+      "krippendorff_alpha_at_least_0_67",
+      "replay_heldout_expected_issue_recall_one",
+      "replay_heldout_all_sources_blocked",
+      "replay_eligible_tasks_below_8",
+      "non_mock_agent_adoption_below_60",
+      "five_stage_replay_repairs_not_completed",
+      "T4_external_holdout_not_completed"
+    ]
+  },
+  "interpretation": "The benchmark run is terminal because the preregistered independent safety gate failed. Stopping before claim-bearing T4 is a completed negative experimental outcome, not evidence that T4 or universal safety succeeded.",
+  "next_version_requirements": [
+    "Add genuinely new clean L1/L2 evidence for uncovered task-family/stage cells and freeze snapshot v2.",
+    "Use two independent blind annotators plus adjudication before relevance claims.",
+    "Improve the detector without tuning on the frozen held-out challenge, then preregister a new challenge v2.",
+    "Run full T2/T3 only after the new safety gate passes; run T4 only after all mechanism gates pass."
+  ],
+  "artifacts": [
+    {
+      "path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/build_report_v1.json",
+      "exists": true,
+      "sha256": "9b24ed15bbf52b931c243fcc1797d9c1fdd297a74699afb2cb7d30b3d56ea686"
+    },
+    {
+      "path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/coverage_audit_v1.json",
+      "exists": true,
+      "sha256": "983f73d7792fd6aa6c9ad7c372e80f2937815c5fe7493b407a7a528aa240c1f5"
+    },
+    {
+      "path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/offline_test_report_v1.json",
+      "exists": true,
+      "sha256": "88f849048812503e5ef84a42b98f5a021b423a9930ec3b86e646f7b0d2bf1283"
+    },
+    {
+      "path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/claim_gate_report_v1.json",
+      "exists": true,
+      "sha256": "9e56892b70993a2308bec64290fb5154823e63b5380e8444a3477896b8abfa3f"
+    },
+    {
+      "path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/replay_heldout_report_v1.json",
+      "exists": true,
+      "sha256": "3adf0863d139387d5f69ca472cfd3d209cb63f9ad7bc9d23db47f52a09bbe8a2"
+    },
+    {
+      "path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/adoption_pilot_report_v1.json",
+      "exists": true,
+      "sha256": "2eb10f677cfdd2b375d13b023a14981a3b8d04b74301adcce48c34babacc7ff9"
+    },
+    {
+      "path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/replay_condition_report_v1.json",
+      "exists": true,
+      "sha256": "e2c39321a0ca967938da2b0b52d5457f34521f2fc45daf2a1b59bb594877c900"
+    },
+    {
+      "path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/micro_execution_report_v1.json",
+      "exists": true,
+      "sha256": "d6bf60d6d44647f1ab94dc96e37cb511d53b242686a60542f7651cfc67778d22"
+    },
+    {
+      "path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/manifests/replay_heldout_lock_v1.json",
+      "exists": true,
+      "sha256": "514a1c2cd0631bd731d610472efff4295ebeb43adb83a2069a0fbfa356fc8428"
+    }
+  ]
+}

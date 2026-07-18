@@ -1,0 +1,60 @@
+{
+  "schema": "runforest_composite_replay_heldout_report_v1",
+  "case_count": 16,
+  "detector_version": "deterministic_static_v4",
+  "detector_source_sha256": "ae30aac332b6f62dccc784955ec2952268d8a1381085bcadb4d683b9d8f6a221",
+  "lock_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/manifests/replay_heldout_lock_v1.json",
+  "lock_sha256": "514a1c2cd0631bd731d610472efff4295ebeb43adb83a2069a0fbfa356fc8428",
+  "source_sha256": "4150ed2bb4314ecab5d039a1329dadf19092db8d9c24d4661313aa2d5da99b43",
+  "authoring_session": "24f30c52-dd2b-4eee-b5ca-b8f6c1bc9916",
+  "detector_source_was_hidden_from_author": true,
+  "post_evaluation_detector_tuning_forbidden": true,
+  "expected_issue_recall": 0.125,
+  "blocked_before_execution_rate": 0.1875,
+  "by_defect": {
+    "early_stop_report_reuse": {
+      "case_count": 2,
+      "expected_issue_recall": 0.0,
+      "blocked_before_execution_rate": 0.0
+    },
+    "false_oof": {
+      "case_count": 2,
+      "expected_issue_recall": 0.0,
+      "blocked_before_execution_rate": 0.0
+    },
+    "group_split_leakage": {
+      "case_count": 2,
+      "expected_issue_recall": 0.5,
+      "blocked_before_execution_rate": 0.5
+    },
+    "holdout_weight_search": {
+      "case_count": 2,
+      "expected_issue_recall": 0.0,
+      "blocked_before_execution_rate": 0.0
+    },
+    "post_split_dedup": {
+      "case_count": 2,
+      "expected_issue_recall": 0.0,
+      "blocked_before_execution_rate": 0.5
+    },
+    "target_encoding_leakage": {
+      "case_count": 2,
+      "expected_issue_recall": 0.0,
+      "blocked_before_execution_rate": 0.0
+    },
+    "temporal_order_leakage": {
+      "case_count": 2,
+      "expected_issue_recall": 0.0,
+      "blocked_before_execution_rate": 0.0
+    },
+    "transductive_fit": {
+      "case_count": 2,
+      "expected_issue_recall": 0.5,
+      "blocked_before_execution_rate": 0.5
+    }
+  },
+  "receipt_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/replay_heldout_receipts_v1.jsonl",
+  "receipt_sha256": "3be0405ec9009d86e69b2a3bd8053287da3feacf395fc512d8b8350188501f5f",
+  "claim_scope": "independently_agent_authored_structural_challenge_not_population_recall",
+  "gate_registration_note": "The all-blocked safety invariant was preregistered; the dedicated held-out report and named claim-gate fields were added conservatively after challenge authoring and cannot support a positive claim."
+}
