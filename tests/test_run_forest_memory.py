@@ -1126,6 +1126,44 @@ def test_repair_contract_is_high_priority_in_debug_and_improve_prompts():
         assert "fresh audit" in source
 
 
+def test_debug_runtime_recovery_targets_shm_without_redesigning_branch():
+    from agents.debug_agent import _runtime_recovery_guidance
+    from engine.search_node import SearchNode
+
+    parent = SearchNode(
+        code="loader = DataLoader(dataset, num_workers=4)",
+        plan="novel image pipeline",
+        stage="debug",
+        draft_role="novel_exploration",
+        is_buggy=True,
+        analysis="DataLoader workers were killed by a bus error from insufficient shared memory",
+    )
+    guidance = "\n".join(_runtime_recovery_guidance(parent))
+
+    assert "num_workers=0" in guidance
+    assert "supersedes the generic num_workers>=2" in guidance
+    assert "Do not redesign or simplify" in guidance
+
+
+def test_debug_runtime_recovery_preserves_missing_torch_hub_model_family():
+    from agents.debug_agent import _runtime_recovery_guidance
+    from engine.search_node import SearchNode
+
+    parent = SearchNode(
+        code="torch.hub.load('./missing', 'dinov3_vitl16', source='local')",
+        plan="novel DINOv3 pipeline",
+        stage="draft",
+        draft_role="novel_exploration",
+        is_buggy=True,
+        exc_type="FileNotFoundError",
+        analysis="hubconf.py was not found while calling torch.hub.load",
+    )
+    guidance = "\n".join(_runtime_recovery_guidance(parent))
+
+    assert "Do not replace the architecture or model family" in guidance
+    assert "online GitHub source" in guidance
+
+
 def test_d93_structural_rename_still_matches_failure_patterns():
     import ast
     import sys

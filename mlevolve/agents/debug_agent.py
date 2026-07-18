@@ -25,6 +25,48 @@ from agents.memory.external_skill_memory import fetch_external_skill_memory, ext
 logger = logging.getLogger("MLEvolve")
 
 
+def _runtime_recovery_guidance(parent_node: SearchNode) -> list[str]:
+    """Return targeted constraints for deterministic environment failures."""
+    failure_values = []
+    for attribute in ("exc_type", "term_out", "analysis"):
+        try:
+            failure_values.append(getattr(parent_node, attribute, ""))
+        except (TypeError, ValueError):
+            # A newly constructed node may not have materialized execution
+            # output yet. Other available failure fields still carry enough
+            # information to build deterministic recovery guidance.
+            failure_values.append("")
+    failure_text = "\n".join(
+        str(value or "")
+        for value in failure_values
+    ).lower()
+    guidance: list[str] = []
+    if any(
+        marker in failure_text
+        for marker in (
+            "bus error",
+            "shared memory",
+            "/dev/shm",
+            "dataloader worker",
+            "worker is killed by signal",
+        )
+    ):
+        guidance.extend([
+            "A DataLoader shared-memory failure was detected. This instruction supersedes the generic num_workers>=2 speed guideline for this repair.",
+            "Set num_workers=0 on every DataLoader used by this script, set persistent_workers=False, and omit prefetch_factor. Preserve the dataset, model, optimizer, batch size, and training budget unless a separate error proves they must change.",
+            "Do not redesign or simplify the branch: this is an execution-environment repair only.",
+        ])
+    if (
+        "filenotfounderror" in failure_text
+        and ("hubconf.py" in failure_text or "torch.hub" in failure_text)
+    ):
+        guidance.extend([
+            "The configured local torch.hub repository is missing. Do not replace the architecture or model family merely to bypass the missing path.",
+            "Keep the same model variant and first resolve it through an existing configured checkpoint/repository path; if the repository is absent, use torch.hub's online GitHub source during development as explicitly permitted by the environment instructions.",
+        ])
+    return guidance
+
+
 def _format_debug_memory_guidance(agent, similar_fixes: List[Tuple]) -> str:
     if not similar_fixes:
         return ""
@@ -143,6 +185,9 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         }
         prompt["Instructions"] = repair_contract | prompt["Instructions"]
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
+    runtime_guidance = _runtime_recovery_guidance(parent_node)
+    if runtime_guidance:
+        prompt["Instructions"]["RUNTIME RESOURCE RECOVERY - HIGHEST PRIORITY"] = runtime_guidance
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY
     prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
 

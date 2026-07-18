@@ -154,6 +154,92 @@ model.fit(X_train, y_train, eval_set=[(X_val, y_val)], eval_metric="mlogloss")
     assert audit["status"] == "clean"
 
 
+def test_train_id_selection_from_mixed_frozen_feature_cache_is_clean():
+    code = """
+train_ids, val_ids = train_test_split(sample_ids)
+all_train_val_ids = list(train_ids) + list(val_ids)
+feature_cache = frozen_backbone_features(all_train_val_ids)
+train_features = np.array([
+    feature_cache.get(sample_id, np.zeros(32)) for sample_id in train_ids
+])
+val_features = np.array([
+    feature_cache.get(sample_id, np.zeros(32)) for sample_id in val_ids
+])
+scaler = StandardScaler()
+train_scaled = scaler.fit_transform(train_features)
+val_scaled = scaler.transform(val_features)
+"""
+    audit = audit_code(code)
+    assert audit["status"] == "clean"
+
+
+def test_train_named_concatenation_does_not_clear_holdout_taint():
+    code = """
+X_train_raw, X_val = train_test_split(X)
+X_train = np.concatenate([X_train_raw, X_val])
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+"""
+    audit = audit_code(code)
+    assert audit["status"] == "blocked"
+    assert "TRANSFORM_FIT_ON_HOLDOUT" in {
+        item["issue_code"] for item in audit["issues"]
+    }
+
+
+def test_validation_only_cache_is_not_relabelled_by_train_iterator():
+    code = """
+train_ids, val_ids = train_test_split(sample_ids)
+validation_features = build_features(val_ids)
+train_features = np.array([
+    validation_features.get(sample_id, np.zeros(32)) for sample_id in train_ids
+])
+scaler = StandardScaler()
+train_scaled = scaler.fit_transform(train_features)
+"""
+    audit = audit_code(code)
+    assert audit["status"] == "blocked"
+    assert "TRANSFORM_FIT_ON_HOLDOUT" in {
+        item["issue_code"] for item in audit["issues"]
+    }
+
+
+def test_train_key_lookup_nested_in_holdout_concatenation_stays_tainted():
+    code = """
+X_train_raw, X_val = train_test_split(X)
+train_ids = list(range(len(X_train_raw)))
+feature_cache = frozen_backbone_features(train_ids)
+X_train = np.concatenate([
+    np.array([feature_cache.get(sample_id, 0.0) for sample_id in train_ids]),
+    X_val,
+])
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+"""
+    audit = audit_code(code)
+    assert audit["status"] == "blocked"
+    assert "TRANSFORM_FIT_ON_HOLDOUT" in {
+        item["issue_code"] for item in audit["issues"]
+    }
+
+
+def test_train_key_lookup_with_holdout_default_stays_tainted():
+    code = """
+train_ids, val_ids = train_test_split(sample_ids)
+feature_cache = frozen_backbone_features(train_ids)
+train_features = np.array([
+    feature_cache.get(sample_id, X_val) for sample_id in train_ids
+])
+scaler = StandardScaler()
+train_scaled = scaler.fit_transform(train_features)
+"""
+    audit = audit_code(code)
+    assert audit["status"] == "blocked"
+    assert "TRANSFORM_FIT_ON_HOLDOUT" in {
+        item["issue_code"] for item in audit["issues"]
+    }
+
+
 def test_protocol_invariant_detectors_allow_clean_counterexamples():
     code = """
 entity_ids = frame.entity_id

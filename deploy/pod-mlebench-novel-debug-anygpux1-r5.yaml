@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlebench-novel-debug-anygpux1-r5
+  namespace: ecepxie
+  labels:
+    app: mlebench-novel-debug
+    role: dev-pod
+spec:
+  restartPolicy: Always
+  containers:
+    - name: dev
+      image: haomingwang22/mlevolve:v1
+      command:
+        - /bin/bash
+        - -lc
+      args:
+        - exec tail -f /dev/null
+      resources:
+        requests:
+          cpu: "7"
+          memory: 32Gi
+          ephemeral-storage: "0"
+          nvidia.com/gpu: "1"
+        limits:
+          cpu: "7"
+          memory: 32Gi
+          ephemeral-storage: 50Gi
+          nvidia.com/gpu: "1"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: dshm
+          mountPath: /dev/shm
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: dshm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 8Gi

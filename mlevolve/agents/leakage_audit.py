@@ -26,7 +26,7 @@ logger = logging.getLogger("MLEvolve")
 
 
 AUDIT_SCHEMA = "mlevolve_leakage_audit_v2"
-DETECTOR_VERSION = "deterministic_static_v4"
+DETECTOR_VERSION = "deterministic_static_v5"
 REGISTRY_SCHEMA = "mlevolve_leakage_registry_record_v2"
 
 try:
@@ -622,6 +622,101 @@ def _is_explicit_train_partition(target_name: str, value: ast.AST, code: str) ->
     )
 
 
+def _is_explicit_train_key_selection(
+    target_name: str,
+    value: ast.AST,
+    taints: dict[str, set[str]],
+) -> bool:
+    """Recognize a train-only row selection from a mixed, stateless cache.
+
+    Frozen feature extraction is often amortized across train and validation
+    rows and stored in a dictionary keyed by sample id.  Building a new array
+    by iterating only over train ids is a partition operation, not fitting on
+    validation data.  Without this narrow rule the mixed cache taint survives
+    the id lookup and produces false ``TRANSFORM_FIT_ON_HOLDOUT`` findings.
+
+    Keep the exemption deliberately small: the target and comprehension
+    iterator must both be train-labelled, the iterator itself must not be
+    holdout-labelled, and the bound train id must be used as the key of a
+    ``mapping.get(id, ...)`` lookup.  Concatenation or an arbitrary assignment
+    to a train-named variable therefore remains tainted.
+    """
+    target_parts = {
+        part for part in re.split(r"[^a-z0-9]+", target_name.lower()) if part
+    }
+    if "train" not in target_parts:
+        return False
+
+    comprehension_types = (
+        ast.ListComp,
+        ast.SetComp,
+        ast.DictComp,
+        ast.GeneratorExp,
+    )
+    expression = value
+    if isinstance(expression, ast.Call):
+        wrapper = _call_name(expression.func)
+        if (
+            wrapper not in {"array", "asarray", "tensor"}
+            or len(expression.args) != 1
+            or any(_expr_taints(keyword.value, taints) for keyword in expression.keywords)
+        ):
+            return False
+        expression = expression.args[0]
+    if not isinstance(expression, comprehension_types):
+        return False
+
+    selected = expression.value if isinstance(expression, ast.DictComp) else expression.elt
+    # The keyed lookup must dominate the produced element. Arithmetic or a
+    # concatenation around it could smuggle holdout values into the same row.
+    if not (
+        isinstance(selected, ast.Call)
+        and isinstance(selected.func, ast.Attribute)
+        and selected.func.attr == "get"
+        and selected.args
+    ):
+        return False
+
+    receiver_name = _root_name(selected.func.value)
+    receiver_parts = {
+        part
+        for part in re.split(r"[^a-z0-9]+", receiver_name.lower())
+        if part
+    }
+    cache_like = bool(
+        receiver_parts
+        & {"cache", "embedding", "embeddings", "feature", "features"}
+    )
+    receiver_holdouts = _semantic_taints(receiver_name)
+    mixed_train_validation = bool(
+        "train" in receiver_parts
+        and receiver_parts & {"val", "valid", "validation", "dev"}
+    )
+    if not cache_like or (receiver_holdouts and not mixed_train_validation):
+        return False
+    if any(_expr_taints(argument, taints) for argument in selected.args[1:]):
+        return False
+    if any(_expr_taints(keyword.value, taints) for keyword in selected.keywords):
+        return False
+
+    for generator in expression.generators:
+        iterator_source = ast.unparse(generator.iter).lower()
+        iterator_parts = {
+            part
+            for part in re.split(r"[^a-z0-9]+", iterator_source)
+            if part
+        }
+        if "train" not in iterator_parts or _expr_taints(generator.iter, taints):
+            continue
+        bound_names = set(_target_names(generator.target))
+        if bound_names and any(
+            isinstance(name, ast.Name) and name.id in bound_names
+            for name in ast.walk(selected.args[0])
+        ):
+            return True
+    return False
+
+
 def _is_split_assignment(value: ast.AST) -> bool:
     return any(
         isinstance(node, ast.Call)
@@ -961,6 +1056,12 @@ def audit_code(code: str) -> dict[str, Any]:
             for index, name in enumerate(names):
                 if split_taints is not None:
                     taints[name] = set(split_taints[index])
+                elif _is_explicit_train_key_selection(name, value, taints):
+                    # The mixed cache can contain validation rows, but the
+                    # dictionary lookup materializes only explicitly selected
+                    # train ids. Any stateful fit on the mixed cache itself is
+                    # still audited at its original call site.
+                    taints[name] = set()
                 elif _is_explicit_train_partition(name, value, code):
                     taints[name] = set(value_taints)
                 else:
