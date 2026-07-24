@@ -12,6 +12,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "mlevolve"))
 
 from fixed_holdout.evaluate import evaluate_submission  # noqa: E402
+from fixed_holdout.common import SCHEMA, sha256_file, sha256_lines, write_json  # noqa: E402
 from fixed_holdout.mode import bypass_protocol_gates, enabled  # noqa: E402
 from fixed_holdout.prepare import prepare_task  # noqa: E402
 from fixed_holdout.score_run import score_run  # noqa: E402
@@ -257,6 +258,64 @@ def test_regression_task_uses_the_same_label_isolated_adapter(tmp_path):
     assert result["maximize"] is False
 
 
+@pytest.mark.parametrize(
+    ("labels", "predictions", "expected"),
+    [
+        ([[0], [0], [1], [1]], [[0.1], [0.2], [0.8], [0.9]], 1.0),
+        (
+            [[1, 0, 1], [0, 1, 0], [1, 1, 0]],
+            [[0.9, 0.1, 0.8], [0.2, 0.7, 0.1], [0.8, 0.9, 0.2]],
+            1.0,
+        ),
+    ],
+)
+def test_macro_f1_supports_binary_and_multilabel_terminal_tasks(
+    tmp_path: Path,
+    labels: list[list[int]],
+    predictions: list[list[float]],
+    expected: float,
+) -> None:
+    evaluator = tmp_path / "evaluator_view"
+    evaluator.mkdir()
+    ids = [f"row-{index}" for index in range(len(labels))]
+    prediction_columns = [f"class_{index}" for index in range(len(labels[0]))]
+    label_frame = pd.DataFrame(labels, columns=prediction_columns)
+    label_frame.insert(0, "id", ids)
+    labels_path = evaluator / "labels.csv"
+    label_frame.to_csv(labels_path, index=False)
+    manifest_path = evaluator / "fixed_holdout_manifest.json"
+    write_json(
+        manifest_path,
+        {
+            "schema": SCHEMA,
+            "role": "evaluator_view",
+            "task_id": "macro-f1-test",
+            "split_id": "macro-f1-test-v1",
+            "metric": "macro_f1",
+            "maximize": True,
+            "id_column": "id",
+            "prediction_columns": prediction_columns,
+            "prediction_threshold": 0.5,
+            "zero_division": 0,
+            "row_count": len(ids),
+            "holdout_id_sha256": sha256_lines(ids),
+            "public_tree_sha256": "0" * 64,
+            "selection_policy": "terminal_only",
+            "labels_file": "labels.csv",
+            "labels_sha256": sha256_file(labels_path),
+        },
+    )
+    submission = tmp_path / "submission.csv"
+    prediction_frame = pd.DataFrame(predictions, columns=prediction_columns)
+    prediction_frame.insert(0, "id", ids)
+    prediction_frame.to_csv(submission, index=False)
+
+    result = evaluate_submission(manifest_path, submission)
+    assert result["metric"] == "macro_f1"
+    assert result["score"] == pytest.approx(expected)
+    assert result["maximize"] is True
+
+
 def test_terminal_scorer_ranks_all_submissions_without_mutating_search_metrics(tmp_path):
     split_root = _prepared(tmp_path)
     submissions = tmp_path / "submissions"
@@ -302,7 +361,9 @@ def test_fixed_mode_explicitly_replaces_internal_protocol_gates():
     cfg = SimpleNamespace(
         fixed_holdout=SimpleNamespace(
             enabled=True,
+            evaluation_mode="terminal_only",
             bypass_protocol_gates=True,
+            internal_metric_disposition="search_only",
         )
     )
     assert enabled(cfg) is True

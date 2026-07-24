@@ -1,0 +1,49 @@
+{
+  "type": "result",
+  "result": {
+    "sessionId": "b0d62720-cdc7-4afe-9d3a-e543414a0214",
+    "durationMs": 346856,
+    "durationApiMs": 344701,
+    "numTurns": 48,
+    "totalCostUsd": 1.8056069999999997,
+    "sessionTotalTurns": 48,
+    "sessionTotalCostUsd": 1.8056069999999997,
+    "stopReason": "end_turn",
+    "fastModeState": "off",
+    "usage": {
+      "input_tokens": 97392,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 1655744,
+      "output_tokens": 19631,
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 0,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "",
+      "iterations": [],
+      "speed": "standard"
+    },
+    "modelUsage": {
+      "glm-5.2[1m]": {
+        "inputTokens": 97392,
+        "outputTokens": 19631,
+        "cacheReadInputTokens": 1655744,
+        "cacheCreationInputTokens": 0,
+        "webSearchRequests": 0,
+        "costUSD": 1.8056069999999997,
+        "contextWindow": 1000000,
+        "maxOutputTokens": 32000
+      }
+    },
+    "permissionDenials": [],
+    "result": "The audit is complete. A note on memory: this session is running with read-only tools only (Glob/Grep/Read — no Write), which is consistent with the audit-only contract, so I could not persist a `MEMORY.md` pointer for this verdict. If you want the outcome recorded for future sessions, say the word and I'll save it under a write-enabled session.\n\n**Summary of what I did and found (read-only):**\n\n- Verified every dual-hash in the packet against the actual artifacts: statistics (`5480e2f5…`/`81078aeb…`), joint inventory (`19a28358…`/`bc1ea05…`), evidence ledger (`c9e8f5b2…`/`a21af8c…`), preregistration r1–r9 with five verification sidecars, and the Stop Gate (`de73a72b…`). All match.\n- Recomputed the statistics independently: 4/9 vs 6/9 completion, raw sign-flip p = (½)⁴ = 0.0625, Holm ×4 = 0.25, task-macro non-estimable (taxi 0 pairs). The \"Full superiority rejected\" call is correct.\n- Confirmed the 23 failures are retained (Taxi seed-155921 Full-failed/No-Memory-scored is row 43 vs row 45 of `formal_observations.jsonl`), 0 imputed, 0 excluded.\n- Confirmed r1/r2/r3 are visibly partial/failed and only r4 is bound; confirmed the post-result boundary (formal snapshots `d7fed754…`/`c674364d…` ≠ closeout `bfb01b79…`).\n- Confirmed all six cited engineering-invariant tests exist and the immutability verifier rejects writable/symlinked/non-regular roots.\n\n**Verdict: PLAN_APPROVED for WP8 engineering completion; no performance-superiority and no experience-causality claim authorized.** Three non-blocking items logged (F-01: the `dcf2e62c…` Stop-Gate \"verification hash\" is cited only inside the packet itself — recommend committing the verifier sidecar; F-02: the r5 retry used a different source snapshot than r3, attested schema-only — worth a one-line note in the paper; F-03: keep C4 paper prose at \"diagnostic\", don't drift to \"trend\").",
+    "isError": false
+  },
+  "createdAt": "2026-07-24T08:32:39.483Z"
+}
+

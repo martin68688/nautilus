@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: da-wp8-f-controller-cpu-r1
+  namespace: ecepxie
+  labels:
+    app: decision-admissibility-wp8-tier2
+    work-package: wp8
+    experiment-tier: tier2-formal
+    execution-kind: devpod
+    role: formal-controller
+spec:
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 30
+  containers:
+  - name: formal-controller
+    image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+    imagePullPolicy: IfNotPresent
+    command:
+    - /bin/bash
+    - -lc
+    args:
+    - 'set -euo pipefail
+
+      exec sleep infinity
+
+      '
+    env:
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.namespace
+    - name: POD_UID
+      valueFrom:
+        fieldRef:
+          fieldPath: metadata.uid
+    - name: WP8_FORMAL_STAGING_CONTENT_HASH
+      value: daedfe276d27e84762f1356fd9a65fe6fd2e2a55eee1f51fe8b79b58c63f0275
+    resources:
+      requests:
+        cpu: '1'
+        memory: 2Gi
+      limits:
+        cpu: '1'
+        memory: 2Gi
+    volumeMounts:
+    - name: workspace
+      mountPath: /opt/nautilus
+      subPath: decision-admissibility-wp8-tier2-formal-source-r7
+      readOnly: true
+    - name: workspace
+      mountPath: /formal/staging
+      subPath: decision-admissibility-wp8-tier2-formal-staging-r9
+      readOnly: true
+    - name: workspace
+      mountPath: /formal/outputs
+      subPath: decision-admissibility-wp8-tier2-formal-runs-r7
+      readOnly: false
+    - name: work
+      mountPath: /work
+  volumes:
+  - name: workspace
+    persistentVolumeClaim:
+      claimName: haoming-storage
+  - name: work
+    emptyDir: {}
+  activeDeadlineSeconds: 259200

@@ -3,6 +3,11 @@ from __future__ import annotations
 import hashlib
 from typing import Any
 
+from ...claim_decomposer import (
+    ClaimBoundaryProposal,
+    DecompositionResult,
+    decompose_node_claims,
+)
 from ...models import Claim, ClaimType, ProtocolRef
 from ...replay_certifier import fingerprint_method
 
@@ -29,20 +34,27 @@ def ensure_node_authority_fields(node: Any, protocol_ref: ProtocolRef) -> None:
             setattr(node, name, value)
 
 
-def score_claim(node: Any, protocol_ref: ProtocolRef, task_id: str) -> Claim:
+def claims_for_node(
+    node: Any,
+    protocol_ref: ProtocolRef,
+    task_id: str,
+    *,
+    proposals: list[ClaimBoundaryProposal] | None = None,
+    legacy_static_only: bool = False,
+) -> DecompositionResult:
     ensure_node_authority_fields(node, protocol_ref)
-    claim_id = f"node:{node.id}:score"
-    metric = getattr(getattr(node, "metric", None), "value", None)
-    claim = Claim(
-        claim_id=claim_id,
-        claim_type=ClaimType.SCORE,
-        subject_artifact_id=str(node.id),
-        task_scope={"task_id": task_id},
-        method_fingerprint=node.method_fingerprint,
-        protocol_ref=protocol_ref,
-        statement=f"Node {node.id} produced score {metric} under {protocol_ref.key()}",
-        parent_claims=list(getattr(node, "derived_from_refs", []) or []),
+    return decompose_node_claims(
+        node,
+        protocol_ref,
+        task_id,
+        proposals=proposals or (),
+        legacy_static_only=legacy_static_only,
     )
-    if claim_id not in node.claim_refs:
-        node.claim_refs.append(claim_id)
-    return claim
+
+
+def score_claim(node: Any, protocol_ref: ProtocolRef, task_id: str) -> Claim:
+    result = claims_for_node(node, protocol_ref, task_id)
+    matches = result.claims_of_type(ClaimType.SCORE)
+    if not matches:
+        raise ValueError(f"Node {node.id} has no reported score claim")
+    return matches[0]

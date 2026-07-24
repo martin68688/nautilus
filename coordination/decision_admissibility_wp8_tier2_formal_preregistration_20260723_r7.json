@@ -1,0 +1,127 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_continuation_amendment_v1",
+  "preregistration_id": "wp8-tier2-formal-3protocol-6system-r7-five-block-continuation",
+  "status": "continuation_design_frozen_pending_new_staging_stop_gate",
+  "frozen_at_utc": "2026-07-23T03:05:00Z",
+  "parent_preregistration": {
+    "preregistration_id": "wp8-tier2-formal-3protocol-6system-r6-preterminal-finalizer-recovery",
+    "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r6.json",
+    "file_sha256": "3b1290854630588a5c94f4cc50f8859fd9aef4c9bb63812020c7cc36610e039d"
+  },
+  "completed_blocks_freeze": {
+    "path": "coordination/decision_admissibility_wp8_tier2_formal_completed_blocks_freeze_20260723_r1.json",
+    "file_sha256": "74ab746d2cdb3a2bd011a2fe84affc2686d236103b20cbad1c696e7c5ccb2a6b",
+    "inventory_hash": "bbf256f9318cd7eaedf12b89c89be479da67e266a5eaa5ef4ef605b72b6ec17d",
+    "score_values_inspected": false,
+    "completed_blocks_may_rerun": false
+  },
+  "scientific_objective": {
+    "primary_hypothesis": "Under identical model, data, candidate contract, Agent budget, condition order controls and host-owned terminal evaluation, full_decision_admissibility yields better protocol-legal target-task performance than no_memory on unseen same-domain transfer tasks, without target-task history, answer or score reuse.",
+    "primary_contrast": "full_decision_admissibility minus no_memory, paired within task and agent_seed",
+    "status_relative_to_r1_r6": "unchanged",
+    "terminal_score_values_inspected": false,
+    "effect_claim_authorized": false
+  },
+  "continuation_design": {
+    "remaining_block_count": 5,
+    "remaining_online_condition_count": 25,
+    "remaining_oracle_count": 5,
+    "remaining_blocks": [
+      {
+        "task_id": "mlsp-2013-birds",
+        "agent_seed": 130363
+      },
+      {
+        "task_id": "mlsp-2013-birds",
+        "agent_seed": 155921
+      },
+      {
+        "task_id": "new-york-city-taxi-fare-prediction",
+        "agent_seed": 104729
+      },
+      {
+        "task_id": "new-york-city-taxi-fare-prediction",
+        "agent_seed": 130363
+      },
+      {
+        "task_id": "new-york-city-taxi-fare-prediction",
+        "agent_seed": 155921
+      }
+    ],
+    "completed_blocks_excluded_from_new_output_root": true,
+    "completed_blocks_may_reexecute": false,
+    "same_frozen_condition_orders": true,
+    "same_frozen_search_budgets": true,
+    "same_frozen_candidate_contracts": true,
+    "same_immutable_holdouts": true,
+    "same_immutable_child_bundles": true
+  },
+  "continuation_overrides": {
+    "source_root": "/workspace/decision-admissibility-wp8-tier2-formal-source-r11",
+    "control_root": "/workspace/decision-admissibility-wp8-tier2-formal-control-r11",
+    "staging_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r13",
+    "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r11",
+    "gate_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r13-stop-gate-r1",
+    "pipeline_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r13-pipeline-r1",
+    "formal_execution_revision": "r4",
+    "block_id_suffix": "r4",
+    "controller_pod": "da-wp8-f-controller-cpu-r4",
+    "stager_pod": "decision-admissibility-wp8-tier2-formal-stager-cpu-r13",
+    "formal_training_authorized": false
+  },
+  "implementation_correction": {
+    "deploy/run_decision_admissibility_wp8_tier2_formal_block.sh": "2664a296afa8d936903ae72c3a718965428168470a64fd009b6c5827c8f8f434",
+    "deploy/run_decision_admissibility_wp8_tier2_formal_continuation_staging_pipeline.sh": "2b032cfa3a71ce74829397d44717ed5921a63dd4d3d5180f60d6eb70d15abc58",
+    "deploy/run_decision_admissibility_wp8_tier2_formal_evaluator_devpod.sh": "a61f9f68fc1a9003e43841a7f41434c53600a4bde93b3a270ff13e40d88decb3",
+    "deploy/stage_decision_admissibility_wp8_tier2_formal_continuation.sh": "677c05dfd0a13095e66fd18c48108877dcf735688b1cc5283141c1056f9bbe97",
+    "mlevolve/fixed_holdout/formal_block_evaluate.py": "bf25e0ba717b940e7046cbd4c71b8b72be6ae269f3b1b8d16321dee3cd96e304",
+    "mlevolve/fixed_holdout/formal_block_training.py": "dc643ca0c8bc8e9b889e3956f17d9bfe79feffe5c02bf37b544f3ed251304b4d",
+    "mlevolve/fixed_holdout/formal_preterminal_recovery.py": "b82cc839f1f5d96738ca9c3155da704750fa7a9bff716dd663fd51c5edac59d4",
+    "mlevolve/fixed_holdout/formal_runtime.py": "11c7abe443498da2df5d782e983af1ce65c8408e450dc307c415a98e3176065a",
+    "paper-skills/memory_bundle/build_tier2_formal_continuation_staging.py": "4c3239d31aa3a1716f31b270a8d7764addcb751991c8995e864a428ad2b97421",
+    "paper-skills/memory_bundle/verify_tier2_formal_continuation_amendment.py": "ea39e33b4b1c05128cc21882b2e5c61519d3542ebd5eb810c109226591f31ca0",
+    "paper-skills/memory_bundle/verify_tier2_formal_continuation_staging.py": "5ba2d1a622bca22c7d205208fa52232bfc8fcc23743e6aaa9e916ad302eb1692",
+    "allowed_runtime_source_changes": [
+      "WP8_TIER2_OVERLAY_PATHS.txt",
+      "deploy/run_decision_admissibility_wp8_tier2_formal_evaluator_devpod.sh",
+      "mlevolve/fixed_holdout/formal_block_evaluate.py",
+      "mlevolve/fixed_holdout/formal_block_training.py",
+      "mlevolve/fixed_holdout/formal_preterminal_recovery.py",
+      "mlevolve/fixed_holdout/formal_runtime.py"
+    ],
+    "candidate_generation_semantics_changed": false,
+    "blocked_observation_condition_failure_fix": true,
+    "positive_protocol_path_changed": false,
+    "targeted_regression_required": true
+  },
+  "scope": {
+    "primary_contrast_changed": false,
+    "systems_changed": false,
+    "tasks_changed": false,
+    "agent_seeds_changed": false,
+    "condition_orders_changed": false,
+    "search_budgets_changed": false,
+    "candidate_contracts_changed": false,
+    "holdouts_changed": false,
+    "memory_bundles_changed": false,
+    "memory_claim_permissions_changed": false,
+    "oracle_algorithm_changed": false,
+    "statistics_changed": false,
+    "target_history_exclusion_changed": false,
+    "source_score_inheritance_changed": false,
+    "terminal_score_value_used_to_choose_continuation": false,
+    "runtime_source_changed": true,
+    "formal_roots_changed": true
+  },
+  "analysis_integrity": {
+    "all_four_completed_blocks_retained": true,
+    "all_five_remaining_blocks_run_once": true,
+    "no_completed_block_reexecuted": true,
+    "no_condition_seed_or_task_excluded": true,
+    "failures_remain_outcomes": true,
+    "no_imputation_from_oracle_or_source_score": true,
+    "mixed_source_hashes_reported_per_block": true,
+    "effect_claim_authorized_before_results": false
+  },
+  "amendment_hash": "0262c545a0cf98183024354dde69df1d1d1bd3f6cbd40b97cb3e99cd6088f29d"
+}

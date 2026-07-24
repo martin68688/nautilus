@@ -8,7 +8,11 @@ from .shared import (
     get_internet_clarification,
 )
 from .environment import get_prompt_environment
-from .impl_guideline import get_impl_guideline, get_impl_guideline_from_agent
+from .impl_guideline import (
+    get_candidate_execution_contract_from_agent,
+    get_impl_guideline,
+    get_impl_guideline_from_agent,
+)
 
 __all__ = [
     "ROBUSTNESS_GENERALIZATION_STRATEGY",
@@ -17,6 +21,7 @@ __all__ = [
     "prompt_resp_fmt",
     "get_internet_clarification",
     "get_prompt_environment",
+    "get_candidate_execution_contract_from_agent",
     "get_impl_guideline",
     "get_impl_guideline_from_agent",
 ]

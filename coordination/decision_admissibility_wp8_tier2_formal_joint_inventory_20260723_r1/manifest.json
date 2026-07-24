@@ -1,0 +1,16 @@
+{
+  "block_tree_binding_hash": "41feb21b16939f9dd24d6dcd81dc93c47084324749861e9cc6026ca7f619dfff",
+  "builder_source_sha256": "eb249f1c38673473a44e9b818025558a82d4020d781b0724896804ec17c25e48",
+  "input_binding_hash": "0014fb703bf5dc29de66054484d72a84e9d45cc5c67e92884d4fa3a9c020292e",
+  "joint_inventory_file": "joint_inventory.json",
+  "joint_inventory_file_sha256": "6242271dc57a2f2de18bfa38c105d535b70364789a98d62d046cc9a6a4c299d8",
+  "joint_inventory_hash": "19a2835857945d56980b8dd0a6ae7d9a51e718045acd6753e9f7db8af05cdba5",
+  "manifest_hash": "44951619451640bfccae85928aff48fab2164ad3161f3a082689222755706b2e",
+  "schema": "decision_admissibility_wp8_tier2_formal_joint_inventory_manifest_v1",
+  "score_bearing_artifacts_parsed": false,
+  "score_policy": "hash_only",
+  "score_values_included": false,
+  "score_values_inspected": false,
+  "source_binding_hash": "22e9030aaf36268fa2809097ef2fb8178998180bb487828b7d9050d7df702883",
+  "status": "passed"
+}

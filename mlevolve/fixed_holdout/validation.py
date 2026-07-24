@@ -59,6 +59,7 @@ def validate_submission(manifest_path: Path, submission_path: Path) -> tuple[boo
         "multiclass_log_loss",
         "binary_log_loss",
         "binary_roc_auc",
+        "macro_f1",
     } and ((predictions < 0).any() or (predictions > 1).any()):
         return False, "Probability predictions must be in [0, 1]"
     if manifest["metric"] == "multiclass_log_loss":

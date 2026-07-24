@@ -898,6 +898,8 @@ def build_artifact(
                 "parent_buggy": parent.get("is_buggy"),
                 "child_buggy": child.get("is_buggy"),
                 "attached_sop_ids": [f"sop::{sop_id}" for sop_id in attached_sops],
+                "navigation_sop_ids": [f"sop::{sop_id}" for sop_id in attached_sops],
+                "attached_sop_ids_deprecated": True,
                 "attachment_quality": [
                     {"sop_id": f"sop::{sop_id}", "quality": quality, "score": score}
                     for sop_id, quality, score in attached_pairs[:6]
@@ -940,20 +942,25 @@ def build_artifact(
                     parent_claim_refs=parent_claim_refs,
                     clean_ancestry=bool(require_clean_provenance),
                 )
-                edges.append(
-                    {
-                        "src": transition_id,
-                        "dst": f"sop::{sop_id}",
-                        "kind": "distills_to",
-                        "weight": 0.9 if quality == "evidence_turn_match" else 0.55,
-                        "quality": quality,
-                        "score": score,
-                        "authority_operation": Operation.DISTILL.value,
-                        "authority_outcome": distillation.outcome.value,
-                        "authority_reasons": distillation.reasons,
-                        "parent_claim_refs": parent_claim_refs,
-                    }
-                )
+                edge_payload = {
+                    "src": transition_id,
+                    "dst": f"sop::{sop_id}",
+                    "weight": 0.9 if quality == "evidence_turn_match" else 0.55,
+                    "quality": quality,
+                    "score": score,
+                    "authority_operation": Operation.DISTILL_POSITIVE.value,
+                    "legacy_authority_operation": Operation.DISTILL.value,
+                    "authority_outcome": distillation.outcome.value,
+                    "authority_reasons": distillation.reasons,
+                    "parent_claim_refs": parent_claim_refs,
+                }
+                edges.append({**edge_payload, "kind": "distills_to"})
+                edges.append({**edge_payload, "kind": "navigation_attached_to"})
+                if distillation.outcome in {
+                    DecisionOutcome.ALLOW,
+                    DecisionOutcome.ALLOW_WITH_WARNING,
+                }:
+                    edges.append({**edge_payload, "kind": "authorized_distills_to"})
 
     for sop in sops:
         sop_id = str(sop.get("id"))
@@ -1041,11 +1048,21 @@ def build_artifact(
             "sop_taxonomy": display_path(sop_taxonomy_path),
             "sop_taxonomy_schema": sop_report.get("taxonomy_schema"),
             "sop_taxonomy_source_graph_sha256": sop_report.get("taxonomy_source_graph_sha256"),
-            "sop_taxonomy_sop_count": sop_report.get("taxonomy_sop_count"),
-            "sop_taxonomy_coverage": sop_report.get("taxonomy_coverage"),
+            # The source taxonomy covers the full SOP catalog, while a clean
+            # provenance allowlist can intentionally retain only a subset of
+            # those SOPs. Runtime validation must compare against the SOPs in
+            # this frozen graph, not the unfiltered source catalog.
+            "sop_taxonomy_sop_count": len(sops),
+            "sop_taxonomy_coverage": 1.0 if sops else 0.0,
+            "sop_taxonomy_source_sop_count": sop_report.get("taxonomy_sop_count"),
+            "sop_taxonomy_source_coverage": sop_report.get("taxonomy_coverage"),
             "sop_taxonomy_classifier_version": sop_report.get("taxonomy_classifier_version"),
             "sop_taxonomy_override_version": sop_report.get("taxonomy_override_version"),
-            "sop_taxonomy_reviewed_l1_count": sop_report.get("taxonomy_reviewed_l1_count"),
+            "sop_taxonomy_reviewed_l1_count": sum(
+                sop.get("abstraction_level") == "L1_strategy"
+                and sop.get("manual_reviewed") is True
+                for sop in sops
+            ),
             "journal_count": len(journals),
             "source_runs": sorted({run_short_id(run_id) for run_id, _path, _journal in journals}),
             "allowlist": provenance.get("allowed_run_ids", []) if provenance else [],
@@ -1116,6 +1133,8 @@ def build_artifact(
         "sop_taxonomy_source_graph_sha256": graph["meta"]["sop_taxonomy_source_graph_sha256"],
         "sop_taxonomy_sop_count": graph["meta"]["sop_taxonomy_sop_count"],
         "sop_taxonomy_coverage": graph["meta"]["sop_taxonomy_coverage"],
+        "sop_taxonomy_source_sop_count": graph["meta"]["sop_taxonomy_source_sop_count"],
+        "sop_taxonomy_source_coverage": graph["meta"]["sop_taxonomy_source_coverage"],
         "sop_taxonomy_classifier_version": graph["meta"]["sop_taxonomy_classifier_version"],
         "sop_taxonomy_override_version": graph["meta"]["sop_taxonomy_override_version"],
         "sop_taxonomy_reviewed_l1_count": graph["meta"]["sop_taxonomy_reviewed_l1_count"],
@@ -1147,6 +1166,13 @@ def build_artifact(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--corpus-manifest", type=Path)
+    parser.add_argument("--audit-dir", type=Path)
+    parser.add_argument("--sop-clauses", type=Path)
+    parser.add_argument("--sop-containers", type=Path)
+    parser.add_argument("--split-manifest", type=Path)
+    parser.add_argument("--authority-decisions", type=Path)
+    parser.add_argument("--bundle-id")
     parser.add_argument("--runs-dir", type=Path, default=DEFAULT_RUNS_DIR)
     parser.add_argument("--sop-graph", type=Path, default=DEFAULT_SOP_GRAPH)
     parser.add_argument("--sop-taxonomy", type=Path, default=DEFAULT_SOP_TAXONOMY)
@@ -1155,6 +1181,37 @@ def main() -> None:
     parser.add_argument("--require-clean-provenance", action="store_true")
     args = parser.parse_args()
 
+    if args.corpus_manifest is not None:
+        required = {
+            "--audit-dir": args.audit_dir,
+            "--sop-clauses": args.sop_clauses,
+            "--sop-containers": args.sop_containers,
+            "--split-manifest": args.split_manifest,
+            "--bundle-id": args.bundle_id,
+        }
+        missing = [flag for flag, value in required.items() if value in {None, ""}]
+        if missing:
+            parser.error(
+                "--corpus-manifest v2 mode also requires " + ", ".join(missing)
+            )
+        memory_bundle_dir = REPO / "paper-skills" / "memory_bundle"
+        if str(memory_bundle_dir) not in sys.path:
+            sys.path.insert(0, str(memory_bundle_dir))
+        from runforest_v2 import build_runforest_v2
+
+        report = build_runforest_v2(
+            args.corpus_manifest,
+            args.audit_dir,
+            args.sop_clauses,
+            args.sop_containers,
+            args.split_manifest,
+            args.out_dir,
+            bundle_id=args.bundle_id,
+            authority_decisions_path=args.authority_decisions,
+        )
+        print(json.dumps(report, indent=2))
+        return
+
     graph, index, report = build_artifact(
         args.runs_dir,
         args.sop_graph,
@@ -1162,6 +1219,8 @@ def main() -> None:
         require_clean_provenance=args.require_clean_provenance,
         sop_taxonomy_path=args.sop_taxonomy,
     )
+    graph["meta"]["certification_level"] = "legacy_uncertified"
+    report["certification_level"] = "legacy_uncertified"
     args.out_dir.mkdir(parents=True, exist_ok=True)
     graph_path = args.out_dir / "run_forest_graph.json"
     index_path = args.out_dir / "run_forest_index.npz"

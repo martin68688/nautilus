@@ -1,0 +1,17 @@
+{
+  "builder_source_sha256": "b6ba926575820c6a9dbff8a56a2357efa153d22d086a380205b410bbea86f59d",
+  "claim_count": 7,
+  "diagnostic_claim_count": 1,
+  "errors": [],
+  "headline_effect_claim_authorized": false,
+  "ledger_hash": "c9e8f5b2cedee1072baae0d7f5c5a505de4980e59223a0678ef19dcc86174570",
+  "manifest_hash": "f7f7e8da1e2d1cb537ac565fbe150e8b3e259d537fae7bd378064fff5f983ea3",
+  "pending_claim_count": 1,
+  "rejected_claim_count": 1,
+  "schema": "decision_admissibility_wp8_evidence_ledger_verification_v1",
+  "status": "passed",
+  "supported_claim_count": 4,
+  "verification_hash": "a21af8c27420447f88fc45f38be77cac37be20e8ef2f901062dc8fd9dadd2b2f",
+  "verified": true,
+  "verifier_source_sha256": "67132230cde61ef459dadcda8c4b496ec914a1133b77dfa5caa6729c523f0b8d"
+}

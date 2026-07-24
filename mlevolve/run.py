@@ -327,6 +327,25 @@ def run():
         evaluation_request = write_evaluation_request(
             cfg,
             cfg.log_dir / "journal.json",
+            authority=getattr(agent, "evaluation_authority", None),
+            selected_node_id=(
+                agent.best_node.id if agent.best_node is not None else None
+            ),
+            selection_basis=(
+                {
+                    "type": "solver_internal_search_metric",
+                    "metric_value": agent.best_node.metric.value,
+                    "metric_maximize": agent.best_node.metric.maximize,
+                    "stage": agent.best_node.stage,
+                    "draft_role": agent.best_node.draft_role,
+                    "metric_disposition": "search_only",
+                    "terminal_metric_observed": False,
+                    "formal_rank_claim_authorized": False,
+                    "source_score_inherited": False,
+                }
+                if agent.best_node is not None
+                else None
+            ),
         )
         if evaluation_request is not None:
             logger.info(

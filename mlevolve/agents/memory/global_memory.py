@@ -10,10 +10,18 @@ import logging
 import os
 import threading
 import uuid
+from dataclasses import asdict, is_dataclass
 from functools import wraps
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Iterable, Optional, List, Tuple
 from datetime import datetime
+
+from authority.models import DecisionOutcome, Operation, canonical_operation
+from authority.stage_ontology import (
+    GenerationStage,
+    GovernanceStage,
+    resolve_stage_axes,
+)
 
 from .record import MemRecord
 from .retriever import HybridRetriever
@@ -25,6 +33,38 @@ except ImportError:  # pragma: no cover - Windows fallback
     fcntl = None
 
 logger = logging.getLogger("memory")
+
+
+_PERSISTED_METADATA_KEYS = (
+    "exec_time",
+    "parent_metric",
+    "current_metric",
+    "parent_error",
+    "source_node_ids",
+    "code_sha256",
+    "leakage_audit",
+    "protocol_repair",
+    "memory_type",
+    "artifact_id",
+    "task_id",
+    "claim_refs",
+    "authority_decision_refs",
+    "authority_decisions",
+    "authority_policy_version",
+    "protocol_ref",
+)
+
+
+def _jsonable(value: Any) -> Any:
+    if is_dataclass(value):
+        return _jsonable(asdict(value))
+    if isinstance(value, dict):
+        return {str(key): _jsonable(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_jsonable(item) for item in value]
+    if hasattr(value, "value"):
+        return value.value
+    return value
 
 
 def _synchronized(method):
@@ -63,11 +103,90 @@ class GlobalMemoryLayer:
         self._load_error: str | None = None
         self.authority_mode: str = "off"
         self.active_protocol_ref: str = ""
+        self.authority_policy_version: str = ""
+        self.active_task_id: str = ""
+        self.authority_decisions: Dict[str, Any] = {}
+        self.authority_enforce_operations: set[str] = set()
+        self.authority_enforce_generation_stages: set[str] = set()
+        self.authority_enforce_governance_stages: set[str] = set()
         self.records: List[MemRecord] = []
         self.node_metadata_map: Dict[str, Dict[str, Any]] = {}
         self._load_memory()
 
         logger.info(f"[GlobalMemory] Initialized with {len(self.records)} existing records")
+
+    def configure_authority(
+        self,
+        *,
+        mode: str,
+        active_protocol_ref: str,
+        policy_version: str,
+        active_task_id: str,
+        decisions: Dict[str, Any],
+        enforce_operations: Iterable[Operation | str] = (),
+        enforce_generation_stages: Iterable[GenerationStage | str] = (),
+        enforce_governance_stages: Iterable[GovernanceStage | str] = (),
+    ) -> None:
+        mode = str(mode or "off").lower()
+        if mode not in {"off", "shadow", "enforce"}:
+            raise ValueError(f"Unsupported GlobalMemory authority mode: {mode}")
+        self.authority_mode = mode
+        self.active_protocol_ref = str(active_protocol_ref or "")
+        self.authority_policy_version = str(policy_version or "")
+        self.active_task_id = str(active_task_id or "")
+        # Keep the live engine mapping so decisions issued immediately before a
+        # memory write are snapshotted into the persisted record.
+        self.authority_decisions = decisions
+        self.authority_enforce_operations = {
+            canonical_operation(value).value for value in enforce_operations
+        }
+        self.authority_enforce_generation_stages = {
+            str(getattr(value, "value", value))
+            for value in enforce_generation_stages
+            if str(getattr(value, "value", value))
+        }
+        self.authority_enforce_governance_stages = {
+            str(getattr(value, "value", value))
+            for value in enforce_governance_stages
+            if str(getattr(value, "value", value))
+        }
+
+    def _should_enforce_request(
+        self,
+        *,
+        operation: Operation,
+        generation_stage: GenerationStage | None,
+        governance_stage: GovernanceStage,
+    ) -> bool:
+        if self.authority_mode != "enforce":
+            return False
+        operations = getattr(self, "authority_enforce_operations", set())
+        generations = getattr(
+            self, "authority_enforce_generation_stages", set()
+        )
+        governances = getattr(
+            self, "authority_enforce_governance_stages", set()
+        )
+        if operations and operation.value not in operations:
+            return False
+        # Missing stage metadata cannot prove that a request is outside a
+        # staged enforcement window, so it remains fail-closed.
+        if (
+            generations
+            and generation_stage is not None
+            and generation_stage.value not in generations
+        ):
+            return False
+        if governances and governance_stage.value not in governances:
+            return False
+        return True
+
+    def _decision_snapshot(self, decision_ref: str) -> dict[str, Any] | None:
+        decision = getattr(self, "authority_decisions", {}).get(decision_ref)
+        if decision is None:
+            return None
+        payload = _jsonable(decision)
+        return payload if isinstance(payload, dict) else None
 
     @_synchronized
     def save_node(self, node, parent_node: Optional = None) -> bool:
@@ -99,11 +218,24 @@ class GlobalMemoryLayer:
                 timestamp=timestamp,
             )
 
+            decision_refs = list(getattr(node, "authority_decision_refs", []) or [])
+            decision_snapshots = [
+                snapshot
+                for decision_ref in decision_refs
+                if (snapshot := self._decision_snapshot(str(decision_ref))) is not None
+            ]
             metadata = {
                 "exec_time": exec_time,
                 "parent_metric": parent_metric,
                 "current_metric": current_metric,
-                "authority_decision_refs": list(getattr(node, "authority_decision_refs", []) or []),
+                "artifact_id": str(node.id),
+                "task_id": str(getattr(self, "active_task_id", "") or ""),
+                "claim_refs": list(getattr(node, "claim_refs", []) or []),
+                "authority_decision_refs": decision_refs,
+                "authority_decisions": decision_snapshots,
+                "authority_policy_version": str(
+                    getattr(self, "authority_policy_version", "") or ""
+                ),
                 "protocol_ref": str(getattr(node, "protocol_ref", "") or ""),
             }
             if (getattr(node, "protocol_repair", None) or {}).get("state") == "completed":
@@ -197,6 +329,106 @@ class GlobalMemoryLayer:
         )
         return True
 
+    @staticmethod
+    def _protocol_hash(protocol_ref: str) -> str:
+        _prefix, separator, digest = str(protocol_ref or "").partition("#")
+        return digest if separator else ""
+
+    def _authority_decision_candidates(self, metadata: dict[str, Any]) -> list[dict[str, Any]]:
+        by_id: dict[str, dict[str, Any]] = {}
+        for payload in metadata.get("authority_decisions") or []:
+            if isinstance(payload, dict) and payload.get("decision_id"):
+                by_id[str(payload["decision_id"])] = payload
+        for decision_ref in metadata.get("authority_decision_refs") or []:
+            decision_ref = str(decision_ref)
+            if decision_ref in by_id:
+                continue
+            snapshot = self._decision_snapshot(decision_ref)
+            if snapshot is not None:
+                by_id[decision_ref] = snapshot
+        return [by_id[key] for key in sorted(by_id)]
+
+    def _record_authorized(
+        self,
+        record: MemRecord,
+        *,
+        operation: Operation,
+        generation_stage: GenerationStage | None,
+        governance_stage: GovernanceStage,
+        task_id: str,
+    ) -> bool:
+        # Negative/audit memory is navigational only. It can inform explicit
+        # debug/inspection, never silently join a positive generation view.
+        if record.label < 0:
+            return operation in {
+                Operation.INSPECT,
+                Operation.DEBUG_HYPOTHESIS,
+                Operation.DISTILL_DIAGNOSTIC,
+            } or generation_stage == GenerationStage.DEBUG
+
+        metadata = self.node_metadata_map.get(record.record_id, {})
+        active_protocol_ref = str(getattr(self, "active_protocol_ref", "") or "")
+        active_policy = str(getattr(self, "authority_policy_version", "") or "")
+        active_hash = self._protocol_hash(active_protocol_ref)
+        if not all((active_protocol_ref, active_policy, active_hash, task_id)):
+            return False
+        if metadata.get("protocol_ref") != active_protocol_ref:
+            return False
+        if generation_stage is None:
+            return False
+
+        refs = {str(value) for value in metadata.get("authority_decision_refs") or []}
+        claim_refs = {str(value) for value in metadata.get("claim_refs") or []}
+        artifact_id = str(metadata.get("artifact_id") or record.record_id.removeprefix("node_"))
+        metadata_policy = str(metadata.get("authority_policy_version") or "")
+        if metadata_policy and metadata_policy != active_policy:
+            return False
+
+        for decision in self._authority_decision_candidates(metadata):
+            if str(decision.get("decision_id") or "") not in refs:
+                continue
+            if str(decision.get("outcome") or "") not in {
+                DecisionOutcome.ALLOW.value,
+                DecisionOutcome.ALLOW_WITH_WARNING.value,
+            }:
+                continue
+            if str(decision.get("policy_version") or "") != active_policy:
+                continue
+            if str(decision.get("artifact_id") or "") != artifact_id:
+                continue
+            if claim_refs and str(decision.get("claim_id") or "") not in claim_refs:
+                continue
+            try:
+                decision_operation = canonical_operation(str(decision.get("operation") or ""))
+            except ValueError:
+                continue
+            if decision_operation != operation:
+                continue
+            if str(decision.get("generation_stage") or "") != generation_stage.value:
+                continue
+            if str(decision.get("governance_stage") or "") != governance_stage.value:
+                continue
+
+            scope = decision.get("permitted_scope")
+            if not isinstance(scope, dict):
+                continue
+            if operation.value not in {str(value) for value in scope.get("operations") or []}:
+                continue
+            if generation_stage.value not in {
+                str(value) for value in scope.get("generation_stages") or []
+            }:
+                continue
+            if governance_stage.value not in {
+                str(value) for value in scope.get("governance_stages") or []
+            }:
+                continue
+            if active_hash not in {str(value) for value in scope.get("protocol_hashes") or []}:
+                continue
+            if task_id not in {str(value) for value in scope.get("task_ids") or []}:
+                continue
+            return True
+        return False
+
     def retrieve_similar_records(
         self,
         query_text: str,
@@ -206,6 +438,10 @@ class GlobalMemoryLayer:
         label_filter: Optional[int] = None,
         stage_filter: Optional[str] = None,
         min_score: float = 0.0,
+        authority_operation: Operation | str = Operation.GENERATE_CANDIDATE,
+        authority_generation_stage: GenerationStage | str | None = None,
+        authority_governance_stage: GovernanceStage | str = GovernanceStage.RETRIEVAL,
+        authority_task_id: str | None = None,
     ) -> List[Tuple[MemRecord, float]]:
         """Retrieve similar or dissimilar records. Returns list of (record, score)."""
         if not self.records:
@@ -226,16 +462,43 @@ class GlobalMemoryLayer:
 
         all_results = self.retriever.search(query_text, top_k=len(self.records), alpha=alpha)
         if self.authority_mode == "enforce":
-            all_results = [
-                (record, score)
-                for record, score in all_results
-                if record.label < 0
-                or (
-                    bool(self.node_metadata_map.get(record.record_id, {}).get("authority_decision_refs"))
-                    and self.node_metadata_map.get(record.record_id, {}).get("protocol_ref")
-                    == self.active_protocol_ref
-                )
-            ]
+            operation = canonical_operation(authority_operation)
+            governance_stage = GovernanceStage(str(getattr(
+                authority_governance_stage, "value", authority_governance_stage
+            )))
+            generation_stage = None
+            if authority_generation_stage is not None:
+                generation_stage = GenerationStage(str(getattr(
+                    authority_generation_stage, "value", authority_generation_stage
+                )))
+            elif stage_filter:
+                try:
+                    generation_stage = resolve_stage_axes(
+                        runtime_stage=stage_filter
+                    ).generation_stage
+                except ValueError:
+                    generation_stage = None
+            task_id = str(
+                authority_task_id
+                if authority_task_id is not None
+                else getattr(self, "active_task_id", "")
+            )
+            if self._should_enforce_request(
+                operation=operation,
+                generation_stage=generation_stage,
+                governance_stage=governance_stage,
+            ):
+                all_results = [
+                    (record, score)
+                    for record, score in all_results
+                    if self._record_authorized(
+                        record,
+                        operation=operation,
+                        generation_stage=generation_stage,
+                        governance_stage=governance_stage,
+                        task_id=task_id,
+                    )
+                ]
         logger.debug(f"[GlobalMemory] Retriever returned {len(all_results)} results for query (length={len(query_text)})")
 
         if label_filter is not None:
@@ -271,6 +534,10 @@ class GlobalMemoryLayer:
         alpha: float = 0.5,
         dissimilar: bool = False,
         stage_filter: Optional[str] = None,
+        authority_operation: Operation | str = Operation.GENERATE_CANDIDATE,
+        authority_generation_stage: GenerationStage | str | None = None,
+        authority_governance_stage: GovernanceStage | str = GovernanceStage.RETRIEVAL,
+        authority_task_id: str | None = None,
     ) -> str:
         """Build guidance text from retrieved records."""
         similar_records = self.retrieve_similar_records(
@@ -279,6 +546,10 @@ class GlobalMemoryLayer:
             alpha=alpha,
             dissimilar=dissimilar,
             stage_filter=stage_filter,
+            authority_operation=authority_operation,
+            authority_generation_stage=authority_generation_stage,
+            authority_governance_stage=authority_governance_stage,
+            authority_task_id=authority_task_id,
         )
 
         if not similar_records:
@@ -431,15 +702,7 @@ class GlobalMemoryLayer:
 
             for item in records_data:
                 metadata = {}
-                for key in (
-                    "exec_time",
-                    "parent_metric",
-                    "current_metric",
-                    "parent_error",
-                    "source_node_ids",
-                    "code_sha256",
-                    "leakage_audit",
-                ):
+                for key in _PERSISTED_METADATA_KEYS:
                     if key in item:
                         metadata[key] = item.pop(key)
 
@@ -470,15 +733,7 @@ class GlobalMemoryLayer:
                 d = r.to_dict()
                 if r.record_id in self.node_metadata_map:
                     meta = self.node_metadata_map[r.record_id]
-                    for key in (
-                        "exec_time",
-                        "parent_metric",
-                        "current_metric",
-                        "parent_error",
-                        "source_node_ids",
-                        "code_sha256",
-                        "leakage_audit",
-                    ):
+                    for key in _PERSISTED_METADATA_KEYS:
                         if meta.get(key) is not None:
                             d[key] = meta[key]
                 records_data.append(d)

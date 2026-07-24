@@ -1,0 +1,61 @@
+{
+  "block_count": 5,
+  "build_hash": "9e7a581c981b4f9d39b309222417bbeef249671ce66627ece5def2f90d608ae2",
+  "builder_source_sha256": "4c3239d31aa3a1716f31b270a8d7764addcb751991c8995e864a428ad2b97421",
+  "formal_training_started": false,
+  "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r12",
+  "pod_yaml_count": 11,
+  "pod_yamls": {
+    "formal-controller": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14/pods/formal-controller-cpu-r4.yaml",
+      "sha256": "de651ffbbcbcd15d642f6e03d9405cfcdffeba254acc50fc8a02058998c839be"
+    },
+    "wp8-tier2-formal-birds-seed-130363-r4:evaluator": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14/pods/wp8-tier2-formal-birds-seed-130363-r4-evaluator.yaml",
+      "sha256": "5050be91fa8c531b17d76b0cc2d3f35b30bf214d46a5a89d83128482d53ac7a5"
+    },
+    "wp8-tier2-formal-birds-seed-130363-r4:training": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14/pods/wp8-tier2-formal-birds-seed-130363-r4-training.yaml",
+      "sha256": "5bbb5618e2696ef80f0aaa8718f899db3a3d5ddfbeb6fd4d0c9edba1d62e9b99"
+    },
+    "wp8-tier2-formal-birds-seed-155921-r4:evaluator": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14/pods/wp8-tier2-formal-birds-seed-155921-r4-evaluator.yaml",
+      "sha256": "7611afa6007b5a65794562a00c69baa2a165219c3c00ee2c4b566200bcdc2b67"
+    },
+    "wp8-tier2-formal-birds-seed-155921-r4:training": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14/pods/wp8-tier2-formal-birds-seed-155921-r4-training.yaml",
+      "sha256": "ff3777e8463888e0c0e111f7e915e22a2651b8106abddcf3bfe31297bd70fe4f"
+    },
+    "wp8-tier2-formal-taxi-seed-104729-r4:evaluator": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14/pods/wp8-tier2-formal-taxi-seed-104729-r4-evaluator.yaml",
+      "sha256": "77f7b6953ab7b95cc8100f791f2a6a86a78ed48dde38dac54a1f1c38b658353f"
+    },
+    "wp8-tier2-formal-taxi-seed-104729-r4:training": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14/pods/wp8-tier2-formal-taxi-seed-104729-r4-training.yaml",
+      "sha256": "2ff62ca872a1ea6be93026a2f12e4513abd6beda328f238c95654aeb6ebe66e5"
+    },
+    "wp8-tier2-formal-taxi-seed-130363-r4:evaluator": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14/pods/wp8-tier2-formal-taxi-seed-130363-r4-evaluator.yaml",
+      "sha256": "1de56d94a4dad58d67d341841213d5af70ca7035ebb49f75259a251c87d46166"
+    },
+    "wp8-tier2-formal-taxi-seed-130363-r4:training": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14/pods/wp8-tier2-formal-taxi-seed-130363-r4-training.yaml",
+      "sha256": "73c020066272666ecd8e2f3445e747a1577f1d22425b6b25a977e47d9ffe7464"
+    },
+    "wp8-tier2-formal-taxi-seed-155921-r4:evaluator": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14/pods/wp8-tier2-formal-taxi-seed-155921-r4-evaluator.yaml",
+      "sha256": "ed7b0624477320aaade7024b761f216da8ff2c2133ca7b0b7715738425552ec1"
+    },
+    "wp8-tier2-formal-taxi-seed-155921-r4:training": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14/pods/wp8-tier2-formal-taxi-seed-155921-r4-training.yaml",
+      "sha256": "1239b4ec25ff4f97b69d7eccd4c5133206811034d85aa0fad2e8a5ea15b97277"
+    }
+  },
+  "schema": "decision_admissibility_wp8_tier2_formal_continuation_staging_build_v1",
+  "staging_content_manifest_hash": "911061395cd41d9f2a90f174595d813500c4be32b8725e7cea53bdf9b7b66f34",
+  "staging_content_manifest_sha256": "75a0fc10878e2509a1426c87083baa48770122724a6227bca21cfbb425b79ef0",
+  "staging_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r14",
+  "status": "built_pending_independent_stop_gate",
+  "terminal_metric_observed_for_remaining_blocks": false,
+  "terminal_score_values_inspected": false
+}

@@ -349,20 +349,22 @@ def _method_identity_audit(agent, node: SearchNode) -> dict:
         or ""
     )
     journal = getattr(agent, "journal", None)
-    source = next(
-        (
-            candidate
-            for candidate in getattr(journal, "nodes", [])
-            if candidate.id == source_id
-        ),
-        None,
-    )
-    ancestor = node.parent
-    while source is None and ancestor is not None:
-        if ancestor.id == source_id or not source_id:
-            source = ancestor
-            break
-        ancestor = ancestor.parent
+    source = None
+    if journal is not None:
+        source = next(
+            (
+                candidate
+                for candidate in getattr(journal, "nodes", [])
+                if candidate.id == source_id
+            ),
+            None,
+        )
+        ancestor = node.parent
+        while source is None and ancestor is not None:
+            if ancestor.id == source_id or not source_id:
+                source = ancestor
+                break
+            ancestor = ancestor.parent
     issue = None
     identity_value = "source_unavailable"
     if source is None and journal is None:
@@ -380,33 +382,77 @@ def _method_identity_audit(agent, node: SearchNode) -> dict:
             "execution_disposition": "block",
             "detector": "authority_method_identity_v1",
         }
-    else:
-        from authority.replay_certifier import ReplayIdentity, certify_replay
-
-        allowed_changes = list(
-            (transaction.get("protocol_plan", {}) or {}).get("stages", [])
-            or ["split", "fit_scope", "prediction_scope", "selection_freeze", "final_holdout"]
+    repair_surface = None
+    verification_hash = ""
+    if source is not None:
+        from authority.replay_certifier import (
+            ProtocolRepairSurface,
+            ReplayIdentity,
+            verify_protocol_only_patch,
         )
-        identity = certify_replay(source.code, node.code, allowed_changes)
-        identity_value = identity.value
-        if identity != ReplayIdentity.METHOD_PRESERVED:
+
+        try:
+            authority = getattr(agent, "evaluation_authority", None)
+            active_spec = getattr(authority, "active_protocol_spec", None)
+            if active_spec is None:
+                # Lightweight callers may not own the runtime adapter. Resolve
+                # the same immutable config-selected spec rather than treating
+                # protocol-repair workflow stages as code-change kinds.
+                from authority.adapters.mlevolve.protocol_adapter import build_registry
+
+                _, active_spec = build_registry(agent.cfg)
+            repair_surface = ProtocolRepairSurface.from_protocol_spec(active_spec)
+            verification = verify_protocol_only_patch(
+                source.code,
+                node.code,
+                repair_surface,
+                source_artifact_id=source.id,
+                replay_artifact_id=node.id,
+            )
+            verification_hash = verification.report_hash
+            identity_value = verification.identity.value
+            if verification.identity != ReplayIdentity.METHOD_PRESERVED:
+                issue = {
+                    "issue_code": "PROTOCOL_REPAIR_METHOD_CHANGED",
+                    "category": "repair_integrity",
+                    "severity": "critical",
+                    "line": 0,
+                    "evidence": (
+                        f"Protocol-only repair identity={verification.identity.value}; "
+                        f"source_node_id={source.id}. Model family, feature logic, "
+                        "training objective, inference pipeline, or protected "
+                        "hyperparameters changed."
+                    ),
+                    "remediation": (
+                        "Restore the frozen method and change only "
+                        "evaluation-protocol code."
+                    ),
+                    "execution_disposition": "block",
+                    "detector": "authority_method_identity_v1",
+                }
+        except Exception as error:
+            # A malformed or unavailable protocol surface is an auditable
+            # fail-closed result, never an exception that escapes the search
+            # worker and disappears from Authority taxonomy.
+            identity_value = "protocol_surface_resolution_failed"
             issue = {
-                "issue_code": "PROTOCOL_REPAIR_METHOD_CHANGED",
+                "issue_code": "PROTOCOL_REPAIR_SURFACE_INVALID",
                 "category": "repair_integrity",
                 "severity": "critical",
                 "line": 0,
-                "evidence": (
-                    f"Protocol-only repair identity={identity.value}; source_node_id={source.id}. "
-                    "Model family, feature logic, training objective, inference pipeline, or protected "
-                    "hyperparameters changed."
+                "evidence": f"{type(error).__name__}: {error}",
+                "remediation": (
+                    "Restore the active ProtocolSpec and its declared clean-replay "
+                    "allowed-change surface before continuing protocol repair."
                 ),
-                "remediation": "Restore the frozen method and change only evaluation-protocol code.",
                 "execution_disposition": "block",
                 "detector": "authority_method_identity_v1",
             }
     return {
         "detector_status": "complete",
         "method_identity": identity_value,
+        "repair_surface": repair_surface.as_dict() if repair_surface else None,
+        "replay_verification_hash": verification_hash,
         "issues": [issue] if issue else [],
     }
 
@@ -784,12 +830,26 @@ def _save_to_global_memory(agent, node: SearchNode):
         legacy_allowed=legacy_allowed,
         component="agents.result_parse_agent._save_to_global_memory",
     )
-    if agent.global_memory and authority_allowed:
+    if authority_allowed:
+        if agent.global_memory:
+            try:
+                parent_node = node.parent
+                agent.global_memory.save_node(node, parent_node)
+            except Exception as e:
+                logger.warning(f"[AgentSearch] Failed to save node {node.id} to global memory: {e}")
         try:
-            parent_node = node.parent
-            agent.global_memory.save_node(node, parent_node)
+            adapter = getattr(agent, "evaluation_authority", None)
+            append_overlay = getattr(
+                adapter, "append_authorized_memory_overlay", None
+            )
+            if callable(append_overlay):
+                append_overlay(node)
         except Exception as e:
-            logger.warning(f"[AgentSearch] Failed to save node {node.id} to global memory: {e}")
+            logger.warning(
+                "[AgentSearch] Failed to append node %s to Session Overlay: %s",
+                node.id,
+                e,
+            )
 
 
 def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:

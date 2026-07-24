@@ -1,0 +1,18 @@
+{
+  "acceptance_check_count": 47,
+  "effect_claim_authorized": false,
+  "errors": [],
+  "goal_completion_authorized": false,
+  "kill_gate_count": 6,
+  "manifest_hash": "6b4f2050474fd97b4bdf549570b13f45d8ae8cfd23e689a8f2cb891e8d151291",
+  "report_file_sha256": "4b327910350e078a3376e425fcd4b3a0b7326f70fcba6f9c1cf8ad96dafd779b",
+  "report_hash": "de73a72b8e55db72a54e8cbcd38fa1d3ce4df580158c1e4449692c0675bac5e2",
+  "required_prerequisite_count": 20,
+  "schema": "decision_admissibility_wp8_final_stop_gate_verification_v1",
+  "status": "passed",
+  "stop_gate_root": "coordination/decision_admissibility_wp8_final_stop_gate_20260724_r1",
+  "verification_hash": "dcf2e62c47d9f22c03a7adb05d325f588367284aee8f7309d2d0831116718778",
+  "verified": true,
+  "verifier_source_sha256": "cec400f775af2887e38743faf91011e41a2f73e1cf4a2d6a3976a8d856eca1f6",
+  "wp8_engineering_complete": true
+}

@@ -33,6 +33,17 @@ def _build_run_forest_coldstart_text(cfg: Any, task_desc: str) -> tuple[str, lis
     ext_cfg = getattr(cfg, "external_skill_memory", None)
     if not _looks_like_run_forest_memory(ext_cfg):
         return "", [], ""
+    source_name = getattr(
+        ext_cfg,
+        "source_name",
+        "run_forest_agentic_memory",
+    )
+    # Bundle-backed memory is not legal to inspect before AgentSearch creates
+    # its Authority adapter and hash-verified MemorySnapshot.  Runtime draft
+    # retrieval happens after that boundary, so defer instead of touching the
+    # legacy graph_path and creating an unledgered pre-prompt exposure.
+    if str(getattr(ext_cfg, "bundle_root", "") or "").strip():
+        return "", [], str(source_name)
     try:
         from agents.memory.external_skill_memory import RunForestMemoryLayer
 
@@ -69,7 +80,7 @@ def _build_run_forest_coldstart_text(cfg: Any, task_desc: str) -> tuple[str, lis
             "\n\n---\n## Run-Forest Cold-Start Map Path Pack\n"
             f"Run-Forest cold-start memory was configured but unavailable; continuing without it. Reason: {exc}",
             [],
-            getattr(ext_cfg, "source_name", "run_forest_agentic_memory") if ext_cfg is not None else "run_forest_agentic_memory",
+            source_name if ext_cfg is not None else "run_forest_agentic_memory",
         )
 
 

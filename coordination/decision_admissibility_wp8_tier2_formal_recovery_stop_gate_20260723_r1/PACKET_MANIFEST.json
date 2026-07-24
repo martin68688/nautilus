@@ -1,0 +1,9 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_recovery_local_gate_packet_v1",
+  "file_hashes": {
+    "RECOVERY_STOP_GATE.json": "40ee941e17ec435796a686425d44bd59f7cf1d2460e595c82bd001af26809cbf",
+    "WP8_TIER2_RECOVERY_SOURCE_MANIFEST.json": "066533e651183b274945db7bd080774c0ab90ee11ecafea63373777e56c09e40"
+  },
+  "gate_hash": "d114be58137df36556fac0394cc845f4d0c48e6c130ca1b0e6b0a88d7420818a",
+  "packet_hash": "15b4d97aefea5a937a349799a02a517a60c816f2d94c9a88bd9f6157faa1ef3b"
+}

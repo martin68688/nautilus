@@ -4,6 +4,7 @@ import logging
 import random
 import time
 from collections import deque
+from pathlib import Path
 from typing import Callable, List, Dict, Optional
 
 from engine.executor import ExecutionResult
@@ -40,6 +41,48 @@ class SearchSpaceExhausted(RuntimeError):
 
 
 class AgentSearch:
+    @staticmethod
+    def _load_configured_memory_snapshot(
+        ext_cfg,
+        *,
+        log_dir: Path,
+        evaluation_authority,
+        resolve_memory_path,
+    ):
+        """Load CURRENT once and return the exact Base graph/index paths."""
+
+        from authority.memory_snapshot import MemorySnapshotLoader
+
+        bundle_root = str(getattr(ext_cfg, "bundle_root", "") or "").strip()
+        if not bundle_root:
+            raise ValueError("external_skill_memory.bundle_root is required")
+        resolved_bundle_root = resolve_memory_path(bundle_root)
+        overlay_setting = str(
+            getattr(ext_cfg, "session_overlay_path", "") or ""
+        ).strip()
+        overlay_path = (
+            Path(overlay_setting).expanduser()
+            if overlay_setting
+            else Path(log_dir) / "session_overlay"
+        )
+        if not overlay_path.is_absolute():
+            overlay_path = Path(log_dir) / overlay_path
+        snapshot = MemorySnapshotLoader(resolved_bundle_root).load(
+            current_path=str(
+                getattr(ext_cfg, "current_pointer_path", "CURRENT.json")
+                or "CURRENT.json"
+            ),
+            session_overlay_path=overlay_path,
+            active_protocol_ref=evaluation_authority.active_protocol.key(),
+            authority_policy_version=evaluation_authority.engine.policy_version,
+        )
+        evaluation_authority.configure_memory_snapshot(snapshot)
+        return (
+            snapshot,
+            str(snapshot.base_bundle.path / "runforest" / "graph.json"),
+            str(snapshot.base_bundle.path / "runforest" / "index.npz"),
+        )
+
     def __init__(
             self,
             task_desc: str,
@@ -134,8 +177,34 @@ class AgentSearch:
                     embedding_device=self.acfg.memory_embedding_device,
                     similarity_threshold=self.acfg.memory_similarity_threshold,
                 )
-                self.global_memory.authority_mode = self.evaluation_authority.mode
-                self.global_memory.active_protocol_ref = self.evaluation_authority.active_protocol.key()
+                self.global_memory.configure_authority(
+                    mode=self.evaluation_authority.mode,
+                    active_protocol_ref=self.evaluation_authority.active_protocol.key(),
+                    policy_version=self.evaluation_authority.engine.policy_version,
+                    active_task_id=self.evaluation_authority.task_id,
+                    decisions=self.evaluation_authority.engine.decisions,
+                    enforce_operations=sorted(
+                        getattr(
+                            getattr(self.evaluation_authority, "rollout", None),
+                            "enforce_operations",
+                            (),
+                        )
+                    ),
+                    enforce_generation_stages=sorted(
+                        getattr(
+                            getattr(self.evaluation_authority, "rollout", None),
+                            "enforce_generation_stages",
+                            (),
+                        )
+                    ),
+                    enforce_governance_stages=sorted(
+                        getattr(
+                            getattr(self.evaluation_authority, "rollout", None),
+                            "enforce_governance_stages",
+                            (),
+                        )
+                    ),
+                )
                 logger.info(f"[AgentSearch] Global memory enabled and initialized at {memory_dir}")
             except Exception as e:
                 import traceback
@@ -147,17 +216,73 @@ class AgentSearch:
 
         # External persistent SkillGraph memory
         self.external_skill_memory = None
+        self.memory_snapshot = None
         ext_cfg = getattr(getattr(self, "cfg", None), "external_skill_memory", None)
         if ext_cfg is not None and getattr(ext_cfg, "enable", False):
             ext_mode = getattr(ext_cfg, "mode", "skillgraph")
             try:
-                from agents.memory.external_skill_memory import ExternalSkillMemoryLayer, RunForestMemoryLayer
+                from agents.memory.external_skill_memory import (
+                    ExternalSkillMemoryLayer,
+                    RunForestMemoryLayer,
+                    resolve_memory_path,
+                )
                 ext_source = getattr(ext_cfg, "source_name", "skillgraph")
                 ext_graph_path = getattr(ext_cfg, "graph_path", "")
+                ext_index_path = getattr(ext_cfg, "index_path", "")
+                bundle_root = str(getattr(ext_cfg, "bundle_root", "") or "").strip()
+                if bundle_root:
+                    (
+                        self.memory_snapshot,
+                        ext_graph_path,
+                        ext_index_path,
+                    ) = self._load_configured_memory_snapshot(
+                        ext_cfg,
+                        log_dir=Path(self.cfg.log_dir),
+                        evaluation_authority=self.evaluation_authority,
+                        resolve_memory_path=resolve_memory_path,
+                    )
+                visibility_kwargs = {}
                 if str(ext_mode).lower() == "run_forest_stage_hybrid":
                     from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
 
                     memory_layer_cls = StageAwareHybridMemoryLayer
+                    visibility_kwargs = {
+                        "visibility_mode": self.evaluation_authority.mode,
+                        "visibility_enforce_operations": sorted(
+                            getattr(
+                                getattr(self.evaluation_authority, "rollout", None),
+                                "enforce_operations",
+                                (),
+                            )
+                        ),
+                        "visibility_enforce_generation_stages": sorted(
+                            getattr(
+                                getattr(self.evaluation_authority, "rollout", None),
+                                "enforce_generation_stages",
+                                (),
+                            )
+                        ),
+                        "visibility_enforce_governance_stages": sorted(
+                            getattr(
+                                getattr(self.evaluation_authority, "rollout", None),
+                                "enforce_governance_stages",
+                                (),
+                            )
+                        ),
+                        "visibility_authority_engine": self.evaluation_authority.engine,
+                        "visibility_active_protocol": self.evaluation_authority.active_protocol,
+                        "visibility_policy_version": self.evaluation_authority.engine.policy_version,
+                        "visibility_task_id": self.evaluation_authority.task_id,
+                        "visibility_bundle_version": (
+                            self.memory_snapshot.base_bundle.bundle_version
+                            if self.memory_snapshot is not None
+                            else None
+                        ),
+                        "visibility_token_budget": getattr(
+                            ext_cfg, "visibility_token_budget", 4096
+                        ),
+                        "memory_snapshot": self.memory_snapshot,
+                    }
                 else:
                     memory_layer_cls = (
                         RunForestMemoryLayer
@@ -167,10 +292,10 @@ class AgentSearch:
                         else ExternalSkillMemoryLayer
                     )
                 self.external_skill_memory = memory_layer_cls(
-                    graph_path=getattr(ext_cfg, "graph_path", ""),
+                    graph_path=ext_graph_path,
                     source_name=ext_source,
                     mode=ext_mode,
-                    index_path=getattr(ext_cfg, "index_path", ""),
+                    index_path=ext_index_path,
                     text_model_path=getattr(ext_cfg, "text_model_path", ""),
                     scoring_mode=getattr(ext_cfg, "scoring_mode", "lexical"),
                     geometry_distance_weight=getattr(ext_cfg, "geometry_distance_weight", 0.30),
@@ -202,6 +327,7 @@ class AgentSearch:
                     include_debug=getattr(ext_cfg, "include_debug", True),
                     include_fusion=getattr(ext_cfg, "include_fusion", True),
                     cfg=self.cfg,
+                    **visibility_kwargs,
                 )
                 logger.info(
                     "[AgentSearch] External skill memory enabled: source=%s graph=%s",
@@ -217,6 +343,9 @@ class AgentSearch:
                 self.external_skill_memory = None
         else:
             logger.info("[AgentSearch] External skill memory is disabled by config")
+        # Bundle binding, if configured, is complete at this point. Freeze the
+        # policy/protocol/collector/bundle tuple before any retrieval decision.
+        self.evaluation_authority.seal_rollout_versions()
 
     def _validate_draft_role_policy(self) -> None:
         policy = getattr(self.acfg, "draft_role_policy", None)

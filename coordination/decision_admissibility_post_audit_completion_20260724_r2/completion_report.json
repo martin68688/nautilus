@@ -1,0 +1,206 @@
+{
+  "schema": "decision_admissibility_post_audit_completion_report_v2",
+  "status": "complete",
+  "created_at_utc": "2026-07-24T10:29:23Z",
+  "canonicalization": "python_json_sort_keys_ensure_ascii_false_compact_excluding_report_hash_v1",
+  "supersedes": {
+    "root": "coordination/decision_admissibility_post_audit_completion_20260724_r1",
+    "manifest_file_sha256": "c32483410a2b55fad71fed8d0f2cf2e127e16e0942ac0d660a83c1ab4822fbcb",
+    "verification_file_sha256": "302613cbc15a72c73c6d8c53b10b72e9291373364b7607398dc4f64e7c02aec6",
+    "disposition": "preserved_invalid_documentation_binding",
+    "reason": "The r1 completion chain bound a documentation package with invalid canonical self-hashes and an incorrect CJK alt-text count."
+  },
+  "plan": {
+    "path": "coordination/decision_admissibility_complete_execution_plan_20260719.md",
+    "sha256": "95da6d3a9311bf3cdb9ac2606949230f0a7680875b34960fa4beeb9160c755ba"
+  },
+  "completion_scope": {
+    "scope": "WP0-WP8 engineering, data processing, formal evaluation, documentation, and independent review",
+    "goal_completion_authorized": true,
+    "engineering_completion_authorized": true,
+    "scientific_superiority_authorized": false,
+    "experience_causality_authorized": false
+  },
+  "section_25": {
+    "25.1_code": {
+      "passed": 7,
+      "total": 7,
+      "status": "passed",
+      "items": [
+        "Authority models/stage/claims/collectors",
+        "SOP Visibility Gateway/retrieval gate",
+        "claim-aware Dynamic Hybrid/GlobalMemory",
+        "manifest-driven RunForest/SOP builder",
+        "Base/Overlay/sleep-time publisher",
+        "Clean Replay/certified bundle",
+        "experiment runners/metrics/reporters"
+      ],
+      "evidence": "coordination/decision_admissibility_wp8_final_stop_gate_20260724_r1/stop_gate_report.json"
+    },
+    "25.2_data_and_artifacts": {
+      "passed": 9,
+      "total": 9,
+      "status": "passed",
+      "items": [
+        "corpus manifest/inventory report",
+        "audit sidecars/report",
+        "raw-audited bundle",
+        "certified bundle",
+        "full/seed/task split manifests",
+        "DeepSeek frozen responses",
+        "visibility/lineage/split validation reports",
+        "replay queue/receipts",
+        "experiment outputs"
+      ],
+      "evidence": "coordination/decision_admissibility_wp8_final_stop_gate_20260724_r1/stop_gate_report.json"
+    },
+    "25.3_documentation": {
+      "passed": 8,
+      "total": 8,
+      "status": "passed",
+      "items": [
+        "implementation report",
+        "schema/API reference",
+        "migration guide",
+        "Bundle README/reproduction command",
+        "experiment preregistration",
+        "Evidence Ledger",
+        "versioned LaTeX/PDF and bilingual PPT update",
+        "independent Claudeagent review"
+      ],
+      "documentation_manifest": "coordination/decision_admissibility_documentation_20260724_r2/manifest.json",
+      "documentation_verification": "coordination/decision_admissibility_documentation_20260724_r2.verification.json"
+    }
+  },
+  "section_26": {
+    "code_correctness": {
+      "passed": 15,
+      "total": 15,
+      "status": "passed",
+      "items": [
+        "baseline and new tests pass",
+        "StageOntology is unique and traceable",
+        "Mixed Claims decompose automatically",
+        "trusted collectors are host-owned",
+        "GlobalMemory checks outcome/scope/policy/protocol",
+        "P4-B filters before ranking and Prompt",
+        "attached_sop_ids/projection/cache bypasses are closed",
+        "Result/Adoption/Causal operations are separate",
+        "clean cold-start Result Fact can publish with empty derivation refs",
+        "Adoption/Causal edges require matching ALLOW decisions",
+        "fixed-holdout positive writeback is exactly once after terminal seal",
+        "legacy Operation.PROMOTE is absent from production writeback",
+        "Positive Result and Positive Adopted SOP are separate",
+        "Base/Overlay atomic publication passes crash safety",
+        "Clean Replay and Successor Method are separate"
+      ]
+    },
+    "corpus_and_bundle": {
+      "passed": 8,
+      "total": 8,
+      "status": "passed",
+      "items": [
+        "Spooky equals zero",
+        "complete/partial/excluded entries have reasons",
+        "all core artifacts are hash-bound",
+        "all code nodes have audit sidecars",
+        "all clause sources resolve",
+        "full/seed/task bundles have independent manifests and hashes",
+        "source/test overlap is zero",
+        "earlier artifacts were not overwritten"
+      ]
+    },
+    "safety_and_utility": {
+      "passed": 8,
+      "total": 8,
+      "status": "passed",
+      "items": [
+        "Unauthorized Prompt Exposure equals zero",
+        "Unauthorized Activation equals zero",
+        "legal Debug/Repair knowledge remains available",
+        "unreplayed historical scores cannot rank or promote",
+        "unadopted history creates no Adoption/Causal authority but does not block clean Result Facts",
+        "execution and actuation Receipt types are not interchangeable",
+        "three-to-five-generation derivation does not expand authority",
+        "shadow disagreements received sampled review"
+      ]
+    },
+    "paper_evidence": {
+      "passed": 8,
+      "total": 8,
+      "status": "passed_with_claim_boundary",
+      "items": [
+        "fresh heldout 2x2 episodes",
+        "seed-heldout and task-heldout evaluation",
+        "three ProtocolSpec families with unchanged Authority kernel",
+        "strong baselines and axis ablations",
+        "IIR-VKR Pareto evidence",
+        "L2/L3/L4 adoption mechanism evidence",
+        "multi-task multi-seed paired statistics",
+        "headline Claims have frozen artifacts and hashes"
+      ],
+      "boundary": "Controlled evidence proves that L2/L3/L4 can be represented and enforced; the formal Tier-2 gains do not have an experience-level L4 chain, so experience causality remains pending_without_L4."
+    }
+  },
+  "scientific_result": {
+    "full_completion": "4/9",
+    "no_memory_completion": "6/9",
+    "estimable_pairs": 4,
+    "available_pair_wins_ties_losses": "4/0/0",
+    "raw_p": 0.0625,
+    "holm_p": 0.25,
+    "taxi_pairs": 0,
+    "full_superiority": "rejected",
+    "conditional_utility": "diagnostic_only",
+    "experience_causality": "pending_without_L4"
+  },
+  "evidence_anchors": {
+    "final_stop_gate": {
+      "manifest_path": "coordination/decision_admissibility_wp8_final_stop_gate_20260724_r1/manifest.json",
+      "manifest_file_sha256": "d54dc9915d584f5502e387ed70eb87e00dbc1584728e23ef9a17d45632435126",
+      "manifest_hash": "6b4f2050474fd97b4bdf549570b13f45d8ae8cfd23e689a8f2cb891e8d151291",
+      "report_hash": "de73a72b8e55db72a54e8cbcd38fa1d3ce4df580158c1e4449692c0675bac5e2",
+      "verification_path": "coordination/decision_admissibility_wp8_final_stop_gate_20260724_r1.verification.json",
+      "verification_file_sha256": "7f3f46f99639b0a8f4bd98f1f7fb09d28f8b215d4e12347c48e30010ad39b317",
+      "verification_hash": "dcf2e62c47d9f22c03a7adb05d325f588367284aee8f7309d2d0831116718778"
+    },
+    "independent_claude_audit": {
+      "manifest_path": "coordination/decision_admissibility_wp8_independent_claude_audit_20260724_r1/manifest.json",
+      "manifest_file_sha256": "5d04e686e440be1677bea06ccb9bcfb05de7b6faac2121d7e4b259db8dad7343",
+      "manifest_hash": "cd26d79ac9761bf2f2b9e01c1b1b3b4ebe8ddc62b2867994dc9f54f1cabde60f",
+      "verification_path": "coordination/decision_admissibility_wp8_independent_claude_audit_20260724_r1.verification.json",
+      "verification_file_sha256": "c047602479c448b0afaa68be97ff2d2b45d928c0da439a4975079a32f634a39d",
+      "verification_hash": "904a5b10284c8e03196c2b5009067d4890c843defc74043a89d309df41a0cc62",
+      "actual_model": "glm-5.2[1m]",
+      "verdict": "PLAN_APPROVED"
+    },
+    "documentation": {
+      "manifest_path": "coordination/decision_admissibility_documentation_20260724_r2/manifest.json",
+      "manifest_file_sha256": "7f7106c14c2b04aa21171b8d0a318e781bd1b21a09f3dae6b1fad5efe0a593ee",
+      "manifest_hash": "153d04aa27c304db5a0c8476090194ae442ae3b1a1ee97360cb7ad1e833250cf",
+      "verification_path": "coordination/decision_admissibility_documentation_20260724_r2.verification.json",
+      "verification_file_sha256": "cb5572c8785aea10d1f19d50e56e47618922568f322a1231d8f23dfcef29bf9b",
+      "verification_hash": "d4c76ed6d3701291d343c7093d95ac0097c46453503ceb9abea32b8d7978f011"
+    }
+  },
+  "versioned_deliverables": {
+    "bilingual_presentation": {
+      "path": "outputs/nautilus_decision_admissibility_wp8_final_bilingual_20260724_r3.pptx",
+      "sha256": "40995a0cf75a7ed9d3e983e390a56734360a55c05eb5ec7f94e66f69c5b18b25"
+    },
+    "paper_source": {
+      "path": "papers/runforest_iclr2025/main_wp8_final_20260724.tex",
+      "sha256": "303d92d460062caf6524e32d724c43fff38d6a4513eeccf7ef0da8fdb2c17e9f"
+    },
+    "paper_pdf": {
+      "path": "papers/runforest_iclr2025/main_wp8_final_20260724.pdf",
+      "sha256": "b4c222c7094a67be2fb7abd64067e5244e0370c97628751cbb858aad3c7cf423"
+    }
+  },
+  "git_state": {
+    "baseline_checkpoint": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
+    "final_commit_or_push_performed": false,
+    "reason": "No new final commit/push authorization was granted; the dirty worktree and user assets remain preserved."
+  },
+  "report_hash": "0ffde12288c1b2648aa898524a98624960d3425a16c1935aca892713e474a635"
+}

@@ -208,6 +208,9 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
                     dissimilar=False,
                     label_filter=1,
                     stage_filter="debug",
+                    authority_operation="debug_hypothesis",
+                    authority_generation_stage="debug",
+                    authority_governance_stage="retrieval",
                 )
 
                 if similar_fixes:

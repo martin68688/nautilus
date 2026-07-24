@@ -1641,6 +1641,7 @@ class RunForestMemoryLayer:
         include_debug: bool = True,
         include_fusion: bool = True,
         cfg: Any | None = None,
+        memory_snapshot: Any | None = None,
         **_: Any,
     ) -> None:
         self.graph_path = resolve_graph_path(graph_path)
@@ -1664,6 +1665,7 @@ class RunForestMemoryLayer:
         self.top_k = max(1, int(top_k or 6))
         self.max_chars = max_chars
         self.cfg = cfg
+        self.memory_snapshot = memory_snapshot
         self.enabled_stages = {
             "draft": include_draft,
             "improve": include_improve,
@@ -1704,18 +1706,45 @@ class RunForestMemoryLayer:
             raise FileNotFoundError(f"Run-forest index not found: {self.index_path}")
         self.graph = json.loads(self.graph_path.read_text(encoding="utf-8"))
         meta = self.graph.get("meta") or {}
-        if meta.get("schema") != "hyperbolic_run_forest_memory_v1":
+        graph_schema = str(meta.get("schema") or "")
+        if graph_schema not in {
+            "hyperbolic_run_forest_memory_v1",
+            "hyperbolic_run_forest_memory_v2",
+        }:
             raise ValueError(f"Not a run-forest memory graph: {self.graph_path}")
-        if (
-            meta.get("leak_verified") is not True
-            or meta.get("paper_grade") is not True
-            or meta.get("leak_audited") is not True
-            or meta.get("positive_admission_enforced") is not True
-        ):
-            raise ValueError(
-                "Run-Forest memory graph is not source-allowlisted and code-audited; rebuild with "
-                "build_run_forest_memory.py --allowlist ... --require-clean-provenance"
-            )
+        if graph_schema == "hyperbolic_run_forest_memory_v1":
+            if (
+                meta.get("leak_verified") is not True
+                or meta.get("paper_grade") is not True
+                or meta.get("leak_audited") is not True
+                or meta.get("positive_admission_enforced") is not True
+            ):
+                raise ValueError(
+                    "Run-Forest memory graph is not source-allowlisted and code-audited; rebuild with "
+                    "build_run_forest_memory.py --allowlist ... --require-clean-provenance"
+                )
+        else:
+            snapshot = self.memory_snapshot
+            if snapshot is None:
+                raise ValueError(
+                    "Run-Forest v2 requires a hash-verified MemorySnapshot"
+                )
+            snapshot.assert_unchanged()
+            base = snapshot.base_bundle
+            expected_graph = (base.path / "runforest" / "graph.json").resolve()
+            expected_index = (base.path / "runforest" / "index.npz").resolve()
+            if self.graph_path.resolve() != expected_graph:
+                raise ValueError("Run-Forest v2 graph is not the bound Base artifact")
+            if self.index_path.resolve() != expected_index:
+                raise ValueError("Run-Forest v2 index is not the bound Base artifact")
+            provenance = base.verify_run_identity_provenance()
+            if (
+                provenance.get("source_membership_verified") is not True
+                or provenance.get("leak_verified") is not True
+            ):
+                raise ValueError("Run-Forest v2 Bundle provenance is not verified")
+            if str(meta.get("bundle_id") or "") != str(base.bundle_id):
+                raise ValueError("Run-Forest v2 graph does not bind the Base Bundle ID")
         self.nodes = {str(n["id"]): n for n in self.graph.get("nodes", []) if n.get("id")}
         for edge in self.graph.get("edges", []):
             src, dst = str(edge.get("src")), str(edge.get("dst"))

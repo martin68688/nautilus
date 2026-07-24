@@ -1,0 +1,51 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_statistics_implementation_freeze_v1",
+  "status": "frozen_before_terminal_score_unblinding",
+  "frozen_at_utc": "2026-07-23T15:31:35Z",
+  "result_blind_at_freeze": {
+    "terminal_score_values_inspected": false,
+    "oracle_score_values_inspected": false,
+    "score_bearing_formal_json_parsed": false
+  },
+  "analysis_policy": {
+    "path": "coordination/decision_admissibility_wp8_tier2_formal_analysis_policy_addendum_20260723_r1.json",
+    "file_sha256": "7302945a8b8853df7fa60e733a7619ef08c44c36237b25d8e47de37faace03fe",
+    "analysis_policy_hash": "26d4fe7e7645fe8f1911e757df2e15a9cf85966158e0d567e6d7e0dd3705670d"
+  },
+  "joint_inventory": {
+    "report_path": "coordination/decision_admissibility_wp8_tier2_formal_joint_inventory_20260723_r1/joint_inventory.json",
+    "report_file_sha256": "6242271dc57a2f2de18bfa38c105d535b70364789a98d62d046cc9a6a4c299d8",
+    "manifest_path": "coordination/decision_admissibility_wp8_tier2_formal_joint_inventory_20260723_r1/manifest.json",
+    "manifest_file_sha256": "27a2ed66328049169d06f2b8d4d0a4625335bddee73f085dd66b7dc8d7207c35",
+    "verification_path": "coordination/decision_admissibility_wp8_tier2_formal_joint_inventory_20260723_r1/verification.json",
+    "verification_file_sha256": "d4c18f6a394ecb801ab6d2b6aafda91c0f7f16ec72a6a2e8c2ca6f1d1c7076e0",
+    "verification_passed": true
+  },
+  "implementation_files": {
+    "paper-skills/memory_bundle/analyze_tier2_formal_statistics.py": "595df494ce667390744e88e3bac14cfc79d4cb54f360d56c161343b5277256de",
+    "paper-skills/memory_bundle/verify_tier2_formal_statistics.py": "5417596b095b3cf2d39e99769855baef29f9f2ae2ce9d999cd146c93a89e4105",
+    "tests/test_tier2_formal_statistics.py": "9890eb1266c89975519236993cc955b450530c88f76700d43cc35c1bbf759238"
+  },
+  "frozen_analysis_rules": {
+    "primary_contrast": "full_minus_no_memory",
+    "secondary_contrasts": [
+      "full_minus_flat_relevance_memory",
+      "full_minus_global_validity_bit",
+      "full_minus_authority_only"
+    ],
+    "failures_retained": true,
+    "score_imputation_forbidden": true,
+    "continuous_effect_requires_both_scored": true,
+    "paired_bootstrap_iterations": 20000,
+    "paired_bootstrap_seed": 20260723,
+    "exact_sign_flip": true,
+    "holm_family_size": 4,
+    "raw_macro_f1_and_rmse_pooling_forbidden": true
+  },
+  "pre_unblinding_regression": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=mlevolve:paper-skills/memory_bundle .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_tier2_formal_joint_inventory.py tests/test_tier2_formal_analysis_policy_addendum.py tests/test_tier2_formal_statistics.py",
+    "passed": 22,
+    "failed": 0
+  },
+  "implementation_hash": "3b693631beb93c599e2ac6b913ae84217902b05f95444c32c3227dc7ed05564b"
+}

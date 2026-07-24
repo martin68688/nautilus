@@ -1,0 +1,48 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_precontract_recovery_record_v1",
+  "status": "passed",
+  "recovered_at_utc": "2026-07-23T04:26:34Z",
+  "block_id": "wp8-tier2-formal-birds-seed-130363-r4",
+  "preregistration": {
+    "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r9.json",
+    "file_sha256": "dd41c01ae9b8331566d011f75b1b991cba7ddaf14d400de69cdcb0b3b23d90af",
+    "amendment_hash": "3831493e97c23670588abe0ffcb9a1f3ad63734783a54c5f7f7f0ede22fb98bd",
+    "verification_hash": "24682d3f2ae79350609ef0802932e366548cb4dca4fdf1e15d149da9697f85f7",
+    "verification_check_count": 96,
+    "verification_passed_check_count": 96
+  },
+  "diagnostic": {
+    "path": "coordination/decision_admissibility_wp8_tier2_formal_birds_seed130363_r4_precontract_diagnostic_20260723.json",
+    "file_sha256": "231b1e09780b8f28c02499eec0d178c5ad604f15eb68db3a8b9723ddaa9f5493",
+    "diagnostic_hash": "6f1a304db2becdda105751cdd2be64c20d41376cac8c0f4dbedb1dff7ba9a9c8"
+  },
+  "receipt": {
+    "path": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r12/blocks/wp8-tier2-formal-birds-seed-130363-r4/FORMAL_PRECONTRACT_INFRASTRUCTURE_ABORT.json",
+    "schema": "decision_admissibility_wp8_tier2_formal_precontract_infrastructure_abort_v1",
+    "file_sha256": "3dd8b9f699499047d4396fe23cfe3b3b59c81cf6dedda2fb931e8c85ce24ee4f",
+    "report_hash": "e79ae8619e4f8e4d42987bfc590fad2e24946cc89e72ad365948cf382253a0a9",
+    "collector_source_sha256": "036161885f569f6833dddcf69b0a811fe7154844a76636d2749994fe006db505",
+    "classification": "staging_schema_compatibility_failure",
+    "sealed_file_count": 5,
+    "failed_output_tree_read_only": true,
+    "reuse_for_formal_execution": false
+  },
+  "lifecycle": {
+    "training_pod_not_found": true,
+    "evaluator_pod_never_created_and_not_found": true,
+    "controller_pod_deleted": true,
+    "controller_pod_not_found": true,
+    "controller_not_found_probe_sha256": "c20ab82a30157b023d2ddc240eb3672dc3e026fd1f001c59abad41b67cb6dabd"
+  },
+  "integrity": {
+    "agent_generation_started": false,
+    "candidate_execution_started": false,
+    "terminal_metric_observed": false,
+    "terminal_score_values_inspected": false,
+    "positive_writeback_observed": false,
+    "counts_as_formal_outcome": false,
+    "fresh_r5_source_staging_output_required": true,
+    "protected_pod_touched": false
+  },
+  "record_hash": "4fab2d546e8832d13579d79fac43ab01e10d807e464d2f12a51c2ef61cf6f595"
+}

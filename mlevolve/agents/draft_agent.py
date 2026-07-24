@@ -16,6 +16,7 @@ from agents.prompts import (
     prompt_leakage_prevention,
     prompt_resp_fmt,
     get_prompt_environment,
+    get_candidate_execution_contract_from_agent,
     get_impl_guideline_from_agent,
 )
 from agents.planner import build_chat_prompt_for_model
@@ -199,6 +200,9 @@ def run(
             "requirement": "Design a competitive runnable solution without assuming another branch covers required components.",
         }
         prompt["Instructions"]["Draft role contract"] = [role_contract["requirement"]]
+    candidate_execution_contract = get_candidate_execution_contract_from_agent(agent)
+    if candidate_execution_contract:
+        role_contract["candidate_execution_contract"] = candidate_execution_contract
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
     prompt["Instructions"] |= prompt_leakage_prevention()
 

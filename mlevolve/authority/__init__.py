@@ -1,6 +1,14 @@
 """Protocol-scoped evaluation authority for recursive learning operations."""
 
 from .authority_engine import AuthorityEngine
+from .actuation import (
+    ActuationLevel,
+    ActuationReport,
+    ActuationTracker,
+    ExperienceContract,
+    ExperienceContractCompiler,
+    Predicate,
+)
 from .models import (
     AuthorityDecision,
     AuthorityRequest,
@@ -13,19 +21,142 @@ from .models import (
     ProtocolSpec,
     Receipt,
     ReceiptType,
+    SOPClauseV1,
+    VisibilityRequest,
+    VisibleSOPPack,
+)
+from .stage_ontology import GenerationStage, GovernanceStage, StageAxes
+from .paired_replay import PairedReplayResult, PairedReplayRunner, ReplayObservation
+from .memory_snapshot import (
+    ImmutableBaseBundle,
+    MemorySnapshot,
+    MemorySnapshotLoader,
+    OverlayEvent,
+    SessionOverlay,
+)
+from .bundle_publisher import (
+    PublicationConflictError,
+    PublicationReport,
+    PublicationValidationError,
+    SleepTimePipeline,
+    SleepTimePublisher,
+)
+from .replay_certifier import (
+    MethodFingerprint,
+    ProtocolRepairSurface,
+    ReplayIdentity,
+    ReplayVerificationReport,
+    fingerprint_method,
+    verify_protocol_only_patch,
+)
+from .clean_replay import (
+    ReplayAuthorityRecovery,
+    ReplayCandidate,
+    ReplayQueue,
+    ReplayQueueEntry,
+    ReplayReceiptIngestor,
+    ReplayRegistration,
+    build_replay_queue,
+)
+from .certified_bundle import (
+    CertifiedBundlePublisher,
+    CertifiedPublicationResult,
+)
+from .positive_distillation import (
+    PositiveDistillationKind,
+    PositiveDistillationResult,
+    authorize_positive_distillation,
+)
+from .writeback_distillation import (
+    PositiveWritebackMaterialization,
+    build_positive_writeback_plan,
+    materialize_positive_writeback,
+)
+from .bundle_authority import load_snapshot_authority, restore_engine_snapshot
+from .rollout import (
+    AuthorityRolloutController,
+    BundleRollbackController,
+    CanaryThresholds,
+    RolloutVersionSet,
+    ShadowDecisionRecord,
+    build_canary_oracle_packet,
+    build_shadow_review_packet,
+    evaluate_canary,
+    load_shadow_records_from_ledger,
+    verify_shadow_review_packet,
+    verify_canary_oracle_packet,
 )
 
 __all__ = [
     "AuthorityDecision",
     "AuthorityEngine",
     "AuthorityRequest",
+    "AuthorityRolloutController",
+    "ActuationLevel",
+    "ActuationReport",
+    "ActuationTracker",
     "Claim",
     "ClaimType",
+    "BundleRollbackController",
+    "CanaryThresholds",
+    "CertifiedBundlePublisher",
+    "CertifiedPublicationResult",
     "DecisionOutcome",
     "DecisionStage",
+    "ExperienceContract",
+    "ExperienceContractCompiler",
+    "GenerationStage",
+    "GovernanceStage",
+    "ImmutableBaseBundle",
+    "MemorySnapshot",
+    "MemorySnapshotLoader",
+    "MethodFingerprint",
     "Operation",
+    "OverlayEvent",
+    "PairedReplayResult",
+    "PairedReplayRunner",
+    "Predicate",
+    "PublicationConflictError",
+    "PublicationReport",
+    "PublicationValidationError",
+    "PositiveDistillationKind",
+    "PositiveDistillationResult",
+    "PositiveWritebackMaterialization",
+    "ProtocolRepairSurface",
     "ProtocolRef",
     "ProtocolSpec",
     "Receipt",
     "ReceiptType",
+    "ReplayAuthorityRecovery",
+    "ReplayCandidate",
+    "ReplayIdentity",
+    "ReplayObservation",
+    "ReplayQueue",
+    "ReplayQueueEntry",
+    "ReplayReceiptIngestor",
+    "ReplayRegistration",
+    "ReplayVerificationReport",
+    "RolloutVersionSet",
+    "SOPClauseV1",
+    "SessionOverlay",
+    "SleepTimePipeline",
+    "SleepTimePublisher",
+    "ShadowDecisionRecord",
+    "StageAxes",
+    "VisibilityRequest",
+    "VisibleSOPPack",
+    "build_replay_queue",
+    "authorize_positive_distillation",
+    "build_positive_writeback_plan",
+    "build_canary_oracle_packet",
+    "build_shadow_review_packet",
+    "evaluate_canary",
+    "load_shadow_records_from_ledger",
+    "materialize_positive_writeback",
+    "verify_shadow_review_packet",
+    "fingerprint_method",
+    "load_snapshot_authority",
+    "restore_engine_snapshot",
+    "verify_protocol_only_patch",
+    "verify_canary_oracle_packet",
 ]

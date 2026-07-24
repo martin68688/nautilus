@@ -1,131 +1,249 @@
-"""
-extract_branches.py  —  Skill Graph P0: 把 clean run 的搜索树切成 branch (= 一个 draft 分叉 + 子孙),
-每个 branch 渲染成一条 trajectory (.md),作为后续逐-branch Trace2Skill 蒸馏的输入。
+"""Extract split-scoped, globally referenced branch traces from a corpus manifest."""
 
-一个 branch = mlevolve journal.json 里 branch_id 相同的所有节点(按 step 排序)。
-渲染格式: header + 每节点一轮(Thought=plan / Action=code_summary / Observation=analysis+metric /
-          Failure=_term_out|exc_info) + RESULT(best metric + 成功/buggy 计数)。
+from __future__ import annotations
 
-用法: python extract_branches.py
-输出: paper-skills/distillation/traces/<run_ts>/branch_<id>.md
-"""
-import json, glob, os, re
+import argparse
+import hashlib
+import json
+import sys
 from pathlib import Path
+from typing import Any, Mapping
 
 REPO = Path(__file__).resolve().parents[2]
-RUNS = REPO / "mlevolve" / "runs"
-OUT  = REPO / "paper-skills" / "distillation" / "traces"
+MEMORY_BUNDLE = REPO / "paper-skills" / "memory_bundle"
+if str(MEMORY_BUNDLE) not in sys.path:
+    sys.path.insert(0, str(MEMORY_BUNDLE))
 
-# Multi-task clean-run allowlist (leakage-run-boundary). spooky = 17 deep-audited runs;
-# the 5 new tasks (2026-07-01) are INDEX_BUG-clean + post-0521 (image-task leaks not fully
-# audited — accept for pilot, audit per-task before any paper claim).
-CLEAN = ["20260509_154039","20260509_185008","20260510_025317","20260510_095558","20260510_162636",
-         "20260511_014836","20260511_102550","20260513_165253","20260514_023457","20260514_052334",
-         "20260515_173948","20260516_104127","20260516_125444","20260517_132158","20260517_151325",
-         "20260509_042918","20260627_135133",  # spooky (17)
-         "20260701_180146","20260701_155016",  # leaf-classification
-         "20260701_180038",  # new-york-city-taxi-fare-prediction (RMSE, lower)
-         "20260701_145250",  # aerial-cactus-identification (accuracy, higher)
-         "20260701_145201"]  # denoising-dirty-documents (MSE, lower)
-
-
-def load_nodes(jf: Path):
-    J = json.load(open(jf))
-    if isinstance(J, dict) and "nodes" in J:
-        return J["nodes"]
-    if isinstance(J, list):
-        return J
-    return list(J.values())
+from build_corpus_manifest import journal_nodes  # noqa: E402
+from schema import (  # noqa: E402
+    CorpusManifestV1,
+    SplitManifestV1,
+    read_json,
+    sha256_file,
+    sha256_json,
+    utc_now,
+    write_json_atomic,
+)
 
 
-def metric_val(n):
-    mv = n.get("metric")
-    return (mv.get("value") if isinstance(mv, dict) else mv)
+def metric_value(node: Mapping[str, Any]) -> Any:
+    value = node.get("metric")
+    return value.get("value") if isinstance(value, Mapping) else value
 
 
-def _trunc(s, n=600):
-    if s is None:
-        return "(none)"
-    s = str(s).strip()
-    return s if len(s) <= n else s[:n] + " …"
+def _short(value: Any, limit: int = 800) -> str:
+    text = str(value or "").strip()
+    return text if len(text) <= limit else f"{text[:limit]} …"
 
 
-def _read_exp_id(run_dir: Path) -> str:
-    cfg = run_dir / "logs" / "config.yaml"
-    if cfg.exists():
-        for line in cfg.read_text(encoding="utf-8", errors="ignore").splitlines():
-            if "exp_id" in line and ":" in line:
-                return line.split(":", 1)[1].strip().strip('"').strip("'")
-    return "unknown"
+def _node_id(node: Mapping[str, Any], index: int) -> str:
+    return str(node.get("id") or node.get("node_id") or index)
 
 
-def render_branch(run_ts: str, branch_id, nodes, task: str, maximize: bool) -> str:
-    nodes = sorted(nodes, key=lambda n: n.get("step", 0))
-    vals = [metric_val(n) for n in nodes if metric_val(n) is not None and not n.get("is_buggy")]
-    best = (max(vals) if maximize else min(vals)) if vals else None
-    direction = "higher=better" if maximize else "lower=better"
-    n_succ = sum(1 for n in nodes if not n.get("is_buggy") and metric_val(n) is not None)
-    n_bug = sum(1 for n in nodes if n.get("is_buggy"))
-    out = [f"# Chat History",
-           f"",
-           f"**Task**: {task}   **Run**: {run_ts}   **Branch**: {branch_id}",
-           f"**Turns**: {len(nodes)}   **Success**: {n_succ}   **Buggy**: {n_bug}   **Best metric ({direction})**: {best}",
-           f"",
-           f"---",
-           f""]
-    for i, n in enumerate(nodes, 1):
-        mv = metric_val(n)
-        out.append(f"## Turn {i}  [stage={n.get('stage')}  buggy={n.get('is_buggy')}  metric={mv}]")
-        out.append(f"**Thought (plan)**: {_trunc(n.get('plan'), 500)}")
-        out.append(f"**Action (code_summary)**: {_trunc(n.get('code_summary'), 500)}")
-        out.append(f"**Observation (analysis)**: {_trunc(n.get('analysis'), 500)}")
-        if n.get("is_buggy"):
-            term = ""
-            to = n.get("_term_out")
-            if to:
-                term = to[0] if isinstance(to, list) and to else str(to)
-            fail = term or str(n.get("exc_info") or "")
-            out.append(f"**Failure** (exc_type={n.get('exc_type')}): {_trunc(fail, 400)}")
-        out.append("")
-    out.append("---")
-    out.append("## RESULT")
-    out.append(f"Best metric in this branch: {best}")
-    out.append(f"Success nodes: {n_succ} / Buggy nodes: {n_bug}")
-    return "\n".join(out)
+def node_ref(run_id: str, node_id: str) -> str:
+    return f"run::{run_id}::node::{node_id}"
 
 
-def main():
-    OUT.mkdir(parents=True, exist_ok=True)
-    total = 0
-    summary = []
-    for run in CLEAN:
-        jfs = glob.glob(str(RUNS / f"{run}_*" / "logs" / "journal.json"))
-        if not jfs:
-            print(f"[skip] {run}: no journal.json")
-            continue
-        nodes = load_nodes(Path(jfs[0]))
-        run_dir_path = Path(jfs[0]).parents[1]
-        task = _read_exp_id(run_dir_path)
-        run_maxes = [n["metric"]["maximize"] for n in nodes
-                     if isinstance(n.get("metric"), dict) and n["metric"].get("maximize") is not None]
-        maximize = bool(run_maxes[0]) if run_maxes else False
-        by_branch = {}
-        for n in nodes:
-            bid = n.get("branch_id")
-            if bid is None:
-                continue
-            by_branch.setdefault(bid, []).append(n)
-        run_dir = OUT / run
-        run_dir.mkdir(exist_ok=True)
-        for bid, bnodes in sorted(by_branch.items()):
-            md = render_branch(run, bid, bnodes, task, maximize)
-            (run_dir / f"branch_{bid}.md").write_text(md)
-            total += 1
-        summary.append((run, len(by_branch)))
-    print(f"Extracted {total} branch-trajectories → {OUT}")
-    for run, nb in summary:
-        print(f"  {run}: {nb} branches")
-    print(f"\n总计 {total} 个 branch (= {total} 条 trace, 后续逐个蒸馏成 skill)")
+def transition_ref(run_id: str, parent_id: str, child_id: str) -> str:
+    payload = f"{run_id}\0{parent_id}\0{child_id}"
+    suffix = hashlib.sha256(payload.encode()).hexdigest()[:16]
+    return f"run::{run_id}::transition::{suffix}"
+
+
+def load_audit_index(audit_dir: Path | None) -> dict[str, dict[str, Any]]:
+    if audit_dir is None:
+        return {}
+    index_path = audit_dir / "index.json"
+    if not index_path.exists():
+        raise FileNotFoundError(f"Audit sidecar index not found: {index_path}")
+    index = read_json(index_path)
+    output: dict[str, dict[str, Any]] = {}
+    for artifact_id, filename in (index.get("entries") or {}).items():
+        output[str(artifact_id)] = read_json(audit_dir / str(filename))
+    return output
+
+
+def render_branch(
+    run_id: str,
+    branch_id: str,
+    nodes: list[dict[str, Any]],
+    *,
+    task: str,
+    audit_sidecars: Mapping[str, Mapping[str, Any]],
+) -> tuple[str, dict[str, Any]]:
+    nodes = sorted(
+        nodes,
+        key=lambda node: (
+            int(node.get("step") or 0),
+            str(node.get("id") or node.get("node_id") or ""),
+        ),
+    )
+    lines = [
+        "# Manifest-Scoped Branch Trace",
+        "",
+        f"**Task**: {task}",
+        f"**Run**: {run_id}",
+        f"**Branch**: {branch_id}",
+        "",
+        "---",
+    ]
+    refs: list[dict[str, Any]] = []
+    previous_id = ""
+    for index, node in enumerate(nodes):
+        identifier = _node_id(node, index)
+        artifact_ref = node_ref(run_id, identifier)
+        sidecar = audit_sidecars.get(artifact_ref, {})
+        current_transition = (
+            transition_ref(run_id, previous_id, identifier)
+            if previous_id
+            else ""
+        )
+        lines.extend(
+            [
+                "",
+                f"## Turn {index + 1}",
+                f"- node_ref: `{artifact_ref}`",
+                f"- transition_ref: `{current_transition or 'root'}`",
+                f"- stage: `{node.get('stage')}`",
+                f"- buggy: `{bool(node.get('is_buggy'))}`",
+                f"- metric: `{metric_value(node)}`",
+                f"- audit_status: `{sidecar.get('status', 'unavailable')}`",
+                f"- audit_issue_refs: `{json.dumps([issue.get('issue_code') for issue in sidecar.get('issues') or []])}`",
+                f"- plan: {_short(node.get('plan'))}",
+                f"- code_summary: {_short(node.get('code_summary'))}",
+                f"- observation: {_short(node.get('analysis'))}",
+                f"- failure: {_short(node.get('exc_info') or node.get('_term_out'))}",
+            ]
+        )
+        refs.append(
+            {
+                "node_ref": artifact_ref,
+                "transition_ref": current_transition or None,
+                "node_id": identifier,
+                "step": node.get("step"),
+                "stage": node.get("stage"),
+                "audit_status": sidecar.get("status", "unavailable"),
+                "audit_sidecar_sha256": sidecar.get("sidecar_sha256", ""),
+            }
+        )
+        previous_id = identifier
+    return "\n".join(lines) + "\n", {
+        "run_id": run_id,
+        "branch_id": branch_id,
+        "task_id": task,
+        "refs": refs,
+    }
+
+
+def extract_branches(
+    corpus_manifest_path: str | Path,
+    output_dir: str | Path,
+    *,
+    split_manifest_path: str | Path | None = None,
+    audit_dir: str | Path | None = None,
+    created_at: str | None = None,
+) -> dict[str, Any]:
+    manifest_path = Path(corpus_manifest_path).resolve()
+    manifest = CorpusManifestV1.from_dict(read_json(manifest_path))
+    source_root = Path(manifest.source_root).resolve()
+    split = None
+    if split_manifest_path is not None:
+        split = SplitManifestV1.from_dict(read_json(split_manifest_path))
+        if split.corpus_manifest_hash != manifest.manifest_sha256:
+            raise ValueError("Split manifest does not bind the corpus manifest")
+        selected_run_ids = set(split.source_run_ids)
+    else:
+        selected_run_ids = {
+            run.run_id for run in manifest.runs if run.status == "complete"
+        }
+    output_dir = Path(output_dir).resolve()
+    if output_dir.exists() and any(output_dir.iterdir()):
+        raise FileExistsError(f"Trace output directory is not empty: {output_dir}")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    sidecars = load_audit_index(Path(audit_dir).resolve() if audit_dir else None)
+    traces: list[dict[str, Any]] = []
+    input_hashes: dict[str, str] = {
+        "corpus_manifest": sha256_file(manifest_path),
+    }
+    if split_manifest_path is not None:
+        input_hashes["split_manifest"] = sha256_file(split_manifest_path)
+    if audit_dir is not None:
+        input_hashes["audit_sidecar_index"] = sha256_file(
+            Path(audit_dir) / "index.json"
+        )
+    selected = [run for run in manifest.runs if run.run_id in selected_run_ids]
+    missing = selected_run_ids - {run.run_id for run in selected}
+    if missing:
+        raise ValueError(f"Split references unknown runs: {sorted(missing)}")
+    for run in sorted(selected, key=lambda item: item.run_id):
+        if run.status != "complete" or not run.journal_path:
+            raise ValueError(f"Selected source run is not complete: {run.run_id}")
+        journal_path = source_root / run.journal_path
+        if sha256_file(journal_path) != run.artifact_hashes.get("journal"):
+            raise ValueError(f"Journal drift for run {run.run_id}")
+        nodes = journal_nodes(read_json(journal_path))
+        branches: dict[str, list[dict[str, Any]]] = {}
+        for node in nodes:
+            branch_id = str(node.get("branch_id") or "root")
+            branches.setdefault(branch_id, []).append(node)
+        run_dir = output_dir / run.run_id
+        run_dir.mkdir(parents=True, exist_ok=False)
+        for branch_id in sorted(branches):
+            text, trace = render_branch(
+                run.run_id,
+                branch_id,
+                branches[branch_id],
+                task=run.canonical_task_id,
+                audit_sidecars=sidecars,
+            )
+            safe_branch = hashlib.sha256(branch_id.encode()).hexdigest()[:12]
+            path = run_dir / f"branch-{safe_branch}.md"
+            path.write_text(text, encoding="utf-8")
+            trace["path"] = path.relative_to(output_dir).as_posix()
+            trace["sha256"] = sha256_file(path)
+            traces.append(trace)
+    trace_manifest = {
+        "schema": "branch_trace_manifest_v1",
+        "created_at": created_at or utc_now(),
+        "corpus_id": manifest.corpus_id,
+        "corpus_manifest_hash": manifest.manifest_sha256,
+        "split_id": split.split_id if split else "all-complete",
+        "input_hashes": input_hashes,
+        "run_count": len(selected),
+        "trace_count": len(traces),
+        "traces": traces,
+    }
+    trace_manifest["manifest_sha256"] = sha256_json(trace_manifest)
+    write_json_atomic(output_dir / "trace_manifest.json", trace_manifest)
+    return trace_manifest
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--corpus-manifest", type=Path, required=True)
+    parser.add_argument("--split-manifest", type=Path)
+    parser.add_argument("--audit-dir", type=Path)
+    parser.add_argument("--out-dir", type=Path, required=True)
+    parser.add_argument("--created-at")
+    args = parser.parse_args()
+    report = extract_branches(
+        args.corpus_manifest,
+        args.out_dir,
+        split_manifest_path=args.split_manifest,
+        audit_dir=args.audit_dir,
+        created_at=args.created_at,
+    )
+    print(
+        json.dumps(
+            {
+                "run_count": report["run_count"],
+                "trace_count": report["trace_count"],
+                "trace_manifest": str(args.out_dir / "trace_manifest.json"),
+                "manifest_sha256": report["manifest_sha256"],
+            },
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

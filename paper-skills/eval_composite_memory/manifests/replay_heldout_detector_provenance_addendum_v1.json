@@ -1,0 +1,32 @@
+{
+  "schema": "runforest_composite_replay_heldout_detector_provenance_addendum_v1",
+  "created_at": "2026-07-23T03:00:00+08:00",
+  "purpose": "Preserve the exact historical detector provenance without falsely requiring the live detector source to remain at v4 after independently versioned v5 development.",
+  "heldout_lock": {
+    "path": "paper-skills/eval_composite_memory/manifests/replay_heldout_lock_v1.json",
+    "file_sha256": "514a1c2cd0631bd731d610472efff4295ebeb43adb83a2069a0fbfa356fc8428",
+    "detector_version": "deterministic_static_v4",
+    "detector_source_sha256": "ae30aac332b6f62dccc784955ec2952268d8a1381085bcadb4d683b9d8f6a221"
+  },
+  "heldout_report": {
+    "path": "paper-skills/eval_composite_memory/reports/replay_heldout_report_v1.json",
+    "file_sha256": "3adf0863d139387d5f69ca472cfd3d209cb63f9ad7bc9d23db47f52a09bbe8a2",
+    "detector_version": "deterministic_static_v4",
+    "detector_source_sha256": "ae30aac332b6f62dccc784955ec2952268d8a1381085bcadb4d683b9d8f6a221"
+  },
+  "historical_detector_source": {
+    "git_commit": "3ac19fd3724cc30601300762096d4d96c186ce62",
+    "git_blob": "616464790acede3c13206c3990a8a679cdc58bec",
+    "path": "mlevolve/agents/leakage_audit.py",
+    "sha256": "ae30aac332b6f62dccc784955ec2952268d8a1381085bcadb4d683b9d8f6a221",
+    "detector_version": "deterministic_static_v4"
+  },
+  "live_detector_at_addendum": {
+    "path": "mlevolve/agents/leakage_audit.py",
+    "sha256": "8f52b2ca627944d5716de30cd50f2e371ec641bc784edc95500b01d7f544f460",
+    "detector_version": "deterministic_static_v5",
+    "used_to_recompute_v4_heldout_results": false
+  },
+  "integrity_rule": "The v4 heldout episodes and report remain bound to the historical v4 source hash. The live v5 detector may evolve, but v4 results cannot be relabelled as v5 and v5 cannot be tuned against the frozen v4 heldout answers.",
+  "addendum_hash": "7d74870b59bb53d40303850723c348d3fd99c8d64b799564368d1a7d0b1eb54d"
+}

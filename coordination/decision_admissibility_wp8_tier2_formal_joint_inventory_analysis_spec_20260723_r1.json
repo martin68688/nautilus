@@ -1,0 +1,74 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_joint_inventory_analysis_spec_v1",
+  "status": "result_blind_frozen",
+  "frozen_at_utc": "2026-07-23T14:39:30Z",
+  "analysis_policy_addendum": {
+    "path": "coordination/decision_admissibility_wp8_tier2_formal_analysis_policy_addendum_20260723_r1.json",
+    "file_sha256": "7302945a8b8853df7fa60e733a7619ef08c44c36237b25d8e47de37faace03fe",
+    "analysis_policy_hash": "26d4fe7e7645fe8f1911e757df2e15a9cf85966158e0d567e6d7e0dd3705670d"
+  },
+  "expected_blocks": [
+    {
+      "agent_seed": 104729,
+      "block_id": "wp8-tier2-formal-aerial-seed-104729-r3",
+      "root_role": "completed_r10",
+      "task_id": "aerial-cactus-identification"
+    },
+    {
+      "agent_seed": 130363,
+      "block_id": "wp8-tier2-formal-aerial-seed-130363-r3",
+      "root_role": "completed_r10",
+      "task_id": "aerial-cactus-identification"
+    },
+    {
+      "agent_seed": 155921,
+      "block_id": "wp8-tier2-formal-aerial-seed-155921-r3",
+      "root_role": "completed_r10",
+      "task_id": "aerial-cactus-identification"
+    },
+    {
+      "agent_seed": 104729,
+      "block_id": "wp8-tier2-formal-birds-seed-104729-r3",
+      "root_role": "completed_r10",
+      "task_id": "mlsp-2013-birds"
+    },
+    {
+      "agent_seed": 130363,
+      "block_id": "wp8-tier2-formal-birds-seed-130363-r5",
+      "root_role": "continuation_r13",
+      "task_id": "mlsp-2013-birds"
+    },
+    {
+      "agent_seed": 155921,
+      "block_id": "wp8-tier2-formal-birds-seed-155921-r5",
+      "root_role": "continuation_r13",
+      "task_id": "mlsp-2013-birds"
+    },
+    {
+      "agent_seed": 104729,
+      "block_id": "wp8-tier2-formal-taxi-seed-104729-r5",
+      "root_role": "continuation_r13",
+      "task_id": "new-york-city-taxi-fare-prediction"
+    },
+    {
+      "agent_seed": 130363,
+      "block_id": "wp8-tier2-formal-taxi-seed-130363-r5",
+      "root_role": "continuation_r13",
+      "task_id": "new-york-city-taxi-fare-prediction"
+    },
+    {
+      "agent_seed": 155921,
+      "block_id": "wp8-tier2-formal-taxi-seed-155921-r5",
+      "root_role": "continuation_r13",
+      "task_id": "new-york-city-taxi-fare-prediction"
+    }
+  ],
+  "expected_online_condition_count": 45,
+  "expected_oracle_disposition_count": 9,
+  "score_values_may_be_inspected": false,
+  "failed_output_roots_forbidden": [
+    "r8 formal attempt",
+    "r12 precontract attempt"
+  ],
+  "spec_hash": "dab5ab8a78a072aaad472532100918a5a0d96d24773acf8040671c1f18ed51a5"
+}

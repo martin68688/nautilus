@@ -1,0 +1,8 @@
+extends: config.yaml
+
+evaluation_authority:
+  mode: shadow
+  rollout_id: authority-shadow-v1
+  enforce_operations: []
+  enforce_generation_stages: []
+  enforce_governance_stages: []

@@ -1,0 +1,337 @@
+{
+  "artifact_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r2",
+  "base_commit": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
+  "blocks_by_id": {
+    "wp8-tier2-formal-birds-seed-130363-r5": {
+      "agent_seed": 130363,
+      "block_id": "wp8-tier2-formal-birds-seed-130363-r5",
+      "block_template_hash": "612ad47541abb97ae697c0d12affde00f929a27dd53af5d3292f946ce8cb1016",
+      "block_template_sha256": "368d8da45d1b56a2debef1d72b89265b0cc150e9a543153d8ca903ad029bcf55",
+      "condition_order": [
+        "global_validity_bit",
+        "authority_only",
+        "flat_relevance_memory",
+        "full_decision_admissibility",
+        "no_memory"
+      ],
+      "contract_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/blocks/wp8-tier2-formal-birds-seed-130363-r5",
+      "evaluator_pod_name": "da-wp8-f-birds-s130363-cpu-r5",
+      "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r13/blocks/wp8-tier2-formal-birds-seed-130363-r5",
+      "output_root_initially_empty": true,
+      "task_id": "mlsp-2013-birds",
+      "training_pod_name": "da-wp8-f-birds-s130363-gpu-r5"
+    },
+    "wp8-tier2-formal-birds-seed-155921-r5": {
+      "agent_seed": 155921,
+      "block_id": "wp8-tier2-formal-birds-seed-155921-r5",
+      "block_template_hash": "607aa22dff2f8dbdbac8d82623755ab700d8042f6bdb22f0e345460868090c0c",
+      "block_template_sha256": "df609e7ca4a60b62ef4b4fa55360b729121b0074445f9109c385579a63dc2d13",
+      "condition_order": [
+        "no_memory",
+        "full_decision_admissibility",
+        "flat_relevance_memory",
+        "authority_only",
+        "global_validity_bit"
+      ],
+      "contract_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/blocks/wp8-tier2-formal-birds-seed-155921-r5",
+      "evaluator_pod_name": "da-wp8-f-birds-s155921-cpu-r5",
+      "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r13/blocks/wp8-tier2-formal-birds-seed-155921-r5",
+      "output_root_initially_empty": true,
+      "task_id": "mlsp-2013-birds",
+      "training_pod_name": "da-wp8-f-birds-s155921-gpu-r5"
+    },
+    "wp8-tier2-formal-taxi-seed-104729-r5": {
+      "agent_seed": 104729,
+      "block_id": "wp8-tier2-formal-taxi-seed-104729-r5",
+      "block_template_hash": "6e9748ff8bf37376965832ef484333b0a0d269b3201ba1617ca424f7b82a5c8a",
+      "block_template_sha256": "1f17feae2c8c3df142ecbbc4f49c6ab205d44c61cb4b22740f6a4378fc6271d2",
+      "condition_order": [
+        "authority_only",
+        "full_decision_admissibility",
+        "global_validity_bit",
+        "no_memory",
+        "flat_relevance_memory"
+      ],
+      "contract_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/blocks/wp8-tier2-formal-taxi-seed-104729-r5",
+      "evaluator_pod_name": "da-wp8-f-taxi-s104729-cpu-r5",
+      "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r13/blocks/wp8-tier2-formal-taxi-seed-104729-r5",
+      "output_root_initially_empty": true,
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "training_pod_name": "da-wp8-f-taxi-s104729-gpu-r5"
+    },
+    "wp8-tier2-formal-taxi-seed-130363-r5": {
+      "agent_seed": 130363,
+      "block_id": "wp8-tier2-formal-taxi-seed-130363-r5",
+      "block_template_hash": "7b4cee08e149ab06083482e389a5ee2223d454f15e6edcd88d79f8431ee98740",
+      "block_template_sha256": "63b1d2cf1cc2a060c291096cfeb006af5d6d040eb38bd173ebf724aadc277de5",
+      "condition_order": [
+        "flat_relevance_memory",
+        "no_memory",
+        "global_validity_bit",
+        "full_decision_admissibility",
+        "authority_only"
+      ],
+      "contract_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/blocks/wp8-tier2-formal-taxi-seed-130363-r5",
+      "evaluator_pod_name": "da-wp8-f-taxi-s130363-cpu-r5",
+      "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r13/blocks/wp8-tier2-formal-taxi-seed-130363-r5",
+      "output_root_initially_empty": true,
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "training_pod_name": "da-wp8-f-taxi-s130363-gpu-r5"
+    },
+    "wp8-tier2-formal-taxi-seed-155921-r5": {
+      "agent_seed": 155921,
+      "block_id": "wp8-tier2-formal-taxi-seed-155921-r5",
+      "block_template_hash": "96c3c0eafd4a7650e93604a8f86c2b320394399074c7442675b98db1c829da86",
+      "block_template_sha256": "46735856f1a37f22c3905192bd4f813be8a5487707e0263114bc0134218e4255",
+      "condition_order": [
+        "full_decision_admissibility",
+        "no_memory",
+        "authority_only",
+        "flat_relevance_memory",
+        "global_validity_bit"
+      ],
+      "contract_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/blocks/wp8-tier2-formal-taxi-seed-155921-r5",
+      "evaluator_pod_name": "da-wp8-f-taxi-s155921-cpu-r5",
+      "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r13/blocks/wp8-tier2-formal-taxi-seed-155921-r5",
+      "output_root_initially_empty": true,
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "training_pod_name": "da-wp8-f-taxi-s155921-gpu-r5"
+    }
+  },
+  "combined_online_condition_count": 45,
+  "combined_oracle_count": 9,
+  "completed_block_count": 4,
+  "completed_blocks": {
+    "wp8-tier2-formal-aerial-seed-104729-r3": {
+      "evaluation_summary_file_sha256": "ed284bc1966be5c2f88b0525be77575fff88ff19374f3666835bc21b8613be77",
+      "evaluation_summary_hash": "c39ded7699c924a075d8ccc12852010b2c774aa1d015cb1d89e04a7482eda282",
+      "evaluator_pod_deletion_attestation_hash": "4aacb0dda710b445613fd4cf3ded86965d54036a64d6b62ddeeb8ce893f1cbd9",
+      "evaluator_pod_deletion_file_sha256": "82c6d8d194040f6b8108051a598b64cfd738e0236464bb1d8d5a83c41ff73952",
+      "failed_online_condition_count": 0,
+      "may_rerun": false,
+      "result_fact_count": 5,
+      "successful_selected_result_count": 5
+    },
+    "wp8-tier2-formal-aerial-seed-130363-r3": {
+      "evaluation_summary_file_sha256": "f81c3a838f8e3defff6b077e13d6804205fe2c24ae4a7da8c14b0fc7268b3379",
+      "evaluation_summary_hash": "9094c7f3e97767605553113739e18dab94d2771c64a84d59565ea5ff1c4dc5e9",
+      "evaluator_pod_deletion_attestation_hash": "d688cb55b6a97068a10dbd7caa95135ebf93aa15aa5c976d0a6106c53d626389",
+      "evaluator_pod_deletion_file_sha256": "fe61bcf517863b1506bdf047ce992549d66e651fda4d3fb3e2978daecb9966a9",
+      "failed_online_condition_count": 0,
+      "may_rerun": false,
+      "result_fact_count": 5,
+      "successful_selected_result_count": 5
+    },
+    "wp8-tier2-formal-aerial-seed-155921-r3": {
+      "evaluation_summary_file_sha256": "7166d9a076933c6be4b8b1313c866a398c43b8a7cc13b0ffa9e278cb0b6a3fb8",
+      "evaluation_summary_hash": "559282991335344d8a8e544ca1e1713dcb96f76a665ab06c4fbb8cd53c04765d",
+      "evaluator_pod_deletion_attestation_hash": "f7c3ff4ae436b0a2eb82147d771e532a51a838eb5d04217a21443c842cbdd7fb",
+      "evaluator_pod_deletion_file_sha256": "a8f85851989b0b1edb04c8dcbbec6b2c032fa93403c99b0ffe3213c0650cc463",
+      "failed_online_condition_count": 0,
+      "may_rerun": false,
+      "result_fact_count": 5,
+      "successful_selected_result_count": 5
+    },
+    "wp8-tier2-formal-birds-seed-104729-r3": {
+      "evaluation_summary_file_sha256": "97b1eaf95eb9aa3b414330453ca1b299a5eb5d58674aa1ce5c93aac81e76e2e6",
+      "evaluation_summary_hash": "a17c7ce5bd6db2eae824830fec5c9d754031487de93cbb513553abf5db48b7a9",
+      "evaluator_pod_deletion_attestation_hash": "813e7ddf5db21b40fe7434dcc7dc3f909faf5c253d93307e2a13c3a48c2feb44",
+      "evaluator_pod_deletion_file_sha256": "4114993198e83acad1b2d4d73f395f3ac05755b796d104c979f7f72876940fea",
+      "failed_online_condition_count": 2,
+      "may_rerun": false,
+      "result_fact_count": 3,
+      "successful_selected_result_count": 3
+    }
+  },
+  "completed_blocks_freeze": {
+    "inventory_hash": "bbf256f9318cd7eaedf12b89c89be479da67e266a5eaa5ef4ef605b72b6ec17d",
+    "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/reports/decision_admissibility_wp8_tier2_formal_completed_blocks_freeze_20260723_r1.json",
+    "sha256": "74ab746d2cdb3a2bd011a2fe84affc2686d236103b20cbad1c696e7c5ccb2a6b"
+  },
+  "container_image_digest": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+  "continuation_amendment_verification": {
+    "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/reports/decision_admissibility_wp8_tier2_formal_preregistration_verification_20260723_r7.json",
+    "sha256": "0c7b33c959ee7d1f30e7b507f82e01ae6b180c0cd46e9c944a590d965bd260e4",
+    "verification_hash": "d4294e7ef825e5debceef4ac8c3fd810cea3355a93f4fc2f141ec1900272a82c"
+  },
+  "control_source_files": {
+    "deploy/run_decision_admissibility_wp8_tier2_formal_block.sh": "ee51f9b7f7646df3e240180f2ee8467a26dec3d7d8a0b56b714a03df8a9fef11",
+    "deploy/run_decision_admissibility_wp8_tier2_formal_continuation_staging_pipeline.sh": "2b032cfa3a71ce74829397d44717ed5921a63dd4d3d5180f60d6eb70d15abc58",
+    "deploy/stage_decision_admissibility_wp8_tier2_formal_continuation.sh": "677c05dfd0a13095e66fd18c48108877dcf735688b1cc5283141c1056f9bbe97",
+    "paper-skills/memory_bundle/build_tier2_formal_continuation_staging.py": "4c3239d31aa3a1716f31b270a8d7764addcb751991c8995e864a428ad2b97421",
+    "paper-skills/memory_bundle/verify_tier2_formal_continuation_amendment.py": "ea39e33b4b1c05128cc21882b2e5c61519d3542ebd5eb810c109226591f31ca0",
+    "paper-skills/memory_bundle/verify_tier2_formal_continuation_staging.py": "5ba2d1a622bca22c7d205208fa52232bfc8fcc23743e6aaa9e916ad302eb1692"
+  },
+  "design_preregistration_id": "wp8-tier2-formal-3protocol-6system-r1",
+  "effective_preregistration_id": "wp8-tier2-formal-3protocol-6system-r7-five-block-continuation",
+  "formal_execution_revision": "r5",
+  "formal_training_started": false,
+  "manifest_hash": "6540208f7a55e7a8fddf470e85d5ef8a9e09b87fc225aa526153160b3a14a0ba",
+  "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r13",
+  "output_roots_initially_empty": true,
+  "parent_source_snapshot_sha256": "d7fed7549c0484fc3a83c22f5a884d7198ca78222a3601a05b6604f674bbd2e9",
+  "parent_staging_content_hash": "99cafc74472163064f03c5223bbb03392f1009a1082fe4e5751f3e015a982172",
+  "parent_staging_gate_hash": "12a2371a24de0e3f53edbe21540f8e1f9561b8aa403c1f3190d1c90d02ca3bed",
+  "preregistration_files": {
+    "decision_admissibility_wp8_tier2_formal_preregistration_20260722_r1.json": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/preregistration/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r1.json",
+      "sha256": "8e52e09750e84027470624cabdf7b3933055a5dbb50b9c7e431e7b725f3f0806"
+    },
+    "decision_admissibility_wp8_tier2_formal_preregistration_20260722_r2.json": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/preregistration/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r2.json",
+      "sha256": "1e667eee5647d6a28d9d0441a35e691257b1a56c71e04be22e472317fd958247"
+    },
+    "decision_admissibility_wp8_tier2_formal_preregistration_20260722_r3.json": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/preregistration/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r3.json",
+      "sha256": "95659800115e75849cdecf7a62f67a4fc4a052821aca8b64af803785b0bf940e"
+    },
+    "decision_admissibility_wp8_tier2_formal_preregistration_20260722_r4.json": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/preregistration/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r4.json",
+      "sha256": "4594682b3134ec563a17829b9fbd0ac48026357cb695654373e343a20aad01cb"
+    },
+    "decision_admissibility_wp8_tier2_formal_preregistration_20260723_r5.json": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/preregistration/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r5.json",
+      "sha256": "36bed4960bac6732fb94150e937f1fe8e68826a5d2ccb63655cf8abdd1b2cf5c"
+    },
+    "decision_admissibility_wp8_tier2_formal_preregistration_20260723_r6.json": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/preregistration/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r6.json",
+      "sha256": "3b1290854630588a5c94f4cc50f8859fd9aef4c9bb63812020c7cc36610e039d"
+    },
+    "decision_admissibility_wp8_tier2_formal_preregistration_20260723_r7.json": {
+      "path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15/preregistration/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r7.json",
+      "sha256": "d19db9e780f6f40f5f03e54f3512d8b86bd29b0b18e5ba6d0a4f18628a8c4ec3"
+    }
+  },
+  "remaining_block_count": 5,
+  "remaining_online_condition_count": 25,
+  "remaining_oracle_count": 5,
+  "runtime_source_files": {
+    "deploy/run_decision_admissibility_wp8_tier2_formal_evaluator_devpod.sh": "faf20477fbb32dc71783b094f323a5e9878018b6e07f7c04fd296a5c68dda0d1",
+    "deploy/run_decision_admissibility_wp8_tier2_formal_training_devpod.sh": "34574af02fc034f4d5f8fb7311043cd70434de6b6b54398d54b582c4389e2f4a",
+    "mlevolve/authority/collectors/trusted.py": "4346b3bbb0cbb85e205b4dee542d8ee9d780f14538846fa2b763fc007bc5a343",
+    "mlevolve/authority/protocol_compiler.py": "cfb18a6925977b06cdaf6eca02c906154d03d967c07b381066086a8b5dd636f6",
+    "mlevolve/authority/runtime_protocol.py": "ecaac75afe882b4812856bab2d325a8a9278a5f8d46c7a1594a2c0177458a896",
+    "mlevolve/fixed_holdout/formal_block_evaluate.py": "bf25e0ba717b940e7046cbd4c71b8b72be6ae269f3b1b8d16321dee3cd96e304",
+    "mlevolve/fixed_holdout/formal_block_training.py": "dc643ca0c8bc8e9b889e3956f17d9bfe79feffe5c02bf37b544f3ed251304b4d",
+    "mlevolve/fixed_holdout/formal_host_receipts.py": "036161885f569f6833dddcf69b0a811fe7154844a76636d2749994fe006db505",
+    "mlevolve/fixed_holdout/formal_prepare.py": "823e545e6da8fa1acab2500c32233cc6db2d4066661758f05a46113fb0abea53",
+    "mlevolve/fixed_holdout/formal_runtime.py": "6ce6e481f61c0921a2b7b6d56ce0409685cdc7b8aed56a1e7f86fd86aeda2b2c",
+    "mlevolve/fixed_holdout/score_run.py": "d99d97219a3b6843c871e1f77777b9651e2671f2c273e9458c165cd8e3f935d4",
+    "mlevolve/fixed_holdout/writeback.py": "6eefc193bd7fd00d44725cb2caa34c64d6b9d6fe6e746e9700f5121407f3bcf1"
+  },
+  "schema": "decision_admissibility_wp8_tier2_formal_continuation_staging_content_v1",
+  "source_manifest_file_sha256": "e61f22782aa8b6264fa4c38612fbd585d8d6b3045ff38ef843950882e7afa375",
+  "source_root": "/workspace/decision-admissibility-wp8-tier2-formal-source-r13",
+  "source_snapshot_sha256": "c674364da0fe5d49e9292bd64218831a08720739abee28b246921a00cefa5292",
+  "status": "continuation_content_frozen_pending_independent_stop_gate",
+  "task_records": {
+    "mlsp-2013-birds": {
+      "bundle_current_file_sha256": "174b58688a70c20317b903b4d798b0c1ed7403f8ea071748cab4582378a24faa",
+      "bundle_current_pointer_sha256": "54a0251575bf5b42c256ff03d82c23d330b1e3452a445dceb0c53debf8d18c89",
+      "bundle_id": "decision-admissibility-wp8-tier2-formal-birds-audio-v1",
+      "bundle_manifest_file_sha256": "7a5aca5c4c1c3765f2dab7b12f6ca4959ab4bc84d910c5097ed40ca4f3a5079a",
+      "bundle_manifest_sha256": "9d3e083220cfbf377eadc149758f1cb23644b80558ab97c516cb262811979794",
+      "bundle_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r2/memory_bundles/mlsp-2013-birds/formal-child-r3",
+      "candidate_execution_contract": {
+        "allow_dataset_wide_per_sample_precompute": true,
+        "allow_remote_assets": false,
+        "allow_source_score_inheritance": false,
+        "allow_unverified_local_assets": false,
+        "allowed_import_roots": [
+          "numpy",
+          "pandas",
+          "sklearn",
+          "scipy",
+          "torch",
+          "torchaudio",
+          "librosa",
+          "soundfile",
+          "xgboost",
+          "lightgbm"
+        ],
+        "contract_hash": "5da8850c463738fcda7007d123e8c893c7e902ce600ab35f7b925a649a88f300",
+        "contract_id": "wp8-tier2-formal-mlsp-2013-birds-v1",
+        "enabled": true,
+        "max_cv_folds": 1,
+        "max_epochs": 8,
+        "max_execution_seconds": 600,
+        "max_trainable_models": 2,
+        "schema": "mlevolve_candidate_execution_contract_v1"
+      },
+      "data_file_count": 331,
+      "data_inventory_sha256": "a4670e0a0dc7c648bce898ae492007711b0a2297a8293144555618ca32f47c41",
+      "data_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r2/data/mlsp-2013-birds/wp8-tier2-formal-mlsp-grouped-v2-d37a8cc74b35",
+      "evaluator_manifest_sha256": "8c7b45547f94d197c273bad74a97b50d9e617b45967b961190b5c7eb449ccc60",
+      "formal_claim_id": "claim::formal-method::4d297a72df2957a8cb823714",
+      "formal_clause_id": "clause::formal-method::4d297a72df2957a8cb823714",
+      "maximize": true,
+      "metric": "macro_f1",
+      "prior_holdout_verification_hash": "1061ab25b0041384188d98bebe526da828f61c8eb832e88edb128fcae2e03218",
+      "prior_holdout_verification_sha256": "1d204f0a23450709bacb20c6ffa0648b42c5991abb947457e7bc381b16e32a03",
+      "protocol_ref": "grouped-classification@1#901703060d3f2dd756cc29339a645583410a1d69ac4f2b6ccd53f8631b411382",
+      "publication_report_hash": "d327629ee836694657437ddbafcd40fded00e8084ed570f07fdfdbc9825d0cb1",
+      "publication_report_sha256": "cc464b15537b09fd773d3e48b642e2e3e78d491f8076ee49b24d393c446fffd3",
+      "split_id": "wp8-tier2-formal-mlsp-grouped-v2-d37a8cc74b35",
+      "split_manifest_file_sha256": "6c2f2ebcec62bcc0210cab08df8777ac31045bb04750b5f7e6119dc4b13bff29",
+      "split_manifest_hash": "80285e14ba5cd4ad53ad35b0e30435f3c82117410c1be0183e63dc4ccaf4239c",
+      "target_domain": "audio",
+      "target_task_family": "audio_multilabel_classification",
+      "task_id": "mlsp-2013-birds",
+      "train_manifest_sha256": "a896c957c571e93943a965070d104ba7b5e0e584fb032ff045345a9f6fe6f6fb"
+    },
+    "new-york-city-taxi-fare-prediction": {
+      "bundle_current_file_sha256": "f66ce21aae6d98954c9dc5ca1cf93f841817a962fe0ef27b6b06c3e4f5c94af9",
+      "bundle_current_pointer_sha256": "5cf426b27617adaec33240075444d8b3d5f8fa4ae909e45e34cf17b60c999c79",
+      "bundle_id": "decision-admissibility-wp8-tier2-formal-taxi-tabular-v1",
+      "bundle_manifest_file_sha256": "922169e8ca8804f1f235a4294440a5e17beac8753829f61a1ad17b4047c1b12e",
+      "bundle_manifest_sha256": "8dafb87be7368c49c5fb185160aac1715a03d9b435ec8cdadc65efbb5e1a4b2b",
+      "bundle_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r2/memory_bundles/new-york-city-taxi-fare-prediction/formal-child-r3",
+      "candidate_execution_contract": {
+        "allow_dataset_wide_per_sample_precompute": true,
+        "allow_remote_assets": false,
+        "allow_source_score_inheritance": false,
+        "allow_unverified_local_assets": false,
+        "allowed_import_roots": [
+          "numpy",
+          "pandas",
+          "sklearn",
+          "scipy",
+          "torch",
+          "xgboost",
+          "lightgbm"
+        ],
+        "contract_hash": "51c2fe751076607ae486d9bad36f5620512e65b887873ed30644406578055e34",
+        "contract_id": "wp8-tier2-formal-new-york-city-taxi-fare-prediction-v1",
+        "enabled": true,
+        "max_cv_folds": 1,
+        "max_epochs": 8,
+        "max_execution_seconds": 600,
+        "max_trainable_models": 2,
+        "schema": "mlevolve_candidate_execution_contract_v1"
+      },
+      "data_file_count": 8,
+      "data_inventory_sha256": "0973d1428d6833ce3ed3f9ec53ebc9878b064e15be4b9a9178a4d4edc9277a40",
+      "data_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r2/data/new-york-city-taxi-fare-prediction/wp8-tier2-formal-nyc-chronological-v1-20497ff0e594",
+      "evaluator_manifest_sha256": "e67ce50eb1e20feb82b43c5f109c64be13da5097e67cd1c4fc704c4072c07e67",
+      "formal_claim_id": "claim::formal-method::532cde7efdaf616a43be789a",
+      "formal_clause_id": "clause::formal-method::532cde7efdaf616a43be789a",
+      "maximize": false,
+      "metric": "rmse",
+      "prior_holdout_verification_hash": "55b2ee78792141d683f01215830e1d03547597ca401c24f0437db2fffbd16bae",
+      "prior_holdout_verification_sha256": "d39352b9313fa78f0f563c5a95baef9c670c14aa0104a1f7dd1b6e0737cc56d8",
+      "protocol_ref": "chronological-regression@1#bfc61957b422df5cf09dcb37cffe06aae2ccd2b11db4fee0721b90a2bc6dbf04",
+      "publication_report_hash": "e19d61570fef06912f403b24a0502c774dec3836e389d6e03fe10109fbfdba35",
+      "publication_report_sha256": "cf9296e9705797c908c4d728711d6e7d77a33a3d82d069af15b61f0748467b87",
+      "split_id": "wp8-tier2-formal-nyc-chronological-v1-20497ff0e594",
+      "split_manifest_file_sha256": "24bc2e78f33bc7dcc31fa5ec3ba9eae4f62f40b201efb610da3b5da7ca631132",
+      "split_manifest_hash": "8b813f5827b393fa60dda65aa6cb20d9c35f77907b777a2f90ec332a4a9e318d",
+      "target_domain": "tabular",
+      "target_task_family": "tabular_regression",
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "train_manifest_sha256": "83318ee95c92cf0b3556f24a0bac89e82799db816c52da4883d48b65df371ef1"
+    }
+  },
+  "terminal_metric_observed_for_remaining_blocks": false,
+  "terminal_score_values_inspected": false,
+  "training_gpu_resource_key": "nvidia.com/rtxa6000"
+}

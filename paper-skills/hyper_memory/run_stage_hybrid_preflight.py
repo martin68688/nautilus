@@ -38,6 +38,46 @@ TASKS = {
 }
 
 
+def _runtime_control_contract(
+    control: str,
+    text: str,
+    refs: list[str],
+    pack: dict,
+) -> tuple[bool, str, str]:
+    """Validate the intentional output contract of each retrieval control."""
+
+    route_ok = (pack.get("stage_route") or {}).get("control") == control
+    if control == "no_memory":
+        ok = bool(
+            text == ""
+            and refs == []
+            and pack.get("schema") == "stage_hybrid_no_memory_pack_v1"
+            and pack.get("memory_snapshot_bound_but_not_exposed") is True
+            and int(pack.get("unauthorized_prompt_exposure", -1)) == 0
+            and route_ok
+        )
+        return ok, "stage_hybrid_no_memory_pack_v1", "none"
+    if control in {
+        "flat_relevance_memory",
+        "global_validity_bit",
+        "authority_only",
+    }:
+        ok = bool(
+            text
+            and pack.get("schema") == PACK_SCHEMA
+            and pack.get("algorithm_version") == "formal_flat_relevance_v1"
+            and route_ok
+        )
+        return ok, PACK_SCHEMA, "formal_flat_relevance_v1"
+    ok = bool(
+        text
+        and pack.get("schema") == PACK_SCHEMA
+        and pack.get("algorithm_version") == "stage_hybrid_v2"
+        and route_ok
+    )
+    return ok, PACK_SCHEMA, "stage_hybrid_v2"
+
+
 def _load_module(path: Path, name: str):
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
@@ -99,6 +139,11 @@ def run_preflight(*, evaluate_offline: bool = True) -> dict:
                     query_parts=["validate a robust model change without leakage"],
                 )
                 pack = layer.current_navigation_pack()
+                (
+                    control_contract_ok,
+                    expected_schema,
+                    expected_algorithm,
+                ) = _runtime_control_contract(control, text, refs, pack)
                 positive_ids = [item["id"] for item in pack.get("fused_execution_candidates", [])]
                 positive_ids += [item["id"] for item in pack.get("selected_sop_gateways", [])]
                 blocked_positive_count = 0
@@ -125,10 +170,9 @@ def run_preflight(*, evaluate_offline: bool = True) -> dict:
                         "control": control,
                         "task": task_id,
                         "stage": stage,
-                        "ok": bool(text)
-                        and pack.get("schema") == PACK_SCHEMA
-                        and pack.get("algorithm_version") == "stage_hybrid_v2"
-                        and pack.get("stage_route", {}).get("control") == control,
+                        "ok": control_contract_ok,
+                        "expected_schema": expected_schema,
+                        "expected_algorithm": expected_algorithm,
                         "ref_count": len(refs),
                         "historical_source_runs": sorted(source_runs),
                         "blocked_positive_count": blocked_positive_count,
@@ -230,7 +274,7 @@ def run_preflight(*, evaluate_offline: bool = True) -> dict:
         "held_out_benchmark", "offline_claim_gates",
     )
     return {
-        "schema": "stage_hybrid_preflight_v1",
+        "schema": "stage_hybrid_preflight_v2",
         "ok": all(checks[name]["ok"] for name in required),
         "checks": checks,
         "online_training_started": False,

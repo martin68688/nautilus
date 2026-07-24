@@ -1,0 +1,67 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_postfailure_regression_receipt_v1",
+  "created_at_utc": "2026-07-22T19:14:20Z",
+  "git_head": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
+  "git_upstream_head": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
+  "r8_failure_diagnostic_sha256": "f9061dcacfa94058c3fbe11947f3dcfc0e6235b7949e3d4dbce8b751b5192481",
+  "r8_failure_diagnostic_hash": "250060ab975edb42ea4c2e0d68808162d2beb240726459701ae96dbdc5335c6d",
+  "r5_postfailure_amendment_sha256": "36bed4960bac6732fb94150e937f1fe8e68826a5d2ccb63655cf8abdd1b2cf5c",
+  "r5_postfailure_amendment_hash": "03604324593555799c12a46824e85371eb0af3806c6df67bfdd17d12bf076d19",
+  "terminal_score_values_inspected": false,
+  "formal_training_restarted": false,
+  "tests": [
+    {
+      "name": "terminal_protocol_and_failure_focused",
+      "command": "PYTHONPATH=mlevolve .venv/bin/python -m pytest -q tests/test_fixed_holdout_protocol_payload_closure.py tests/test_fixed_holdout_terminal_writeback.py tests/test_tier2_formal_block_finalizers.py tests/authority/test_tier2_formal_launcher_static.py tests/authority/test_trusted_collectors.py tests/authority/test_runtime_protocol_observer.py",
+      "passed": 52,
+      "failed": 0,
+      "duration_seconds": 27.89
+    },
+    {
+      "name": "execution_plan_section_20_baseline",
+      "command": "PYTHONPATH=mlevolve .venv/bin/python -m pytest -q tests/authority tests/test_stage_aware_hybrid_memory.py tests/test_causal_granularity_benchmark_v2.py tests/test_protocol_repair.py tests/test_run_forest_memory.py",
+      "passed": 406,
+      "failed": 0,
+      "duration_seconds": 102.69
+    },
+    {
+      "name": "full_test_suite",
+      "command": "PYTHONPATH=mlevolve .venv/bin/python -m pytest -q tests",
+      "passed": 687,
+      "failed": 0,
+      "duration_seconds": 208.79
+    }
+  ],
+  "verified_behaviors": [
+    "aerial stratified ProtocolSpec payload closure",
+    "birds grouped ProtocolSpec payload closure",
+    "taxi chronological ProtocolSpec payload closure",
+    "missing runtime protocol evidence fails closed",
+    "terminal train_view_only is not relabelled as an internal fold fit scope",
+    "five enforced online conditions each publish exactly one independent Result Fact",
+    "evaluator failure is deleted, verified NotFound, hash-attested and sealed",
+    "r5 retains the frozen Full-minus-No-Memory primary contrast",
+    "v4 heldout detector evidence remains bound to historical v4 provenance while live v5 stays separate",
+    "stage-hybrid preflight validates each control's actual output contract"
+  ],
+  "critical_source_sha256": {
+    "deploy/run_decision_admissibility_wp8_tier2_formal_block.sh": "aaff7f56c08293df025285d4361312c8c568eef0049392d6f3489719098c946f",
+    "mlevolve/authority/collectors/trusted.py": "4346b3bbb0cbb85e205b4dee542d8ee9d780f14538846fa2b763fc007bc5a343",
+    "mlevolve/fixed_holdout/formal_block_evaluate.py": "4a053cb1afdbe2ae315e0c908f04be910df861d423563a4b764cc63f84ec59a8",
+    "mlevolve/fixed_holdout/formal_block_training.py": "f671777142488cf918d3ad306fee79b605e39a09969fe0d7ef945d206cff9b6b",
+    "mlevolve/fixed_holdout/formal_host_receipts.py": "e70e5ad5428d6b95a83a54b929005ade0839b6f91d1e30a6a3e2b5961f56ff52",
+    "mlevolve/fixed_holdout/formal_runtime.py": "a8a3f3b0f43c3376c1e024a8450352ed7a1f81610cdcc6275ebf26d18b1f5819",
+    "mlevolve/fixed_holdout/score_run.py": "d99d97219a3b6843c871e1f77777b9651e2671f2c273e9458c165cd8e3f935d4",
+    "mlevolve/fixed_holdout/writeback.py": "6eefc193bd7fd00d44725cb2caa34c64d6b9d6fe6e746e9700f5121407f3bcf1",
+    "paper-skills/memory_bundle/build_tier2_formal_staging.py": "0836ef69c101136bb9b98fe6c27206626e8644ef6437761fda4e6f0c2e5e828f",
+    "paper-skills/memory_bundle/verify_tier2_formal_postfailure_amendment.py": "c6bf23bae619f4fe4f537c9ebeba8ff41370952291016fd8ab4b62a18a20c5ad",
+    "paper-skills/memory_bundle/verify_tier2_formal_staging.py": "36b9138eccc664b2e4e4addc81c020841de00f400089d89a6b0df9ca574c4a09"
+  },
+  "test_source_sha256": {
+    "tests/test_fixed_holdout_protocol_payload_closure.py": "8f45f9c48f4f00bf3d6654096ab114f8a7830d81e334b864efe28963097aea34",
+    "tests/test_tier2_formal_block_finalizers.py": "a842fa94f4df1dedde83fe26a0afda5441ecf322684c394414422fdba75ca527",
+    "tests/test_tier2_formal_postfailure_amendment.py": "dc23ed682cbb86e18cb74a386717ba752a259c27b140d035a02fd94c47fc04b0"
+  },
+  "regression_gate_passed": true,
+  "receipt_hash": "2b5ca58879e23d825cd5829c5de3ef6d061f0dad5bcc2f0d6556d8ab7484121f"
+}

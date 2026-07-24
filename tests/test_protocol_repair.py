@@ -26,6 +26,7 @@ from engine.agent_search import AgentSearch
 from engine import executor
 from engine.search_node import Journal
 from utils.metric import MetricValue
+from authority.protocol_registry import ProtocolRegistry
 
 
 def _agent(tmp_path, task_desc="generic task"):
@@ -341,6 +342,52 @@ model_a = XGBClassifier(n_estimators=800)
     assert "REPAIR_MODEL_COMPONENT_REMOVED" in {
         item["issue_code"] for item in node.leakage_audit["issues"]
     }
+
+
+def test_method_identity_uses_active_protocol_surface_not_workflow_stages(tmp_path):
+    code = """
+sample_ids = list(range(len(df)))
+outer_train_ids, outer_holdout_ids = train_test_split(sample_ids, stratify=labels)
+model = LogisticRegression()
+model.fit(X_outer_train, y_outer_train)
+"""
+    source = SearchNode(code=code, plan="frozen", stage="draft")
+    transaction = {
+        "source_node_id": source.id,
+        # These are workflow stages and deliberately are not valid
+        # ProtocolRepairSurface change kinds.
+        "protocol_plan": {
+            "stages": ["data_scope", "validation_provenance", "final_holdout"]
+        },
+    }
+    node = SearchNode(
+        code=code,
+        plan="protocol-only",
+        stage="debug",
+        protocol_repair=transaction,
+        leakage_repair_context={"source_node_id": source.id},
+    )
+    agent = _agent(tmp_path)
+    agent.journal = Journal(nodes=[source])
+    registry = ProtocolRegistry(REPO / "mlevolve" / "config" / "protocols")
+    agent.evaluation_authority = SimpleNamespace(
+        active_protocol_spec=registry.get("mlevolve-default", "2")
+    )
+
+    report = result_parse_agent._method_identity_audit(agent, node)
+
+    assert report["method_identity"] == "method_preserved"
+    assert report["issues"] == []
+    assert report["repair_surface"]["allowed_change_kinds"] == [
+        "evaluator",
+        "holdout_access",
+        "instrumentation",
+        "preprocessing_scope",
+        "seed_aggregation",
+        "selection_freeze",
+        "split_api",
+    ]
+    assert len(report["replay_verification_hash"]) == 64
 
 
 def test_final_stage_requires_all_static_gates_then_becomes_executable(tmp_path, monkeypatch):

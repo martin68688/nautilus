@@ -1,0 +1,101 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_completed_blocks_freeze_v1",
+  "status": "four_completed_blocks_frozen_before_continuation_staging",
+  "frozen_at_utc": "2026-07-23T02:55:00Z",
+  "score_values_inspected": false,
+  "score_values_included": false,
+  "completed_block_count": 4,
+  "completed_online_condition_count": 20,
+  "completed_oracle_count": 4,
+  "successful_selected_result_count": 18,
+  "failed_online_condition_count": 2,
+  "result_fact_count": 18,
+  "blocks": {
+    "wp8-tier2-formal-aerial-seed-104729-r3": {
+      "task_id": "aerial-cactus-identification",
+      "agent_seed": 104729,
+      "evaluation_summary_hash": "c39ded7699c924a075d8ccc12852010b2c774aa1d015cb1d89e04a7482eda282",
+      "evaluation_summary_file_sha256": "ed284bc1966be5c2f88b0525be77575fff88ff19374f3666835bc21b8613be77",
+      "successful_selected_result_count": 5,
+      "failed_online_condition_count": 0,
+      "result_fact_count": 5,
+      "evaluator_pod_deletion_attestation_hash": "4aacb0dda710b445613fd4cf3ded86965d54036a64d6b62ddeeb8ce893f1cbd9",
+      "evaluator_pod_deletion_file_sha256": "82c6d8d194040f6b8108051a598b64cfd738e0236464bb1d8d5a83c41ff73952",
+      "block_evaluation_file_manifest_sha256": null,
+      "may_rerun": false
+    },
+    "wp8-tier2-formal-aerial-seed-130363-r3": {
+      "task_id": "aerial-cactus-identification",
+      "agent_seed": 130363,
+      "evaluation_summary_hash": "9094c7f3e97767605553113739e18dab94d2771c64a84d59565ea5ff1c4dc5e9",
+      "evaluation_summary_file_sha256": "f81c3a838f8e3defff6b077e13d6804205fe2c24ae4a7da8c14b0fc7268b3379",
+      "successful_selected_result_count": 5,
+      "failed_online_condition_count": 0,
+      "result_fact_count": 5,
+      "evaluator_pod_deletion_attestation_hash": "d688cb55b6a97068a10dbd7caa95135ebf93aa15aa5c976d0a6106c53d626389",
+      "evaluator_pod_deletion_file_sha256": "fe61bcf517863b1506bdf047ce992549d66e651fda4d3fb3e2978daecb9966a9",
+      "block_evaluation_file_manifest_sha256": null,
+      "may_rerun": false
+    },
+    "wp8-tier2-formal-aerial-seed-155921-r3": {
+      "task_id": "aerial-cactus-identification",
+      "agent_seed": 155921,
+      "evaluation_summary_hash": "559282991335344d8a8e544ca1e1713dcb96f76a665ab06c4fbb8cd53c04765d",
+      "evaluation_summary_file_sha256": "7166d9a076933c6be4b8b1313c866a398c43b8a7cc13b0ffa9e278cb0b6a3fb8",
+      "successful_selected_result_count": 5,
+      "failed_online_condition_count": 0,
+      "result_fact_count": 5,
+      "evaluator_pod_deletion_attestation_hash": "f7c3ff4ae436b0a2eb82147d771e532a51a838eb5d04217a21443c842cbdd7fb",
+      "evaluator_pod_deletion_file_sha256": "a8f85851989b0b1edb04c8dcbbec6b2c032fa93403c99b0ffe3213c0650cc463",
+      "block_evaluation_file_manifest_sha256": "a12c84c78bd874c2c189c92fd64346ef37ca51c2ca3a9963121b65f34c2fdada",
+      "may_rerun": false
+    },
+    "wp8-tier2-formal-birds-seed-104729-r3": {
+      "task_id": "mlsp-2013-birds",
+      "agent_seed": 104729,
+      "evaluation_summary_hash": "a17c7ce5bd6db2eae824830fec5c9d754031487de93cbb513553abf5db48b7a9",
+      "evaluation_summary_file_sha256": "97b1eaf95eb9aa3b414330453ca1b299a5eb5d58674aa1ce5c93aac81e76e2e6",
+      "successful_selected_result_count": 3,
+      "failed_online_condition_count": 2,
+      "result_fact_count": 3,
+      "evaluator_pod_deletion_attestation_hash": "813e7ddf5db21b40fe7434dcc7dc3f909faf5c253d93307e2a13c3a48c2feb44",
+      "evaluator_pod_deletion_file_sha256": "4114993198e83acad1b2d4d73f395f3ac05755b796d104c979f7f72876940fea",
+      "block_evaluation_file_manifest_sha256": "42b02d329e3e99a8afac4a1482dd8db70bb5eb2e13c7bb06fdc041ff7b63ac93",
+      "structure_audit_path": "coordination/decision_admissibility_wp8_tier2_formal_birds_seed104729_r3_structure_audit_20260723.json",
+      "structure_audit_file_sha256": "c36fb2d38d72137e57861af6c707a0a997cc70d79fc931ab4cde9c48ccbdec96",
+      "may_rerun": false
+    }
+  },
+  "remaining_blocks": [
+    {
+      "task_id": "mlsp-2013-birds",
+      "agent_seed": 130363
+    },
+    {
+      "task_id": "mlsp-2013-birds",
+      "agent_seed": 155921
+    },
+    {
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "agent_seed": 104729
+    },
+    {
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "agent_seed": 130363
+    },
+    {
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "agent_seed": 155921
+    }
+  ],
+  "continuation_requirements": {
+    "completed_blocks_must_not_rerun": true,
+    "remaining_block_count": 5,
+    "remaining_online_condition_count": 25,
+    "remaining_oracle_count": 5,
+    "total_online_condition_count_after_completion": 45,
+    "total_oracle_count_after_completion": 9,
+    "terminal_score_values_remain_blinded_until_all_nine_blocks_complete": true
+  },
+  "inventory_hash": "bbf256f9318cd7eaedf12b89c89be479da67e266a5eaa5ef4ef605b72b6ec17d"
+}

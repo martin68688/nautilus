@@ -78,26 +78,73 @@ class EvidenceGraph:
         for path_id in self.claim_paths.get(claim_id, []):
             path = self.paths[path_id]
             receipts = [self.receipts[rid] for rid in path.receipt_ids if rid in self.receipts]
-            positive = [r for r in receipts if not r.payload.get("contradicts", False)]
-            blockers = [r.receipt_id for r in receipts if r.payload.get("contradicts", False)]
+            claim_type = claim.claim_type.value
+            applicable = [
+                receipt
+                for receipt in receipts
+                if not receipt.supports_claim_types or claim_type in receipt.supports_claim_types
+            ]
+            positive = [
+                receipt
+                for receipt in applicable
+                if not receipt.payload.get("contradicts", False)
+            ]
+            blockers = [
+                receipt.receipt_id
+                for receipt in receipts
+                if receipt.payload.get("contradicts", False)
+                and (
+                    not receipt.blocks_claim_types
+                    or claim_type in receipt.blocks_claim_types
+                )
+            ]
             blocking.update(blockers)
-            types = {r.receipt_type for r in positive}
+            trusted_positive = [
+                receipt for receipt in positive if receipt.trust_status == "trusted_host"
+            ]
+            eligible = trusted_positive if obligations.require_trusted_receipts else positive
+            types = {r.receipt_type for r in eligible}
             missing = {f"receipt:{item.value}" for item in obligations.required_receipts - types}
+            if obligations.require_trusted_receipts:
+                if not trusted_positive:
+                    missing.add("trusted_receipt:any")
+                observed_untrusted_types = {
+                    receipt.receipt_type for receipt in positive
+                    if receipt.trust_status != "trusted_host"
+                }
+                for receipt_type in obligations.required_receipts & observed_untrusted_types - types:
+                    missing.discard(f"receipt:{receipt_type.value}")
+                    missing.add(f"trusted_receipt:{receipt_type.value}")
             for receipt_type, count in obligations.minimum_counts.items():
-                observed = sum(1 for r in positive if r.receipt_type == receipt_type)
+                observed = sum(1 for r in eligible if r.receipt_type == receipt_type)
                 if observed < count:
                     missing.add(f"count:{receipt_type.value}>={count}")
             for receipt_type, flags in obligations.required_payload_flags.items():
-                candidates = [r for r in positive if r.receipt_type == receipt_type]
-                if not candidates or not all(
-                    any(candidate.payload.get(key) == expected for candidate in candidates)
-                    for key, expected in flags.items()
+                candidates = [r for r in eligible if r.receipt_type == receipt_type]
+                if not candidates or not any(
+                    all(
+                        candidate.payload.get(key) == expected
+                        for key, expected in flags.items()
+                    )
+                    for candidate in candidates
                 ):
                     missing.add(f"payload:{receipt_type.value}")
+            if obligations.require_positive_effect:
+                effective_receipts = [
+                    receipt
+                    for receipt in eligible
+                    if receipt.receipt_type == ReceiptType.COUNTERFACTUAL_ACTUATION
+                    and receipt.payload.get("effective") is True
+                    and receipt.payload.get("protocol_legal") is True
+                    and isinstance(receipt.payload.get("outcome_delta"), (int, float))
+                    and float(receipt.payload["outcome_delta"]) > 0
+                ]
+                if not effective_receipts:
+                    missing.add("positive_effect:protocol_legal_counterfactual")
             for receipt_type, (key, count) in obligations.distinct_payload_values.items():
                 values = {
                     receipt.payload.get(key)
-                    for receipt in positive
+                    for receipt in eligible
                     if receipt.receipt_type == receipt_type and receipt.payload.get(key) is not None
                 }
                 if len(values) < count:
@@ -114,7 +161,11 @@ class EvidenceGraph:
                 satisfied.append(path_id)
             missing_by_path.append(missing)
         if satisfied:
-            return PathEvaluation(satisfied, [], sorted(blocking))
+            # Evidence paths are alternatives: a complete clean path is enough
+            # even when another independent path is contaminated. Blockers on
+            # the rejected path remain in its receipts; they do not poison the
+            # clean support path or become falsely described as satisfied.
+            return PathEvaluation(satisfied, [], [])
         if not missing_by_path:
             return PathEvaluation([], ["complete_evidence_path"], sorted(blocking))
         # Do not union partial paths: report the smallest incomplete path for diagnostics.

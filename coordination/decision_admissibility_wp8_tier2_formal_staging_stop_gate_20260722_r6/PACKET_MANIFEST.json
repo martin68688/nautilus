@@ -1,0 +1,11 @@
+{
+  "file_hashes": {
+    "STAGING_BUILD_REPORT.json": "4a69d65d85e3fd6fa55c7538bec9d1c90841a69cc1e429775e5c56d3a224a6d7",
+    "STAGING_CONTENT_MANIFEST.json": "4a49322017f32624e83f1a30f6342574f5b2fee0c65f97692a6c7a29216009fa",
+    "STAGING_STOP_GATE.json": "7829a3d1f5d086a7c4d285514453d77b5374d55b746f73d188c6398fc4148161",
+    "formal-controller-cpu-r1.yaml": "bb5803bfc0f215ded9200414ac7c0c87131086a68c4f4b4630a5a89fd34fe6e0"
+  },
+  "gate_hash": "673acee069ccc39bf2642766d544d604bad102d5053db0f15a73f0593c075360",
+  "packet_hash": "f912e632affc66e9b5ad7ff38043108b8564a9ea6bc5453385918e2dbd499d9b",
+  "schema": "decision_admissibility_wp8_tier2_formal_local_gate_packet_v1"
+}

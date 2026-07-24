@@ -64,6 +64,7 @@ external_skill_memory:
   strategy_candidate_limit: 12
   strategy_route_count: 3
   l2_tactic_limit: 4
+  visibility_token_budget: 4096
   stage_quotas:
     draft: {sop_candidates: 6, sop_gateways: 3, tree_candidates: 2}
     improve: {sop_candidates: 4, sop_gateways: 2, tree_candidates: 6}

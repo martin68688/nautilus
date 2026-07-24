@@ -1,0 +1,108 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_failure_diagnostic_v1",
+  "diagnostic_id": "wp8-tier2-formal-r8-aerial-s104729-authority-denial",
+  "recorded_at_utc": "2026-07-22T18:17:59Z",
+  "block_id": "wp8-tier2-formal-aerial-seed-104729-r1",
+  "experiment_status": "failed_formal_evidence_preserved_not_reusable",
+  "failure_classification": "nonretryable_infrastructure_authority_denial_after_terminal_metric",
+  "failure_stage": "cpu_evaluator_terminal_result_fact_writeback",
+  "failure_condition": "no_memory",
+  "failure_reason": "Terminal Result Fact Authority denied: payload:evaluator,payload:fit_scope,payload:split_lineage",
+  "terminal_metric_observed": true,
+  "pre_metric_abort": false,
+  "score_values_inspected_during_recovery": false,
+  "normal_result_fact_published": false,
+  "session_overlay_event_count": 0,
+  "silent_retry_permitted": false,
+  "r8_reuse_permitted": false,
+  "source": {
+    "git_head": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
+    "git_upstream_head": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
+    "source_snapshot_sha256": "513e812824de83b24bc3598e5159731e4c56f300d75c6c7e6c3780306ad7face",
+    "container_image_digest": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc"
+  },
+  "staging": {
+    "packet_root": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_tier2_formal_staging_stop_gate_20260722_r8",
+    "gate_hash": "ed734267e43971935ea807df8b102e0f85d59abbfced9cd2f711de63ecd898e8",
+    "content_manifest_hash": "ef674f7f2d6429855de3fa37d54d235d1d1c4e2c9eb1eb31d0997e4b37bcd6ec",
+    "packet_file_sha256": {
+      "PACKET_MANIFEST.json": "843ade47b8f76cc6275b7c96d8efe5c98cfd165a6a2825616f4b1365894075e8",
+      "STAGING_BUILD_REPORT.json": "4027b195ad23460eaa556c88f8e3093ee0bf6dadfbf75abf13ab5a9e621b5dbf",
+      "STAGING_CONTENT_MANIFEST.json": "0355326f2f6ae17871c5f5d80a3d08bef41caec33cfa7aa7189ab4a9ee476931",
+      "STAGING_STOP_GATE.json": "139e4586f82e3a9a6b3a785f9254b4ee433f3e81234f901abfde5e8087f1f3a6",
+      "formal-controller-cpu-r1.yaml": "5b46158c774bcd1cfd2a78e664c8c7c257adf675c11d4e25ebe2a3a6f1299916"
+    }
+  },
+  "preserved_output": {
+    "root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r8/blocks/wp8-tier2-formal-aerial-seed-104729-r1",
+    "tree_sha256": "84cb48c4c2c9d359e49125ce40e5d9808bd42e6552478b44e6ec51d15eb6aac4",
+    "file_count": 331,
+    "state": "evaluator_failed",
+    "state_file_sha256": "aa018226457a9dc31faf657f7962da8f950bf3feac27bf2deeaedffffd6a17f4",
+    "evaluator_launcher_exit_code": 1,
+    "evaluator_launcher_exit_code_file_sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+    "training_manifest_sha256": "a8e619c338adce510df6368f2c053fc6e923f07b17e6d40735a21679da08e6ab",
+    "evaluator_launcher_log_sha256": "bf62b725fe50c678f38ffa33c4b85e4e159f11fe49d9a3d3ed16089251f45809",
+    "evaluation_started_marker_sha256": "8c6ff6d28463332770de2ef3e4a11db3333664c9a5ce55e2c5b0cbd76e148f04"
+  },
+  "partial_terminal_artifacts": {
+    "condition": "no_memory",
+    "all_candidate_terminal_scores_sha256": "eb922dba5ea7125cf3fc3c3010781b7c791abdc6370ea85cd9d291a59d288444",
+    "fixed_holdout_scores_sha256": "90699583034cf468455d228802b4c11fe4983eade4a6d102f585b1e58443f98a",
+    "fixed_holdout_writeback_status_sha256": "0df08f241c96eee4ae0e17212cad145986c1cc430e80cf3bec8725daea8740a0",
+    "fixed_holdout_writeback_status_hash": "c01b1c28114232d1812c8bc67dea169f7f8e67104b8a00032f90d9882a0abcb2",
+    "authority_ledger_sha256_after_failed_prepare": "d54accac709ce515ab63ac1b72d021ea39d5ea6ad239fc75a3432350bd2f77c5",
+    "session_overlay_events_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "session_overlay_manifest_sha256": "c2518de3135a99f607daa9d1801122b28612bb0e203392e5c70d91dec8e031a2",
+    "writeback_status": "writeback_incomplete"
+  },
+  "pod_lifecycle": {
+    "training": {
+      "pod_name": "da-wp8-f-aerial-s104729-gpu-r1",
+      "pod_uid": "ba8120ff-c4e1-4276-b6f4-a9bbb1e088b6",
+      "deletion_attestation_file_sha256": "c43652147ab4034e8aadcbf2e34bca271c74503c1c8ee279fef8aa671719d866",
+      "deletion_attestation_hash": "ca04174ce97bcd77ff169f86538bf2b5052df4e939831224b97761adc929c37b",
+      "delete_requested_at": "2026-07-22T18:00:04Z",
+      "not_found_verified_at": "2026-07-22T18:00:48Z",
+      "terminal_metric_observed_before_not_found": false,
+      "post_failure_not_found_probe_at": "2026-07-22T18:17:54Z",
+      "post_failure_not_found_probe_exit_code": 1,
+      "post_failure_not_found_probe_sha256": "e1649450bcb11533dd6bdbd317931294bdeb40d7f33ca8777ba2ded9508133e2"
+    },
+    "evaluator": {
+      "pod_name": "da-wp8-f-aerial-s104729-cpu-r1",
+      "pod_uid": "1c3a3efa-338e-4ad7-90a3-4ecc917147a3",
+      "creation_timestamp": "2026-07-22T18:01:21Z",
+      "creation_attestation_file_sha256": "fd3d1a203f1394c43770799b4b904523421c72a6c37882373708fa8b2c5a2da8",
+      "creation_attestation_hash": "5c304062d493fa87afd22aaa082b13acf7f65b3d6be43d112710ed748d074942",
+      "deletion_attestation_present": false,
+      "post_failure_not_found_probe_at": "2026-07-22T18:17:59Z",
+      "post_failure_not_found_probe_exit_code": 1,
+      "post_failure_not_found_probe_sha256": "1728097a57b9601f5c07d36073694c43728ed50c9a0979e9880c82215dc8c952"
+    }
+  },
+  "root_cause": {
+    "component": "mlevolve/fixed_holdout/writeback.py:_trusted_terminal_receipts",
+    "missing_payload_obligations": [
+      "payload:evaluator",
+      "payload:fit_scope",
+      "payload:split_lineage"
+    ],
+    "diagnosis": "The terminal collectors emitted trusted receipt types but did not join the hash-bound host terminal manifest evidence with the selected node's persisted internal runtime protocol observation to satisfy the active ProtocolSpec payloads.",
+    "semantic_constraints": [
+      "formal fit_scope=train_view_only is terminal holdout isolation and must not be relabeled as an internal fold fit scope",
+      "internal runtime protocol evidence and terminal manifest evidence must both be present and independently verified",
+      "aerial stratified_random, birds grouped_multilabel_stratified, and taxi chronological_deterministic_sha256_sample require explicit verified mapping to ProtocolSpec strategy families"
+    ]
+  },
+  "recovery_requirements": [
+    "preserve the complete r8 output root and this failure record",
+    "do not inspect or reuse the stored terminal score values while designing the correction",
+    "add fail-closed protocol payload closure tests for aerial, birds, and taxi",
+    "add evaluator failure deletion and NotFound attestation",
+    "create a transparent post-failure preregistration amendment bound to this diagnostic",
+    "use new source, staging, Bundle, CURRENT, image, and output roots",
+    "pass a new staging Stop Gate before any corrected formal run"
+  ],
+  "diagnostic_hash": "250060ab975edb42ea4c2e0d68808162d2beb240726459701ae96dbdc5335c6d"
+}

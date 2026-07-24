@@ -1,0 +1,89 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_preregistration_amendment_v1",
+  "preregistration_id": "wp8-tier2-formal-3protocol-6system-r2",
+  "status": "design_frozen_pending_staging_hash_manifest",
+  "frozen_at": "2026-07-22T09:35:00Z",
+  "parent_preregistration": {
+    "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r1.json",
+    "file_sha256": "8e52e09750e84027470624cabdf7b3933055a5dbb50b9c7e431e7b725f3f0806",
+    "preregistration_id": "wp8-tier2-formal-3protocol-6system-r1"
+  },
+  "reason_for_revision": "The frozen r1 hash-only Birds group allocation failed its preregistered two-sided 19-species coverage check before any formal training or terminal metric was observed. The r1 result is retained as a design failure and is not rearranged in place.",
+  "pretraining_evidence": {
+    "r1_failure": {
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_birds_r1_feasibility_20260722.json",
+      "file_sha256": "52bfffb81275e348b6c28d3a6b2356c54cb55ffff4ad50dfce5750a27049ce93",
+      "report_hash": "17bb0e65ffe58611a90ab2bb217ca2c1a450aaba01784cbcd35dafa3c2ee83d6",
+      "checks_passed": false,
+      "fold0_record_count": 322,
+      "fold0_group_count": 152,
+      "holdout_group_count": 38,
+      "train_record_count": 244,
+      "holdout_record_count": 78,
+      "missing_holdout_class_ids": [3, 16]
+    },
+    "r2_feasibility": {
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_birds_r2_feasibility_20260722.json",
+      "file_sha256": "49da91979764efdfdeb0e1cd6eb9a8b93ed9488c2009c5bb95ad33ab614c044c",
+      "report_hash": "38591fc0487f6e2d50ea8bb283e509c65165328b2404c9b3b11163317ae716e4",
+      "checks_passed": true,
+      "fold0_record_count": 322,
+      "fold0_group_count": 152,
+      "holdout_group_count": 38,
+      "train_record_count": 233,
+      "holdout_record_count": 89,
+      "missing_train_class_ids": [],
+      "missing_holdout_class_ids": [],
+      "selected_group_ids_sha256": "d37a8cc74b35297a26e10a6d9b2b1e71b40356bc62cdf429150c34afcbcd1f13"
+    }
+  },
+  "scope": {
+    "inherit_all_parent_fields_except_explicit_overrides": true,
+    "changed_tasks": ["mlsp-2013-birds"],
+    "unchanged_tasks": [
+      "aerial-cactus-identification",
+      "new-york-city-taxi-fare-prediction"
+    ],
+    "systems_seeds_condition_order_budgets_oracle_and_statistics_changed": false,
+    "formal_training_observed_before_revision": false,
+    "terminal_metric_observed_before_revision": false
+  },
+  "overrides": {
+    "tasks_by_id": {
+      "mlsp-2013-birds": {
+        "holdout_builder": {
+          "split_version": "wp8-tier2-formal-mlsp-grouped-v2",
+          "strategy": "grouped_multilabel_stratified",
+          "source_population": "only the 322 publicly labeled fold0 records; all 323 fold1 question-mark records remain excluded",
+          "group_column": "recording_session_id",
+          "group_rule": "remove the terminal underscore plus four decimal digits from each WAV filename stem",
+          "holdout_group_count": "ceil(fold0_unique_group_count * 0.25)",
+          "class_target": "for each of 19 classes, max(1, min(total_positive-1, round(total_positive*0.25)))",
+          "phase_a": "Starting from an empty holdout, repeatedly choose a not-yet-selected group that covers at least one uncovered class and leaves at least one positive for every class in train. Minimize lexicographically: negative newly-covered-class count, normalized target overshoot, normalized target distance, sha256(split_version + NUL + group), group ID.",
+          "phase_b": "Until the frozen holdout group count is reached, choose a remaining group that leaves every class represented in train. Minimize lexicographically: normalized target distance, normalized target overshoot, sha256(split_version + NUL + group), group ID.",
+          "forbidden_repairs": [
+            "manual group swapping",
+            "terminal-metric-driven allocation",
+            "fold1 inclusion",
+            "record-level splitting of a session group"
+          ],
+          "required_checks": [
+            "train_and_holdout_rec_id_overlap_is_zero",
+            "train_and_holdout_group_overlap_is_zero",
+            "all_19_species_have_at_least_one_positive_in_train_and_holdout",
+            "fold1_records_and_labels_absent_from_both_views",
+            "terminal_labels_absent_from_train_view"
+          ]
+        }
+      }
+    },
+    "formal_staging_requirement": "The verified formal staging manifest must bind this r2 amendment, its parent r1 file, both feasibility reports, the exact formal_prepare.py implementation hash and the resulting r2 Birds split hashes before any formal training Pod starts."
+  },
+  "interpretation": {
+    "r1_status": "retained_failed_design_not_used_for_training",
+    "r2_status": "effective_design_pending_verified_staging",
+    "effect_claim_authorized": false,
+    "formal_training_authorized": false
+  },
+  "amendment_hash": "87bc093a64f22c797d27f4286dd6939e2aa22c0aa1ae9e722bd20cc5f84a3f99"
+}

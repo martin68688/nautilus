@@ -1,0 +1,99 @@
+{
+  "schema": "decision_admissibility_post_audit_completion_verification_v2",
+  "status": "passed",
+  "verified": true,
+  "verified_at_utc": "2026-07-24T10:35:14Z",
+  "root": "coordination/decision_admissibility_post_audit_completion_20260724_r2",
+  "canonicalization": "python_json_sort_keys_ensure_ascii_false_compact_excluding_verification_hash_v1",
+  "manifest_hash": "3eec409720082760ab080a394f7d21e8e0ae25a2565075f20fe50ddb60464c78",
+  "manifest_file_sha256": "3e5adb9a91ea77a16c6bbb4c4198e31b2c88b418334e68f0c93f18103ec8ea72",
+  "report_hash": "0ffde12288c1b2648aa898524a98624960d3425a16c1935aca892713e474a635",
+  "report_file_sha256": "d463f5b58f8eb038db70faf217ed527c4355cc363862ed74636afd3ec4fca671",
+  "checks": {
+    "manifest_schema_and_status": true,
+    "manifest_payload_hash_python_canonical": true,
+    "report_schema_and_status": true,
+    "report_payload_hash_python_canonical": true,
+    "manifest_report_binding": true,
+    "root_entry_set_exact": true,
+    "root_file_hashes": true,
+    "complete_marker": true,
+    "root_mode_0555": true,
+    "root_files_mode_0444": true,
+    "plan_hash": true,
+    "section_25_counts_and_item_sets": true,
+    "section_26_counts_and_item_sets": true,
+    "final_stop_gate_anchor_hashes": true,
+    "independent_audit_anchor_hashes": true,
+    "documentation_r2_anchor_hashes": true,
+    "documentation_r2_python_canonical_self_hashes": true,
+    "versioned_deliverable_hashes": true,
+    "presentation_cjk_alt_text_count_117": true,
+    "final_stop_gate_recomputed_after_r2": true,
+    "final_stop_gate_recompute_hash_identical": true,
+    "r4_source_inventory_recomputed_after_r2": true,
+    "r4_source_inventory_byte_identical": true,
+    "scientific_claim_boundary_preserved": true,
+    "completion_authority_is_engineering_scoped": true,
+    "invalid_r1_roots_preserved": true,
+    "git_head_remains_baseline_checkpoint": true,
+    "no_final_commit_or_push_claimed": true
+  },
+  "bound_verifications": {
+    "final_stop_gate": "dcf2e62c47d9f22c03a7adb05d325f588367284aee8f7309d2d0831116718778",
+    "independent_claude_audit": "904a5b10284c8e03196c2b5009067d4890c843defc74043a89d309df41a0cc62",
+    "documentation_r2": "d4c76ed6d3701291d343c7093d95ac0097c46453503ceb9abea32b8d7978f011"
+  },
+  "final_stop_gate_reverification": {
+    "verified": true,
+    "required_prerequisite_count": 20,
+    "kill_gate_count": 6,
+    "acceptance_check_count": 47,
+    "verification_hash": "dcf2e62c47d9f22c03a7adb05d325f588367284aee8f7309d2d0831116718778",
+    "file_sha256": "7f3f46f99639b0a8f4bd98f1f7fb09d28f8b215d4e12347c48e30010ad39b317"
+  },
+  "r4_source_inventory_reverification": {
+    "algorithm": "sha256(canonical-jsonl(path,size_bytes,sha256))",
+    "row_count": 579,
+    "inventory_sha256": "5415e61d198e952f304490a963780a8be843c44d8232e0d56ec36bf1d856d81e",
+    "byte_identical": true,
+    "new_documentation_or_deliverable_paths_in_inventory": []
+  },
+  "presentation": {
+    "path": "outputs/nautilus_decision_admissibility_wp8_final_bilingual_20260724_r3.pptx",
+    "sha256": "40995a0cf75a7ed9d3e983e390a56734360a55c05eb5ec7f94e66f69c5b18b25",
+    "slides": 9,
+    "cjk_alt_text_objects": 117,
+    "per_slide_cjk_alt_text_objects": [9, 12, 16, 13, 11, 15, 17, 10, 14]
+  },
+  "section_completion": {
+    "25.1": "7/7_passed",
+    "25.2": "9/9_passed",
+    "25.3": "8/8_passed",
+    "26.code_correctness": "15/15_passed",
+    "26.corpus_and_bundle": "8/8_passed",
+    "26.safety_and_utility": "8/8_passed",
+    "26.paper_evidence": "8/8_passed_with_claim_boundary"
+  },
+  "completion_authority": {
+    "wp0_wp8_plan_execution": "complete",
+    "engineering_and_documentation": "complete",
+    "full_superiority": "rejected",
+    "conditional_utility": "diagnostic_only",
+    "experience_causality": "pending_without_L4"
+  },
+  "superseded_r1": {
+    "documentation_root": "coordination/decision_admissibility_documentation_20260724_r1",
+    "completion_root": "coordination/decision_admissibility_post_audit_completion_20260724_r1",
+    "preserved": true,
+    "admissible_as_final_closeout": false
+  },
+  "git": {
+    "branch": "codex/dual-time-procedural-memory",
+    "head": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
+    "upstream_head": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
+    "final_commit_or_push_performed": false
+  },
+  "errors": [],
+  "verification_hash": "fbd7bb6e74215f7368da03fb681feca31dd9b6bf284c1b639c474457d3c715e1"
+}

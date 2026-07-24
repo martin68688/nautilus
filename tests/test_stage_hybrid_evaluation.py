@@ -98,10 +98,28 @@ def test_no_gpu_preflight_covers_config_provenance_routes_and_benchmark():
     assert report["online_training_started"] is False
     assert report["checks"]["coldstart_template"]["sha256"] == preflight.COLDSTART_SHA256
     cases = report["checks"]["runtime_routes"]["cases"]
-    assert len(cases) == 100  # 4 controls x 5 non-spooky tasks x 5 stages
+    assert len(cases) == (
+        len(preflight.RETRIEVAL_CONTROLS - {"layered_strategy"})
+        * len(preflight.TASKS)
+        * 5
+    )
     assert {row["task"] for row in cases} == set(preflight.TASKS)
     assert all(row["blocked_positive_count"] == 0 for row in cases)
     assert any(row["historical_source_runs"] for row in cases)
+    no_memory = [row for row in cases if row["control"] == "no_memory"]
+    assert no_memory
+    assert all(row["ref_count"] == 0 for row in no_memory)
+    assert all(row["historical_source_runs"] == [] for row in no_memory)
+    assert all(
+        row["expected_algorithm"] == "formal_flat_relevance_v1"
+        for row in cases
+        if row["control"]
+        in {
+            "flat_relevance_memory",
+            "global_validity_bit",
+            "authority_only",
+        }
+    )
     assert report["checks"]["sparse_task_memory_fallback"]["ok"] is True
     assert report["checks"]["exact_replay_coverage"]["ok"] is True
     assert report["checks"]["exact_replay_coverage"]["memory_transfer_tasks"] == ["mlsp-2013-birds"]

@@ -1,0 +1,113 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_preterminal_finalizer_diagnostic_v1",
+  "status": "preserved_preterminal_finalizer_failure_pending_result_blind_recovery",
+  "generated_at_utc": "2026-07-23T01:35:17Z",
+  "block_id": "wp8-tier2-formal-birds-seed-104729-r3",
+  "task_id": "mlsp-2013-birds",
+  "agent_seed": 104729,
+  "frozen_execution": {
+    "block_contract_hash": "123cc689725b2ce82bfbf91db0b500e67d014191b75a7194acca9482312e4d23",
+    "source_snapshot_sha256": "d7fed7549c0484fc3a83c22f5a884d7198ca78222a3601a05b6604f674bbd2e9",
+    "staging_gate_hash": "12a2371a24de0e3f53edbe21540f8e1f9561b8aa403c1f3190d1c90d02ca3bed",
+    "training_pod_name": "da-wp8-f-birds-s104729-gpu-r3",
+    "training_pod_uid": "09b5560c-d6a2-43ee-b7f7-fa2006f6ad0d",
+    "evaluator_pod_name": "da-wp8-f-birds-s104729-cpu-r3",
+    "condition_order": [
+      "full_decision_admissibility",
+      "authority_only",
+      "no_memory",
+      "global_validity_bit",
+      "flat_relevance_memory"
+    ],
+    "condition_outcomes_before_finalization": {
+      "full_decision_admissibility": {
+        "run_exit_code": 0,
+        "state": "training_complete_unscored"
+      },
+      "authority_only": {
+        "run_exit_code": 1,
+        "state": "pre_terminal_failure"
+      },
+      "no_memory": {
+        "run_exit_code": 0,
+        "state": "training_complete_unscored"
+      },
+      "global_validity_bit": {
+        "run_exit_code": 0,
+        "state": "training_complete_unscored"
+      },
+      "flat_relevance_memory": {
+        "run_exit_code": 0,
+        "state": "training_complete_unscored"
+      }
+    }
+  },
+  "preserved_output": {
+    "path": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r10/blocks/wp8-tier2-formal-birds-seed-104729-r3",
+    "file_count_before_recovery": 219,
+    "tree_sha256_before_recovery": "4f626b9fbd87c18544069a40fac06c1e6ca76930ec3613923b5c1a8d1ce07f1e",
+    "training_launcher_log_sha256": "bd6beb2f27b62bfffc2cd45e92370bd7770e64c1e18ef165b62593669613f615",
+    "training_launcher_exit_code": 1,
+    "training_manifest_exists": false,
+    "training_complete_marker_exists": false,
+    "evaluator_artifact_count": 0,
+    "terminal_score_file_count": 0,
+    "terminal_metric_observed": false,
+    "terminal_score_values_inspected": false
+  },
+  "failure": {
+    "phase": "host_training_finalizer",
+    "error_type": "ValueError",
+    "error": "Selected node lacks a valid persisted runtime protocol observation",
+    "implementation_gap": "A host-produced blocked selected-node protocol observation was raised as a block-fatal finalizer exception instead of being retained as the condition's non-retryable Authority-denial outcome.",
+    "old_runtime_source_hashes": {
+      "mlevolve/fixed_holdout/formal_block_training.py": "f671777142488cf918d3ad306fee79b605e39a09969fe0d7ef945d206cff9b6b",
+      "mlevolve/fixed_holdout/formal_runtime.py": "a8a3f3b0f43c3376c1e024a8450352ed7a1f81610cdcc6275ebf26d18b1f5819"
+    },
+    "affected_condition": "full_decision_admissibility",
+    "selected_node_id": "2b0b2e22ca6045c2b79efb68493cea7a",
+    "evaluation_request_hash": "0fd39d0464ac7c2762be2c6a200c29651a960c31e08868d3c53f5ab61971564a",
+    "journal_sha256": "b68e5c1fa1e8fac3e8344c24a346327ec5d91dbf47360a6e8453713b94022d19",
+    "protocol_observation_sha256": "5ae405c18670dafd4a7996653f83e622cb0f9e6e7f6d85c204c3b39db3e0b734",
+    "protocol_observation_status": "blocked",
+    "protocol_observation_reason": "missing_protocol_event_plan:split_lineage",
+    "protocol_observation_source_code_bound": true
+  },
+  "required_disposition": {
+    "full_condition_classification": "authority_denial",
+    "full_condition_terminal_scoring_authorized": false,
+    "full_condition_result_fact_authorized": false,
+    "full_condition_candidate_reexecution_authorized": false,
+    "authority_only_existing_failure_retained": true,
+    "other_three_successful_conditions_may_enter_cpu_evaluation": true,
+    "whole_block_silent_retry_authorized": false,
+    "recovery_may_reexecute_agent_or_candidate_code": false,
+    "recovery_may_only_apply_a_hash_bound_deterministic_host_finalizer": true
+  },
+  "kubernetes_lifecycle": {
+    "training_pod_not_found": true,
+    "training_not_found_probe_sha256": "b37eb068fcc3fe2ac6f182a13a5eb2c26f4f707de5d2ba8d08f839f5416a6350",
+    "evaluator_pod_not_found": true,
+    "evaluator_not_found_probe_sha256": "b32687d2ad6ff78a24e5bb1fa980468bdf2728d5e523d9f5b2ead0162ab0e74b",
+    "training_pod_event_snapshot_sha256": "4119830752dbf3bef2fc51cd496fc68620e6b9c73b1a22f6cbcddfe3e388fcb9",
+    "training_pod_event_reasons": [
+      "Killing"
+    ],
+    "training_pod_killing_timestamp": "2026-07-23T01:13:51Z"
+  },
+  "scientific_integrity": {
+    "primary_contrast_changed": false,
+    "systems_changed": false,
+    "tasks_changed": false,
+    "seeds_changed": false,
+    "budgets_changed": false,
+    "condition_order_changed": false,
+    "holdout_changed": false,
+    "memory_bundle_changed": false,
+    "source_score_inheritance_changed": false,
+    "target_history_exclusion_changed": false,
+    "unfavorable_full_outcome_retained": true,
+    "effect_claim_authorized": false
+  },
+  "diagnostic_hash": "108eac20bb14b57329b18ebdfaddae0b23aceb3597727ce53968b7bd1453f5bd"
+}

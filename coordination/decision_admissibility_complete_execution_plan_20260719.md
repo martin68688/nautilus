@@ -1,11 +1,13 @@
 # Decision Admissibility 完整实施与实验计划书
 
-> 版本：v1.0  
-> 日期：2026-07-19  
+> 版本：v1.1（Result / Adoption / Causal Writeback 修订）  
+> 初版日期：2026-07-19  
+> 修订日期：2026-07-21  
 > 用途：新 Codex/开发窗口的唯一实施交接文档  
 > 工作目录：`/Users/haoming/Downloads/nautilus`  
 > 当前分支：`codex/dual-time-procedural-memory`  
-> 当前 HEAD：`422f9051a47be02cfd627766de0b9a3266b88362`  
+> 原始 baseline HEAD：`422f9051a47be02cfd627766de0b9a3266b88362`  
+> 2026-07-21 只读审查 HEAD：`b47dab63b7861f3ea0871094d6dd07b77e6b81a4`（当前 worktree 有大量未提交用户修改，不得把该 HEAD 当成完整实现快照）  
 > 基线测试：215 passed in 40.59s  
 > 基线测试日期：2026-07-19
 
@@ -41,6 +43,7 @@
 
 这是一个从已 commit/push baseline 开始的新任务。先完整读取计划书和 AGENTS.md，核对当前分支/HEAD 是否等于交接记录中的 baseline_commit，再检查 dirty worktree、现有接口和基线测试。
 按计划的 Work Package 顺序执行，不得跳过验收门，不得覆盖用户未跟踪文件，不得将旧历史分数因静态审查而升级为可排名证据。
+必须先阅读第 0.4 节的 v1.1 修订：不得把 Result Fact、Adoption Edge 和 Causal Edge 合并；不得重复实现已经存在的 PROMOTE_RESULT 拆分。进入 WP5 前先做 delta audit，只实现尚未接线的 edge publisher、fixed-holdout terminal finalizer 和 Positive Result/Adopted SOP 拆分。
 优先完成 WP0→WP4 的本地正确性闭环，在 shadow parity 通过前不开启全局 enforce，在用户明确授权前不创建 Kubernetes Job、不 push、不修改论文头条结论。
 每完成一个 WP，报告：修改文件、新增接口、测试命令/结果、已知风险、是否通过该 WP 的 stop gate。
 ```
@@ -57,7 +60,7 @@
    ```
 
 3. 保存 dirty-worktree manifest，不删除、移动或提交与本任务无关的用户文件。
-4. 运行第 20.1 节的基线测试。如不是 215 passed，先分析差异，不得直接把差异当作本任务回归。
+4. 如果从原始 baseline commit 启动，运行第 20.1 节基线测试，预期 215 passed；如果从后续 WP checkpoint 启动，先读取对应 WP 报告和 dirty-worktree manifest，再运行 full suite 与第 0.4 节相关 targeted suite，不得机械地把“不是 215”视为回归。
 5. 检查本文档中标注的当前缺口是否已被其他窗口修改；已完成的不重复实现。
 
 ### 0.3 实施权限边界
@@ -67,13 +70,48 @@
 - 需要集群只读盘点时，优先使用已有 Pod；需要新 Pod/Job 时必须另行获得用户授权。
 - 不得把 API key、token 或 `.env` 内容写入命令行、manifest、日志或计划书。
 
+### 0.4 v1.1 修订摘要：不要再混淆“节点入库”和“经验采用”
+
+本次修订确认，写回至少包含三个不同的权限对象：
+
+```text
+PROMOTE_RESULT
+  当前实际运行节点作为独立 result fact 入库
+  不声称任何注入历史经验影响了它
+
+PUBLISH_ADOPTION
+  发布 historical experience → current artifact 的采用边
+  需要 static_actuation + runtime_actuation
+
+PUBLISH_CAUSAL
+  发布 historical experience → current artifact 的因果边
+  在 Adoption 证据之外再需要 counterfactual_actuation
+```
+
+2026-07-21 只读代码审查确认当前源代码已经部分完成该拆分：
+
+- `Operation` 已有 `PROMOTE_RESULT / PUBLISH_ADOPTION / PUBLISH_CAUSAL`；
+- `ProtocolCompiler` 不再为 `PROMOTE_RESULT` 强制要求 actuation；
+- 正常 positive-memory gate 已调用 `PROMOTE_RESULT`；
+- Session Overlay 的 result event 使用 `publication_class=result_fact`，并固定 `derived_from_refs=[]`；
+- 相关 Authority 测试 40/40 通过。
+
+仍未完成、必须由本计划补齐的接线：
+
+1. 生产路径中尚未找到 `PUBLISH_ADOPTION / PUBLISH_CAUSAL` 的正式 edge publisher；
+2. fixed-holdout 模式在 result parse 阶段主动跳过 positive writeback，但尚未找到 sealed terminal scoring 完成后的唯一最终写回器；
+3. Positive SOP distillation 仍需区分“从当前成功节点产生的新 SOP”和“宣称历史经验被当前节点验证”；前者不应要求历史经验 actuation，后者必须要求；
+4. legacy `PROMOTE` 仅可读取旧 ledger/config，不得再作为新结果入库的生产调用。
+
+后续窗口不得重新把这三条权限合并成一个 `PROMOTE`，也不得因为旧 shadow 报告出现 `missing_static_actuation/missing_runtime_actuation` 就认定当前独立 result 被正确拒绝；必须先检查该记录使用的是 legacy `PROMOTE` 还是 `PROMOTE_RESULT`。
+
 ---
 
 ## 1. 一句话目标与论文主线
 
 ### 1.1 一句话目标
 
-> 在递归式 MLE Agent 中，只让“粒度适合当前决策阶段，且具体 Claim 在当前 Protocol 下有权影响当前 Operation”的经验进入排序和 Prompt；经验被使用后，再用 AST、运行和反事实 Receipt 确认它真的改变了程序，最后仅将合法且真实产生作用的部分写回下一代 RunForest/SOP 长期记忆。
+> 在递归式 MLE Agent 中，只让“粒度适合当前决策阶段，且具体 Claim 在当前 Protocol 下有权影响当前 Operation”的历史经验进入排序和 Prompt；本次实际运行节点只要具有合法执行、数据、评分和协议 Receipt，就可以作为独立 Result Fact 写回；只有当系统进一步声称该节点采用了某条历史经验、由该经验造成，或将其权限继承给后代 SOP 时，才要求 AST、运行和反事实 Actuation Receipt。
 
 ### 1.2 不再使用的三个并列贡献叙事
 
@@ -87,7 +125,7 @@
 
 1. `Stage/Granularity Gate`：决定当前应该看 SOP 还是 RunForest，看 L1/L2/L3 中的哪一粒度。
 2. `Claim/Authority Gate`：决定某条内容是否有资格影响当前操作。
-3. `Actuation/Writeback Gate`：确认它是否真的被采纳，以及能否写回后代记忆。
+3. `Actuation/Writeback Gate`：分别决定当前 Result Fact 能否独立写回、历史经验采用边能否发布、因果边能否发布，以及哪些权限能继承到后代记忆。
 
 ### 1.3 真正的研究单元
 
@@ -102,7 +140,8 @@
 - OOF 索引修复可用于 Debug/Repair Seed；
 - 泄漏警告可用于 Inspect/Protocol Repair；
 - 0.92 污染分数不得用于 Rank/Select/Promote；
-- 未证明被采纳的经验不得作为后代成功知识。
+- 未证明被采纳的历史经验不得作为后代成功知识；
+- 但一个未采用任何历史经验、由 cold-start 独立产生且协议合法的新节点，仍可作为自己的 Result Fact 入库。
 
 ---
 
@@ -116,6 +155,8 @@
 4. 原始污染历史永不被原地改成 clean；Clean Replay 只新建证据路径。
 5. 当前运行使用只读 Base Bundle + append-only Session Overlay，运行后离线发布新版 Bundle。
 6. 从 shadow 到 enforce 有差异报告、false allow/deny 审计和明确回滚开关。
+7. Result Fact、Adoption Edge 和 Causal Edge 分别授权、分别落盘；任何一种缺失不得伪造另外两种。
+8. fixed-holdout 只允许 sealed terminal scorer 完成后进行一次幂等 `PROMOTE_RESULT` 写回；不得提前写，也不得永远漏写。
 
 ### 2.2 实验成功标准
 
@@ -180,6 +221,10 @@ PYTHONPATH=mlevolve .venv/bin/python -m pytest -q \
 10. 当前 2,773 条 `distills_to` 边全部是 quarantine，原因为缺 runtime/counterfactual actuation，但检索层仍可消费。
 11. 现有 `run_forest_graph.json` 是旧语料/旧 schema artifact，不是最近原版 MLEvolve 非 Spooky 运行构建的新包。
 12. 不存在 Base Bundle + Session Overlay + sleep-time publication 的完整版本化闭环。
+13. 2026-07-21 已完成 `PROMOTE_RESULT/PUBLISH_ADOPTION/PUBLISH_CAUSAL` 的权限语义拆分，但只有 Result Fact 有生产写回器；Adoption/Causal edge 仍停留在模型、compiler 和测试层。
+14. fixed-holdout 在 pre-score 阶段正确禁止 positive write，但尚缺 sealed terminal scoring 后的幂等 Result Fact finalizer。
+15. 当前 `DISTILL_POSITIVE` 仍把“本次节点自身的新 SOP”和“历史经验被采用/验证后的 SOP”混为一条 actuation-gated 路径，可能在 SOP 层重复 cold-start false denial。
+16. GlobalMemory 只保存 code summary，Overlay 保存 code hash/pointer；必须验证每个 Result Fact 都能解析回 Journal/RunForest 的完整真实代码，不能把摘要误当事实主体。
 
 ### 3.4 当前数据边界
 
@@ -236,9 +281,13 @@ DecisionContext
   → SOP/RunForest scoring + Dynamic Hybrid
   → prompt pack + ExperienceContracts
   → Agent action/code
-  → Static/Runtime/Counterfactual Receipts
-  → outcome authority
-  → append-only Session Overlay
+  → CodeExecution + Protocol Receipts
+  → PROMOTE_RESULT → Result Fact event
+  → optional Static/Runtime Actuation
+  → optional PUBLISH_ADOPTION → Adoption Edge
+  → optional Counterfactual Actuation
+  → optional PUBLISH_CAUSAL → Causal Edge
+  → append-only Session Overlay（各对象分别落盘）
 ```
 
 ### 4.3 递归写回环
@@ -248,9 +297,11 @@ Base Bundle vN (read-only)
     +
 Session Overlay (append-only)
   → run completes
+  → fixed-holdout terminal finalizer closes Result Facts
   → sleep-time audit
   → claim decomposition
-  → diagnostic/candidate/certified distillation
+  → separate Result/Adoption/Causal lineage materialization
+  → diagnostic/candidate/positive-result/positive-adopted distillation
   → lineage/authority validation
   → build Bundle vN+1 in staging
   → validate hashes and invariants
@@ -286,7 +337,8 @@ Scope(child) ⊆ intersection(required parent scopes)
 ### I3. 可见不等于可采用
 
 - `INSPECT` 可以显示全量并带警告。
-- `RANK/SELECT/PROMOTE/CODE_SEED` 必须有该 Operation 的 ALLOW scope。
+- `RANK/SELECT/PROMOTE_RESULT/PUBLISH_ADOPTION/PUBLISH_CAUSAL/CODE_SEED` 必须分别有该 Operation 的 ALLOW scope。
+- `PROMOTE_RESULT` 的 ALLOW 不自动产生 `PUBLISH_ADOPTION` 或 `PUBLISH_CAUSAL` 权限。
 
 ### I4. 过滤先于排序和 Prompt
 
@@ -305,6 +357,19 @@ LLM/Agent 可以提出 Claim 和解释，但 split/evaluator/execution/method id
 ### I7. Exposure 不等于 Adoption
 
 记忆出现在 Prompt 中只是 L0；论文中的 adoption 至少需要 L2/L3，causal adoption 需要 L4。
+
+### I7-A. Result Existence 不等于 Experience Adoption
+
+- `CODE_EXECUTION + protocol-legal score` 可以证明本次节点存在并成功，不证明历史经验影响了它。
+- `static_actuation + runtime_actuation` 证明的是历史经验合同在本次代码和运行中被落实。
+- `counterfactual_actuation` 才支持“去掉/替换该经验会改变动作、代码或结果”的因果 Claim。
+- 一个没有任何 exposure/adoption 的 clean cold-start 节点可以 `PROMOTE_RESULT`，但 `derived_from_refs` 必须为空。
+
+### I7-B. 不得用 Result Event 偷渡派生边
+
+- Result event 固定 `publication_class=result_fact`。
+- Result event 的 `derived_from_refs=[]`；即使存在 L3/L4 report，也只能记录为尚未发布的 report reference。
+- Adoption/Causal 必须分别经过 `PUBLISH_ADOPTION/PUBLISH_CAUSAL` 并写为独立、可撤销、可审计的 edge event。
 
 ### I8. Bundle 不可变
 
@@ -372,17 +437,27 @@ AUDIT_FINDING = "audit_finding"
 现有 Operation 保留，新增或显式区分：
 
 ```python
+PROMOTE_RESULT = "promote_result"
+PUBLISH_ADOPTION = "publish_adoption"
+PUBLISH_CAUSAL = "publish_causal"
 DISTILL_DIAGNOSTIC = "distill_diagnostic"
 DISTILL_CANDIDATE = "distill_candidate"
-DISTILL_POSITIVE = "distill_positive"
+DISTILL_POSITIVE_RESULT = "distill_positive_result"
+DISTILL_POSITIVE_ADOPTED = "distill_positive_adopted"
 ```
 
 迁移期内：
 
-- legacy `DISTILL` 默认视为 `DISTILL_POSITIVE`，以 fail-closed 为原则；
+- `PROMOTE_RESULT` 发布当前节点自身的 protocol-legal Result Fact，不需要证明其采用历史经验；
+- `PUBLISH_ADOPTION` 发布历史经验到当前节点的采用边，至少需要 L2/L3；
+- `PUBLISH_CAUSAL` 发布因果边，至少需要 L4；如声称效果则需要 L5；
+- legacy `PROMOTE` 只为旧 ledger/config 读取兼容保留；任何新生产调用必须静态检查失败；
+- legacy `DISTILL` 默认 fail-closed，不得在未区分 result/adopted 语义时自动映射为 positive；
 - Diagnostic distillation 只产生警告/调试可见条款，不支持成绩或晋升；
 - Candidate distillation 可产生方法候选，仅允许 Generate/Inspect/Replay Seed，不声称已证明有效；
-- Positive distillation 需要合法证据、lineage 和所需 actuation level。
+- `DISTILL_POSITIVE_RESULT` 从本次实际运行节点产生新的正向 SOP Clause，需要节点执行、协议、评分和 Derivation Receipt，但不要求历史经验 actuation；
+- `DISTILL_POSITIVE_ADOPTED` 声称某条历史经验已被当前节点采用/验证，需要对应 `PUBLISH_ADOPTION`，如声称造成改进还需要 `PUBLISH_CAUSAL`；
+- 两类 positive distillation 生成不同 Claim/lineage path，不得只用一个布尔字段区分。
 
 ### 6.4 CorpusManifestV1
 
@@ -854,10 +929,13 @@ retrieve all
 | Inspect | 所有条款，显示完整警告/来源 | “可看”不得自动变成“可采用” |
 | Rank/Select | 当前 Protocol 下有完整 Receipt 的 SCORE/PAIRWISE | v2 score、test leakage、best-seed-only |
 | Repair Seed | 方法冻结且允许修协议的 clause | 换模型/特征/loss 后伪称 protocol-only |
-| Promote | 权限、lineage、需求 actuation level 都满足 | 只 exposed 或只 Agent 声称采纳 |
+| Promote Result | 当前节点有执行、数据、evaluator、selection 和 active Protocol 的合法 Receipt | 因未采用历史经验而拒绝独立 clean result |
+| Publish Adoption | source experience 已暴露，ExperienceContract 满足 L2 Static + L3 Runtime | 只 exposed、只 Agent 声称采纳、或仅代码相似 |
+| Publish Causal | 已有 Adoption + L4 memory-on/off counterfactual | 仅 activation/correlation 就声称因果 |
 | Distill Diagnostic | 有来源的审计/失败/修复条款 | 成绩结论和 positive recommendation |
 | Distill Candidate | 静态合法的 method hypothesis，显示 provisional | superiority/promote 含义 |
-| Distill Positive | 满足规定 Receipt/actuation 的条款 | quarantine/unclean/no-adoption |
+| Distill Positive Result | 当前节点自身的合法执行/协议/评分/derivation 证据 | 强迫 cold-start result 提交历史经验 actuation |
+| Distill Positive Adopted | 已发布 Adoption；如声称效果还需 Causal/Efficacy | 用当前节点成功反向洗白所有 exposed 经验 |
 | Code Seed | 明确允许复用且代码契约完整 | 混合 SOP 中未授权代码片段 |
 
 ### 11.5 Mixed-value 标准案例
@@ -1030,11 +1108,33 @@ ExpectedRuntimeObservations: one prediction per training sample; no duplicate/mi
 |---|---|
 | Diagnostic SOP | source lineage + audit finding |
 | Candidate SOP | EXECUTED + static-clean method claim，显示 provisional |
-| Positive SOP | L3；如声称该经验导致改进则需 L4/L5 |
-| Promote success memory | protocol-legal score + L3；causal attribution 需 L4 |
+| Promote Result Fact | 当前节点 `CODE_EXECUTION` + 与 Claim 相符的 split/fit/prediction/evaluator/selection/protocol Receipts；**不要求历史经验 actuation** |
+| Publish Adoption Edge | source ExperienceContract + L2 Static + L3 Runtime；只发布 `source_claim/clause → target_artifact` 边 |
+| Publish Causal Edge | 已发布 Adoption + L4 Counterfactual；如声称 outcome 改善则需要 L5 |
+| Positive Result SOP | 当前节点 Result Fact + Derivation Receipt + clause-level protocol scope；**不要求历史经验 actuation** |
+| Positive Adopted SOP | 已发布 Adoption；如文案声称“该历史经验导致改进”则需要 Causal/Efficacy |
 | Code Seed | 明确 CODE_SEED authority + L2/L3 + no forbidden dependency |
 | Causal Claim | L4 |
 | Effective Repair Claim | L5 |
+
+### 13.5 四种 Receipt 不得互相替代
+
+```text
+CODE_EXECUTION
+  证明本次训练代码运行过
+
+STATIC_ACTUATION
+  证明注入历史经验的 MustPreserve/MustChange/MustNotUse
+  体现在本次生成代码中
+
+RUNTIME_ACTUATION
+  证明上述历史经验对应的目标路径在本次运行中真实触发
+
+COUNTERFACTUAL_ACTUATION
+  证明移除/替换该历史经验后，动作、代码或合法 outcome 会改变
+```
+
+不得用 `runtime_actuation` 代替普通 `code_execution`，也不得因为本次代码成功运行就自动签发历史经验的 `runtime_actuation`。
 
 ---
 
@@ -1100,6 +1200,19 @@ REQUIRE_HUMAN_REVIEW
 
 ## 15. Base Bundle、Session Overlay 与版本化写回
 
+### 15.0 写回对象与存储职责
+
+| 对象 | 主体 | 存储位置 | 是否包含完整代码 | 是否需要历史经验 Actuation |
+|---|---|---|---:|---:|
+| Raw Run / RunNode | 本次真实执行节点 | immutable Journal / RunForest | 是 | 否 |
+| Result Fact | 本次节点的执行、score、protocol Claim | Session Overlay / Authority Memory | code hash + artifact pointer；不重复完整代码 | 否 |
+| GlobalMemory Record | 本次节点的检索摘要 | GlobalMemory | code summary，不是完整代码 | 否 |
+| Adoption Edge | 历史 Claim/Clause → 本次节点 | 独立 Overlay edge event | 否 | L2 + L3 |
+| Causal Edge | 历史 Claim/Clause → 本次节点 | 独立 Overlay edge event | 否 | L4；效果需 L5 |
+| SOP Clause | 从本次节点蒸馏的程序知识 | staged/certified Bundle | 自然语言/结构化 clause + source pointer | 取决于它是 Result SOP 还是 Adopted SOP |
+
+完整训练代码的事实源是 Journal/RunForest。GlobalMemory、Overlay 和 SOP 不必复制完整代码，但必须通过 `artifact_id + code_sha256 + corpus/bundle manifest` 可解析回不可变的原始节点。无法解析的 Result Fact 不得发布到 certified Bundle。
+
 ### 15.1 Runtime 加载
 
 ```python
@@ -1121,11 +1234,71 @@ Base Bundle 只读；Session Overlay append-only。
 - 合并后再执行 Dynamic Hybrid RRF，但两边事先都已经准入过滤。
 - Overlay 中未审查 score 只能 Inspect，不得 Rank/Promote。
 
+### 15.2-A 三条在线写回路径
+
+#### A. Result Fact
+
+```text
+terminal node
+→ trusted execution/protocol/evaluator receipts
+→ Authority(PROMOTE_RESULT)
+→ append memory_claim(publication_class=result_fact, derived_from_refs=[])
+```
+
+该路径允许没有任何历史经验 exposure 的 clean cold-start 节点入库。
+
+#### B. Adoption Edge
+
+```text
+source ExperienceContract + target artifact
+→ static_actuation
+→ runtime_actuation
+→ Authority(PUBLISH_ADOPTION)
+→ append memory_derivation_edge(kind=adoption)
+```
+
+edge payload 至少包含：`source_claim_ref/source_clause_ref`、`target_artifact_id`、`contract_hash`、static/runtime receipt refs、decision ref、protocol/policy version 和 edge hash。
+
+#### C. Causal Edge
+
+```text
+authorized Adoption Edge
+→ memory-on/off counterfactual
+→ Authority(PUBLISH_CAUSAL)
+→ append memory_derivation_edge(kind=causal)
+```
+
+不得根据 result event 中存在 `verified_adoption_report_refs` 自动生成 Adoption/Causal Edge；report 是候选证据，edge 只有在对应 Operation 被 ALLOW 后才存在。
+
+### 15.2-B Fixed-holdout 终局写回
+
+fixed-holdout 模式必须保留“评分前不写 positive memory”的安全边界，同时增加唯一的后置 finalizer：
+
+```text
+candidate execution completes
+→ pre-score: no positive writeback
+→ sealed terminal scorer computes trusted metric
+→ host closes split/fit/prediction/evaluator/selection receipts
+→ select final artifact(s) under declared policy
+→ Authority(PROMOTE_RESULT)
+→ idempotent Result Fact append
+→ optional Adoption/Causal edge publication
+```
+
+实现要求：
+
+- finalizer 只能由宿主 terminal scorer 调用，Agent 不可调用；
+- idempotency key 至少绑定 `run_id + artifact_id + protocol_hash + publication_class`；
+- crash/restart 重放不得产生重复 Result Fact 或重复 edge；
+- failed、timeout、missing-score、protocol-blocked 节点不得写 positive Result Fact，但原始 RunNode 仍进入 RunForest；
+- 如果 terminal scorer 不存在或 Receipt closure 失败，必须产出显式 `writeback_incomplete` 状态，而不是静默漏写；
+- 任何测试或生产路径不得在 sealed score 产生前调用 `PROMOTE_RESULT`。
+
 ### 15.3 Sleep-time 发布
 
 1. 冻结 session journal 与 runtime receipts。
 2. 生成 overlay manifest/hash。
-3. 运行审查、Claim decomposition、SOP distillation。
+3. 分别消费 Result Fact、Adoption Edge 和 Causal Edge，运行审查、Claim decomposition、SOP distillation；缺 edge 时不得凭文本相似度补造 lineage。
 4. 运行 derivation/visibility/bundle validator。
 5. 在 staging 目录构建 vN+1。
 6. 全部验收通过后，原子更新 `CURRENT.json`。
@@ -1287,12 +1460,33 @@ tests/test_memory_bundle_validation.py
 
 ## WP5：Actuation 与 Base/Overlay 写回
 
+### 2026-07-21 增量状态
+
+已存在且不得重复实现：
+
+- `PROMOTE_RESULT / PUBLISH_ADOPTION / PUBLISH_CAUSAL` Operation；
+- `PROMOTE_RESULT` 不要求 actuation 的 ProtocolCompiler 语义；
+- normal positive-memory gate 使用 `PROMOTE_RESULT`；
+- Result Fact overlay event 与空 `derived_from_refs`；
+- 独立 result 可在无 actuation 时授权的单元/运行时测试。
+
+本 WP 当前真正剩余的实现范围：
+
+- Adoption/Causal edge 的生产 publisher 与 append-only event schema；
+- fixed-holdout terminal writeback finalizer；
+- Positive Result SOP 与 Positive Adopted SOP 的权限/蒸馏拆分；
+- legacy `PROMOTE` 生产调用清零与迁移审计。
+
 ### 代码
 
 - ExperienceContract compiler；
 - static/runtime collector instrumentation；
 - memory-on/off paired replay runner；
 - MemorySnapshot/Base/Overlay loader；
+- `publish_adoption_edge()` 与 `publish_causal_edge()`；
+- fixed-holdout `finalize_result_writeback()`；
+- Result/Adoption/Causal 三类幂等 event key 与 crash recovery；
+- Positive Result/Positive Adopted 两条 SOP distillation path；
 - sleep-time publisher 和 atomic `CURRENT.json`。
 
 ### 测试
@@ -1301,7 +1495,11 @@ tests/test_memory_bundle_validation.py
 tests/authority/test_experience_contract.py
 tests/authority/test_actuation_pipeline.py
 tests/authority/test_counterfactual_actuation.py
+tests/authority/test_result_adoption_causal_writeback.py
+tests/authority/test_legacy_promote_not_used.py
 tests/test_memory_snapshot_overlay.py
+tests/test_fixed_holdout_terminal_writeback.py
+tests/test_positive_result_vs_adopted_distillation.py
 tests/test_sleep_time_bundle_publication.py
 tests/test_bundle_publication_crash_safety.py
 ```
@@ -1309,7 +1507,13 @@ tests/test_bundle_publication_crash_safety.py
 ### Stop gate
 
 - L0–L5 报告可产生；
-- 未采纳经验不晋升；
+- clean cold-start/unexposed 节点可 `PROMOTE_RESULT`，且不产生 `derived_from`；
+- 未采纳历史经验不得发布 Adoption/Causal Edge，也不得作为 Adopted SOP 晋升；
+- L3 Adoption 可发布 Adoption Edge，但不能声称 causal；
+- L4 才可发布 Causal Edge；L5 才可声称有效改进；
+- fixed-holdout 评分前零 positive write，sealed terminal scoring 后恰好一次 Result Fact write；
+- 生产代码对 legacy `Operation.PROMOTE` 的新调用数为 0；
+- Positive Result SOP 不因没有历史 actuation 被错误拒绝；
 - 发布失败不改 CURRENT；
 - Base 不可变，Overlay append-only。
 
@@ -1426,10 +1630,15 @@ DEBUG_HYPOTHESIS: ALLOW
 REPAIR_SEED: ALLOW
 RANK: DENY
 SELECT: DENY
-PROMOTE: DENY
+PROMOTE_RESULT(polluted source score): DENY
+PROMOTE_RESULT(new target node): ALLOW only if the target has its own clean execution/protocol/score path
+PUBLISH_ADOPTION(OOF repair clause): ALLOW only after L2/L3 actuation
+PUBLISH_ADOPTION(invalid 0.92 score): DENY / claim-operation incompatible
+PUBLISH_CAUSAL: DENY unless L4 counterfactual exists
 CODE_SEED: DENY unless code clause independently authorized
 DISTILL_DIAGNOSTIC: ALLOW
-DISTILL_POSITIVE(score): DENY
+DISTILL_POSITIVE_RESULT(new clean target): evaluate from the target's own evidence
+DISTILL_POSITIVE_ADOPTED(invalid score): DENY
 ```
 
 ---
@@ -1512,6 +1721,21 @@ PYTHONPATH=mlevolve .venv/bin/python -m pytest -q \
   tests/test_run_forest_memory.py
 ```
 
+### 20.1-A v1.1 Result/Adoption/Causal 语义回归
+
+2026-07-21 只读审查使用：
+
+```bash
+PYTHONPATH=mlevolve .venv/bin/python -m pytest -q \
+  tests/authority/test_actuation_pipeline.py \
+  tests/authority/test_runtime_protocol_observer.py \
+  tests/authority/test_claim_types.py \
+  tests/authority/test_mlevolve_adapter.py \
+  tests/authority/test_enforce_rollout.py
+```
+
+当时结果：`40 passed in 18.73s`。该结果只证明当前已有拆分和回归用例通过，不证明 Adoption/Causal edge publisher 或 fixed-holdout terminal finalizer 已完成；新增实现后必须扩展第 20.2/20.3 节测试并重新运行 full suite。
+
 ### 20.2 新单元测试
 
 ```text
@@ -1528,6 +1752,8 @@ tests/authority/test_legacy_sop_visibility.py
 tests/authority/test_experience_contract.py
 tests/authority/test_actuation_pipeline.py
 tests/authority/test_counterfactual_actuation.py
+tests/authority/test_result_adoption_causal_writeback.py
+tests/authority/test_legacy_promote_not_used.py
 tests/authority/test_method_preserving_replay.py
 tests/authority/test_method_changing_fake_replay.py
 ```
@@ -1541,6 +1767,8 @@ tests/test_run_forest_bundle_v2.py
 tests/test_sop_clause_distillation_schema.py
 tests/test_memory_bundle_validation.py
 tests/test_memory_snapshot_overlay.py
+tests/test_fixed_holdout_terminal_writeback.py
+tests/test_positive_result_vs_adopted_distillation.py
 tests/test_sleep_time_bundle_publication.py
 tests/test_multigeneration_contamination.py
 tests/test_decision_admissibility_factorial.py
@@ -1612,10 +1840,11 @@ tests/test_decision_admissibility_factorial.py
 |---|---|---|
 | –Stage | 不检查粒度 | L3 细节干扰 Draft |
 | –Claim | 整条 valid bit | 混合价值污染或全丢 |
-| –Operation | 不区分用途 | Inspect 泄漏到 Rank/Promote |
+| –Operation | 不区分用途 | Inspect 泄漏到 Rank；Result/Adoption/Causal 被错误合并 |
 | –Protocol | 忽略版本 | v2 score 进 v3 排名 |
 | –Visibility | 改为 post-prompt tags | Unauthorized Prompt Exposure |
-| –Actuation | exposure 当 adoption | 错误归因/晋升 |
+| –Writeback Separation | 用单一 PROMOTE 同时表示节点成功与历史经验采用 | cold-start clean result 被误拒，或 exposure 被伪造为 derived success |
+| –Actuation | exposure 当 adoption | 错误发布 Adoption/后代权限；不应影响独立 Result Fact |
 | –Counterfactual | 只看代码重合 | 不能证明经验影响 |
 | –Non-escalation | 派生扩权 | Summary/SOP 洗白 |
 | –Method Fingerprint | replay 不验方法 | fake replay 恢复旧权限 |
@@ -1645,6 +1874,11 @@ VKR = legitimate claim-use pairs preserved
 - Unauthorized Activation；
 - Unauthorized Rank/Promote/Distill/Code Seed；
 - Clean False-Block Rate；
+- Independent Result Retention：clean unexposed/cold-start result 被正确写回的比例；
+- Adoption Edge Precision/Recall：已发布 edge 是否真的达到 L3；
+- Causal Edge Precision/Recall：已发布 edge 是否真的达到 L4；
+- Fixed-holdout Orphan Rate：完成 sealed scoring 但缺 Result Fact 的比例，目标 0；
+- Duplicate Writeback Rate：crash/restart 后重复 result/edge 的比例，目标 0；
 - L2/L3/L4/L5 adoption rate；
 - repair success/time-to-repair；
 - protocol-legal task metric；
@@ -1676,6 +1910,7 @@ task → source run → decision episode → agent seed → condition
 3. Stage Utility：错粒度是否真改变 action/code/outcome。
 4. Visibility Necessity：pre-prompt gateway 是否比 post-prompt tags 在强攻击下更安全。
 5. Multi-generation：3–5 代中 laundering success 是否显著下降且 VKR 可保留。
+6. Writeback Separation：单一 PROMOTE 是否会造成 clean cold-start result false denial，或把 exposure/activation 误写成 Adoption/Causal descendant；完整拆分必须同时降低两类错误。
 
 任一主 gate 失败时，收缩论文 Claim，不用更多模块堆叠来掩盖。
 
@@ -1789,6 +2024,12 @@ task → source run → decision episode → agent seed → condition
 - [ ] GlobalMemory 检查 outcome/scope/policy/protocol。
 - [ ] P4-B 在排序和 Prompt 前过滤。
 - [ ] 无 `attached_sop_ids`/projection/cache 旁路。
+- [ ] `PROMOTE_RESULT`、`PUBLISH_ADOPTION`、`PUBLISH_CAUSAL` 三条路径分别授权、分别落盘。
+- [ ] clean unexposed/cold-start result 可独立入库，且 `derived_from_refs=[]`。
+- [ ] Adoption/Causal edge 只有对应 AuthorityDecision ALLOW 后存在；不能从 exposure/report 自动推导。
+- [ ] fixed-holdout 评分前零 positive write，sealed terminal scoring 后恰好一次幂等 Result Fact write。
+- [ ] 生产路径不再调用 legacy `Operation.PROMOTE`。
+- [ ] Positive Result SOP 与 Positive Adopted SOP 分离，前者不错误要求历史经验 actuation。
 - [ ] Base/Overlay/atomic publication 通过崩溃测试。
 - [ ] Clean Replay 与 Successor Method 分离。
 
@@ -1809,6 +2050,8 @@ task → source run → decision episode → agent seed → condition
 - [ ] Unauthorized Activation=0 于 deterministic suite。
 - [ ] 合法 Debug/Repair knowledge 未被 global invalidation 删除。
 - [ ] 未 replay 历史 score 不可排名/晋升。
+- [ ] 未采纳历史经验不产生 Adoption/Causal 后代权限，但不阻止本次 clean Result Fact 入库。
+- [ ] `CODE_EXECUTION`、Static/Runtime/Counterfactual Actuation 不可互相替代。
 - [ ] 3–5 代派生不扩权。
 - [ ] shadow disagreement 经人工抽样审计。
 
@@ -1833,7 +2076,7 @@ task → source run → decision episode → agent seed → condition
 4. 第 3 阶段：WP2，完成 mixed Claim/trusted receipts。
 5. 第 4 阶段：WP3，独立完成 P4-B Visibility Gateway。
 6. 第 5 阶段：WP4，构建新语料与 raw-audited bundle。
-7. 第 6 阶段：WP5，接通 actuation/Base/Overlay/sleep-time。
+7. 第 6 阶段：WP5，保留已完成的 Result/Adoption/Causal 权限拆分，只补 Adoption/Causal edge publisher、fixed-holdout terminal finalizer、Positive Result/Adopted SOP 拆分和 sleep-time 消费逻辑。
 8. 第 7 阶段：WP6，做 Clean Replay/certified bundle。
 9. 第 8 阶段：WP7，shadow→enforce。
 10. 第 9 阶段：WP8，先 Tier 0/1，过 kill gates 后再 Tier 2。
@@ -1845,4 +2088,4 @@ task → source run → decision episode → agent seed → condition
 
 ## 28. 最后一句话
 
-> 这项工作不是“把 Tree、SOP 和审查器放在一起”，而是建立一条完整的经验影响供应链：原始执行事实全量进入 RunForest，DeepSeek 把它们拆成可追溯 SOP Clause，Stage-aware Dynamic Hybrid 选择当前需要的粒度，SOP Visibility Gateway 和 Claim-specific Authority 在排序/Prompt 前阻断无权内容，Runtime Actuation Receipt 再确认经验真的改变了程序，只有合法且真实产生作用的部分才能进入下一代长期记忆。
+> 这项工作不是“把 Tree、SOP 和审查器放在一起”，而是建立一条完整的经验影响供应链：本次真实执行节点首先以 RunForest/Result Fact 保存自己的代码、运行和协议事实，不因未采用历史经验而消失；Stage-aware Dynamic Hybrid 和 Claim-specific Authority 决定哪些历史经验可以影响当前决策；Static/Runtime/Counterfactual Receipt 再分别证明这些历史经验是否体现在代码中、是否真实触发、是否具有因果影响；只有经过相应授权的 Adoption/Causal scope 才能进入后代 SOP，且不得通过蒸馏扩大权限。

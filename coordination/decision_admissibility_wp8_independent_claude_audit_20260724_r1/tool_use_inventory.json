@@ -1,0 +1,366 @@
+{
+  "schema": "claude_agent_mcp_read_only_tool_inventory_v1",
+  "session_id": "b0d62720-cdc7-4afe-9d3a-e543414a0214",
+  "observed_tool_names": [
+    "Glob",
+    "Grep",
+    "Read"
+  ],
+  "tool_call_count": 47,
+  "calls": [
+    {
+      "seq": 2,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/decision_admissibility*/**"
+      }
+    },
+    {
+      "seq": 3,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/*decision_admissibility*"
+      }
+    },
+    {
+      "seq": 6,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/decision_admissibility_wp8_final_stop_gate_20260724_r1/**"
+      }
+    },
+    {
+      "seq": 7,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/decision_admissibility_wp8_final_tests_20260724_r*/**"
+      }
+    },
+    {
+      "seq": 8,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/decision_admissibility_wp8_final_regression_20260724_r1/**"
+      }
+    },
+    {
+      "seq": 11,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_final_stop_gate_20260724_r1/stop_gate_report.json"
+      }
+    },
+    {
+      "seq": 12,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_final_tests_20260724_r4/test_receipt.json"
+      }
+    },
+    {
+      "seq": 15,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_final_tests_20260724_r4/test_receipt.json",
+        "limit": 120
+      }
+    },
+    {
+      "seq": 16,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_final_regression_20260724_r1/final_regression_receipt.json"
+      }
+    },
+    {
+      "seq": 19,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_final_tests_20260724_r2/test_receipt.json",
+        "limit": 80
+      }
+    },
+    {
+      "seq": 20,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/**"
+      }
+    },
+    {
+      "seq": 21,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/decision_admissibility_wp8_evidence_ledger_20260723_r2/**"
+      }
+    },
+    {
+      "seq": 24,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/decision_admissibility_wp8_final_host_test_receipt_20260723_r1/**"
+      }
+    },
+    {
+      "seq": 25,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/decision_admissibility_wp8_final_tests_20260724_r3/**"
+      }
+    },
+    {
+      "seq": 26,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/statistics_report.json"
+      }
+    },
+    {
+      "seq": 29,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/formal_observations.jsonl"
+      }
+    },
+    {
+      "seq": 30,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_evidence_ledger_20260723_r2/evidence_ledger.json"
+      }
+    },
+    {
+      "seq": 33,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r9.json"
+      }
+    },
+    {
+      "seq": 34,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_tier2_formal_preregistration_verification_20260723_r9.json"
+      }
+    },
+    {
+      "seq": 37,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/decision_admissibility_wp8_semantic_purity_20260721/**"
+      }
+    },
+    {
+      "seq": 38,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_tier2_formal_joint_inventory_20260723_r1/verification.json"
+      }
+    },
+    {
+      "seq": 39,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/verification.json"
+      }
+    },
+    {
+      "seq": 41,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_semantic_purity_20260721/method_semantic_purity_report.json"
+      }
+    },
+    {
+      "seq": 42,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_semantic_purity_20260721/independent_validation_report.json"
+      }
+    },
+    {
+      "seq": 45,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_semantic_purity_20260721/formal_validation_report.json"
+      }
+    },
+    {
+      "seq": 46,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/decision_admissibility_wp8_tier2_formal_staging_stop_gate_20260723_r10/**"
+      }
+    },
+    {
+      "seq": 47,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_final_stop_gate_20260724_r1/stop_gate_report.md"
+      }
+    },
+    {
+      "seq": 49,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_tier2_formal_staging_stop_gate_20260723_r10/STAGING_STOP_GATE.json"
+      }
+    },
+    {
+      "seq": 50,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_final_stop_gate_20260724_r1/manifest.json"
+      }
+    },
+    {
+      "seq": 53,
+      "name": "Grep",
+      "input": {
+        "pattern": "empty.pack|empty_authorized|abstention|crash_isolation|crash isolation|re-?signed|tamper|laundering|P4-B|p4_b",
+        "path": "/Users/haoming/Downloads/nautilus/tests",
+        "output_mode": "files_with_matches",
+        "head_limit": 40
+      }
+    },
+    {
+      "seq": 54,
+      "name": "Glob",
+      "input": {
+        "pattern": "tests/**/test_*admissibility*.py"
+      }
+    },
+    {
+      "seq": 55,
+      "name": "Glob",
+      "input": {
+        "pattern": "tests/**/test_*empty*pack*.py"
+      }
+    },
+    {
+      "seq": 57,
+      "name": "Grep",
+      "input": {
+        "-n": true,
+        "head_limit": 50,
+        "output_mode": "content",
+        "path": "/Users/haoming/Downloads/nautilus/tests",
+        "pattern": "def test.*(empty|abstain|crash|tamper|launder|resign|re_sign|p4_b|p4b)",
+        "-i": true
+      }
+    },
+    {
+      "seq": 60,
+      "name": "Grep",
+      "input": {
+        "output_mode": "files_with_matches",
+        "pattern": "dcf2e62c47d9f22c03a7adb05d325f588367284aee8f7309d2d0831116718778"
+      }
+    },
+    {
+      "seq": 61,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/tests/test_wp8_final_stop_gate.py",
+        "limit": 100
+      }
+    },
+    {
+      "seq": 64,
+      "name": "Grep",
+      "input": {
+        "output_mode": "count",
+        "pattern": "^.",
+        "path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_final_host_test_receipt_20260723_r1/source_inventory.jsonl"
+      }
+    },
+    {
+      "seq": 65,
+      "name": "Grep",
+      "input": {
+        "output_mode": "count",
+        "pattern": "^.",
+        "path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_final_tests_20260724_r3/source_inventory.jsonl"
+      }
+    },
+    {
+      "seq": 66,
+      "name": "Grep",
+      "input": {
+        "output_mode": "count",
+        "pattern": "^.",
+        "path": "/Users/haoming/Downloads/nautilus/coordination/decision_admissibility_wp8_final_tests_20260724_r4/source_inventory.jsonl"
+      }
+    },
+    {
+      "seq": 67,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/Downloads/nautilus/tests/authority/test_visibility_overhead_reporting.py",
+        "limit": 60
+      }
+    },
+    {
+      "seq": 70,
+      "name": "Grep",
+      "input": {
+        "-n": true,
+        "head_limit": 30,
+        "output_mode": "content",
+        "path": "/Users/haoming/Downloads/nautilus/paper-skills/memory_bundle",
+        "pattern": "0o555|0o444|S_IW|writable|immutable|symlink|is_symlink"
+      }
+    },
+    {
+      "seq": 71,
+      "name": "Glob",
+      "input": {
+        "pattern": "coordination/decision_admissibility_wp8_final_tests_20260724_r3/*"
+      }
+    },
+    {
+      "seq": 74,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/.claude/projects/-Users-haoming-Downloads-nautilus/memory/MEMORY.md"
+      }
+    },
+    {
+      "seq": 77,
+      "name": "Glob",
+      "input": {
+        "pattern": "/Users/haoming/.claude/projects/-Users-haoming-Downloads-nautilus/memory/wp8*"
+      }
+    },
+    {
+      "seq": 79,
+      "name": "Glob",
+      "input": {
+        "pattern": "/Users/haoming/.claude/projects/-Users-haoming-Downloads-nautilus/memory/codex-hyperbolic-review-findings.md"
+      }
+    },
+    {
+      "seq": 80,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/.claude/projects/-Users-haoming-Downloads-nautilus/memory/codex-hyperbolic-review-findings.md"
+      }
+    },
+    {
+      "seq": 82,
+      "name": "Glob",
+      "input": {
+        "pattern": "/Users/haoming/.claude/projects/-Users-haoming-Downloads-nautilus/memory/wp8-decision-admissibility-audit.md"
+      }
+    },
+    {
+      "seq": 83,
+      "name": "Read",
+      "input": {
+        "file_path": "/Users/haoming/.claude/projects/-Users-haoming-Downloads-nautilus/memory/codex-hyperbolic-review-findings.md",
+        "limit": 8
+      }
+    }
+  ]
+}
+

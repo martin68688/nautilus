@@ -1,0 +1,114 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_block_structure_audit_v1",
+  "block_id": "wp8-tier2-formal-birds-seed-104729-r3",
+  "task_id": "mlsp-2013-birds",
+  "agent_seed": 104729,
+  "audited_at_utc": "2026-07-23T02:45:00Z",
+  "status": "passed",
+  "score_values_inspected": false,
+  "score_values_included": false,
+  "online_condition_count": 5,
+  "successful_selected_result_count": 3,
+  "failed_online_condition_count": 2,
+  "result_fact_count": 3,
+  "condition_structure": {
+    "full_decision_admissibility": {
+      "status": "pre_terminal_failure",
+      "failure_classification": "authority_denial",
+      "terminal_metric_observed": false,
+      "result_fact_count": 0,
+      "candidate_reexecuted": false
+    },
+    "authority_only": {
+      "status": "pre_terminal_failure",
+      "failure_classification": "retained_run_failure",
+      "terminal_metric_observed": false,
+      "result_fact_count": 0
+    },
+    "no_memory": {
+      "status": "scored_selected_result",
+      "terminal_value_omitted": true,
+      "result_fact_count": 1,
+      "result_fact_derived_from_refs": []
+    },
+    "global_validity_bit": {
+      "status": "scored_selected_result",
+      "terminal_value_omitted": true,
+      "result_fact_count": 1,
+      "result_fact_derived_from_refs": []
+    },
+    "flat_relevance_memory": {
+      "status": "scored_selected_result",
+      "terminal_value_omitted": true,
+      "result_fact_count": 1,
+      "result_fact_derived_from_refs": []
+    }
+  },
+  "oracle_structure": {
+    "candidate_union_count": 8,
+    "scored_candidate_count": 8,
+    "score_values_omitted": true,
+    "normal_result_fact_published": false
+  },
+  "recovery_structure": {
+    "recovery_status": "deterministic_preterminal_finalizer_recovered",
+    "agent_reexecuted": false,
+    "candidate_code_reexecuted": false,
+    "full_condition_reexecuted": false,
+    "terminal_metric_observed_during_recovery": false,
+    "recovery_pod_not_found": true,
+    "training_pod_not_found": true,
+    "evaluator_pod_not_found": true,
+    "evaluator_created_after_both_required_not_found_attestations": true,
+    "recovery_stop_gate_hash": "d114be58137df36556fac0394cc845f4d0c48e6c130ca1b0e6b0a88d7420818a",
+    "recovery_source_manifest_hash": "6204b4f42953431742b6b688b222877d47a199f7e324ad4e533883c45aa60279"
+  },
+  "artifact_bindings": {
+    "TRAINING_MANIFEST.json": {
+      "file_sha256": "dfb208add9cd6090a467971e5c9f137e328462f221c984a6e5f9943a8a86d688",
+      "internal_hash": "697342f578316cbbb1ac6209d9ef024352be1065f07ca9da5e746396c4c9459b"
+    },
+    "TRAINING_FINALIZER_RECOVERY.json": {
+      "file_sha256": "a4ff4c52f65e326887e10cd58311a0790f991b91697421bb92d92b90ee53022c",
+      "internal_hash": "08fbb050b5f16e4a052e72374715e48df69d61a50a2f3493b504b5698b3c571c"
+    },
+    "RECOVERY_POD_DELETION_ATTESTATION.json": {
+      "file_sha256": "50b7b31c7aac7b5cd35a5bf193ea1af83443241d07117548e2f5772478473932",
+      "internal_hash": "44d6cef96fa680422bfa6d05ff0b4b94db49b595255d74d27446319f457dbf9e"
+    },
+    "TRAINING_POD_DELETION_ATTESTATION.json": {
+      "file_sha256": "2192917d393adce1989685aaef6ef84071876191796f9b7dde835c7ed9175b5b",
+      "internal_hash": "7829a028c7fa7a2a3e533af16959bcc14f1d304c6ac372cbfae93928a0527ead"
+    },
+    "EVALUATOR_POD_CREATION_ATTESTATION.json": {
+      "file_sha256": "2925c17703c8088ffe6709b97064d71f2fb1edbc2ce3bb277a19723088f997f4",
+      "internal_hash": "7c35652208c1b43d8ba1d030e365faae961a423dc20319d2c3d5905e91853967"
+    },
+    "EVALUATOR_ISOLATION.json": {
+      "file_sha256": "a2b508d8c2f24655add111f344e2d02a1ff34d8dd26fe53aca435cecc72dd09b",
+      "internal_hash": "31c9ce3678558a63bea16c0bd6a19bc71271dc23482a121a94e46a58193324f3"
+    },
+    "EVALUATION_SUMMARY.json": {
+      "file_sha256": "97b1eaf95eb9aa3b414330453ca1b299a5eb5d58674aa1ce5c93aac81e76e2e6",
+      "internal_hash": "a17c7ce5bd6db2eae824830fec5c9d754031487de93cbb513553abf5db48b7a9"
+    },
+    "EVALUATOR_POD_DELETION_ATTESTATION.json": {
+      "file_sha256": "4114993198e83acad1b2d4d73f395f3ac05755b796d104c979f7f72876940fea",
+      "internal_hash": "813e7ddf5db21b40fe7434dcc7dc3f909faf5c253d93307e2a13c3a48c2feb44"
+    },
+    "BLOCK_EVALUATION_FILE_MANIFEST.json": {
+      "file_sha256": "42b02d329e3e99a8afac4a1482dd8db70bb5eb2e13c7bb06fdc041ff7b63ac93",
+      "internal_hash": "976038f6d31c24d13a4df5544bdc1047aade888d768c03c1d64c5e13f6cb50a9"
+    }
+  },
+  "structural_invariants": {
+    "all_five_conditions_retained": true,
+    "successful_plus_failed_equals_five": true,
+    "failed_conditions_have_no_result_fact": true,
+    "successful_conditions_have_exactly_one_independent_result_fact": true,
+    "source_scores_not_inherited": true,
+    "target_history_not_used": true,
+    "terminal_values_remain_blinded": true
+  },
+  "audit_hash": "17beb23e58fd40b05926b189ede3dbc094976e7230be5f25513aeddd21b5bffa"
+}

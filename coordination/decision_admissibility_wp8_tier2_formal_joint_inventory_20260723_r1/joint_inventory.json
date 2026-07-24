@@ -1,0 +1,697 @@
+{
+  "block_tree_hash_algorithm": "sha256(canonical_json(relative_posix_path_to_domain_separated_regular_file_or_readlink_sha256));symlinks_are_never_followed",
+  "blocks": [
+    {
+      "agent_seed": 104729,
+      "block_evaluation_file_manifest_hashed": false,
+      "block_evaluation_file_manifest_legacy_absence_frozen": true,
+      "block_file_count": 363,
+      "block_id": "wp8-tier2-formal-aerial-seed-104729-r3",
+      "block_tree_sha256": "fc2ba3bd881d134df3f2666d57063fc2dbdecf6bd9ff89f7e3c6fce649c8292d",
+      "condition_structure": [],
+      "condition_structure_source": "completed_freeze",
+      "evaluator_deletion_attestation_hashed": true,
+      "failed_online_condition_count": 0,
+      "online_condition_count": 5,
+      "oracle_disposition": "host_only_frozen_union_no_normal_result_fact",
+      "oracle_disposition_count": 1,
+      "required_artifact_hashes": {
+        "BLOCK_CONTRACT.json": "b476cd2b54e29bb24fefa29af8d537235da8a786a43205a2089100797fdb07df",
+        "BLOCK_EVALUATION_FILE_MANIFEST.json": null,
+        "EVALUATION_COMPLETE": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "EVALUATION_SUMMARY.json": "ed284bc1966be5c2f88b0525be77575fff88ff19374f3666835bc21b8613be77",
+        "EVALUATOR_ISOLATION.json": "57b291ec51d5356fa3bfe2855bf59515325819c872aaebe43e34c1eb175ded48",
+        "EVALUATOR_POD_CREATION_ATTESTATION.json": "068627f58eee548ba7e5846714a6f9e6b2e64bc55ee4e66a22892e81c423491d",
+        "EVALUATOR_POD_DELETION_ATTESTATION.json": "82c6d8d194040f6b8108051a598b64cfd738e0236464bb1d8d5a83c41ff73952",
+        "HOST_ORACLE.json": "7db79bba93f4227e7b7173d864fac0e504eb652adc46798219fcad0a4dc1525d",
+        "TRAINING_MANIFEST.json": "fc2ad2be76b4eb1dbf6530495670ad5b6f120bf2a0ae20e6fad81cf1d4b42294",
+        "TRAINING_POD_DELETION_ATTESTATION.json": "ed58aeb0ca7b67923fdecd412576b6aff89462edb5b175e61efc0f39bbdfa2ce"
+      },
+      "result_fact_count": 5,
+      "root_role": "completed_r10",
+      "semantic_source_hash": "bbf256f9318cd7eaedf12b89c89be479da67e266a5eaa5ef4ef605b72b6ec17d",
+      "source_snapshot_sha256": "d7fed7549c0484fc3a83c22f5a884d7198ca78222a3601a05b6604f674bbd2e9",
+      "staging_gate_hash": "12a2371a24de0e3f53edbe21540f8e1f9561b8aa403c1f3190d1c90d02ca3bed",
+      "successful_selected_result_count": 5,
+      "task_id": "aerial-cactus-identification",
+      "training_deletion_attestation_hashed": true
+    },
+    {
+      "agent_seed": 130363,
+      "block_evaluation_file_manifest_hashed": false,
+      "block_evaluation_file_manifest_legacy_absence_frozen": true,
+      "block_file_count": 382,
+      "block_id": "wp8-tier2-formal-aerial-seed-130363-r3",
+      "block_tree_sha256": "56b9f641ace1c8f9057c07d93190db5fa77b6b77c7e68942beee166288b6eb03",
+      "condition_structure": [],
+      "condition_structure_source": "completed_freeze",
+      "evaluator_deletion_attestation_hashed": true,
+      "failed_online_condition_count": 0,
+      "online_condition_count": 5,
+      "oracle_disposition": "host_only_frozen_union_no_normal_result_fact",
+      "oracle_disposition_count": 1,
+      "required_artifact_hashes": {
+        "BLOCK_CONTRACT.json": "7bb5d0d50312139fd1af5e883d9370efcf14318eb19c4d2fc857082fc6721789",
+        "BLOCK_EVALUATION_FILE_MANIFEST.json": null,
+        "EVALUATION_COMPLETE": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "EVALUATION_SUMMARY.json": "f81c3a838f8e3defff6b077e13d6804205fe2c24ae4a7da8c14b0fc7268b3379",
+        "EVALUATOR_ISOLATION.json": "58986a408c4af1e399052e362f7e01ae78edb1abf0104fc5fd25ec9b661779e8",
+        "EVALUATOR_POD_CREATION_ATTESTATION.json": "8808b3a8a1cc60934307bb0e78757aeddbc4179df05c20638a2b8aafaafa57ad",
+        "EVALUATOR_POD_DELETION_ATTESTATION.json": "fe61bcf517863b1506bdf047ce992549d66e651fda4d3fb3e2978daecb9966a9",
+        "HOST_ORACLE.json": "5caaa2afb4efa3c7079b275b6572bcdf173468f5fa1e79a3b5a914a1158ad8df",
+        "TRAINING_MANIFEST.json": "e40214c40088c99f329596963d09b3d28345b2c463c6aa2f33a4c90abe220db0",
+        "TRAINING_POD_DELETION_ATTESTATION.json": "7377d866c6b86d514f581359fcf1e131c8794dd22bc05a02259ed482fd7582ad"
+      },
+      "result_fact_count": 5,
+      "root_role": "completed_r10",
+      "semantic_source_hash": "bbf256f9318cd7eaedf12b89c89be479da67e266a5eaa5ef4ef605b72b6ec17d",
+      "source_snapshot_sha256": "d7fed7549c0484fc3a83c22f5a884d7198ca78222a3601a05b6604f674bbd2e9",
+      "staging_gate_hash": "12a2371a24de0e3f53edbe21540f8e1f9561b8aa403c1f3190d1c90d02ca3bed",
+      "successful_selected_result_count": 5,
+      "task_id": "aerial-cactus-identification",
+      "training_deletion_attestation_hashed": true
+    },
+    {
+      "agent_seed": 155921,
+      "block_evaluation_file_manifest_hashed": true,
+      "block_evaluation_file_manifest_legacy_absence_frozen": false,
+      "block_file_count": 352,
+      "block_id": "wp8-tier2-formal-aerial-seed-155921-r3",
+      "block_tree_sha256": "991fe5f16d0a5cd124bcd0fbd64f509263d436b4b5cbe47e3e2e8ddffcf0d40d",
+      "condition_structure": [],
+      "condition_structure_source": "completed_freeze",
+      "evaluator_deletion_attestation_hashed": true,
+      "failed_online_condition_count": 0,
+      "online_condition_count": 5,
+      "oracle_disposition": "host_only_frozen_union_no_normal_result_fact",
+      "oracle_disposition_count": 1,
+      "required_artifact_hashes": {
+        "BLOCK_CONTRACT.json": "3249a5016b804ba2766a92007b0f77e7768e7589dd3ca6f431278262aab494fd",
+        "BLOCK_EVALUATION_FILE_MANIFEST.json": "a12c84c78bd874c2c189c92fd64346ef37ca51c2ca3a9963121b65f34c2fdada",
+        "EVALUATION_COMPLETE": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "EVALUATION_SUMMARY.json": "7166d9a076933c6be4b8b1313c866a398c43b8a7cc13b0ffa9e278cb0b6a3fb8",
+        "EVALUATOR_ISOLATION.json": "f896b56fe1ef27d071f95948af735adebd42da09db098915f744b09a700db103",
+        "EVALUATOR_POD_CREATION_ATTESTATION.json": "f4144283afc3fe1018d693f46a3c9a7aee974d140532a94c30feb375f793ea95",
+        "EVALUATOR_POD_DELETION_ATTESTATION.json": "a8f85851989b0b1edb04c8dcbbec6b2c032fa93403c99b0ffe3213c0650cc463",
+        "HOST_ORACLE.json": "36234b24900d7d7f830e3b32d8fd78dfb7dcf063002d7e429f1537ba42d08aea",
+        "TRAINING_MANIFEST.json": "e7547d204d90e19797df76ac1612ba680770c96ef291eeb3b97cd83e4c1b5296",
+        "TRAINING_POD_DELETION_ATTESTATION.json": "3cd389039caf429fecd110d275bd6b09e04841b9fea3e353ecc4e8e57ed1bd39"
+      },
+      "result_fact_count": 5,
+      "root_role": "completed_r10",
+      "semantic_source_hash": "bbf256f9318cd7eaedf12b89c89be479da67e266a5eaa5ef4ef605b72b6ec17d",
+      "source_snapshot_sha256": "d7fed7549c0484fc3a83c22f5a884d7198ca78222a3601a05b6604f674bbd2e9",
+      "staging_gate_hash": "12a2371a24de0e3f53edbe21540f8e1f9561b8aa403c1f3190d1c90d02ca3bed",
+      "successful_selected_result_count": 5,
+      "task_id": "aerial-cactus-identification",
+      "training_deletion_attestation_hashed": true
+    },
+    {
+      "agent_seed": 104729,
+      "block_evaluation_file_manifest_hashed": true,
+      "block_evaluation_file_manifest_legacy_absence_frozen": false,
+      "block_file_count": 294,
+      "block_id": "wp8-tier2-formal-birds-seed-104729-r3",
+      "block_tree_sha256": "c33a1e797df35c48c5bf81e679a3cda6a3606204dab0462cd79286a0729ebd2b",
+      "condition_structure": [
+        {
+          "condition": "no_memory",
+          "result_fact_count": 1,
+          "status": "scored_selected_result",
+          "terminal_value_omitted": true
+        },
+        {
+          "condition": "flat_relevance_memory",
+          "result_fact_count": 1,
+          "status": "scored_selected_result",
+          "terminal_value_omitted": true
+        },
+        {
+          "condition": "global_validity_bit",
+          "result_fact_count": 1,
+          "status": "scored_selected_result",
+          "terminal_value_omitted": true
+        },
+        {
+          "condition": "authority_only",
+          "failure_classification": "retained_run_failure",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "full_decision_admissibility",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        }
+      ],
+      "condition_structure_source": "structure_audit",
+      "evaluator_deletion_attestation_hashed": true,
+      "failed_online_condition_count": 2,
+      "online_condition_count": 5,
+      "oracle_disposition": "host_only_frozen_union_no_normal_result_fact",
+      "oracle_disposition_count": 1,
+      "required_artifact_hashes": {
+        "BLOCK_CONTRACT.json": "8921b22e984b4a61e200b6a087e42f84240a7c709dc1c600ee15a5f4163af424",
+        "BLOCK_EVALUATION_FILE_MANIFEST.json": "42b02d329e3e99a8afac4a1482dd8db70bb5eb2e13c7bb06fdc041ff7b63ac93",
+        "EVALUATION_COMPLETE": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "EVALUATION_SUMMARY.json": "97b1eaf95eb9aa3b414330453ca1b299a5eb5d58674aa1ce5c93aac81e76e2e6",
+        "EVALUATOR_ISOLATION.json": "a2b508d8c2f24655add111f344e2d02a1ff34d8dd26fe53aca435cecc72dd09b",
+        "EVALUATOR_POD_CREATION_ATTESTATION.json": "2925c17703c8088ffe6709b97064d71f2fb1edbc2ce3bb277a19723088f997f4",
+        "EVALUATOR_POD_DELETION_ATTESTATION.json": "4114993198e83acad1b2d4d73f395f3ac05755b796d104c979f7f72876940fea",
+        "HOST_ORACLE.json": "c6d6439a1c08ecc76ae9bb037b60261fa034b7ecc9aacbdaee4f3a606d861767",
+        "TRAINING_MANIFEST.json": "dfb208add9cd6090a467971e5c9f137e328462f221c984a6e5f9943a8a86d688",
+        "TRAINING_POD_DELETION_ATTESTATION.json": "2192917d393adce1989685aaef6ef84071876191796f9b7dde835c7ed9175b5b"
+      },
+      "result_fact_count": 3,
+      "root_role": "completed_r10",
+      "semantic_source_hash": "17beb23e58fd40b05926b189ede3dbc094976e7230be5f25513aeddd21b5bffa",
+      "source_snapshot_sha256": "d7fed7549c0484fc3a83c22f5a884d7198ca78222a3601a05b6604f674bbd2e9",
+      "staging_gate_hash": "12a2371a24de0e3f53edbe21540f8e1f9561b8aa403c1f3190d1c90d02ca3bed",
+      "successful_selected_result_count": 3,
+      "task_id": "mlsp-2013-birds",
+      "training_deletion_attestation_hashed": true
+    },
+    {
+      "agent_seed": 130363,
+      "block_evaluation_file_manifest_hashed": true,
+      "block_evaluation_file_manifest_legacy_absence_frozen": false,
+      "block_file_count": 243,
+      "block_id": "wp8-tier2-formal-birds-seed-130363-r5",
+      "block_tree_sha256": "7be08ceef497d1666c86468ec6dbfcc9d7f961274c97cc076ff7a3971b814b3e",
+      "condition_structure": [
+        {
+          "condition": "no_memory",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "flat_relevance_memory",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "global_validity_bit",
+          "failure_classification": "retained_run_failure",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "authority_only",
+          "failure_classification": "retained_run_failure",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "full_decision_admissibility",
+          "failure_classification": "retained_run_failure",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        }
+      ],
+      "condition_structure_source": "structure_audit",
+      "evaluator_deletion_attestation_hashed": true,
+      "failed_online_condition_count": 5,
+      "online_condition_count": 5,
+      "oracle_disposition": "host_only_frozen_union_no_normal_result_fact",
+      "oracle_disposition_count": 1,
+      "required_artifact_hashes": {
+        "BLOCK_CONTRACT.json": "a9e18a6ea19bf30ce8f1709bee4a2279b2f5bdb3ac675b7f661d5e1326280bd0",
+        "BLOCK_EVALUATION_FILE_MANIFEST.json": "0c3813b4ebe357554ed5f5fb6eb02f48561db308ef752036ba90d84fa4e4d981",
+        "EVALUATION_COMPLETE": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "EVALUATION_SUMMARY.json": "4443312a1c4611b983824339766fd1a5b3d64441330dc47dcafb36dd456eff79",
+        "EVALUATOR_ISOLATION.json": "c8dbf7c313a5f7566152d5f6800701a780d99cbb08a2e6aa68d286d8307f4091",
+        "EVALUATOR_POD_CREATION_ATTESTATION.json": "7a8887c6212a706ac0385d42cd54cb7a09abfc15c83762d7fd2ac7cf165297c9",
+        "EVALUATOR_POD_DELETION_ATTESTATION.json": "c4c23b520dcc6d2922f859d45d49e9c91509efc43dc58578e1d2ee1214d9fa34",
+        "HOST_ORACLE.json": "5421939547dcc3f938fab2df7248e7913b0056afbf0acb6bc2b3da5111811f3d",
+        "TRAINING_MANIFEST.json": "f322b4b3c83aa0382c9db8886ad938112e9c50e2b8cdacb2b9954fcda165c8da",
+        "TRAINING_POD_DELETION_ATTESTATION.json": "e109469acff965875a81e830f39ba8c280074b1ab26b17ed8a759fad7614d3ff"
+      },
+      "result_fact_count": 0,
+      "root_role": "continuation_r13",
+      "semantic_source_hash": "82013408bb41d3ca13023ca0f2fef266dd88f77ace7ddfbbfd1b898204dff2a3",
+      "source_snapshot_sha256": "c674364da0fe5d49e9292bd64218831a08720739abee28b246921a00cefa5292",
+      "staging_gate_hash": "aef746cb87046d3f4134f3699005f7f0bbbde5ce3c1f4b04ddca00fdd5ee2678",
+      "successful_selected_result_count": 0,
+      "task_id": "mlsp-2013-birds",
+      "training_deletion_attestation_hashed": true
+    },
+    {
+      "agent_seed": 155921,
+      "block_evaluation_file_manifest_hashed": true,
+      "block_evaluation_file_manifest_legacy_absence_frozen": false,
+      "block_file_count": 654,
+      "block_id": "wp8-tier2-formal-birds-seed-155921-r5",
+      "block_tree_sha256": "fb0d5818d5a7e0305aacd243747ce57394338ebfd3dd1d26628bfc00d73e8b41",
+      "condition_structure": [
+        {
+          "condition": "no_memory",
+          "result_fact_count": 1,
+          "status": "scored_selected_result",
+          "terminal_value_omitted": true
+        },
+        {
+          "condition": "flat_relevance_memory",
+          "failure_classification": "retained_run_failure",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "global_validity_bit",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "authority_only",
+          "result_fact_count": 1,
+          "status": "scored_selected_result",
+          "terminal_value_omitted": true
+        },
+        {
+          "condition": "full_decision_admissibility",
+          "result_fact_count": 1,
+          "status": "scored_selected_result",
+          "terminal_value_omitted": true
+        }
+      ],
+      "condition_structure_source": "structure_audit",
+      "evaluator_deletion_attestation_hashed": true,
+      "failed_online_condition_count": 2,
+      "online_condition_count": 5,
+      "oracle_disposition": "host_only_frozen_union_no_normal_result_fact",
+      "oracle_disposition_count": 1,
+      "required_artifact_hashes": {
+        "BLOCK_CONTRACT.json": "e83e26d91f5ebca87b0c6dad0d1cb063d3800bf835f6f27e167b4664ceb225c6",
+        "BLOCK_EVALUATION_FILE_MANIFEST.json": "78c5f46b97d066a58ddc08d001057a8cd2350d42148f9602e30eebd68da15322",
+        "EVALUATION_COMPLETE": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "EVALUATION_SUMMARY.json": "a15a9de637df36e81f6887b60fe43a019b51e9b16c118203fbac8956f031f0dd",
+        "EVALUATOR_ISOLATION.json": "0b6506210720396120d766428eb789a95a5f1fba1428c9ec9976799f8913b6e6",
+        "EVALUATOR_POD_CREATION_ATTESTATION.json": "209a1932cb1351e755a9314d4add5c1a5ae8cb8aa6074e5ded3c5edb63366db5",
+        "EVALUATOR_POD_DELETION_ATTESTATION.json": "21c23224282b36accd4c013ec05fdd7ba0d7013f9f34ec03a105939425c0d06e",
+        "HOST_ORACLE.json": "ab28acfbb3ecccc7608af7b6e5897ff20ea752779d33392a424d383cd7b5defb",
+        "TRAINING_MANIFEST.json": "5c4714d4d5f206a41e01ca4f750ce08e4ae0f1d059d8be2c2e7a907f0d1db6c9",
+        "TRAINING_POD_DELETION_ATTESTATION.json": "7ac788dadf77c2143a97fcaacb5e17e15f2f944112a23c4d4601169020f7a59d"
+      },
+      "result_fact_count": 3,
+      "root_role": "continuation_r13",
+      "semantic_source_hash": "97829412c31ba5a0a306d88ae759534052a7e468d4508aff81cc6409c3cc8794",
+      "source_snapshot_sha256": "c674364da0fe5d49e9292bd64218831a08720739abee28b246921a00cefa5292",
+      "staging_gate_hash": "aef746cb87046d3f4134f3699005f7f0bbbde5ce3c1f4b04ddca00fdd5ee2678",
+      "successful_selected_result_count": 3,
+      "task_id": "mlsp-2013-birds",
+      "training_deletion_attestation_hashed": true
+    },
+    {
+      "agent_seed": 104729,
+      "block_evaluation_file_manifest_hashed": true,
+      "block_evaluation_file_manifest_legacy_absence_frozen": false,
+      "block_file_count": 321,
+      "block_id": "wp8-tier2-formal-taxi-seed-104729-r5",
+      "block_tree_sha256": "f5a498a0edd17a432983a3eaab020af04fc591bb0639a77040fd151336e5f3f7",
+      "condition_structure": [
+        {
+          "condition": "no_memory",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "flat_relevance_memory",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "global_validity_bit",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "authority_only",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "full_decision_admissibility",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        }
+      ],
+      "condition_structure_source": "structure_audit",
+      "evaluator_deletion_attestation_hashed": true,
+      "failed_online_condition_count": 5,
+      "online_condition_count": 5,
+      "oracle_disposition": "host_only_frozen_union_no_normal_result_fact",
+      "oracle_disposition_count": 1,
+      "required_artifact_hashes": {
+        "BLOCK_CONTRACT.json": "65cf8f17bf2381763b1334fa557094f69f7ee5f12472192ef456293b9c7a41f8",
+        "BLOCK_EVALUATION_FILE_MANIFEST.json": "bac3a0c7647b3e11be549584169e2e2059efe7de0c042c59aa09fdcd91e5e652",
+        "EVALUATION_COMPLETE": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "EVALUATION_SUMMARY.json": "8bab4cf600a3e4b5359ab2ac7fcf277277a84112cd8e1b4dc77b801ed71b6ab7",
+        "EVALUATOR_ISOLATION.json": "60a1108c50b8c312b0a1a740c1bd1e449ec80e281d6a3232ba956c885f51cc64",
+        "EVALUATOR_POD_CREATION_ATTESTATION.json": "c062996d19867a37e9f85ab94216ec08c222f800f3fe8fbfde49e817f989c129",
+        "EVALUATOR_POD_DELETION_ATTESTATION.json": "6ab8167e4c2a073f5a1cec3d69fa90a508008796742ce6970abd3f99493868e3",
+        "HOST_ORACLE.json": "5421939547dcc3f938fab2df7248e7913b0056afbf0acb6bc2b3da5111811f3d",
+        "TRAINING_MANIFEST.json": "bc7ffe8ffeb4706fdfed5b3b46565b32a8cbf3ecc47b49c6eb3eb6a5c56a8d37",
+        "TRAINING_POD_DELETION_ATTESTATION.json": "daef6e7f3a2e4d6b9cf26ff1794eaa7bcc50532b4deb0bcfe6a892dd10fa51b7"
+      },
+      "result_fact_count": 0,
+      "root_role": "continuation_r13",
+      "semantic_source_hash": "0f6575abde41ed2e3f6ea9d57e37415107e61bbb113e0f1a1121ca7dabcbcd9f",
+      "source_snapshot_sha256": "c674364da0fe5d49e9292bd64218831a08720739abee28b246921a00cefa5292",
+      "staging_gate_hash": "aef746cb87046d3f4134f3699005f7f0bbbde5ce3c1f4b04ddca00fdd5ee2678",
+      "successful_selected_result_count": 0,
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "training_deletion_attestation_hashed": true
+    },
+    {
+      "agent_seed": 130363,
+      "block_evaluation_file_manifest_hashed": true,
+      "block_evaluation_file_manifest_legacy_absence_frozen": false,
+      "block_file_count": 338,
+      "block_id": "wp8-tier2-formal-taxi-seed-130363-r5",
+      "block_tree_sha256": "e80b50527cceed6cad9c8364f7b8c32144da5c7cdbe6f7eb887f16c2a578eed8",
+      "condition_structure": [
+        {
+          "condition": "no_memory",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "flat_relevance_memory",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "global_validity_bit",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "authority_only",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "full_decision_admissibility",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        }
+      ],
+      "condition_structure_source": "structure_audit",
+      "evaluator_deletion_attestation_hashed": true,
+      "failed_online_condition_count": 5,
+      "online_condition_count": 5,
+      "oracle_disposition": "host_only_frozen_union_no_normal_result_fact",
+      "oracle_disposition_count": 1,
+      "required_artifact_hashes": {
+        "BLOCK_CONTRACT.json": "841b6baa11afdbca7ec3d0fe104fab771883012f47db41922c0655354ef28098",
+        "BLOCK_EVALUATION_FILE_MANIFEST.json": "1a2c66b11f0014d2834f945b13efb243f9eebe3321c791f113b88ca01fa271c7",
+        "EVALUATION_COMPLETE": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "EVALUATION_SUMMARY.json": "1ac28686b8134232b10a16859f4ebef8164619672f7285bb0a5c3549ae67c981",
+        "EVALUATOR_ISOLATION.json": "09c56de45a614cb6bccdfa37077d39cf97535d215ed07d1418a145106a153bf8",
+        "EVALUATOR_POD_CREATION_ATTESTATION.json": "d785752a11b7e10c910e62b7230062b8558d6f7024d159ef78276dfff42c3f0c",
+        "EVALUATOR_POD_DELETION_ATTESTATION.json": "286e99ea8e00a3a0d5d17e07459c2389e2a921d3f26d79e8be2451e6691f01b3",
+        "HOST_ORACLE.json": "5421939547dcc3f938fab2df7248e7913b0056afbf0acb6bc2b3da5111811f3d",
+        "TRAINING_MANIFEST.json": "1cf6cb20f17366c78a5d9b52a287c1af16616c51117f5b17aa52ddebf4dd5e51",
+        "TRAINING_POD_DELETION_ATTESTATION.json": "4cec5fe36ac6e1b6aa5b21e32761fedf9465a58295a886dc672286aa92d59ae6"
+      },
+      "result_fact_count": 0,
+      "root_role": "continuation_r13",
+      "semantic_source_hash": "dde2fa0aac6749d1f82059b93bba605939a1481aabb5401b307e0b6b9d799208",
+      "source_snapshot_sha256": "c674364da0fe5d49e9292bd64218831a08720739abee28b246921a00cefa5292",
+      "staging_gate_hash": "aef746cb87046d3f4134f3699005f7f0bbbde5ce3c1f4b04ddca00fdd5ee2678",
+      "successful_selected_result_count": 0,
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "training_deletion_attestation_hashed": true
+    },
+    {
+      "agent_seed": 155921,
+      "block_evaluation_file_manifest_hashed": true,
+      "block_evaluation_file_manifest_legacy_absence_frozen": false,
+      "block_file_count": 368,
+      "block_id": "wp8-tier2-formal-taxi-seed-155921-r5",
+      "block_tree_sha256": "b1d717c25745cff2a8e0a5c4e6805ce6c69827368583ce0356f3c077482280d7",
+      "condition_structure": [
+        {
+          "condition": "no_memory",
+          "result_fact_count": 1,
+          "status": "scored_selected_result",
+          "terminal_value_omitted": true
+        },
+        {
+          "condition": "flat_relevance_memory",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "global_validity_bit",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "authority_only",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        },
+        {
+          "condition": "full_decision_admissibility",
+          "failure_classification": "authority_denial",
+          "result_fact_count": 0,
+          "status": "pre_terminal_failure",
+          "terminal_metric_observed": false
+        }
+      ],
+      "condition_structure_source": "structure_audit",
+      "evaluator_deletion_attestation_hashed": true,
+      "failed_online_condition_count": 4,
+      "online_condition_count": 5,
+      "oracle_disposition": "host_only_frozen_union_no_normal_result_fact",
+      "oracle_disposition_count": 1,
+      "required_artifact_hashes": {
+        "BLOCK_CONTRACT.json": "9fb4ea3753ff01b2c659eed6a5a4e8a151d8690c897a9b2c5855df02d47cab48",
+        "BLOCK_EVALUATION_FILE_MANIFEST.json": "2e1c6a5cc51e758ad2beee80d7cfb88de634e457b9dc0ccc0470ee9cda661a96",
+        "EVALUATION_COMPLETE": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "EVALUATION_SUMMARY.json": "3b5f4a2a8e4f3e70c48ca5753742d8c44227a36da939c1501ff6a3e149f10a4d",
+        "EVALUATOR_ISOLATION.json": "8b29606d7008ddacd131a2c2e0b347ff391ab3f1b527fa8ec972f123957883a3",
+        "EVALUATOR_POD_CREATION_ATTESTATION.json": "5723e4392b004f696dcb5e4558c3ef9e7658ca242b360c239bb1cd76477a7bde",
+        "EVALUATOR_POD_DELETION_ATTESTATION.json": "06843efdd91d58183b95c78b69b4d1d54fb98f47e9ad589e4f3b376851a828ac",
+        "HOST_ORACLE.json": "2d924984379c612da189143332c84afa8d850f85e67c30341f07daaf46c7eaee",
+        "TRAINING_MANIFEST.json": "3543bdf2716b4128cd2d6c86d98fc69976eaf077f05c532e1068b25a2b2eb6e6",
+        "TRAINING_POD_DELETION_ATTESTATION.json": "c089eafdce2aff21004179447dbbcc9ec51e62d8f489d1006430331fd3baa4c6"
+      },
+      "result_fact_count": 1,
+      "root_role": "continuation_r13",
+      "semantic_source_hash": "770df4c57dca0a588b205d1b20e2892e78f98d202864bdbab9add8c72eb2e99c",
+      "source_snapshot_sha256": "c674364da0fe5d49e9292bd64218831a08720739abee28b246921a00cefa5292",
+      "staging_gate_hash": "aef746cb87046d3f4134f3699005f7f0bbbde5ce3c1f4b04ddca00fdd5ee2678",
+      "successful_selected_result_count": 1,
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "training_deletion_attestation_hashed": true
+    }
+  ],
+  "builder_source_sha256": "eb249f1c38673473a44e9b818025558a82d4020d781b0724896804ec17c25e48",
+  "created_at": "2026-07-23T15:12:23Z",
+  "effect_claim_authorized": false,
+  "excluded_precreated_empty_block_dirs": [
+    {
+      "block_id": "wp8-tier2-formal-birds-seed-130363-r3",
+      "disposition": "precreated_never_started_empty_not_an_outcome",
+      "root_role": "completed_r10"
+    },
+    {
+      "block_id": "wp8-tier2-formal-birds-seed-155921-r3",
+      "disposition": "precreated_never_started_empty_not_an_outcome",
+      "root_role": "completed_r10"
+    },
+    {
+      "block_id": "wp8-tier2-formal-taxi-seed-104729-r3",
+      "disposition": "precreated_never_started_empty_not_an_outcome",
+      "root_role": "completed_r10"
+    },
+    {
+      "block_id": "wp8-tier2-formal-taxi-seed-130363-r3",
+      "disposition": "precreated_never_started_empty_not_an_outcome",
+      "root_role": "completed_r10"
+    },
+    {
+      "block_id": "wp8-tier2-formal-taxi-seed-155921-r3",
+      "disposition": "precreated_never_started_empty_not_an_outcome",
+      "root_role": "completed_r10"
+    }
+  ],
+  "formal_block_json_parsed": false,
+  "formal_roots": {
+    "completed_r10": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r10",
+    "continuation_r13": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r13"
+  },
+  "input_bindings": {
+    "analysis_spec": {
+      "file_sha256": "b3cb264239aaea0df05fd4115b299ed3fa7cfd16b68dbc39e2759f57947476d0",
+      "internal_hash": "dab5ab8a78a072aaad472532100918a5a0d96d24773acf8040671c1f18ed51a5",
+      "internal_hash_field": "spec_hash",
+      "path": "/work/control/analysis_spec.json"
+    },
+    "completed_blocks_freeze": {
+      "file_sha256": "74ab746d2cdb3a2bd011a2fe84affc2686d236103b20cbad1c696e7c5ccb2a6b",
+      "internal_hash": "bbf256f9318cd7eaedf12b89c89be479da67e266a5eaa5ef4ef605b72b6ec17d",
+      "internal_hash_field": "inventory_hash",
+      "path": "/work/control/completed_freeze.json"
+    },
+    "completed_staging_gate": {
+      "file_sha256": "3f9505eb0fd3801ec3577b586b38486c09fb7988b2196c17c4d82ecc5eed8a3b",
+      "internal_hash": "12a2371a24de0e3f53edbe21540f8e1f9561b8aa403c1f3190d1c90d02ca3bed",
+      "internal_hash_field": "gate_hash",
+      "path": "/work/control/completed_staging_gate.json"
+    },
+    "continuation_staging_gate": {
+      "file_sha256": "1fab4b277e8a52a6f09ed4381d5a6df1ed895c6ee31b532acb8dc43c52673663",
+      "internal_hash": "aef746cb87046d3f4134f3699005f7f0bbbde5ce3c1f4b04ddca00fdd5ee2678",
+      "internal_hash_field": "gate_hash",
+      "path": "/work/control/continuation_staging_gate.json"
+    },
+    "recovery_diagnostic": {
+      "file_sha256": "aeb03c70ab0609be918df3a9ec9728f192eb590634aeef95e1af42780b57cf05",
+      "internal_hash": "108eac20bb14b57329b18ebdfaddae0b23aceb3597727ce53968b7bd1453f5bd",
+      "internal_hash_field": "diagnostic_hash",
+      "path": "/work/control/recovery_diagnostic.json"
+    },
+    "recovery_gate": {
+      "file_sha256": "40ee941e17ec435796a686425d44bd59f7cf1d2460e595c82bd001af26809cbf",
+      "internal_hash": "d114be58137df36556fac0394cc845f4d0c48e6c130ca1b0e6b0a88d7420818a",
+      "internal_hash_field": "gate_hash",
+      "path": "/work/control/recovery_gate.json"
+    },
+    "structure_audits": [
+      {
+        "block_id": "wp8-tier2-formal-birds-seed-104729-r3",
+        "file_sha256": "c36fb2d38d72137e57861af6c707a0a997cc70d79fc931ab4cde9c48ccbdec96",
+        "internal_hash": "17beb23e58fd40b05926b189ede3dbc094976e7230be5f25513aeddd21b5bffa",
+        "internal_hash_field": "audit_hash",
+        "path": "/work/control/decision_admissibility_wp8_tier2_formal_birds_seed104729_r3_structure_audit_20260723.json"
+      },
+      {
+        "block_id": "wp8-tier2-formal-birds-seed-130363-r5",
+        "file_sha256": "74e0ceb077a561ae169196d79bf0ed289a1bdb2d2b4aa884bdaa15ddd36ac4cf",
+        "internal_hash": "82013408bb41d3ca13023ca0f2fef266dd88f77ace7ddfbbfd1b898204dff2a3",
+        "internal_hash_field": "audit_hash",
+        "path": "/work/control/decision_admissibility_wp8_tier2_formal_birds_seed130363_r5_structure_audit_20260723.json"
+      },
+      {
+        "block_id": "wp8-tier2-formal-birds-seed-155921-r5",
+        "file_sha256": "8679701d0c8e5bba754c0e2bfb38e26bdb631c71bdfe6d3ddb471b45b82e3df4",
+        "internal_hash": "97829412c31ba5a0a306d88ae759534052a7e468d4508aff81cc6409c3cc8794",
+        "internal_hash_field": "audit_hash",
+        "path": "/work/control/decision_admissibility_wp8_tier2_formal_birds_seed155921_r5_structure_audit_20260723.json"
+      },
+      {
+        "block_id": "wp8-tier2-formal-taxi-seed-104729-r5",
+        "file_sha256": "703335a21d5338ecc0fe05c490ae13ff40eeef448c78de6dd9b589a69c058db1",
+        "internal_hash": "0f6575abde41ed2e3f6ea9d57e37415107e61bbb113e0f1a1121ca7dabcbcd9f",
+        "internal_hash_field": "audit_hash",
+        "path": "/work/control/decision_admissibility_wp8_tier2_formal_taxi_seed104729_r5_structure_audit_20260723.json"
+      },
+      {
+        "block_id": "wp8-tier2-formal-taxi-seed-130363-r5",
+        "file_sha256": "7825c406f806cd6fb21a01418e551390d7d237e7b98432aa6ba524712f5c8b3d",
+        "internal_hash": "dde2fa0aac6749d1f82059b93bba605939a1481aabb5401b307e0b6b9d799208",
+        "internal_hash_field": "audit_hash",
+        "path": "/work/control/decision_admissibility_wp8_tier2_formal_taxi_seed130363_r5_structure_audit_20260723.json"
+      },
+      {
+        "block_id": "wp8-tier2-formal-taxi-seed-155921-r5",
+        "file_sha256": "7091e109466bbccef12d8f57a5a2ff138eb996517143d95df9dcbe616f858f47",
+        "internal_hash": "770df4c57dca0a588b205d1b20e2892e78f98d202864bdbab9add8c72eb2e99c",
+        "internal_hash_field": "audit_hash",
+        "path": "/work/control/decision_admissibility_wp8_tier2_formal_taxi_seed155921_r5_structure_audit_20260723.json"
+      }
+    ]
+  },
+  "invariants": {
+    "all_required_lifecycle_artifacts_hashed": true,
+    "all_semantic_sources_result_blind": true,
+    "exact_45_online_conditions": true,
+    "exact_expected_block_set": true,
+    "exact_nine_blocks": true,
+    "exact_nine_oracle_dispositions": true,
+    "formal_block_files_hashed_without_json_parsing": true,
+    "legacy_manifest_absence_matches_completed_freeze": true,
+    "mixed_source_hashes_bound_per_block": true,
+    "non_outcome_formal_roots_absent": true,
+    "precreated_unstarted_r10_block_dirs_verified_empty": true,
+    "result_fact_count_equals_successful_count": true,
+    "successful_plus_failed_equals_45": true
+  },
+  "next_authorized_phase": "terminal_score_unblinding_and_frozen_statistics",
+  "parsed_structural_input_classes": [
+    "analysis_spec",
+    "completed_blocks_freeze",
+    "staging_and_recovery_gates",
+    "recovery_diagnostic",
+    "score_blind_structure_audits"
+  ],
+  "report_hash": "19a2835857945d56980b8dd0a6ae7d9a51e718045acd6753e9f7db8af05cdba5",
+  "schema": "decision_admissibility_wp8_tier2_formal_joint_inventory_v1",
+  "score_bearing_artifacts_parsed": false,
+  "score_policy": "hash_only",
+  "score_values_included": false,
+  "score_values_inspected": false,
+  "source_bindings": {
+    "completed_r10": {
+      "recovery_gate_hash": "d114be58137df36556fac0394cc845f4d0c48e6c130ca1b0e6b0a88d7420818a",
+      "source_snapshot_sha256": "d7fed7549c0484fc3a83c22f5a884d7198ca78222a3601a05b6604f674bbd2e9",
+      "staging_gate_hash": "12a2371a24de0e3f53edbe21540f8e1f9561b8aa403c1f3190d1c90d02ca3bed"
+    },
+    "continuation_r13": {
+      "source_snapshot_sha256": "c674364da0fe5d49e9292bd64218831a08720739abee28b246921a00cefa5292",
+      "staging_gate_hash": "aef746cb87046d3f4134f3699005f7f0bbbde5ce3c1f4b04ddca00fdd5ee2678"
+    },
+    "source_binding_hash": "22e9030aaf36268fa2809097ef2fb8178998180bb487828b7d9050d7df702883"
+  },
+  "status": "passed",
+  "totals": {
+    "block_count": 9,
+    "failed_online_condition_count": 23,
+    "legacy_block_evaluation_file_manifest_absence_count": 2,
+    "online_condition_count": 45,
+    "oracle_disposition_count": 9,
+    "result_fact_count": 22,
+    "successful_selected_result_count": 22
+  }
+}

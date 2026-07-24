@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import collections
 import copy
+import hashlib
+import hmac
 import json
 import logging
 import math
@@ -15,6 +17,24 @@ from pathlib import Path
 from typing import Any
 
 from agents.memory.external_skill_memory import RunForestMemoryLayer, _as_list, _tokenize
+from agents.memory.sop_visibility_gateway import SOPVisibilityGateway
+from authority.domain_scope import (
+    DOMAIN_GENERAL,
+    SAME_DOMAIN,
+    canonical_domain,
+    normalize_transfer_scope,
+    transfer_is_compatible,
+)
+from authority.models import (
+    GenerationStage,
+    GovernanceStage,
+    Operation,
+    ProtocolRef,
+    TaskContext,
+    VisibilityRequest,
+    VisibleSOPPack,
+)
+from authority.stage_ontology import resolve_stage_axes
 
 logger = logging.getLogger("MLEvolve")
 
@@ -79,7 +99,24 @@ STAGE_ALIASES = {
     "aggregation": "fusion",
 }
 
-RETRIEVAL_CONTROLS = {"stage_hybrid", "layered_strategy", "sop_only", "tree_only", "naive_concat"}
+RETRIEVAL_CONTROLS = {
+    "no_memory",
+    "stage_hybrid",
+    "flat_relevance_memory",
+    "global_validity_bit",
+    "authority_only",
+    "full_decision_admissibility",
+    "layered_strategy",
+    "sop_only",
+    "tree_only",
+    "naive_concat",
+}
+
+FORMAL_FLAT_RELEVANCE_CONTROLS = {
+    "flat_relevance_memory",
+    "global_validity_bit",
+    "authority_only",
+}
 
 STRATEGY_SCORE_WEIGHTS = {
     "task_fit": 0.30,
@@ -145,6 +182,9 @@ TASK_PROFILES = {
     "aerial-cactus-identification": ("image", "image_binary_classification"),
     "denoising-dirty-documents": ("image", "image_restoration"),
     "leaf-classification": ("multimodal", "tabular_multiclass"),
+    "random-acts-of-pizza": ("text", "text_binary_classification"),
+    "mlsp-2013-birds": ("audio", "audio_multilabel_classification"),
+    "nomad2018-predict-transparent-conductors": ("tabular", "tabular_multioutput_regression"),
     "new-york-city-taxi-fare-prediction": ("tabular", "tabular_regression"),
 }
 
@@ -300,6 +340,18 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         strategy_selector: Callable[..., dict[str, Any]] | None = None,
         retrieval_control: str | None = None,
         excluded_run_ids: list[str] | None = None,
+        visibility_gateway: SOPVisibilityGateway | None = None,
+        visibility_mode: str | None = None,
+        visibility_enforce_operations: list[str] | None = None,
+        visibility_enforce_generation_stages: list[str] | None = None,
+        visibility_enforce_governance_stages: list[str] | None = None,
+        visibility_authority_engine: Any | None = None,
+        visibility_active_protocol: ProtocolRef | str | None = None,
+        visibility_policy_version: str | None = None,
+        visibility_task_id: str | None = None,
+        visibility_bundle_version: str | None = None,
+        visibility_token_budget: int | None = None,
+        memory_snapshot: Any | None = None,
         **kwargs: Any,
     ) -> None:
         self._trace_local = threading.local()
@@ -309,6 +361,31 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             stage_quotas = getattr(ext_cfg, "stage_quotas", None)
         if rrf_weights is None and ext_cfg is not None:
             rrf_weights = getattr(ext_cfg, "rrf_weights", None)
+        authority_cfg = getattr(cfg, "evaluation_authority", None) if cfg is not None else None
+        if visibility_mode is None and authority_cfg is not None:
+            visibility_mode = getattr(authority_cfg, "mode", None)
+        if visibility_policy_version is None and authority_cfg is not None:
+            visibility_policy_version = getattr(authority_cfg, "policy_version", None)
+        if visibility_enforce_operations is None and authority_cfg is not None:
+            visibility_enforce_operations = list(
+                getattr(authority_cfg, "enforce_operations", None) or []
+            )
+        if (
+            visibility_enforce_generation_stages is None
+            and authority_cfg is not None
+        ):
+            visibility_enforce_generation_stages = list(
+                getattr(authority_cfg, "enforce_generation_stages", None) or []
+            )
+        if (
+            visibility_enforce_governance_stages is None
+            and authority_cfg is not None
+        ):
+            visibility_enforce_governance_stages = list(
+                getattr(authority_cfg, "enforce_governance_stages", None) or []
+            )
+        if visibility_token_budget is None and ext_cfg is not None:
+            visibility_token_budget = getattr(ext_cfg, "visibility_token_budget", None)
         if blocked_run_prefixes is None and ext_cfg is not None:
             configured_prefixes = list(getattr(ext_cfg, "blocked_run_prefixes", None) or [])
             if configured_prefixes:
@@ -339,19 +416,348 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             raise ValueError("strategy_candidate_limit must be >= strategy_route_count")
         if self.l2_tactic_limit <= 0:
             raise ValueError("l2_tactic_limit must be positive")
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, memory_snapshot=memory_snapshot, **kwargs)
         if self.mode != "run_forest_stage_hybrid":
             raise ValueError("StageAwareHybridMemoryLayer requires mode=run_forest_stage_hybrid")
+        self.domain_scope_required = (
+            (self.graph.get("meta") or {}).get("domain_scope_required") is True
+        )
+        self.memory_snapshot = memory_snapshot
+        self._overlay_clause_ids: set[str] = set()
+        if self.memory_snapshot is not None:
+            self.memory_snapshot.assert_unchanged()
+            expected_graph = (
+                self.memory_snapshot.base_bundle.path
+                / "runforest"
+                / "graph.json"
+            ).resolve()
+            if self.graph_path.resolve() != expected_graph:
+                raise ValueError(
+                    "MemorySnapshot Base Bundle does not match the loaded RunForest graph"
+                )
+            self._load_session_overlay_clauses()
+        self.visibility_mode = str(visibility_mode or "shadow").lower()
+        self.visibility_authority_engine = visibility_authority_engine
+        self.visibility_active_protocol = self._coerce_protocol_ref(
+            visibility_active_protocol
+        )
+        self.visibility_policy_version = str(
+            visibility_policy_version or "authority_v1"
+        )
+        self.visibility_task_id = str(visibility_task_id or "")
+        self.visibility_bundle_version = str(
+            visibility_bundle_version
+            or (self.graph.get("meta") or {}).get("bundle_version")
+            or (self.graph.get("meta") or {}).get("bundle_id")
+            or (self.graph.get("meta") or {}).get("schema")
+            or "legacy-unversioned"
+        )
+        self.visibility_token_budget = max(
+            0, int(visibility_token_budget if visibility_token_budget is not None else 4096)
+        )
+        decision_lookup = None
+        if visibility_authority_engine is not None:
+            decision_lookup = getattr(visibility_authority_engine, "decisions", {}).get
+        self.visibility_gateway = visibility_gateway or SOPVisibilityGateway(
+            self.nodes,
+            mode=self.visibility_mode,
+            authority_engine=visibility_authority_engine,
+            decision_lookup=decision_lookup,
+            retrieval_profile=(
+                self.retrieval_control
+                if self.retrieval_control
+                in {
+                    "flat_relevance_memory",
+                    "global_validity_bit",
+                    "authority_only",
+                    "full_decision_admissibility",
+                }
+                else "full_decision_admissibility"
+            ),
+            enforce_operations=visibility_enforce_operations or [],
+            enforce_generation_stages=(
+                visibility_enforce_generation_stages or []
+            ),
+            enforce_governance_stages=(
+                visibility_enforce_governance_stages or []
+            ),
+        )
+        if visibility_gateway is not None:
+            self.visibility_mode = visibility_gateway.mode
         self._build_sop_reverse_index()
         if self.retrieval_control == "layered_strategy":
             self._validate_layered_taxonomy()
 
+    def _load_session_overlay_clauses(self) -> None:
+        """Materialize append-only overlay clauses for online Authority gating.
+
+        No overlay event is pre-authorized here. The visibility gateway sees
+        the clauses, but every non-Inspect use is still evaluated against the
+        live Authority Engine before ranking or prompt materialization.
+        """
+
+        by_sop: dict[str, list[dict[str, Any]]] = collections.defaultdict(list)
+        for event in self.memory_snapshot.session_overlay.events():
+            if event.event_type != "sop_clause":
+                continue
+            raw = event.payload.get("clause")
+            if not isinstance(raw, dict):
+                continue
+            clause = copy.deepcopy(raw)
+            clause_id = str(clause.get("clause_id") or "")
+            sop_id = str(clause.get("sop_id") or "")
+            if not clause_id or not sop_id:
+                raise ValueError("Session Overlay SOP clause lacks stable IDs")
+            if clause_id in self.nodes:
+                raise ValueError(f"Session Overlay clause collides with Base: {clause_id}")
+            clause.update(
+                {
+                    "id": clause_id,
+                    "type": "SOPClause",
+                    "origin": "session_overlay",
+                    "overlay_event_id": event.event_id,
+                }
+            )
+            self.nodes[clause_id] = clause
+            self._overlay_clause_ids.add(clause_id)
+            self._node_tokens[clause_id] = _tokenize(self._node_text(clause))
+            by_sop[sop_id].append(clause)
+        for sop_id, clauses in sorted(by_sop.items()):
+            existing = self.nodes.get(sop_id)
+            if existing is not None and existing.get("type") != "SOP":
+                raise ValueError(f"Session Overlay SOP collides with Base node: {sop_id}")
+            if existing is None:
+                existing = {
+                    "id": sop_id,
+                    "type": "SOP",
+                    "sop_id": sop_id,
+                    "title": "Session Overlay experience",
+                    "action": "",
+                    "applies_when": [],
+                    "prevents": [],
+                    "origin": "session_overlay",
+                    "clauses": [],
+                }
+                self.nodes[sop_id] = existing
+                self._sops.append(sop_id)
+            raw_clauses = list(existing.get("clauses") or [])
+            raw_clauses.extend(copy.deepcopy(clauses))
+            existing["clauses"] = raw_clauses
+            self._node_tokens[sop_id] = _tokenize(self._node_text(existing))
+        self._sops = sorted(set(self._sops))
+
+    @staticmethod
+    def _coerce_protocol_ref(value: ProtocolRef | str | None) -> ProtocolRef:
+        if isinstance(value, ProtocolRef):
+            return value
+        raw = str(value or "")
+        key, separator, digest = raw.partition("#")
+        protocol_id, at, version = key.partition("@")
+        if separator and at and protocol_id and version and digest:
+            return ProtocolRef(protocol_id, version, digest)
+        return ProtocolRef("unbound", "0", "")
+
+    @staticmethod
+    def _default_visibility_operation(stage: str) -> Operation:
+        return (
+            Operation.DEBUG_HYPOTHESIS
+            if STAGE_ALIASES.get(stage, stage) == "debug"
+            else Operation.GENERATE_CANDIDATE
+        )
+
+    def _visibility_request(
+        self,
+        *,
+        stage: str,
+        task_id: str,
+        task_desc: str,
+        operation: Operation | str | None = None,
+        active_protocol: ProtocolRef | str | None = None,
+        governance_stage: GovernanceStage | str = GovernanceStage.RETRIEVAL,
+        requesting_component: str = "agents.memory.stage_aware_hybrid_memory",
+    ) -> VisibilityRequest:
+        axes = resolve_stage_axes(
+            runtime_stage=stage,
+            governance_stage=governance_stage,
+        )
+        return VisibilityRequest(
+            operation=operation or self._default_visibility_operation(stage),
+            generation_stage=axes.generation_stage,
+            governance_stage=axes.governance_stage,
+            active_protocol=self._coerce_protocol_ref(active_protocol)
+            if active_protocol is not None
+            else self.visibility_active_protocol,
+            task_context=TaskContext(
+                task_id=str(task_id or self.visibility_task_id),
+                task_family=self._task_family_for_query(task_id, task_desc),
+            ),
+            memory_bundle_version=self.visibility_bundle_version,
+            token_budget=self.visibility_token_budget,
+            requesting_component=requesting_component,
+            authority_policy_version=self.visibility_policy_version,
+        )
+
+    def _prepare_visibility(
+        self,
+        *,
+        stage: str,
+        task_id: str,
+        task_desc: str,
+        request: VisibilityRequest | None = None,
+        operation: Operation | str | None = None,
+        active_protocol: ProtocolRef | str | None = None,
+    ) -> VisibleSOPPack:
+        request = request or self._visibility_request(
+            stage=stage,
+            task_id=task_id,
+            task_desc=task_desc,
+            operation=operation,
+            active_protocol=active_protocol,
+        )
+        pack = self.visibility_gateway.evaluate(
+            request,
+            candidate_sop_ids=self._sops,
+            candidate_clause_ids=self._snapshot_candidate_clause_ids(request),
+        )
+        self._trace_local.visibility_pack = pack
+        return pack
+
+    def _snapshot_candidate_clause_ids(
+        self, request: VisibilityRequest
+    ) -> set[str] | None:
+        if (
+            self.memory_snapshot is None
+            or not self.visibility_gateway.should_enforce(request)
+        ):
+            return None
+        base_clauses = self.memory_snapshot.base_clauses(
+            request.operation,
+            task_id=request.task_context.task_id,
+            task_family=request.task_context.task_family,
+            generation_stage=request.generation_stage.value,
+            governance_stage=request.governance_stage.value,
+        )
+        return {
+            str(clause["clause_id"])
+            for clause in base_clauses
+            if clause.get("clause_id")
+        } | set(self._overlay_clause_ids)
+
+    def _visibility_is_enforced(self) -> bool:
+        pack = getattr(self._trace_local, "visibility_pack", None)
+        if pack is None:
+            return self.visibility_mode == "enforce"
+        return bool(
+            pack.visibility_trace.get(
+                "request_enforced", self.visibility_mode == "enforce"
+            )
+        )
+
+    def _effective_visibility_sop_ids(self) -> set[str] | None:
+        if not self._visibility_is_enforced():
+            return None
+        pack = getattr(self._trace_local, "visibility_pack", None)
+        return set(pack.effective_sop_ids) if pack is not None else set()
+
+    def _visibility_projection(self, sop_id: str) -> dict[str, Any] | None:
+        pack = getattr(self._trace_local, "visibility_pack", None)
+        if pack is None:
+            return None
+        return pack.rendered_by_sop.get(sop_id)
+
+    def _visible_sop_text_parts(
+        self, sop_id: str, node: dict[str, Any]
+    ) -> dict[str, str]:
+        if not self._visibility_is_enforced():
+            return self._sop_text_parts(node)
+        projection = self._visibility_projection(sop_id)
+        text = str((projection or {}).get("retrieval_text") or "")
+        return {
+            "semantic": text,
+            "conditions": "",
+            "failures": "",
+            "evidence": "",
+        }
+
+    def _visible_sop_prompt(self, sop_id: str) -> str:
+        if not self._visibility_is_enforced():
+            node = self.nodes.get(sop_id, {})
+            return "\n".join(
+                value
+                for value in (
+                    str(node.get("title") or ""),
+                    str(node.get("action") or ""),
+                )
+                if value
+            )
+        projection = self._visibility_projection(sop_id)
+        return str((projection or {}).get("prompt_text") or "")
+
+    def _container_embedding_visibility_safe(
+        self,
+        sop_id: str,
+        projection: dict[str, Any] | None,
+    ) -> bool:
+        projection = projection or {}
+        node = self.nodes[sop_id]
+        declared_hash = str(
+            node.get("visibility_safe_container_embedding_hash") or ""
+        )
+        expected_hash = hashlib.sha256(
+            str(projection.get("retrieval_text") or "").encode("utf-8")
+        ).hexdigest()
+        return bool(
+            projection.get("clause_ids")
+            and node.get("visibility_safe_container_embedding") is True
+            and declared_hash
+            and hmac.compare_digest(declared_hash, expected_hash)
+        )
+
     def _build_sop_reverse_index(self) -> None:
-        self._transitions_by_sop: dict[str, list[str]] = collections.defaultdict(list)
-        self._sops_by_execution: dict[str, list[str]] = collections.defaultdict(list)
-        self._sop_links_by_execution: dict[str, dict[str, list[str]]] = collections.defaultdict(dict)
+        self._navigation_transitions_by_sop: dict[str, list[str]] = collections.defaultdict(list)
+        self._authorized_transitions_by_sop: dict[str, list[str]] = collections.defaultdict(list)
+        self._navigation_sops_by_execution: dict[str, list[str]] = collections.defaultdict(list)
+        self._authorized_sops_by_execution: dict[str, list[str]] = collections.defaultdict(list)
+        self._navigation_sop_links_by_execution: dict[str, dict[str, list[str]]] = collections.defaultdict(dict)
+        self._authorized_sop_links_by_execution: dict[str, dict[str, list[str]]] = collections.defaultdict(dict)
+        self._navigation_sops_by_transition: dict[str, list[str]] = collections.defaultdict(list)
+        self._authorized_sops_by_transition: dict[str, list[str]] = collections.defaultdict(list)
+        self._sop_edge_metadata: dict[tuple[str, str], dict[str, Any]] = {}
+        edge_outcomes: collections.Counter[str] = collections.Counter()
+
+        def register(
+            transition_id: str,
+            sop_id: str,
+            transitions_by_sop: dict[str, list[str]],
+            sops_by_execution: dict[str, list[str]],
+            links_by_execution: dict[str, dict[str, list[str]]],
+            sops_by_transition: dict[str, list[str]],
+        ) -> None:
+            if transition_id not in transitions_by_sop[sop_id]:
+                transitions_by_sop[sop_id].append(transition_id)
+            if sop_id not in sops_by_transition[transition_id]:
+                sops_by_transition[transition_id].append(sop_id)
+            transition = self.nodes[transition_id]
+            for execution_id in (
+                transition_id,
+                str(transition.get("parent_node_id") or ""),
+                str(transition.get("child_node_id") or ""),
+            ):
+                if not execution_id:
+                    continue
+                if sop_id not in sops_by_execution[execution_id]:
+                    sops_by_execution[execution_id].append(sop_id)
+                links = links_by_execution[execution_id].setdefault(sop_id, [])
+                if transition_id not in links:
+                    links.append(transition_id)
+
         for edge in self.graph.get("edges", []):
-            if str(edge.get("kind") or edge.get("type")) != "distills_to":
+            kind = str(edge.get("kind") or edge.get("type"))
+            if kind not in {
+                "distills_to",
+                "navigation_attached_to",
+                "authorized_distills_to",
+            }:
                 continue
             transition_id = str(edge.get("src", ""))
             sop_id = str(edge.get("dst", ""))
@@ -359,29 +765,110 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 continue
             if self.nodes.get(sop_id, {}).get("type") != "SOP":
                 continue
-            self._transitions_by_sop[sop_id].append(transition_id)
-            transition = self.nodes[transition_id]
-            for execution_id in (
+            self._sop_edge_metadata[(transition_id, sop_id)] = dict(edge)
+            outcome = str(edge.get("authority_outcome") or "legacy_missing")
+            edge_outcomes[outcome] += 1
+            register(
                 transition_id,
-                str(transition.get("parent_node_id") or ""),
-                str(transition.get("child_node_id") or ""),
-            ):
-                if execution_id and sop_id not in self._sops_by_execution[execution_id]:
-                    self._sops_by_execution[execution_id].append(sop_id)
-                if execution_id:
-                    links = self._sop_links_by_execution[execution_id].setdefault(sop_id, [])
-                    if transition_id not in links:
-                        links.append(transition_id)
-        for values in self._transitions_by_sop.values():
-            values.sort()
-        for values in self._sops_by_execution.values():
-            values.sort()
-        for mapping in self._sop_links_by_execution.values():
+                sop_id,
+                self._navigation_transitions_by_sop,
+                self._navigation_sops_by_execution,
+                self._navigation_sop_links_by_execution,
+                self._navigation_sops_by_transition,
+            )
+            # A legacy ``distills_to`` edge is navigation-only even when it
+            # carries an old allow-like label. Adoption requires the explicit
+            # edge kind and a current allow outcome; either signal alone is
+            # insufficient.
+            authorized = kind == "authorized_distills_to" and outcome in {
+                "allow",
+                "allow_with_warning",
+            }
+            if authorized:
+                register(
+                    transition_id,
+                    sop_id,
+                    self._authorized_transitions_by_sop,
+                    self._authorized_sops_by_execution,
+                    self._authorized_sop_links_by_execution,
+                    self._authorized_sops_by_transition,
+                )
+        for mapping in (
+            self._navigation_transitions_by_sop,
+            self._authorized_transitions_by_sop,
+            self._navigation_sops_by_execution,
+            self._authorized_sops_by_execution,
+            self._navigation_sops_by_transition,
+            self._authorized_sops_by_transition,
+        ):
             for values in mapping.values():
                 values.sort()
+        for outer in (
+            self._navigation_sop_links_by_execution,
+            self._authorized_sop_links_by_execution,
+        ):
+            for mapping in outer.values():
+                for values in mapping.values():
+                    values.sort()
+        # Compatibility is explicitly navigation-only. Enforced adoption paths
+        # use the authorized maps through the helpers below.
+        self._transitions_by_sop = self._navigation_transitions_by_sop
+        self._sops_by_execution = self._navigation_sops_by_execution
+        self._sop_links_by_execution = self._navigation_sop_links_by_execution
+        self._sop_edge_migration = {
+            "navigation_edge_count": sum(
+                len(values) for values in self._navigation_transitions_by_sop.values()
+            ),
+            "authorized_edge_count": sum(
+                len(values) for values in self._authorized_transitions_by_sop.values()
+            ),
+            "authority_outcomes": dict(sorted(edge_outcomes.items())),
+        }
         meta_prefixes = _as_list((self.graph.get("meta") or {}).get("blocked_run_prefixes"))
         override = self._blocked_run_prefixes_override
         self._blocked_run_prefixes = tuple(str(value) for value in (override if override is not None else meta_prefixes))
+
+    def _visibility_navigation_allowed(self) -> bool:
+        pack = getattr(self._trace_local, "visibility_pack", None)
+        if not self._visibility_is_enforced() or pack is None:
+            return True
+        operation = str((pack.visibility_trace.get("request") or {}).get("operation") or "")
+        return operation in {
+            Operation.INSPECT.value,
+            Operation.DEBUG_HYPOTHESIS.value,
+        }
+
+    def _active_transitions_for_sop(self, sop_id: str) -> list[str]:
+        mapping = (
+            self._navigation_transitions_by_sop
+            if self._visibility_navigation_allowed()
+            else self._authorized_transitions_by_sop
+        )
+        return mapping.get(sop_id, [])
+
+    def _active_sops_for_execution(self, execution_id: str) -> list[str]:
+        mapping = (
+            self._navigation_sops_by_execution
+            if self._visibility_navigation_allowed()
+            else self._authorized_sops_by_execution
+        )
+        return mapping.get(execution_id, [])
+
+    def _active_links_for_execution(self, execution_id: str) -> dict[str, list[str]]:
+        mapping = (
+            self._navigation_sop_links_by_execution
+            if self._visibility_navigation_allowed()
+            else self._authorized_sop_links_by_execution
+        )
+        return mapping.get(execution_id, {})
+
+    def _active_sops_for_transition(self, transition_id: str) -> list[str]:
+        mapping = (
+            self._navigation_sops_by_transition
+            if self._visibility_navigation_allowed()
+            else self._authorized_sops_by_transition
+        )
+        return mapping.get(transition_id, [])
 
     def _validate_layered_taxonomy(self) -> None:
         meta = self.graph.get("meta") or {}
@@ -476,6 +963,22 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         )
         if "siglip" in text or dino_family or "vision transformer" in text:
             return "vision_transformer_finetune"
+        # Audio cold-start templates may use a model repository identifier
+        # (for example OpenMuQ/MuQ-large-msd-iter) without an explicit
+        # architecture token. Keep audio as its own exclusion family instead
+        # of failing the layered retrieval preflight.
+        if any(
+            token in text
+            for token in (
+                "muq",
+                "audio",
+                "librosa",
+                "wav2vec",
+                "whisper",
+                "music information retrieval",
+            )
+        ):
+            return "audio_finetune"
         if any(token in text for token in ("lightgbm", "xgboost")):
             return "gradient_boosted_trees"
         raise ValueError(f"Cannot map model description to method_family: {value!r}")
@@ -543,11 +1046,16 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             metric_name, metric_direction = "task_metric", "unknown"
         if "excluded_method_families" in context:
             excluded = [str(value) for value in context.get("excluded_method_families") or []]
+            baseline = str(context.get("baseline_model") or "").strip()
+            baseline_family = ""
         else:
-            baseline = str(context.get("baseline_model") or "")
-            if not baseline:
-                raise ValueError("Layered strategy retrieval requires the cold-start primary model")
-            excluded = [self._model_family_from_text(baseline)]
+            baseline = str(context.get("baseline_model") or "").strip()
+            baseline_family = (
+                self._model_family_from_text(baseline)
+                if baseline and baseline.lower() != "none model"
+                else ""
+            )
+            excluded = [baseline_family] if baseline_family else []
             replay_family = self._replay_family(canonical_task)
             if replay_family:
                 excluded.append(replay_family)
@@ -571,6 +1079,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             "train_size_band": size_band,
             "metric_name": metric_name,
             "metric_direction": metric_direction,
+            "coldstart_primary_model_available": bool(baseline_family),
+            "coldstart_primary_model_family": baseline_family or None,
             "resource_budget": {
                 "gpu_count": gpu_count,
                 "cpu_count": cpu_count,
@@ -621,7 +1131,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
 
     def _strategy_supports(self, sop_id: str, task_id: str) -> list[dict[str, Any]]:
         rows = []
-        for transition_id in self._transitions_by_sop.get(sop_id, []):
+        for transition_id in self._active_transitions_for_sop(sop_id):
             transition = self.nodes[transition_id]
             if canonical_task_id(transition.get("task")) != canonical_task_id(task_id):
                 continue
@@ -666,7 +1176,10 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         excluded = set(task_profile["excluded_method_families"])
         gpu_count = int(task_profile["resource_budget"].get("gpu_count") or 0)
         rows: list[dict[str, Any]] = []
+        visibility_ids = self._effective_visibility_sop_ids()
         for sop_id in self._sops:
+            if visibility_ids is not None and sop_id not in visibility_ids:
+                continue
             node = self.nodes[sop_id]
             if node.get("abstraction_level") != "L1_strategy" or node.get("sop_kind") != "model_strategy":
                 continue
@@ -682,15 +1195,32 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             supports = self._strategy_supports(sop_id, str(task_profile["task_id"]))
             if not supports:
                 continue
-            semantic = self._token_overlap(query_tokens, self._node_tokens.get(sop_id, set()))
+            visible_text = self._visible_sop_prompt(sop_id)
+            semantic = self._token_overlap(
+                query_tokens,
+                _tokenize(visible_text)
+                if self._visibility_is_enforced()
+                else self._node_tokens.get(sop_id, set()),
+            )
             evidence = min(1.0, math.log1p(len(supports)) / math.log(4.0))
             best_improvement = max(float(item.get("metric_improvement") or 0.0) for item in supports)
             rows.append(
                 {
                     "sop_id": sop_id,
                     "raw_sop_id": node.get("sop_id"),
-                    "title": node.get("title"),
-                    "action": node.get("action"),
+                    "title": (
+                        node.get("title")
+                        if not self._visibility_is_enforced()
+                        else "Authorized strategy clauses"
+                    ),
+                    "action": (
+                        node.get("action")
+                        if not self._visibility_is_enforced()
+                        else visible_text
+                    ),
+                    "visible_clause_ids": list(
+                        (self._visibility_projection(sop_id) or {}).get("clause_ids") or []
+                    ),
                     "method_family": family,
                     "task_families": sorted(task_families),
                     "compute_profile": node.get("compute_profile"),
@@ -837,7 +1367,18 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         task_desc: str,
         query_text: str,
         context: dict[str, Any] | None,
+        visibility_request: VisibilityRequest | None = None,
+        authority_operation: Operation | str | None = None,
+        active_protocol: ProtocolRef | str | None = None,
     ) -> dict[str, Any]:
+        self._prepare_visibility(
+            stage="draft",
+            task_id=task_id,
+            task_desc=task_desc,
+            request=visibility_request,
+            operation=authority_operation,
+            active_protocol=active_protocol,
+        )
         task_profile = self._build_task_profile(task_id=task_id, task_desc=task_desc, context=context)
         candidates = self._rank_strategy_routes(query_text=query_text, task_profile=task_profile)
         routes = candidates[: self.strategy_route_count]
@@ -852,6 +1393,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 task_id=task_id,
                 task_desc=task_desc,
                 query_text=query_text,
+                visibility_request=visibility_request,
+                authority_operation=authority_operation,
+                active_protocol=active_protocol,
             )
             fallback["task_profile"] = task_profile
             fallback["layered_strategy_fallback"] = {
@@ -944,6 +1488,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         task_desc: str,
         strategy_context: dict[str, Any],
     ) -> tuple[str, list[str], dict[str, Any]]:
+        self._prepare_visibility(
+            stage="model_design",
+            task_id=task_id,
+            task_desc=task_desc,
+        )
         selected = strategy_context.get("selected_strategy") or strategy_context
         task_profile = strategy_context.get("task_profile") or {}
         family = str(selected.get("method_family") or "")
@@ -955,7 +1504,10 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         query_tokens = _tokenize(query_text)
         task_family = str(task_profile.get("task_family") or TASK_PROFILES.get(task_id, ("", "general"))[1])
         rows = []
+        visibility_ids = self._effective_visibility_sop_ids()
         for sop_id in self._sops:
+            if visibility_ids is not None and sop_id not in visibility_ids:
+                continue
             node = self.nodes[sop_id]
             if node.get("abstraction_level") != "L2_tactic":
                 continue
@@ -972,13 +1524,30 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             supports = self._strategy_supports(sop_id, task_id)
             if not supports:
                 continue
-            semantic = self._token_overlap(query_tokens, self._node_tokens.get(sop_id, set()))
+            visible_text = self._visible_sop_prompt(sop_id)
+            semantic = self._token_overlap(
+                query_tokens,
+                _tokenize(visible_text)
+                if self._visibility_is_enforced()
+                else self._node_tokens.get(sop_id, set()),
+            )
             score = 0.55 * semantic + 0.25 * min(1.0, len(supports) / 3.0) + 0.20 * (1.0 if node_family == family else 0.5)
             rows.append(
                 {
                     "sop_id": sop_id,
-                    "title": node.get("title"),
-                    "action": node.get("action"),
+                    "title": (
+                        node.get("title")
+                        if not self._visibility_is_enforced()
+                        else "Authorized tactic clauses"
+                    ),
+                    "action": (
+                        node.get("action")
+                        if not self._visibility_is_enforced()
+                        else visible_text
+                    ),
+                    "visible_clause_ids": list(
+                        (self._visibility_projection(sop_id) or {}).get("clause_ids") or []
+                    ),
                     "sop_kind": node.get("sop_kind"),
                     "method_family": node_family,
                     "score": score,
@@ -1121,6 +1690,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         return (1.0 if compatible else 0.0), compatible
 
     def _sop_task_fit(self, node: dict[str, Any], task_family: str) -> float:
+        if self.domain_scope_required:
+            return 1.0 if self._sop_task_compatible(node, task_family) else 0.0
         declared = {str(value) for value in (node.get("task_families") or [])}
         if task_family == "general":
             return 0.50
@@ -1138,6 +1709,33 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         return 0.35 * best
 
     def _sop_task_compatible(self, node: dict[str, Any], task_family: str) -> bool:
+        if self.domain_scope_required:
+            scopes = {
+                normalize_transfer_scope(value)
+                for value in (
+                    node.get("transfer_scopes")
+                    or [node.get("transfer_scope")]
+                )
+            }
+            scopes.discard("")
+            if DOMAIN_GENERAL in scopes:
+                return True
+            if scopes != {SAME_DOMAIN}:
+                return False
+            source_domains = {
+                canonical_domain(value)
+                for value in (
+                    node.get("source_domains")
+                    or node.get("source_task_families")
+                    or []
+                )
+            }
+            source_domains.discard("")
+            return transfer_is_compatible(
+                source_domains,
+                canonical_domain(task_family),
+                SAME_DOMAIN,
+            )
         declared = {str(value) for value in (node.get("task_families") or [])}
         if task_family == "general" or not declared or "general" in declared or task_family in declared:
             return True
@@ -1150,7 +1748,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
     def _clean_sop_support(self, sop_id: str) -> tuple[list[str], list[dict[str, str]]]:
         clean: list[str] = []
         rejected: list[dict[str, str]] = []
-        for transition_id in self._transitions_by_sop.get(sop_id, []):
+        for transition_id in self._active_transitions_for_sop(sop_id):
             eligible, reason = self._positive_transition(transition_id)
             if eligible:
                 clean.append(transition_id)
@@ -1175,13 +1773,22 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             raise ValueError(f"Unsupported SOP ranking stage: {stage}")
         query_tokens = _tokenize(query_text)
         task_family = self._task_family_for_query(task_id, task_desc)
+        visibility_ids = self._effective_visibility_sop_ids()
         candidate_ids = [
             sop_id
             for sop_id in self._sops
-            if allowed_sop_ids is None or sop_id in allowed_sop_ids
+            if (allowed_sop_ids is None or sop_id in allowed_sop_ids)
+            and (visibility_ids is None or sop_id in visibility_ids)
         ]
         coords = self._coords()
-        anchor = self._query_anchor(query_text, candidate_ids)
+        geometry_candidate_ids = candidate_ids
+        if self._visibility_is_enforced():
+            geometry_candidate_ids = []
+            for sop_id in candidate_ids:
+                projection = self._visibility_projection(sop_id) or {}
+                if self._container_embedding_visibility_safe(sop_id, projection):
+                    geometry_candidate_ids.append(sop_id)
+        anchor = self._query_anchor(query_text, geometry_candidate_ids)
         field_weights = STAGE_SOP_FIELD_WEIGHTS[stage]
         rows = []
         for sop_id in candidate_ids:
@@ -1191,7 +1798,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             node_family = str(node.get("method_family") or "general")
             if method_family and not self._family_compatible(method_family, node_family):
                 continue
-            parts = self._sop_text_parts(node)
+            parts = self._visible_sop_text_parts(sop_id, node)
             scores = {
                 key: min(1.0, self._token_overlap(query_tokens, _tokenize(text)))
                 for key, text in parts.items()
@@ -1201,7 +1808,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             task_fit = self._sop_task_fit(node, task_family)
             task_compatible = self._sop_task_compatible(node, task_family)
             geometry = 0.0
-            if anchor is not None and sop_id in coords:
+            projection = self._visibility_projection(sop_id)
+            geometry_safe = (
+                not self._visibility_is_enforced()
+                or self._container_embedding_visibility_safe(sop_id, projection)
+            )
+            if geometry_safe and anchor is not None and sop_id in coords:
                 geometry = 1.0 / (1.0 + self._distance(anchor, coords[sop_id]))
             clean, rejected = self._clean_sop_support(sop_id)
             clean_evidence = min(1.0, len(clean) / 3.0)
@@ -1235,6 +1847,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     "clean_supporting_transition_count": len(clean),
                     "rejected_support": rejected[:8],
                     "rejected_support_count": len(rejected),
+                    "visible_clause_ids": list((projection or {}).get("clause_ids") or []),
+                    "visible_text": self._visible_sop_prompt(sop_id),
+                    "geometry_visibility_safe": geometry_safe,
                 }
             )
         rows.sort(key=lambda item: (-item["score"], item["id"]))
@@ -1463,7 +2078,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             return 0.90
         attached_families = {
             str(value)
-            for sop_id in (transition.get("attached_sop_ids") or [])
+            for sop_id in self._active_sops_for_transition(str(transition.get("id") or ""))
             for value in (self.nodes.get(str(sop_id), {}).get("task_families") or [])
             if str(value) != "general"
         }
@@ -1509,9 +2124,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if item.get("sop_id")
         }
         rows = []
-        for raw_sop_id in transition.get("attached_sop_ids") or []:
-            sop_id = str(raw_sop_id)
+        transition_id = str(transition.get("id") or "")
+        for sop_id in self._active_sops_for_transition(transition_id):
             if allowed_sop_ids is not None and sop_id not in allowed_sop_ids:
+                continue
+            visibility_ids = self._effective_visibility_sop_ids()
+            if visibility_ids is not None and sop_id not in visibility_ids:
                 continue
             sop = self.nodes.get(sop_id, {})
             if sop.get("type") != "SOP":
@@ -1519,7 +2137,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             _stage_score, stage_compatible = self._sop_stage_fit(sop, stage)
             if not stage_compatible or not self._sop_task_compatible(sop, task_family):
                 continue
-            quality = quality_by_sop.get(sop_id, {})
+            edge = self._sop_edge_metadata.get((transition_id, sop_id), {})
+            quality = quality_by_sop.get(sop_id, {}) or edge
             quality_kind = str(quality.get("quality") or "")
             quality_score = float(quality.get("score") or 0.0)
             causally_supported = quality_kind == "evidence_turn_match" or quality_score >= CAUSAL_ATTACHMENT_MIN_SCORE
@@ -1772,11 +2391,14 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
 
     def _tree_sop_projection(self, tree_ids: list[str], allowed_sop_ids: set[str] | None = None) -> list[str]:
         projected: list[str] = []
+        visibility_ids = self._effective_visibility_sop_ids()
         for execution_id in tree_ids:
-            for sop_id in self._sops_by_execution.get(execution_id, []):
+            for sop_id in self._active_sops_for_execution(execution_id):
                 if allowed_sop_ids is not None and sop_id not in allowed_sop_ids:
                     continue
-                linked_transitions = self._sop_links_by_execution.get(execution_id, {}).get(sop_id, [])
+                if visibility_ids is not None and sop_id not in visibility_ids:
+                    continue
+                linked_transitions = self._active_links_for_execution(execution_id).get(sop_id, [])
                 linked_clean = any(self._positive_transition(transition_id)[0] for transition_id in linked_transitions)
                 if linked_clean and sop_id not in projected:
                     projected.append(sop_id)
@@ -1791,11 +2413,29 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         query_text: str,
         limit: int,
         allowed_sop_ids: set[str] | None = None,
+        visibility_request: VisibilityRequest | None = None,
+        authority_operation: Operation | str | None = None,
+        active_protocol: ProtocolRef | str | None = None,
     ) -> dict[str, Any]:
         """Return the production channel logic projected onto the SOP decision space."""
         stage = STAGE_ALIASES.get(stage, stage)
         if stage not in STAGE_QUOTAS:
             raise ValueError(f"Unsupported stage-hybrid stage: {stage}")
+        visibility_pack = self._prepare_visibility(
+            stage=stage,
+            task_id=task_id,
+            task_desc=task_desc,
+            request=visibility_request,
+            operation=authority_operation,
+            active_protocol=active_protocol,
+        )
+        visibility_ids = self._effective_visibility_sop_ids()
+        if visibility_ids is not None:
+            allowed_sop_ids = (
+                visibility_ids
+                if allowed_sop_ids is None
+                else set(allowed_sop_ids) & visibility_ids
+            )
         sop_rows = self._rank_sops(
             query_text,
             stage,
@@ -1893,7 +2533,13 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 "input_count": len(fused),
                 "output_count": len(final),
                 "all_outputs_clean": all(item["id"] in compatible_ids for item in final),
+                "all_outputs_visible": all(
+                    visibility_ids is None or item["id"] in visibility_ids
+                    for item in final
+                ),
             },
+            "visible_clause_ids": visibility_pack.effective_clause_ids,
+            "visibility_trace": visibility_pack.visibility_trace,
         }
 
     def _risk_warnings(self, candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1910,6 +2556,135 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 )
         return warnings[:20]
 
+    def _formal_flat_relevance_pack(
+        self,
+        *,
+        stage: str,
+        query_text: str,
+        visibility_pack: VisibleSOPPack,
+    ) -> dict[str, Any]:
+        """Build the three preregistered flat-ranking baseline packs.
+
+        Eligibility is decided by the configured visibility profile. Ranking
+        then uses only lexical relevance over the already materialized clause
+        text: no Stage, task-fit, geometry, score, Tree, or clean-evidence term
+        can change candidate order.
+        """
+
+        quotas = self.stage_quotas[stage]
+        rows: list[dict[str, Any]] = []
+        for sop_id in visibility_pack.effective_sop_ids:
+            projection = visibility_pack.rendered_by_sop.get(sop_id) or {}
+            retrieval_text = str(projection.get("retrieval_text") or "")
+            score = self._bounded_token_similarity(query_text, retrieval_text)
+            rows.append(
+                {
+                    "id": sop_id,
+                    "score": score,
+                    "score_components": {"flat_text_relevance": score},
+                    "hybrid_score_components": {},
+                    "ranking_backend": "formal_flat_text_relevance_v1",
+                    "abstraction_level": self.nodes.get(sop_id, {}).get(
+                        "abstraction_level"
+                    ),
+                    "sop_kind": self.nodes.get(sop_id, {}).get("sop_kind"),
+                    "method_family": self.nodes.get(sop_id, {}).get(
+                        "method_family"
+                    ),
+                    "decision_stages": [],
+                    "task_families": [],
+                    "stage_compatible": True,
+                    "task_compatible": True,
+                    "task_family": "marginalized",
+                    "clean_supporting_transition_ids": [],
+                    "clean_supporting_transition_count": 0,
+                    "rejected_support": [],
+                    "rejected_support_count": 0,
+                    "visible_clause_ids": list(
+                        projection.get("clause_ids") or []
+                    ),
+                    "visible_text": str(projection.get("prompt_text") or ""),
+                    "geometry_visibility_safe": False,
+                }
+            )
+        rows.sort(key=lambda item: (-float(item["score"]), str(item["id"])))
+        candidates = rows[: quotas["sop_candidates"]]
+        trace = [
+            {
+                "retrieval_channel": "formal_flat_sop",
+                "candidate_class": "sop_only_candidates",
+                "gateway_sop_id": None,
+                "supporting_transition_ids": [],
+                "selection_reason": (
+                    "flat text relevance only; score="
+                    f"{float(item['score']):.8f}"
+                ),
+                "selection_state": "injected",
+                "candidate_id": item["id"],
+            }
+            for item in candidates
+        ]
+        intentional_bypass = visibility_pack.visibility_trace.get(
+            "intentional_authority_bypass_clause_ids", []
+        )
+        return {
+            "schema": PACK_SCHEMA,
+            "algorithm_version": "formal_flat_relevance_v1",
+            "stage_route": {
+                "stage": stage,
+                "route": "flat_sop_relevance",
+                "control": self.retrieval_control,
+                "quotas": quotas,
+                "rrf": {"sop": 1.0, "tree": 0.0},
+                "configured_rrf": self.rrf_weights[stage],
+                "tree_confidence": None,
+                "fallback_reason": None,
+            },
+            "direct_sop_candidates": candidates,
+            "selected_sop_gateways": [],
+            "gateway_transitions": {},
+            "tree_candidates": [],
+            "tree_candidate_details": [],
+            "sop_transition_matches": [],
+            "sop_only_candidates": candidates,
+            "tree_only_candidates": [],
+            "evidence_refs": [],
+            "failure_patterns": [],
+            "risk_warnings": [],
+            "visibility_warnings": [],
+            "navigation_trace": trace,
+            "fused_execution_candidates": [],
+            "execution_candidate_provenance": {},
+            "execution_safety_gate": {
+                "predicate": "not_applicable_flat_clause_baseline",
+                "rejected": [],
+                "all_outputs_clean": True,
+            },
+            "gateway_selection": {
+                "mode": "not_applicable_flat_clause_baseline",
+                "llm_tool_calls": 0,
+                "goal": "flat clause retrieval",
+                "clean_eligible_count": 0,
+                "eligible_count": len(candidates),
+                "stage_task_gate_rejected_count": 0,
+            },
+            "visible_clause_ids": visibility_pack.effective_clause_ids,
+            "visibility_trace": visibility_pack.visibility_trace,
+            "visibility_safety_gate": {
+                "mode": self.visibility_mode,
+                "pre_ranking": True,
+                "intentional_baseline_authority_bypass_count": len(
+                    intentional_bypass
+                ),
+                "unauthorized_prompt_exposure": len(intentional_bypass),
+                "unauthorized_activation": 0,
+                "all_sop_candidates_visible": all(
+                    item["id"] in set(visibility_pack.effective_sop_ids)
+                    for item in candidates
+                ),
+            },
+        }
+
     def _hybrid_pack(
         self,
         *,
@@ -1918,11 +2693,29 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         task_desc: str,
         query_text: str,
         strategy_context: dict[str, Any] | None = None,
+        visibility_request: VisibilityRequest | None = None,
+        authority_operation: Operation | str | None = None,
+        active_protocol: ProtocolRef | str | None = None,
     ) -> dict[str, Any]:
         stage = STAGE_ALIASES.get(stage, stage)
         if stage not in STAGE_QUOTAS:
             raise ValueError(f"Unsupported stage-hybrid stage: {stage}")
+        visibility_pack = self._prepare_visibility(
+            stage=stage,
+            task_id=task_id,
+            task_desc=task_desc,
+            request=visibility_request,
+            operation=authority_operation,
+            active_protocol=active_protocol,
+        )
+        visibility_ids = self._effective_visibility_sop_ids()
         quotas = self.stage_quotas[stage]
+        if self.retrieval_control in FORMAL_FLAT_RELEVANCE_CONTROLS:
+            return self._formal_flat_relevance_pack(
+                stage=stage,
+                query_text=query_text,
+                visibility_pack=visibility_pack,
+            )
         allowed_levels = None
         method_family = None
         if self.retrieval_control == "layered_strategy":
@@ -1937,6 +2730,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             method_family=method_family,
             task_id=task_id,
             task_desc=task_desc,
+            allowed_sop_ids=visibility_ids,
         )
         selected, selection_meta = self._select_gateways(
             ranked_sops, stage=stage, query_text=query_text, limit=quotas["sop_gateways"]
@@ -1960,6 +2754,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 task_id=task_id,
                 task_desc=task_desc,
                 limit=quotas["tree_candidates"],
+                allowed_sop_ids=visibility_ids,
             )
             weights, tree_confidence, tree_fallback_reason = self._debug_dynamic_weights(tree_rows)
             if tree_fallback_reason and self.retrieval_control in {"stage_hybrid", "layered_strategy"}:
@@ -2106,6 +2901,17 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 }
             )
         sop_only = [item for item in sop_candidates if item["id"] not in selected_sop_ids]
+        visibility_warnings = []
+        if self._visibility_is_enforced():
+            visibility_warnings = [
+                {
+                    "clause_id": clause.clause_id,
+                    "sop_id": clause.sop_id,
+                    "text": clause.text,
+                    "disposition": "navigation_warning_only",
+                }
+                for clause in visibility_pack.warning_clauses
+            ]
         return {
             "schema": PACK_SCHEMA,
             "algorithm_version": "stage_hybrid_v2",
@@ -2130,6 +2936,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             "evidence_refs": evidence_refs,
             "failure_patterns": failure_patterns,
             "risk_warnings": self._risk_warnings(sop_candidates),
+            "visibility_warnings": visibility_warnings,
             "navigation_trace": trace,
             "fused_execution_candidates": fused,
             "execution_candidate_provenance": execution_provenance,
@@ -2142,7 +2949,44 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 ),
             },
             "gateway_selection": selection_meta,
+            "visible_clause_ids": visibility_pack.effective_clause_ids,
+            "visibility_trace": visibility_pack.visibility_trace,
+            "visibility_safety_gate": {
+                "mode": self.visibility_mode,
+                "pre_ranking": True,
+                "unauthorized_prompt_exposure": 0,
+                "unauthorized_activation": 0,
+                "all_sop_candidates_visible": all(
+                    visibility_ids is None or item["id"] in visibility_ids
+                    for item in sop_candidates
+                ),
+            },
         }
+
+    @staticmethod
+    def _mark_empty_visibility_abstention(pack: dict[str, Any]) -> None:
+        trace = pack.get("visibility_trace")
+        if not isinstance(trace, dict) or trace.get("empty_pack") is not True:
+            return
+        consumable_keys = (
+            "direct_sop_candidates",
+            "selected_sop_gateways",
+            "fused_execution_candidates",
+            "sop_only_candidates",
+            "tree_only_candidates",
+            "evidence_refs",
+            "failure_patterns",
+        )
+        if any(pack.get(key) for key in consumable_keys):
+            return
+        disposition = {
+            "status": "abstain",
+            "reason": "empty_visible_pack",
+            "legacy_fallback_used": False,
+            "warning_preserved": True,
+        }
+        pack["visibility_abstention"] = disposition
+        trace["consumer_disposition"] = copy.deepcopy(disposition)
 
     def _format_hybrid_pack(self, pack: dict[str, Any]) -> str:
         lines = [
@@ -2151,6 +2995,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             "Never present an SOP-only reference as a proven successful recipe.",
             f"Stage route: {json.dumps(pack['stage_route'], ensure_ascii=False)}",
         ]
+        if (pack.get("visibility_abstention") or {}).get("status") == "abstain":
+            lines += [
+                "",
+                "### Memory Abstention",
+                "- No authorized memory clauses are available; no legacy fallback was used.",
+            ]
         if pack["risk_warnings"]:
             lines += ["", "### Risk Warnings (do not adopt as positive recipes)"]
             for warning in pack["risk_warnings"][:6]:
@@ -2158,13 +3008,27 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     f"- SOP {warning['sop_id']} / transition {warning['transition_id']}: "
                     f"{warning['reason']} [{warning['disposition']}]"
                 )
+        if pack.get("visibility_warnings"):
+            lines += ["", "### Authorized Diagnostic Warnings (navigation only)"]
+            for warning in pack["visibility_warnings"][:8]:
+                lines.append(
+                    f"- {warning['clause_id']}: {warning['text']} "
+                    f"[{warning['disposition']}]"
+                )
         if pack["selected_sop_gateways"]:
             lines += ["", "### Selected SOP Gateways (clean supporting execution required)"]
             for gateway in pack["selected_sop_gateways"]:
-                node = self.nodes[gateway["id"]]
-                lines.append(f"- {gateway['id']}: {node.get('title', '')}")
-                lines.append(f"  Action: {node.get('action', '')}")
-                lines.append(f"  When: {'; '.join(_as_list(node.get('applies_when')))}")
+                if self._visibility_is_enforced():
+                    lines.append(
+                        f"- {gateway['id']} clauses="
+                        f"{', '.join(gateway.get('visible_clause_ids') or [])}"
+                    )
+                    lines.append(f"  Authorized text: {gateway.get('visible_text', '')}")
+                else:
+                    node = self.nodes[gateway["id"]]
+                    lines.append(f"- {gateway['id']}: {node.get('title', '')}")
+                    lines.append(f"  Action: {node.get('action', '')}")
+                    lines.append(f"  When: {'; '.join(_as_list(node.get('applies_when')))}")
                 lines.append(
                     f"  Supporting transitions: {', '.join(pack['gateway_transitions'].get(gateway['id'], []))}"
                 )
@@ -2191,8 +3055,15 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if pack["sop_only_candidates"]:
             lines += ["", "### SOP-Only Method References (unverified here)"]
             for candidate in pack["sop_only_candidates"][:4]:
-                node = self.nodes[candidate["id"]]
-                lines.append(f"- {candidate['id']}: {node.get('title', '')}; action={node.get('action', '')}")
+                if self._visibility_is_enforced():
+                    lines.append(
+                        f"- {candidate['id']} clauses="
+                        f"{', '.join(candidate.get('visible_clause_ids') or [])}: "
+                        f"{candidate.get('visible_text', '')}"
+                    )
+                else:
+                    node = self.nodes[candidate["id"]]
+                    lines.append(f"- {candidate['id']}: {node.get('title', '')}; action={node.get('action', '')}")
         if pack["evidence_refs"]:
             lines += ["", "### Verified Evidence Refs"]
             for evidence_id in pack["evidence_refs"][:6]:
@@ -2208,6 +3079,23 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         """Return a defensive copy of this thread's latest retrieval pack."""
         return copy.deepcopy(getattr(self._trace_local, "pack", {}))
 
+    def current_visibility_pack(self) -> VisibleSOPPack | None:
+        """Return the host-only clause visibility result for this thread."""
+        pack = getattr(self._trace_local, "visibility_pack", None)
+        return copy.deepcopy(pack) if pack is not None else None
+
+    @staticmethod
+    def _prompt_visible_refs(text: str, refs: list[str]) -> list[str]:
+        """Return exactly the side-channel IDs that survived prompt truncation."""
+
+        return list(
+            dict.fromkeys(
+                str(ref_id)
+                for ref_id in refs
+                if ref_id and str(ref_id) in text
+            )
+        )
+
     def retrieve_for_node(
         self,
         *,
@@ -2218,7 +3106,31 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         draft_role: str | None = None,
         context: dict[str, Any] | None = None,
         strategy_context: dict[str, Any] | None = None,
+        visibility_request: VisibilityRequest | None = None,
+        authority_operation: Operation | str | None = None,
+        active_protocol: ProtocolRef | str | None = None,
     ) -> tuple[str, list[str]]:
+        if self.retrieval_control == "no_memory":
+            self._trace_local.visibility_pack = None
+            self._trace_local.pack = {
+                "schema": "stage_hybrid_no_memory_pack_v1",
+                "stage_route": {
+                    "stage": STAGE_ALIASES.get(stage, stage),
+                    "control": "no_memory",
+                },
+                "target_task_id": str(task_id),
+                "prompt_text": "",
+                "prompt_visible_refs": [],
+                "visible_clause_ids": [],
+                "fused_execution_candidates": [],
+                "selected_sop_gateways": [],
+                "sop_only_candidates": [],
+                "evidence_refs": [],
+                "failure_patterns": [],
+                "unauthorized_prompt_exposure": 0,
+                "memory_snapshot_bound_but_not_exposed": True,
+            }
+            return "", []
         if not self.stage_enabled(stage):
             return "", []
         query_text = "\n".join([task_desc or "", *(query_parts or [])])
@@ -2231,7 +3143,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     task_id=task_id,
                     task_desc=task_desc,
                     query_text=query_text,
+                    visibility_request=visibility_request,
+                    authority_operation=authority_operation,
+                    active_protocol=active_protocol,
                 )
+                self._mark_empty_visibility_abstention(pack)
                 pack["memory_transfer"] = {
                     "activated": True,
                     "reason": "no_exact_task_replay_target",
@@ -2241,11 +3157,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 self._trace_local.pack = pack
                 refs = [item["id"] for item in pack["fused_execution_candidates"][: self.top_k]]
                 refs += [item["id"] for item in pack["selected_sop_gateways"]]
+                refs += [item["id"] for item in pack["sop_only_candidates"]]
                 refs += pack["evidence_refs"] + pack["failure_patterns"]
                 text = self._format_hybrid_pack(pack)
                 if self.max_chars > 0 and len(text) > self.max_chars:
                     text = text[: self.max_chars].rstrip() + "\n... (memory-transfer pack truncated)"
-                return text, list(dict.fromkeys(refs))
+                return text, self._prompt_visible_refs(text, refs)
             if draft_role != "novel_exploration":
                 raise ValueError("Layered L1 Draft retrieval is restricted to novel_exploration")
             pack = self._layered_draft_pack(
@@ -2253,7 +3170,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 task_desc=task_desc,
                 query_text=query_text,
                 context=context,
+                visibility_request=visibility_request,
+                authority_operation=authority_operation,
+                active_protocol=active_protocol,
             )
+            self._mark_empty_visibility_abstention(pack)
             self._last_agentic_pack = pack
             self._trace_local.pack = pack
             selected = pack.get("selected_strategy") or {}
@@ -2264,24 +3185,30 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             else:
                 refs = [item["id"] for item in pack["fused_execution_candidates"][: self.top_k]]
                 refs += [item["id"] for item in pack["selected_sop_gateways"]]
+                refs += [item["id"] for item in pack["sop_only_candidates"]]
                 refs += pack["evidence_refs"] + pack["failure_patterns"]
                 text = self._format_hybrid_pack(pack)
             if self.max_chars > 0 and len(text) > self.max_chars:
                 text = text[: self.max_chars].rstrip() + "\n... (layered strategy memory truncated)"
-            return text, list(dict.fromkeys(refs))
+            return text, self._prompt_visible_refs(text, refs)
         pack = self._hybrid_pack(
             stage=stage,
             task_id=task_id,
             task_desc=task_desc,
             query_text=query_text,
             strategy_context=strategy_context,
+            visibility_request=visibility_request,
+            authority_operation=authority_operation,
+            active_protocol=active_protocol,
         )
+        self._mark_empty_visibility_abstention(pack)
         self._last_agentic_pack = pack
         self._trace_local.pack = pack
         refs = [item["id"] for item in pack["fused_execution_candidates"][: self.top_k]]
         refs += [item["id"] for item in pack["selected_sop_gateways"]]
+        refs += [item["id"] for item in pack["sop_only_candidates"]]
         refs += pack["evidence_refs"] + pack["failure_patterns"]
         text = self._format_hybrid_pack(pack)
         if self.max_chars > 0 and len(text) > self.max_chars:
             text = text[: self.max_chars].rstrip() + "\n... (stage-hybrid memory truncated)"
-        return text, list(dict.fromkeys(refs))
+        return text, self._prompt_visible_refs(text, refs)

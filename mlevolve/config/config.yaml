@@ -82,6 +82,21 @@ agent:
     extra_role: novel_exploration
     replay_targets_path: ""
 
+  # Optional host-enforced feasibility boundary for paired online experiments.
+  # It is inert by default and must be identical across paired conditions.
+  candidate_execution_contract:
+    enabled: False
+    contract_id: ""
+    max_execution_seconds: 0
+    max_epochs: 0
+    max_cv_folds: 0
+    max_trainable_models: 0
+    allowed_import_roots: []
+    allow_remote_assets: True
+    allow_unverified_local_assets: True
+    allow_dataset_wide_per_sample_precompute: True
+    allow_source_score_inheritance: False
+
   # Protocol-biased solutions need a staged evaluation-protocol migration,
   # not repeated free-form debugging.  Each stage keeps the frozen model
   # design and is blocked from GPU execution until the final gate.
@@ -193,10 +208,28 @@ evaluation_authority:
   active_protocol_id: mlevolve-default
   active_protocol_version: "1"
   policy_version: authority_v1
+  collector_version: "1"
+  rollout_id: authority-shadow-v1
+  # Pin these to CURRENT before any online canary that uses a Base Bundle.
+  # Empty means that this run is explicitly bundle-free (bundle_id=none).
+  expected_bundle_id: ""
+  expected_bundle_manifest_sha256: ""
+  require_bound_bundle: false
+  # These scopes are inert in shadow mode.  The canary profile below fills
+  # them so enforce never silently expands to every operation/stage.
+  enforce_operations: []
+  enforce_generation_stages: []
+  enforce_governance_stages: []
+  canary_minimum_decisions: 20
+  canary_max_unauthorized_authority_allows: 0
+  canary_max_false_denial_rate: 0.05
   fail_closed_high_risk: true
   allow_invalid_debug: true
   emit_snapshot: true
   enable_causal_actuation: false
+  # Host-injected call tracing binds executed split/fit/prediction/evaluator
+  # events to the immutable code snapshot. It is active only in shadow/enforce.
+  runtime_protocol_observer_enabled: true
 
 coldstart:
   use_coldstart: True
@@ -217,6 +250,11 @@ adoption_tracking:
 # ============================================================
 external_skill_memory:
   enable: False
+  # When bundle_root is set, runtime resolves CURRENT.json into a hash-verified
+  # immutable Base Bundle and writes only to the run-scoped Session Overlay.
+  bundle_root: ""
+  current_pointer_path: "CURRENT.json"
+  session_overlay_path: ""
   graph_path: "../paper-skills/distillation/graph_build/graph_optimized_skillgraph.json"
   index_path: ""
   text_model_path: ""
@@ -251,6 +289,7 @@ external_skill_memory:
   include_evolution: True
   include_debug: True
   include_fusion: True
+  visibility_token_budget: 4096
 
 # ============================================================
 #  Persisted run identity (baseline vs memory-system experiments)

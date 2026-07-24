@@ -1,0 +1,77 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_continuation_staging_failure_v1",
+  "status": "failed_before_staging_build",
+  "failed_at_utc": "2026-07-23T03:30:30Z",
+  "phase": "control_targeted_regression",
+  "stager_pod": {
+    "name": "decision-admissibility-wp8-tier2-formal-stager-cpu-r13",
+    "namespace": "ecepxie",
+    "uid": "4428239c-9631-440f-a1ba-a6a7c2921707",
+    "execution_kind": "cpu_devpod",
+    "created_at_utc": "2026-07-23T03:18:48Z",
+    "container_image_id": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc"
+  },
+  "parent_continuation": {
+    "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r7.json",
+    "file_sha256": "d19db9e780f6f40f5f03e54f3512d8b86bd29b0b18e5ba6d0a4f18628a8c4ec3",
+    "amendment_hash": "0262c545a0cf98183024354dde69df1d1d1bd3f6cbd40b97cb3e99cd6088f29d"
+  },
+  "frozen_failed_roots": {
+    "/workspace/decision-admissibility-wp8-tier2-formal-source-r11": {
+      "file_count": 161,
+      "tree_sha256": "4935b7d98e0cb2bf65b1663774a28ac51e553c1a5510dcba0372dec6eb0d3c96",
+      "writable_file_count_after_freeze": 0
+    },
+    "/workspace/decision-admissibility-wp8-tier2-formal-control-r11": {
+      "file_count": 383,
+      "tree_sha256": "cd15ff66f8bb2fe034a9c6467e5c1e46f20d122db2126b37a71ed1202bdcd521",
+      "writable_file_count_after_freeze": 0
+    }
+  },
+  "failed_source_snapshot": {
+    "manifest_file_sha256": "937dc5f68dc43dd21d21f5d8f99887e0c7092795e36db22ddfe17b1d233f039f",
+    "source_sha256": "bff8979136c1784b06483d951cf48f1ba50d1936c85877e5fadea5b2786f35f4",
+    "overlay_path_count": 80
+  },
+  "failure": {
+    "targeted_regression_passed": 27,
+    "targeted_regression_failed": 4,
+    "failed_tests": [
+      "tests/test_tier2_formal_preterminal_recovery_amendment.py::test_r6_preterminal_recovery_amendment_verifies",
+      "tests/authority/test_tier2_formal_launcher_static.py::test_formal_scripts_and_embedded_python_are_syntactically_valid",
+      "tests/authority/test_tier2_formal_launcher_static.py::test_formal_stager_never_stages_user_assets_or_launches_gpu",
+      "tests/authority/test_tier2_formal_launcher_static.py::test_formal_retry_uses_fresh_roots_and_binds_superseded_attempts"
+    ],
+    "root_cause": "The continuation control archive omitted four historical formal-control dependencies required by frozen verification and launcher regression tests.",
+    "missing_control_paths": [
+      "deploy/devpod-decision-admissibility-wp8-tier2-formal-recovered-evaluator-cpu-r1.yaml",
+      "deploy/devpod-decision-admissibility-wp8-tier2-formal-recovery-cpu-r1.yaml",
+      "deploy/run_decision_admissibility_wp8_tier2_formal_staging_pipeline.sh",
+      "deploy/stage_decision_admissibility_wp8_tier2_formal.sh"
+    ],
+    "local_r6_verification_after_failure": {
+      "verified": true,
+      "passed_check_count": 105,
+      "check_count": 105,
+      "meaning": "The r6 amendment and source files remain valid locally; the in-Pod failure was caused by omitted control-package files."
+    }
+  },
+  "downstream_absence": {
+    "/workspace/decision-admissibility-wp8-tier2-formal-staging-r13": false,
+    "/workspace/decision-admissibility-wp8-tier2-formal-runs-r11": false,
+    "/workspace/decision-admissibility-wp8-tier2-formal-staging-r13-stop-gate-r1": false,
+    "/workspace/decision-admissibility-wp8-tier2-formal-staging-r13-pipeline-r1": false
+  },
+  "integrity": {
+    "formal_training_authorized": false,
+    "training_or_evaluator_pod_created": false,
+    "remaining_block_started": false,
+    "terminal_metric_observed": false,
+    "terminal_score_values_inspected": false,
+    "completed_block_rerun": false,
+    "failed_roots_may_be_reused": false,
+    "fresh_roots_required": true,
+    "protected_pod_touched": false
+  },
+  "diagnostic_hash": "afdac86b0ab848f3d9d1fb0d907efb8b1fc4eaf6da4d4493a2695d45b4429235"
+}

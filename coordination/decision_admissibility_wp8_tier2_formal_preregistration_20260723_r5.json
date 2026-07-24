@@ -1,0 +1,119 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_postfailure_amendment_v1",
+  "preregistration_id": "wp8-tier2-formal-3protocol-6system-r5-postfailure",
+  "status": "postfailure_design_frozen_pending_new_staging_stop_gate",
+  "frozen_at": "2026-07-23T02:30:00+08:00",
+  "parent_preregistration": {
+    "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r4.json",
+    "file_sha256": "4594682b3134ec563a17829b9fbd0ac48026357cb695654373e343a20aad01cb",
+    "preregistration_id": "wp8-tier2-formal-3protocol-6system-r4"
+  },
+  "failed_formal_attempt": {
+    "diagnostic_path": "coordination/decision_admissibility_wp8_tier2_formal_r8_authority_failure_diagnostic_20260723.json",
+    "diagnostic_file_sha256": "f9061dcacfa94058c3fbe11947f3dcfc0e6235b7949e3d4dbce8b751b5192481",
+    "diagnostic_hash": "250060ab975edb42ea4c2e0d68808162d2beb240726459701ae96dbdc5335c6d",
+    "block_id": "wp8-tier2-formal-aerial-seed-104729-r1",
+    "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r8/blocks/wp8-tier2-formal-aerial-seed-104729-r1",
+    "output_tree_sha256": "84cb48c4c2c9d359e49125ce40e5d9808bd42e6552478b44e6ec51d15eb6aac4",
+    "failure_classification": "nonretryable_infrastructure_authority_denial_after_terminal_metric",
+    "terminal_metric_observed": true,
+    "score_values_inspected_for_this_amendment": false,
+    "normal_result_fact_published": false,
+    "reuse_for_formal_execution": false,
+    "included_in_effect_analysis": false
+  },
+  "reason_for_revision": "The first r8 formal evaluator produced sealed terminal artifacts for one frozen condition and then failed while authorizing the independent Result Fact because terminal trusted Receipts omitted the exact ProtocolSpec payload fields. The stored score values were not inspected. The original failure policy classifies authority denial as nonretryable infrastructure and forbids a silent post-terminal retry. This amendment therefore preserves r8 as failed evidence, freezes the semantic correction before any new formal execution, and requires entirely new immutable roots and a new Stop Gate.",
+  "scientific_objective": {
+    "primary_hypothesis": "Under identical model, data, candidate contract, Agent budget, condition order controls and host-owned terminal evaluation, full_decision_admissibility yields better protocol-legal target-task performance than no_memory on unseen same-domain transfer tasks, without target-task history, answer or score reuse.",
+    "primary_contrast": "full_decision_admissibility minus no_memory, paired within task and agent_seed",
+    "status_relative_to_r1": "unchanged_restatement_of_the_frozen_r1_primary_online_contrast",
+    "secondary_mechanism_contrasts": [
+      "full_decision_admissibility minus flat_relevance_memory",
+      "full_decision_admissibility minus global_validity_bit",
+      "full_decision_admissibility minus authority_only"
+    ],
+    "utility_orientation": "macro_f1 is used directly; RMSE deltas are sign-flipped so positive paired utility deltas favor Full",
+    "cross_task_rule": "Never average raw macro-F1 and RMSE; retain native task metrics and use the already frozen paired win/tie/loss and within-task standardized summaries",
+    "attribution_rule": "The randomized condition contrast is the intention-to-treat system effect. A claim that an injected historical experience caused a gain additionally requires exposure, static actuation and runtime actuation; causal attribution still requires the declared memory-on/off counterfactual.",
+    "zero_adoption_rule": "A memory condition with zero verified adoption remains a valid assigned-condition observation but cannot support an experience-adoption or causal mechanism claim. It must not be relabelled or excluded post hoc."
+  },
+  "scope": {
+    "inherit_all_r1_r4_design_fields_except_explicit_postfailure_overrides": true,
+    "systems_changed": false,
+    "tasks_changed": false,
+    "agent_seeds_changed": false,
+    "condition_orders_changed": false,
+    "search_budgets_changed": false,
+    "candidate_contracts_changed": false,
+    "holdouts_changed": false,
+    "memory_claim_permissions_changed": false,
+    "oracle_changed": false,
+    "statistics_changed": false,
+    "primary_contrast_changed": false,
+    "target_history_exclusion_changed": false,
+    "source_score_inheritance_changed": false,
+    "implementation_source_changed": true,
+    "formal_root_revision_changed": true,
+    "terminal_metric_observed_before_revision": true,
+    "terminal_score_value_used_to_choose_correction": false
+  },
+  "implementation_correction": {
+    "failure_obligations": [
+      "payload:evaluator",
+      "payload:fit_scope",
+      "payload:split_lineage"
+    ],
+    "runtime_chain": "The formal training finalizer verifies and hash-binds the selected node's persisted host runtime protocol observation, source code, attestation, event scopes, input scopes, output scopes and callable origins into TRAINING_MANIFEST.json before training Pod deletion.",
+    "terminal_chain": "The isolated evaluator independently verifies the immutable train/evaluator manifests and their formal split, terminal fit-isolation and metric Receipts.",
+    "join_rule": "PROMOTE_RESULT receives protocol payload fields only after both chains verify and their hashes are joined into each terminal protocol Receipt.",
+    "fit_scope_non_equivalence": "formal fit_scope=train_view_only proves terminal holdout isolation; it is retained as terminal_fit_scope and is never relabelled as fold_train_only, fold_train_groups_only or past_fold_train_only. The internal fit_scope field comes only from the active ProtocolSpec and the separately bound runtime chain.",
+    "strategy_mapping": {
+      "stratified_random": "stratified_random",
+      "grouped_multilabel_stratified": "grouped",
+      "chronological_deterministic_sha256_sample": "chronological"
+    },
+    "fail_closed_rule": "Missing, forged, mismatched or semantically relabelled runtime or terminal evidence denies Result Fact writeback.",
+    "evaluator_failure_rule": "Every nonzero evaluator exit is followed by host deletion, a verified Kubernetes NotFound probe, a hash-bound evaluator-failure attestation, partial terminal artifact hashes and output-tree sealing.",
+    "required_regressions": [
+      "aerial enforced ProtocolSpec payload closure",
+      "birds enforced ProtocolSpec payload closure",
+      "taxi enforced ProtocolSpec payload closure",
+      "missing runtime chain fails closed",
+      "terminal train_view_only relabelling fails closed",
+      "five-condition enforced terminal Result Fact closure",
+      "post-metric evaluator failure deletion and sealing"
+    ]
+  },
+  "overrides": {
+    "formal_execution_revision": "r2",
+    "source_root": "/workspace/decision-admissibility-wp8-tier2-formal-source-r9",
+    "control_root": "/workspace/decision-admissibility-wp8-tier2-formal-control-r9",
+    "staging_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r11",
+    "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r9",
+    "gate_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r11-stop-gate-r1",
+    "pipeline_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r11-pipeline-r1",
+    "controller_pod": "da-wp8-f-controller-cpu-r2",
+    "block_id_suffix": "r2",
+    "formal_training_authorized": false,
+    "authorization_condition": "A new independent staging Stop Gate must bind r1-r5, the r8 failure diagnostic, corrected source snapshot, immutable data, child Bundles and CURRENT pointers, container digest, all r2 block Pod specs and initially empty r9 output roots."
+  },
+  "analysis_integrity": {
+    "r8_terminal_values_are_excluded": true,
+    "r8_is_not_completed_post_hoc": true,
+    "r8_is_not_called_pre_metric": true,
+    "new_results_must_use_only_r9_roots": true,
+    "no_condition_seed_or_task_may_be_excluded_after_terminal_metric": true,
+    "effect_claim_authorized_before_results": false,
+    "formal_training_authorized_before_new_gate": false
+  },
+  "interpretation": {
+    "r8_status": "failed_formal_evidence_preserved",
+    "r9_status": "not_started",
+    "primary_performance_claim_status": "unauthorized_pending_complete_frozen_results_and_statistics",
+    "mechanism_claim_status": "requires_verified_exposure_and_actuation",
+    "causal_experience_claim_status": "requires_counterfactual_actuation",
+    "effect_claim_authorized": false,
+    "formal_training_authorized": false
+  },
+  "amendment_hash": "03604324593555799c12a46824e85371eb0af3806c6df67bfdd17d12bf076d19"
+}

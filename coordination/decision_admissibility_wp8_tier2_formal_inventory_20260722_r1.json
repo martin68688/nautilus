@@ -1,0 +1,153 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_inventory_v1",
+  "status": "inventory_complete_formal_design_not_frozen",
+  "observed_at": "2026-07-22T08:22:52Z",
+  "base_commit": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
+  "branch": "codex/dual-time-procedural-memory",
+  "worktree_policy": {
+    "dirty_worktree_preserved": true,
+    "staged_or_committed": false,
+    "user_assets_overwritten": false
+  },
+  "inventory_pod": {
+    "name": "decision-admissibility-wp8-tier2-formal-inventory-cpu-r1",
+    "namespace": "ecepxie",
+    "workspace_mount_read_only": true,
+    "gpu_requested": false,
+    "deleted_after_inventory": true,
+    "deletion_verified": "NotFound"
+  },
+  "wp4_bundles": {
+    "seed_heldout": {
+      "path": "/workspace/decision-admissibility-wp4-20260719-r1/corrected-r2/bundle-seed-heldout",
+      "bundle_id": "mlevolve-be034ec-nonspooky-seed-heldout-v1",
+      "bundle_version": "v1",
+      "manifest_sha256": "8d612b60a83d1469dbb05caad228be791280ebcd68027d0141ccdae1840ae7d8",
+      "manifest_file_sha256": "d6f2422de8b136050eecf14341627a82669ceb84b747658a874dd988ddab45ac",
+      "active_split_id": "seed-heldout-be034ec-nonspooky-v1",
+      "active_split_manifest_sha256": "a3ae0b360e12671b9fdad7ea896625e9e9461d9b2ad608dc47fcddae625cff92",
+      "active_split_file_sha256": "c86df75408a8dca98b6f949aedd7a05e31f8c0a7a42a1ad9c965cb48d2cceeaf"
+    },
+    "task_heldout": {
+      "path": "/workspace/decision-admissibility-wp4-20260719-r1/corrected-r2/bundle-task-heldout",
+      "bundle_id": "mlevolve-be034ec-nonspooky-task-heldout-v1",
+      "bundle_version": "v1",
+      "manifest_sha256": "8a8abd5146be6ba81a9b334140f88632953f7cae2874ef82e18cd713f9ba31c8",
+      "manifest_file_sha256": "749154d5200883d20d10b79b2bae1fa66285436309629ff23b36dcf88798efe2",
+      "active_split_id": "task-heldout-be034ec-nonspooky-v1",
+      "active_split_manifest_sha256": "f04a4557d2745e5e2de0973ffb3d7d966d198807d4a988757e90f54a55f4663f",
+      "active_split_file_sha256": "238fddbca9aba515a47e75d071b790999264b7e3cbe496de0cc7a5f2a9ac600d",
+      "heldout_task_ids": [
+        "aerial-cactus-identification",
+        "denoising-dirty-documents",
+        "tabular-playground-series-may-2022",
+        "text-normalization-challenge-russian-language"
+      ]
+    },
+    "formal_readiness": {
+      "raw_bundle_clause_count": {
+        "seed_heldout": 1058,
+        "task_heldout": 1260
+      },
+      "source_domain_fields_present": false,
+      "trusted_receipt_count": 0,
+      "evidence_path_count": 0,
+      "direct_enforce_use_allowed": false,
+      "required_remediation": "Build new immutable domain-bound child Bundles from the frozen WP4 inputs. Publish only clean executed method Claims as provisional or clean-replay methods; never grant historical Score authority."
+    }
+  },
+  "source_data": {
+    "aerial_cactus": {
+      "task_id": "aerial-cactus-identification",
+      "source_zip": "/workspace/nautilus/mlevolve/data/aerial-cactus-identification/aerial-cactus-identification.zip",
+      "source_zip_sha256": "b41166e9d3c282f7cb52a5c705bf6c35bf439f1eba99fc47a93d5e1ecc3330c4",
+      "existing_train_manifest_sha256": "a7968c2bd3ee254f6e70d6b360bc9362aafc4449b5985078d508ecb3b8de64ea",
+      "existing_evaluator_manifest_sha256": "dac23ecfeb625e7a2cd650a710012f0028f83cf93a873d227356622fc4c1cf55",
+      "existing_metric": "binary_roc_auc",
+      "formal_protocol_metric": "macro_f1",
+      "existing_holdout_protocol_aligned": false
+    },
+    "mlsp_birds": {
+      "task_id": "mlsp-2013-birds",
+      "source_root": "/workspace/nautilus/mlevolve/data/mlsp-2013-bird/mlsp_contest_dataset",
+      "source_zip_sha256": "83c05aab4b21a2ec0e98856a32793c7b8a60c4a799d55cb7e44117966cfa2902",
+      "record_count": 645,
+      "public_labeled_fold0_count": 322,
+      "hidden_fold1_count": 323,
+      "derived_recording_session_group_count": 154,
+      "group_rule": "remove the terminal _0010/_0020/... segment suffix from each WAV stem",
+      "cvfolds_sha256": "162c08574b0928c49826983d9d79f629f2243abb8fffc08d2e9dd34b9dc550bb",
+      "record_filename_map_sha256": "508bc2f577ad274539bcf00c107af8bade30c3b977d1e202a530e58ae0ec4cf5",
+      "public_label_file_sha256": "2865c7ca6efa4b7ff8490955e53f0d38ed3637571140fdfe202d13114988aeeb",
+      "species_list_sha256": "66636ff9c3c463a676d357aaad5cab026f353d8a81a7ed695f4a993bf681064c",
+      "formal_holdout_source": "fold0 only; fold1 hidden labels remain excluded"
+    },
+    "nyc_taxi": {
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "source_zip_sha256": "b708d8b9bb88902dbebfcce01adf76d29b72fc6530a710ac1ce69cb7942e8863",
+      "labels_path": "/workspace/nautilus/mlevolve/data/new-york-city-taxi-fare-prediction/prepared/public/labels.csv",
+      "labels_size_bytes": 5662345732,
+      "labels_sha256": "20497ff0e594e99e2a7f3b35c41e5aba6137e3ce7e43b327ee3553c961912321",
+      "time_key": "pickup_datetime",
+      "target": "fare_amount",
+      "formal_holdout_required": "deterministic sampled past-training/future-terminal split with max(train_time) < min(holdout_time)"
+    }
+  },
+  "formal_task_candidates": [
+    {
+      "task_id": "aerial-cactus-identification",
+      "memory_split": "task-heldout",
+      "domain": "image",
+      "protocol_ref": "random-classification@1",
+      "metric": "macro_f1",
+      "holdout_action": "build a new deterministic stratified holdout from labeled training images"
+    },
+    {
+      "task_id": "mlsp-2013-birds",
+      "memory_split": "seed-heldout",
+      "domain": "audio",
+      "protocol_ref": "grouped-classification@1",
+      "metric": "macro_f1",
+      "holdout_action": "build a group-disjoint multilabel holdout from public fold0 only"
+    },
+    {
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "memory_split": "seed-heldout",
+      "domain": "tabular",
+      "protocol_ref": "chronological-regression@1",
+      "metric": "rmse",
+      "holdout_action": "build a physically isolated deterministic chronological holdout"
+    }
+  ],
+  "candidate_provisional_methods": [
+    {
+      "task_id": "mlsp-2013-birds",
+      "clause_id": "clause::06c4a3d0455368ac50513172",
+      "source_run_id": "20260716_070743_mlsp-2013-birds",
+      "source_node_id": "91ffa7572b3d4774bc33d0c000e418e4",
+      "source_execution_clean": true,
+      "source_metric_inheritance_allowed": false
+    },
+    {
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "clause_id": "clause::641451816c260f793c6cc4b8",
+      "source_run_id": "20260716_173558_new-york-city-taxi-fare-prediction",
+      "source_node_id": "896f942ce32946658c08a46c7591acac",
+      "source_execution_clean": true,
+      "source_metric_inheritance_allowed": false
+    }
+  ],
+  "loader_constraints": {
+    "current_pointer_must_be_hash_valid": true,
+    "bundle_path_must_resolve_beneath_bundle_root": true,
+    "base_bundle_is_hash_verified": true,
+    "session_overlay_must_be_outside_immutable_base": true,
+    "safe_formal_design": "Use a separately hash-bound CURRENT pointer per memory split and mount only that selected immutable Bundle into each training Pod."
+  },
+  "claims_not_authorized_by_inventory": [
+    "The six-system formal Tier-2 matrix has run.",
+    "Full Decision Admissibility improves target-task metric.",
+    "The raw WP4 Bundles are directly enforce-ready.",
+    "The three formal task contracts are frozen."
+  ]
+}

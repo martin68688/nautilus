@@ -1,0 +1,64 @@
+{
+  "schema": "decision_admissibility_documentation_verification_v2",
+  "status": "passed",
+  "verified": true,
+  "verified_at_utc": "2026-07-24T10:26:08Z",
+  "root": "coordination/decision_admissibility_documentation_20260724_r2",
+  "canonicalization": "python_json_sort_keys_ensure_ascii_false_compact_excluding_verification_hash_v1",
+  "manifest_hash": "153d04aa27c304db5a0c8476090194ae442ae3b1a1ee97360cb7ad1e833250cf",
+  "manifest_file_sha256": "7f7106c14c2b04aa21171b8d0a318e781bd1b21a09f3dae6b1fad5efe0a593ee",
+  "checks": {
+    "manifest_schema_and_status": true,
+    "manifest_payload_hash_python_canonical": true,
+    "root_entry_set_exact": true,
+    "root_file_hashes": true,
+    "external_deliverable_hashes": true,
+    "plan_hash": true,
+    "evidence_anchor_hashes": true,
+    "complete_marker": true,
+    "root_mode_0555": true,
+    "root_files_mode_0444": true,
+    "pptx_zip_integrity": true,
+    "presentation_slide_count_9": true,
+    "presentation_image_relationships_resolve": true,
+    "presentation_chinese_images_nonblank_and_unique": true,
+    "presentation_cjk_alt_text_count_117": true,
+    "presentation_per_slide_cjk_counts_match": true,
+    "presentation_libreoffice_render_pages_9": true,
+    "presentation_visual_inspection_all_pages": true,
+    "presentation_r2_r3_render_byte_identical": true,
+    "paper_page_count_21": true,
+    "scientific_claim_boundary_preserved": true,
+    "earlier_assets_not_overwritten": true,
+    "invalid_r1_preserved_and_superseded": true
+  },
+  "presentation": {
+    "path": "outputs/nautilus_decision_admissibility_wp8_final_bilingual_20260724_r3.pptx",
+    "sha256": "40995a0cf75a7ed9d3e983e390a56734360a55c05eb5ec7f94e66f69c5b18b25",
+    "slides": 9,
+    "image_objects": 117,
+    "cjk_alt_text_objects": 117,
+    "per_slide_cjk_alt_text_objects": [9, 12, 16, 13, 11, 15, 17, 10, 14],
+    "rendered_page_size_points": [960.009, 540]
+  },
+  "paper": {
+    "source_sha256": "303d92d460062caf6524e32d724c43fff38d6a4513eeccf7ef0da8fdb2c17e9f",
+    "pdf_sha256": "b4c222c7094a67be2fb7abd64067e5244e0370c97628751cbb858aad3c7cf423",
+    "pages": 21
+  },
+  "claim_authority": {
+    "wp0_wp8_engineering_completion": "authorized",
+    "full_superiority": "rejected",
+    "conditional_utility": "diagnostic_only",
+    "experience_causality": "pending_without_L4"
+  },
+  "superseded_r1": {
+    "root": "coordination/decision_admissibility_documentation_20260724_r1",
+    "preserved": true,
+    "admissible_as_final_closeout": false,
+    "recomputed_manifest_hash": "e6877d3c20054bda6ca2723fb8c27d302e68d6e541386dbee846e67da2b0e817",
+    "recomputed_verification_hash": "583e25cd7e3c894c812c04f248294f44c1b35d886002cb4ea26f6243ff7c45ef"
+  },
+  "errors": [],
+  "verification_hash": "d4c76ed6d3701291d343c7093d95ac0097c46453503ceb9abea32b8d7978f011"
+}

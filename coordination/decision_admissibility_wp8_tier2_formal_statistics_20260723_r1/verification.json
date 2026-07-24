@@ -1,0 +1,18 @@
+{
+  "analyzer_source_sha256": "595df494ce667390744e88e3bac14cfc79d4cb54f360d56c161343b5277256de",
+  "assigned_online_outcomes": 45,
+  "assigned_oracle_dispositions": 9,
+  "effect_claim_authorized": false,
+  "errors": [],
+  "failed_online_conditions": 23,
+  "imputed_scores": 0,
+  "post_assignment_exclusions": 0,
+  "schema": "decision_admissibility_wp8_tier2_formal_statistics_verification_v1",
+  "scored_selected_results": 22,
+  "statistics_manifest_hash": "5abb4b245161a45025ab04950a81beab70f7e64aae4f000d20b1221c3d1774b7",
+  "statistics_report_hash": "5480e2f5c39ae8d8bde1e5d279877959c62874ca9c28e3ee1a2bf4da587369c8",
+  "status": "passed",
+  "verification_hash": "81078aeb542cd160c4dda87fb308a56baeee189d85bfc7cc0307633293f6f360",
+  "verified": true,
+  "verifier_source_sha256": "5417596b095b3cf2d39e99769855baef29f9f2ae2ce9d999cd146c93a89e4105"
+}

@@ -1,0 +1,526 @@
+{
+  "analysis_policy_binding": {
+    "analysis_policy_hash": "26d4fe7e7645fe8f1911e757df2e15a9cf85966158e0d567e6d7e0dd3705670d",
+    "file_sha256": "7302945a8b8853df7fa60e733a7619ef08c44c36237b25d8e47de37faace03fe",
+    "path": "/work/control/analysis_policy.json"
+  },
+  "analysis_population": {
+    "assigned_online_outcomes": 45,
+    "assigned_oracle_dispositions": 9,
+    "failed_online_conditions": 23,
+    "imputed_scores": 0,
+    "post_assignment_exclusions": 0,
+    "scored_selected_results": 22
+  },
+  "analyzer_source_sha256": "595df494ce667390744e88e3bac14cfc79d4cb54f360d56c161343b5277256de",
+  "completion_by_system": {
+    "authority_only": {
+      "assigned": 9,
+      "completed": 4,
+      "rate": 0.4444444444444444,
+      "wilson_confidence_interval_95": [
+        0.18877852109766458,
+        0.7333487065045069
+      ]
+    },
+    "flat_relevance_memory": {
+      "assigned": 9,
+      "completed": 4,
+      "rate": 0.4444444444444444,
+      "wilson_confidence_interval_95": [
+        0.18877852109766458,
+        0.7333487065045069
+      ]
+    },
+    "full_decision_admissibility": {
+      "assigned": 9,
+      "completed": 4,
+      "rate": 0.4444444444444444,
+      "wilson_confidence_interval_95": [
+        0.18877852109766458,
+        0.7333487065045069
+      ]
+    },
+    "global_validity_bit": {
+      "assigned": 9,
+      "completed": 4,
+      "rate": 0.4444444444444444,
+      "wilson_confidence_interval_95": [
+        0.18877852109766458,
+        0.7333487065045069
+      ]
+    },
+    "no_memory": {
+      "assigned": 9,
+      "completed": 6,
+      "rate": 0.6666666666666666,
+      "wilson_confidence_interval_95": [
+        0.35420213558039626,
+        0.8794161816130891
+      ]
+    }
+  },
+  "contrasts": {
+    "full_minus_authority_only": {
+      "completion": {
+        "both_completed": 4,
+        "exact_discordant_one_sided_p": 1.0,
+        "left_minus_right_mean": 0.0,
+        "left_only_completed": 0,
+        "neither_completed": 5,
+        "right_only_completed": 0
+      },
+      "continuous": {
+        "assigned_pairs": 9,
+        "availability": "4/9",
+        "exact_one_sided_sign_flip_raw_p": 0.0625,
+        "holm_adjusted_p": 0.25,
+        "holm_input_for_not_estimable_is_one": false,
+        "missing_block_ids": [
+          "wp8-tier2-formal-birds-seed-104729-r3",
+          "wp8-tier2-formal-birds-seed-130363-r5",
+          "wp8-tier2-formal-taxi-seed-104729-r5",
+          "wp8-tier2-formal-taxi-seed-130363-r5",
+          "wp8-tier2-formal-taxi-seed-155921-r5"
+        ],
+        "mixed_effects_sensitivity": {
+          "reason": "fewer_than_two_pairs_in_a_contributing_task",
+          "status": "not_estimable"
+        },
+        "n_scored_pairs": 4,
+        "per_task": {
+          "aerial-cactus-identification": {
+            "assigned_pairs": 3,
+            "direction": "maximize",
+            "mean_native_delta": 0.00851044188109129,
+            "mean_standardized_delta": 0.00851044188109129,
+            "missing_block_ids": [],
+            "n_scored_pairs": 3,
+            "native_metric": "macro_f1",
+            "paired_native_deltas": [
+              0.006842091000890949,
+              0.0057207886942347574,
+              0.012968445948148166
+            ],
+            "paired_standardized_deltas": [
+              0.006842091000890949,
+              0.0057207886942347574,
+              0.012968445948148166
+            ],
+            "task_id": "aerial-cactus-identification"
+          },
+          "mlsp-2013-birds": {
+            "assigned_pairs": 3,
+            "direction": "maximize",
+            "mean_native_delta": 0.031085650588542665,
+            "mean_standardized_delta": 0.031085650588542665,
+            "missing_block_ids": [
+              "wp8-tier2-formal-birds-seed-104729-r3",
+              "wp8-tier2-formal-birds-seed-130363-r5"
+            ],
+            "n_scored_pairs": 1,
+            "native_metric": "macro_f1",
+            "paired_native_deltas": [
+              0.031085650588542665
+            ],
+            "paired_standardized_deltas": [
+              0.031085650588542665
+            ],
+            "task_id": "mlsp-2013-birds"
+          },
+          "new-york-city-taxi-fare-prediction": {
+            "assigned_pairs": 3,
+            "direction": "minimize",
+            "mean_native_delta": null,
+            "mean_standardized_delta": null,
+            "missing_block_ids": [
+              "wp8-tier2-formal-taxi-seed-104729-r5",
+              "wp8-tier2-formal-taxi-seed-130363-r5",
+              "wp8-tier2-formal-taxi-seed-155921-r5"
+            ],
+            "n_scored_pairs": 0,
+            "native_metric": "rmse",
+            "paired_native_deltas": [],
+            "paired_standardized_deltas": [],
+            "task_id": "new-york-city-taxi-fare-prediction"
+          }
+        },
+        "task_macro_standardized_bootstrap": {
+          "confidence_interval_95": null,
+          "estimate": null,
+          "iterations": 20000,
+          "reason": "at_least_one_task_has_no_scored_pair",
+          "seed": 20260723,
+          "status": "not_estimable"
+        },
+        "win_tie_loss": {
+          "assigned": 9,
+          "available": 4,
+          "losses": 0,
+          "ties": 0,
+          "wins": 4
+        }
+      },
+      "left_system": "full_decision_admissibility",
+      "right_system": "authority_only",
+      "role": "secondary"
+    },
+    "full_minus_flat_relevance_memory": {
+      "completion": {
+        "both_completed": 3,
+        "exact_discordant_one_sided_p": 0.75,
+        "left_minus_right_mean": 0.0,
+        "left_only_completed": 1,
+        "neither_completed": 4,
+        "right_only_completed": 1
+      },
+      "continuous": {
+        "assigned_pairs": 9,
+        "availability": "3/9",
+        "exact_one_sided_sign_flip_raw_p": 0.125,
+        "holm_adjusted_p": 0.25,
+        "holm_input_for_not_estimable_is_one": false,
+        "missing_block_ids": [
+          "wp8-tier2-formal-birds-seed-104729-r3",
+          "wp8-tier2-formal-birds-seed-130363-r5",
+          "wp8-tier2-formal-birds-seed-155921-r5",
+          "wp8-tier2-formal-taxi-seed-104729-r5",
+          "wp8-tier2-formal-taxi-seed-130363-r5",
+          "wp8-tier2-formal-taxi-seed-155921-r5"
+        ],
+        "mixed_effects_sensitivity": {
+          "reason": "fewer_than_two_tasks_with_scored_pairs",
+          "status": "not_estimable"
+        },
+        "n_scored_pairs": 3,
+        "per_task": {
+          "aerial-cactus-identification": {
+            "assigned_pairs": 3,
+            "direction": "maximize",
+            "mean_native_delta": 0.003943920454537175,
+            "mean_standardized_delta": 0.003943920454537175,
+            "missing_block_ids": [],
+            "n_scored_pairs": 3,
+            "native_metric": "macro_f1",
+            "paired_native_deltas": [
+              0.0026752325506669283,
+              0.00420208204061856,
+              0.004954446772326038
+            ],
+            "paired_standardized_deltas": [
+              0.0026752325506669283,
+              0.00420208204061856,
+              0.004954446772326038
+            ],
+            "task_id": "aerial-cactus-identification"
+          },
+          "mlsp-2013-birds": {
+            "assigned_pairs": 3,
+            "direction": "maximize",
+            "mean_native_delta": null,
+            "mean_standardized_delta": null,
+            "missing_block_ids": [
+              "wp8-tier2-formal-birds-seed-104729-r3",
+              "wp8-tier2-formal-birds-seed-130363-r5",
+              "wp8-tier2-formal-birds-seed-155921-r5"
+            ],
+            "n_scored_pairs": 0,
+            "native_metric": "macro_f1",
+            "paired_native_deltas": [],
+            "paired_standardized_deltas": [],
+            "task_id": "mlsp-2013-birds"
+          },
+          "new-york-city-taxi-fare-prediction": {
+            "assigned_pairs": 3,
+            "direction": "minimize",
+            "mean_native_delta": null,
+            "mean_standardized_delta": null,
+            "missing_block_ids": [
+              "wp8-tier2-formal-taxi-seed-104729-r5",
+              "wp8-tier2-formal-taxi-seed-130363-r5",
+              "wp8-tier2-formal-taxi-seed-155921-r5"
+            ],
+            "n_scored_pairs": 0,
+            "native_metric": "rmse",
+            "paired_native_deltas": [],
+            "paired_standardized_deltas": [],
+            "task_id": "new-york-city-taxi-fare-prediction"
+          }
+        },
+        "task_macro_standardized_bootstrap": {
+          "confidence_interval_95": null,
+          "estimate": null,
+          "iterations": 20000,
+          "reason": "at_least_one_task_has_no_scored_pair",
+          "seed": 20260723,
+          "status": "not_estimable"
+        },
+        "win_tie_loss": {
+          "assigned": 9,
+          "available": 3,
+          "losses": 0,
+          "ties": 0,
+          "wins": 3
+        }
+      },
+      "left_system": "full_decision_admissibility",
+      "right_system": "flat_relevance_memory",
+      "role": "secondary"
+    },
+    "full_minus_global_validity_bit": {
+      "completion": {
+        "both_completed": 3,
+        "exact_discordant_one_sided_p": 0.75,
+        "left_minus_right_mean": 0.0,
+        "left_only_completed": 1,
+        "neither_completed": 4,
+        "right_only_completed": 1
+      },
+      "continuous": {
+        "assigned_pairs": 9,
+        "availability": "3/9",
+        "exact_one_sided_sign_flip_raw_p": 0.125,
+        "holm_adjusted_p": 0.25,
+        "holm_input_for_not_estimable_is_one": false,
+        "missing_block_ids": [
+          "wp8-tier2-formal-birds-seed-104729-r3",
+          "wp8-tier2-formal-birds-seed-130363-r5",
+          "wp8-tier2-formal-birds-seed-155921-r5",
+          "wp8-tier2-formal-taxi-seed-104729-r5",
+          "wp8-tier2-formal-taxi-seed-130363-r5",
+          "wp8-tier2-formal-taxi-seed-155921-r5"
+        ],
+        "mixed_effects_sensitivity": {
+          "reason": "fewer_than_two_tasks_with_scored_pairs",
+          "status": "not_estimable"
+        },
+        "n_scored_pairs": 3,
+        "per_task": {
+          "aerial-cactus-identification": {
+            "assigned_pairs": 3,
+            "direction": "maximize",
+            "mean_native_delta": 0.005859156008552802,
+            "mean_standardized_delta": 0.005859156008552802,
+            "missing_block_ids": [],
+            "n_scored_pairs": 3,
+            "native_metric": "macro_f1",
+            "paired_native_deltas": [
+              0.0034671942691020252,
+              0.005365091019410295,
+              0.008745182737146084
+            ],
+            "paired_standardized_deltas": [
+              0.0034671942691020252,
+              0.005365091019410295,
+              0.008745182737146084
+            ],
+            "task_id": "aerial-cactus-identification"
+          },
+          "mlsp-2013-birds": {
+            "assigned_pairs": 3,
+            "direction": "maximize",
+            "mean_native_delta": null,
+            "mean_standardized_delta": null,
+            "missing_block_ids": [
+              "wp8-tier2-formal-birds-seed-104729-r3",
+              "wp8-tier2-formal-birds-seed-130363-r5",
+              "wp8-tier2-formal-birds-seed-155921-r5"
+            ],
+            "n_scored_pairs": 0,
+            "native_metric": "macro_f1",
+            "paired_native_deltas": [],
+            "paired_standardized_deltas": [],
+            "task_id": "mlsp-2013-birds"
+          },
+          "new-york-city-taxi-fare-prediction": {
+            "assigned_pairs": 3,
+            "direction": "minimize",
+            "mean_native_delta": null,
+            "mean_standardized_delta": null,
+            "missing_block_ids": [
+              "wp8-tier2-formal-taxi-seed-104729-r5",
+              "wp8-tier2-formal-taxi-seed-130363-r5",
+              "wp8-tier2-formal-taxi-seed-155921-r5"
+            ],
+            "n_scored_pairs": 0,
+            "native_metric": "rmse",
+            "paired_native_deltas": [],
+            "paired_standardized_deltas": [],
+            "task_id": "new-york-city-taxi-fare-prediction"
+          }
+        },
+        "task_macro_standardized_bootstrap": {
+          "confidence_interval_95": null,
+          "estimate": null,
+          "iterations": 20000,
+          "reason": "at_least_one_task_has_no_scored_pair",
+          "seed": 20260723,
+          "status": "not_estimable"
+        },
+        "win_tie_loss": {
+          "assigned": 9,
+          "available": 3,
+          "losses": 0,
+          "ties": 0,
+          "wins": 3
+        }
+      },
+      "left_system": "full_decision_admissibility",
+      "right_system": "global_validity_bit",
+      "role": "secondary"
+    },
+    "full_minus_no_memory": {
+      "completion": {
+        "both_completed": 4,
+        "exact_discordant_one_sided_p": 1.0,
+        "left_minus_right_mean": -0.2222222222222222,
+        "left_only_completed": 0,
+        "neither_completed": 3,
+        "right_only_completed": 2
+      },
+      "continuous": {
+        "assigned_pairs": 9,
+        "availability": "4/9",
+        "exact_one_sided_sign_flip_raw_p": 0.0625,
+        "holm_adjusted_p": 0.25,
+        "holm_input_for_not_estimable_is_one": false,
+        "missing_block_ids": [
+          "wp8-tier2-formal-birds-seed-104729-r3",
+          "wp8-tier2-formal-birds-seed-130363-r5",
+          "wp8-tier2-formal-taxi-seed-104729-r5",
+          "wp8-tier2-formal-taxi-seed-130363-r5",
+          "wp8-tier2-formal-taxi-seed-155921-r5"
+        ],
+        "mixed_effects_sensitivity": {
+          "reason": "fewer_than_two_pairs_in_a_contributing_task",
+          "status": "not_estimable"
+        },
+        "n_scored_pairs": 4,
+        "per_task": {
+          "aerial-cactus-identification": {
+            "assigned_pairs": 3,
+            "direction": "maximize",
+            "mean_native_delta": 0.014373260193018914,
+            "mean_standardized_delta": 0.014373260193018914,
+            "missing_block_ids": [],
+            "n_scored_pairs": 3,
+            "native_metric": "macro_f1",
+            "paired_native_deltas": [
+              0.033555225327495664,
+              0.005728364724398416,
+              0.003836190527162664
+            ],
+            "paired_standardized_deltas": [
+              0.033555225327495664,
+              0.005728364724398416,
+              0.003836190527162664
+            ],
+            "task_id": "aerial-cactus-identification"
+          },
+          "mlsp-2013-birds": {
+            "assigned_pairs": 3,
+            "direction": "maximize",
+            "mean_native_delta": 0.05979378455983453,
+            "mean_standardized_delta": 0.05979378455983453,
+            "missing_block_ids": [
+              "wp8-tier2-formal-birds-seed-104729-r3",
+              "wp8-tier2-formal-birds-seed-130363-r5"
+            ],
+            "n_scored_pairs": 1,
+            "native_metric": "macro_f1",
+            "paired_native_deltas": [
+              0.05979378455983453
+            ],
+            "paired_standardized_deltas": [
+              0.05979378455983453
+            ],
+            "task_id": "mlsp-2013-birds"
+          },
+          "new-york-city-taxi-fare-prediction": {
+            "assigned_pairs": 3,
+            "direction": "minimize",
+            "mean_native_delta": null,
+            "mean_standardized_delta": null,
+            "missing_block_ids": [
+              "wp8-tier2-formal-taxi-seed-104729-r5",
+              "wp8-tier2-formal-taxi-seed-130363-r5",
+              "wp8-tier2-formal-taxi-seed-155921-r5"
+            ],
+            "n_scored_pairs": 0,
+            "native_metric": "rmse",
+            "paired_native_deltas": [],
+            "paired_standardized_deltas": [],
+            "task_id": "new-york-city-taxi-fare-prediction"
+          }
+        },
+        "task_macro_standardized_bootstrap": {
+          "confidence_interval_95": null,
+          "estimate": null,
+          "iterations": 20000,
+          "reason": "at_least_one_task_has_no_scored_pair",
+          "seed": 20260723,
+          "status": "not_estimable"
+        },
+        "win_tie_loss": {
+          "assigned": 9,
+          "available": 4,
+          "losses": 0,
+          "ties": 0,
+          "wins": 4
+        }
+      },
+      "left_system": "full_decision_admissibility",
+      "right_system": "no_memory",
+      "role": "primary"
+    }
+  },
+  "created_at": "2026-07-23T15:35:57Z",
+  "effect_claim_gate": {
+    "criteria": {
+      "all_45_assignments_retained_with_no_imputation_or_post_assignment_exclusion": true,
+      "all_9_blocks_have_complete_five_system_dispositions": true,
+      "each_task_primary_mean_oriented_native_delta_is_strictly_greater_than_zero": false,
+      "full_completion_count_is_greater_than_or_equal_to_no_memory_completion_count": false,
+      "no_block_has_full_failed_and_no_memory_scored": false,
+      "primary_has_at_least_one_scored_pair_in_each_of_all_3_tasks": false,
+      "primary_holm_adjusted_exact_one_sided_sign_flip_p_is_less_than_or_equal_to_0.05": false,
+      "primary_task_macro_standardized_bootstrap_95pct_ci_lower_is_strictly_greater_than_zero": false
+    },
+    "effect_claim_authorized": false,
+    "failed_criteria": [
+      "each_task_primary_mean_oriented_native_delta_is_strictly_greater_than_zero",
+      "full_completion_count_is_greater_than_or_equal_to_no_memory_completion_count",
+      "no_block_has_full_failed_and_no_memory_scored",
+      "primary_has_at_least_one_scored_pair_in_each_of_all_3_tasks",
+      "primary_holm_adjusted_exact_one_sided_sign_flip_p_is_less_than_or_equal_to_0.05",
+      "primary_task_macro_standardized_bootstrap_95pct_ci_lower_is_strictly_greater_than_zero"
+    ]
+  },
+  "holm_family_order": [
+    "full_minus_no_memory",
+    "full_minus_flat_relevance_memory",
+    "full_minus_global_validity_bit",
+    "full_minus_authority_only"
+  ],
+  "joint_inventory_binding": {
+    "joint_inventory_hash": "19a2835857945d56980b8dd0a6ae7d9a51e718045acd6753e9f7db8af05cdba5",
+    "manifest_hash": "44951619451640bfccae85928aff48fab2164ad3161f3a082689222755706b2e",
+    "root": "/work/joint-inventory-r1",
+    "verification_hash": "bc1ea054326304e4cdb935e4df6ace0df7a1e70eed3349aec2a593a35e117f62"
+  },
+  "native_metric_rule": "macro_f1_reported_directly;rmse_deltas_sign_flipped;raw_macro_f1_and_rmse_never_pooled",
+  "observations_file": "formal_observations.jsonl",
+  "oracle_gap_rows": 45,
+  "oracle_gaps_file": "oracle_gaps.jsonl",
+  "oracle_observations_file": "oracle_observations.jsonl",
+  "paired_contrasts_file": "paired_contrasts.jsonl",
+  "primary_contrast": "full_minus_no_memory",
+  "report_hash": "5480e2f5c39ae8d8bde1e5d279877959c62874ca9c28e3ee1a2bf4da587369c8",
+  "schema": "decision_admissibility_wp8_tier2_formal_statistics_v1",
+  "secondary_contrasts": [
+    "full_minus_flat_relevance_memory",
+    "full_minus_global_validity_bit",
+    "full_minus_authority_only"
+  ],
+  "status": "complete"
+}

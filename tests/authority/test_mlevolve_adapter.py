@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import copy
 import hashlib
+import json
 import threading
 
 from authority.adapters.mlevolve.runtime import MLEvolveAuthorityAdapter
@@ -51,6 +52,7 @@ def node(node_id="n1", clean=True):
     }
     return SimpleNamespace(
         id=node_id,
+        stage="improve",
         code=code,
         metric=Metric(0.8),
         exec_time=1.0,
@@ -67,6 +69,20 @@ def node(node_id="n1", clean=True):
         draft_role="general_draft",
         selected_strategy={},
         strategy_alignment={},
+        protocol_repair={
+            "runtime_provenance": {
+                "status": "clean",
+                "payload_sha256": "a" * 64,
+                "counts": {
+                    "partitions": 2,
+                    "fits": 1,
+                    "predictions": 1,
+                    "selections": 1,
+                    "final_evaluations": 1,
+                    "global_oof": 1,
+                },
+            }
+        } if clean else {},
     )
 
 
@@ -96,6 +112,42 @@ def test_shadow_records_same_decision_but_preserves_legacy_behavior(tmp_path):
     assert decision.outcome == DecisionOutcome.DENY
     assert agent.evaluation_authority.permits(decision, legacy_allowed=True)
     assert not agent.evaluation_authority.permits(decision, legacy_allowed=False)
+
+
+def test_failed_node_without_score_is_normal_fail_closed_decision(tmp_path):
+    agent = fake_agent(tmp_path, mode="shadow")
+    adapter = MLEvolveAuthorityAdapter(agent)
+
+    for operation, stage, expected_outcome in (
+        (Operation.RANK, DecisionStage.BRANCH_SELECTION, DecisionOutcome.DENY),
+        (
+            Operation.PROMOTE,
+            DecisionStage.MEMORY_WRITEBACK,
+            DecisionOutcome.QUARANTINE,
+        ),
+    ):
+        failed = node(f"failed-{operation.value}", True)
+        failed.metric = Metric(None)
+        failed.is_buggy = True
+        failed.is_valid = None
+
+        decision = adapter.authorize_node(failed, operation, stage, "test.failed")
+
+        assert decision.outcome == expected_outcome
+        assert decision.allowed is False
+        assert decision.claim_id == f"node:{failed.id}:score"
+        assert decision.missing_obligations == ["claim_exists"]
+        assert not any(
+            item.startswith("authority_internal_error:")
+            for item in decision.missing_obligations
+        )
+
+    events = [
+        json.loads(line)
+        for line in (tmp_path / "authority_events.jsonl").read_text().splitlines()
+    ]
+    assert sum(event["event_type"] == "authority_decision" for event in events) == 2
+    assert all(event["event_type"] != "authority_internal_error" for event in events)
 
 
 def test_global_top_k_authorizes_before_sorting(tmp_path):
@@ -158,6 +210,75 @@ def test_rank_gate_internal_error_fails_closed_in_enforce_mode(monkeypatch):
 
     monkeypatch.setattr(ranking_gate, "authorize_ranking", broken)
     assert rank_eligible(agent, candidate) is False
+
+
+def test_fixed_holdout_search_only_candidate_ordering_is_not_formal_rank(
+    tmp_path,
+):
+    from agents.leakage_audit import rank_eligible
+    from authority.adapters.mlevolve.ranking_gate import (
+        authorize_selection,
+        filter_ranked_nodes,
+    )
+
+    agent = fake_agent(tmp_path)
+    agent.cfg.fixed_holdout = SimpleNamespace(
+        enabled=True,
+        evaluation_mode="terminal_only",
+        bypass_protocol_gates=True,
+        internal_metric_disposition="search_only",
+    )
+    agent.acfg = SimpleNamespace(check_data_leakage=False)
+    agent.evaluation_authority = MLEvolveAuthorityAdapter(agent)
+    candidate = node("search-only", True)
+    candidate.protocol_repair = {}
+
+    # Direct Authority RANK remains denied because terminal receipts do not yet
+    # exist.  Only the provisional target-node search ordering is allowed.
+    assert not agent.evaluation_authority.gate_node(
+        candidate,
+        Operation.RANK,
+        DecisionStage.BRANCH_SELECTION,
+        "test.direct-formal-rank",
+        legacy_allowed=True,
+    )
+    assert rank_eligible(agent, candidate) is True
+    assert authorize_selection(
+        agent,
+        candidate,
+        legacy_allowed=True,
+        component="test.search-only-selection",
+    ) is True
+    assert filter_ranked_nodes(
+        agent,
+        [candidate],
+        component="test.search-only-filter",
+    ) == [candidate]
+
+
+def test_fixed_holdout_search_only_bypass_is_limited_to_branch_selection(
+    tmp_path,
+):
+    from authority.adapters.mlevolve.ranking_gate import authorize_selection
+
+    agent = fake_agent(tmp_path)
+    agent.cfg.fixed_holdout = SimpleNamespace(
+        enabled=True,
+        evaluation_mode="terminal_only",
+        bypass_protocol_gates=True,
+        internal_metric_disposition="search_only",
+    )
+    agent.evaluation_authority = MLEvolveAuthorityAdapter(agent)
+    candidate = node("not-governance-bypass", True)
+    candidate.protocol_repair = {}
+
+    assert not authorize_selection(
+        agent,
+        candidate,
+        legacy_allowed=True,
+        component="test.non-branch-selection",
+        stage=DecisionStage.MEMORY_WRITEBACK,
+    )
 
 
 def test_filtered_journal_excludes_runtime_authority_agent_with_thread_locks():

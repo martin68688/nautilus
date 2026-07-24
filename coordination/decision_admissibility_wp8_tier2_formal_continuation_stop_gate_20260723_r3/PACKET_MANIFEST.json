@@ -1,0 +1,12 @@
+{
+  "file_hashes": {
+    "STAGING_BUILD_REPORT.json": "8e22976f79850e2f96f1770fb34ca8cc53fba12afeb219bf7f6bbf2216d90b68",
+    "STAGING_CONTENT_MANIFEST.json": "d3db21400e7211a0f65a7c6da64f01f6e8c9134cdcdecd32274a79c75a7fe6bd",
+    "STAGING_R5_BINDING.json": "7597afa869d7e59629e1c9415de985e8d8aa15f2f84290f3be9081f80e306c2a",
+    "STAGING_STOP_GATE.json": "1fab4b277e8a52a6f09ed4381d5a6df1ed895c6ee31b532acb8dc43c52673663",
+    "formal-controller-cpu-r5.yaml": "8a40f132c59cb7a3cbb35ee3a78b26f202a61a8166aa345a11a83d4d5d4f6c0e"
+  },
+  "gate_hash": "aef746cb87046d3f4134f3699005f7f0bbbde5ce3c1f4b04ddca00fdd5ee2678",
+  "packet_hash": "36889fa0ebaa4e4bf6be1894eb7947bad841ff656c40d53380add68f02cd401d",
+  "schema": "decision_admissibility_wp8_tier2_formal_continuation_r5_local_gate_packet_v1"
+}

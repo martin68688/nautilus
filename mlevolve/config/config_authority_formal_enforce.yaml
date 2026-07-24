@@ -1,0 +1,70 @@
+extends: config_run_forest_stage_hybrid.yaml
+
+# Formal Tier-2 binds the exact protocol and Bundle on the command line for
+# each task block.  Unlike the earlier canary overlay, every declared
+# generation/governance axis is enforced here.
+evaluation_authority:
+  mode: enforce
+  active_protocol_id: ""
+  active_protocol_version: ""
+  rollout_id: ""
+  expected_bundle_id: ""
+  expected_bundle_manifest_sha256: ""
+  require_bound_bundle: true
+  enforce_operations:
+    - generate_candidate
+    - debug_hypothesis
+    - rank
+    - select
+    - promote_result
+    - publish_adoption
+    - publish_causal
+    - promote
+    - code_seed
+    - repair_seed
+    - distill_diagnostic
+    - distill_candidate
+    - distill_positive_result
+    - distill_positive_adopted
+    - distill_positive
+    - derived_publication
+  enforce_generation_stages:
+    - draft
+    - model_design
+    - improve
+    - debug
+    - evolution
+    - fusion
+  enforce_governance_stages:
+    - retrieval
+    - branch_selection
+    - memory_writeback
+    - distillation
+    - replay
+
+external_skill_memory:
+  enable: true
+  retrieval_control: full_decision_admissibility
+
+agent:
+  initial_drafts: 3
+  steps: 6
+  code:
+    temp: 1.0
+  feedback:
+    temp: 1.0
+  draft_role_policy:
+    enabled: true
+    roles:
+      - coldstart_baseline
+      - memory_transfer
+      - novel_exploration
+  protocol_repair:
+    enabled: false
+  check_data_leakage: false
+
+fixed_holdout:
+  enabled: true
+  evaluation_mode: terminal_only
+  bypass_protocol_gates: true
+  internal_metric_disposition: search_only

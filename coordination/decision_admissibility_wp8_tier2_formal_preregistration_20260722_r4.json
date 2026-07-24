@@ -1,0 +1,155 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_claim_authority_amendment_v1",
+  "preregistration_id": "wp8-tier2-formal-3protocol-6system-r4",
+  "status": "design_frozen_pending_staging_hash_manifest",
+  "frozen_at": "2026-07-22T10:57:25Z",
+  "parent_preregistration": {
+    "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r2.json",
+    "file_sha256": "1e667eee5647d6a28d9d0441a35e691257b1a56c71e04be22e472317fd958247",
+    "preregistration_id": "wp8-tier2-formal-3protocol-6system-r2"
+  },
+  "supersedes_failed_revision": {
+    "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r3.json",
+    "file_sha256": "95659800115e75849cdecf7a62f67a4fc4a052821aca8b64af803785b0bf940e",
+    "preregistration_id": "wp8-tier2-formal-3protocol-6system-r3",
+    "failed_source_verification": {
+      "cluster_path": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r2/reports/preregistration-r3-claim-authority-verification-r2.json",
+      "file_sha256": "40233864f1f5e38967bf3a3607d456aa5db6a494ef379ac61f760146bafc99ad",
+      "verification_hash": "fe306643c543c457c91f1191b11823837ede02ec85df5e2071af7f22ba964f1a",
+      "errors": [
+        "source_task_family_bound"
+      ]
+    },
+    "correction": {
+      "field": "pretraining_evidence.source_method.source_task_family",
+      "r3_value": "audio_multilabel_classification",
+      "r4_value": "Audio"
+    }
+  },
+  "reason_for_revision": "Before formal training and before observing any terminal metric, independent source-Bundle verification rejected r3 because it used the target runtime family label audio_multilabel_classification as the immutable source corpus family. The parent Bundle records the source family as Audio. This r4 replacement corrects that one provenance field and retains the r3 failure evidence; it makes no change to the claim permission, systems, seeds, order, budget, statistics, holdout or effect-claim rule.",
+  "pretraining_evidence": {
+    "formal_training_observed_before_revision": false,
+    "terminal_metric_observed_before_revision": false,
+    "source_bundle": {
+      "bundle_id": "mlevolve-be034ec-nonspooky-seed-heldout-v1",
+      "manifest_sha256": "8d612b60a83d1469dbb05caad228be791280ebcd68027d0141ccdae1840ae7d8",
+      "manifest_file_sha256": "d6f2422de8b136050eecf14341627a82669ceb84b747658a874dd988ddab45ac"
+    },
+    "source_method": {
+      "clause_id": "clause::06c4a3d0455368ac50513172",
+      "claim_id": "claim::00fa8a166a3234c91f8ae9b7",
+      "source_run_id": "20260716_070743_mlsp-2013-birds",
+      "source_node_id": "91ffa7572b3d4774bc33d0c000e418e4",
+      "source_artifact_id": "run::20260716_070743_mlsp-2013-birds::node::91ffa7572b3d4774bc33d0c000e418e4",
+      "source_task_id": "mlsp-2013-birds",
+      "source_task_family": "Audio",
+      "source_domain": "audio",
+      "method_text": "A BirdTransformer model with a linear projection, 3-layer Transformer encoder, attention pooling, layer normalization, and a linear classifier is trained using Focal Loss with label smoothing.",
+      "method_text_sha256": "08fca76e87e03ac16d672aaa7c5f51724b3272e5ea3fb0d351f91094c72bd192",
+      "code_sha256": "aec59518374d0ee87a320b6f8213814496fb689b4b8a48e425b7ba3251c70d7a",
+      "source_journal_sha256": "c4e942fc47d8f2b58d90141258542e5a4a6d9a8fc5fba41d0a233d863b7b77bb",
+      "terminal_output_sha256": "4dd9b11c93c381108bd24ade3d6018db97b958320c1e1b4740f575cc2ab555b4",
+      "exec_time_seconds": 484.00861072540283,
+      "execution_checks": {
+        "is_valid": true,
+        "not_buggy": true,
+        "no_exception_type": true,
+        "positive_exec_time": true,
+        "terminal_execution_signal": true,
+        "submission_signal": true
+      }
+    },
+    "source_audit": {
+      "index_filename": "21f50a74b2557710039aff7528f472bf06b9e37e1d10fb39f7be20221fd27209.json",
+      "file_sha256": "885959ebbfca3494ca1c92a509df53480db7b615fd8114df40d356d7a41c7666",
+      "sidecar_sha256": "a81951ecf2d8229aabce12aece3d61054ab6319903462453dbdef4e6f6b35edc",
+      "status": "blocked",
+      "issue_codes": [
+        "TEMPORAL_SPLIT_LEAKAGE"
+      ],
+      "issue_disposition": "retained_as_protocol_and_score_blocker",
+      "sidecar_relabelled_clean": false
+    }
+  },
+  "scope": {
+    "inherit_all_parent_fields_except_explicit_overrides": true,
+    "changed_contract": "memory_bundle_contract.selected_seed_heldout_provisional_methods[mlsp-2013-birds]",
+    "changed_source_claims": [
+      "claim::00fa8a166a3234c91f8ae9b7"
+    ],
+    "changed_source_runs": [
+      "20260716_070743_mlsp-2013-birds"
+    ],
+    "systems_seeds_condition_order_budgets_oracle_statistics_or_holdouts_changed": false,
+    "taxi_provisional_rule_changed": false,
+    "aerial_certified_rule_changed": false,
+    "source_global_audit_status_changed": false,
+    "formal_training_observed_before_revision": false,
+    "terminal_metric_observed_before_revision": false
+  },
+  "overrides": {
+    "memory_bundle_contract": {
+      "birds_claim_specific_publication": {
+        "publication_class": "provisional",
+        "target_task_id": "mlsp-2013-birds",
+        "target_task_family": "audio_multilabel_classification",
+        "target_domain": "audio",
+        "active_protocol_ref": "grouped-classification@1#901703060d3f2dd756cc29339a645583410a1d69ac4f2b6ccd53f8631b411382",
+        "claim_type": "method_hypothesis",
+        "permitted_operations": [
+          "generate_candidate"
+        ],
+        "permitted_generation_stages": [
+          "draft",
+          "model_design",
+          "improve",
+          "evolution",
+          "fusion"
+        ],
+        "permitted_governance_stages": [
+          "retrieval"
+        ],
+        "allowed_source_audit_issue_codes": [
+          "TEMPORAL_SPLIT_LEAKAGE"
+        ],
+        "allowed_issue_semantics": "The issue may be ignored only when determining whether this outcome-free method hypothesis can seed a new grouped-protocol candidate. It remains binding for every historical Result, Score, Pairwise, Rank, Select, Promote and positive-result claim.",
+        "required_source_checks": [
+          "source_run_is_in_the_memory_side_of_the_frozen_split",
+          "source_journal_is_parent_manifest_bound",
+          "source_node_code_hash_matches_runforest_and_blocked_audit_sidecar",
+          "source_audit_issue_set_equals_TEMPORAL_SPLIT_LEAKAGE_only",
+          "source_node_has_successful_execution_evidence",
+          "method_claim_passes_semantic_purity_without_source_outcome_text",
+          "trusted_METHOD_IDENTITY_and_CODE_EXECUTION_receipts_are_host_collected_for_the_new_formal_claim",
+          "an_exact_claim_to_receipt_EvidencePath_is_published",
+          "source_score_inheritance_is_false"
+        ],
+        "source_score_inheritance": false,
+        "historical_metric_used_as_evidence": false,
+        "target_result_fact_inferred_from_source": false,
+        "source_result_certified": false,
+        "source_sidecar_clean": false
+      },
+      "superseded_parent_obligation_for_birds_only": "source_node_code_hash_matches_clean_audit_sidecar",
+      "replacement_obligation_for_birds_only": "source_node_code_hash_matches_the_manifest_bound_blocked_sidecar_and_the_only_issue_is_retained_as_a protocol/Score blocker while the pure method Claim is evaluated independently",
+      "unchanged_prohibitions": [
+        "no_source_score_inheritance",
+        "no_historical_score_for_rank_or_select",
+        "no_source_result_promotion",
+        "no_positive_result_distillation_from_the_source",
+        "no_cross_domain_method_transfer",
+        "no_target_terminal_label_exposure"
+      ]
+    },
+    "formal_staging_requirement": "The verified staging manifest must bind this r4 replacement, failed r3 and its verifier report, r2 and r1, the exact source parent Bundle manifest and CURRENT-independent path, the Birds source journal, source clause, source node code hash, blocked audit sidecar, formal publisher/verifier source, grouped protocol, derived immutable child Bundle and its separately hash-bound CURRENT pointer before any formal training Pod starts."
+  },
+  "interpretation": {
+    "method_claim_status": "provisional_candidate_generation_only",
+    "historical_score_status": "blocked_by_TEMPORAL_SPLIT_LEAKAGE",
+    "historical_result_status": "not_certified",
+    "global_source_sidecar_status": "blocked_unchanged",
+    "effect_claim_authorized": false,
+    "formal_training_authorized": false
+  },
+  "amendment_hash": "eedaffb7f22f24721b4372811a237326ae73e7eb4f3e05b7ad77c768268d5d14"
+}

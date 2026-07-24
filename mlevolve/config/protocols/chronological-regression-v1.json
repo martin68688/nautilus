@@ -1,0 +1,61 @@
+{
+  "protocol_id": "chronological-regression",
+  "version": "1",
+  "parent_version": null,
+  "task_profile": {
+    "task_type": "regression",
+    "unit_of_analysis": "timestamped_sample",
+    "split_family": "chronological"
+  },
+  "data_split_policy": {
+    "strategy": "chronological",
+    "required_time_key": true,
+    "fit_scope": "past_training_window_only",
+    "forbidden_overlap": ["sample_id"],
+    "future_to_past": false,
+    "outer_holdout_feedback": false
+  },
+  "preprocessing_policy": {
+    "fit_scope": "past_fold_train_only"
+  },
+  "evaluator_spec": {
+    "source": "host_terminal",
+    "metric": "rmse",
+    "immutable_during_run": true
+  },
+  "metric_spec": {
+    "name": "rmse",
+    "direction": "minimize",
+    "best_seed_selection": false
+  },
+  "selection_policy": {
+    "freeze_before_final_evaluation": true
+  },
+  "seed_policy": {
+    "pairwise_min_seeds": 3,
+    "best_seed_selection": false
+  },
+  "holdout_policy": {
+    "terminal_only": true,
+    "reuse_for_search": false
+  },
+  "promotion_policy": {
+    "require_complete_evidence": true,
+    "enforce_protocol_payloads": true,
+    "clean_replay": {
+      "allowed_protocol_changes": [
+        "split_api",
+        "preprocessing_scope",
+        "evaluator",
+        "selection_freeze",
+        "seed_aggregation",
+        "holdout_access",
+        "instrumentation"
+      ]
+    }
+  },
+  "compatibility_rules": {
+    "accepted_protocol_hashes": []
+  },
+  "canonical_hash": ""
+}

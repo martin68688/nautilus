@@ -1,0 +1,11 @@
+{
+  "builder_source_sha256": "b6ba926575820c6a9dbff8a56a2357efa153d22d086a380205b410bbea86f59d",
+  "files": {
+    "claims_addendum.md": "425920c770ca7bf86df9a93572f0b1da21a738672cb3aa322df97fda408b08c2",
+    "evidence_ledger.json": "94701e2a1787b98847917f5bc93b87791a8bf71f52d1df21681a178dc9998ca3"
+  },
+  "ledger_hash": "c9e8f5b2cedee1072baae0d7f5c5a505de4980e59223a0678ef19dcc86174570",
+  "manifest_hash": "f7f7e8da1e2d1cb537ac565fbe150e8b3e259d537fae7bd378064fff5f983ea3",
+  "schema": "decision_admissibility_wp8_evidence_ledger_manifest_v1",
+  "status": "complete"
+}

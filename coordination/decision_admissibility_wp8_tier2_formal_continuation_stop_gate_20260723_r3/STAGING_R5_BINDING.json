@@ -1,0 +1,20 @@
+{
+  "binding_hash": "0350ced88e922b6394c631e90bdc7128aed253161557b663e7587b51dec7526c",
+  "controller_pod": "da-wp8-f-controller-cpu-r5",
+  "failed_r4_output_reused": false,
+  "formal_execution_revision": "r5",
+  "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r13",
+  "precontract_recovery_file_sha256": "3dd8b9f699499047d4396fe23cfe3b3b59c81cf6dedda2fb931e8c85ce24ee4f",
+  "precontract_recovery_report_hash": "e79ae8619e4f8e4d42987bfc590fad2e24946cc89e72ad365948cf382253a0a9",
+  "r9_amendment_file_sha256": "dd41c01ae9b8331566d011f75b1b991cba7ddaf14d400de69cdcb0b3b23d90af",
+  "r9_amendment_hash": "3831493e97c23670588abe0ffcb9a1f3ad63734783a54c5f7f7f0ede22fb98bd",
+  "r9_verification_file_sha256": "8e683bb3e5498407943e64590950fdfffbdc953c95707bbfdbd3a097c6e06e58",
+  "r9_verification_hash": "24682d3f2ae79350609ef0802932e366548cb4dca4fdf1e15d149da9697f85f7",
+  "remaining_block_count": 5,
+  "schema": "decision_admissibility_wp8_tier2_formal_continuation_r5_binding_v1",
+  "source_root": "/workspace/decision-admissibility-wp8-tier2-formal-source-r13",
+  "staging_content_manifest_hash": "6540208f7a55e7a8fddf470e85d5ef8a9e09b87fc225aa526153160b3a14a0ba",
+  "staging_root": "/workspace/decision-admissibility-wp8-tier2-formal-staging-r15",
+  "status": "r5_content_built_pending_independent_stop_gate",
+  "terminal_score_values_inspected": false
+}

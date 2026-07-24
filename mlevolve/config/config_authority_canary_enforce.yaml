@@ -1,0 +1,41 @@
+extends: config_run_forest_stage_hybrid.yaml
+
+# This is deliberately staged, not a global-enforce switch.  Before an online
+# canary, callers must pin expected_bundle_id and expected_bundle_manifest_sha256
+# to the hash-verified CURRENT pointer used by that run.
+evaluation_authority:
+  mode: enforce
+  active_protocol_id: mlevolve-default
+  active_protocol_version: "2"
+  rollout_id: authority-canary-v1
+  expected_bundle_id: ""
+  expected_bundle_manifest_sha256: ""
+  require_bound_bundle: true
+  enforce_operations:
+    - generate_candidate
+    - debug_hypothesis
+    - rank
+    - select
+    - promote_result
+    - publish_adoption
+    - publish_causal
+    - promote
+    - code_seed
+    - distill_diagnostic
+    - distill_candidate
+    - distill_positive_result
+    - distill_positive_adopted
+    - distill_positive
+    - derived_publication
+  enforce_generation_stages:
+    - draft
+    - improve
+    - debug
+  enforce_governance_stages:
+    - retrieval
+    - branch_selection
+    - memory_writeback
+    - distillation
+  canary_minimum_decisions: 20
+  canary_max_unauthorized_authority_allows: 0
+  canary_max_false_denial_rate: 0.05

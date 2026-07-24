@@ -1,0 +1,484 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_preregistration_v1",
+  "preregistration_id": "wp8-tier2-formal-3protocol-6system-r1",
+  "status": "design_frozen_pending_staging_hash_manifest",
+  "frozen_at": "2026-07-22T08:30:00Z",
+  "purpose": "Evaluate online MLE utility of decision-admissible memory under protocol-aligned, label-isolated terminal evaluation. This design does not authorize a superiority claim before the frozen results and statistics pass verification.",
+  "authoritative_inputs": {
+    "execution_plan": {
+      "path": "coordination/decision_admissibility_complete_execution_plan_20260719.md",
+      "sha256": "95da6d3a9311bf3cdb9ac2606949230f0a7680875b34960fa4beeb9160c755ba"
+    },
+    "formal_inventory": {
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_inventory_20260722_r1.json",
+      "sha256": "74f3a8f4d0f075ccbf82eb2b3130aaef000ef47819ad458eac8462e31d1c29d8"
+    },
+    "base_commit": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
+    "protocol_files": {
+      "random-classification-v1.json": {
+        "file_sha256": "622ce9970fe778350f9c0841d7d091a525f69fd945a60d2cc162693d9b79bd6f",
+        "protocol_ref": "random-classification@1#ecf870583bf524f66b11ea6b1e33829351c7c761c1a842d22338a95bd976c9cc"
+      },
+      "grouped-classification-v1.json": {
+        "file_sha256": "b9fc98f21fce1348059973dcbbd5dc23496f9201b57a66309e148260c504da5d",
+        "protocol_ref": "grouped-classification@1#901703060d3f2dd756cc29339a645583410a1d69ac4f2b6ccd53f8631b411382"
+      },
+      "chronological-regression-v1.json": {
+        "file_sha256": "1ea53b563507402e80e6cff15df4f199a00a5046fef7d4f951964f3ce5e80255",
+        "protocol_ref": "chronological-regression@1#bfc61957b422df5cf09dcb37cffe06aae2ccd2b11db4fee0721b90a2bc6dbf04"
+      }
+    }
+  },
+  "freeze_sequence": {
+    "phase_1": "This file freezes the design, algorithms, systems, seeds, ordering, budgets, source inputs and failure policy.",
+    "phase_2": "A separately verified formal staging manifest must bind the post-implementation source snapshot, every derived holdout, every derived memory Bundle, each CURRENT pointer, container image, candidate contract and output root before the first formal training Pod starts.",
+    "formal_training_before_phase_2": "forbidden",
+    "revision_rule": "Any semantic change requires a new preregistration_id and a new immutable file; this r1 file must remain preserved."
+  },
+  "agent_seeds": [
+    104729,
+    130363,
+    155921
+  ],
+  "seed_policy": {
+    "all_declared_seeds_run": true,
+    "best_seed_selection": false,
+    "same_seed_shared_across_online_systems": true,
+    "source_memory_seed_overlap_allowed_only_by_split_design": true,
+    "formal_agent_seeds_absent_from_wp4_source_seed_groups": true
+  },
+  "tasks": [
+    {
+      "task_id": "aerial-cactus-identification",
+      "task_alias": "aerial_cactus",
+      "domain": "image",
+      "memory_split": "task-heldout",
+      "protocol_ref": "random-classification@1#ecf870583bf524f66b11ea6b1e33829351c7c761c1a842d22338a95bd976c9cc",
+      "terminal_metric": {
+        "name": "macro_f1",
+        "direction": "maximize",
+        "prediction_rule": "has_cactus_probability >= 0.5",
+        "average": "macro",
+        "zero_division": 0
+      },
+      "source_inputs": {
+        "source_zip_sha256": "b41166e9d3c282f7cb52a5c705bf6c35bf439f1eba99fc47a93d5e1ecc3330c4",
+        "source_relation": "build only from the labeled training image population; do not reuse the old binary-ROC-AUC holdout as the formal split"
+      },
+      "holdout_builder": {
+        "split_version": "wp8-tier2-formal-aerial-stratified-v1",
+        "strategy": "stratified_random",
+        "id_column": "id",
+        "label_column": "has_cactus",
+        "holdout_fraction": 0.2,
+        "ordering_key": "sha256(split_version + NUL + sample_id)",
+        "allocation": "within each binary class, sort by ordering_key and assign max(1, floor(class_count * 0.20)) rows to terminal holdout",
+        "physical_views": "training labels/images and unlabeled terminal images are materialized into separate train_view/input and evaluator_view roots using copied files, never hardlinks",
+        "required_checks": [
+          "train_and_holdout_id_overlap_is_zero",
+          "both_classes_exist_in_train_and_holdout",
+          "stratification_verified",
+          "terminal_labels_absent_from_train_view"
+        ]
+      },
+      "candidate_contract": {
+        "contract_id": "wp8-tier2-formal-aerial-cactus-identification-v1",
+        "contract_hash": "c9fdd7756a5dc280b3f15512a7f05074e18ef1c6deebb545abdc907fb9df5330",
+        "allowed_import_roots": [
+          "numpy",
+          "pandas",
+          "sklearn",
+          "scipy",
+          "torch",
+          "torchvision",
+          "cv2",
+          "PIL",
+          "xgboost",
+          "lightgbm"
+        ]
+      }
+    },
+    {
+      "task_id": "mlsp-2013-birds",
+      "task_alias": "mlsp_birds",
+      "domain": "audio",
+      "memory_split": "seed-heldout",
+      "protocol_ref": "grouped-classification@1#901703060d3f2dd756cc29339a645583410a1d69ac4f2b6ccd53f8631b411382",
+      "terminal_metric": {
+        "name": "macro_f1",
+        "direction": "maximize",
+        "prediction_rule": "each_species_probability >= 0.5",
+        "average": "macro_over_19_species",
+        "zero_division": 0
+      },
+      "source_inputs": {
+        "source_zip_sha256": "83c05aab4b21a2ec0e98856a32793c7b8a60c4a799d55cb7e44117966cfa2902",
+        "cvfolds_sha256": "162c08574b0928c49826983d9d79f629f2243abb8fffc08d2e9dd34b9dc550bb",
+        "record_filename_map_sha256": "508bc2f577ad274539bcf00c107af8bade30c3b977d1e202a530e58ae0ec4cf5",
+        "public_label_file_sha256": "2865c7ca6efa4b7ff8490955e53f0d38ed3637571140fdfe202d13114988aeeb",
+        "species_list_sha256": "66636ff9c3c463a676d357aaad5cab026f353d8a81a7ed695f4a993bf681064c",
+        "source_relation": "use only the 322 publicly labeled fold0 records; all fold1 question-mark labels remain excluded"
+      },
+      "holdout_builder": {
+        "split_version": "wp8-tier2-formal-mlsp-grouped-v1",
+        "strategy": "grouped",
+        "id_column": "rec_id",
+        "label_columns": "the 19 class IDs in species_list.txt, serialized as wide binary columns",
+        "group_column": "recording_session_id",
+        "group_rule": "remove the terminal underscore plus four decimal digits from the WAV filename stem",
+        "holdout_group_fraction": 0.25,
+        "ordering_key": "sha256(split_version + NUL + recording_session_id)",
+        "allocation": "sort unique fold0 groups by ordering_key and assign ceil(group_count * 0.25) groups to terminal holdout",
+        "physical_views": "copy fold0 WAV files into disjoint train_wavs and test_wavs trees; training CSV contains labels only for training groups",
+        "required_checks": [
+          "train_and_holdout_rec_id_overlap_is_zero",
+          "train_and_holdout_group_overlap_is_zero",
+          "all_19_species_have_at_least_one_positive_in_train_and_holdout",
+          "fold1_records_and_labels_absent_from_both_views",
+          "terminal_labels_absent_from_train_view"
+        ],
+        "fail_closed_rule": "If deterministic r1 allocation fails label coverage, do not rearrange groups post hoc; preserve the failed staging root and issue a new preregistration revision."
+      },
+      "candidate_contract": {
+        "contract_id": "wp8-tier2-formal-mlsp-2013-birds-v1",
+        "contract_hash": "5da8850c463738fcda7007d123e8c893c7e902ce600ab35f7b925a649a88f300",
+        "allowed_import_roots": [
+          "numpy",
+          "pandas",
+          "sklearn",
+          "scipy",
+          "torch",
+          "torchaudio",
+          "librosa",
+          "soundfile",
+          "xgboost",
+          "lightgbm"
+        ]
+      }
+    },
+    {
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "task_alias": "nyc_taxi",
+      "domain": "tabular",
+      "memory_split": "seed-heldout",
+      "protocol_ref": "chronological-regression@1#bfc61957b422df5cf09dcb37cffe06aae2ccd2b11db4fee0721b90a2bc6dbf04",
+      "terminal_metric": {
+        "name": "rmse",
+        "direction": "minimize"
+      },
+      "source_inputs": {
+        "source_zip_sha256": "b708d8b9bb88902dbebfcce01adf76d29b72fc6530a710ac1ce69cb7942e8863",
+        "labels_csv_sha256": "20497ff0e594e99e2a7f3b35c41e5aba6137e3ce7e43b327ee3553c961912321",
+        "labels_csv_size_bytes": 5662345732
+      },
+      "holdout_builder": {
+        "split_version": "wp8-tier2-formal-nyc-chronological-v1",
+        "strategy": "chronological",
+        "id_column": "key",
+        "time_column": "pickup_datetime",
+        "target_column": "fare_amount",
+        "time_window": {
+          "inclusive_start": "2009-01-01T00:00:00Z",
+          "exclusive_end": "2015-07-01T00:00:00Z",
+          "terminal_cutoff": "2014-07-01T00:00:00Z"
+        },
+        "row_filters": {
+          "fare_amount": "2.5 <= fare_amount <= 200",
+          "passenger_count": "1 <= passenger_count <= 6",
+          "pickup_and_dropoff_longitude": "-75 <= longitude <= -72",
+          "pickup_and_dropoff_latitude": "40 <= latitude <= 42",
+          "all_required_fields_finite": true,
+          "key_unique_after_filtering": true
+        },
+        "deterministic_sampling": {
+          "digest": "sha256(split_version + NUL + key)",
+          "integer_encoding": "first_8_digest_bytes_big_endian_unsigned",
+          "keep_rule": "digest_integer mod 256 == 0"
+        },
+        "allocation": "sampled rows before terminal_cutoff are training; sampled rows at or after terminal_cutoff are terminal holdout",
+        "physical_views": "train.csv contains past labels; test.csv contains future features without fare_amount; evaluator labels contain only key and fare_amount",
+        "minimum_counts": {
+          "training_rows": 50000,
+          "terminal_holdout_rows": 10000
+        },
+        "required_checks": [
+          "train_and_holdout_key_overlap_is_zero",
+          "max_train_pickup_datetime_is_before_min_holdout_pickup_datetime",
+          "future_to_past_count_is_zero",
+          "terminal_labels_absent_from_train_view"
+        ]
+      },
+      "candidate_contract": {
+        "contract_id": "wp8-tier2-formal-new-york-city-taxi-fare-prediction-v1",
+        "contract_hash": "51c2fe751076607ae486d9bad36f5620512e65b887873ed30644406578055e34",
+        "allowed_import_roots": [
+          "numpy",
+          "pandas",
+          "sklearn",
+          "scipy",
+          "torch",
+          "xgboost",
+          "lightgbm"
+        ]
+      }
+    }
+  ],
+  "shared_candidate_contract": {
+    "max_execution_seconds": 600,
+    "max_epochs": 8,
+    "max_cv_folds": 1,
+    "max_trainable_models": 2,
+    "allow_remote_assets": false,
+    "allow_unverified_local_assets": false,
+    "allow_dataset_wide_per_sample_precompute": true,
+    "allow_source_score_inheritance": false,
+    "same_contract_within_each_task_seed_block": true
+  },
+  "online_systems": [
+    {
+      "system_id": "no_memory",
+      "semantics": "Bind the same immutable Bundle and protocol as paired memory systems, but expose zero clauses, zero RunForest nodes and zero memory text."
+    },
+    {
+      "system_id": "flat_relevance_memory",
+      "semantics": "Within the hard same-domain/domain-general source universe, rank clauses by flat textual relevance only. Ignore Claim Authority, Operation, Protocol and current Stage. This is an intentionally weak baseline; it may expose invalid source content but never target holdout labels."
+    },
+    {
+      "system_id": "global_validity_bit",
+      "semantics": "Evaluate clauses using the full current Operation, Protocol, Task and Stage request. If any clause in an SOP is denied, suppress the entire SOP before ranking; otherwise expose the intact SOP."
+    },
+    {
+      "system_id": "authority_only",
+      "semantics": "Apply Claim-level Authority, Operation, Protocol and Task/domain gates before flat relevance ranking, but marginalize over Stage: a clause is eligible if it is authorized in at least one declared generation/governance stage."
+    },
+    {
+      "system_id": "full_decision_admissibility",
+      "semantics": "Apply pre-prompt Claim-level Authority for the exact current Operation, Protocol, Task/domain and generation/governance Stage, then use stage-aware SOP/RunForest routing over only the visible clauses."
+    }
+  ],
+  "oracle": {
+    "system_id": "oracle",
+    "agent_visible": false,
+    "construction": "For each task and agent seed, the CPU evaluator scores the frozen union of all candidate submissions produced by the five online systems and selects the protocol-legal best candidate as a host-side upper bound.",
+    "cross_seed_selection": false,
+    "feeds_back_into_search": false,
+    "publishes_adoption_or_causal_edges": false,
+    "interpretation": "upper bound only, not a deployable memory system"
+  },
+  "memory_bundle_contract": {
+    "same_bundle_within_task_seed_block": true,
+    "no_memory_still_binds_bundle_identity": true,
+    "task_heldout_target_history_exposure": 0,
+    "seed_heldout_group_overlap": 0,
+    "hard_domain_rule": "Every online system, including Flat, receives only same-domain method content or explicitly domain-general guardrails. Cross-domain and unknown-source method content is forbidden.",
+    "provisional_method_rule": "A clean, manifest-bound source execution may authorize a same-domain METHOD_HYPOTHESIS for GENERATE_CANDIDATE without clean-replay certification. It cannot authorize source Score inheritance, Rank, Select, Promote, positive-result distillation or a target Result Fact.",
+    "selected_seed_heldout_provisional_methods": [
+      {
+        "clause_id": "clause::06c4a3d0455368ac50513172",
+        "task_id": "mlsp-2013-birds",
+        "source_run_id": "20260716_070743_mlsp-2013-birds",
+        "source_node_id": "91ffa7572b3d4774bc33d0c000e418e4"
+      },
+      {
+        "clause_id": "clause::641451816c260f793c6cc4b8",
+        "task_id": "new-york-city-taxi-fare-prediction",
+        "source_run_id": "20260716_173558_new-york-city-taxi-fare-prediction",
+        "source_node_id": "896f942ce32946658c08a46c7591acac"
+      }
+    ],
+    "provisional_publication_obligations": [
+      "source_run_is_in_the_memory_side_of_the_frozen_split",
+      "source_journal_hash_is_manifest_bound",
+      "source_node_code_hash_matches_clean_audit_sidecar",
+      "source_node_has_successful_execution_evidence",
+      "trusted_METHOD_IDENTITY_and_CODE_EXECUTION_receipts_are_host_collected",
+      "published_retrieval_text_contains_no_numeric_source_score_or_success_ranking_claim",
+      "source_task_and_source_domain_lineage_are_explicit",
+      "source_score_inheritance_is_false"
+    ],
+    "aerial_memory_parent": {
+      "path": "/workspace/decision-admissibility-wp8-method-only-certified-r3",
+      "bundle_id": "mlevolve-be034ec-image-aerial-task-heldout-certified-replay-method-only-v7",
+      "manifest_sha256": "782bbae91c19d5a2e92aa8d7aca9bf6949824ca50505121373a784e6018881f3"
+    },
+    "seed_memory_parent": {
+      "path": "/workspace/decision-admissibility-wp4-20260719-r1/corrected-r2/bundle-seed-heldout",
+      "bundle_id": "mlevolve-be034ec-nonspooky-seed-heldout-v1",
+      "manifest_sha256": "8d612b60a83d1469dbb05caad228be791280ebcd68027d0141ccdae1840ae7d8"
+    },
+    "formal_child_bundle_requirement": "All formal runs use newly published, immutable, validator-clean child Bundles with domain lineage, protocol registry binding, artifact hashes and a separately hash-bound CURRENT pointer. Raw WP4 Bundles are not mounted directly as enforce memory."
+  },
+  "condition_order_design": {
+    "online_condition_count": 5,
+    "method": "nine distinct sequences from a ten-sequence balanced Latin/Williams construction for five online systems; across the nine task-seed blocks each system occupies each position either once or twice",
+    "oracle_position": "host-side only after all five online candidate sets are frozen",
+    "blocks": [
+      {
+        "task_id": "aerial-cactus-identification",
+        "agent_seed": 104729,
+        "order": ["no_memory", "flat_relevance_memory", "full_decision_admissibility", "global_validity_bit", "authority_only"]
+      },
+      {
+        "task_id": "aerial-cactus-identification",
+        "agent_seed": 130363,
+        "order": ["authority_only", "global_validity_bit", "full_decision_admissibility", "flat_relevance_memory", "no_memory"]
+      },
+      {
+        "task_id": "aerial-cactus-identification",
+        "agent_seed": 155921,
+        "order": ["flat_relevance_memory", "global_validity_bit", "no_memory", "authority_only", "full_decision_admissibility"]
+      },
+      {
+        "task_id": "mlsp-2013-birds",
+        "agent_seed": 104729,
+        "order": ["full_decision_admissibility", "authority_only", "no_memory", "global_validity_bit", "flat_relevance_memory"]
+      },
+      {
+        "task_id": "mlsp-2013-birds",
+        "agent_seed": 130363,
+        "order": ["global_validity_bit", "authority_only", "flat_relevance_memory", "full_decision_admissibility", "no_memory"]
+      },
+      {
+        "task_id": "mlsp-2013-birds",
+        "agent_seed": 155921,
+        "order": ["no_memory", "full_decision_admissibility", "flat_relevance_memory", "authority_only", "global_validity_bit"]
+      },
+      {
+        "task_id": "new-york-city-taxi-fare-prediction",
+        "agent_seed": 104729,
+        "order": ["authority_only", "full_decision_admissibility", "global_validity_bit", "no_memory", "flat_relevance_memory"]
+      },
+      {
+        "task_id": "new-york-city-taxi-fare-prediction",
+        "agent_seed": 130363,
+        "order": ["flat_relevance_memory", "no_memory", "global_validity_bit", "full_decision_admissibility", "authority_only"]
+      },
+      {
+        "task_id": "new-york-city-taxi-fare-prediction",
+        "agent_seed": 155921,
+        "order": ["full_decision_admissibility", "no_memory", "authority_only", "flat_relevance_memory", "global_validity_bit"]
+      }
+    ]
+  },
+  "search_budget": {
+    "provider": "deepseek",
+    "expected_model": "deepseek-chat",
+    "code_temperature": 1.0,
+    "feedback_temperature": 1.0,
+    "initial_drafts": 3,
+    "total_steps": 6,
+    "repair_or_improvement_steps": 3,
+    "parallel_search_num": 1,
+    "num_gpus": 1,
+    "cpu_number": 8,
+    "agent_time_limit_seconds": 4200,
+    "condition_launcher_timeout_seconds": 4800,
+    "same_prompt_and_nonmemory_config_within_block": true,
+    "coldstart_legacy_static_memory": false,
+    "terminal_scores_visible_during_search": false
+  },
+  "selection_and_terminal_evaluation": {
+    "system_selected_node": "Before any terminal labels are mounted, the training process freezes exactly one selected_node_id per online condition using the solver's internal search-only metric and records its code, submission hash, selection basis and candidate-set hash in a v3 evaluation request.",
+    "system_metric": "The CPU evaluator reports the terminal metric of the preselected node. It must not replace that node with the terminal-best candidate.",
+    "oracle_metric": "The CPU evaluator may additionally score all frozen submissions solely to construct the declared per-task/per-seed Oracle upper bound.",
+    "writeback": "PROMOTE_RESULT and the independent Result Fact use only the preselected node and selected terminal score. Oracle selection never writes a normal system Result Fact.",
+    "adoption_and_causal": "Result Fact derived_from_refs remains empty. Adoption requires static plus runtime actuation; Causal additionally requires a memory-on/off counterfactual. Their absence never blocks an independent clean Result Fact.",
+    "old_best_terminal_behavior": "The canary-era practice of treating terminal-best among all submissions as the system result is forbidden for formal Tier-2."
+  },
+  "pod_and_label_isolation": {
+    "execution_kind": "devpod_only",
+    "kubernetes_job_forbidden": true,
+    "training_mounts": [
+      "immutable source snapshot read-only",
+      "one selected train_view read-only",
+      "one selected formal memory Bundle read-only",
+      "fresh output root read-write",
+      "solver environment secret as a single read-only file",
+      "ephemeral work and cache"
+    ],
+    "training_forbidden_mounts": [
+      "/workspace",
+      "evaluator_view",
+      "terminal labels",
+      "another split Bundle",
+      "prior formal output roots"
+    ],
+    "evaluator_is_cpu_only": true,
+    "evaluator_has_no_solver_secret": true,
+    "evaluator_has_no_memory_bundle": true,
+    "ordering": "For each task-seed block: run and freeze all five conditions in one paired GPU devpod, delete that GPU Pod and verify NotFound, then start a separate CPU evaluator devpod.",
+    "user_pods_out_of_scope": [
+      "jupyter-a10-d48dfd589-pqfkb"
+    ]
+  },
+  "failure_and_retry_policy": {
+    "failed_source_or_output_root_reuse": false,
+    "every_retry_uses_new_roots": true,
+    "old_failed_roots_preserved": true,
+    "model_or_candidate_failure_counts_as_outcome": true,
+    "candidate_execution_contract_denial_counts_as_outcome": true,
+    "retryable_infrastructure_failures": [
+      "verified_pod_eviction_or_node_loss",
+      "provider_transport_failure_before_a_complete_response",
+      "cluster_storage_or_kubernetes_transport_failure",
+      "source_or_mount_integrity_preflight_failure_before_generation"
+    ],
+    "nonretryable_as_infrastructure": [
+      "generated_code_error",
+      "candidate_timeout_under_the_shared_contract",
+      "invalid_submission",
+      "no_valid_preselected_submission",
+      "authority_denial",
+      "memory_empty_pack"
+    ],
+    "exclusion_rule": "No condition, seed or task is excluded after observing a terminal metric. Every exclusion and retry must be classified from pre-metric infrastructure evidence and retained in the Evidence Ledger."
+  },
+  "analysis_plan": {
+    "statistical_unit": "task -> agent_seed -> online_system",
+    "online_system_observation_count": 45,
+    "oracle_observation_count": 9,
+    "native_metric_reporting": true,
+    "utility_orientation": "macro_f1 is used directly; RMSE deltas are sign-flipped so positive paired utility deltas favor the first-named system",
+    "primary_online_contrast": "full_decision_admissibility minus no_memory, paired within task and agent_seed",
+    "secondary_online_contrasts": [
+      "full_decision_admissibility minus flat_relevance_memory",
+      "full_decision_admissibility minus global_validity_bit",
+      "full_decision_admissibility minus authority_only"
+    ],
+    "multiple_comparison_correction": "Holm over the four declared Full contrasts",
+    "uncertainty": [
+      "paired seed deltas with numerator and denominator",
+      "paired bootstrap resampling task-seed blocks",
+      "task-stratified effect sizes and confidence intervals",
+      "mixed-effects model with task as random intercept when estimable"
+    ],
+    "cross_task_aggregation": "Never average raw macro-F1 and RMSE. Cross-task summaries use paired win/tie/loss counts and within-task standardized utility deltas, alongside every native-metric result.",
+    "oracle_gap": "For each task-seed block report Oracle utility minus each system utility; do not select the best seed.",
+    "paper_claim_rule": "Infrastructure completion does not imply Full superiority. If the declared effect gate fails, retain the complete result and shrink the paper claim rather than changing systems, tasks, seeds or exclusions."
+  },
+  "formal_stop_gate": {
+    "required_before_result_interpretation": [
+      "verified_staging_manifest_binds_source_bundle_pointer_data_contract_and_container_hashes",
+      "all_nine_task_seed_blocks_have_frozen_candidate_sets_or_retained_nonretryable_failure_receipts",
+      "every_training_gpu_pod_was_deleted_and_verified_NotFound_before_its_cpu_evaluator_started",
+      "training_views_contained_no_terminal_labels",
+      "all_system_results_use_preselected_nodes_not_terminal_best_nodes",
+      "oracle_uses_only_the_frozen_candidate_union",
+      "no_target_history_or_cross_domain_method_exposure",
+      "no_source_score_inheritance",
+      "exactly_one_independent_Result_Fact_per_successful_online_condition",
+      "Result_Adoption_and_Causal_publications_are_separate",
+      "statistics_and_exclusions_match_this_preregistration",
+      "all_packet_files_and_ledgers_verify_without_mutation"
+    ],
+    "effect_claim_gate": "A Full-superiority statement is permitted only if the frozen corrected contrast supports it with directionally consistent task-level evidence and reported uncertainty. Otherwise effect_claim_authorized is false.",
+    "next_authority_after_pass": "WP8 evidence synthesis and final independent Claude-agent review only after code, data processing, formal execution, statistics and full tests are complete."
+  },
+  "claims_not_authorized_by_preregistration": [
+    "Formal Tier-2 execution has started.",
+    "The derived holdouts or formal child Bundles already exist.",
+    "All candidate dependencies are available in the training image.",
+    "Full Decision Admissibility improves any target metric.",
+    "WP8 Stop Gate has passed."
+  ]
+}

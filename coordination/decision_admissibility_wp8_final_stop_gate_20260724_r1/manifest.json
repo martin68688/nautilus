@@ -1,0 +1,12 @@
+{
+  "builder_source_sha256": "75d93dc1b1729a639e1a3557c66549ee80c727c9750db30775f1d7ff26c1205d",
+  "files": {
+    "stop_gate_report.json": "4b327910350e078a3376e425fcd4b3a0b7326f70fcba6f9c1cf8ad96dafd779b",
+    "stop_gate_report.md": "4047b53fc8ef101866e9204f6910ee6bbf6ac4b340898eaf4e155b91f776e08c"
+  },
+  "manifest_hash": "6b4f2050474fd97b4bdf549570b13f45d8ae8cfd23e689a8f2cb891e8d151291",
+  "report_hash": "de73a72b8e55db72a54e8cbcd38fa1d3ce4df580158c1e4449692c0675bac5e2",
+  "schema": "decision_admissibility_wp8_final_stop_gate_manifest_v1",
+  "status": "complete",
+  "verifier_source_sha256": "cec400f775af2887e38743faf91011e41a2f73e1cf4a2d6a3976a8d856eca1f6"
+}

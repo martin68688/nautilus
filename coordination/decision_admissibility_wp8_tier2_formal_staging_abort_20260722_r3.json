@@ -1,0 +1,20 @@
+{
+  "causes": [
+    "kubectl_exec_websocket_close_1006_unexpected_eof",
+    "source_contract_superseded_before_any_formal_training"
+  ],
+  "formal_training_started": false,
+  "preserved_roots": [
+    "/workspace/decision-admissibility-wp8-tier2-formal-source-r1",
+    "/workspace/decision-admissibility-wp8-tier2-formal-control-r1",
+    "/workspace/.decision-admissibility-wp8-tier2-formal-staging-r3.staging-7761f7ec5f734b9f8ff94ab7e7919aff",
+    "/workspace/.decision-admissibility-wp8-tier2-formal-runs-r1.staging-3b3228f5a88d4014bf65f229e32fccaa"
+  ],
+  "report_hash": "445912fa7565c0320275a2ee7f32a43fd8a5ed26ff877cc57bdef85e115193d7",
+  "reuse_for_formal_execution": false,
+  "schema": "decision_admissibility_wp8_tier2_formal_staging_abort_v1",
+  "source_snapshot_sha256": "c0aa6ca32b915957a761701fc6ae3b6f7b31c6e6c4206db94a1c4e90e29a029d",
+  "staging_revision": "r3",
+  "status": "aborted_before_staging_stop_gate",
+  "terminal_metric_observed": false
+}

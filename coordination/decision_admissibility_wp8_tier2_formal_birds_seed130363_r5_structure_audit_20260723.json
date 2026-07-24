@@ -1,0 +1,97 @@
+{
+  "agent_seed": 130363,
+  "artifact_bindings": {
+    "BLOCK_EVALUATION_FILE_MANIFEST.json": {
+      "file_sha256": "0c3813b4ebe357554ed5f5fb6eb02f48561db308ef752036ba90d84fa4e4d981",
+      "internal_hash": "9bc45485d3309e6fc8240a021fa6ebc6d5b790dec61fc23f3201ee5fc45b7ece"
+    },
+    "EVALUATION_SUMMARY.json": {
+      "file_sha256": "4443312a1c4611b983824339766fd1a5b3d64441330dc47dcafb36dd456eff79",
+      "internal_hash": "f5be2c8409271985229a7a1be07a6cae46f932666046af479863a19164450ac2"
+    },
+    "EVALUATOR_ISOLATION.json": {
+      "file_sha256": "c8dbf7c313a5f7566152d5f6800701a780d99cbb08a2e6aa68d286d8307f4091",
+      "internal_hash": "4de9165503226b5dcd79da7e93d65e890ff6cf0156fb341da8e3966dc02f732b"
+    },
+    "EVALUATOR_POD_CREATION_ATTESTATION.json": {
+      "file_sha256": "7a8887c6212a706ac0385d42cd54cb7a09abfc15c83762d7fd2ac7cf165297c9",
+      "internal_hash": "d204bf84e5773358dbde562ffd8436a383aff36644e3451e60ef44231f8b1c8b"
+    },
+    "EVALUATOR_POD_DELETION_ATTESTATION.json": {
+      "file_sha256": "c4c23b520dcc6d2922f859d45d49e9c91509efc43dc58578e1d2ee1214d9fa34",
+      "internal_hash": "489eeaffb37ddbd8d9b6d6d01283e1978bc79702b220ccb0fbe3197cca0a8930"
+    },
+    "TRAINING_MANIFEST.json": {
+      "file_sha256": "f322b4b3c83aa0382c9db8886ad938112e9c50e2b8cdacb2b9954fcda165c8da",
+      "internal_hash": "96815117f945f4c5a2b9ea8e8507ad63b213738cea81062d5fdae38e885c6f5c"
+    },
+    "TRAINING_POD_DELETION_ATTESTATION.json": {
+      "file_sha256": "e109469acff965875a81e830f39ba8c280074b1ab26b17ed8a759fad7614d3ff",
+      "internal_hash": "80936468fce1f974a028dd55ee2b1d614895cd955e0d2ca4c9ff5fd1cdc0b4e6"
+    }
+  },
+  "audit_hash": "82013408bb41d3ca13023ca0f2fef266dd88f77ace7ddfbbfd1b898204dff2a3",
+  "audited_at_utc": "2026-07-23T05:30:20Z",
+  "block_id": "wp8-tier2-formal-birds-seed-130363-r5",
+  "condition_structure": {
+    "authority_only": {
+      "failure_classification": "retained_run_failure",
+      "result_fact_count": 0,
+      "status": "pre_terminal_failure",
+      "terminal_metric_observed": false
+    },
+    "flat_relevance_memory": {
+      "failure_classification": "authority_denial",
+      "result_fact_count": 0,
+      "status": "pre_terminal_failure",
+      "terminal_metric_observed": false
+    },
+    "full_decision_admissibility": {
+      "failure_classification": "retained_run_failure",
+      "result_fact_count": 0,
+      "status": "pre_terminal_failure",
+      "terminal_metric_observed": false
+    },
+    "global_validity_bit": {
+      "failure_classification": "retained_run_failure",
+      "result_fact_count": 0,
+      "status": "pre_terminal_failure",
+      "terminal_metric_observed": false
+    },
+    "no_memory": {
+      "failure_classification": "authority_denial",
+      "result_fact_count": 0,
+      "status": "pre_terminal_failure",
+      "terminal_metric_observed": false
+    }
+  },
+  "failed_online_condition_count": 5,
+  "lifecycle": {
+    "evaluator_created_after_training_not_found_attestation": true,
+    "evaluator_pod_not_found": true,
+    "training_pod_not_found": true
+  },
+  "online_condition_count": 5,
+  "oracle_structure": {
+    "candidate_union_count": 0,
+    "normal_result_fact_published": false,
+    "score_values_omitted": true,
+    "scored_candidate_count": 0
+  },
+  "result_fact_count": 0,
+  "schema": "decision_admissibility_wp8_tier2_formal_block_structure_audit_v1",
+  "score_values_included": false,
+  "score_values_inspected": false,
+  "status": "passed",
+  "structural_invariants": {
+    "all_five_conditions_retained": true,
+    "failed_conditions_have_no_terminal_result_or_result_fact": true,
+    "source_scores_not_inherited": true,
+    "successful_conditions_have_exactly_one_independent_result_fact": true,
+    "successful_plus_failed_equals_five": true,
+    "target_history_not_used": true,
+    "terminal_values_remain_blinded": true
+  },
+  "successful_selected_result_count": 0,
+  "task_id": "mlsp-2013-birds"
+}

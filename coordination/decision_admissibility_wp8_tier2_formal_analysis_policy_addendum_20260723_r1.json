@@ -1,0 +1,486 @@
+{
+  "analysis_policy": {
+    "completion_endpoint": {
+      "completed_value": 1,
+      "completed_when": "scored_selected_result",
+      "discordant_table_fields": [
+        "both_completed",
+        "left_only_completed",
+        "right_only_completed",
+        "neither_completed"
+      ],
+      "exact_discordant_sign_test": {
+        "alternative": "left_completion_probability_greater_than_right",
+        "null_probability": 0.5,
+        "p_formula": "binomial_upper_tail_of_left_only_completed_given_all_discordant",
+        "zero_discordant_rule": "p_equals_1.0"
+      },
+      "failed_value": 0,
+      "failed_when": "pre_terminal_failure",
+      "paired_binary_difference": "mean_over_9_of_left_completion_minus_right_completion",
+      "population": "all_9_assigned_task_seed_blocks_per_online_system",
+      "system_report": "completion_count_and_rate_with_denominator_9"
+    },
+    "continuous_native_and_standardized_effects": {
+      "assigned_denominator_blocks": 9,
+      "native_delta": {
+        "maximize": "left_score_minus_right_score",
+        "minimize": "right_score_minus_left_score",
+        "positive_always_favors_left": true
+      },
+      "pair_eligibility": "left_and_right_both_have_scored_selected_result_in_same_task_seed_block",
+      "per_task_native_reporting_required": true,
+      "per_task_required_fields": [
+        "task_id",
+        "native_metric",
+        "direction",
+        "n_scored_pairs",
+        "assigned_pairs",
+        "missing_block_ids",
+        "paired_native_deltas",
+        "mean_native_delta"
+      ],
+      "required_availability_report": {
+        "denominator": 9,
+        "missing_block_ids_required": true,
+        "numerator": "n_scored_pairs",
+        "rendering": "n_scored_pairs/9",
+        "word_exclusion_for_missing_failures_forbidden": true
+      },
+      "standardized_delta": {
+        "classification_macro_f1": "native_delta_divided_by_1.0",
+        "regression_reference_system": "contrast_right",
+        "regression_rmse": "native_delta_divided_by_abs_contrast_right_reference_score",
+        "zero_or_nonfinite_reference_rule": "standardized_delta_not_estimable_no_epsilon_substitution"
+      },
+      "unscored_pair_semantics": "continuous_delta_undefined_but_failed_assignment_retained_in_itt_disposition_and_completion_endpoint"
+    },
+    "cross_task_aggregation": {
+      "all_three_tasks_required_for_task_macro": true,
+      "allowed_cross_task_effect_summaries": [
+        "task_macro_standardized_delta",
+        "win_tie_loss"
+      ],
+      "loss_rule": "delta_less_than_zero",
+      "raw_native_delta_pooling_across_tasks_forbidden": true,
+      "raw_native_metric_pooling_forbidden": true,
+      "task_macro_standardized_delta": "unweighted_mean_of_three_task_mean_standardized_deltas",
+      "task_without_scored_pair_rule": "task_macro_not_estimable",
+      "tie_rule": "delta_exactly_equal_to_zero_no_tolerance",
+      "win_rule": "delta_greater_than_zero",
+      "win_tie_loss_reports_n_over_9_and_missing_blocks": true,
+      "win_tie_loss_unit": "available_task_seed_standardized_delta"
+    },
+    "exact_sign_flip_and_holm": {
+      "adjusted_p_cap": 1.0,
+      "alternative": "mean_standardized_delta_greater_than_zero",
+      "correction": "Holm_step_down",
+      "empty_available_set_rule": "not_estimable",
+      "enumeration": "all_2_power_n_sign_vectors",
+      "family": [
+        "full_minus_no_memory",
+        "full_minus_flat_relevance_memory",
+        "full_minus_global_validity_bit",
+        "full_minus_authority_only"
+      ],
+      "family_size": 4,
+      "holm_sort_tie_break": "frozen_family_order",
+      "not_estimable_raw_p_for_holm": 1.0,
+      "raw_p_formula": "count(permuted_mean_greater_than_or_equal_to_observed_mean)/2_power_n",
+      "role": "inference_only_not_an_additional_cross_task_effect_summary",
+      "test_unit": "available_task_seed_standardized_delta",
+      "zero_deltas_retained": true
+    },
+    "itt_population": {
+      "all_failures_retained": true,
+      "allowed_final_dispositions": [
+        "scored_selected_result",
+        "pre_terminal_failure"
+      ],
+      "constant_or_model_based_score_imputation_forbidden": true,
+      "disposition_unit": "task_seed_system_assignment",
+      "estimand": "all_45_assigned_online_system_outcomes",
+      "oracle_or_source_score_imputation_forbidden": true,
+      "other_system_score_imputation_forbidden": true,
+      "post_assignment_exclusion_forbidden": true,
+      "rerun_to_replace_failure_forbidden": true
+    },
+    "mixed_effects_sensitivity": {
+      "minimum_distinct_tasks": 2,
+      "minimum_pairs_per_contributing_task": 2,
+      "minimum_total_pairs": 4,
+      "model": "intercept_only_linear_mixed_model_with_task_random_intercept",
+      "not_estimable_output": {
+        "allowed_reasons": [
+          "fewer_than_two_tasks_with_scored_pairs",
+          "fewer_than_two_pairs_in_a_contributing_task",
+          "fewer_than_four_total_scored_pairs",
+          "zero_within_task_variation",
+          "optimizer_nonconvergence",
+          "singular_random_effect_covariance",
+          "nonfinite_estimate_or_standard_error",
+          "software_error"
+        ],
+        "reason_required": true,
+        "status": "not_estimable"
+      },
+      "outcome": "available_task_seed_standardized_delta",
+      "required_diagnostics": [
+        "optimizer_converged",
+        "finite_fixed_effect",
+        "finite_standard_error",
+        "nonsingular_random_effect_covariance"
+      ],
+      "role": "sensitivity_only_not_used_by_effect_claim_gate"
+    },
+    "paired_bootstrap": {
+      "all_three_tasks_require_at_least_one_pair": true,
+      "confidence_level": 0.95,
+      "interval": "percentile",
+      "iterations": 20000,
+      "quantile_method": "linear",
+      "quantiles": [
+        0.025,
+        0.975
+      ],
+      "replicate_reduction": "mean_within_each_task_then_unweighted_macro_mean_across_three_tasks",
+      "resampling_scope": "within_task_available_scored_pairs_with_replacement",
+      "resampling_unit": "task_seed_block",
+      "rng": "numpy.random.Generator(numpy.random.PCG64(20260723))",
+      "rng_reinitialized_per_contrast": true,
+      "sample_size_per_task": "observed_available_scored_pair_count_for_task",
+      "seed": 20260723
+    }
+  },
+  "analysis_policy_hash": "26d4fe7e7645fe8f1911e757df2e15a9cf85966158e0d567e6d7e0dd3705670d",
+  "analysis_policy_id": "wp8-tier2-formal-analysis-policy-r1",
+  "design": {
+    "agent_seeds": [
+      104729,
+      130363,
+      155921
+    ],
+    "assigned_block_count": 9,
+    "assigned_online_outcome_count": 45,
+    "assigned_oracle_outcome_count": 9,
+    "contrasts": [
+      {
+        "contrast_id": "full_minus_no_memory",
+        "left": "full_decision_admissibility",
+        "right": "no_memory",
+        "role": "primary"
+      },
+      {
+        "contrast_id": "full_minus_flat_relevance_memory",
+        "left": "full_decision_admissibility",
+        "right": "flat_relevance_memory",
+        "role": "secondary"
+      },
+      {
+        "contrast_id": "full_minus_global_validity_bit",
+        "left": "full_decision_admissibility",
+        "right": "global_validity_bit",
+        "role": "secondary"
+      },
+      {
+        "contrast_id": "full_minus_authority_only",
+        "left": "full_decision_admissibility",
+        "right": "authority_only",
+        "role": "secondary"
+      }
+    ],
+    "online_systems": [
+      "full_decision_admissibility",
+      "no_memory",
+      "flat_relevance_memory",
+      "global_validity_bit",
+      "authority_only"
+    ],
+    "tasks": [
+      {
+        "direction": "maximize",
+        "native_metric": "macro_f1",
+        "standardization": "native_delta_divided_by_1.0",
+        "task_id": "aerial-cactus-identification"
+      },
+      {
+        "direction": "maximize",
+        "native_metric": "macro_f1",
+        "standardization": "native_delta_divided_by_1.0",
+        "task_id": "mlsp-2013-birds"
+      },
+      {
+        "direction": "minimize",
+        "native_metric": "rmse",
+        "standardization": "native_delta_divided_by_abs_contrast_right_reference_score",
+        "task_id": "new-york-city-taxi-fare-prediction"
+      }
+    ]
+  },
+  "effect_claim_gate": {
+    "authorized_only_in_post_reveal_statistics_receipt": true,
+    "criteria": [
+      "all_9_blocks_have_complete_five_system_dispositions",
+      "all_45_assignments_retained_with_no_imputation_or_post_assignment_exclusion",
+      "primary_has_at_least_one_scored_pair_in_each_of_all_3_tasks",
+      "each_task_primary_mean_oriented_native_delta_is_strictly_greater_than_zero",
+      "primary_task_macro_standardized_bootstrap_95pct_ci_lower_is_strictly_greater_than_zero",
+      "primary_holm_adjusted_exact_one_sided_sign_flip_p_is_less_than_or_equal_to_0.05",
+      "full_completion_count_is_greater_than_or_equal_to_no_memory_completion_count",
+      "no_block_has_full_failed_and_no_memory_scored"
+    ],
+    "decision_rule": "all_criteria_must_be_true_else_false",
+    "default_effect_claim_authorized": false,
+    "not_estimable_or_missing_criterion_value": "criterion_false",
+    "this_addendum_effect_claim_authorized": false
+  },
+  "frozen_at_utc": "2026-07-23T09:01:39Z",
+  "itt_disposition_matrix": [
+    {
+      "agent_seed": 104729,
+      "block_id": "wp8-tier2-formal-aerial-seed-104729-r3",
+      "dispositions": {
+        "authority_only": "scored_selected_result",
+        "flat_relevance_memory": "scored_selected_result",
+        "full_decision_admissibility": "scored_selected_result",
+        "global_validity_bit": "scored_selected_result",
+        "no_memory": "scored_selected_result"
+      },
+      "task_id": "aerial-cactus-identification"
+    },
+    {
+      "agent_seed": 130363,
+      "block_id": "wp8-tier2-formal-aerial-seed-130363-r3",
+      "dispositions": {
+        "authority_only": "scored_selected_result",
+        "flat_relevance_memory": "scored_selected_result",
+        "full_decision_admissibility": "scored_selected_result",
+        "global_validity_bit": "scored_selected_result",
+        "no_memory": "scored_selected_result"
+      },
+      "task_id": "aerial-cactus-identification"
+    },
+    {
+      "agent_seed": 155921,
+      "block_id": "wp8-tier2-formal-aerial-seed-155921-r3",
+      "dispositions": {
+        "authority_only": "scored_selected_result",
+        "flat_relevance_memory": "scored_selected_result",
+        "full_decision_admissibility": "scored_selected_result",
+        "global_validity_bit": "scored_selected_result",
+        "no_memory": "scored_selected_result"
+      },
+      "task_id": "aerial-cactus-identification"
+    },
+    {
+      "agent_seed": 104729,
+      "block_id": "wp8-tier2-formal-birds-seed-104729-r3",
+      "dispositions": {
+        "authority_only": "pre_terminal_failure",
+        "flat_relevance_memory": "scored_selected_result",
+        "full_decision_admissibility": "pre_terminal_failure",
+        "global_validity_bit": "scored_selected_result",
+        "no_memory": "scored_selected_result"
+      },
+      "task_id": "mlsp-2013-birds"
+    },
+    {
+      "agent_seed": 130363,
+      "block_id": "wp8-tier2-formal-birds-seed-130363-r5",
+      "dispositions": {
+        "authority_only": "pre_terminal_failure",
+        "flat_relevance_memory": "pre_terminal_failure",
+        "full_decision_admissibility": "pre_terminal_failure",
+        "global_validity_bit": "pre_terminal_failure",
+        "no_memory": "pre_terminal_failure"
+      },
+      "task_id": "mlsp-2013-birds"
+    },
+    {
+      "agent_seed": 155921,
+      "block_id": "wp8-tier2-formal-birds-seed-155921-r5",
+      "dispositions": {
+        "authority_only": "scored_selected_result",
+        "flat_relevance_memory": "pre_terminal_failure",
+        "full_decision_admissibility": "scored_selected_result",
+        "global_validity_bit": "pre_terminal_failure",
+        "no_memory": "scored_selected_result"
+      },
+      "task_id": "mlsp-2013-birds"
+    },
+    {
+      "agent_seed": 104729,
+      "block_id": "wp8-tier2-formal-taxi-seed-104729-r5",
+      "dispositions": {
+        "authority_only": "pre_terminal_failure",
+        "flat_relevance_memory": "pre_terminal_failure",
+        "full_decision_admissibility": "pre_terminal_failure",
+        "global_validity_bit": "pre_terminal_failure",
+        "no_memory": "pre_terminal_failure"
+      },
+      "task_id": "new-york-city-taxi-fare-prediction"
+    },
+    {
+      "agent_seed": 130363,
+      "block_id": "wp8-tier2-formal-taxi-seed-130363-r5",
+      "dispositions": {
+        "authority_only": "pre_terminal_failure",
+        "flat_relevance_memory": "pre_terminal_failure",
+        "full_decision_admissibility": "pre_terminal_failure",
+        "global_validity_bit": "pre_terminal_failure",
+        "no_memory": "pre_terminal_failure"
+      },
+      "task_id": "new-york-city-taxi-fare-prediction"
+    },
+    {
+      "agent_seed": 155921,
+      "block_id": "wp8-tier2-formal-taxi-seed-155921-r5",
+      "dispositions": {
+        "authority_only": "pre_terminal_failure",
+        "flat_relevance_memory": "pre_terminal_failure",
+        "full_decision_admissibility": "pre_terminal_failure",
+        "global_validity_bit": "pre_terminal_failure",
+        "no_memory": "scored_selected_result"
+      },
+      "task_id": "new-york-city-taxi-fare-prediction"
+    }
+  ],
+  "known_structural_counts": {
+    "assigned_online_outcome_count": 45,
+    "block_count": 9,
+    "by_system": {
+      "authority_only": {
+        "assigned_block_count": 9,
+        "failed_online_condition_count": 5,
+        "scored_selected_result_count": 4
+      },
+      "flat_relevance_memory": {
+        "assigned_block_count": 9,
+        "failed_online_condition_count": 5,
+        "scored_selected_result_count": 4
+      },
+      "full_decision_admissibility": {
+        "assigned_block_count": 9,
+        "failed_online_condition_count": 5,
+        "scored_selected_result_count": 4
+      },
+      "global_validity_bit": {
+        "assigned_block_count": 9,
+        "failed_online_condition_count": 5,
+        "scored_selected_result_count": 4
+      },
+      "no_memory": {
+        "assigned_block_count": 9,
+        "failed_online_condition_count": 3,
+        "scored_selected_result_count": 6
+      }
+    },
+    "by_task": {
+      "aerial-cactus-identification": {
+        "block_count": 3,
+        "failed_online_condition_count": 0,
+        "scored_selected_result_count": 15
+      },
+      "mlsp-2013-birds": {
+        "block_count": 3,
+        "failed_online_condition_count": 9,
+        "scored_selected_result_count": 6
+      },
+      "new-york-city-taxi-fare-prediction": {
+        "block_count": 3,
+        "failed_online_condition_count": 14,
+        "scored_selected_result_count": 1
+      }
+    },
+    "failed_online_condition_count": 23,
+    "scored_selected_result_count": 22
+  },
+  "preregistration_file_bindings": [
+    {
+      "file_sha256": "8e52e09750e84027470624cabdf7b3933055a5dbb50b9c7e431e7b725f3f0806",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r1.json",
+      "revision": "r1"
+    },
+    {
+      "file_sha256": "1e667eee5647d6a28d9d0441a35e691257b1a56c71e04be22e472317fd958247",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r2.json",
+      "revision": "r2"
+    },
+    {
+      "file_sha256": "95659800115e75849cdecf7a62f67a4fc4a052821aca8b64af803785b0bf940e",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r3.json",
+      "revision": "r3"
+    },
+    {
+      "file_sha256": "4594682b3134ec563a17829b9fbd0ac48026357cb695654373e343a20aad01cb",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260722_r4.json",
+      "revision": "r4"
+    },
+    {
+      "file_sha256": "36bed4960bac6732fb94150e937f1fe8e68826a5d2ccb63655cf8abdd1b2cf5c",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r5.json",
+      "revision": "r5"
+    },
+    {
+      "file_sha256": "3b1290854630588a5c94f4cc50f8859fd9aef4c9bb63812020c7cc36610e039d",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r6.json",
+      "revision": "r6"
+    },
+    {
+      "file_sha256": "d19db9e780f6f40f5f03e54f3512d8b86bd29b0b18e5ba6d0a4f18628a8c4ec3",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r7.json",
+      "revision": "r7"
+    },
+    {
+      "file_sha256": "0af210a13d2462fb1a8bef266d30a8e91dd86416d3259366219cc16d931c7384",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r8.json",
+      "revision": "r8"
+    },
+    {
+      "file_sha256": "dd41c01ae9b8331566d011f75b1b991cba7ddaf14d400de69cdcb0b3b23d90af",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_preregistration_20260723_r9.json",
+      "revision": "r9"
+    }
+  ],
+  "result_blind_freeze": {
+    "effect_claim_authorized": false,
+    "freeze_timing": "frozen_after_structural_dispositions_before_score_reveal",
+    "oracle_score_values_inspected_for_this_addendum": false,
+    "policy_selected_from_structural_dispositions_only": true,
+    "source_score_values_used_to_choose_policy": false,
+    "terminal_score_values_included": false,
+    "terminal_score_values_inspected_for_this_addendum": false
+  },
+  "schema": "decision_admissibility_wp8_tier2_formal_analysis_policy_addendum_v1",
+  "status": "frozen_after_structural_dispositions_before_score_reveal",
+  "structural_evidence_file_bindings": [
+    {
+      "file_sha256": "74ab746d2cdb3a2bd011a2fe84affc2686d236103b20cbad1c696e7c5ccb2a6b",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_completed_blocks_freeze_20260723_r1.json"
+    },
+    {
+      "file_sha256": "c36fb2d38d72137e57861af6c707a0a997cc70d79fc931ab4cde9c48ccbdec96",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_birds_seed104729_r3_structure_audit_20260723.json"
+    },
+    {
+      "file_sha256": "74e0ceb077a561ae169196d79bf0ed289a1bdb2d2b4aa884bdaa15ddd36ac4cf",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_birds_seed130363_r5_structure_audit_20260723.json"
+    },
+    {
+      "file_sha256": "8679701d0c8e5bba754c0e2bfb38e26bdb631c71bdfe6d3ddb471b45b82e3df4",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_birds_seed155921_r5_structure_audit_20260723.json"
+    },
+    {
+      "file_sha256": "703335a21d5338ecc0fe05c490ae13ff40eeef448c78de6dd9b589a69c058db1",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_taxi_seed104729_r5_structure_audit_20260723.json"
+    },
+    {
+      "file_sha256": "7825c406f806cd6fb21a01418e551390d7d237e7b98432aa6ba524712f5c8b3d",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_taxi_seed130363_r5_structure_audit_20260723.json"
+    },
+    {
+      "file_sha256": "7091e109466bbccef12d8f57a5a2ff138eb996517143d95df9dcbe616f858f47",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_taxi_seed155921_r5_structure_audit_20260723.json"
+    }
+  ]
+}

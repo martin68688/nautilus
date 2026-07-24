@@ -4,6 +4,16 @@ import time
 
 import humanize
 
+from engine.candidate_execution_contract import (
+    candidate_execution_contract_from_cfg,
+)
+
+
+def get_candidate_execution_contract_from_agent(agent):
+    """Return the canonical host-owned contract, or an empty mapping."""
+
+    return candidate_execution_contract_from_cfg(agent.cfg) or {}
+
 
 def get_impl_guideline_from_agent(agent):
     """Build implementation guideline from agent config."""
@@ -16,6 +26,9 @@ def get_impl_guideline_from_agent(agent):
         expose_prediction=getattr(agent.acfg, "expose_prediction", False),
         k_fold_validation=getattr(agent.acfg, "k_fold_validation", 0),
         pretrain_model_dir=getattr(agent.cfg, "pretrain_model_dir", ""),
+        candidate_execution_contract=get_candidate_execution_contract_from_agent(
+            agent
+        ),
     )
 
 
@@ -31,12 +44,13 @@ def get_impl_guideline(
     expose_prediction: bool = False,
     k_fold_validation: int = 0,
     pretrain_model_dir: str = "",
+    candidate_execution_contract: dict | None = None,
 ) -> dict:
     """Build implementation guideline from time and config."""
     impl_guideline = [
         f"**Resource Budget**: Time left ≈ {_format_time(tot_time_remaining)} | Steps left = {steps_remaining} | Max execution time per run = {humanize.naturaldelta(exec_timeout)}",
         "",
-        "**Note:** Code execution MUST complete within 9 hours (hard limit) — any solution exceeding this will be invalid. Within this constraint, prioritize performance and optimization.",
+        f"**Hard deadline:** Code execution MUST complete within {humanize.naturaldelta(exec_timeout)}. This is the actual per-candidate host limit; any conflicting generic runtime guidance is void.",
         "🎯 **CRITICAL REQUIREMENTS** (Non-Negotiable):",
         "",
         "**1. Model Inference for ALL Predictions**",
@@ -75,6 +89,26 @@ def get_impl_guideline(
         "□ Did I print validation metric as the last line?",
         "□ Did I use the COMPLETE training dataset (not a tiny subset)?",
     ]
+    contract = dict(candidate_execution_contract or {})
+    if contract:
+        allowed = ", ".join(contract["allowed_import_roots"])
+        impl_guideline.extend(
+            [
+                "",
+                "🧪 **PAIRED CANDIDATE EXECUTION CONTRACT (HOST-ENFORCED)**:",
+                f"• Contract ID/hash: `{contract['contract_id']}` / `{contract['contract_hash']}`.",
+                "• This feasibility boundary is identical for No-Memory and memory-enabled conditions. Memory content cannot relax it.",
+                f"• Produce a complete model-inference submission within {contract['max_execution_seconds']} seconds; the host terminates longer candidates.",
+                f"• Train at most {contract['max_epochs']} epochs, use at most {contract['max_cv_folds']} validation fold, and instantiate at most {contract['max_trainable_models']} trainable model. No CV ensemble or model ensemble.",
+                f"• Imports are restricted to the Python standard library plus these verified roots: {allowed}.",
+                "• Do not use `skimage` or another package outside that allowlist, even if a transitive dependency appears likely to exist.",
+                "• Do not download or resolve remote repositories, pretrained weights, HuggingFace assets, or torch.hub assets. Use locally constructible architectures with `weights=None`/`pretrained=False`.",
+                "• Do not load a pre-existing local checkpoint or repository. A checkpoint created by this candidate under `./working` may be reloaded by the same candidate.",
+                "• Do not precompute handcrafted features with a Python per-image pass over the full dataset. Use batched DataLoader/tensor operations or vectorized tabular operations.",
+                "• If a retrieved method is too expensive, implement a budget-compatible instance of its method hypothesis; never copy or inherit its source-task score, rank, or success conclusion.",
+                "• The host statically audits imports, remote assets, literal local loads, fold count, and epoch count before execution; violations fail closed.",
+            ]
+        )
     if expose_prediction:
         impl_guideline.append(
             "The implementation should include a predict() function, "

@@ -1,6 +1,6 @@
 {
   "schema": "runforest_causal_granularity_benchmark_v2_report",
-  "code_commit": "422f9051a47be02cfd627766de0b9a3266b88362",
+  "code_commit": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
   "memory_manifest": {
     "schema": "runforest_causal_granularity_benchmark_v2_manifest",
     "graph_path": "/Users/haoming/Downloads/nautilus/paper-skills/hyper_memory/run_forest_graph.json",
@@ -59,7 +59,7 @@
             "detail_intrusion_at_5": 0.5444444444444445
           }
         },
-        "mean_latency_sec": 0.00591799266791592
+        "mean_latency_sec": 0.005875301081687212
       },
       "tree_only": {
         "episode_count": 120,
@@ -84,7 +84,7 @@
             "detail_intrusion_at_5": 0.0
           }
         },
-        "mean_latency_sec": 0.019202246815742303
+        "mean_latency_sec": 0.018979603828241428
       },
       "sop_only": {
         "episode_count": 120,
@@ -109,7 +109,7 @@
             "detail_intrusion_at_5": 0.0
           }
         },
-        "mean_latency_sec": 0.019117671235774954
+        "mean_latency_sec": 0.01881022463009382
       },
       "stage_hybrid_dynamic": {
         "episode_count": 120,
@@ -134,7 +134,7 @@
             "detail_intrusion_at_5": 0.0
           }
         },
-        "mean_latency_sec": 0.01774774897688379
+        "mean_latency_sec": 0.017003161448519676
       },
       "oracle_level": {
         "episode_count": 120,
@@ -159,7 +159,7 @@
             "detail_intrusion_at_5": 0.0
           }
         },
-        "mean_latency_sec": 0.00011513160619263848
+        "mean_latency_sec": 0.00011568888245771329
       }
     },
     "causal_debug_transfer": {
@@ -181,7 +181,7 @@
         "top_packet_complete_rate_when_tree": 0.0,
         "unsafe_count": 0,
         "source_run_escape_count": 0,
-        "mean_latency_sec": 2.3518836027697513e-06,
+        "mean_latency_sec": 2.583366279539309e-06,
         "by_split": {
           "dev": {
             "episode_count": 13,
@@ -201,7 +201,7 @@
             "top_packet_complete_rate_when_tree": 0.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 2.371720396555387e-06
+            "mean_latency_sec": 2.509556137598478e-06
           },
           "test": {
             "episode_count": 25,
@@ -221,7 +221,7 @@
             "top_packet_complete_rate_when_tree": 0.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 2.3415684700012205e-06
+            "mean_latency_sec": 2.621747553348541e-06
           }
         }
       },
@@ -243,7 +243,7 @@
         "top_packet_complete_rate_when_tree": 1.0,
         "unsafe_count": 0,
         "source_run_escape_count": 0,
-        "mean_latency_sec": 7.802527397871017e-05,
+        "mean_latency_sec": 7.317873257163323e-05,
         "by_split": {
           "dev": {
             "episode_count": 13,
@@ -263,7 +263,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 7.893263290707882e-05
+            "mean_latency_sec": 7.070833817124367e-05
           },
           "test": {
             "episode_count": 25,
@@ -283,7 +283,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 7.755344733595849e-05
+            "mean_latency_sec": 7.446333765983581e-05
           }
         }
       },
@@ -305,7 +305,7 @@
         "top_packet_complete_rate_when_tree": 1.0,
         "unsafe_count": 0,
         "source_run_escape_count": 0,
-        "mean_latency_sec": 9.085093379804963e-05,
+        "mean_latency_sec": 9.024781665127528e-05,
         "by_split": {
           "dev": {
             "episode_count": 13,
@@ -325,7 +325,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 8.988774453218166e-05
+            "mean_latency_sec": 8.365053396958571e-05
           },
           "test": {
             "episode_count": 25,
@@ -345,7 +345,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 9.135179221630097e-05
+            "mean_latency_sec": 9.367840364575386e-05
           }
         }
       },
@@ -367,7 +367,7 @@
         "top_packet_complete_rate_when_tree": 1.0,
         "unsafe_count": 0,
         "source_run_escape_count": 0,
-        "mean_latency_sec": 0.003816631573595499,
+        "mean_latency_sec": 0.0036990668649148,
         "by_split": {
           "dev": {
             "episode_count": 13,
@@ -387,7 +387,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 0.003902618630001178
+            "mean_latency_sec": 0.0037756826585301985
           },
           "test": {
             "episode_count": 25,
@@ -407,7 +407,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 0.0037719183042645454
+            "mean_latency_sec": 0.003659226652234793
           }
         }
       },
@@ -429,7 +429,7 @@
         "top_packet_complete_rate_when_tree": 1.0,
         "unsafe_count": 0,
         "source_run_escape_count": 0,
-        "mean_latency_sec": 0.0027356678129811037,
+        "mean_latency_sec": 0.0026297017711361774,
         "by_split": {
           "dev": {
             "episode_count": 13,
@@ -449,7 +449,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 0.002727198736885419
+            "mean_latency_sec": 0.00268416995039353
           },
           "test": {
             "episode_count": 25,
@@ -469,7 +469,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 0.0027400717325508596
+            "mean_latency_sec": 0.002601378317922354
           }
         }
       },
@@ -491,7 +491,7 @@
         "top_packet_complete_rate_when_tree": 1.0,
         "unsafe_count": 0,
         "source_run_escape_count": 0,
-        "mean_latency_sec": 0.004746309064916875,
+        "mean_latency_sec": 0.004611626071365256,
         "by_split": {
           "dev": {
             "episode_count": 13,
@@ -511,7 +511,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 0.005664794669988064
+            "mean_latency_sec": 0.005482234096584411
           },
           "test": {
             "episode_count": 25,
@@ -531,7 +531,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 0.004268696550279855
+            "mean_latency_sec": 0.004158909898251295
           }
         }
       },
@@ -553,7 +553,7 @@
         "top_packet_complete_rate_when_tree": 1.0,
         "unsafe_count": 0,
         "source_run_escape_count": 0,
-        "mean_latency_sec": 0.004566317963364877,
+        "mean_latency_sec": 0.004502556004904602,
         "by_split": {
           "dev": {
             "episode_count": 13,
@@ -573,7 +573,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 0.005367012801938332
+            "mean_latency_sec": 0.005340746854646848
           },
           "test": {
             "episode_count": 25,
@@ -593,7 +593,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 0.00414995664730668
+            "mean_latency_sec": 0.004066696763038636
           }
         }
       },
@@ -615,7 +615,7 @@
         "top_packet_complete_rate_when_tree": 1.0,
         "unsafe_count": 0,
         "source_run_escape_count": 0,
-        "mean_latency_sec": 6.559243621794801e-06,
+        "mean_latency_sec": 6.4374977036526326e-06,
         "by_split": {
           "dev": {
             "episode_count": 13,
@@ -635,7 +635,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 7.1795299076117e-06
+            "mean_latency_sec": 7.035174908546301e-06
           },
           "test": {
             "episode_count": 25,
@@ -655,7 +655,7 @@
             "top_packet_complete_rate_when_tree": 1.0,
             "unsafe_count": 0,
             "source_run_escape_count": 0,
-            "mean_latency_sec": 6.236694753170014e-06
+            "mean_latency_sec": 6.126705557107925e-06
           }
         }
       }
@@ -690,5 +690,5 @@
     ]
   },
   "receipt_path": "/Users/haoming/Downloads/nautilus/paper-skills/eval_composite_memory/reports/causal_granularity_receipts_v2.jsonl",
-  "receipt_sha256": "5a5c59bea38116c4dec86b5bde3e936ca6544abdf772809910b55ca8c1a7f636"
+  "receipt_sha256": "68cdc1ce098ee18c068d42d5863364cbad493aab49e9028f2f931014f4402e93"
 }

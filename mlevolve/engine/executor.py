@@ -6,7 +6,10 @@ Python interpreter for executing code snippets via subprocess.
 """
 
 import logging
+import hashlib
+import json
 import os
+import secrets
 import signal
 import sys
 import threading
@@ -19,6 +22,19 @@ from pathlib import Path
 
 import humanize
 from dataclasses_json import DataClassJsonMixin
+
+from authority.runtime_protocol import (
+    OBSERVATION_SCHEMA,
+    build_runtime_protocol_plan,
+    instrument_runtime_protocol_source,
+    parse_runtime_protocol_trace,
+    strip_runtime_protocol_markers,
+)
+from engine.candidate_execution_contract import (
+    audit_candidate_code,
+    build_candidate_execution_block_receipt,
+    candidate_execution_contract_from_cfg,
+)
 
 logger = logging.getLogger("MLEvolve")
 
@@ -35,6 +51,15 @@ def _execution_environment() -> dict[str, str]:
     env["PYTHONUNBUFFERED"] = "1"
     return env
 
+
+def _runtime_protocol_observer_enabled(cfg) -> bool:
+    authority = getattr(cfg, "evaluation_authority", None) if cfg else None
+    mode = str(getattr(authority, "mode", "off") or "off").lower()
+    enabled = bool(
+        getattr(authority, "runtime_protocol_observer_enabled", True)
+    )
+    return enabled and mode in {"shadow", "enforce"}
+
 @dataclass
 class ExecutionResult(DataClassJsonMixin):
     """
@@ -47,6 +72,7 @@ class ExecutionResult(DataClassJsonMixin):
     exc_type: str | None
     exc_info: dict | None = None
     exc_stack: list[tuple] | None = None
+    protocol_observation: dict | None = None
 
 
 
@@ -74,6 +100,14 @@ class Interpreter:
         assert self.working_dir.exists(), f"Working directory {self.working_dir} does not exist"
         self.timeout = timeout
         self.cfg = cfg
+        self.candidate_execution_contract = (
+            candidate_execution_contract_from_cfg(cfg) if cfg is not None else None
+        )
+        if self.candidate_execution_contract:
+            self.timeout = min(
+                self.timeout,
+                int(self.candidate_execution_contract["max_execution_seconds"]),
+            )
         self.max_parallel_run = (
             cfg.agent.search.parallel_search_num if (cfg and getattr(cfg.agent.search, "parallel_search_num", None)) else max_parallel_run
         )
@@ -212,7 +246,11 @@ class Interpreter:
         
         try:
             cpu_number_per_session = max(1, int(self.cpu_number / self.max_parallel_run))
-            avail_cpus = sorted(os.sched_getaffinity(0))
+            avail_cpus = (
+                sorted(os.sched_getaffinity(0))
+                if hasattr(os, "sched_getaffinity")
+                else list(range(os.cpu_count() or 1))
+            )
             start = process_id * cpu_number_per_session
             cpu_set = set(avail_cpus[start:start + cpu_number_per_session])
             if not cpu_set:
@@ -224,16 +262,82 @@ class Interpreter:
             gpu_id = process_id % num_gpus
             logger.info(f"has set process_id:{process_id} to use GPU: {gpu_id}")
 
-            pre_code = "import os\nos.sched_setaffinity(0, {cpu_set})\nos.environ['CUDA_VISIBLE_DEVICES'] = '{gpu_id}'\n".format(cpu_set=cpu_set, gpu_id=gpu_id)
-
-            code = self.isolate_submission_path(code=code, _id=id)
-            code = self.isolate_model_path(code=code, _id=id)
-            code = pre_code + code
-
             # decide runfile location and cwd
             run_wd = Path(working_dir).resolve() if working_dir is not None else self.working_dir
             runfile_path = run_wd / self.agent_file_name[process_id]
             run_wd.mkdir(parents=True, exist_ok=True)
+
+            pre_code = "import os\nif hasattr(os, 'sched_setaffinity'):\n    os.sched_setaffinity(0, {cpu_set})\nos.environ['CUDA_VISIBLE_DEVICES'] = '{gpu_id}'\n".format(cpu_set=cpu_set, gpu_id=gpu_id)
+            source_code_sha256 = hashlib.sha256(code.encode("utf-8")).hexdigest()
+            if self.candidate_execution_contract:
+                contract_audit = audit_candidate_code(
+                    code,
+                    self.candidate_execution_contract,
+                )
+                audit_root = run_wd / "working"
+                audit_root.mkdir(parents=True, exist_ok=True)
+                audit_path = audit_root / f"candidate_execution_contract_audit_{id}.json"
+                audit_path.write_text(
+                    json.dumps(contract_audit, sort_keys=True, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                audit_path.chmod(audit_path.stat().st_mode & ~0o222)
+                if not contract_audit["valid"]:
+                    block_receipt = build_candidate_execution_block_receipt(
+                        node_id=str(id),
+                        contract=self.candidate_execution_contract,
+                        audit=contract_audit,
+                    )
+                    block_path = audit_root / (
+                        f"candidate_execution_block_receipt_{id}.json"
+                    )
+                    block_path.write_text(
+                        json.dumps(block_receipt, sort_keys=True, indent=2) + "\n",
+                        encoding="utf-8",
+                    )
+                    block_path.chmod(block_path.stat().st_mode & ~0o222)
+                    message = "; ".join(contract_audit["violations"])
+                    return ExecutionResult(
+                        term_out=[
+                            "Candidate execution contract rejected code before execution: "
+                            f"{message}\n",
+                            f"Audit receipt: {audit_path}\n",
+                        ],
+                        exec_time=time.time() - start_time,
+                        exc_type="CandidateExecutionContractError",
+                        exc_info={
+                            "message": message,
+                            "audit_path": str(audit_path),
+                            "audit_hash": contract_audit["audit_hash"],
+                            "block_receipt_path": str(block_path),
+                            "block_receipt_hash": block_receipt["receipt_hash"],
+                        },
+                        exc_stack=[],
+                    )
+            candidate_code = self.isolate_submission_path(code=code, _id=id)
+            candidate_code = self.isolate_model_path(code=candidate_code, _id=id)
+            protocol_plan = None
+            protocol_nonce = ""
+            if _runtime_protocol_observer_enabled(self.cfg):
+                protocol_plan = build_runtime_protocol_plan(
+                    candidate_code,
+                    source_code_sha256=source_code_sha256,
+                )
+                protocol_nonce = secrets.token_hex(32)
+                try:
+                    candidate_code = instrument_runtime_protocol_source(
+                        candidate_code,
+                        protocol_plan,
+                        protocol_nonce,
+                        filename=str(runfile_path),
+                    )
+                except Exception as error:
+                    logger.warning(
+                        "Host runtime protocol instrumentation unavailable: %s",
+                        type(error).__name__,
+                    )
+            code = pre_code + candidate_code
+
             with open(runfile_path, "w") as f:
                 f.write(code)
 
@@ -360,8 +464,56 @@ class Interpreter:
                 output.append(
                     f"Execution time: {humanize.naturaldelta(exec_time)} seconds (time limit is {humanize.naturaldelta(self.timeout)})."
                 )
-            
-            return ExecutionResult(output, exec_time, exc_type, exc_info, exc_stack)
+
+            protocol_observation = None
+            if protocol_plan is not None:
+                try:
+                    protocol_observation = parse_runtime_protocol_trace(
+                        stdout or "",
+                        protocol_plan,
+                        protocol_nonce,
+                        execution_succeeded=(proc.returncode == 0 and exc_type is None),
+                    )
+                except Exception as error:
+                    protocol_observation = {
+                        "schema": OBSERVATION_SCHEMA,
+                        "status": "blocked",
+                        "reason": f"host_protocol_parser_error:{type(error).__name__}",
+                        "source_code_sha256": source_code_sha256,
+                        "plan_sha256": protocol_plan.get("plan_sha256", ""),
+                        "event_hashes": {},
+                        "scope_hashes": {},
+                        "scope_input_hashes": {},
+                        "scope_output_hashes": {},
+                        "callable_refs": {},
+                    }
+                cleaned_stdout = strip_runtime_protocol_markers(stdout or "")
+                output = []
+                if cleaned_stdout:
+                    output.extend(cleaned_stdout.splitlines(keepends=True))
+                if stderr:
+                    output.extend(stderr.splitlines(keepends=True))
+                if not output:
+                    output = [""]
+                if output and output[-1] and not output[-1].endswith("\n"):
+                    output.append("\n")
+                if exc_type == "TimeoutError":
+                    output.append(
+                        f"Execution time: TimeoutError: Execution exceeded the time limit of {humanize.naturaldelta(self.timeout)}"
+                    )
+                else:
+                    output.append(
+                        f"Execution time: {humanize.naturaldelta(exec_time)} seconds (time limit is {humanize.naturaldelta(self.timeout)})."
+                    )
+
+            return ExecutionResult(
+                output,
+                exec_time,
+                exc_type,
+                exc_info,
+                exc_stack,
+                protocol_observation,
+            )
             
         except Exception as e:
             logger.error(f"Error in _run_subprocess: {e}")
@@ -404,4 +556,3 @@ class Interpreter:
                 if process_id is not None:
                     self.status_map[process_id] = 0
                     self.current_parallel_run -= 1
-

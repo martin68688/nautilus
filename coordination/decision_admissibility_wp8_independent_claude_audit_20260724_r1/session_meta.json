@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "sessionId": "b0d62720-cdc7-4afe-9d3a-e543414a0214",
+  "status": "idle",
+  "createdAt": "2026-07-24T08:26:52.658Z",
+  "lastActiveAt": "2026-07-24T08:32:39.485Z",
+  "model": "glm-5.2[1m]",
+  "cwd": "/Users/haoming/Downloads/nautilus",
+  "permissionMode": "default",
+  "totalTurns": 48,
+  "totalCostUsd": 1.8056069999999997
+}
+

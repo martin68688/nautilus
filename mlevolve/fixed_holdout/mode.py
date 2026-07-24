@@ -5,6 +5,7 @@ from typing import Any
 
 
 EVALUATION_MODE = "terminal_only"
+INTERNAL_METRIC_DISPOSITION = "search_only"
 
 
 def _config(cfg: Any) -> Any:
@@ -19,6 +20,29 @@ def bypass_protocol_gates(cfg: Any) -> bool:
     fixed_cfg = _config(cfg)
     return enabled(cfg) and bool(
         getattr(fixed_cfg, "bypass_protocol_gates", False)
+    )
+
+
+def search_only_candidate_selection(cfg: Any) -> bool:
+    """Return whether target-node ordering is a provisional search operation.
+
+    In fixed-holdout mode the candidate's internal validation metric is never
+    terminal evidence.  It may order freshly executed target-task candidates
+    before the label-isolated evaluator runs, but it cannot authorize a Result
+    Fact, inherit a source score, or rank memory Claims.
+    """
+
+    fixed_cfg = _config(cfg)
+    return bool(
+        bypass_protocol_gates(cfg)
+        and getattr(fixed_cfg, "evaluation_mode", EVALUATION_MODE)
+        == EVALUATION_MODE
+        and getattr(
+            fixed_cfg,
+            "internal_metric_disposition",
+            INTERNAL_METRIC_DISPOSITION,
+        )
+        == INTERNAL_METRIC_DISPOSITION
     )
 
 

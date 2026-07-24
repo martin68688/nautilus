@@ -1,0 +1,25 @@
+{
+  "schema": "decision_admissibility_wp8_independent_claude_audit_manifest_v1",
+  "status": "complete",
+  "created_at_utc": "2026-07-24T08:32:39.485Z",
+  "root": "coordination/decision_admissibility_wp8_independent_claude_audit_20260724_r1",
+  "verdict": "PLAN_APPROVED",
+  "session_id": "b0d62720-cdc7-4afe-9d3a-e543414a0214",
+  "actual_model": "glm-5.2[1m]",
+  "packet_sha256": "d7bff2358fd0291a4b246c38a751b16f42b9cb1230e7ee11dadda926e12c4977",
+  "files": {
+    "COMPLETE": "37a40f08d8548dba289b9b0bb35bcf63b359f6d37ee86044ebc6b6da080b9ec1",
+    "audit_metadata.json": "e7bed39c894686fa6424e434162f4453e22a6c11a5a9149a484119edb8bb0d2a",
+    "audit_report.md": "3c37f98a611983b138c93f6d9eb57866aa9bdc18c807ed73664011a85627b0dd",
+    "raw_public_event.json": "60271b2cb2361cbf1a54ed181bdf88167e8ac327b8d0acd0409a0953169cd88b",
+    "session_meta.json": "b60f9345ec3fd475818d0faca62f63680258a7b10ad70841c667a0864855b602",
+    "session_result.json": "ac94c588da5551643fecc8cb50da3075ab24a317cd08c9e991a19d5edf5648fb",
+    "tool_use_inventory.json": "5cb56700621dce0fe3edb7d626e0baf04eadf5aaee5596063b02eca176b8ddc2"
+  },
+  "claim_authority": {
+    "wp8_engineering_completion_authorized": true,
+    "performance_superiority_authorized": false,
+    "experience_causality_status": "pending_without_L4"
+  },
+  "manifest_hash": "cd26d79ac9761bf2f2b9e01c1b1b3b4ebe8ddc62b2867994dc9f54f1cabde60f"
+}

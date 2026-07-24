@@ -54,6 +54,21 @@ class DraftRolePolicyConfig:
 
 
 @dataclass
+class CandidateExecutionContractConfig:
+    enabled: bool = False
+    contract_id: str = ""
+    max_execution_seconds: int = 0
+    max_epochs: int = 0
+    max_cv_folds: int = 0
+    max_trainable_models: int = 0
+    allowed_import_roots: list[str] = field(default_factory=list)
+    allow_remote_assets: bool = True
+    allow_unverified_local_assets: bool = True
+    allow_dataset_wide_per_sample_precompute: bool = True
+    allow_source_score_inheritance: bool = False
+
+
+@dataclass
 class ProtocolRepairConfig:
     enabled: bool = True
     per_stage_attempt_limit: int = 2
@@ -133,6 +148,9 @@ class AgentConfig:
     decay: DecayConfig
     use_diff_mode: bool = True
     draft_role_policy: DraftRolePolicyConfig = field(default_factory=DraftRolePolicyConfig)
+    candidate_execution_contract: CandidateExecutionContractConfig = field(
+        default_factory=CandidateExecutionContractConfig
+    )
     protocol_repair: ProtocolRepairConfig = field(default_factory=ProtocolRepairConfig)
 @dataclass
 class ExecConfig:
@@ -176,15 +194,30 @@ class EvaluationAuthorityConfig:
     active_protocol_id: str = "mlevolve-default"
     active_protocol_version: str = "1"
     policy_version: str = "authority_v1"
+    collector_version: str = "1"
+    rollout_id: str = "authority-shadow-v1"
+    expected_bundle_id: str = ""
+    expected_bundle_manifest_sha256: str = ""
+    require_bound_bundle: bool = False
+    enforce_operations: list[str] = field(default_factory=list)
+    enforce_generation_stages: list[str] = field(default_factory=list)
+    enforce_governance_stages: list[str] = field(default_factory=list)
+    canary_minimum_decisions: int = 20
+    canary_max_unauthorized_authority_allows: int = 0
+    canary_max_false_denial_rate: float = 0.05
     fail_closed_high_risk: bool = True
     allow_invalid_debug: bool = True
     emit_snapshot: bool = True
     enable_causal_actuation: bool = False
+    runtime_protocol_observer_enabled: bool = True
 
 
 @dataclass
 class ExternalSkillMemoryConfig:
     enable: bool = False
+    bundle_root: str = ""
+    current_pointer_path: str = "CURRENT.json"
+    session_overlay_path: str = ""
     graph_path: str = "../paper-skills/distillation/graph_build/graph_optimized_skillgraph.json"
     index_path: str = ""
     text_model_path: str = ""
@@ -223,6 +256,7 @@ class ExternalSkillMemoryConfig:
     strategy_candidate_limit: int = 12
     strategy_route_count: int = 3
     l2_tactic_limit: int = 4
+    visibility_token_budget: int = 4096
     stage_quotas: dict = field(default_factory=dict)
     rrf_weights: dict = field(default_factory=dict)
     blocked_run_prefixes: list[str] = field(default_factory=list)
@@ -309,17 +343,86 @@ def _populate_run_identity(cfg) -> None:
     memory_cfg = cfg.external_skill_memory
     identity.memory_enabled = bool(memory_cfg.enable)
     if identity.memory_enabled:
-        graph_path = _resolve_memory_artifact(memory_cfg.graph_path)
-        index_path = _resolve_memory_artifact(memory_cfg.index_path) if memory_cfg.index_path else None
+        bundle_root = str(getattr(memory_cfg, "bundle_root", "") or "").strip()
+        base = None
+        if bundle_root:
+            from authority.memory_snapshot import MemorySnapshotLoader
+
+            base = MemorySnapshotLoader(
+                _resolve_memory_artifact(bundle_root)
+            ).load_base(
+                current_path=str(
+                    getattr(memory_cfg, "current_pointer_path", "CURRENT.json")
+                    or "CURRENT.json"
+                )
+            )
+            graph_path = base.path / "runforest" / "graph.json"
+            index_path = base.path / "runforest" / "index.npz"
+            identity.memory_snapshot_sha256 = base.manifest_sha256
+            identity.memory_version = base.bundle_version
+            authority_cfg = getattr(cfg, "evaluation_authority", None)
+            if authority_cfg is not None and bool(
+                getattr(authority_cfg, "require_bound_bundle", False)
+            ):
+                expected_id = str(
+                    getattr(authority_cfg, "expected_bundle_id", "") or ""
+                )
+                expected_manifest = str(
+                    getattr(
+                        authority_cfg,
+                        "expected_bundle_manifest_sha256",
+                        "",
+                    )
+                    or ""
+                )
+                if not expected_id or not expected_manifest:
+                    raise ValueError("A required Bundle must have explicit identity pins")
+                if base.bundle_id != expected_id:
+                    raise ValueError("Run identity Bundle ID does not match the required pin")
+                if base.manifest_sha256 != expected_manifest:
+                    raise ValueError(
+                        "Run identity Bundle manifest does not match the required pin"
+                    )
+                expected_policy = str(
+                    getattr(authority_cfg, "policy_version", "") or ""
+                )
+                if expected_policy and str(
+                    base.manifest.get("authority_policy_version") or ""
+                ) != expected_policy:
+                    raise ValueError(
+                        "Run identity Bundle policy does not match the active policy"
+                    )
+        else:
+            graph_path = _resolve_memory_artifact(memory_cfg.graph_path)
+            index_path = _resolve_memory_artifact(memory_cfg.index_path) if memory_cfg.index_path else None
         if not graph_path.is_file():
             raise FileNotFoundError(f"Run identity memory graph not found: {graph_path}")
         graph = json.loads(graph_path.read_text(encoding="utf-8"))
         meta = graph.get("meta") or {}
-        if meta.get("source_membership_verified") is not True or meta.get("leak_verified") is not True:
-            raise ValueError("Memory-enabled runs require a source-verified and leak-verified graph")
-        identity.memory_snapshot_sha256 = _sha256_file(graph_path)
+        legacy_provenance_fields = {
+            "source_membership_verified",
+            "leak_verified",
+        } & set(meta)
+        if legacy_provenance_fields:
+            if (
+                meta.get("source_membership_verified") is not True
+                or meta.get("leak_verified") is not True
+            ):
+                raise ValueError(
+                    "Memory-enabled runs require a source-verified and leak-verified graph"
+                )
+            source_runs = [str(value) for value in (meta.get("source_runs") or [])]
+        elif base is not None:
+            provenance = base.verify_run_identity_provenance()
+            source_runs = [str(value) for value in provenance["source_runs"]]
+        else:
+            raise ValueError(
+                "Memory-enabled runs require a source-verified and leak-verified graph"
+            )
+        if not bundle_root:
+            identity.memory_snapshot_sha256 = _sha256_file(graph_path)
         identity.memory_index_sha256 = _sha256_file(index_path) if index_path and index_path.is_file() else ""
-        identity.memory_source_runs = [str(value) for value in (meta.get("source_runs") or [])]
+        identity.memory_source_runs = source_runs
         identity.memory_source_count = len(identity.memory_source_runs)
     else:
         identity.memory_system = "none"

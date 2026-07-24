@@ -1,0 +1,35 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_historical_verifier_upgrade_v1",
+  "status": "revision_aware_verifier_upgrade_frozen",
+  "created_at_utc": "2026-07-23T16:00:00Z",
+  "reason": "Historical r6/r7 amendments bind their then-current verifier and execution source hashes. Later immutable r8/r9 amendments supersede execution sources. The verifier must accept a current source only through the official r6-r7-r8-r9 chain; its own revision-aware code change is bound here as an explicit old-to-new upgrade rather than exempted.",
+  "scope": {
+    "historical_amendments_mutated": false,
+    "scientific_design_changed": false,
+    "formal_outputs_changed": false,
+    "source_hash_checks_disabled": false,
+    "temporary_mutation_fixtures_may_use_upgrade": false
+  },
+  "upgrades": {
+    "paper-skills/memory_bundle/verify_tier2_formal_preterminal_recovery_amendment.py": {
+      "ancestor_revision": "r6",
+      "historical_file_sha256": "72f98c9661617a75e272f451815f8da1bfc34a4f684b82e87eadfc95e495846b",
+      "upgraded_file_sha256": "bb1d21d65815e4ad8d200423ccbd310abdea33fc0ca45f7e1d4c0d4058ed38c1"
+    },
+    "paper-skills/memory_bundle/verify_tier2_formal_continuation_amendment.py": {
+      "ancestor_revision": "r7",
+      "historical_file_sha256": "ea39e33b4b1c05128cc21882b2e5c61519d3542ebd5eb810c109226591f31ca0",
+      "upgraded_file_sha256": "c36746aac16344db107e4e955285eb889f9c67ba0064b0ee08c4b33983471121"
+    }
+  },
+  "revision_chain_helper": {
+    "path": "paper-skills/memory_bundle/tier2_formal_revision_chain.py",
+    "file_sha256": "c782cd3dfc09f810d2f02afe1aca21dc2c2e273d3c6ab62fa49705e1af86be28"
+  },
+  "targeted_regression": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=mlevolve:paper-skills/memory_bundle .venv/bin/python -m pytest -q -p no:cacheprovider tests/test_tier2_formal_preterminal_recovery_amendment.py tests/test_tier2_formal_continuation_amendment.py",
+    "passed": 8,
+    "failed": 0
+  },
+  "receipt_hash": "3327321939bf9c8050089cacff54cc3bd93de97a708e5c265209d9bb929ba917"
+}

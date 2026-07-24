@@ -130,6 +130,9 @@ def refine_plan_to_json(
         alpha=0.5,
         dissimilar=False,
         label_filter=1,
+        authority_operation="generate_candidate",
+        authority_generation_stage="improve",
+        authority_governance_stage="retrieval",
     )
 
     similar_fail_records = agent_instance.global_memory.retrieve_similar_records(
@@ -138,6 +141,9 @@ def refine_plan_to_json(
         alpha=0.5,
         dissimilar=False,
         label_filter=-1,
+        authority_operation="generate_candidate",
+        authority_generation_stage="improve",
+        authority_governance_stage="retrieval",
     )
 
     refinement_guidance = _build_refinement_guidance(similar_success_records, similar_fail_records)

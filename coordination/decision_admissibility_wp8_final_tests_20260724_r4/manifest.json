@@ -1,0 +1,29 @@
+{
+  "files": {
+    "baseline_section_20_1.log": "3b047a80398961294646f15bce4393da6ce112b0034b35c810fd5009311a1453",
+    "baseline_section_20_1.xml": "6ec59c1cea3f70e85c278ec63073e52ebb3f75b5ffd85ea5224a9dd4fc1593d7",
+    "baseline_section_20_1_r2.xml": "7111fcf2e3075ca53992d68428756256dcfd46ba91ffd49f40ca97fe8a257881",
+    "baseline_section_20_1_r3.xml": "e4945be31e3bf9af34d7107b9237c5d68c4b3fd0c51771d87bc441be035777c8",
+    "frozen_composite_lock_regression.log": "7323e43e1a1b96478a62af1cf2823b8d3a07b10cb86d94849e521dc3d441f2a3",
+    "frozen_composite_lock_regression.xml": "1ee6cc1a809b691d4eb881adb76b22cd0bced4947e760cb9e11c96ddef0f6257",
+    "full_suite_r2.log": "9f017ad709dcf1eac0bcbcff5502e4da94ba5ebb9bf099db6d702480436cc582",
+    "full_suite_r2.xml": "58932eca1d02b3e702d42548688a6745d096d941eb5bc9a4374bdac601fbe1d1",
+    "integration_section_20_3.log": "abae8cc0f9f96b8487398d75990ceb790e56fa12abf716bb58ef7faa711fd407",
+    "integration_section_20_3.xml": "32c475f021f050497f8a1a26fe83f162812e0336b68319e72625e73f80d3321e",
+    "new_unit_section_20_2.log": "ffac3df5798f17f723a7b6a2997e6f15330edeccdee48394d529fd95bf6a627c",
+    "new_unit_section_20_2.xml": "c3d38fc80b2cec3c4b51dfd0fdb22cf5f4b8363139d91af620ac8f0434ada457",
+    "result_adoption_causal_section_20_1_A.log": "917b53d6578215411233e724dc9d7038ea14ce846e92bdb3958c264f1f7a59e9",
+    "result_adoption_causal_section_20_1_A.xml": "83b7282d7eccb10164218a83655040c21211d271c4566a6cd5ed516cf807f097",
+    "source_inventory.jsonl": "5415e61d198e952f304490a963780a8be843c44d8232e0d56ec36bf1d856d81e",
+    "test_receipt.json": "8fef4bbcf5fb32bcad41a4cf041d2b79ce48fa78433702d356fa8ed59620e991",
+    "tier2_formal_and_final.log": "90fab5bd2c760402e31ac935007b2aec279554895a987faabaa3adb99f05ce8f",
+    "tier2_formal_and_final.xml": "a84cda79237e5643234f918f9a73f489d03f033c6a2a9c7fe265654773db89d1",
+    "tier2_formal_and_new.xml": "81be1c87efaf3316ba617fa5616b66dcf412c68d254f42e413075c73c615da1f",
+    "tier2_formal_and_new_r2.xml": "a852a3762e39d4193e5bfed46147299a1a88bddd240a9a32dc626595e74d131c"
+  },
+  "manifest_hash": "ed9adc6485d371d1ab7fef89dda8a12558771791f9b2f57a934b928cf163901e",
+  "receipt_hash": "e46eeaa4a7db62f69aa22ba73a2c9ba110babc74ae8dee5e05666ff5a17beb78",
+  "runner_source_sha256": "ed5dc4164369dc732d6fdd01071c9b1620a5012f13d2f4de38459284c1e45774",
+  "schema": "decision_admissibility_wp8_final_test_manifest_v1",
+  "status": "passed"
+}

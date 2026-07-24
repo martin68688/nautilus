@@ -79,14 +79,36 @@ def log_adoption(
         ref_ids: list of memory entry ids injected into this node's prompt.
         stage: "draft" | "improve" | "debug".
     """
-    if not getattr(agent, "adoption_tracking_enabled", False):
-        return
     ref_ids = [ref_id for ref_id in (ref_ids or []) if ref_id]
     if not ref_ids:
         return
+    layer = getattr(agent, "external_skill_memory", None)
+    visibility_pack = None
+    if layer is not None:
+        getter = getattr(layer, "current_visibility_pack", None)
+        if callable(getter):
+            visibility_pack = getter()
+    adapter = getattr(agent, "evaluation_authority", None)
+    exposure_recorder = getattr(adapter, "record_prompt_exposure", None)
+    if callable(exposure_recorder) and visibility_pack is not None:
+        try:
+            exposure_recorder(
+                node=node,
+                visibility_pack=visibility_pack,
+                injected_ref_ids=ref_ids,
+            )
+        except Exception as error:
+            # Exposure bookkeeping must never fabricate adoption or silently
+            # alter the already-sent prompt. Fail closed for later writeback.
+            logger.warning(
+                "Failed to record ExperienceContract exposure for node %s: %s",
+                getattr(node, "id", "unknown"),
+                type(error).__name__,
+            )
+    if not getattr(agent, "adoption_tracking_enabled", False):
+        return
     ts = time.strftime("%Y-%m-%dT%H:%M:%S")
     pack = {}
-    layer = getattr(agent, "external_skill_memory", None)
     if source == "run_forest_stage_hybrid_memory" and layer is not None:
         getter = getattr(layer, "current_navigation_pack", None)
         if callable(getter):

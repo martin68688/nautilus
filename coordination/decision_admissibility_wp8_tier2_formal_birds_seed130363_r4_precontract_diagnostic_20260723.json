@@ -1,0 +1,93 @@
+{
+  "schema": "decision_admissibility_wp8_tier2_formal_precontract_failure_diagnostic_v1",
+  "status": "result_blind_precontract_infrastructure_failure_frozen",
+  "diagnosed_at_utc": "2026-07-23T04:09:44Z",
+  "block_id": "wp8-tier2-formal-birds-seed-130363-r4",
+  "task_id": "mlsp-2013-birds",
+  "agent_seed": 130363,
+  "failure_phase": "training_launcher_precontract",
+  "classification": "staging_schema_compatibility_failure",
+  "root_cause": {
+    "observed_schema": "decision_admissibility_wp8_tier2_formal_continuation_staging_content_v1",
+    "runtime_accepted_schema_before_fix": "decision_admissibility_wp8_tier2_formal_staging_content_manifest_v1",
+    "failure_message": "The training launcher asserted the legacy staging schema before writing BLOCK_CONTRACT.json.",
+    "candidate_or_agent_related": false,
+    "terminal_evaluator_related": false
+  },
+  "frozen_bindings": {
+    "staging_gate_hash": "7dae70c0da48f7788713012f29fc0de21dde98087b8c5d1f1a89e74bbb891a6d",
+    "staging_content_manifest_hash": "911061395cd41d9f2a90f174595d813500c4be32b8725e7cea53bdf9b7b66f34",
+    "source_snapshot_sha256": "bff8979136c1784b06483d951cf48f1ba50d1936c85877e5fadea5b2786f35f4",
+    "formal_execution_revision": "r4",
+    "output_root": "/workspace/decision-admissibility-wp8-tier2-formal-runs-r12/blocks/wp8-tier2-formal-birds-seed-130363-r4"
+  },
+  "training_pod": {
+    "name": "da-wp8-f-birds-s130363-gpu-r4",
+    "namespace": "ecepxie",
+    "uid": "92ba52fc-7ed9-4b13-b789-cfaacec1d8a1",
+    "scheduled_node": "hcc-prp-c5038.unl.edu",
+    "execution_kind": "devpod",
+    "container_started": true,
+    "event_reasons": [
+      "Created",
+      "FailedScheduling",
+      "Killing",
+      "Pulled",
+      "Scheduled",
+      "Started",
+      "SuccessfulAttachVolume"
+    ],
+    "event_snapshot_sha256": "f6b9e795d09254c269861812adf78ca6d2ced0f5a4a10cba2b1520b0dcdb3dd4",
+    "not_found_verified": true,
+    "not_found_probe_sha256": "504e981f951338ccac6c9b4b82c34dd38c44469dd39459717008d5a04846679f"
+  },
+  "evaluator_pod": {
+    "name": "da-wp8-f-birds-s130363-cpu-r4",
+    "created": false,
+    "not_found_verified": true,
+    "not_found_probe_sha256": "f9af92033042473c67d6b1e375f0d34bdc957de49778cf88003c789d143622c2"
+  },
+  "controller_pod": {
+    "name": "da-wp8-f-controller-cpu-r4",
+    "namespace": "ecepxie",
+    "uid": "bf24a747-8229-4464-8837-2a9304d09a6f",
+    "created_at_utc": "2026-07-23T03:55:16Z",
+    "node": "exp-19-12.sdsc.optiputer.net",
+    "container_image_id": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc"
+  },
+  "partial_output": {
+    "file_count": 4,
+    "tree_sha256": "8ffd4dd0bbec377339ea5366e252ccd2c25ac382e8de0372dd6663868208ce43",
+    "files": {
+      "STATE": "cfc78823c6cc4fc40fee9d397798c7dcb9867c5c42c63fb36a73b6866e71c5f1",
+      "TRAINING_LAUNCHER.log": "7c7473ef1ba03434fc3345dba1675d717d0aab209668b5b4b46267936ce5a5ec",
+      "TRAINING_LAUNCHER_EXIT_CODE": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "TRAINING_STARTED_AT": "ab04e1eb5022028d5d1e2fe240fd6a468c155875081a86e4f5b11024330fb527"
+    },
+    "launcher_exit_code": 1,
+    "state": "training_launcher_failed",
+    "block_contract_written": false,
+    "condition_directory_created": false,
+    "agent_generation_started": false,
+    "candidate_execution_started": false,
+    "candidate_submission_count": 0,
+    "evaluation_request_count": 0,
+    "terminal_score_file_count": 0,
+    "training_complete_marker_written": false,
+    "evaluator_artifact_count": 0
+  },
+  "analysis_integrity": {
+    "terminal_metric_observed": false,
+    "terminal_score_values_inspected": false,
+    "source_score_values_inspected_for_fix": false,
+    "formal_effect_observation": false,
+    "positive_result_fact_written": false,
+    "counts_as_formal_outcome": false,
+    "silent_retry_permitted": false,
+    "retry_requires_amendment_new_source_staging_and_output_root": true,
+    "completed_r10_blocks_may_rerun": false,
+    "remaining_block_design_may_change": false,
+    "protected_pod_touched": false
+  },
+  "diagnostic_hash": "6f1a304db2becdda105751cdd2be64c20d41376cac8c0f4dbedb1dff7ba9a9c8"
+}

@@ -1,0 +1,21 @@
+{
+  "block_count": 9,
+  "builder_source_sha256": "eb249f1c38673473a44e9b818025558a82d4020d781b0724896804ec17c25e48",
+  "errors": [],
+  "formal_block_json_parsed": false,
+  "joint_inventory_file_sha256": "6242271dc57a2f2de18bfa38c105d535b70364789a98d62d046cc9a6a4c299d8",
+  "joint_inventory_hash": "19a2835857945d56980b8dd0a6ae7d9a51e718045acd6753e9f7db8af05cdba5",
+  "manifest_hash": "44951619451640bfccae85928aff48fab2164ad3161f3a082689222755706b2e",
+  "online_condition_count": 45,
+  "oracle_disposition_count": 9,
+  "schema": "decision_admissibility_wp8_tier2_formal_joint_inventory_verification_v1",
+  "score_bearing_artifacts_parsed": false,
+  "score_policy": "hash_only",
+  "score_values_included": false,
+  "score_values_inspected": false,
+  "source_binding_hash": "22e9030aaf36268fa2809097ef2fb8178998180bb487828b7d9050d7df702883",
+  "status": "passed",
+  "verification_hash": "bc1ea054326304e4cdb935e4df6ace0df7a1e70eed3349aec2a593a35e117f62",
+  "verified": true,
+  "verifier_source_sha256": "2e88f55e726645dc84151e7509e413a1220bcf81a0b9d14a99ee42972e53161c"
+}

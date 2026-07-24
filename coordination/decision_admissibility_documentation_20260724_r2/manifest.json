@@ -1,0 +1,86 @@
+{
+  "schema": "decision_admissibility_documentation_manifest_v2",
+  "status": "complete",
+  "created_at_utc": "2026-07-24T10:23:07Z",
+  "root": "coordination/decision_admissibility_documentation_20260724_r2",
+  "canonicalization": "python_json_sort_keys_ensure_ascii_false_compact_excluding_manifest_hash_v1",
+  "supersedes": {
+    "root": "coordination/decision_admissibility_documentation_20260724_r1",
+    "manifest_file_sha256": "3d7bca16c4140f4e03159911d79fd01a4a1889d43f57cce6ad45caa0fb01e39b",
+    "disposition": "preserved_invalid_closeout_metadata",
+    "reasons": [
+      "self-hash used noncanonical JavaScript number serialization",
+      "Chinese alt-text object count was declared as 110 instead of 117"
+    ]
+  },
+  "plan": {
+    "path": "coordination/decision_admissibility_complete_execution_plan_20260719.md",
+    "sha256": "95da6d3a9311bf3cdb9ac2606949230f0a7680875b34960fa4beeb9160c755ba",
+    "closed_section": "25.3"
+  },
+  "files": {
+    "COMPLETE": "37a40f08d8548dba289b9b0bb35bcf63b359f6d37ee86044ebc6b6da080b9ec1",
+    "README.md": "0a688fad5b0809b023a731dd326520199ac2116d12ae564dde39ac1e2cd0359f",
+    "build_final_presentation.js": "6be847184d2b8ccebc253d668ce99e982a4090138dfcc9cfa16853b491026df5",
+    "implementation_report.md": "d7a9a62ad3b83779c2765d23e927c559eab49a7a53dcd3e5386afd639adc2747",
+    "migration_guide.md": "2654a7b66f567180e4e6dfe5381a108383ed88f5db18d975af81411b4b62d476",
+    "schema_api_reference.md": "fe9792f7497f84098fd4edacd7f76637c5d3539dcf5cce2635398f3f94246ded"
+  },
+  "external_deliverables": {
+    "bilingual_presentation": {
+      "path": "outputs/nautilus_decision_admissibility_wp8_final_bilingual_20260724_r3.pptx",
+      "sha256": "40995a0cf75a7ed9d3e983e390a56734360a55c05eb5ec7f94e66f69c5b18b25",
+      "slide_count": 9
+    },
+    "paper_pdf": {
+      "path": "papers/runforest_iclr2025/main_wp8_final_20260724.pdf",
+      "sha256": "b4c222c7094a67be2fb7abd64067e5244e0370c97628751cbb858aad3c7cf423",
+      "page_count": 21
+    },
+    "paper_source": {
+      "path": "papers/runforest_iclr2025/main_wp8_final_20260724.tex",
+      "sha256": "303d92d460062caf6524e32d724c43fff38d6a4513eeccf7ef0da8fdb2c17e9f"
+    }
+  },
+  "presentation_verification": {
+    "pptx_zip_integrity": true,
+    "rendered_page_count": 9,
+    "rendered_page_size_points": [960.009, 540],
+    "visual_inspection": "passed_all_9_pages",
+    "cjk_rendering": "passed",
+    "english_native_editable_text": true,
+    "chinese_alt_text_objects": 117,
+    "per_slide_chinese_alt_text_objects": [9, 12, 16, 13, 11, 15, 17, 10, 14],
+    "all_chinese_images_nonblank_and_unique": true,
+    "all_image_relationships_resolve": true,
+    "r2_r3_render_byte_identical": true
+  },
+  "evidence_anchors": {
+    "final_stop_gate": {
+      "report_sha256": "4b327910350e078a3376e425fcd4b3a0b7326f70fcba6f9c1cf8ad96dafd779b",
+      "verification_path": "coordination/decision_admissibility_wp8_final_stop_gate_20260724_r1.verification.json",
+      "verification_file_sha256": "7f3f46f99639b0a8f4bd98f1f7fb09d28f8b215d4e12347c48e30010ad39b317",
+      "verification_hash": "dcf2e62c47d9f22c03a7adb05d325f588367284aee8f7309d2d0831116718778"
+    },
+    "independent_claude_audit": {
+      "manifest_file_sha256": "5d04e686e440be1677bea06ccb9bcfb05de7b6faac2121d7e4b259db8dad7343",
+      "verdict": "PLAN_APPROVED",
+      "actual_model": "glm-5.2[1m]",
+      "verification_path": "coordination/decision_admissibility_wp8_independent_claude_audit_20260724_r1.verification.json",
+      "verification_file_sha256": "c047602479c448b0afaa68be97ff2d2b45d928c0da439a4975079a32f634a39d",
+      "verification_hash": "904a5b10284c8e03196c2b5009067d4890c843defc74043a89d309df41a0cc62"
+    }
+  },
+  "claim_authority": {
+    "wp0_wp8_engineering_completion": "authorized",
+    "full_superiority": "rejected",
+    "conditional_utility": "diagnostic_only",
+    "experience_causality": "pending_without_L4"
+  },
+  "asset_preservation": {
+    "earlier_presentations_overwritten": false,
+    "original_main_tex_overwritten": false,
+    "frozen_evidence_roots_modified": false
+  },
+  "manifest_hash": "153d04aa27c304db5a0c8476090194ae442ae3b1a1ee97360cb7ad1e833250cf"
+}

@@ -1,0 +1,224 @@
+{
+  "all_required_passing_scopes_clean": true,
+  "branch": "codex/dual-time-procedural-memory",
+  "created_at": "2026-07-23T17:42:30Z",
+  "dirty_worktree_preserved": true,
+  "final_full_suite_clean": true,
+  "final_regression_passed": true,
+  "final_suite_filename": "full_suite_r2.xml",
+  "head": "b47dab63b7861f3ea0871094d6dd07b77e6b81a4",
+  "historical_failure_repair": {
+    "closeout_regressions": [
+      {
+        "failed_junit": "baseline_section_20_1_r2.xml",
+        "failed_junit_preserved": true,
+        "failed_testcase_ids": [
+          "tests.authority.test_replay_authority_recovery::test_clean_replay_recovers_only_new_claim_and_publishes_scoped_bundle"
+        ],
+        "fix": "Require semantic provenance for corpus_manifest_v1 or explicit split/audit markers; keep resigned source/heldout overlap denied.",
+        "fixed_junit": "baseline_section_20_1_r3.xml",
+        "root_cause": "The new semantic-provenance loader trigger treated a synthetic Clean Replay bundle containing only corpus/manifest.json as a modern corpus_manifest_v1 bundle."
+      }
+    ],
+    "fix_class": "strict_revision_aware_verifier_chain",
+    "fixed_junit": "tier2_formal_and_new_r2.xml",
+    "historical_artifacts_mutated": false,
+    "initial_failed_testcase_ids": [
+      "tests.test_tier2_formal_continuation_amendment::test_r7_continuation_amendment_verifies",
+      "tests.test_tier2_formal_preterminal_recovery_amendment::test_r6_preterminal_recovery_amendment_verifies"
+    ],
+    "initial_failure_preserved": true,
+    "initial_junit": "tier2_formal_and_new.xml",
+    "upgrade_receipt": {
+      "file_sha256": "338a43705ae86f7c534ba25766767183c947f7a19aaf387858b28423a18d9d1e",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_historical_verifier_upgrade_20260723_r1.json",
+      "receipt_hash": "3327321939bf9c8050089cacff54cc3bd93de97a708e5c265209d9bb929ba917"
+    },
+    "upgrade_sidecar": {
+      "file_sha256": "ebec9a8485e1d0c5f9445c8bdd5617ed4bfbcc6863652e7b8c88617287739d93",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_historical_verifier_upgrade_20260723_r1.sha256"
+    }
+  },
+  "junit_runs": [
+    {
+      "duration_seconds": 105.36,
+      "error_testcase_ids": [],
+      "errors": 0,
+      "failed_testcase_ids": [],
+      "failures": 0,
+      "file_sha256": "6ec59c1cea3f70e85c278ec63073e52ebb3f75b5ffd85ea5224a9dd4fc1593d7",
+      "path": "coordination/decision_admissibility_wp8_final_tests_20260724_r4/baseline_section_20_1.xml",
+      "skipped": 0,
+      "skipped_testcase_ids": [],
+      "testcase_ids_hash": "c134a4846640966d5dcab75968640b683f7159e721d4230d6339b4b739715208",
+      "tests": 410
+    },
+    {
+      "duration_seconds": 106.664,
+      "error_testcase_ids": [],
+      "errors": 0,
+      "failed_testcase_ids": [
+        "tests.authority.test_replay_authority_recovery::test_clean_replay_recovers_only_new_claim_and_publishes_scoped_bundle"
+      ],
+      "failures": 1,
+      "file_sha256": "7111fcf2e3075ca53992d68428756256dcfd46ba91ffd49f40ca97fe8a257881",
+      "path": "coordination/decision_admissibility_wp8_final_tests_20260724_r4/baseline_section_20_1_r2.xml",
+      "skipped": 0,
+      "skipped_testcase_ids": [],
+      "testcase_ids_hash": "c134a4846640966d5dcab75968640b683f7159e721d4230d6339b4b739715208",
+      "tests": 410
+    },
+    {
+      "duration_seconds": 107.277,
+      "error_testcase_ids": [],
+      "errors": 0,
+      "failed_testcase_ids": [],
+      "failures": 0,
+      "file_sha256": "e4945be31e3bf9af34d7107b9237c5d68c4b3fd0c51771d87bc441be035777c8",
+      "path": "coordination/decision_admissibility_wp8_final_tests_20260724_r4/baseline_section_20_1_r3.xml",
+      "skipped": 0,
+      "skipped_testcase_ids": [],
+      "testcase_ids_hash": "c134a4846640966d5dcab75968640b683f7159e721d4230d6339b4b739715208",
+      "tests": 410
+    },
+    {
+      "duration_seconds": 0.609,
+      "error_testcase_ids": [],
+      "errors": 0,
+      "failed_testcase_ids": [],
+      "failures": 0,
+      "file_sha256": "1ee6cc1a809b691d4eb881adb76b22cd0bced4947e760cb9e11c96ddef0f6257",
+      "path": "coordination/decision_admissibility_wp8_final_tests_20260724_r4/frozen_composite_lock_regression.xml",
+      "skipped": 0,
+      "skipped_testcase_ids": [],
+      "testcase_ids_hash": "48a5c13947f3d89745b6e86d10cd5c8a8f656c09072821d277c90a3887f0a195",
+      "tests": 19
+    },
+    {
+      "duration_seconds": 290.259,
+      "error_testcase_ids": [],
+      "errors": 0,
+      "failed_testcase_ids": [],
+      "failures": 0,
+      "file_sha256": "58932eca1d02b3e702d42548688a6745d096d941eb5bc9a4374bdac601fbe1d1",
+      "path": "coordination/decision_admissibility_wp8_final_tests_20260724_r4/full_suite_r2.xml",
+      "skipped": 0,
+      "skipped_testcase_ids": [],
+      "testcase_ids_hash": "b1385ad399d22e75c773e936936069805b0723d8323fc044326d717a63201160",
+      "tests": 760
+    },
+    {
+      "duration_seconds": 5.13,
+      "error_testcase_ids": [],
+      "errors": 0,
+      "failed_testcase_ids": [],
+      "failures": 0,
+      "file_sha256": "32c475f021f050497f8a1a26fe83f162812e0336b68319e72625e73f80d3321e",
+      "path": "coordination/decision_admissibility_wp8_final_tests_20260724_r4/integration_section_20_3.xml",
+      "skipped": 0,
+      "skipped_testcase_ids": [],
+      "testcase_ids_hash": "823b128afba8bfe86d6eaf75dedb8a5209d92301fdc29b25300ba336be03f9d0",
+      "tests": 58
+    },
+    {
+      "duration_seconds": 1.976,
+      "error_testcase_ids": [],
+      "errors": 0,
+      "failed_testcase_ids": [],
+      "failures": 0,
+      "file_sha256": "c3d38fc80b2cec3c4b51dfd0fdb22cf5f4b8363139d91af620ac8f0434ada457",
+      "path": "coordination/decision_admissibility_wp8_final_tests_20260724_r4/new_unit_section_20_2.xml",
+      "skipped": 0,
+      "skipped_testcase_ids": [],
+      "testcase_ids_hash": "75c8e3bb1bf5dc3fd10f0be431b2aeed9239b4058e2afbd85ae254ce98dddded",
+      "tests": 69
+    },
+    {
+      "duration_seconds": 18.193,
+      "error_testcase_ids": [],
+      "errors": 0,
+      "failed_testcase_ids": [],
+      "failures": 0,
+      "file_sha256": "83b7282d7eccb10164218a83655040c21211d271c4566a6cd5ed516cf807f097",
+      "path": "coordination/decision_admissibility_wp8_final_tests_20260724_r4/result_adoption_causal_section_20_1_A.xml",
+      "skipped": 0,
+      "skipped_testcase_ids": [],
+      "testcase_ids_hash": "6e2169b524212838a9f28bc9c371069caaa971acb86d2f786f786f83e275cd97",
+      "tests": 45
+    },
+    {
+      "duration_seconds": 13.47,
+      "error_testcase_ids": [],
+      "errors": 0,
+      "failed_testcase_ids": [],
+      "failures": 0,
+      "file_sha256": "a84cda79237e5643234f918f9a73f489d03f033c6a2a9c7fe265654773db89d1",
+      "path": "coordination/decision_admissibility_wp8_final_tests_20260724_r4/tier2_formal_and_final.xml",
+      "skipped": 0,
+      "skipped_testcase_ids": [],
+      "testcase_ids_hash": "fc34cbda3d04a39e0eb24f1888b245f57d00976a9ffecc1edcb503c2c95caccb",
+      "tests": 93
+    },
+    {
+      "duration_seconds": 11.399,
+      "error_testcase_ids": [],
+      "errors": 0,
+      "failed_testcase_ids": [
+        "tests.test_tier2_formal_continuation_amendment::test_r7_continuation_amendment_verifies",
+        "tests.test_tier2_formal_preterminal_recovery_amendment::test_r6_preterminal_recovery_amendment_verifies"
+      ],
+      "failures": 2,
+      "file_sha256": "81be1c87efaf3316ba617fa5616b66dcf412c68d254f42e413075c73c615da1f",
+      "path": "coordination/decision_admissibility_wp8_final_tests_20260724_r4/tier2_formal_and_new.xml",
+      "skipped": 0,
+      "skipped_testcase_ids": [],
+      "testcase_ids_hash": "f30864a8fdbead18e651acb6f3950a6cad3d58f0f16d309194de6c30a192e72c",
+      "tests": 90
+    },
+    {
+      "duration_seconds": 10.827,
+      "error_testcase_ids": [],
+      "errors": 0,
+      "failed_testcase_ids": [],
+      "failures": 0,
+      "file_sha256": "a852a3762e39d4193e5bfed46147299a1a88bddd240a9a32dc626595e74d131c",
+      "path": "coordination/decision_admissibility_wp8_final_tests_20260724_r4/tier2_formal_and_new_r2.xml",
+      "skipped": 0,
+      "skipped_testcase_ids": [],
+      "testcase_ids_hash": "b806d30b271541fd33167e4e1ee13949d8e16ab33c62557c8495fa92156108b4",
+      "tests": 92
+    }
+  ],
+  "receipt_hash": "e006ed0f0817d7372efc699ed9f320a8d2fe3b990d1d610c867764e531ea89fd",
+  "schema": "decision_admissibility_wp8_final_regression_receipt_v1",
+  "source_inventory": {
+    "algorithm": "sorted_relative_path_and_byte_sha256_canonical_json_v1",
+    "file_count": 390,
+    "inventory_hash": "bfb01b79dbb6021931165dfce78a5a420dee8d3deb9b0670aa956f5c1664f9b8",
+    "root_summaries": {
+      "deploy_decision_admissibility": {
+        "file_count": 25,
+        "inventory_hash": "99e975aeb1d372e1d69355660ef0cfce5ca093d0312d2b05b4f4b7e1da933778"
+      },
+      "execution_plan": {
+        "file_count": 1,
+        "inventory_hash": "4ad15f05470794d96d2f07953151f211393509602c73ca95214cb4574892c4cd"
+      },
+      "memory_bundle": {
+        "file_count": 87,
+        "inventory_hash": "a79c763f70944044f7115f02439809ce325ad07d8182c6fb2f19a84671716e22"
+      },
+      "mlevolve": {
+        "file_count": 177,
+        "inventory_hash": "5a8f5607b2d44f75819e7a9e39a967486fc263c0e4aeafa721b0514b4b4fc1ef"
+      },
+      "tests": {
+        "file_count": 100,
+        "inventory_hash": "78be948083996f45a6d869667806951bd79965a0574dd036d7f565dbb1eaa844"
+      }
+    }
+  },
+  "status": "passed_with_preserved_historical_failure",
+  "test_root": "coordination/decision_admissibility_wp8_final_tests_20260724_r4",
+  "unexpected_failure_count": 0
+}

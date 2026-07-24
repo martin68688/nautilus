@@ -1,0 +1,35 @@
+{
+  "actual_model": "glm-5.2[1m]",
+  "audit_report_sha256": "3c37f98a611983b138c93f6d9eb57866aa9bdc18c807ed73664011a85627b0dd",
+  "checks": {
+    "actual_model_bound": true,
+    "complete_marker": true,
+    "engineering_only_claim_boundary": true,
+    "event_model_bound": true,
+    "manifest_entry_set_exact": true,
+    "manifest_file_hashes": true,
+    "manifest_payload_hash": true,
+    "manifest_schema_and_status": true,
+    "no_permission_denials": true,
+    "no_web_tools": true,
+    "packet_hash": true,
+    "read_only_tool_inventory": true,
+    "report_exact_raw_event_extraction": true,
+    "report_first_line_verdict": true,
+    "session_id_bound": true,
+    "session_success": true,
+    "twelve_questions_answered": true
+  },
+  "errors": [],
+  "manifest_file_sha256": "5d04e686e440be1677bea06ccb9bcfb05de7b6faac2121d7e4b259db8dad7343",
+  "manifest_hash": "cd26d79ac9761bf2f2b9e01c1b1b3b4ebe8ddc62b2867994dc9f54f1cabde60f",
+  "packet_sha256": "d7bff2358fd0291a4b246c38a751b16f42b9cb1230e7ee11dadda926e12c4977",
+  "raw_public_event_sha256": "60271b2cb2361cbf1a54ed181bdf88167e8ac327b8d0acd0409a0953169cd88b",
+  "schema": "decision_admissibility_wp8_independent_claude_audit_verification_v1",
+  "session_id": "b0d62720-cdc7-4afe-9d3a-e543414a0214",
+  "status": "passed",
+  "tool_call_count": 47,
+  "verification_hash": "904a5b10284c8e03196c2b5009067d4890c843defc74043a89d309df41a0cc62",
+  "verified": true
+}
+

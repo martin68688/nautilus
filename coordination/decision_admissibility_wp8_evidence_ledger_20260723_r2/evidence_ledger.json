@@ -1,0 +1,385 @@
+{
+  "claim_status_counts": {
+    "diagnostic": 1,
+    "pending": 1,
+    "rejected": 1,
+    "supported": 4
+  },
+  "claims": [
+    {
+      "artifact_bindings": [
+        {
+          "file_sha256": "6242271dc57a2f2de18bfa38c105d535b70364789a98d62d046cc9a6a4c299d8",
+          "internal_hash": "19a2835857945d56980b8dd0a6ae7d9a51e718045acd6753e9f7db8af05cdba5",
+          "internal_hash_field": "report_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_joint_inventory_20260723_r1/joint_inventory.json"
+        },
+        {
+          "file_sha256": "d4c18f6a394ecb801ab6d2b6aafda91c0f7f16ec72a6a2e8c2ca6f1d1c7076e0",
+          "internal_hash": "bc1ea054326304e4cdb935e4df6ace0df7a1e70eed3349aec2a593a35e117f62",
+          "internal_hash_field": "verification_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_joint_inventory_20260723_r1/verification.json"
+        }
+      ],
+      "claim_gate": {
+        "effect_claim_required": false,
+        "formal_integrity_verified": true
+      },
+      "claim_hash": "02e05ea08c4774c810c4517cdd08fc0179a1943917d4b7f4bf1cf64dc0ae0f25",
+      "claim_id": "WP8-C1-FORMAL-EXECUTION",
+      "condition": "five online systems plus host-only Oracle across three tasks and three seeds",
+      "group": "Authority",
+      "interpretation": "This supports execution completeness and traceability, not Full superiority.",
+      "metrics": {
+        "assigned_online_outcomes": 45,
+        "blocks": 9,
+        "oracle_dispositions": 9,
+        "retained_failed_outcomes": 23,
+        "scored_selected_results": 22
+      },
+      "sample_unit": "task_seed_system_assignment",
+      "statement": "Formal Tier-2 completed all assigned task-seed-system dispositions under host-owned terminal evaluation.",
+      "status": "supported"
+    },
+    {
+      "artifact_bindings": [
+        {
+          "file_sha256": "6242271dc57a2f2de18bfa38c105d535b70364789a98d62d046cc9a6a4c299d8",
+          "internal_hash": "19a2835857945d56980b8dd0a6ae7d9a51e718045acd6753e9f7db8af05cdba5",
+          "internal_hash_field": "report_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_joint_inventory_20260723_r1/joint_inventory.json"
+        },
+        {
+          "file_sha256": "efcb4e24b5a37264f857cc794bba736a947490881efa282c4cc5a9fe2bb02d6c",
+          "internal_hash": "81078aeb542cd160c4dda87fb308a56baeee189d85bfc7cc0307633293f6f360",
+          "internal_hash_field": "verification_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/verification.json"
+        }
+      ],
+      "claim_gate": {
+        "passed": true,
+        "result_adoption_causal_separation_required": true
+      },
+      "claim_hash": "356970075626f10bc05ce2e7df8198eff2439d33e22f4710f05c7432680c7c1e",
+      "claim_id": "WP8-C2-RESULT-WRITEBACK",
+      "condition": "formal Tier-2 selected-node terminal writeback",
+      "group": "Actuation",
+      "interpretation": "Result retention is supported; this does not establish Adoption or Causal edges.",
+      "metrics": {
+        "failed_conditions_with_result_fact": 0,
+        "fixed_holdout_orphans": 0,
+        "result_facts": 22,
+        "successful_conditions": 22
+      },
+      "sample_unit": "successful_or_failed_online_condition",
+      "statement": "Every successful formal online condition published exactly one independent Result Fact and every failed condition published none.",
+      "status": "supported"
+    },
+    {
+      "artifact_bindings": [
+        {
+          "file_sha256": "cb5dce91b1d7518e93b3b26bb07a20b3efe07b45f15c02bcc652c2679561a403",
+          "internal_hash": "5480e2f5c39ae8d8bde1e5d279877959c62874ca9c28e3ee1a2bf4da587369c8",
+          "internal_hash_field": "report_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/statistics_report.json"
+        },
+        {
+          "file_sha256": "efcb4e24b5a37264f857cc794bba736a947490881efa282c4cc5a9fe2bb02d6c",
+          "internal_hash": "81078aeb542cd160c4dda87fb308a56baeee189d85bfc7cc0307633293f6f360",
+          "internal_hash_field": "verification_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/verification.json"
+        }
+      ],
+      "claim_gate": {
+        "effect_claim_authorized": false,
+        "failed_criteria": [
+          "each_task_primary_mean_oriented_native_delta_is_strictly_greater_than_zero",
+          "full_completion_count_is_greater_than_or_equal_to_no_memory_completion_count",
+          "no_block_has_full_failed_and_no_memory_scored",
+          "primary_has_at_least_one_scored_pair_in_each_of_all_3_tasks",
+          "primary_holm_adjusted_exact_one_sided_sign_flip_p_is_less_than_or_equal_to_0.05",
+          "primary_task_macro_standardized_bootstrap_95pct_ci_lower_is_strictly_greater_than_zero"
+        ]
+      },
+      "claim_hash": "71afef6b27484baf260de119a5f7cff8d6d218310bf13d69bfe4639132f2c57e",
+      "claim_id": "WP8-C3-FULL-SUPERIORITY",
+      "condition": "Full minus No Memory primary contrast",
+      "group": "Authority",
+      "interpretation": "Conditional scored pairs are favorable, but poorer completion, missing Taxi pairs and corrected uncertainty reject the headline claim.",
+      "metrics": {
+        "assigned_pairs": 9,
+        "exact_one_sided_raw_p": 0.0625,
+        "full_completed": 4,
+        "holm_adjusted_p": 0.25,
+        "losses": 0,
+        "no_memory_completed": 6,
+        "scored_pairs": 4,
+        "ties": 0,
+        "wins": 4
+      },
+      "sample_unit": "paired_task_seed_block_with_all_9_assignments_retained",
+      "statement": "Full Decision Admissibility improves target-task training performance over No Memory.",
+      "status": "rejected"
+    },
+    {
+      "artifact_bindings": [
+        {
+          "file_sha256": "cb5dce91b1d7518e93b3b26bb07a20b3efe07b45f15c02bcc652c2679561a403",
+          "internal_hash": "5480e2f5c39ae8d8bde1e5d279877959c62874ca9c28e3ee1a2bf4da587369c8",
+          "internal_hash_field": "report_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/statistics_report.json"
+        },
+        {
+          "file_sha256": "7302945a8b8853df7fa60e733a7619ef08c44c36237b25d8e47de37faace03fe",
+          "internal_hash": "26d4fe7e7645fe8f1911e757df2e15a9cf85966158e0d567e6d7e0dd3705670d",
+          "internal_hash_field": "analysis_policy_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_analysis_policy_addendum_20260723_r1.json"
+        }
+      ],
+      "claim_gate": {
+        "diagnostic_only": true,
+        "superiority_authorized": false
+      },
+      "claim_hash": "96be605d9b301a60d71acce56647ecfaf9ffc02f6a192a100be758fd88ef6344",
+      "claim_id": "WP8-C4-CONDITIONAL-UTILITY",
+      "condition": "available-pair analysis only; failures remain in the ITT denominator",
+      "group": "Granularity",
+      "interpretation": "This identifies potential conditional value but cannot be generalized to all assigned runs.",
+      "metrics": {
+        "aerial_mean_macro_f1_delta": 0.014373260193018914,
+        "assigned_pairs": 9,
+        "available_pairs": 4,
+        "birds_mean_macro_f1_delta": 0.05979378455983453,
+        "holm_adjusted_p": 0.25,
+        "losses": 0,
+        "taxi_pair_count": 0,
+        "ties": 0,
+        "wins": 4
+      },
+      "sample_unit": "both_scored_task_seed_pair",
+      "statement": "Among blocks where both Full and No Memory produced legal selected results, all observed paired deltas favor Full.",
+      "status": "diagnostic"
+    },
+    {
+      "artifact_bindings": [
+        {
+          "file_sha256": "7302945a8b8853df7fa60e733a7619ef08c44c36237b25d8e47de37faace03fe",
+          "internal_hash": "26d4fe7e7645fe8f1911e757df2e15a9cf85966158e0d567e6d7e0dd3705670d",
+          "internal_hash_field": "analysis_policy_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_analysis_policy_addendum_20260723_r1.json"
+        },
+        {
+          "file_sha256": "efcb4e24b5a37264f857cc794bba736a947490881efa282c4cc5a9fe2bb02d6c",
+          "internal_hash": "81078aeb542cd160c4dda87fb308a56baeee189d85bfc7cc0307633293f6f360",
+          "internal_hash_field": "verification_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/verification.json"
+        }
+      ],
+      "claim_gate": {
+        "preregistration_missingness_policy_followed": true
+      },
+      "claim_hash": "9fdd1d99ad49bafbc8414134db4b0aed9b9ee3a2740c4960d5f3995dcf68e614",
+      "claim_id": "WP8-C5-NO-IMPUTATION",
+      "condition": "all formal Tier-2 outcomes",
+      "group": "Authority",
+      "interpretation": "The negative completion evidence is part of the result rather than filtered away.",
+      "metrics": {
+        "assigned": 45,
+        "imputed": 0,
+        "post_assignment_exclusions": 0,
+        "retained_failures": 23
+      },
+      "sample_unit": "task_seed_system_assignment",
+      "statement": "Formal statistics retain all failures without Oracle, source-score or other-system score imputation.",
+      "status": "supported"
+    },
+    {
+      "artifact_bindings": [
+        {
+          "file_sha256": "cb5dce91b1d7518e93b3b26bb07a20b3efe07b45f15c02bcc652c2679561a403",
+          "internal_hash": "5480e2f5c39ae8d8bde1e5d279877959c62874ca9c28e3ee1a2bf4da587369c8",
+          "internal_hash_field": "report_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/statistics_report.json"
+        },
+        {
+          "file_sha256": "7302945a8b8853df7fa60e733a7619ef08c44c36237b25d8e47de37faace03fe",
+          "internal_hash": "26d4fe7e7645fe8f1911e757df2e15a9cf85966158e0d567e6d7e0dd3705670d",
+          "internal_hash_field": "analysis_policy_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_formal_analysis_policy_addendum_20260723_r1.json"
+        }
+      ],
+      "claim_gate": {
+        "satisfied": false,
+        "static_runtime_and_counterfactual_required": true
+      },
+      "claim_hash": "755c77868a67b75da0d477725685e1c44f1231bbaf705de6fed26a8271b99332",
+      "claim_id": "WP8-C6-EXPERIENCE-CAUSALITY",
+      "condition": "experience-level attribution",
+      "group": "Actuation",
+      "interpretation": "The randomized system contrast is not a substitute for adoption or causal receipts.",
+      "metrics": {
+        "formal_system_contrast_is_not_l4": true,
+        "required_minimum_actuation_level": "L4"
+      },
+      "sample_unit": "exposed_experience_to_target_code_edge",
+      "statement": "Injected historical experience caused the observed conditional Full gains.",
+      "status": "pending"
+    },
+    {
+      "artifact_bindings": [
+        {
+          "file_sha256": "429e7596b584b4e150146bf0fa6f5b7909b2eb314901256d9243d05328514a0c",
+          "internal_hash": "31a58762b82a1d66546e46ebaa45e70082c403abf5968c256db1bf720c10b534",
+          "internal_hash_field": "verification_hash",
+          "path": "coordination/decision_admissibility_wp8_gate1_prevalence_20260721_r1/verification.json"
+        },
+        {
+          "file_sha256": "f9a4c224db234e2bfc9c766badf1e8dc665f659c877205a202b65d9951923cd8",
+          "internal_hash": "ad5cba8478124abed9778a9d65d6e9436353c9243623de80985846dbb8dbcc4c",
+          "internal_hash_field": "verification_hash",
+          "path": "coordination/decision_admissibility_wp8_tier1_stop_gate_20260721_r2/verification.json"
+        },
+        {
+          "file_sha256": "57384261203f9b3156b97d9ef38d47e6c929c5279492f11da7fb904df70c2c1f",
+          "internal_hash": "bb1292cf28e9c7adabd19856eab1189757321d318cb902724a36bdcf9c978fdd",
+          "internal_hash_field": "verification_hash",
+          "path": "coordination/decision_admissibility_wp8_multigeneration_stop_gate_20260721_r1/verification.json"
+        },
+        {
+          "file_sha256": "fab6d83ec58bac8c2589a6c3539539a3851dde27f6e578e1affaa9020f404391",
+          "internal_hash": "fe3476aac763de40e6d19ece6fe1f11971aaceefb9432690a0aa95fe13a6dbf9",
+          "internal_hash_field": "verification_hash",
+          "path": "coordination/decision_admissibility_wp8_tier2_canary_stop_gate_20260722_r10_r2/verification.json"
+        },
+        {
+          "file_sha256": "8835a216a968ac204e4df2f960c60618a5ba9b02ed55184799ef73fdb5e8f4ff",
+          "path": "coordination/decision_admissibility_wp8_tier0_report_20260721.md"
+        },
+        {
+          "file_sha256": "c8e842c7daf8dc111bedaa5c7a32b39b5a15792da8b6a1b440e8e61d4e2d2818",
+          "path": "coordination/decision_admissibility_wp8_semantic_purity_report_20260721.md"
+        },
+        {
+          "file_sha256": "88f5ba8d3e8948e9dba42014cad2b27a7fd841b7d1eec81d7db9cef05e11bf20",
+          "path": "coordination/decision_admissibility_wp7_corrected_canary_report_20260721.md"
+        }
+      ],
+      "claim_gate": {
+        "formal_superiority_implied": false,
+        "packet_verifications_passed": true
+      },
+      "claim_hash": "361befe0f88372afb4d256d5d789763e83a62f7de906b9ca2b50ec00c82d5553",
+      "claim_id": "WP8-C7-PRIOR-KILL-GATES",
+      "condition": "pre-formal WP8 evidence tracks",
+      "group": "Recursive",
+      "interpretation": "These packets support mechanism and safety gates; they do not override the formal downstream result.",
+      "metrics": {
+        "bound_reports": 3,
+        "verified_prior_packets": 4
+      },
+      "sample_unit": "immutable_evidence_packet",
+      "statement": "WP8 prevalence, deterministic, controlled, multi-generation and canary evidence packets remain hash-verified inputs to the final synthesis.",
+      "status": "supported"
+    }
+  ],
+  "core_artifact_bindings": {
+    "analysis_policy": {
+      "file_sha256": "7302945a8b8853df7fa60e733a7619ef08c44c36237b25d8e47de37faace03fe",
+      "internal_hash": "26d4fe7e7645fe8f1911e757df2e15a9cf85966158e0d567e6d7e0dd3705670d",
+      "internal_hash_field": "analysis_policy_hash",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_analysis_policy_addendum_20260723_r1.json"
+    },
+    "joint_inventory": {
+      "file_sha256": "6242271dc57a2f2de18bfa38c105d535b70364789a98d62d046cc9a6a4c299d8",
+      "internal_hash": "19a2835857945d56980b8dd0a6ae7d9a51e718045acd6753e9f7db8af05cdba5",
+      "internal_hash_field": "report_hash",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_joint_inventory_20260723_r1/joint_inventory.json"
+    },
+    "joint_inventory_verification": {
+      "file_sha256": "d4c18f6a394ecb801ab6d2b6aafda91c0f7f16ec72a6a2e8c2ca6f1d1c7076e0",
+      "internal_hash": "bc1ea054326304e4cdb935e4df6ace0df7a1e70eed3349aec2a593a35e117f62",
+      "internal_hash_field": "verification_hash",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_joint_inventory_20260723_r1/verification.json"
+    },
+    "statistics": {
+      "file_sha256": "cb5dce91b1d7518e93b3b26bb07a20b3efe07b45f15c02bcc652c2679561a403",
+      "internal_hash": "5480e2f5c39ae8d8bde1e5d279877959c62874ca9c28e3ee1a2bf4da587369c8",
+      "internal_hash_field": "report_hash",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/statistics_report.json"
+    },
+    "statistics_verification": {
+      "file_sha256": "efcb4e24b5a37264f857cc794bba736a947490881efa282c4cc5a9fe2bb02d6c",
+      "internal_hash": "81078aeb542cd160c4dda87fb308a56baeee189d85bfc7cc0307633293f6f360",
+      "internal_hash_field": "verification_hash",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_statistics_20260723_r1/verification.json"
+    }
+  },
+  "created_at": "2026-07-23T15:51:04Z",
+  "engineering_evidence_complete_pending_tests_and_final_gate": true,
+  "failure_and_retry_evidence": [
+    {
+      "file_sha256": "f9061dcacfa94058c3fbe11947f3dcfc0e6235b7949e3d4dbce8b751b5192481",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_r8_authority_failure_diagnostic_20260723.json"
+    },
+    {
+      "file_sha256": "139bd44f69e4100d074691476a9538d8b4e743d04de5d1ec7a1e8cf962467a8b",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_continuation_staging_failure_20260723_r1.json"
+    },
+    {
+      "file_sha256": "231b1e09780b8f28c02499eec0d178c5ad604f15eb68db3a8b9723ddaa9f5493",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_birds_seed130363_r4_precontract_diagnostic_20260723.json"
+    },
+    {
+      "file_sha256": "aeb03c70ab0609be918df3a9ec9728f192eb590634aeef95e1af42780b57cf05",
+      "path": "coordination/decision_admissibility_wp8_tier2_formal_r10_birds_s104729_preterminal_finalizer_diagnostic_20260723.json"
+    }
+  ],
+  "headline_effect_claim_authorized": false,
+  "ledger_hash": "c9e8f5b2cedee1072baae0d7f5c5a505de4980e59223a0678ef19dcc86174570",
+  "paper_claims_binding": {
+    "file_sha256": "dc5d37eb3ab4122e393ee2c49bc794607cb0a77e635b9c412511db34addc7d46",
+    "path": "papers/runforest_iclr2025/evidence/claims.md"
+  },
+  "prior_report_bindings": [
+    {
+      "file_sha256": "8835a216a968ac204e4df2f960c60618a5ba9b02ed55184799ef73fdb5e8f4ff",
+      "path": "coordination/decision_admissibility_wp8_tier0_report_20260721.md"
+    },
+    {
+      "file_sha256": "c8e842c7daf8dc111bedaa5c7a32b39b5a15792da8b6a1b440e8e61d4e2d2818",
+      "path": "coordination/decision_admissibility_wp8_semantic_purity_report_20260721.md"
+    },
+    {
+      "file_sha256": "88f5ba8d3e8948e9dba42014cad2b27a7fd841b7d1eec81d7db9cef05e11bf20",
+      "path": "coordination/decision_admissibility_wp7_corrected_canary_report_20260721.md"
+    }
+  ],
+  "prior_verification_bindings": [
+    {
+      "file_sha256": "429e7596b584b4e150146bf0fa6f5b7909b2eb314901256d9243d05328514a0c",
+      "internal_hash": "31a58762b82a1d66546e46ebaa45e70082c403abf5968c256db1bf720c10b534",
+      "internal_hash_field": "verification_hash",
+      "path": "coordination/decision_admissibility_wp8_gate1_prevalence_20260721_r1/verification.json"
+    },
+    {
+      "file_sha256": "f9a4c224db234e2bfc9c766badf1e8dc665f659c877205a202b65d9951923cd8",
+      "internal_hash": "ad5cba8478124abed9778a9d65d6e9436353c9243623de80985846dbb8dbcc4c",
+      "internal_hash_field": "verification_hash",
+      "path": "coordination/decision_admissibility_wp8_tier1_stop_gate_20260721_r2/verification.json"
+    },
+    {
+      "file_sha256": "57384261203f9b3156b97d9ef38d47e6c929c5279492f11da7fb904df70c2c1f",
+      "internal_hash": "bb1292cf28e9c7adabd19856eab1189757321d318cb902724a36bdcf9c978fdd",
+      "internal_hash_field": "verification_hash",
+      "path": "coordination/decision_admissibility_wp8_multigeneration_stop_gate_20260721_r1/verification.json"
+    },
+    {
+      "file_sha256": "fab6d83ec58bac8c2589a6c3539539a3851dde27f6e578e1affaa9020f404391",
+      "internal_hash": "fe3476aac763de40e6d19ece6fe1f11971aaceefb9432690a0aa95fe13a6dbf9",
+      "internal_hash_field": "verification_hash",
+      "path": "coordination/decision_admissibility_wp8_tier2_canary_stop_gate_20260722_r10_r2/verification.json"
+    }
+  ],
+  "schema": "decision_admissibility_wp8_evidence_ledger_v1",
+  "status": "complete"
+}

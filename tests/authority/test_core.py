@@ -6,6 +6,18 @@ import multiprocessing
 import threading
 
 from authority.authority_engine import AuthorityEngine
+from authority.collectors import (
+    CodeExecutionCollector,
+    EvaluatorIntegrityCollector,
+    FitScopeCollector,
+    MethodIdentityCollector,
+    PredictionScopeCollector,
+    ReplicationCollector,
+    SeedAggregationCollector,
+    SelectionFreezeCollector,
+    SplitLineageCollector,
+    TrustedCollectorHost,
+)
 from authority.derivation_guard import authorize_derivation_operation
 from authority.derivation_guard import validate_derivation
 from authority.evidence_graph import EvidenceGraph, EvidencePath
@@ -78,16 +90,51 @@ def request(ref, operation=Operation.RANK):
 
 
 def required_receipts(ref, path_suffix=""):
+    digest = "a" * 64
+    host = TrustedCollectorHost(f"test-host{path_suffix}")
+    specifications = (
+        (MethodIdentityCollector, {
+            "method_fingerprint": digest,
+            "code_sha256": digest,
+        }),
+        (CodeExecutionCollector, {
+            "exit_status": 0,
+            "executed_path": "a1",
+            "run_hash": digest,
+        }),
+        (SplitLineageCollector, {
+            "partition_hashes": {"train": digest, "valid": digest},
+            "overlap_count": 0,
+        }),
+        (FitScopeCollector, {
+            "fit_scope_hashes": {"model": digest},
+            "holdout_fit_count": 0,
+        }),
+        (PredictionScopeCollector, {
+            "prediction_scope_hashes": {"valid": digest},
+            "forbidden_overlap_count": 0,
+        }),
+        (EvaluatorIntegrityCollector, {
+            "evaluator_hash": digest,
+            "inputs_hash": digest,
+            "metric_direction": "minimize",
+            "tampered": False,
+        }),
+        (SelectionFreezeCollector, {
+            "candidate_set_hash": digest,
+            "frozen_before_holdout": True,
+        }),
+    )
     return [
-        make_receipt(kind, "a1", "run", ref, f"collector{path_suffix}", {"ok": True})
-        for kind in (
-            ReceiptType.METHOD_IDENTITY,
-            ReceiptType.CODE_EXECUTION,
-            ReceiptType.SPLIT_LINEAGE,
-            ReceiptType.FIT_SCOPE,
-            ReceiptType.EVALUATOR,
-            ReceiptType.SELECTION_FREEZE,
+        host.collect(
+            collector,
+            artifact_id="a1",
+            run_id="run",
+            protocol_ref=ref,
+            source="tests.host",
+            payload=payload,
         )
+        for collector, payload in specifications
     ]
 
 
@@ -125,6 +172,35 @@ def test_and_or_paths_cannot_combine_two_incomplete_paths():
     decision = engine.authorize(request(spec.ref()))
     assert decision.outcome == DecisionOutcome.ALLOW
     assert decision.satisfied_paths == ["complete"]
+    assert decision.generation_stage == "improve"
+    assert decision.governance_stage == "branch_selection"
+    assert decision.permitted_scope is not None
+    assert decision.permitted_scope.generation_stages == ["improve"]
+    assert decision.permitted_scope.governance_stages == ["branch_selection"]
+
+
+def test_request_artifact_and_task_context_must_match_the_claim() -> None:
+    registry = ProtocolRegistry()
+    spec = registry.register(protocol())
+    graph = EvidenceGraph()
+    graph.add_claim(claim(spec.ref()))
+    receipts = required_receipts(spec.ref())
+    for receipt in receipts:
+        graph.add_receipt(receipt)
+    graph.add_path(EvidencePath("complete", "c1", [item.receipt_id for item in receipts]))
+    engine = AuthorityEngine(registry, graph=graph)
+
+    wrong_artifact = request(spec.ref())
+    wrong_artifact.artifact_id = "other-artifact"
+    artifact_decision = engine.authorize(wrong_artifact)
+    assert artifact_decision.outcome == DecisionOutcome.DENY
+    assert "claim_subject_artifact" in artifact_decision.missing_obligations
+
+    wrong_task = request(spec.ref())
+    wrong_task.task_context = TaskContext(task_id="other-task")
+    task_decision = engine.authorize(wrong_task)
+    assert task_decision.outcome == DecisionOutcome.DENY
+    assert "claim_task_scope" in task_decision.missing_obligations
 
 
 def test_contradictory_receipt_cannot_increase_authority():
@@ -147,6 +223,83 @@ def test_contradictory_receipt_cannot_increase_authority():
     decision = AuthorityEngine(registry, graph=graph).authorize(request(spec.ref()))
     assert decision.outcome == DecisionOutcome.DENY
     assert contradiction.receipt_id in decision.blocking_receipts
+
+
+def test_contaminated_alternative_path_does_not_poison_clean_support_path():
+    registry = ProtocolRegistry()
+    spec = registry.register(protocol())
+    graph = EvidenceGraph()
+    graph.add_claim(claim(spec.ref()))
+    receipts = required_receipts(spec.ref())
+    contradiction = make_receipt(
+        ReceiptType.EVALUATOR,
+        "a1",
+        "run",
+        spec.ref(),
+        "counterevidence",
+        {"contradicts": True, "reason": "labels observed"},
+    )
+    for receipt in [*receipts, contradiction]:
+        graph.add_receipt(receipt)
+    graph.add_path(EvidencePath("clean", "c1", [item.receipt_id for item in receipts]))
+    graph.add_path(EvidencePath(
+        "contaminated",
+        "c1",
+        [item.receipt_id for item in [*receipts, contradiction]],
+    ))
+    decision = AuthorityEngine(registry, graph=graph).authorize(request(spec.ref()))
+    assert decision.outcome == DecisionOutcome.ALLOW
+    assert decision.satisfied_paths == ["clean"]
+    assert decision.blocking_receipts == []
+
+
+def test_pairwise_claim_can_be_satisfied_by_complete_trusted_evidence():
+    registry = ProtocolRegistry()
+    spec = registry.register(protocol())
+    pairwise = claim(spec.ref())
+    pairwise.claim_type = ClaimType.PAIRWISE_SUPERIORITY
+    receipts = required_receipts(spec.ref(), "-pairwise")
+    host = TrustedCollectorHost("pairwise-host")
+    receipts.append(host.collect(
+        SeedAggregationCollector,
+        artifact_id="a1",
+        run_id="run",
+        protocol_ref=spec.ref(),
+        source="tests.host",
+        payload={
+            "declared_seeds": [1, 2, 3],
+            "all_results_hash": "b" * 64,
+            "aggregation": "paired_mean",
+            "paired": True,
+            "preregistered": True,
+            "best_seed_selection": False,
+        },
+    ))
+    for index in range(3):
+        receipts.append(host.collect(
+            ReplicationCollector,
+            artifact_id="a1",
+            run_id="run",
+            protocol_ref=spec.ref(),
+            source="tests.host",
+            payload={
+                "replication_id": f"seed-{index}",
+                "task_family": "text",
+                "result_hash": f"{index + 1:x}" * 64,
+                "equal_data_budget": True,
+                "equal_compute_budget": True,
+                "paired_bootstrap_ci_lower_gt_zero": True,
+            },
+        ))
+    graph = EvidenceGraph()
+    graph.add_claim(pairwise)
+    for receipt in receipts:
+        graph.add_receipt(receipt)
+    graph.add_path(EvidencePath("pairwise-complete", "c1", [
+        receipt.receipt_id for receipt in receipts
+    ]))
+    decision = AuthorityEngine(registry, graph=graph).authorize(request(spec.ref()))
+    assert decision.outcome == DecisionOutcome.ALLOW
 
 
 def test_protocol_drift_requires_new_replay_path():
@@ -189,10 +342,9 @@ def test_offline_distillation_requires_actuation_but_publication_only_needs_line
         clean_ancestry=True,
     )
     assert distillation.outcome == DecisionOutcome.QUARANTINE
-    assert set(distillation.reasons) == {
-        "missing_runtime_actuation",
-        "missing_counterfactual_actuation",
-    }
+    assert distillation.reasons == [
+        "ambiguous_positive_distillation_semantics"
+    ]
 
     actuated = authorize_derivation_operation(
         Operation.DISTILL,
@@ -201,7 +353,35 @@ def test_offline_distillation_requires_actuation_but_publication_only_needs_line
         runtime_actuation_receipts=["receipt::runtime"],
         counterfactual_actuation_receipts=["receipt::counterfactual"],
     )
-    assert actuated.outcome == DecisionOutcome.ALLOW
+    assert actuated.outcome == DecisionOutcome.QUARANTINE
+    assert actuated.reasons == [
+        "ambiguous_positive_distillation_semantics"
+    ]
+
+    positive_result = authorize_derivation_operation(
+        Operation.DISTILL_POSITIVE_RESULT,
+        parent_claim_refs=["claim::source"],
+        clean_ancestry=True,
+    )
+    assert positive_result.outcome == DecisionOutcome.ALLOW
+
+    adopted = authorize_derivation_operation(
+        Operation.DISTILL_POSITIVE_ADOPTED,
+        parent_claim_refs=["claim::source"],
+        clean_ancestry=True,
+        runtime_actuation_receipts=["receipt::runtime"],
+    )
+    assert adopted.outcome == DecisionOutcome.ALLOW
+
+    causal = authorize_derivation_operation(
+        Operation.DISTILL_POSITIVE_ADOPTED,
+        parent_claim_refs=["claim::source"],
+        clean_ancestry=True,
+        runtime_actuation_receipts=["receipt::runtime"],
+        causal_claim=True,
+    )
+    assert causal.outcome == DecisionOutcome.QUARANTINE
+    assert causal.reasons == ["missing_counterfactual_actuation"]
 
 
 def test_ledger_detects_tampering_and_orders_concurrent_events(tmp_path):

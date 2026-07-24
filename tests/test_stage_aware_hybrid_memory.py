@@ -214,6 +214,72 @@ def test_memory_transfer_role_is_explicit_and_clean_for_task_without_exact_repla
     assert pack["execution_safety_gate"]["all_outputs_clean"] is True
 
 
+def test_no_memory_binds_bundle_but_has_zero_prompt_refs_and_exposure(tmp_path):
+    from agents.adoption import log_adoption
+
+    layer = _layer(tmp_path, retrieval_control="no_memory")
+    assert layer.nodes
+    assert layer.graph_path.is_file()
+
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="aerial-cactus-identification",
+        task_desc="Binary aerial image classification.",
+        query_parts=["Use the loaded task-heldout bundle."],
+        draft_role="memory_transfer",
+    )
+
+    pack = layer.current_navigation_pack()
+    assert text == ""
+    assert refs == []
+    assert layer.current_visibility_pack() is None
+    assert pack["schema"] == "stage_hybrid_no_memory_pack_v1"
+    assert pack["stage_route"]["control"] == "no_memory"
+    assert pack["memory_snapshot_bound_but_not_exposed"] is True
+    assert pack["prompt_text"] == ""
+    assert pack["prompt_visible_refs"] == []
+    assert pack["visible_clause_ids"] == []
+    assert pack["fused_execution_candidates"] == []
+    assert pack["selected_sop_gateways"] == []
+    assert pack["sop_only_candidates"] == []
+    assert pack["evidence_refs"] == []
+    assert pack["failure_patterns"] == []
+
+    recorded_exposures = []
+    authority = SimpleNamespace(
+        record_prompt_exposure=lambda **payload: recorded_exposures.append(payload)
+    )
+    node = SimpleNamespace(adoption_log=[], memory_navigation_trace=[])
+    agent = SimpleNamespace(
+        adoption_tracking_enabled=True,
+        evaluation_authority=authority,
+        external_skill_memory=layer,
+    )
+    log_adoption(node, agent, layer.source_name, refs, "draft")
+    assert recorded_exposures == []
+    assert node.adoption_log == []
+    assert node.memory_navigation_trace == []
+
+
+def test_rendered_sop_only_prompt_exposures_are_returned_as_refs(tmp_path):
+    layer = _layer(tmp_path, clean=False, retrieval_control="stage_hybrid")
+
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="task",
+        task_desc="text classification",
+        draft_role="memory_transfer",
+    )
+
+    pack = layer.current_navigation_pack()
+    exposed = [row["id"] for row in pack["sop_only_candidates"]]
+    rendered = [sop_id for sop_id in exposed if sop_id in text]
+    truncated = set(exposed) - set(rendered)
+    assert rendered
+    assert set(rendered) <= set(refs)
+    assert not truncated & set(refs)
+
+
 def test_gateway_requires_code_audited_clean_support(tmp_path):
     clean = _layer(tmp_path)
     candidates = clean._rank_sops("transformer validation ensemble", "draft", 6)
@@ -609,6 +675,10 @@ def test_prompt_separates_evidence_sop_only_and_risk(tmp_path):
     ("control", "has_sop", "has_tree"),
     [
         ("stage_hybrid", True, True),
+        ("full_decision_admissibility", True, True),
+        ("flat_relevance_memory", False, False),
+        ("global_validity_bit", False, False),
+        ("authority_only", False, False),
         ("sop_only", True, False),
         ("tree_only", False, True),
         ("naive_concat", True, True),
@@ -642,6 +712,20 @@ def test_runtime_retrieval_controls_are_isolated(tmp_path, control, has_sop, has
         assert set(pack["execution_candidate_provenance"]) == {
             item["id"] for item in pack["fused_execution_candidates"]
         }
+    if control in {
+        "flat_relevance_memory",
+        "global_validity_bit",
+        "authority_only",
+    }:
+        assert pack["algorithm_version"] == "formal_flat_relevance_v1"
+        assert pack["direct_sop_candidates"]
+        assert pack["sop_only_candidates"] == pack["direct_sop_candidates"]
+        assert pack["tree_candidate_details"] == []
+        assert pack["fused_execution_candidates"] == []
+        assert all(
+            set(item["score_components"]) == {"flat_text_relevance"}
+            for item in pack["direct_sop_candidates"]
+        )
 
 
 def test_final_adoption_outcome_taxonomy():
@@ -802,6 +886,27 @@ def test_leaf_runtime_context_with_dinov3_reaches_clean_layered_retrieval():
         assert pack["layered_strategy_fallback"]["activated"] is True
         assert pack["layered_strategy_fallback"]["fallback_mode"] == "stage_hybrid_v2_clean_cross_task"
         assert pack["execution_safety_gate"]["all_outputs_clean"] is True
+
+
+def test_nomad_without_a_coldstart_template_uses_explicit_clean_fallback():
+    layer = _real_layered()
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="nomad2018-predict-transparent-conductors",
+        task_desc="Tabular multi-output regression evaluated by RMSLE.",
+        query_parts=["One GPU and eight CPUs are available."],
+        draft_role="novel_exploration",
+        context={"baseline_model": "", "coldstart": "None model"},
+    )
+    pack = layer.current_navigation_pack()
+    profile = pack["task_profile"]
+    assert text and refs
+    assert profile["modality"] == "tabular"
+    assert profile["task_family"] == "tabular_multioutput_regression"
+    assert profile["coldstart_primary_model_available"] is False
+    assert profile["coldstart_primary_model_family"] is None
+    assert pack["layered_strategy_fallback"]["activated"] is True
+    assert pack["layered_strategy_fallback"]["fallback_mode"] == "stage_hybrid_v2_clean_cross_task"
 
 
 def test_full_prefixed_historical_tasks_are_task_local_for_runtime_retrieval():

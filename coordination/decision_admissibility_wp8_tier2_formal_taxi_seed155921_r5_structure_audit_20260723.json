@@ -1,0 +1,97 @@
+{
+  "agent_seed": 155921,
+  "artifact_bindings": {
+    "BLOCK_EVALUATION_FILE_MANIFEST.json": {
+      "file_sha256": "2e1c6a5cc51e758ad2beee80d7cfb88de634e457b9dc0ccc0470ee9cda661a96",
+      "internal_hash": "d99b83284a41440be5aabd1fedd265d68314d7b4dd296c6faed6f49193233841"
+    },
+    "EVALUATION_SUMMARY.json": {
+      "file_sha256": "3b5f4a2a8e4f3e70c48ca5753742d8c44227a36da939c1501ff6a3e149f10a4d",
+      "internal_hash": "21337b0bc6e3087b41b9e29ee51eed394b1acafd6674da92a548df1d5a0b80e7"
+    },
+    "EVALUATOR_ISOLATION.json": {
+      "file_sha256": "8b29606d7008ddacd131a2c2e0b347ff391ab3f1b527fa8ec972f123957883a3",
+      "internal_hash": "55eef10a3588433b5c75e5a666449b101fb00bf46eabc4d58a105e14c39fa528"
+    },
+    "EVALUATOR_POD_CREATION_ATTESTATION.json": {
+      "file_sha256": "5723e4392b004f696dcb5e4558c3ef9e7658ca242b360c239bb1cd76477a7bde",
+      "internal_hash": "9b5c5141e28f2c09edf00aa75e460c4c148ae5563b122dbbd452b285a7fdaa08"
+    },
+    "EVALUATOR_POD_DELETION_ATTESTATION.json": {
+      "file_sha256": "06843efdd91d58183b95c78b69b4d1d54fb98f47e9ad589e4f3b376851a828ac",
+      "internal_hash": "a7c066a094e93450fb6a3cb259d921504075aebe21ad2c8630548b95ae831804"
+    },
+    "TRAINING_MANIFEST.json": {
+      "file_sha256": "3543bdf2716b4128cd2d6c86d98fc69976eaf077f05c532e1068b25a2b2eb6e6",
+      "internal_hash": "427fe8514f9074d72484bbb091e643cf997e9dcd8b0aa23f630c30e1ad33dbb1"
+    },
+    "TRAINING_POD_DELETION_ATTESTATION.json": {
+      "file_sha256": "c089eafdce2aff21004179447dbbcc9ec51e62d8f489d1006430331fd3baa4c6",
+      "internal_hash": "ba916c792a190e5a592de065976930020fd18fff939a99fe55d14ff04cb6c782"
+    }
+  },
+  "audit_hash": "770df4c57dca0a588b205d1b20e2892e78f98d202864bdbab9add8c72eb2e99c",
+  "audited_at_utc": "2026-07-23T08:58:33Z",
+  "block_id": "wp8-tier2-formal-taxi-seed-155921-r5",
+  "condition_structure": {
+    "authority_only": {
+      "failure_classification": "authority_denial",
+      "result_fact_count": 0,
+      "status": "pre_terminal_failure",
+      "terminal_metric_observed": false
+    },
+    "flat_relevance_memory": {
+      "failure_classification": "authority_denial",
+      "result_fact_count": 0,
+      "status": "pre_terminal_failure",
+      "terminal_metric_observed": false
+    },
+    "full_decision_admissibility": {
+      "failure_classification": "authority_denial",
+      "result_fact_count": 0,
+      "status": "pre_terminal_failure",
+      "terminal_metric_observed": false
+    },
+    "global_validity_bit": {
+      "failure_classification": "authority_denial",
+      "result_fact_count": 0,
+      "status": "pre_terminal_failure",
+      "terminal_metric_observed": false
+    },
+    "no_memory": {
+      "result_fact_count": 1,
+      "result_fact_derived_from_refs": [],
+      "status": "scored_selected_result",
+      "terminal_value_omitted": true
+    }
+  },
+  "failed_online_condition_count": 4,
+  "lifecycle": {
+    "evaluator_created_after_training_not_found_attestation": true,
+    "evaluator_pod_not_found": true,
+    "training_pod_not_found": true
+  },
+  "online_condition_count": 5,
+  "oracle_structure": {
+    "candidate_union_count": 5,
+    "normal_result_fact_published": false,
+    "score_values_omitted": true,
+    "scored_candidate_count": 5
+  },
+  "result_fact_count": 1,
+  "schema": "decision_admissibility_wp8_tier2_formal_block_structure_audit_v1",
+  "score_values_included": false,
+  "score_values_inspected": false,
+  "status": "passed",
+  "structural_invariants": {
+    "all_five_conditions_retained": true,
+    "failed_conditions_have_no_terminal_result_or_result_fact": true,
+    "source_scores_not_inherited": true,
+    "successful_conditions_have_exactly_one_independent_result_fact": true,
+    "successful_plus_failed_equals_five": true,
+    "target_history_not_used": true,
+    "terminal_values_remain_blinded": true
+  },
+  "successful_selected_result_count": 1,
+  "task_id": "new-york-city-taxi-fare-prediction"
+}

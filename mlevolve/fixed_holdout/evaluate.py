@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import f1_score, roc_auc_score
 
 from fixed_holdout.common import read_manifest, sha256_file, sha256_lines
 
@@ -73,6 +73,36 @@ def _binary_targets(y_true: np.ndarray) -> np.ndarray:
     return values
 
 
+def _macro_f1(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    *,
+    threshold: float,
+    zero_division: int,
+) -> float:
+    if y_true.shape != y_pred.shape or y_true.ndim != 2:
+        raise ValueError("Macro-F1 labels and predictions must have matching matrices")
+    if not set(np.unique(y_true)).issubset({0.0, 1.0}):
+        raise ValueError("Macro-F1 labels must contain only 0 and 1")
+    if (y_pred < 0).any() or (y_pred > 1).any():
+        raise ValueError("Macro-F1 probability predictions must be in [0, 1]")
+    if not 0.0 <= threshold <= 1.0:
+        raise ValueError("Macro-F1 threshold must be in [0, 1]")
+    true_values = y_true.astype(int)
+    predicted_values = (y_pred >= threshold).astype(int)
+    if true_values.shape[1] == 1:
+        true_values = true_values.reshape(-1)
+        predicted_values = predicted_values.reshape(-1)
+    return float(
+        f1_score(
+            true_values,
+            predicted_values,
+            average="macro",
+            zero_division=zero_division,
+        )
+    )
+
+
 def evaluate_submission(manifest_path: Path, submission_path: Path) -> dict:
     manifest, y_true, y_pred = _load_aligned_frames(manifest_path, submission_path)
     metric = manifest["metric"]
@@ -97,6 +127,13 @@ def evaluate_submission(manifest_path: Path, submission_path: Path) -> dict:
         score = float(np.mean(np.abs(y_pred.reshape(-1) - y_true.reshape(-1))))
     elif metric == "accuracy":
         score = float(np.mean(y_pred.reshape(-1) == y_true.reshape(-1)))
+    elif metric == "macro_f1":
+        score = _macro_f1(
+            y_true,
+            y_pred,
+            threshold=float(manifest.get("prediction_threshold", 0.5)),
+            zero_division=int(manifest.get("zero_division", 0)),
+        )
     else:
         raise ValueError(f"Unsupported fixed-holdout metric: {metric}")
     return {

@@ -41,6 +41,7 @@ class SearchNode(DataClassJsonMixin):
     exc_type: str | None = field(default=None, kw_only=True)
     exc_info: dict | None = field(default=None, kw_only=True)
     exc_stack: list[tuple] | None = field(default=None, kw_only=True)
+    protocol_observation: dict = field(default_factory=dict, kw_only=True)
 
     # ---- evaluation ----
     analysis: str = field(default=None, kw_only=True)  # type: ignore
@@ -102,6 +103,8 @@ class SearchNode(DataClassJsonMixin):
     claim_refs: list[str] = field(default_factory=list, kw_only=True)
     receipt_refs: list[str] = field(default_factory=list, kw_only=True)
     authority_decision_refs: list[str] = field(default_factory=list, kw_only=True)
+    experience_contract_refs: list[str] = field(default_factory=list, kw_only=True)
+    actuation_report_refs: list[str] = field(default_factory=list, kw_only=True)
     derived_from_refs: list[str] = field(default_factory=list, kw_only=True)
     protocol_ref: str = field(default="", kw_only=True)
     method_fingerprint: str = field(default="", kw_only=True)
@@ -128,6 +131,9 @@ class SearchNode(DataClassJsonMixin):
         self.exc_type = exec_result.exc_type
         self.exc_info = exec_result.exc_info
         self.exc_stack = exec_result.exc_stack
+        self.protocol_observation = copy.deepcopy(
+            exec_result.protocol_observation or {}
+        )
 
     @property
     def term_out(self) -> str:

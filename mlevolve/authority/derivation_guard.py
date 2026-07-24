@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .models import AuthorityDecision, AuthorityScope, DecisionOutcome, Operation
+from .models import (
+    AuthorityDecision,
+    AuthorityScope,
+    DecisionOutcome,
+    Operation,
+    canonical_operation,
+)
 
 
 @dataclass
@@ -30,6 +36,7 @@ def authorize_derivation_operation(
     scope_widened: bool = False,
     runtime_actuation_receipts: list[str] | None = None,
     counterfactual_actuation_receipts: list[str] | None = None,
+    causal_claim: bool = False,
 ) -> DerivationOperationDecision:
     """Fail closed for offline distillation/publication mediation.
 
@@ -37,19 +44,30 @@ def authorize_derivation_operation(
     needs positive runtime and counterfactual actuation evidence; clean lineage
     alone never upgrades an attachment into an authoritative SOP.
     """
-    if operation not in {Operation.DISTILL, Operation.DERIVED_PUBLICATION}:
+    operation = canonical_operation(operation)
+    if operation not in {
+        Operation.DISTILL_DIAGNOSTIC,
+        Operation.DISTILL_CANDIDATE,
+        Operation.DISTILL_POSITIVE_RESULT,
+        Operation.DISTILL_POSITIVE_ADOPTED,
+        Operation.DISTILL_POSITIVE,
+        Operation.DISTILL,
+        Operation.DERIVED_PUBLICATION,
+    }:
         raise ValueError(f"unsupported derivation operation: {operation}")
     reasons: list[str] = []
     if not parent_claim_refs:
         reasons.append("missing_parent_claims")
-    if not clean_ancestry:
+    if operation != Operation.DISTILL_DIAGNOSTIC and not clean_ancestry:
         reasons.append("unclean_ancestry")
     if scope_widened:
         reasons.append("scope_widening")
-    if operation == Operation.DISTILL:
+    if operation in {Operation.DISTILL, Operation.DISTILL_POSITIVE}:
+        reasons.append("ambiguous_positive_distillation_semantics")
+    if operation == Operation.DISTILL_POSITIVE_ADOPTED:
         if not runtime_actuation_receipts:
             reasons.append("missing_runtime_actuation")
-        if not counterfactual_actuation_receipts:
+        if causal_claim and not counterfactual_actuation_receipts:
             reasons.append("missing_counterfactual_actuation")
     return DerivationOperationDecision(
         outcome=DecisionOutcome.ALLOW if not reasons else DecisionOutcome.QUARANTINE,
@@ -76,6 +94,8 @@ def intersect_parent_scopes(decisions: list[AuthorityDecision]) -> AuthorityScop
         stages=_intersection([scope.stages for scope in scopes]),
         protocol_hashes=_intersection([scope.protocol_hashes for scope in scopes]),
         task_ids=_intersection([scope.task_ids for scope in scopes]),
+        generation_stages=_intersection([scope.generation_stages for scope in scopes]),
+        governance_stages=_intersection([scope.governance_stages for scope in scopes]),
     )
 
 
@@ -96,7 +116,15 @@ def validate_derivation(
     if effective is None:
         reasons.append("no_parent_scope_intersection")
     else:
-        for field in ("claim_types", "operations", "stages", "protocol_hashes", "task_ids"):
+        for field in (
+            "claim_types",
+            "operations",
+            "stages",
+            "protocol_hashes",
+            "task_ids",
+            "generation_stages",
+            "governance_stages",
+        ):
             if not set(getattr(requested_scope, field)).issubset(set(getattr(effective, field))):
                 reasons.append(f"scope_widening:{field}")
     return DerivationValidation(not reasons, effective if not reasons else None, reasons)
