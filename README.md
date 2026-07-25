@@ -98,8 +98,8 @@ agent:
     num_improves: 3            # Max improve attempts per node
 
 # LLM backend
-agent.code.model: deepseek-chat
-agent.feedback.model: deepseek-chat
+agent.code.model: deepseek-v4-flash
+agent.feedback.model: deepseek-v4-flash
 
 # Knowledge base path
 methodology_kb_path: "../paper-skills/experience_kb"

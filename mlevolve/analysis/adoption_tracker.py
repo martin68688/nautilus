@@ -181,7 +181,7 @@ def _llm_judge(code: str, memory_text: str, cfg) -> bool:
     import os
     api_key = os.environ.get("DEEPSEEK_API_KEY") or getattr(cfg, "api_key", "")
     base_url = os.environ.get("DEEPSEEK_BASE_URL") or getattr(cfg, "base_url", "") or None
-    model = os.environ.get("DEEPSEEK_MODEL") or "deepseek-chat"
+    model = os.environ.get("DEEPSEEK_MODEL") or "deepseek-v4-flash"
     user = (
         f"Memory entry (a distilled skill describing specific techniques/APIs/patterns):\n"
         f"```\n{memory_text[:2000]}\n```\n\n"
@@ -194,9 +194,12 @@ def _llm_judge(code: str, memory_text: str, cfg) -> bool:
     )
     try:
         from openai import OpenAI
+        from llm.model_compat import deepseek_thinking_extra_body, resolve_model_name
+        resolution = resolve_model_name(model, base_url=base_url)
         client = OpenAI(api_key=api_key, base_url=base_url)
         resp = client.chat.completions.create(
-            model=model, temperature=0, max_tokens=8,
+            model=resolution.effective_name, temperature=0, max_tokens=8,
+            extra_body=deepseek_thinking_extra_body(resolution, use_thinking=False),
             messages=[{"role": "system", "content": "Output only YES or NO."},
                       {"role": "user", "content": user}],
         )
@@ -225,7 +228,7 @@ def _llm_judge_batch(memory_text: str, codes: list, cfg, max_chars: int = 4000) 
         return [_llm_judge(codes[0], memory_text, cfg)]
     api_key = os.environ.get("DEEPSEEK_API_KEY") or getattr(cfg, "api_key", "")
     base_url = os.environ.get("DEEPSEEK_BASE_URL") or getattr(cfg, "base_url", "") or None
-    model = os.environ.get("DEEPSEEK_MODEL") or "deepseek-chat"
+    model = os.environ.get("DEEPSEEK_MODEL") or "deepseek-v4-flash"
     parts = "\n\n".join(f"=== CODE {i + 1} ===\n{c[:max_chars]}" for i, c in enumerate(codes))
     user = (
         f"Memory entry (a distilled skill describing specific techniques/APIs/patterns):\n"
@@ -236,9 +239,12 @@ def _llm_judge_batch(memory_text: str, codes: list, cfg, max_chars: int = 4000) 
     )
     try:
         from openai import OpenAI
+        from llm.model_compat import deepseek_thinking_extra_body, resolve_model_name
+        resolution = resolve_model_name(model, base_url=base_url)
         client = OpenAI(api_key=api_key, base_url=base_url)
         resp = client.chat.completions.create(
-            model=model, temperature=0, max_tokens=8 * n + 16,
+            model=resolution.effective_name, temperature=0, max_tokens=8 * n + 16,
+            extra_body=deepseek_thinking_extra_body(resolution, use_thinking=False),
             messages=[{"role": "system",
                        "content": f"Output exactly {n} lines, each '<number> YES' or '<number> NO', in order 1..{n}."},
                       {"role": "user", "content": user}],

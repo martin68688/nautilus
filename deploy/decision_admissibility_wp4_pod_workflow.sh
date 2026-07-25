@@ -151,7 +151,7 @@ case "${1:-}" in
       --trace-manifest "$LOCAL_ROOT/traces/trace_manifest.json" \
       --trace-root "$LOCAL_ROOT/traces" \
       --output-dir "$LOCAL_ROOT/distillation" \
-      --model "${DEEPSEEK_MODEL:-deepseek-chat}" \
+      --model "${DEEPSEEK_MODEL:-deepseek-v4-flash}" \
       --temperature 0 \
       --allow-network
     bind_local

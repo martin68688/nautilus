@@ -28,7 +28,7 @@ def load_env():
 load_env()
 BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
+MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash")
 TAU = 0.50  # text-Jaccard threshold on title+principle
 STOP = set("use for in the a an to when on with and of by from as is are be it that this via into your".split())
 

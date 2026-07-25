@@ -258,7 +258,7 @@ def distill(
     output_dir: str | Path,
     *,
     frozen_responses_path: str | Path | None = None,
-    model: str = "deepseek-chat",
+    model: str = "deepseek-v4-flash",
     temperature: float = 0.0,
     allow_network: bool = False,
     created_at: str | None = None,
@@ -472,7 +472,7 @@ def main() -> None:
     parser.add_argument("--trace-root", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--frozen-responses", type=Path)
-    parser.add_argument("--model", default=os.environ.get("DEEPSEEK_MODEL", "deepseek-chat"))
+    parser.add_argument("--model", default=os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash"))
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--allow-network", action="store_true")
     parser.add_argument("--created-at")

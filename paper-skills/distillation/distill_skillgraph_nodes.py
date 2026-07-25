@@ -10,7 +10,7 @@ Each skill node carries the paper's 4 fields {title, principle, condition, categ
 category = "general" | "<task_type>" (task_type folded into category, per paper Appendix B).
 evidence_turns (list of "B<branch>.T<turn>" labels) is OUR extension to ground references.
 
-Teacher: DeepSeek (deepseek-chat -> deepseek-v4-flash). Edges/levels/stats/Merge are NOT done
+Teacher: DeepSeek (deepseek-v4-flash). Edges/levels/stats/Merge are NOT done
 here (see build_edges_levels.py).
 
 Usage:
@@ -38,7 +38,7 @@ def load_env():
 load_env()
 BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
 API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")  # aliases to v4-flash
+MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash")
 VALID_SCOPES = {"universal_general", "api_warning", "implementation_note", "task_specific"}
 GENERAL_DEMOTE_RE = re.compile(
     r"\bAPI\b|parameter name|import path|correct (?:import|parameter|API|method|argument|flag|keyword)|"

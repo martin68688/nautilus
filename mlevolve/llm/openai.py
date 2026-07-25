@@ -11,6 +11,7 @@ from openai import OpenAI
 
 from config import Config
 from .gemini import FunctionSpec, compile_prompt_to_md
+from .model_compat import deepseek_thinking_extra_body, resolve_model_name
 from .model_profiles import get_profile, supports_json_schema, thinking_json_incompatible
 
 logger = logging.getLogger("MLEvolve")
@@ -98,8 +99,10 @@ def query(
     if cfg is None:
         raise ValueError("cfg is required for OpenAI backend")
     filtered = {k: v for k, v in model_kwargs.items() if v is not None}
-    model = filtered.get("model", "")
-    stage = _stage_config_for_model(cfg, model)
+    requested_model = filtered.get("model", "")
+    stage = _stage_config_for_model(cfg, requested_model)
+    resolution = resolve_model_name(requested_model, base_url=stage.base_url)
+    model = resolution.effective_name
     timeout = float(os.environ.get("OPENAI_COMPAT_TIMEOUT", "1200"))
     client = OpenAI(
         api_key=stage.api_key,
@@ -115,7 +118,10 @@ def query(
     use_thinking = func_spec is None
     profile = get_profile(model, use_thinking=use_thinking)
 
-    extra_body: dict[str, Any] = {}
+    extra_body: dict[str, Any] = deepseek_thinking_extra_body(
+        resolution,
+        use_thinking=use_thinking,
+    )
     if "top_k" in profile:
         extra_body["top_k"] = profile["top_k"]
     if "enable_thinking" in profile:
@@ -174,6 +180,8 @@ def query(
     out_tok = getattr(completion.usage, "completion_tokens", 0) or 0
     info = {
         "model": getattr(completion, "model", model),
+        "requested_model": resolution.requested_name,
+        "effective_model": resolution.effective_name,
         "created": getattr(completion, "created", int(time.time())),
     }
     return output, req_time, in_tok, out_tok, info
@@ -225,7 +233,14 @@ def generate(
 ) -> str:
     """Streaming text generation via OpenAI-compatible Chat API. Supports chat format {system, user, assistant} for Qwen."""
     stage = cfg.agent.code
-    model = stage.model
+    resolution = resolve_model_name(stage.model, base_url=stage.base_url)
+    model = resolution.effective_name
+    if resolution.migrated:
+        logger.warning(
+            "Migrating deprecated model alias %s to %s",
+            resolution.requested_name,
+            resolution.effective_name,
+        )
     messages = _prompt_to_messages(prompt, model=model)
     client = OpenAI(
         api_key=stage.api_key,
@@ -238,7 +253,10 @@ def generate(
     use_thinking = json_schema is None
     profile = get_profile(model, use_thinking=use_thinking)
 
-    extra_body: dict[str, Any] = {}
+    extra_body: dict[str, Any] = deepseek_thinking_extra_body(
+        resolution,
+        use_thinking=use_thinking,
+    )
     if "top_k" in profile:
         extra_body["top_k"] = profile["top_k"]
     if "enable_thinking" in profile:

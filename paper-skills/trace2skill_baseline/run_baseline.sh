@@ -7,7 +7,7 @@
 # Credentials: reads DEEPSEEK_API_KEY from env (or mlevolve/.env). Never echoes the key.
 # Usage:
 #   ./run_baseline.sh [run_dir ...]      # defaults to one spooky run (smoke test)
-#   MAX_SUCCESS_PER_RUN=8 MAX_FAILED_PER_RUN=8 MAX_WORKERS=6 MODEL=deepseek-chat \
+#   MAX_SUCCESS_PER_RUN=8 MAX_FAILED_PER_RUN=8 MAX_WORKERS=6 MODEL=deepseek-v4-flash \
 #     ./run_baseline.sh mlevolve/runs/2026*_spooky-author-identification
 set -euo pipefail
 
@@ -24,7 +24,7 @@ fi
 : "${DEEPSEEK_API_KEY:?DEEPSEEK_API_KEY not set (export it or put it in mlevolve/.env)}"
 export OPENAI_API_KEY="$DEEPSEEK_API_KEY"
 export OPENAI_BASE_URL="${DEEPSEEK_BASE_URL:-https://api.deepseek.com}"
-MODEL="${MODEL:-deepseek-chat}"
+MODEL="${MODEL:-deepseek-v4-flash}"
 GCFG="$HERE/deepseek_chat.json"
 MAX_WORKERS="${MAX_WORKERS:-6}"
 # Python env with openai+tqdm+diskcache (anaconda base on this machine). Override with PYTHON=...
