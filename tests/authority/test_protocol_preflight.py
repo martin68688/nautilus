@@ -891,6 +891,57 @@ if __name__ == "__main__":
     )
 
 
+def test_static_preflight_rejects_invalid_selection_lifecycle_before_gpu(
+    tmp_path: Path,
+) -> None:
+    contract, _identity, _manifest, _candidate = _prepared(tmp_path, "boosting")
+    source = '''def candidate(session):
+    views = session.get_split()
+    with session.fit_scope(component="model", data_view=views.train):
+        pass
+    with session.prediction_scope(component="model", data_view=views.validation):
+        predictions = []
+    session.evaluate_internal(views.validation, predictions, label_key="fare")
+    session.freeze_selection("dry", based_on=views.validation, artifact_hash="0" * 64)
+
+from protocol_runtime import current_session
+
+def main():
+    session = current_session()
+    views = session.get_split()
+    with session.fit_scope(component="model", data_view=views.train):
+        pass
+    with session.prediction_scope(component="model", data_view=views.validation):
+        predictions = []
+    artifact_hash = "model_hash_" + str(hash(tuple(predictions)))
+    session.freeze_selection("real", based_on=views.validation, artifact_hash=artifact_hash)
+    session.evaluate_internal(views.validation, predictions, label_key="fare")
+
+if __name__ == "__main__":
+    main()
+'''
+    report = static_compatibility_check(source, contract)
+    assert report["status"] == PreflightStatus.PROTOCOL_VIOLATION.value
+    assert "selection_before_evaluation:main" in report["violations"]
+    assert "post_selection_evaluation:main" in report["violations"]
+    assert any(
+        value.startswith("invalid_artifact_hash_expression:main:")
+        for value in report["violations"]
+    )
+
+    checkpoint_source = source.replace(
+        '    artifact_hash = "model_hash_" + str(hash(tuple(predictions)))\n',
+        '    artifact_hash = "best_model.pt"\n',
+    ).replace(
+        '    session.freeze_selection("real", based_on=views.validation, artifact_hash=artifact_hash)\n'
+        '    session.evaluate_internal(views.validation, predictions, label_key="fare")\n',
+        '    session.evaluate_internal(views.validation, predictions, label_key="fare")\n'
+        '    session.freeze_selection("real", based_on=views.validation, artifact_hash=artifact_hash)\n',
+    )
+    checkpoint_report = static_compatibility_check(checkpoint_source, contract)
+    assert checkpoint_report["status"] == PreflightStatus.PASS.value
+
+
 def test_chronological_internal_resplit_and_import_choice_are_method_freedom(
     tmp_path: Path,
 ) -> None:

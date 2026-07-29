@@ -152,6 +152,132 @@ def _expanded_function_calls(
     return expanded
 
 
+def _direct_calls_with_nodes(
+    function: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> list[ast.Call]:
+    """Return calls in one function while excluding nested definitions."""
+
+    calls: list[ast.Call] = []
+
+    class Visitor(ast.NodeVisitor):
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            if node is function:
+                for statement in node.body:
+                    self.visit(statement)
+
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+            if node is function:
+                for statement in node.body:
+                    self.visit(statement)
+
+        def visit_ClassDef(self, _node: ast.ClassDef) -> None:
+            return
+
+        def visit_Lambda(self, _node: ast.Lambda) -> None:
+            return
+
+        def visit_Call(self, node: ast.Call) -> None:
+            calls.append(node)
+            self.generic_visit(node)
+
+    Visitor().visit(function)
+    return calls
+
+
+def _assigned_values(
+    function: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> dict[str, ast.expr]:
+    """Collect simple local assignments for bounded hash-expression checks."""
+
+    values: dict[str, ast.expr] = {}
+    for node in ast.walk(function):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    values[target.id] = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            if node.value is not None:
+                values[node.target.id] = node.value
+    return values
+
+
+def _artifact_hash_expression_status(
+    expression: ast.expr,
+    assignments: Mapping[str, ast.expr],
+    *,
+    seen: tuple[str, ...] = (),
+) -> bool | None:
+    """Classify only obviously safe/unsafe ``artifact_hash`` expressions.
+
+    ``None`` means that static analysis cannot prove the expression either way;
+    runtime Host validation remains authoritative in that case.  We reject the
+    common non-digest pattern produced by LLMs (``hash(model.parameters())``)
+    before it consumes GPU time, while allowing checkpoint paths and explicit
+    SHA-256/hexdigest expressions.
+    """
+
+    if isinstance(expression, ast.Name):
+        if expression.id in seen:
+            return None
+        assigned = assignments.get(expression.id)
+        if assigned is None:
+            return None
+        return _artifact_hash_expression_status(
+            assigned, assignments, seen=(*seen, expression.id)
+        )
+    if isinstance(expression, ast.Constant) and isinstance(expression.value, str):
+        value = expression.value
+        if len(value) == 64 and all(
+            character in "0123456789abcdef" for character in value
+        ):
+            return True
+        # The SDK accepts a regular checkpoint path in this slot.  Absolute or
+        # relative path literals are checked for existence by the Host runtime.
+        if (
+            value.startswith(("/", "./", "../"))
+            or "/" in value
+            or "\\" in value
+            or Path(value).suffix.lower()
+            in {".bin", ".ckpt", ".joblib", ".json", ".model", ".pkl", ".pt", ".pth"}
+        ):
+            return True
+        return None
+    if isinstance(expression, ast.BinOp) and isinstance(expression.op, ast.Mult):
+        left, right = expression.left, expression.right
+        if (
+            isinstance(left, ast.Constant)
+            and isinstance(left.value, str)
+            and isinstance(right, ast.Constant)
+            and right.value == 64
+            and len(left.value) == 1
+            and left.value in "0123456789abcdef"
+        ) or (
+            isinstance(right, ast.Constant)
+            and isinstance(right.value, str)
+            and isinstance(left, ast.Constant)
+            and left.value == 64
+            and len(right.value) == 1
+            and right.value in "0123456789abcdef"
+        ):
+            return True
+    if isinstance(expression, ast.Call):
+        call_name = _call_name(expression.func)
+        if call_name.endswith("hexdigest") or call_name.endswith("sha256"):
+            return True
+        if any(
+            isinstance(node, ast.Call) and _call_name(node.func).endswith("hash")
+            for node in ast.walk(expression)
+        ):
+            return False
+    if any(
+        isinstance(node, ast.Call)
+        and _call_name(node.func).rsplit(".", 1)[-1] == "hash"
+        for node in ast.walk(expression)
+    ):
+        return False
+    return None
+
+
 def _execution_audit_contract(contract: ProtocolExecutionContract) -> dict[str, Any]:
     """Build the leakage-only static audit surface for a Host Protocol run.
 
@@ -312,6 +438,24 @@ def static_compatibility_check(
         if not freeze_lines:
             continue
         first_freeze = min(freeze_lines)
+        # Expanded helper effects are projected onto the helper call site and
+        # therefore share that call's line number.  Check chronology on the
+        # function that directly contains the lifecycle calls; helper bodies
+        # are visited separately below.
+        direct_names = {
+            name.rsplit(".", 1)[-1]
+            for _line, name in _direct_function_calls(function)
+        }
+        if {"evaluate_internal", "freeze_selection"} & direct_names:
+            evaluation_lines = [
+                line
+                for line, name in function_calls
+                if name.rsplit(".", 1)[-1] == "evaluate_internal"
+            ]
+            if not any(line < first_freeze for line in evaluation_lines):
+                violations.append(f"selection_before_evaluation:{function.name}")
+            if any(line > first_freeze for line in evaluation_lines):
+                violations.append(f"post_selection_evaluation:{function.name}")
         inference_lines = [
             line for line, name in function_calls if name.endswith("inference_scope")
         ]
@@ -328,6 +472,27 @@ def static_compatibility_check(
             violations.append(
                 f"post_selection_tuning:{function.name}:" + ",".join(post_freeze)
             )
+        assignments = _assigned_values(function)
+        for call in _direct_calls_with_nodes(function):
+            if _call_name(call.func).rsplit(".", 1)[-1] != "freeze_selection":
+                continue
+            artifact_hash_expression: ast.expr | None = None
+            for keyword in call.keywords:
+                if keyword.arg == "artifact_hash":
+                    artifact_hash_expression = keyword.value
+                    break
+            if artifact_hash_expression is None and len(call.args) >= 3:
+                artifact_hash_expression = call.args[2]
+            if artifact_hash_expression is None:
+                continue
+            hash_status = _artifact_hash_expression_status(
+                artifact_hash_expression, assignments
+            )
+            if hash_status is False:
+                violations.append(
+                    f"invalid_artifact_hash_expression:{function.name}:"
+                    f"line_{getattr(call, 'lineno', 0)}"
+                )
     if "legacy_ast" in source and "protocol_runtime" not in source:
         warnings.append("legacy_ast_only_is_shadow_diagnostic")
     if violations:
