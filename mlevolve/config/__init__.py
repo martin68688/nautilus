@@ -530,6 +530,8 @@ def load_cfg(path: Path | None = None) -> Config:
 
 def prep_cfg(cfg: Config):
     if cfg.agent.protocol_preflight.enabled:
+        from authority.protocol_execution_contract import read_contract_artifact
+        from authority.protocol_registry import ProtocolRegistry
         from protocol_runtime.activation import hash_sdk_tree, load_host_protocol_binding
 
         preflight = cfg.agent.protocol_preflight
@@ -578,12 +580,38 @@ def prep_cfg(cfg: Config):
         cfg.evaluation_authority.protocol_runtime_artifact_root = binding[
             "runtime_artifact_root"
         ]
+        # The Host Contract is the protocol authority for an activated run.
+        # Bind claim-use Authority to the exact same registered ProtocolRef so
+        # valid signed runtime Receipts cannot be silently quarantined merely
+        # because an inherited profile still names ``mlevolve-default``.
+        contract = read_contract_artifact(binding["contract_path"])
+        registry_root = Path(cfg.evaluation_authority.protocol_registry)
+        if not registry_root.is_absolute():
+            registry_root = Path(__file__).resolve().parents[1] / registry_root
+        registered = ProtocolRegistry(registry_root).get(
+            contract.protocol_ref.protocol_id,
+            contract.protocol_ref.version,
+        )
+        if registered.ref() != contract.protocol_ref:
+            raise ValueError(
+                "Host Protocol Contract does not match the active Protocol registry"
+            )
+        cfg.evaluation_authority.active_protocol_id = (
+            contract.protocol_ref.protocol_id
+        )
+        cfg.evaluation_authority.active_protocol_version = (
+            contract.protocol_ref.version
+        )
         # Shadow validates and dry-runs the frozen Host views without changing
         # the Candidate's historical input surface.  Only a separately approved
         # enforce canary may replace data_dir with the terminal-blind Host root.
         if runtime_mode == "host_sdk_enforce":
             cfg.data_dir = binding["data_view_root"]
-        if not cfg.desc_file:
+            # Use the immutable Host copy as the sole schema authority. It
+            # carries a generated normalized-row appendix that resolves stale
+            # benchmark descriptions (notably Leaf's margin_1 vs margin1).
+            cfg.desc_file = binding["description_path"]
+        elif not cfg.desc_file:
             cfg.desc_file = binding["description_path"]
 
     if cfg.data_dir is None:

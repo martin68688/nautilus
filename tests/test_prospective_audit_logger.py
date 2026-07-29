@@ -287,3 +287,59 @@ def test_counterfactual_retries_one_empty_generation(tmp_path: Path, monkeypatch
     assert len(calls) == 2
     assert calls == [150.0, 150.0]
     assert row["counterfactual_status"] == "complete"
+
+
+def test_code_only_counterfactual_is_complete_not_pending(tmp_path: Path, monkeypatch):
+    agent = _agent(tmp_path)
+    logger = ProspectiveAuditLogger(agent)
+    protocol_ref = "protocol@1#" + "a" * 64
+    pack = SimpleNamespace(
+        request_id="visibility-request-code-only-counterfactual",
+        visibility_trace={
+            "request": {
+                "operation": "generate_candidate",
+                "generation_stage": "draft",
+            },
+            "raw_shadow_authority_decisions": [{
+                "clause_id": "clause-invalid",
+                "claim_id": "claim-invalid",
+                "claim_type": "method_hypothesis",
+                "outcome": "deny",
+                "protocol_ref": protocol_ref,
+            }],
+            "suppressed_clause_refs": ["clause-invalid"],
+            "effective_visible_clause_ids": [],
+            "clause_decisions": {
+                "clause-invalid": {"allowed": False, "reason": "missing_receipt"}
+            },
+        },
+    )
+    logger.record_visibility(
+        pack,
+        SimpleNamespace(
+            clauses={"clause-invalid": SimpleNamespace(text="suppressed method")}
+        ),
+        source="test-code-only-counterfactual",
+    )
+    node = SimpleNamespace(
+        id="node-code-only-counterfactual",
+        stage="draft",
+        draft_role="memory_transfer",
+        plan="actual plan",
+        code="actual = True\n",
+        prompt_input="actual prompt",
+        receipt_refs=[],
+    )
+    logger.bind_thread_to_node(node)
+    monkeypatch.setattr(
+        "agents.coder.plan_and_code_query",
+        lambda *_args, **_kwargs: ("", "```python\ncounterfactual = True\n```"),
+    )
+
+    logger.prepare_counterfactuals(node)
+    logger.finalize_node(node)
+
+    row = _rows(tmp_path / "prospective_decision_ledger.jsonl")[0]
+    assert row["counterfactual_status"] == "complete"
+    assert row["counterfactual_action_hash"]
+    assert row["counterfactual_code_hash"]

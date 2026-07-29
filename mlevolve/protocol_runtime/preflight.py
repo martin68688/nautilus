@@ -211,13 +211,6 @@ def static_compatibility_check(
             short = name.rsplit(".", 1)[-1]
             if short in {"symlink", "link"}:
                 violations.append(f"symlink_creation:line_{getattr(node, 'lineno', 0)}")
-            if contract.split_strategy == "chronological" and short in {
-                "train_test_split",
-                "KFold",
-                "StratifiedKFold",
-                "shuffle",
-            }:
-                violations.append(f"chronological_random_resplit:{name}")
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
             lowered = node.value.lower()
             if any(

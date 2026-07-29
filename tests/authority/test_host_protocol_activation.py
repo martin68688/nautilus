@@ -7,6 +7,7 @@ import pytest
 
 from config import _load_cfg, prep_cfg
 from protocol_runtime.activation import (
+    _host_description_appendix,
     build_host_protocol_bundle,
     hash_sdk_tree,
     load_host_protocol_binding,
@@ -15,6 +16,18 @@ from protocol_runtime.activation import (
 
 IMAGE = "sha256:" + "1" * 64
 TASK = "activation-cactus"
+
+
+def test_leaf_host_description_uses_real_normalized_feature_names() -> None:
+    appendix = _host_description_appendix(
+        task_id="leaf-classification",
+        label_key="label",
+        inference_enabled=True,
+    )
+    assert "`margin1`…`margin64`" in appendix
+    assert "`shape1`…`shape64`" in appendix
+    assert "`texture1`…`texture64`" in appendix
+    assert "`margin_1`" in appendix and "do not exist" in appendix
 
 
 def _bundle(tmp_path: Path) -> tuple[Path, Path]:
@@ -185,4 +198,38 @@ def test_shadow_profile_is_bound_and_legacy_enforcement_is_disabled(
     assert bound.agent.protocol_repair.enabled is False
     assert bound.agent.protocol_preflight.legacy_ast_mode == "shadow"
     assert bound.agent.protocol_preflight.expected_contract_hash
+    assert bound.evaluation_authority.active_protocol_id == "random-classification"
+    assert bound.evaluation_authority.active_protocol_version == "1"
     assert bound.data_dir == candidate_data.resolve()
+
+
+def test_enforce_uses_bound_authoritative_description(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    binding_path, private_key = _bundle(tmp_path)
+    monkeypatch.setenv("MLEVOLVE_HOST_PROTOCOL_BINDING", str(binding_path))
+    monkeypatch.setenv("MLEVOLVE_HOST_COLLECTOR_KEY_FILE", str(private_key))
+    monkeypatch.setenv("MLEVOLVE_RUNTIME_IMAGE_DIGEST", IMAGE)
+    cfg = _load_cfg(
+        Path("mlevolve/config/config_authority_host_protocol_shadow.yaml"),
+        use_cli_args=False,
+    )
+    cfg.exp_id = TASK
+    cfg.evaluation_authority.mode = "enforce"
+    cfg.evaluation_authority.protocol_runtime_mode = "host_sdk_enforce"
+    candidate_data = tmp_path / "candidate-public"
+    candidate_data.mkdir()
+    public_description = candidate_data / "description.md"
+    public_description.write_text("stale public description", encoding="utf-8")
+    cfg.data_dir = str(candidate_data)
+    cfg.desc_file = str(public_description)
+    cfg.log_dir = str(tmp_path / "enforce-runs")
+    cfg.workspace_dir = str(tmp_path / "enforce-runs")
+
+    bound = prep_cfg(cfg)
+
+    binding = load_host_protocol_binding(binding_path)
+    assert bound.desc_file == Path(binding["description_path"]).resolve()
+    text = bound.desc_file.read_text(encoding="utf-8")
+    assert "Host Runtime Schema (authoritative)" in text
+    assert "stale public description" not in text

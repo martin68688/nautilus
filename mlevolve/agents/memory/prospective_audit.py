@@ -505,10 +505,20 @@ class ProspectiveAuditLogger:
                             counterfactual_prompt,
                             request_timeout=per_attempt_timeout,
                         )
-                        if str(plan or "").strip() and str(code or "").strip():
+                        # ``plan_and_code_query`` returns ("", raw_completion)
+                        # after exhausting its own format retries. A code-only
+                        # completion is still a complete counterfactual action:
+                        # recover the executable block and preserve the truly
+                        # empty plan in the action hash instead of reporting a
+                        # false pending pair.
+                        if not str(plan or "").strip() and str(code or "").strip():
+                            from utils.response import extract_code
+
+                            code = extract_code(str(code))
+                        if str(code or "").strip():
                             break
                         raise RuntimeError(
-                            "counterfactual generation returned no plan/code"
+                            "counterfactual generation returned no executable code"
                         )
                     except Exception as attempt_error:
                         attempt_errors.append(
@@ -520,7 +530,7 @@ class ProspectiveAuditLogger:
                                 "Retrying prospective counterfactual after %s",
                                 attempt_errors[-1],
                             )
-                if not str(plan or "").strip() or not str(code or "").strip():
+                if not str(code or "").strip():
                     raise RuntimeError("; ".join(attempt_errors))
                 payload["_counterfactual_plan"] = str(plan)
                 payload["_counterfactual_code"] = str(code)
@@ -578,7 +588,7 @@ class ProspectiveAuditLogger:
                         payload.pop("_counterfactual_prompt_hash", "") or ""
                     )
                     cf_error = str(payload.pop("_counterfactual_error", "") or "")
-                    if cf_plan and cf_code and cf_prompt_hash:
+                    if cf_code and cf_prompt_hash:
                         cf_action_hash = _sha(
                             {
                                 "stage": str(getattr(node, "stage", "")),

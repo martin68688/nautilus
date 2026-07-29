@@ -344,6 +344,39 @@ def _read_records(path: Path) -> list[dict[str, Any]]:
     return records
 
 
+def _host_description_appendix(
+    *, task_id: str, label_key: str, inference_enabled: bool
+) -> str:
+    """Return the authoritative Candidate-visible Host row schema note."""
+
+    lines = [
+        "# Host Runtime Schema (authoritative)",
+        "",
+        "This section overrides any earlier raw-dataset field spelling. "
+        "Candidate code receives normalized rows from `ProtocolSession`, not "
+        "the original CSV objects.",
+        f"The supervised target is the direct training/validation row field "
+        f"`{label_key}`.",
+    ]
+    if task_id == "leaf-classification":
+        lines.extend(
+            [
+                "Leaf feature fields are exactly `margin1`…`margin64`, "
+                "`shape1`…`shape64`, and `texture1`…`texture64`.",
+                "The numeric suffix has no underscore: `margin_1`, `shape_1`, "
+                "and `texture_1` do not exist in Host rows.",
+                "Build frames directly with `pd.DataFrame(rows)`; features are "
+                "not nested or JSON-encoded.",
+            ]
+        )
+    if inference_enabled:
+        lines.append(
+            "The inference view is unlabeled and becomes accessible only after "
+            "`session.freeze_selection(...)`."
+        )
+    return "\n".join(lines) + "\n"
+
+
 def build_host_protocol_bundle(
     *,
     output_root: str | Path,
@@ -389,7 +422,16 @@ def build_host_protocol_bundle(
     records_file = _regular_file(records_path, label="normalized task records")
     source_description = _regular_file(description_path, label="task description")
     description = root / "TASK_DESCRIPTION.md"
-    _write_exclusive(description, source_description.read_bytes())
+    source_text = source_description.read_text(encoding="utf-8")
+    appendix = _host_description_appendix(
+        task_id=task_id,
+        label_key=label_key,
+        inference_enabled=inference_records_path is not None,
+    )
+    _write_exclusive(
+        description,
+        (source_text.rstrip() + "\n\n" + appendix).encode("utf-8"),
+    )
 
     if private_key_output.exists():
         identity = HostCollectorIdentity.from_private_key_file(private_key_output)

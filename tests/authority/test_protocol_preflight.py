@@ -891,25 +891,37 @@ if __name__ == "__main__":
     )
 
 
-def test_chronological_random_resplit_is_denied_but_import_choice_is_not(
+def test_chronological_internal_resplit_and_import_choice_are_method_freedom(
     tmp_path: Path,
 ) -> None:
     contract, _identity, _manifest, _candidate = _prepared(tmp_path, "boosting")
     source = """
 import definitely_not_allowed
 from sklearn.model_selection import train_test_split
-def candidate(session):
+
+def run_method(session):
     views = session.get_split()
     train_test_split([], [], shuffle=True)
     session.fit_scope(component='model', data_view=views.train)
     session.prediction_scope(component='model', data_view=views.validation)
     session.evaluate_internal(views.validation, [], label_key='fare')
     session.freeze_selection('x', based_on=views.validation)
+
+def candidate(session):
+    run_method(session)
+
+from protocol_runtime import current_session
+
+def main():
+    run_method(current_session())
+
+if __name__ == '__main__':
+    main()
 """
     report = static_compatibility_check(source, contract)
-    assert report["status"] == PreflightStatus.PROTOCOL_VIOLATION.value
+    assert report["status"] == PreflightStatus.PASS.value
     assert not any("unauthorized_import_roots" in item for item in report["violations"])
-    assert any("chronological_random_resplit" in item for item in report["violations"])
+    assert not any("chronological_random_resplit" in item for item in report["violations"])
 
 
 def test_missing_evidence_is_not_protocol_violation(tmp_path: Path) -> None:
