@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -343,3 +344,83 @@ def test_code_only_counterfactual_is_complete_not_pending(tmp_path: Path, monkey
     assert row["counterfactual_status"] == "complete"
     assert row["counterfactual_action_hash"]
     assert row["counterfactual_code_hash"]
+
+
+def test_search_replace_counterfactual_is_reconstructed_from_parent(
+    tmp_path: Path, monkeypatch
+):
+    agent = _agent(tmp_path)
+    agent.cfg.prospective_audit.allow_pending_counterfactual = False
+    logger = ProspectiveAuditLogger(agent)
+    protocol_ref = "protocol@1#" + "a" * 64
+    pack = SimpleNamespace(
+        request_id="visibility-request-diff-counterfactual",
+        visibility_trace={
+            "request": {
+                "operation": "debug_hypothesis",
+                "generation_stage": "debug",
+            },
+            "raw_shadow_authority_decisions": [{
+                "clause_id": "clause-invalid",
+                "claim_id": "claim-invalid",
+                "claim_type": "method_hypothesis",
+                "outcome": "deny",
+                "protocol_ref": protocol_ref,
+            }],
+            "suppressed_clause_refs": ["clause-invalid"],
+            "effective_visible_clause_ids": [],
+            "clause_decisions": {
+                "clause-invalid": {"allowed": False, "reason": "missing_receipt"}
+            },
+        },
+    )
+    logger.record_visibility(
+        pack,
+        SimpleNamespace(
+            clauses={"clause-invalid": SimpleNamespace(text="suppressed method")}
+        ),
+        source="test-diff-counterfactual",
+    )
+    parent_code = "value = 1\nprint(value)\n"
+    parent = SimpleNamespace(code=parent_code)
+    node = SimpleNamespace(
+        id="node-diff-counterfactual",
+        stage="debug",
+        draft_role="memory_transfer",
+        plan="actual repair",
+        code="value = 3\nprint(value)\n",
+        prompt_input="diff-oriented actual prompt",
+        receipt_refs=[],
+        parent=parent,
+    )
+    logger.bind_thread_to_node(node)
+    raw_diff = (
+        "The suppressed memory suggests changing the value.\n"
+        "<<<<<<< SEARCH\n"
+        "value = 1\n"
+        "=======\n"
+        "value = 2\n"
+        ">>>>>>> REPLACE\n"
+    )
+    monkeypatch.setattr(
+        "agents.coder.plan_and_code_query",
+        lambda *_args, **_kwargs: ("", raw_diff),
+    )
+
+    logger.prepare_counterfactuals(node)
+    logger.finalize_node(node)
+
+    row = _rows(tmp_path / "prospective_decision_ledger.jsonl")[0]
+    expected_code = "value = 2\nprint(value)\n"
+    assert row["counterfactual_status"] == "complete"
+    assert row["counterfactual_generation_format"] == "search_replace_diff"
+    assert row["counterfactual_diff_patch_count"] == 1
+    assert row["counterfactual_base_code_hash"] == hashlib.sha256(
+        parent_code.encode("utf-8")
+    ).hexdigest()
+    assert row["counterfactual_raw_completion_hash"] == hashlib.sha256(
+        raw_diff.encode("utf-8")
+    ).hexdigest()
+    assert row["counterfactual_code_hash"] == hashlib.sha256(
+        expected_code.encode("utf-8")
+    ).hexdigest()

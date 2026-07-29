@@ -126,6 +126,89 @@ class ProspectiveAuditLogger:
             used += len(encoded)
         return bounded
 
+    @staticmethod
+    def _recover_counterfactual_completion(
+        node: Any,
+        plan: Any,
+        completion: Any,
+    ) -> tuple[str, str, dict[str, Any]]:
+        """Normalize full-code, code-only and SEARCH/REPLACE observer arms.
+
+        Improve/debug prompts legitimately ask the model for a patch rather than
+        a full rewrite.  The observer must preserve that decision context, so a
+        well-formed patch is deterministically applied to the same parent code
+        instead of being misreported as an empty counterfactual.
+        """
+        normalized_plan = str(plan or "")
+        raw_completion = str(completion or "")
+        metadata: dict[str, Any] = {
+            "counterfactual_raw_completion_hash": hashlib.sha256(
+                raw_completion.encode("utf-8")
+            ).hexdigest(),
+        }
+        if normalized_plan.strip() and raw_completion.strip():
+            metadata["counterfactual_generation_format"] = "full_code"
+            return normalized_plan, raw_completion, metadata
+
+        if not raw_completion.strip():
+            return normalized_plan, "", metadata
+
+        from utils.response import (
+            extract_code,
+            extract_plan_from_diff_response,
+            is_valid_python_script,
+        )
+
+        extracted_code = extract_code(raw_completion)
+        if extracted_code.strip():
+            metadata["counterfactual_generation_format"] = "code_only"
+            return normalized_plan, extracted_code, metadata
+
+        has_search_replace = (
+            "<<<<<<< SEARCH" in raw_completion
+            or "< SEARCH" in raw_completion
+        )
+        if "<<<<<<< SEARCH" in raw_completion:
+            search_markers = raw_completion.count("<<<<<<< SEARCH")
+            replace_markers = raw_completion.count(">>>>>>> REPLACE")
+        else:
+            search_markers = raw_completion.count("< SEARCH")
+            replace_markers = raw_completion.count("> REPLACE")
+        parent = getattr(node, "parent", None)
+        parent_code = str(getattr(parent, "code", "") or "")
+        if has_search_replace and parent_code.strip():
+            from agents.coder.diff_coder import SearchReplacePatcher
+
+            patched_code, patch_count = SearchReplacePatcher().apply_patch(
+                raw_completion,
+                parent_code,
+                strict=False,
+            )
+            if (
+                patch_count > 0
+                and search_markers > 0
+                and search_markers == replace_markers
+                and patch_count == search_markers
+                and patched_code != parent_code
+                and is_valid_python_script(patched_code)
+            ):
+                metadata.update(
+                    {
+                        "counterfactual_generation_format": "search_replace_diff",
+                        "counterfactual_base_code_hash": hashlib.sha256(
+                            parent_code.encode("utf-8")
+                        ).hexdigest(),
+                        "counterfactual_diff_patch_count": patch_count,
+                    }
+                )
+                return (
+                    extract_plan_from_diff_response(raw_completion),
+                    patched_code,
+                    metadata,
+                )
+
+        return normalized_plan, "", metadata
+
     def _pending(self) -> list[dict[str, Any]]:
         pending = getattr(self._local, "pending", None)
         if pending is None:
@@ -492,6 +575,7 @@ class ProspectiveAuditLogger:
                 from agents.coder import plan_and_code_query
 
                 plan = code = ""
+                generation_metadata: dict[str, Any] = {}
                 attempt_errors: list[str] = []
                 per_attempt_timeout = max(
                     1.0,
@@ -500,21 +584,18 @@ class ProspectiveAuditLogger:
                 )
                 for attempt in range(1, self.counterfactual_generation_attempts + 1):
                     try:
-                        plan, code = plan_and_code_query(
+                        plan, completion = plan_and_code_query(
                             self.agent,
                             counterfactual_prompt,
                             request_timeout=per_attempt_timeout,
                         )
-                        # ``plan_and_code_query`` returns ("", raw_completion)
-                        # after exhausting its own format retries. A code-only
-                        # completion is still a complete counterfactual action:
-                        # recover the executable block and preserve the truly
-                        # empty plan in the action hash instead of reporting a
-                        # false pending pair.
-                        if not str(plan or "").strip() and str(code or "").strip():
-                            from utils.response import extract_code
-
-                            code = extract_code(str(code))
+                        plan, code, generation_metadata = (
+                            self._recover_counterfactual_completion(
+                                node,
+                                plan,
+                                completion,
+                            )
+                        )
                         if str(code or "").strip():
                             break
                         raise RuntimeError(
@@ -537,6 +618,7 @@ class ProspectiveAuditLogger:
                 payload["_counterfactual_prompt_hash"] = hashlib.sha256(
                     counterfactual_prompt.encode("utf-8")
                 ).hexdigest()
+                payload["_counterfactual_generation_metadata"] = generation_metadata
             except Exception as error:
                 message = (
                     f"{payload['decision_id']}: {type(error).__name__}: {error}"
@@ -586,6 +668,9 @@ class ProspectiveAuditLogger:
                     items = list(payload.pop("_counterfactual_memory_items", []) or [])
                     cf_prompt_hash = str(
                         payload.pop("_counterfactual_prompt_hash", "") or ""
+                    )
+                    cf_generation_metadata = dict(
+                        payload.pop("_counterfactual_generation_metadata", {}) or {}
                     )
                     cf_error = str(payload.pop("_counterfactual_error", "") or "")
                     if cf_code and cf_prompt_hash:
@@ -637,6 +722,7 @@ class ProspectiveAuditLogger:
                         payload["counterfactual_control_hash"] = control_hash
                         payload["counterfactual_memory_payload_hash"] = memory_payload_hash
                         payload["counterfactual_prompt_hash"] = cf_prompt_hash
+                        payload.update(cf_generation_metadata)
                         payload["counterfactual_influence_confirmed"] = pair_result[
                             "action_or_code_changed"
                         ]
