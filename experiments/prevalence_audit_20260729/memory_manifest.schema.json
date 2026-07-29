@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mlevolve_prevalence_memory_manifest_v1",
+  "title": "Experiment A frozen memory profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "profile",
+    "artifact_version",
+    "source_archive_sha256",
+    "graph_sha256",
+    "index_sha256",
+    "replay_targets_sha256",
+    "positive_control_probe_sha256",
+    "source_count",
+    "source_run_ids",
+    "controlled_candidate_ids"
+  ],
+  "properties": {
+    "schema": {"const": "mlevolve_prevalence_memory_manifest_v1"},
+    "profile": {"enum": ["natural", "spooky-positive-control"]},
+    "artifact_version": {"type": "string", "minLength": 1},
+    "source_archive_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "graph_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "index_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "replay_targets_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "positive_control_probe_sha256": {
+      "type": "string",
+      "pattern": "^(|[0-9a-f]{64})$"
+    },
+    "source_count": {"type": "integer", "minimum": 1},
+    "source_run_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "controlled_candidate_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^control::spooky::"}
+    }
+  }
+}

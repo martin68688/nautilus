@@ -1,0 +1,76 @@
+extends: config_authority_host_protocol_shadow.yaml
+
+# Four-task updated RunForest Graph v2 experiment profile.
+# One graph contains four task-local forests plus the shared SOP layer. Runtime
+# retrieval remains task/stage aware; task-specific result claims are not
+# treated as transferable cross-task facts.
+methodology_dynamic: true
+
+agent:
+  initial_drafts: 3
+  draft_role_policy:
+    enabled: true
+    roles:
+      - coldstart_baseline
+      - memory_reproduction
+      - novel_exploration
+    replay_targets_path: "../paper-skills/eval_skill_memory/clean_replay_targets.json"
+  protocol_repair:
+    enabled: false
+  protocol_preflight:
+    enabled: true
+    repair_enabled: false
+    legacy_ast_mode: shadow
+  search:
+    num_drafts: 3
+    replacement_drafts_enabled: true
+    max_replacement_drafts: 5
+
+adoption_tracking:
+  enable: true
+  enable_analysis: true
+  judge_mode: llm-all
+
+external_skill_memory:
+  enable: true
+  graph_path: "/memory/run_forest_graph_fourtask_v2.json"
+  index_path: "/memory/run_forest_index_fourtask_v2.npz"
+  text_model_path: ""
+  source_name: "run_forest_fourtask_updated_v2"
+  mode: "run_forest_stage_hybrid"
+  scoring_mode: "flat_twin"
+  enable_agentic: true
+  navigator_max_steps: 3
+  navigator_reference_budget: 1200
+  top_k: 6
+  max_chars: 6500
+  include_draft: true
+  include_improve: true
+  include_evolution: true
+  include_debug: true
+  include_fusion: true
+  retrieval_control: "layered_strategy"
+  strategy_candidate_limit: 12
+  strategy_route_count: 3
+  l2_tactic_limit: 4
+  visibility_token_budget: 4096
+  stage_quotas:
+    draft: {sop_candidates: 6, sop_gateways: 3, tree_candidates: 2}
+    improve: {sop_candidates: 4, sop_gateways: 2, tree_candidates: 6}
+    debug: {sop_candidates: 2, sop_gateways: 1, tree_candidates: 8}
+    evolution: {sop_candidates: 6, sop_gateways: 3, tree_candidates: 3}
+    fusion: {sop_candidates: 4, sop_gateways: 2, tree_candidates: 4}
+  rrf_weights:
+    draft: {sop: 0.70, tree: 0.30}
+    improve: {sop: 0.40, tree: 0.60}
+    debug: {sop: 0.25, tree: 0.75}
+    evolution: {sop: 0.70, tree: 0.30}
+    fusion: {sop: 0.50, tree: 0.50}
+
+run_identity:
+  experiment_group: "fourtask_graph_v2_all_features_host_shadow"
+  baseline_reference_group: "baseline_no_external_memory_host_shadow_r7"
+  memory_enabled: true
+  memory_system: "run_forest_stage_hybrid"
+  memory_version: "fourtask_updated_graph_v2_20260727"
+  identity_source: "declared_at_runtime"

@@ -6,10 +6,10 @@ items:
 - apiVersion: batch/v1
   kind: Job
   metadata:
-    name: mlev-prevalence-denoising-a100-r2
+    name: mlev-prevalence-denoising-a100-r3
     namespace: ecepxie
     labels: &labels
-      app: mlevolve-prevalence-audit-20260729-r2
+      app: mlevolve-prevalence-audit-20260729-r3
       experiment: prospective-dual-observer
       cohort: reduced-five-task
       shared-matrix: experiment-a-c
@@ -17,7 +17,7 @@ items:
       memory-mode: full-dynamic-hybrid
     annotations: &annotations
       mlevolve.ai/release-state: frozen-release-candidate
-      mlevolve.ai/freeze-manifest: prevalence-audit-20260729-r2/freeze/FREEZE_MANIFEST.json
+      mlevolve.ai/freeze-manifest: prevalence-audit-20260729-r3/freeze/FREEZE_MANIFEST.json
   spec: &jobSpec
     backoffLimit: 0
     activeDeadlineSeconds: 86400
@@ -65,7 +65,7 @@ items:
             task="${TASK_ID}"
             archive=/release/source/mlevolve-runtime.tar.gz
             source_root="/tmp/prevalence-source-${task}"
-            runtime_release=/workspace/prevalence-audit-20260729-r2
+            runtime_release=/workspace/prevalence-audit-20260729-r3
             binding="${runtime_release}/bindings/${task}/HOST_PROTOCOL_BINDING.json"
             memory_root="/release/memory/${MEMORY_PROFILE}"
             memory_manifest="${memory_root}/MEMORY_MANIFEST.json"
@@ -221,7 +221,7 @@ items:
 
             export MLEVOLVE_CONFIG="${source_root}/mlevolve/config/config_prevalence_audit_20260729_host_enforce.yaml"
             export MLEVOLVE_HOST_PROTOCOL_BINDING="${binding}"
-            export MLEVOLVE_CODE_REVISION=prevalence-audit-20260729-r2
+            export MLEVOLVE_CODE_REVISION=prevalence-audit-20260729-r3
             export MLEVOLVE_CODE_WORKTREE_SHA256="${source_sha}"
             export HF_HOME="/tmp/huggingface-${task}"
             export HUGGINGFACE_HUB_CACHE="${HF_HOME}/hub"
@@ -261,7 +261,7 @@ items:
               seed_status=0
               python -u run.py \
                 exp_id="${task}" \
-                exp_name="prevalence-audit-20260729-r2-${task}-seed-${seed}" \
+                exp_name="prevalence-audit-20260729-r3-${task}-seed-${seed}" \
                 dataset_dir=/task \
                 data_dir=/task/public \
                 desc_file=/task/public/description.md \
@@ -300,10 +300,10 @@ items:
             requests: {cpu: "16", memory: 64Gi, nvidia.com/a100: "1"}
             limits: {cpu: "16", memory: 64Gi, nvidia.com/a100: "1"}
           volumeMounts: &mounts
-          - {name: workspace, mountPath: /release, subPath: prevalence-audit-20260729-r2}
+          - {name: workspace, mountPath: /release, subPath: prevalence-audit-20260729-r3}
           # Frozen Host bindings use this canonical absolute launcher path.
-          - {name: host-runtime, mountPath: /workspace/prevalence-audit-20260729-r2}
-          - {name: workspace, mountPath: /task/public, subPathExpr: prevalence-audit-20260729-r2/data/$(TASK_ID)/public, readOnly: true}
+          - {name: host-runtime, mountPath: /workspace/prevalence-audit-20260729-r3}
+          - {name: workspace, mountPath: /task/public, subPathExpr: prevalence-audit-20260729-r3/data/$(TASK_ID)/public, readOnly: true}
           - {name: collector-key-source, mountPath: /run/host-key-source, readOnly: true}
           - {name: collector-key-runtime, mountPath: /run/host-key}
           - {name: shm, mountPath: /dev/shm}
@@ -317,7 +317,7 @@ items:
 - apiVersion: batch/v1
   kind: Job
   metadata:
-    name: mlev-prevalence-leaf-a100-r2
+    name: mlev-prevalence-leaf-a100-r3
     namespace: ecepxie
     labels: *labels
     annotations: *annotations
@@ -345,7 +345,7 @@ items:
 - apiVersion: batch/v1
   kind: Job
   metadata:
-    name: mlev-prevalence-aerial-a100-r2
+    name: mlev-prevalence-aerial-a100-r3
     namespace: ecepxie
     labels: *labels
     annotations: *annotations
@@ -373,7 +373,7 @@ items:
 - apiVersion: batch/v1
   kind: Job
   metadata:
-    name: mlev-prevalence-taxi-a100-r2
+    name: mlev-prevalence-taxi-a100-r3
     namespace: ecepxie
     labels: *labels
     annotations: *annotations
@@ -404,7 +404,7 @@ items:
 - apiVersion: batch/v1
   kind: Job
   metadata:
-    name: mlev-prevalence-spooky-a100-r2
+    name: mlev-prevalence-spooky-a100-r3
     namespace: ecepxie
     labels:
       <<: *labels

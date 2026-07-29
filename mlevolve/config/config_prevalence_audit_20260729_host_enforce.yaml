@@ -1,0 +1,62 @@
+extends: config_fourtask_graph_v2_all_features_host_shadow.yaml
+
+# Experiment A uses the production Dynamic Hybrid retrieval profile while the
+# effective prompt is governed by Authority in enforce mode.  The visibility
+# gateway still emits its reference/shadow decision for every raw Claim-use.
+# This release intentionally uses RunForest/Dynamic Hybrid only.  Do not scan
+# experience_kb or propose/inject Methodology candidates.
+methodology_kb_path: ""
+methodology_dynamic: false
+
+evaluation_authority:
+  mode: enforce
+  rollout_id: prospective-dual-observer-prevalence-audit-20260729
+  protocol_runtime_mode: host_sdk_enforce
+  enforce_operations:
+    - generate_candidate
+    - debug_hypothesis
+    - rank
+    - select
+    - promote_result
+    - publish_adoption
+    - publish_causal
+    - promote
+    - code_seed
+    - repair_seed
+    - distill_diagnostic
+    - distill_candidate
+    - distill_positive_result
+    - distill_positive_adopted
+    - distill_positive
+    - derived_publication
+  enforce_generation_stages:
+    - draft
+    - model_design
+    - improve
+    - debug
+    - evolution
+    - fusion
+  enforce_governance_stages:
+    - retrieval
+    - branch_selection
+    - memory_writeback
+    - distillation
+    - replay
+
+agent:
+  protocol_preflight:
+    enabled: true
+    repair_enabled: false
+    legacy_ast_mode: shadow
+
+run_identity:
+  experiment_group: prevalence_audit_20260729_reduced_five_task
+  baseline_reference_group: ""
+  memory_enabled: true
+  memory_system: run_forest_stage_hybrid
+  memory_version: prevalence_audit_frozen_snapshot
+  identity_source: frozen_release_manifest
+
+prospective_audit:
+  enabled: true
+  allow_pending_counterfactual: false

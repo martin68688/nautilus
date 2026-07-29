@@ -1,0 +1,47 @@
+{
+  "schema": "mlevolve_formal_experiment_freeze_spec_v1",
+  "root": ".",
+  "container_image_digest": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+  "protocol_ref": "prospective-dual-observer-prevalence-audit-20260729@1",
+  "evaluator": {
+    "id": "frozen-terminal-evaluators-five-task",
+    "revision": "REPLACE_AT_STAGING"
+  },
+  "model": {
+    "id": "deepseek-production-solver",
+    "revision": "REPLACE_AT_STAGING"
+  },
+  "task_seeds": [
+    {"task_id": "denoising-dirty-documents", "seed": 11},
+    {"task_id": "denoising-dirty-documents", "seed": 29},
+    {"task_id": "denoising-dirty-documents", "seed": 47},
+    {"task_id": "leaf-classification", "seed": 11},
+    {"task_id": "leaf-classification", "seed": 29},
+    {"task_id": "leaf-classification", "seed": 47},
+    {"task_id": "aerial-cactus-identification", "seed": 11},
+    {"task_id": "aerial-cactus-identification", "seed": 29},
+    {"task_id": "aerial-cactus-identification", "seed": 47},
+    {"task_id": "new-york-city-taxi-fare-prediction", "seed": 11},
+    {"task_id": "new-york-city-taxi-fare-prediction", "seed": 29},
+    {"task_id": "new-york-city-taxi-fare-prediction", "seed": 47},
+    {"task_id": "spooky-author-identification", "seed": 20260729}
+  ],
+  "artifacts": [
+    {"name": "runtime-source-archive", "category": "code", "path": "source/mlevolve-runtime.tar.gz"},
+    {"name": "offline-python-dependencies", "category": "environment", "path": "source/dependencies"},
+    {
+      "name": "host-protocol-bindings",
+      "category": "protocol",
+      "path": "bindings",
+      "exclude": ["*/reports/**", "*/runtime/**"]
+    },
+    {"name": "frozen-task-data", "category": "data", "path": "data"},
+    {"name": "evaluator-binding", "category": "evaluator", "path": "freeze/evaluator_binding.json"},
+    {"name": "solver-model-binding", "category": "model", "path": "freeze/model_binding.json"},
+    {"name": "runtime-config-binding", "category": "config", "path": "freeze/config_binding.json"},
+    {"name": "natural-memory", "category": "memory_bundle", "path": "memory/natural"},
+    {"name": "spooky-control-memory", "category": "memory_bundle", "path": "memory/spooky-positive-control"},
+    {"name": "seed-matrix", "category": "task_seed", "path": "freeze/seed_matrix.json"},
+    {"name": "runtime-environment-binding", "category": "environment", "path": "freeze/environment_binding.json"}
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "schema": "mlevolve_prevalence_audit_design_status_v1",
+  "as_of": "2026-07-29",
+  "design_only": true,
+  "submission_authorized": false,
+  "job_count": 5,
+  "natural_run_count": 12,
+  "positive_control_run_count": 1,
+  "validated_design_properties": [
+    "five_jobs_materialize_with_kubectl_client_dry_run",
+    "a100_request_equals_limit_for_every_job",
+    "cpu_16_for_every_job",
+    "taxi_memory_128Gi",
+    "other_job_memory_64Gi",
+    "one_pvc_declaration_per_pod",
+    "digest_pinned_images",
+    "no_floating_git_sync",
+    "no_sleep_or_long_lived_job_process",
+    "host_activation_verify_present_for_all_jobs",
+    "natural_and_positive_control_memory_profiles_separated",
+    "formal_job_text_static_validation_passes",
+    "online_packet_gate_synthetic_positive_control_test_passes",
+    "production_source_emits_prospective_decision_ledger.jsonl",
+    "production_source_emits_decision_opportunities.jsonl",
+    "raw_candidate_logging_observed_at_100_percent_in_devpod_packet",
+    "natural_and_positive_control_memory_profiles_staged",
+    "five_frozen_host_activation_bundles_staged",
+    "five_frozen_task_data_roots_staged",
+    "immutable_solver_and_collector_kubernetes_secrets_verified",
+    "latest_source_archive_staged_before_final_documentation_refresh"
+  ],
+  "submission_blockers": [
+    "r2_source_archive_and_five_bundles_must_be_regenerated",
+    "r2_memory_and_freeze_manifests_must_be_regenerated",
+    "r2_exact_source_online_enforce_smoke_must_pass",
+    "r2_applied_job_yaml_must_be_hash_bound_into_the_release_record"
+  ],
+  "cluster_mutations_performed": [
+    "release_staging_devpod_created",
+    "exact_source_enforce_devpod_created",
+    "immutable_solver_secret_created",
+    "immutable_collector_secret_created"
+  ]
+}
