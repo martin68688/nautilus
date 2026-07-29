@@ -756,7 +756,13 @@ def verify_data_view_manifest(
                 "group_id_sha256"
             ]:
                 raise ValueError(f"{role} group ID hash mismatch")
-        if manifest.split_strategy == "chronological":
+        # Chronological ordering is a property of the labeled search split.
+        # The unlabeled inference view is terminal-blind and may come from a
+        # different timestamp range (or have no timestamp field at all); it
+        # remains protected by disjoint IDs, hashes, and post-freeze scope
+        # checks below, but must not be compared against train/validation
+        # boundaries during bundle verification.
+        if manifest.split_strategy == "chronological" and role != "inference":
             times = [row[time_key] for row in rows]
             if min(times, key=lambda value: _time_key(value)[1]) != metadata[
                 "time_min"

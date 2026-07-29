@@ -194,6 +194,27 @@ def test_grouped_and_chronological_semantics(tmp_path: Path) -> None:
     verify_data_view_manifest(taxi_path, contract=taxi_contract)
 
 
+def test_chronological_inference_view_is_not_required_to_be_future_dated(
+    tmp_path: Path,
+) -> None:
+    contract = _contract("chronological-regression@1", "taxi", "tabular")
+    manifest, path = materialize_data_views(
+        _taxi(),
+        tmp_path / "taxi-with-inference",
+        contract,
+        # A real test set may overlap the training time range; it is still
+        # unlabeled and disjoint by sample_id, so it must not be treated as a
+        # second validation split.
+        inference_records=[
+            {"sample_id": "test-row", "timestamp": 0, "x": 99.0},
+        ],
+        inference_view_ref="view://taxi/test/inference",
+        split_id="taxi-inference-split",
+    )
+    assert manifest.views["inference"]["time_min"] is None
+    assert verify_data_view_manifest(path, contract=contract)["status"] == "pass"
+
+
 def test_manifest_and_data_tamper_fail_closed(tmp_path: Path) -> None:
     contract = _contract("random-classification@1", "cactus", "image")
     manifest, path = materialize_data_views(
