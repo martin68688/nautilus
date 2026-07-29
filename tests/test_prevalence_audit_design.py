@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 from pathlib import Path
@@ -7,6 +8,10 @@ import subprocess
 import sys
 
 import yaml
+
+from experiments.prevalence_audit_20260729.run_full_runtime_gate import (
+    candidate_source,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -81,6 +86,32 @@ def test_formal_prevalence_config_disables_methodology_but_keeps_runforest():
     assert "--max-epochs" not in builder
     assert "--max-folds" not in builder
     assert "--max-models" not in builder
+
+
+def test_exact_source_gate_covers_post_freeze_inference_for_both_tasks():
+    for task_id in (
+        "denoising-dirty-documents",
+        "aerial-cactus-identification",
+    ):
+        tree = ast.parse(candidate_source(task_id))
+        functions = {
+            node.name: node
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef)
+        }
+        for function_name in ("candidate", "main"):
+            function = functions[function_name]
+            calls = [
+                (node.lineno, node.func.attr)
+                for node in ast.walk(function)
+                if isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+            ]
+            freeze_lines = [line for line, name in calls if name == "freeze_selection"]
+            inference_lines = [line for line, name in calls if name == "inference_scope"]
+            assert len(freeze_lines) == 1
+            assert len(inference_lines) == 1
+            assert freeze_lines[0] < inference_lines[0]
 
 
 def test_positive_control_packet_gate_accepts_complete_traced_packet(tmp_path: Path):

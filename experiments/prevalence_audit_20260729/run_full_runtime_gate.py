@@ -100,6 +100,8 @@ def _denoising_source() -> str:
                 predictions = _predict_images(model, device, validation_rows)
             session.evaluate_internal(views.validation, predictions, label_key="target")
             session.freeze_selection("denoising-preflight", based_on=views.validation, artifact_hash="a" * 64)
+            with session.inference_scope(component="denoising-preflight-submission", data_view=views.inference) as inference_rows:
+                _predict_images(model, device, inference_rows)
 
         def main():
             session = current_session()
@@ -112,6 +114,8 @@ def _denoising_source() -> str:
             checkpoint = "denoising-full-runtime-gate.pt"
             torch.save(model.state_dict(), checkpoint)
             session.freeze_selection(checkpoint, based_on=views.validation, artifact_hash=checkpoint)
+            with session.inference_scope(component="denoising-final-submission", data_view=views.inference) as inference_rows:
+                _predict_images(model, device, inference_rows)
             print("HOST_GATE_METRIC_JSON=" + json.dumps({
                 "metric_name": "rmse",
                 "metric_value": float(score),
@@ -183,6 +187,8 @@ def _aerial_source() -> str:
                 predictions = _predict_probabilities(model, device, validation_rows)
             session.evaluate_internal(views.validation, predictions, label_key="label")
             session.freeze_selection("aerial-preflight", based_on=views.validation, artifact_hash="b" * 64)
+            with session.inference_scope(component="aerial-preflight-submission", data_view=views.inference) as inference_rows:
+                _predict_probabilities(model, device, inference_rows)
 
         def main():
             session = current_session()
@@ -195,6 +201,8 @@ def _aerial_source() -> str:
             checkpoint = "aerial-full-runtime-gate.pt"
             torch.save(model.state_dict(), checkpoint)
             session.freeze_selection(checkpoint, based_on=views.validation, artifact_hash=checkpoint)
+            with session.inference_scope(component="aerial-final-submission", data_view=views.inference) as inference_rows:
+                _predict_probabilities(model, device, inference_rows)
             print("HOST_GATE_METRIC_JSON=" + json.dumps({
                 "metric_name": "roc_auc",
                 "metric_value": float(score),
