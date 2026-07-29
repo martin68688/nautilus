@@ -15,6 +15,7 @@ _LAST_RUN_FOREST_SOURCE: str = ""
 _LAST_RUN_FOREST_TEXT: str = ""
 _LAST_PRIMARY_MODEL_NAME: str = ""
 _LAST_PRIMARY_MODEL_TEXT: str = ""
+_LAST_METHODOLOGY_CANDIDATES: list[dict[str, str]] = []
 
 
 def _looks_like_run_forest_memory(ext_cfg: Any) -> bool:
@@ -197,6 +198,50 @@ def _build_methodology_text(task_name: str, methodology_kb_path: str) -> tuple[s
     return text, ref_ids
 
 
+def _build_static_methodology_candidates(
+    task_name: str, methodology_kb_path: str
+) -> list[dict[str, str]]:
+    """Decompose legacy static methodology into Claim-use candidates."""
+
+    import hashlib
+
+    if not METHODOLOGY_MAP_JSON.exists():
+        return []
+    try:
+        mapping = _load_json(str(METHODOLOGY_MAP_JSON))
+    except Exception:
+        return []
+    output: list[dict[str, str]] = []
+    kb_base = Path(methodology_kb_path)
+    for folder in mapping.get(task_name, []):
+        for md_file in sorted((kb_base / folder).glob("*_methodology.md")):
+            try:
+                sections = _extract_positive_sections(
+                    md_file.read_text(encoding="utf-8")
+                )
+            except Exception:
+                continue
+            for index, section in enumerate(sections):
+                ref_id = f"static:{folder}/{md_file.stem}#{index}"
+                digest = hashlib.sha256(
+                    f"{ref_id}\n{section}".encode("utf-8")
+                ).hexdigest()
+                output.append(
+                    {
+                        "candidate_id": f"methodology::{digest[:24]}",
+                        "claim_id": f"methodology_claim::{digest[:24]}",
+                        "ref_id": ref_id,
+                        "category": str(folder),
+                        "title": section.splitlines()[0],
+                        "text": section,
+                        "content_sha256": hashlib.sha256(
+                            section.encode("utf-8")
+                        ).hexdigest(),
+                    }
+                )
+    return output
+
+
 def build_guidance_description(cfg: Any, task_desc: str = "") -> str:
 
     tasks = _load_json(cfg.coldstart.task_json_path)
@@ -209,15 +254,20 @@ def build_guidance_description(cfg: Any, task_desc: str = "") -> str:
 
     methodology_kb_path = getattr(cfg, "methodology_kb_path", "") or ""
     ref_ids: list[str] = []
+    methodology_candidates: list[dict[str, str]] = []
     if methodology_kb_path:
         use_dynamic = getattr(cfg, "methodology_dynamic", False)
         if use_dynamic and task_desc:
-            from engine.coldstart.methodology_agent import build_methodology_guidance
-            methodology_text, ref_ids = build_methodology_guidance(task_desc, methodology_kb_path, cfg.agent.code)
+            from engine.coldstart.methodology_agent import build_methodology_candidates
+
+            methodology_candidates = build_methodology_candidates(
+                task_desc, methodology_kb_path, cfg.agent.code
+            )
         else:
-            methodology_text, ref_ids = _build_methodology_text(cfg.exp_id, methodology_kb_path)
-        if methodology_text:
-            text += methodology_text
+            methodology_candidates = _build_static_methodology_candidates(
+                cfg.exp_id, methodology_kb_path
+            )
+        ref_ids = [item["ref_id"] for item in methodology_candidates]
 
     # Keep model-template cold start byte-compatible with the original path.
     # Run-Forest cold-start memory is injected later as a separate external
@@ -227,6 +277,7 @@ def build_guidance_description(cfg: Any, task_desc: str = "") -> str:
 
     global _LAST_REF_IDS, _LAST_RUN_FOREST_REF_IDS, _LAST_RUN_FOREST_SOURCE, _LAST_RUN_FOREST_TEXT
     global _LAST_PRIMARY_MODEL_NAME, _LAST_PRIMARY_MODEL_TEXT
+    global _LAST_METHODOLOGY_CANDIDATES
     _LAST_REF_IDS = ref_ids  # side-channel snapshot for adoption tracking
     _LAST_RUN_FOREST_REF_IDS = list(run_forest_ref_ids)
     _LAST_RUN_FOREST_SOURCE = run_forest_source
@@ -241,4 +292,7 @@ def build_guidance_description(cfg: Any, task_desc: str = "") -> str:
     else:
         _LAST_PRIMARY_MODEL_NAME = ""
         _LAST_PRIMARY_MODEL_TEXT = "None model"
+    # Methodology is deliberately *not* appended here. AgentSearch creates its
+    # Authority adapter later and materializes only the admitted Claim-use text.
+    _LAST_METHODOLOGY_CANDIDATES = [dict(item) for item in methodology_candidates]
     return text

@@ -155,3 +155,37 @@ def test_invalid_runtime_fact_cannot_mint_trusted_receipt() -> None:
             source="tests.host",
             payload={"partition_hashes": {"train": DIGEST}, "overlap_count": 1},
         )
+
+
+def test_deterministic_random_split_requires_and_records_host_verification() -> None:
+    host = TrustedCollectorHost("deterministic-random-host")
+    receipt = host.collect(
+        SplitLineageCollector,
+        artifact_id="artifact",
+        run_id="run",
+        protocol_ref=PROTOCOL,
+        source="tests.host",
+        payload={
+            "partition_hashes": {"train": DIGEST, "valid": "c" * 64},
+            "overlap_count": 0,
+            "split_strategy": "deterministic_random",
+            "deterministic_partition_verified": True,
+        },
+    )
+    assert receipt.payload["split_strategy"] == "deterministic_random"
+    assert receipt.payload["deterministic_partition_verified"] is True
+
+    with pytest.raises(UntrustedObservationError, match="was not verified"):
+        host.collect(
+            SplitLineageCollector,
+            artifact_id="artifact",
+            run_id="run",
+            protocol_ref=PROTOCOL,
+            source="tests.host",
+            payload={
+                "partition_hashes": {"train": DIGEST, "valid": "c" * 64},
+                "overlap_count": 0,
+                "split_strategy": "deterministic_random",
+                "deterministic_partition_verified": False,
+            },
+        )

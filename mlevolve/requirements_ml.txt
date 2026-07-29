@@ -62,6 +62,7 @@ tensorpack==0.11
 
 scikit-learn==1.6.1
 scikit-image==0.25.2
+lazy_loader==0.4
 scikit-base==0.13.0
 scikit-multilearn==0.2.0
 scikit-optimize==0.10.2

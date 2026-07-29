@@ -29,6 +29,16 @@ from agents.leakage_audit import structural_sha256
 logger = logging.getLogger("MLEvolve")
 
 
+def bounded_selector_max_tokens(cfg: Any) -> int:
+    """Return the configured selector budget within the frozen safe bounds."""
+
+    memory_cfg = getattr(cfg, "external_skill_memory", None)
+    return min(
+        2400,
+        max(900, int(getattr(memory_cfg, "selector_max_tokens", 1800) or 1800)),
+    )
+
+
 _TOKEN_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9_+-]{2,}")
 _OPPOSING_TERMS = (
     ("large", "small"),
@@ -1642,6 +1652,8 @@ class RunForestMemoryLayer:
         include_fusion: bool = True,
         cfg: Any | None = None,
         memory_snapshot: Any | None = None,
+        positive_control_probe_path: str = "",
+        positive_control_force_raw: bool = False,
         **_: Any,
     ) -> None:
         self.graph_path = resolve_graph_path(graph_path)
@@ -1666,6 +1678,8 @@ class RunForestMemoryLayer:
         self.max_chars = max_chars
         self.cfg = cfg
         self.memory_snapshot = memory_snapshot
+        self.positive_control_probe_path = str(positive_control_probe_path or "")
+        self.positive_control_force_raw = bool(positive_control_force_raw)
         self.enabled_stages = {
             "draft": include_draft,
             "improve": include_improve,
@@ -1698,6 +1712,49 @@ class RunForestMemoryLayer:
         self._evidence_by_transition: dict[str, list[str]] = collections.defaultdict(list)
         self._last_agentic_pack: dict[str, Any] = {}
         self._load()
+        self._load_positive_control_probes()
+
+    def _load_positive_control_probes(self) -> None:
+        """Load explicitly quarantined candidates for a controlled smoke arm.
+
+        Probe nodes are never execution-eligible and are not added to the
+        geometry index.  They exist only so the pre-gate observer can prove
+        that known-invalid proposals are removed before Prompt assembly.
+        """
+
+        if not self.positive_control_probe_path:
+            self._positive_control_probe_ids: list[str] = []
+            return
+        path = resolve_memory_path(
+            self.positive_control_probe_path,
+            base_dir=self.graph_path.parent,
+        )
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        rows = payload.get("nodes") if isinstance(payload, dict) else payload
+        if not isinstance(rows, list) or not rows:
+            raise ValueError("Positive-control probe must contain non-empty nodes")
+        self._positive_control_probe_ids = []
+        for index, source in enumerate(rows):
+            if not isinstance(source, dict) or source.get("quarantined") is not True:
+                raise ValueError("Every positive-control node must be explicitly quarantined")
+            node = dict(source)
+            node_id = str(node.get("id") or f"positive-control::{index}")
+            if node_id in self.nodes:
+                raise ValueError(f"Positive-control node collides with graph: {node_id}")
+            node.update(
+                {
+                    "id": node_id,
+                    "type": "RunNode",
+                    "quarantined": True,
+                    "protocol_biased": bool(node.get("protocol_biased", True)),
+                    "audit_status": "blocked",
+                }
+            )
+            self.nodes[node_id] = node
+            self._node_tokens[node_id] = _tokenize(self._node_text(node))
+            self._run_nodes.append(node_id)
+            self._run_nodes_by_run[str(node.get("run_id") or "positive-control")].append(node_id)
+            self._positive_control_probe_ids.append(node_id)
 
     def _load(self) -> None:
         if not self.graph_path.exists():
@@ -1879,6 +1936,31 @@ class RunForestMemoryLayer:
         stage_bonus: dict[str, float] | None = None,
         outcome_bonus: dict[str, float] | None = None,
     ) -> list[str]:
+        return [
+            nid for _score, nid in self._rank_with_scores(
+                query_text=query_text,
+                candidate_ids=candidate_ids,
+                task_id=task_id,
+                task_desc=task_desc,
+                top_k=top_k,
+                stage_bonus=stage_bonus,
+                outcome_bonus=outcome_bonus,
+            )
+        ]
+
+    def _rank_with_scores(
+        self,
+        *,
+        query_text: str,
+        candidate_ids: list[str],
+        task_id: str,
+        task_desc: str,
+        top_k: int,
+        stage_bonus: dict[str, float] | None = None,
+        outcome_bonus: dict[str, float] | None = None,
+    ) -> list[tuple[float, str]]:
+        """Return the normal ranking together with its pre-gate raw scores."""
+
         coords = self._coords()
         anchor = self._query_anchor(query_text, candidate_ids)
         q_tokens = _tokenize(query_text)
@@ -1901,7 +1983,7 @@ class RunForestMemoryLayer:
             score = 0.50 * geometry + 0.32 * lexical + task + bonus
             scored.append((score, nid))
         scored.sort(key=lambda item: (-item[0], item[1]))
-        return [nid for _score, nid in scored[:top_k]]
+        return scored[:top_k]
 
     def _ancestor_path(self, node_id: str, max_hops: int = 4) -> list[str]:
         path = [node_id]
@@ -2173,7 +2255,7 @@ class RunForestMemoryLayer:
             user_message=user,
             model=model,
             temperature=0.1,
-            max_tokens=900,
+            max_tokens=bounded_selector_max_tokens(self.cfg),
             func_spec=self._strategy_action_spec(),
             cfg=self.cfg,
         )
@@ -2320,6 +2402,8 @@ def fetch_external_skill_memory(agent: Any, stage: str, **kwargs: Any) -> tuple[
     if layer is None:
         return "", [], "skillgraph"
     draft_role = kwargs.pop("draft_role", None)
+    if draft_role == "replacement_draft":
+        draft_role = "novel_exploration"
     if draft_role in {"coldstart_baseline", "memory_reproduction"}:
         return "", [], getattr(layer, "source_name", "skillgraph")
     try:

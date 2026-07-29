@@ -76,7 +76,8 @@ def test_engine_internal_exception_denies_high_risk_operation(monkeypatch) -> No
 
     monkeypatch.setattr(engine.compiler, "compile", broken)
     decision = engine.authorize(_request(protocol_ref, Operation.RANK))
-    assert decision.outcome == DecisionOutcome.DENY
+    assert decision.outcome == DecisionOutcome.QUARANTINE
+    assert decision.reason_codes == ["collector_internal_error"]
     assert decision.permitted_scope is None
     assert decision.missing_obligations == ["authority_internal_error:RuntimeError"]
 
@@ -160,6 +161,6 @@ def test_adapter_pre_engine_exception_cannot_use_legacy_allow(monkeypatch, tmp_p
         DecisionStage.BRANCH_SELECTION,
         "test",
     )
-    assert decision.outcome == DecisionOutcome.DENY
+    assert decision.outcome == DecisionOutcome.QUARANTINE
     assert adapter.permits(decision, legacy_allowed=True) is False
     assert decision.decision_id in node.authority_decision_refs

@@ -660,11 +660,29 @@ def record_terminal_writeback_failure(
 ) -> dict[str, Any]:
     """Persist a hash-bound, explicit failure for host terminal closure."""
 
+    reason = str(error)
+    lowered = reason.lower()
+    if "contract" in lowered or "protocolref" in lowered:
+        reason_code = "contract_mismatch"
+        component = "terminal_contract_join"
+    elif any(
+        marker in lowered
+        for marker in ("collector", "payload:", "receipt", "schema", "manifest")
+    ):
+        reason_code = "collector_internal_error"
+        component = "terminal_host_collector"
+    else:
+        reason_code = "terminal_writeback_error"
+        component = "terminal_writeback"
     incomplete = {
         "schema": STATUS_SCHEMA,
         "status": "writeback_incomplete",
         "error_type": type(error).__name__,
-        "reason": str(error),
+        "reason": reason,
+        "reason_codes": [reason_code],
+        "responsible_component": component,
+        "repairable": False,
+        "authority_disposition": "quarantine",
         "request_path": str(Path(request_path).resolve()) if request_path else "",
         "score_report_path": (
             str(Path(score_report_path).resolve()) if score_report_path else ""

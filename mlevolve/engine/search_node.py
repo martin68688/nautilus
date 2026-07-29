@@ -98,12 +98,17 @@ class SearchNode(DataClassJsonMixin):
     # solutions.  This is intentionally separate from ordinary debug depth:
     # intermediate stages are journaled and audited, but never executed/ranked.
     protocol_repair: dict = field(default_factory=dict, kw_only=True)
+    protocol_preflight: dict = field(default_factory=dict, kw_only=True)
     # Evaluation Authority stores stable references only. The append-only
     # ledger/evidence graph owns the full claims, receipts, and decisions.
     claim_refs: list[str] = field(default_factory=list, kw_only=True)
     receipt_refs: list[str] = field(default_factory=list, kw_only=True)
     authority_decision_refs: list[str] = field(default_factory=list, kw_only=True)
     experience_contract_refs: list[str] = field(default_factory=list, kw_only=True)
+    # Host-owned observations keyed by ExperienceContract ID. Candidate prose
+    # never self-satisfies a contract; only explicitly attached static/runtime
+    # observations may close non-generic predicates.
+    experience_actuation_observations: dict = field(default_factory=dict, kw_only=True)
     actuation_report_refs: list[str] = field(default_factory=list, kw_only=True)
     derived_from_refs: list[str] = field(default_factory=list, kw_only=True)
     protocol_ref: str = field(default="", kw_only=True)
@@ -133,6 +138,9 @@ class SearchNode(DataClassJsonMixin):
         self.exc_stack = exec_result.exc_stack
         self.protocol_observation = copy.deepcopy(
             exec_result.protocol_observation or {}
+        )
+        self.protocol_preflight = copy.deepcopy(
+            self.protocol_observation.get("protocol_preflight") or {}
         )
 
     @property
@@ -395,7 +403,15 @@ class SearchNode(DataClassJsonMixin):
             
     def sub_expected_child_count(self):
         with self.child_count_lock:
-            self.expected_child_count -= 1
+            if self.expected_child_count <= 0:
+                logger.error(
+                    "Refusing to decrement non-positive expected_child_count for %s: %s",
+                    self.id,
+                    self.expected_child_count,
+                )
+                self.expected_child_count = 0
+            else:
+                self.expected_child_count -= 1
             logger.info(f"current {self.id} expected_child_count is {self.expected_child_count}.")
 
     def __getstate__(self):

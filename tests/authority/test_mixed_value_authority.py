@@ -157,7 +157,8 @@ def test_execution_receipt_cannot_upgrade_score_or_pairwise_superiority() -> Non
     decision = AuthorityEngine(registry, graph=graph).authorize(
         _request(ref, pairwise, Operation.RANK, DecisionStage.BRANCH_SELECTION)
     )
-    assert decision.outcome == DecisionOutcome.DENY
+    assert decision.outcome == DecisionOutcome.REQUIRE_REPLAY
+    assert decision.reason_codes == ["missing_evidence"]
     assert any(
         obligation.startswith(("receipt:", "trusted_receipt:", "count:"))
         for obligation in decision.missing_obligations

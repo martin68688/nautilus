@@ -18,6 +18,7 @@ from agents.prompts import (
     get_prompt_environment,
     get_candidate_execution_contract_from_agent,
     get_impl_guideline_from_agent,
+    host_protocol_preflight_enabled,
 )
 from agents.planner import build_chat_prompt_for_model
 
@@ -28,9 +29,13 @@ def run(
     agent,
     init_solution_path: Optional[str] = None,
     draft_role: Optional[str] = None,
+    replacement: bool = False,
 ) -> SearchNode:
     """Generate initial draft. If init_solution_path is provided and readable, use file content directly."""
-    draft_role = agent.claim_draft_role(draft_role)
+    if replacement:
+        draft_role = agent.claim_replacement_draft_role()
+    else:
+        draft_role = agent.claim_draft_role(draft_role)
 
     if draft_role == "memory_reproduction":
         from agents.adoption import log_adoption
@@ -92,6 +97,11 @@ def run(
             register_node(agent, new_node, "User-provided init solution (no LLM).", new_branch=True)
             logger.info(f"[draft] → node {new_node.id} (branch={new_node.branch_id}) [init_solution]")
             return new_node
+
+    # Reserve the root child before prompt/memory construction.  The caller's
+    # failure path decrements this reservation; reserving later allowed an
+    # early retrieval exception to drive expected_child_count below zero.
+    agent.virtual_root.add_expected_child_count()
 
     professional_identity = (
         "🏆 You are a Kaggle Grandmaster - a top-tier ML expert competing to WIN.\n\n"
@@ -161,11 +171,15 @@ def run(
         ]
     }
 
+    host_preflight = host_protocol_preflight_enabled(agent)
     if draft_role == "coldstart_baseline":
         role_contract = {
             "role": draft_role,
             "requirement": (
-                "Build a runnable baseline from only the first applicable original cold-start model template. "
+                "Build a runnable baseline that obeys the frozen Host Protocol Contract and SDK entrypoint. "
+                "Do not use pretrained/remote model templates or RunForest memory."
+                if host_preflight
+                else "Build a runnable baseline from only the first applicable original cold-start model template. "
                 "Preserve its model name, checkpoint path, and loading API; adapt only task data, labels, "
                 "training, validation, and submission code. Do not use RunForest memory."
             ),
@@ -194,6 +208,18 @@ def run(
             role_contract["requirement"],
             "Minor hyperparameter-only variations do not satisfy this role.",
         ]
+    elif draft_role == "replacement_draft":
+        role_contract = {
+            "role": draft_role,
+            "requirement": (
+                "Create a materially different, runnable root hypothesis because every "
+                "previous branch became permanently non-expandable. Avoid repeating the "
+                "same model family, dependency, data protocol, and failure pattern."
+            ),
+        }
+        prompt["Instructions"]["Replacement Draft contract (MANDATORY)"] = [
+            role_contract["requirement"]
+        ]
     else:
         role_contract = {
             "role": draft_role,
@@ -211,7 +237,11 @@ def run(
         if draft_role == "coldstart_baseline"
         else agent.coldstart_description
     )
-    if agent.use_coldstart and (coldstart_description != "None model"):
+    if (
+        not host_preflight
+        and agent.use_coldstart
+        and (coldstart_description != "None model")
+    ):
         coldstart_guideline = [
             f"""
             **Pretrained Model Strategy**:
@@ -246,6 +276,11 @@ def run(
     if draft_role == "coldstart_baseline":
         external_skill_text, external_skill_ref_ids, external_skill_source = "", [], "run_forest_agentic_memory"
     else:
+        memory_draft_role = (
+            "novel_exploration"
+            if draft_role == "replacement_draft"
+            else draft_role
+        )
         external_skill_text, external_skill_ref_ids, external_skill_source = fetch_external_skill_memory(
             agent,
             "draft",
@@ -253,10 +288,10 @@ def run(
             data_preview=agent.data_preview or "",
             coldstart=getattr(agent, "coldstart_description", ""),
             baseline_model=getattr(agent, "coldstart_primary_model_name", ""),
-            draft_role=draft_role,
+            draft_role=memory_draft_role,
         )
     layered_novel = bool(
-        draft_role == "novel_exploration"
+        draft_role in {"novel_exploration", "replacement_draft"}
         and str(getattr(getattr(agent, "external_skill_memory", None), "retrieval_control", ""))
         == "layered_strategy"
     )
@@ -318,8 +353,6 @@ def run(
     prompt_complete = build_chat_prompt_for_model(
         agent.acfg.code.model, introduction, user_prompt, assistant_prefix
     )
-    agent.virtual_root.add_expected_child_count()
-
     generation_metadata = {}
     if agent.use_stepwise_generation:
         plan, code, generation_metadata = stepwise_plan_and_code_query(

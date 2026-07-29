@@ -1,0 +1,437 @@
+# Frozen release candidate. Submit only after the final freeze verifier passes
+# against the exact staged artifact tree and this manifest.
+apiVersion: v1
+kind: List
+items:
+- apiVersion: batch/v1
+  kind: Job
+  metadata:
+    name: mlev-prevalence-denoising-a100-r2
+    namespace: ecepxie
+    labels: &labels
+      app: mlevolve-prevalence-audit-20260729-r2
+      experiment: prospective-dual-observer
+      cohort: reduced-five-task
+      shared-matrix: experiment-a-c
+      protocol-runtime: host-sdk-enforce
+      memory-mode: full-dynamic-hybrid
+    annotations: &annotations
+      mlevolve.ai/release-state: frozen-release-candidate
+      mlevolve.ai/freeze-manifest: prevalence-audit-20260729-r2/freeze/FREEZE_MANIFEST.json
+  spec: &jobSpec
+    backoffLimit: 0
+    activeDeadlineSeconds: 86400
+    ttlSecondsAfterFinished: 604800
+    template:
+      metadata:
+        labels: *labels
+        annotations: *annotations
+      spec: &podSpec
+        restartPolicy: Never
+        terminationGracePeriodSeconds: 60
+        securityContext: {runAsUser: 0, runAsGroup: 0}
+        initContainers:
+        - &keyInit
+          name: stage-collector-key
+          image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+          command: ["/bin/sh", "-ceu"]
+          args: ["test -s /bootstrap/collector.ed25519; install -m 0400 /bootstrap/collector.ed25519 /runtime-key/collector.ed25519"]
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 100m, memory: 128Mi}
+          volumeMounts:
+          - {name: collector-key-source, mountPath: /bootstrap, readOnly: true}
+          - {name: collector-key-runtime, mountPath: /runtime-key}
+        containers:
+        - &container
+          name: prevalence-runner
+          image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+          imagePullPolicy: IfNotPresent
+          envFrom:
+          - secretRef: {name: prevalence-audit-deepseek-r1}
+          env:
+          - {name: TASK_ID, value: denoising-dirty-documents}
+          - {name: SEED_LIST, value: "11 29 47"}
+          - {name: MEMORY_PROFILE, value: natural}
+          - {name: POSITIVE_CONTROL, value: "0"}
+          - {name: MLEVOLVE_RUNTIME_IMAGE_DIGEST, value: "sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc"}
+          - {name: MLEVOLVE_HOST_COLLECTOR_KEY_FILE, value: /run/host-key/collector.ed25519}
+          - {name: PYTHONUNBUFFERED, value: "1"}
+          - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+          command: ["/bin/bash", "-lc"]
+          args:
+          - &command |
+            set -euo pipefail
+            task="${TASK_ID}"
+            archive=/release/source/mlevolve-runtime.tar.gz
+            source_root="/tmp/prevalence-source-${task}"
+            runtime_release=/workspace/prevalence-audit-20260729-r2
+            binding="${runtime_release}/bindings/${task}/HOST_PROTOCOL_BINDING.json"
+            memory_root="/release/memory/${MEMORY_PROFILE}"
+            memory_manifest="${memory_root}/MEMORY_MANIFEST.json"
+            graph="${memory_root}/run_forest_graph.json"
+            index="${memory_root}/run_forest_index.npz"
+            replay_targets="${memory_root}/replay_targets.json"
+            control_probe="${memory_root}/positive_control_probe.json"
+            dependency_wheel=/release/source/dependencies/lazy_loader-0.4-py3-none-any.whl
+            dependency_sums=/release/source/dependencies/SHA256SUMS
+
+            test -s "${archive}"
+            test -s "${archive}.sha256"
+            source_sha="$(awk 'NF {print $1; exit}' "${archive}.sha256")"
+            [[ "${source_sha}" =~ ^[0-9a-f]{64}$ ]]
+            test "$(sha256sum "${archive}" | awk '{print $1}')" = "${source_sha}"
+            test -s /release/freeze/FREEZE_MANIFEST.json
+            mkdir -p "${runtime_release}/bindings"
+            test ! -e "${runtime_release}/bindings/${task}"
+            cp -a "/release/bindings/${task}" "${runtime_release}/bindings/${task}"
+            test -s "${binding}"
+            test -s "${memory_manifest}"
+            test -s "${graph}"
+            test -s "${index}"
+            test -s "${replay_targets}"
+            test -s "${dependency_wheel}"
+            test -s "${dependency_sums}"
+            test -s /run/host-key-source/collector.ed25519
+            test -s /task/public/description.md
+            test -n "${DEEPSEEK_API_KEY:-}"
+            test -n "${DEEPSEEK_BASE_URL:-}"
+            test -n "${DEEPSEEK_MODEL:-}"
+
+            dependency_sha="$(awk 'NF {print $1; exit}' "${dependency_sums}")"
+            [[ "${dependency_sha}" =~ ^[0-9a-f]{64}$ ]]
+            test "$(sha256sum "${dependency_wheel}" | awk '{print $1}')" = "${dependency_sha}"
+            python -m pip install --disable-pip-version-check --no-index --no-deps \
+              "${dependency_wheel}"
+            python -c 'import lazy_loader; assert lazy_loader.__version__ == "0.4"'
+
+            rm -rf "${source_root}"
+            mkdir -p "${source_root}" "/tmp/huggingface-${task}"
+            tar -xzf "${archive}" -C "${source_root}"
+            test -s "${source_root}/mlevolve/config/config_prevalence_audit_20260729_host_enforce.yaml"
+            test -s "${source_root}/mlevolve/protocol_runtime/activation.py"
+            test -s "${source_root}/mlevolve/experiment_freeze.py"
+            test -s "${source_root}/experiments/prevalence_audit_20260729/validate_run_packet.py"
+            mkdir -p "${source_root}/paper-skills"
+
+            python "${source_root}/mlevolve/experiment_freeze.py" verify \
+              --manifest /release/freeze/FREEZE_MANIFEST.json --root /release
+
+            read -r memory_version memory_source_count < <(
+              python - "${memory_manifest}" "${graph}" "${index}" "${replay_targets}" "${source_sha}" "${MEMORY_PROFILE}" "${control_probe}" <<'PY'
+            import hashlib
+            import json
+            import pathlib
+            import re
+            import sys
+
+            manifest_path = pathlib.Path(sys.argv[1])
+            graph_path = pathlib.Path(sys.argv[2])
+            index_path = pathlib.Path(sys.argv[3])
+            replay_targets_path = pathlib.Path(sys.argv[4])
+            source_sha = sys.argv[5]
+            profile = sys.argv[6]
+            control_probe_path = pathlib.Path(sys.argv[7])
+
+            def sha256(path):
+                digest = hashlib.sha256()
+                with path.open("rb") as handle:
+                    while chunk := handle.read(1024 * 1024):
+                        digest.update(chunk)
+                return digest.hexdigest()
+
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            assert manifest["schema"] == "mlevolve_prevalence_memory_manifest_v1"
+            assert manifest["profile"] == profile
+            assert re.fullmatch(r"[0-9a-f]{64}", source_sha)
+            assert manifest["source_archive_sha256"] == source_sha
+            assert manifest["graph_sha256"] == sha256(graph_path)
+            assert manifest["index_sha256"] == sha256(index_path)
+            assert manifest["replay_targets_sha256"] == sha256(replay_targets_path)
+            assert int(manifest["source_count"]) > 0
+            controls = [str(value) for value in manifest.get("controlled_candidate_ids", [])]
+            if profile == "spooky-positive-control":
+                assert controls, "positive-control memory has no controlled candidates"
+                assert all(value.startswith("control::spooky::") for value in controls)
+                assert control_probe_path.is_file() and not control_probe_path.is_symlink()
+                assert manifest["positive_control_probe_sha256"] == sha256(control_probe_path)
+            else:
+                assert not controls, "controlled candidates leaked into natural memory profile"
+                assert manifest["positive_control_probe_sha256"] == ""
+                assert not control_probe_path.exists()
+            print(manifest["artifact_version"], int(manifest["source_count"]))
+            PY
+            )
+
+            python - "${replay_targets}" "${memory_root}/replay_sources" \
+              "${source_root}/mlevolve/runs" "${task}" "${POSITIVE_CONTROL}" \
+              "${memory_manifest}" <<'PY'
+            import hashlib
+            import json
+            import pathlib
+            import shutil
+            import sys
+
+            targets_path = pathlib.Path(sys.argv[1])
+            replay_root = pathlib.Path(sys.argv[2])
+            destination = pathlib.Path(sys.argv[3])
+            task_id = sys.argv[4]
+            positive_control = sys.argv[5] == "1"
+            memory_manifest = json.loads(pathlib.Path(sys.argv[6]).read_text(encoding="utf-8"))
+            payload = json.loads(targets_path.read_text(encoding="utf-8"))
+            assert payload["schema"] == "run-forest-replay-targets-v1"
+            matches = [row for row in payload.get("targets", []) if row.get("task_id") == task_id]
+            if positive_control:
+                assert not payload.get("targets"), "control profile must not expose replay code seeds"
+            else:
+                assert len(matches) == 1, f"expected one replay target for {task_id}"
+                target = matches[0]
+                assert target.get("audit_status") == "verified_clean"
+                assert not target.get("known_issue_codes")
+
+            for row in payload.get("targets", []):
+                assert not positive_control
+                assert row.get("audit_status") == "verified_clean"
+                assert not row.get("known_issue_codes")
+                run_id = str(row["run_id"])
+                node_id = str(row["original_node_id"])
+                journal = replay_root / run_id / "logs" / "journal.json"
+                assert journal.is_file() and not journal.is_symlink()
+                raw = json.loads(journal.read_text(encoding="utf-8"))
+                nodes = [node for node in raw.get("nodes", []) if str(node.get("id")) == node_id]
+                assert len(nodes) == 1 and str(nodes[0].get("code", "")).strip()
+                actual = hashlib.sha256(nodes[0]["code"].encode("utf-8")).hexdigest()
+                assert actual == row["code_sha256"]
+                target_root = destination / run_id
+                if target_root.exists():
+                    shutil.rmtree(target_root)
+                shutil.copytree(replay_root / run_id, target_root)
+            PY
+
+            sdk_hash="$({ PYTHONPATH="${source_root}/mlevolve" python - <<PY
+            from protocol_runtime.activation import hash_sdk_tree
+            print(hash_sdk_tree("${source_root}/mlevolve/protocol_runtime"))
+            PY
+            } | tail -n 1)"
+            PYTHONPATH="${source_root}/mlevolve" python -m protocol_runtime.activation verify \
+              --binding "${binding}" \
+              --task-id "${task}" \
+              --expected-image-digest "${MLEVOLVE_RUNTIME_IMAGE_DIGEST}" \
+              --expected-sdk-hash "${sdk_hash}"
+
+            export MLEVOLVE_CONFIG="${source_root}/mlevolve/config/config_prevalence_audit_20260729_host_enforce.yaml"
+            export MLEVOLVE_HOST_PROTOCOL_BINDING="${binding}"
+            export MLEVOLVE_CODE_REVISION=prevalence-audit-20260729-r2
+            export MLEVOLVE_CODE_WORKTREE_SHA256="${source_sha}"
+            export HF_HOME="/tmp/huggingface-${task}"
+            export HUGGINGFACE_HUB_CACHE="${HF_HOME}/hub"
+            export TRANSFORMERS_CACHE="${HF_HOME}/transformers"
+            export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+
+            validator_args=()
+            draft_role_args=()
+            memory_control_args=()
+            if [[ "${POSITIVE_CONTROL}" == "1" ]]; then
+              validator_args+=(--positive-control)
+              draft_role_args+=("agent.draft_role_policy.roles=[coldstart_baseline,memory_transfer,novel_exploration]")
+              memory_control_args+=("external_skill_memory.positive_control_probe_path=${control_probe}")
+              memory_control_args+=("external_skill_memory.positive_control_force_raw=true")
+            fi
+            overall_status=0
+            active_pid=""
+            forward_term() {
+              if [[ -n "${active_pid}" ]]; then
+                kill -TERM "${active_pid}" 2>/dev/null || true
+                wait "${active_pid}" || true
+              fi
+              exit 143
+            }
+            trap forward_term TERM INT
+            cd "${source_root}/mlevolve"
+            for seed in ${SEED_LIST}; do
+              run_root="/release/outputs/${task}/seed-${seed}"
+              if [[ -e "${run_root}" ]]; then
+                echo "refusing to replace existing formal run root: ${run_root}" >&2
+                overall_status=1
+                continue
+              fi
+              mkdir -p "${run_root}"
+              install -m 0400 /run/host-key-source/collector.ed25519 \
+                /run/host-key/collector.ed25519
+              seed_status=0
+              python -u run.py \
+                exp_id="${task}" \
+                exp_name="prevalence-audit-20260729-r2-${task}-seed-${seed}" \
+                dataset_dir=/task \
+                data_dir=/task/public \
+                desc_file=/task/public/description.md \
+                log_dir="${run_root}/logs" \
+                workspace_dir="${run_root}/workspace" \
+                agent.seed="${seed}" \
+                agent.search.num_gpus=1 \
+                agent.search.parallel_search_num=1 \
+                cpu_number=16 \
+                external_skill_memory.graph_path="${graph}" \
+                external_skill_memory.index_path="${index}" \
+                agent.draft_role_policy.replay_targets_path="${replay_targets}" \
+                run_identity.memory_version="${memory_version}" \
+                run_identity.memory_source_count="${memory_source_count}" \
+                "${memory_control_args[@]}" \
+                "${draft_role_args[@]}" &
+              active_pid=$!
+              if ! wait "${active_pid}"; then
+                seed_status=1
+              fi
+              active_pid=""
+              if ! python "${source_root}/experiments/prevalence_audit_20260729/validate_run_packet.py" \
+                --run-root "${run_root}" \
+                --task-id "${task}" \
+                --agent-seed "${seed}" \
+                --memory-manifest "${memory_manifest}" \
+                "${validator_args[@]}"; then
+                seed_status=1
+              fi
+              if [[ "${seed_status}" != "0" ]]; then
+                overall_status=1
+              fi
+            done
+            exit "${overall_status}"
+          resources: &naturalResources
+            requests: {cpu: "16", memory: 64Gi, nvidia.com/a100: "1"}
+            limits: {cpu: "16", memory: 64Gi, nvidia.com/a100: "1"}
+          volumeMounts: &mounts
+          - {name: workspace, mountPath: /release, subPath: prevalence-audit-20260729-r2}
+          # Frozen Host bindings use this canonical absolute launcher path.
+          - {name: host-runtime, mountPath: /workspace/prevalence-audit-20260729-r2}
+          - {name: workspace, mountPath: /task/public, subPathExpr: prevalence-audit-20260729-r2/data/$(TASK_ID)/public, readOnly: true}
+          - {name: collector-key-source, mountPath: /run/host-key-source, readOnly: true}
+          - {name: collector-key-runtime, mountPath: /run/host-key}
+          - {name: shm, mountPath: /dev/shm}
+        volumes: &volumes
+        - {name: workspace, persistentVolumeClaim: {claimName: haoming-storage}}
+        - {name: collector-key-source, secret: {secretName: prevalence-audit-collector-r1, defaultMode: 256}}
+        - {name: collector-key-runtime, emptyDir: {medium: Memory, sizeLimit: 1Mi}}
+        - {name: host-runtime, emptyDir: {sizeLimit: 1Gi}}
+        - {name: shm, emptyDir: {medium: Memory, sizeLimit: 16Gi}}
+
+- apiVersion: batch/v1
+  kind: Job
+  metadata:
+    name: mlev-prevalence-leaf-a100-r2
+    namespace: ecepxie
+    labels: *labels
+    annotations: *annotations
+  spec:
+    <<: *jobSpec
+    template:
+      metadata: {labels: *labels, annotations: *annotations}
+      spec:
+        <<: *podSpec
+        initContainers: [*keyInit]
+        containers:
+        - <<: *container
+          env:
+          - {name: TASK_ID, value: leaf-classification}
+          - {name: SEED_LIST, value: "11 29 47"}
+          - {name: MEMORY_PROFILE, value: natural}
+          - {name: POSITIVE_CONTROL, value: "0"}
+          - {name: MLEVOLVE_RUNTIME_IMAGE_DIGEST, value: "sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc"}
+          - {name: MLEVOLVE_HOST_COLLECTOR_KEY_FILE, value: /run/host-key/collector.ed25519}
+          - {name: PYTHONUNBUFFERED, value: "1"}
+          - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+          volumeMounts: *mounts
+        volumes: *volumes
+
+- apiVersion: batch/v1
+  kind: Job
+  metadata:
+    name: mlev-prevalence-aerial-a100-r2
+    namespace: ecepxie
+    labels: *labels
+    annotations: *annotations
+  spec:
+    <<: *jobSpec
+    template:
+      metadata: {labels: *labels, annotations: *annotations}
+      spec:
+        <<: *podSpec
+        initContainers: [*keyInit]
+        containers:
+        - <<: *container
+          env:
+          - {name: TASK_ID, value: aerial-cactus-identification}
+          - {name: SEED_LIST, value: "11 29 47"}
+          - {name: MEMORY_PROFILE, value: natural}
+          - {name: POSITIVE_CONTROL, value: "0"}
+          - {name: MLEVOLVE_RUNTIME_IMAGE_DIGEST, value: "sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc"}
+          - {name: MLEVOLVE_HOST_COLLECTOR_KEY_FILE, value: /run/host-key/collector.ed25519}
+          - {name: PYTHONUNBUFFERED, value: "1"}
+          - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+          volumeMounts: *mounts
+        volumes: *volumes
+
+- apiVersion: batch/v1
+  kind: Job
+  metadata:
+    name: mlev-prevalence-taxi-a100-r2
+    namespace: ecepxie
+    labels: *labels
+    annotations: *annotations
+  spec:
+    <<: *jobSpec
+    template:
+      metadata: {labels: *labels, annotations: *annotations}
+      spec:
+        <<: *podSpec
+        initContainers: [*keyInit]
+        containers:
+        - <<: *container
+          env:
+          - {name: TASK_ID, value: new-york-city-taxi-fare-prediction}
+          - {name: SEED_LIST, value: "11 29 47"}
+          - {name: MEMORY_PROFILE, value: natural}
+          - {name: POSITIVE_CONTROL, value: "0"}
+          - {name: MLEVOLVE_RUNTIME_IMAGE_DIGEST, value: "sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc"}
+          - {name: MLEVOLVE_HOST_COLLECTOR_KEY_FILE, value: /run/host-key/collector.ed25519}
+          - {name: PYTHONUNBUFFERED, value: "1"}
+          - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+          resources:
+            requests: {cpu: "16", memory: 128Gi, nvidia.com/a100: "1"}
+            limits: {cpu: "16", memory: 128Gi, nvidia.com/a100: "1"}
+          volumeMounts: *mounts
+        volumes: *volumes
+
+- apiVersion: batch/v1
+  kind: Job
+  metadata:
+    name: mlev-prevalence-spooky-a100-r2
+    namespace: ecepxie
+    labels:
+      <<: *labels
+      control: known-invalid-positive-control
+    annotations: *annotations
+  spec:
+    <<: *jobSpec
+    template:
+      metadata:
+        labels:
+          <<: *labels
+          control: known-invalid-positive-control
+        annotations: *annotations
+      spec:
+        <<: *podSpec
+        initContainers: [*keyInit]
+        containers:
+        - <<: *container
+          env:
+          - {name: TASK_ID, value: spooky-author-identification}
+          - {name: SEED_LIST, value: "20260729"}
+          - {name: MEMORY_PROFILE, value: spooky-positive-control}
+          - {name: POSITIVE_CONTROL, value: "1"}
+          - {name: MLEVOLVE_RUNTIME_IMAGE_DIGEST, value: "sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc"}
+          - {name: MLEVOLVE_HOST_COLLECTOR_KEY_FILE, value: /run/host-key/collector.ed25519}
+          - {name: PYTHONUNBUFFERED, value: "1"}
+          - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+          resources: *naturalResources
+          volumeMounts: *mounts
+        volumes: *volumes

@@ -85,6 +85,16 @@ class DecisionOutcome(StringEnum):
     REQUIRE_HUMAN_REVIEW = "require_human_review"
 
 
+class AuthorityReasonCode(StringEnum):
+    PROTOCOL_VIOLATION = "protocol_violation"
+    MISSING_EVIDENCE = "missing_evidence"
+    UNTRUSTED_EVIDENCE = "untrusted_evidence"
+    CONTRACT_MISMATCH = "contract_mismatch"
+    COLLECTOR_INTERNAL_ERROR = "collector_internal_error"
+    RUNTIME_FAILURE = "runtime_failure"
+    TERMINAL_WRITEBACK_ERROR = "terminal_writeback_error"
+
+
 class ReceiptType(StringEnum):
     CODE_EXECUTION = "code_execution"
     SPLIT_LINEAGE = "split_lineage"
@@ -100,6 +110,7 @@ class ReceiptType(StringEnum):
     RUNTIME_ACTUATION = "runtime_actuation"
     ADOPTION_PUBLICATION = "adoption_publication"
     COUNTERFACTUAL_ACTUATION = "counterfactual_actuation"
+    COUNTERFACTUAL_OBSERVATION = "counterfactual_observation"
 
 
 @dataclass(frozen=True)
@@ -303,6 +314,12 @@ class AuthorityDecision:
     decision_stage: str = ""
     generation_stage: str = ""
     governance_stage: str = ""
+    reason_codes: list[str] = field(default_factory=list)
+    responsible_component: str = ""
+    repairable: bool = False
+    missing_receipts: list[str] = field(default_factory=list)
+    missing_payloads: list[str] = field(default_factory=list)
+    diagnostics: dict[str, Any] = field(default_factory=dict)
 
     @property
     def allowed(self) -> bool:

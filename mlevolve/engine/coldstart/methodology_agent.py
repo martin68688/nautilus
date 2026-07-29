@@ -5,6 +5,7 @@ uses LLM to find relevant categories, then reads HIGH-confidence
 references to build detailed methodology guidance.
 """
 import logging
+import hashlib
 import re
 from pathlib import Path
 from typing import Any, List
@@ -94,55 +95,113 @@ def _strip_ref_noise(text: str) -> str:
     return text.strip()
 
 
-def _read_high_confidence_references(cat_dir: Path) -> tuple[str, list[str]]:
-    """Read insight.md, find HIGH-confidence rows, read their reference files.
+def _read_high_confidence_candidates(
+    cat_dir: Path,
+    *,
+    category_path: str | None = None,
+) -> list[dict[str, str]]:
+    """Return one immutable candidate per HIGH-confidence reference."""
 
-    Returns (joined_text, ref_ids). ref_ids are side-channel ids ("{category}/{stem}")
-    for adoption tracking only — NEVER injected into the prompt text.
-    """
     insight_file = cat_dir / "insight.md"
     if not insight_file.exists():
-        return "", []
-
+        return []
     insight_text = insight_file.read_text(encoding="utf-8")
     refs_dir = cat_dir / "references"
-    ref_contents = []
-    ref_ids = []  # side-channel: stable id per reference, NOT added to prompt text
-
+    output: list[dict[str, str]] = []
     in_table = False
     for line in insight_text.splitlines():
         line = line.strip()
         if line.startswith("| # |") or line.startswith("|---|"):
             in_table = True
             continue
-        if in_table:
-            if not line.startswith("|"):
-                break
-            cells = [c.strip() for c in line.split("|")[1:-1]]
-            if len(cells) < 5:
-                continue
-            confidence = cells[3].upper()
-            if confidence != "HIGH":
-                continue
-            ref_hint = cells[4].strip()
-            # Resolve file path
-            ref_name = ref_hint.rsplit("/", 1)[-1]
-            ref_path = refs_dir / ref_name
-            if not ref_path.exists() and refs_dir.exists():
-                # Fuzzy match by slug prefix
-                slug = re.sub(r"[^a-z0-9-]", "", cells[1].lower().replace(" ", "-"))[:30]
-                candidates = [p for p in refs_dir.glob("*.md") if slug[:15] in p.stem]
-                ref_path = candidates[0] if candidates else None
+        if not in_table:
+            continue
+        if not line.startswith("|"):
+            break
+        cells = [cell.strip() for cell in line.split("|")[1:-1]]
+        if len(cells) < 5 or cells[3].upper() != "HIGH":
+            continue
+        ref_name = cells[4].strip().rsplit("/", 1)[-1]
+        ref_path = refs_dir / ref_name
+        if not ref_path.exists() and refs_dir.exists():
+            slug = re.sub(
+                r"[^a-z0-9-]", "", cells[1].lower().replace(" ", "-")
+            )[:30]
+            matches = [
+                path
+                for path in refs_dir.glob("*.md")
+                if slug[:15] in path.stem
+            ]
+            ref_path = matches[0] if matches else None
+        if ref_path is None or not Path(ref_path).exists():
+            continue
+        try:
+            text = _strip_ref_noise(Path(ref_path).read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not text:
+            continue
+        category = str(category_path or cat_dir.name)
+        ref_id = f"{category}/{Path(ref_path).stem}"
+        digest = hashlib.sha256(
+            f"{ref_id}\n{text}".encode("utf-8")
+        ).hexdigest()
+        output.append(
+            {
+                "candidate_id": f"methodology::{digest[:24]}",
+                "claim_id": f"methodology_claim::{digest[:24]}",
+                "ref_id": ref_id,
+                "category": category,
+                "title": cells[1],
+                "text": text,
+                "content_sha256": hashlib.sha256(
+                    text.encode("utf-8")
+                ).hexdigest(),
+            }
+        )
+    return output
 
-            if ref_path and Path(ref_path).exists():
-                try:
-                    raw = Path(ref_path).read_text(encoding="utf-8")
-                    ref_contents.append(_strip_ref_noise(raw))
-                    ref_ids.append(f"{cat_dir.name}/{Path(ref_path).stem}")
-                except Exception:
-                    continue
 
-    return "\n\n---\n\n".join(ref_contents), ref_ids
+def _read_high_confidence_references(cat_dir: Path) -> tuple[str, list[str]]:
+    """Read insight.md, find HIGH-confidence rows, read their reference files.
+
+    Returns (joined_text, ref_ids). ref_ids are side-channel ids ("{category}/{stem}")
+    for adoption tracking only — NEVER injected into the prompt text.
+    """
+    candidates = _read_high_confidence_candidates(cat_dir)
+    return (
+        "\n\n---\n\n".join(item["text"] for item in candidates),
+        [item["ref_id"] for item in candidates],
+    )
+
+
+def build_methodology_candidates(
+    task_desc: str,
+    methodology_kb_path: str,
+    cfg: Any,
+) -> list[dict[str, str]]:
+    """Select categories, but return unrendered candidates for Authority."""
+
+    kb_base = Path(methodology_kb_path)
+    if not kb_base.exists():
+        logger.info("[MethodologyAgent] methodology_kb_path not found, skipping")
+        return []
+    categories = _scan_categories(kb_base)
+    if not categories:
+        logger.info("[MethodologyAgent] No categories found")
+        return []
+    logger.info("[MethodologyAgent] Scanning %s categories...", len(categories))
+    matched = _match_categories_with_llm(task_desc, categories, cfg)
+    output: list[dict[str, str]] = []
+    for category in matched:
+        values = _read_high_confidence_candidates(
+            kb_base / category,
+            category_path=category,
+        )
+        output.extend(values)
+        if values:
+            logger.info("[MethodologyAgent] Proposed references from %s", category)
+    return output
 
 
 def build_methodology_guidance(task_desc: str, methodology_kb_path: str, cfg: Any) -> tuple[str, list[str]]:
@@ -151,31 +210,18 @@ def build_methodology_guidance(task_desc: str, methodology_kb_path: str, cfg: An
     Returns (guidance_text, ref_ids). guidance_text is byte-for-byte identical to before
     (goes into the prompt). ref_ids is a side-channel list for adoption tracking only.
     """
-    kb_base = Path(methodology_kb_path)
-    if not kb_base.exists():
-        logger.info("[MethodologyAgent] methodology_kb_path not found, skipping")
-        return "", []
-
-    categories = _scan_categories(kb_base)
-    if not categories:
-        logger.info("[MethodologyAgent] No categories found")
-        return "", []
-
-    logger.info(f"[MethodologyAgent] Scanning {len(categories)} categories...")
-    matched = _match_categories_with_llm(task_desc, categories, cfg)
-    if not matched:
-        logger.info("[MethodologyAgent] No relevant categories matched")
-        return "", []
-
-    all_sections = []
-    all_ref_ids = []  # side-channel
-    for cat_path in matched:
-        cat_dir = kb_base / cat_path
-        content, ref_ids = _read_high_confidence_references(cat_dir)
-        if content:
-            all_sections.append(f"### [{cat_path}]\n\n{content}")
-            all_ref_ids.extend(ref_ids)
-            logger.info(f"[MethodologyAgent] Added references from {cat_path}")
+    candidates = build_methodology_candidates(
+        task_desc, methodology_kb_path, cfg
+    )
+    by_category: dict[str, list[dict[str, str]]] = {}
+    for candidate in candidates:
+        by_category.setdefault(candidate["category"], []).append(candidate)
+    all_sections = [
+        f"### [{category}]\n\n"
+        + "\n\n---\n\n".join(item["text"] for item in values)
+        for category, values in by_category.items()
+    ]
+    all_ref_ids = [item["ref_id"] for item in candidates]
 
     if not all_sections:
         return "", []

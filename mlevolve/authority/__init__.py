@@ -160,3 +160,18 @@ __all__ = [
     "verify_protocol_only_patch",
     "verify_canary_oracle_packet",
 ]
+from .protocol_execution_contract import (
+    PROTOCOL_EXECUTION_CONTRACT_SCHEMA,
+    ProtocolExecutionContract,
+    compile_protocol_execution_contract,
+    read_contract_artifact,
+    write_contract_artifacts,
+)
+
+__all__ = [
+    "PROTOCOL_EXECUTION_CONTRACT_SCHEMA",
+    "ProtocolExecutionContract",
+    "compile_protocol_execution_contract",
+    "read_contract_artifact",
+    "write_contract_artifacts",
+]

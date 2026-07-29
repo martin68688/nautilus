@@ -3,7 +3,10 @@ from __future__ import annotations
 import pytest
 
 from authority.actuation import ActuationLevel, ActuationTracker
-from authority.collectors import TrustedCollectorHost
+from authority.collectors import (
+    CounterfactualObservationCollector,
+    TrustedCollectorHost,
+)
 from authority.paired_replay import PairedReplayRunner
 from tests.authority.test_actuation_pipeline import ACTIVE, _contract, _observations
 
@@ -50,6 +53,30 @@ def test_no_action_or_code_delta_never_reaches_causal_confirmation() -> None:
     assert result.influence_confirmed is False
     assert result.outcome_delta == 0
     assert result.effective is False
+
+
+def test_observer_receipt_accepts_truthful_no_change_pair() -> None:
+    host = TrustedCollectorHost("prospective-observer-test")
+    receipt = host.collect(
+        CounterfactualObservationCollector,
+        artifact_id="node-1",
+        run_id="run-1",
+        protocol_ref=ACTIVE,
+        source="host.prospective_counterfactual_observer",
+        payload={
+            "pair_id": "pair-1",
+            "control_hash": "a" * 64,
+            "memory_payload_hash": "b" * 64,
+            "memory_on_action_hash": "c" * 64,
+            "memory_off_action_hash": "c" * 64,
+            "memory_on_code_hash": "d" * 64,
+            "memory_off_code_hash": "d" * 64,
+            "action_or_code_changed": False,
+            "never_submitted_to_executor": True,
+        },
+    )
+    assert receipt.payload["counterfactual_observed"] is True
+    assert receipt.payload["action_or_code_changed"] is False
 
 
 def test_protocol_illegal_improvement_is_not_effective() -> None:

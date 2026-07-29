@@ -16,7 +16,12 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
-from agents.memory.external_skill_memory import RunForestMemoryLayer, _as_list, _tokenize
+from agents.memory.external_skill_memory import (
+    RunForestMemoryLayer,
+    _as_list,
+    _tokenize,
+    bounded_selector_max_tokens,
+)
 from agents.memory.sop_visibility_gateway import SOPVisibilityGateway
 from authority.domain_scope import (
     DOMAIN_GENERAL,
@@ -351,10 +356,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         visibility_task_id: str | None = None,
         visibility_bundle_version: str | None = None,
         visibility_token_budget: int | None = None,
+        prospective_audit_logger: Any | None = None,
         memory_snapshot: Any | None = None,
         **kwargs: Any,
     ) -> None:
         self._trace_local = threading.local()
+        self.prospective_audit_logger = prospective_audit_logger
         cfg = kwargs.get("cfg")
         ext_cfg = getattr(cfg, "external_skill_memory", None) if cfg is not None else None
         if stage_quotas is None and ext_cfg is not None:
@@ -620,6 +627,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             candidate_clause_ids=self._snapshot_candidate_clause_ids(request),
         )
         self._trace_local.visibility_pack = pack
+        if self.prospective_audit_logger is not None:
+            self.prospective_audit_logger.record_visibility(
+                pack,
+                self.visibility_gateway,
+                source="run_forest_sop_visibility",
+            )
         return pack
 
     def _snapshot_candidate_clause_ids(
@@ -1277,12 +1290,16 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 "type": "object",
                 "additionalProperties": False,
                 "properties": {
-                    "strategy_sop_id": {"type": "string"},
-                    "method_family": {"type": "string"},
-                    "hypothesis": {"type": "string"},
-                    "validation_plan": {"type": "string"},
-                    "model_components": {"type": "array", "items": {"type": "string"}},
-                    "reason": {"type": "string"},
+                    "strategy_sop_id": {"type": "string", "maxLength": 256},
+                    "method_family": {"type": "string", "maxLength": 128},
+                    "hypothesis": {"type": "string", "maxLength": 600},
+                    "validation_plan": {"type": "string", "maxLength": 600},
+                    "model_components": {
+                        "type": "array",
+                        "maxItems": 12,
+                        "items": {"type": "string", "maxLength": 160},
+                    },
+                    "reason": {"type": "string", "maxLength": 600},
                 },
                 "required": [
                     "strategy_sop_id",
@@ -1308,15 +1325,33 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         from llm import query
 
         model = getattr(self.cfg.agent.feedback, "model", None) or getattr(self.cfg.agent.code, "model", "")
+        compact_routes = [
+            {
+                key: route.get(key)
+                for key in (
+                    "sop_id",
+                    "method_family",
+                    "hypothesis",
+                    "model_components",
+                    "compute_profile",
+                    "score",
+                )
+            }
+            for route in routes
+        ]
         return query(
             system_message=(
                 "Select exactly one supplied strategy. Do not invent a method family or SOP id. "
                 "Prefer a task-appropriate, compute-feasible hypothesis that differs from excluded families."
             ),
-            user_message=json.dumps({"task_profile": task_profile, "routes": routes}, ensure_ascii=False),
+            user_message=json.dumps(
+                {"task_profile": task_profile, "routes": compact_routes},
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
             model=model,
             temperature=0.0,
-            max_tokens=900,
+            max_tokens=bounded_selector_max_tokens(self.cfg),
             func_spec=self._strategy_function_spec(),
             cfg=self.cfg,
         )
@@ -1865,9 +1900,19 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 "type": "object",
                 "additionalProperties": False,
                 "properties": {
-                    "gateway_ids": {"type": "array", "items": {"type": "string"}},
-                    "reasons": {"type": "object", "additionalProperties": {"type": "string"}},
-                    "goal": {"type": "string"},
+                    "gateway_ids": {
+                        "type": "array",
+                        "maxItems": 8,
+                        "items": {"type": "string", "maxLength": 256},
+                    },
+                    "reasons": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "maxLength": 400,
+                        },
+                    },
+                    "goal": {"type": "string", "maxLength": 500},
                 },
                 "required": ["gateway_ids", "reasons", "goal"],
             },
@@ -1881,12 +1926,35 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         from llm import query
 
         model = getattr(self.cfg.agent.feedback, "model", None) or getattr(self.cfg.agent.code, "model", "")
+        compact_eligible = [
+            {
+                "id": item.get("id"),
+                "score": item.get("score"),
+                "method_family": item.get("method_family"),
+                "decision_stages": item.get("decision_stages"),
+                "task_families": item.get("task_families"),
+                "clean_supporting_transition_count": item.get(
+                    "clean_supporting_transition_count"
+                ),
+                "visible_clause_ids": item.get("visible_clause_ids"),
+                "visible_text": str(item.get("visible_text") or "")[:800],
+            }
+            for item in eligible
+        ]
         return query(
             system_message="Select only supplied clean SOP gateway IDs. Do not invent IDs.",
-            user_message=json.dumps({"stage": stage, "query": query_text[-5000:], "eligible": eligible}, ensure_ascii=False),
+            user_message=json.dumps(
+                {
+                    "stage": stage,
+                    "query": query_text[-3000:],
+                    "eligible": compact_eligible,
+                },
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ),
             model=model,
             temperature=0.0,
-            max_tokens=900,
+            max_tokens=bounded_selector_max_tokens(self.cfg),
             func_spec=self._gateway_function_spec(),
             cfg=self.cfg,
         )
@@ -2709,6 +2777,51 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             active_protocol=active_protocol,
         )
         visibility_ids = self._effective_visibility_sop_ids()
+        raw_ranked = self._rank_with_scores(
+            query_text=query_text,
+            candidate_ids=[
+                node_id
+                for node_id in self._run_nodes
+                if self.nodes.get(node_id, {}).get("stage") in {
+                    "draft", "debug", "improve", "evolution", "fusion"
+                }
+            ],
+            task_id=task_id,
+            task_desc=task_desc,
+            top_k=max(5, self.top_k),
+            stage_bonus={stage: 0.10},
+        )
+        if self.positive_control_force_raw and self._positive_control_probe_ids:
+            probe_ids = list(self._positive_control_probe_ids[: self.top_k])
+            raw_ranked = [
+                (1.0 - (index * 1e-6), node_id)
+                for index, node_id in enumerate(probe_ids)
+            ] + [
+                row for row in raw_ranked
+                if row[1] not in set(probe_ids)
+            ]
+            raw_ranked = raw_ranked[: max(5, self.top_k)]
+        pre_gate_raw_candidates = []
+        for raw_rank, (raw_score, node_id) in enumerate(raw_ranked, 1):
+            node = self.nodes[node_id]
+            eligible, eligibility_reason = self._execution_candidate_eligibility(node_id)
+            audit = node.get("leakage_audit") if isinstance(node.get("leakage_audit"), dict) else {}
+            pre_gate_raw_candidates.append(
+                {
+                    "candidate_id": node_id,
+                    "rank": raw_rank,
+                    "score": raw_score,
+                    "source_run_id": node.get("run_id"),
+                    "source_task_id": node.get("task"),
+                    "source_stage": node.get("stage"),
+                    "audit_status": audit.get("status") or node.get("audit_status"),
+                    "memory_disposition": audit.get("memory_disposition") or node.get("memory_disposition"),
+                    "quarantined": bool(node.get("quarantined")),
+                    "operation_authorized": eligible,
+                    "gate_reason": eligibility_reason,
+                    "controlled_positive_control": node_id in self._positive_control_probe_ids,
+                }
+            )
         quotas = self.stage_quotas[stage]
         if self.retrieval_control in FORMAL_FLAT_RELEVANCE_CONTROLS:
             return self._formal_flat_relevance_pack(
@@ -2840,6 +2953,39 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 sop_weight=weights["sop"],
                 tree_weight=weights["tree"],
             )
+        # The raw observer must cover every execution candidate proposed by
+        # either retrieval channel before the execution-safety gate.  The
+        # broad relevance probe above is intentionally retained to measure
+        # naturally ineligible opportunities, but it is not guaranteed to
+        # contain SOP-gateway transitions selected by the hybrid route.
+        raw_candidate_ids = {
+            str(item["candidate_id"]) for item in pre_gate_raw_candidates
+        }
+        for raw_rank, item in enumerate(fused, len(pre_gate_raw_candidates) + 1):
+            node_id = str(item["id"])
+            if node_id in raw_candidate_ids:
+                continue
+            node = self.nodes[node_id]
+            eligible, eligibility_reason = self._execution_candidate_eligibility(node_id)
+            audit = node.get("leakage_audit") if isinstance(node.get("leakage_audit"), dict) else {}
+            pre_gate_raw_candidates.append(
+                {
+                    "candidate_id": node_id,
+                    "rank": raw_rank,
+                    "score": float(item.get("rrf_score") or 0.0),
+                    "source_run_id": node.get("run_id"),
+                    "source_task_id": node.get("task"),
+                    "source_stage": node.get("stage"),
+                    "audit_status": audit.get("status") or node.get("audit_status"),
+                    "memory_disposition": audit.get("memory_disposition") or node.get("memory_disposition"),
+                    "quarantined": bool(node.get("quarantined")),
+                    "operation_authorized": eligible,
+                    "gate_reason": eligibility_reason,
+                    "controlled_positive_control": node_id in self._positive_control_probe_ids,
+                    "proposal_channel": "hybrid_execution_pre_gate",
+                }
+            )
+            raw_candidate_ids.add(node_id)
         rejected_execution = []
         clean_fused = []
         for item in fused:
@@ -2912,6 +3058,24 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 }
                 for clause in visibility_pack.warning_clauses
             ]
+        final_prompt_candidate_ids = {item["id"] for item in fused[: self.top_k]}
+        for item in pre_gate_raw_candidates:
+            item["final_prompt_visible"] = item["candidate_id"] in final_prompt_candidate_ids
+        trace.append(
+            {
+                "retrieval_channel": "pre_prompt_authority_receipt",
+                "candidate_class": "raw_run_node_top_k",
+                "gateway_sop_id": "",
+                "supporting_transition_ids": [],
+                "selection_reason": "raw_candidate_observer_before_authority",
+                "selection_state": "candidate",
+                "authority_observation_state": "observed_before_gate",
+                "target_task_id": task_id,
+                "decision_stage": stage,
+                "pre_gate_raw_candidates": pre_gate_raw_candidates,
+                "final_prompt_candidate_ids": sorted(final_prompt_candidate_ids),
+            }
+        )
         return {
             "schema": PACK_SCHEMA,
             "algorithm_version": "stage_hybrid_v2",
@@ -2939,6 +3103,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             "visibility_warnings": visibility_warnings,
             "navigation_trace": trace,
             "fused_execution_candidates": fused,
+            "pre_gate_raw_candidates": pre_gate_raw_candidates,
+            "final_prompt_candidate_ids": sorted(final_prompt_candidate_ids),
             "execution_candidate_provenance": execution_provenance,
             "execution_safety_gate": {
                 "predicate": "positive_transition_or_clean_successful_run_node",
@@ -3155,6 +3321,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 }
                 self._last_agentic_pack = pack
                 self._trace_local.pack = pack
+                if self.prospective_audit_logger is not None:
+                    self.prospective_audit_logger.record_run_candidates(pack, self.nodes)
                 refs = [item["id"] for item in pack["fused_execution_candidates"][: self.top_k]]
                 refs += [item["id"] for item in pack["selected_sop_gateways"]]
                 refs += [item["id"] for item in pack["sop_only_candidates"]]
@@ -3177,6 +3345,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             self._mark_empty_visibility_abstention(pack)
             self._last_agentic_pack = pack
             self._trace_local.pack = pack
+            if self.prospective_audit_logger is not None:
+                self.prospective_audit_logger.record_run_candidates(pack, self.nodes)
             selected = pack.get("selected_strategy") or {}
             if selected:
                 evidence = selected["best_tree_evidence"]
@@ -3204,6 +3374,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         self._mark_empty_visibility_abstention(pack)
         self._last_agentic_pack = pack
         self._trace_local.pack = pack
+        if self.prospective_audit_logger is not None:
+            self.prospective_audit_logger.record_run_candidates(pack, self.nodes)
         refs = [item["id"] for item in pack["fused_execution_candidates"][: self.top_k]]
         refs += [item["id"] for item in pack["selected_sop_gateways"]]
         refs += [item["id"] for item in pack["sop_only_candidates"]]

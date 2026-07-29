@@ -9,7 +9,12 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from ...authority_engine import AuthorityEngine
-from ...actuation import ActuationLevel, ActuationTracker, ExperienceContract
+from ...actuation import (
+    ActuationLevel,
+    ActuationTracker,
+    ExperienceContract,
+    Predicate,
+)
 from ...claim_decomposer import select_claim_for_operation
 from ...collectors import (
     AdoptionPublicationCollector,
@@ -25,6 +30,7 @@ from ...models import (
     DecisionOutcome,
     DecisionStage,
     Operation,
+    ReceiptType,
     TaskContext,
 )
 from ...policy import is_high_risk
@@ -392,6 +398,7 @@ class MLEvolveAuthorityAdapter:
             self.active_protocol,
             self.run_id,
             collector_host=self.collector_host,
+            task_id=self.task_id,
         )
         receipts.extend(
             self.actuation_tracker.receipts_for_artifact(str(node.id))
@@ -482,6 +489,332 @@ class MLEvolveAuthorityAdapter:
         self._emit_snapshots()
         return contract_ids
 
+    def record_replay_exposure(self, node: Any) -> list[str]:
+        """Bind a direct replay/code-seed delivery to a real ExperienceContract.
+
+        This is separate from normal Prompt visibility because an exact replay
+        is delivered as executable source rather than prose.  The contract can
+        reach L3 only after deterministic lineage checks and trusted execution
+        observations; merely inheriting replay metadata never publishes an
+        adoption edge.
+        """
+
+        if self.mode == "off" or not getattr(node, "replay_source", None):
+            return []
+        source = dict(node.replay_source)
+        graph_node_id = str(source.get("graph_node_id") or "")
+        claim_id = f"replay:{graph_node_id}:method_hypothesis"
+        if not graph_node_id or claim_id not in self.engine.graph.claims:
+            raise ValueError("Replay source Claim is not registered")
+        replay_operation = (
+            Operation.REPAIR_SEED
+            if bool(source.get("requires_repair"))
+            else Operation.CODE_SEED
+        )
+        source_decision = self._latest_decisions.get(
+            (graph_node_id, replay_operation.value)
+        )
+        if source_decision is None or not source_decision.allowed:
+            # Shadow-mode legacy control flow may still inspect a denied seed,
+            # but a denied/missing source decision cannot mint an adoption
+            # contract or later establish certified experience lineage.
+            if self.mode != "off":
+                self.ledger.append(
+                    "replay_experience_contract_suppressed",
+                    {
+                        "artifact_id": str(node.id),
+                        "source_artifact_id": graph_node_id,
+                        "operation": replay_operation.value,
+                        "decision_id": (
+                            source_decision.decision_id
+                            if source_decision is not None
+                            else ""
+                        ),
+                        "reason": "source_replay_authority_not_allowed",
+                    },
+                )
+            return []
+        axes = resolve_stage_axes(runtime_stage=getattr(node, "stage", None))
+        source_hash = str(source.get("code_sha256") or "")
+        clause_id = f"replay_clause::{hashlib.sha256(graph_node_id.encode('utf-8')).hexdigest()[:24]}"
+        contract = ExperienceContract(
+            preconditions=[
+                Predicate(
+                    "source_replay_claim_authorized",
+                    True,
+                    "The immutable replay source Claim passed CODE_SEED Authority.",
+                )
+            ],
+            must_preserve=[
+                Predicate("active_protocol_ref", self.active_protocol.key()),
+                Predicate("task_id", self.task_id),
+                Predicate("replay_lineage_preserved", True),
+            ],
+            must_change=[
+                Predicate(
+                    f"clause_applied::{clause_id}",
+                    True,
+                    "The admitted replay method is realized by the target artifact.",
+                )
+            ],
+            must_not_use=[
+                Predicate("forbidden_dependency_count", 0),
+                Predicate("holdout_used_for_selection", False),
+            ],
+            expected_runtime_observations=[
+                Predicate("target_path_executed", True)
+            ],
+            clause_id=clause_id,
+            sop_id=(str((source.get("sop_ids") or [""])[0]) or f"replay_sop::{graph_node_id}"),
+            claim_refs=[claim_id],
+            source_artifact_refs=[graph_node_id],
+            source_run_ids=[str(source.get("run_id") or "")],
+            source_task_ids=[str(source.get("task_id") or self.task_id)],
+            task_scope={"task_id": self.task_id},
+            active_protocol_ref=self.active_protocol.key(),
+            target_task_id=self.task_id,
+            operation=replay_operation.value,
+            generation_stage=axes.generation_stage.value,
+            governance_stage=GovernanceStage.REPLAY.value,
+            publication_class="certified",
+            minimum_writeback_level=int(ActuationLevel.RUNTIME_CONFORMANT),
+            policy_version=self.engine.policy_version,
+        ).finalize()
+        existing_contracts = {
+            value.contract_id
+            for value in self.actuation_tracker.contracts_for_artifact(
+                str(node.id)
+            )
+        }
+        if contract.contract_id in existing_contracts:
+            contract_ids = [contract.contract_id]
+            refs_field = getattr(node, "experience_contract_refs", None)
+            if not isinstance(refs_field, list):
+                refs_field = []
+                setattr(node, "experience_contract_refs", refs_field)
+            for contract_id in contract_ids:
+                if contract_id not in refs_field:
+                    refs_field.append(contract_id)
+            source["experience_contract_ids"] = contract_ids
+            source["source_code_sha256"] = source_hash
+            node.replay_source = source
+            return contract_ids
+        prompt_text = str(getattr(node, "prompt_input", "") or "")
+        contract_ids = self.actuation_tracker.record_exposure(
+            artifact_id=str(node.id),
+            contracts=[contract],
+            request_id=f"direct_replay::{node.id}",
+            prompt_sha256=hashlib.sha256(prompt_text.encode("utf-8")).hexdigest(),
+        )
+        refs_field = getattr(node, "experience_contract_refs", None)
+        if not isinstance(refs_field, list):
+            refs_field = []
+            setattr(node, "experience_contract_refs", refs_field)
+        for contract_id in contract_ids:
+            if contract_id not in refs_field:
+                refs_field.append(contract_id)
+        source["experience_contract_ids"] = list(contract_ids)
+        source["source_code_sha256"] = source_hash
+        node.replay_source = source
+        self._emit_snapshots()
+        return contract_ids
+
+    @staticmethod
+    def _replay_lineage_preserved(node: Any) -> bool:
+        source = dict(getattr(node, "replay_source", None) or {})
+        source_hash = str(source.get("code_sha256") or "")
+        code = str(getattr(node, "code", "") or "")
+        if source_hash and hashlib.sha256(code.encode("utf-8")).hexdigest() == source_hash:
+            return True
+        instrumentation = dict(
+            source.get("host_entrypoint_instrumentation_receipt") or {}
+        )
+        if instrumentation:
+            receipt_hash = str(instrumentation.get("receipt_hash") or "")
+            receipt_core = {
+                key: value
+                for key, value in instrumentation.items()
+                if key != "receipt_hash"
+            }
+            expected_receipt_hash = hashlib.sha256(
+                canonical_json(receipt_core).encode("utf-8")
+            ).hexdigest()
+            if (
+                instrumentation.get("schema")
+                == "mlevolve_preflight_repair_receipt_v1"
+                and instrumentation.get("repair_kind") == "instrumentation"
+                and instrumentation.get("method_identity_preserved") is True
+                and instrumentation.get("terminal_score_observed") is False
+                and instrumentation.get("runtime_receipt_fabricated") is False
+                and instrumentation.get("original_code_sha256") == source_hash
+                and instrumentation.get("repaired_code_sha256")
+                == hashlib.sha256(code.encode("utf-8")).hexdigest()
+                and receipt_hash == expected_receipt_hash
+            ):
+                return True
+        if str(getattr(node, "replay_status", "") or "") in {
+            "mandatory_audit_repair_executed_clean",
+            "staged_protocol_repair_executed_clean",
+        }:
+            return True
+        ancestor = getattr(node, "parent", None)
+        while ancestor is not None:
+            ancestor_code = str(getattr(ancestor, "code", "") or "")
+            if source_hash and hashlib.sha256(ancestor_code.encode("utf-8")).hexdigest() == source_hash:
+                try:
+                    from agents.leakage_audit import (
+                        audit_repair_preservation,
+                        build_repair_preservation_contract,
+                    )
+
+                    audit = audit_repair_preservation(
+                        code,
+                        build_repair_preservation_contract(ancestor_code),
+                    )
+                    return audit.get("status") == "clean"
+                except Exception:
+                    return False
+            ancestor = getattr(ancestor, "parent", None)
+        return False
+
+    def finalize_production_actuation(self, node: Any) -> list[dict[str, Any]]:
+        """Advance only host-verifiable production adoptions and publish L3 edges."""
+
+        if self.mode == "off":
+            return []
+        artifact_id = str(node.id)
+        contracts = self.actuation_tracker.contracts_for_artifact(artifact_id)
+        if not contracts:
+            return []
+
+        selected = dict(getattr(node, "selected_strategy", None) or {})
+        selected_sop = str(selected.get("sop_id") or "")
+        alignment = dict(getattr(node, "strategy_alignment", None) or {})
+        replay_preserved = self._replay_lineage_preserved(node)
+        host_receipts = receipts_for_node(
+            node,
+            self.active_protocol,
+            self.run_id,
+            collector_host=self.collector_host,
+            task_id=self.task_id,
+        )
+        receipt_types = {
+            receipt.receipt_type
+            for receipt in host_receipts
+            if getattr(receipt, "trust_status", "") == "trusted_host"
+        }
+        protocol_receipts = {
+            ReceiptType.SPLIT_LINEAGE,
+            ReceiptType.FIT_SCOPE,
+            ReceiptType.PREDICTION_SCOPE,
+            ReceiptType.EVALUATOR,
+            ReceiptType.SELECTION_FREEZE,
+        }
+        protocol_clean = protocol_receipts <= receipt_types
+        execution_observed = bool(
+            ReceiptType.CODE_EXECUTION in receipt_types
+            and getattr(node, "is_buggy", True) is False
+            and getattr(node, "is_valid", True) is not False
+        )
+
+        for contract in contracts:
+            direct_replay = contract.clause_id.startswith("replay_clause::")
+            selected_strategy = bool(
+                selected_sop
+                and contract.sop_id == selected_sop
+                and alignment.get("status") == "verified"
+            )
+            admitted = replay_preserved if direct_replay else selected_strategy
+            if not admitted:
+                continue
+            report = self.actuation_tracker.report(
+                artifact_id=artifact_id,
+                contract_id=contract.contract_id,
+            )
+            if not report.reached(ActuationLevel.CLAIMED_ADOPTION):
+                self.actuation_tracker.record_claimed_adoption(
+                    artifact_id=artifact_id,
+                    contract_id=contract.contract_id,
+                )
+
+            supplied = dict(
+                (
+                    getattr(node, "experience_actuation_observations", None)
+                    or {}
+                ).get(contract.contract_id)
+                or {}
+            )
+            preconditions = dict(supplied.get("preconditions") or {})
+            if direct_replay:
+                preconditions["source_replay_claim_authorized"] = True
+            static: dict[str, Any] = {
+                "active_protocol_ref": self.active_protocol.key(),
+                "task_id": self.task_id,
+                f"clause_applied::{contract.clause_id}": True,
+            }
+            static.update(dict(supplied.get("static") or {}))
+            if direct_replay:
+                static["replay_lineage_preserved"] = replay_preserved
+            if protocol_clean:
+                static.update(
+                    {
+                        "forbidden_dependency_count": 0,
+                        "holdout_used_for_selection": False,
+                    }
+                )
+            report = self.actuation_tracker.report(
+                artifact_id=artifact_id,
+                contract_id=contract.contract_id,
+            )
+            if not report.reached(ActuationLevel.STATIC_CONFORMANT):
+                static_receipt = self.actuation_tracker.record_static_observation(
+                    artifact_id=artifact_id,
+                    contract_id=contract.contract_id,
+                    preconditions=preconditions,
+                    observations=static,
+                    source="host.production_static_actuation",
+                )
+                if static_receipt is None:
+                    continue
+            if not execution_observed:
+                continue
+            runtime = dict(supplied.get("runtime") or {})
+            runtime["target_path_executed"] = True
+            report = self.actuation_tracker.report(
+                artifact_id=artifact_id,
+                contract_id=contract.contract_id,
+            )
+            if not report.reached(ActuationLevel.RUNTIME_CONFORMANT):
+                runtime_receipt = self.actuation_tracker.record_runtime_observation(
+                    artifact_id=artifact_id,
+                    contract_id=contract.contract_id,
+                    observations=runtime,
+                    source="host.production_runtime_actuation",
+                )
+                if runtime_receipt is None:
+                    continue
+            report = self.actuation_tracker.report(
+                artifact_id=artifact_id,
+                contract_id=contract.contract_id,
+            )
+            if not report.reached(ActuationLevel.RUNTIME_CONFORMANT):
+                continue
+            decision = self.authorize_experience_link(
+                node,
+                contract_id=contract.contract_id,
+            )
+            if decision.allowed:
+                self.append_authorized_experience_link(
+                    node,
+                    contract_id=contract.contract_id,
+                )
+                for claim_ref in contract.claim_refs:
+                    if claim_ref not in node.derived_from_refs:
+                        node.derived_from_refs.append(claim_ref)
+
+        reports = self.actuation_reports_for_node(node)
+        return reports
+
     def claim_experience_adoption(self, node: Any, contract_id: str) -> None:
         self.actuation_tracker.record_claimed_adoption(
             artifact_id=str(node.id), contract_id=str(contract_id)
@@ -532,6 +865,29 @@ class MLEvolveAuthorityAdapter:
             contract_id=str(contract_id),
             pair_result=pair_result,
         )
+        self._emit_snapshots()
+        return receipt
+
+    def record_prospective_counterfactual(
+        self,
+        node: Any,
+        *,
+        pair_result: dict[str, Any],
+    ):
+        """Mint a Host-owned observer receipt without executing the other arm."""
+        from ...collectors import CounterfactualObservationCollector
+
+        receipt = self.collector_host.collect(
+            CounterfactualObservationCollector,
+            artifact_id=str(node.id),
+            run_id=self.run_id,
+            protocol_ref=self.active_protocol,
+            source="host.prospective_counterfactual_observer",
+            payload=dict(pair_result),
+        )
+        self.engine.graph.add_receipt(receipt)
+        if self.mode != "off":
+            self.ledger.append("receipt_written", dataclasses.asdict(receipt))
         self._emit_snapshots()
         return receipt
 
@@ -660,6 +1016,7 @@ class MLEvolveAuthorityAdapter:
                 self.active_protocol,
                 self.run_id,
                 collector_host=self.collector_host,
+                task_id=self.task_id,
             )
             receipts.extend(
                 self.actuation_tracker.receipts_for_artifact(artifact_id)
@@ -1156,6 +1513,7 @@ class MLEvolveAuthorityAdapter:
         audit: dict[str, Any],
         source_run_id: str,
         repair_seed: bool = False,
+        source_execution_verified: bool = False,
     ) -> AuthorityDecision | None:
         if self.mode == "off":
             return None
@@ -1182,6 +1540,7 @@ class MLEvolveAuthorityAdapter:
                 self.active_protocol,
                 source_run_id,
                 collector_host=self.collector_host,
+                source_execution_verified=source_execution_verified,
             ),
         )
         decision = self.engine.authorize(
@@ -1197,6 +1556,11 @@ class MLEvolveAuthorityAdapter:
                 governance_stage=GovernanceStage.REPLAY,
             )
         )
+        self._latest_decisions[(artifact_id, (
+            Operation.REPAIR_SEED.value
+            if repair_seed
+            else Operation.CODE_SEED.value
+        ))] = decision
         self._emit_snapshots()
         return decision
 

@@ -1,3 +1,4 @@
+import copy
 import logging
 import time
 from typing import cast
@@ -14,6 +15,36 @@ from fixed_holdout.mode import bypass_protocol_gates, enabled, train_manifest_pa
 from fixed_holdout.validation import validate_submission as validate_fixed_submission
 
 logger = logging.getLogger("MLEvolve")
+
+
+def _legacy_ast_mode(agent) -> str:
+    preflight = getattr(getattr(agent, "acfg", None), "protocol_preflight", None)
+    if not bool(getattr(preflight, "enabled", False)):
+        return "enforce"
+    return str(getattr(preflight, "legacy_ast_mode", "shadow") or "shadow")
+
+
+def _shadow_only_audit(audit: dict) -> dict:
+    """Preserve a legacy observation without allowing it to affect the run."""
+
+    observed = copy.deepcopy(audit)
+    shadow = copy.deepcopy(audit)
+    shadow.update(
+        {
+            "status": "clean",
+            "hard_block": False,
+            "paper_grade_eligible": True,
+            "metric_disposition": "accept",
+            "memory_disposition": "positive_eligible",
+            "execution_disposition": "allow",
+            "search_disposition": "normal",
+            "rank_eligible": True,
+            "repair_required": False,
+            "enforcement_mode": "shadow",
+            "legacy_shadow_observation": observed,
+        }
+    )
+    return shadow
 
 metric_direction_func_spec = FunctionSpec(
     name="determine_metric_direction",
@@ -465,6 +496,66 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
             node.id,
         )
         return False
+    migration_seed = bool(
+        node.replay_source
+        and node.replay_source.get("requires_full_runtime_migration") is True
+        and node.replay_source.get("execution_seed_only") is True
+    )
+    if migration_seed:
+        migration = dict(node.replay_source.get("full_runtime_migration") or {})
+        digest = leakage_audit.code_sha256(node.code)
+        node.leakage_audit = {
+            "schema": "mlevolve_leakage_audit_v2",
+            "detector_version": "host_full_runtime_migration_v1",
+            "detector_status": "complete",
+            "status": "blocked",
+            "hard_block": False,
+            "code_sha256": digest,
+            "issues": [
+                {
+                    "issue_code": "LEGACY_FULL_RUNTIME_LIFECYCLE_MISSING",
+                    "category": "runtime_contract_migration",
+                    "severity": "high",
+                    "line": 0,
+                    "evidence": (
+                        "Historical method code lacks required Host full-runtime calls: "
+                        + ", ".join(
+                            migration.get("missing_full_runtime_coverage") or []
+                        )
+                    ),
+                    "remediation": (
+                        "Generate a method-preserving derived child and collect fresh "
+                        "Preflight/full-runtime receipts."
+                    ),
+                    "execution_disposition": "block",
+                    "detector": "host_full_runtime_migration_v1",
+                }
+            ],
+            "execution_disposition": "block",
+            "search_disposition": "repair_only",
+            "memory_disposition": "diagnostic_only",
+            "metric_disposition": "reject",
+            "rank_eligible": False,
+            "paper_grade_eligible": False,
+            "repair_required": True,
+            "pre_execution_gate_reason": "legacy_full_runtime_migration_seed",
+        }
+        node.audit_repair_required = True
+        node.is_buggy = True
+        node.is_valid = False
+        node.metric = WorstMetricValue()
+        node.analysis = (
+            "Historical replay is a legal method seed but cannot execute under "
+            "the current Host full-runtime Contract; a derived child is required."
+        )
+        node._term_out = [node.analysis]
+        node.replay_status = "blocked_legacy_full_runtime_seed"
+        _persist_leakage_audit(agent, node)
+        logger.warning(
+            "Node %s blocked before execution as a legacy full-runtime migration seed",
+            node.id,
+        )
+        return True
     if node.draft_role == "novel_exploration" and node.selected_strategy:
         from agents.memory.stage_aware_hybrid_memory import strategy_alignment_for_code
 
@@ -517,6 +608,24 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
             )
     node.leakage_audit = audit
     node.audit_repair_required = audit.get("status") != "clean"
+
+    if _legacy_ast_mode(agent) == "shadow":
+        node.leakage_audit = _shadow_only_audit(audit)
+        node.audit_repair_required = False
+        # A historical replay may carry an old enforcing repair transaction.
+        # Host mode re-admits the immutable code through its own Contract and
+        # Receipt, so the legacy transaction is diagnostic-only as well.
+        node.protocol_repair = {}
+        node.leakage_repair_context = {}
+        _persist_leakage_audit(agent, node)
+        observed = node.leakage_audit["legacy_shadow_observation"]
+        logger.warning(
+            "Node %s legacy pre-execution audit is shadow-only: observed_status=%s issues=%s",
+            node.id,
+            observed.get("status"),
+            [item.get("issue_code") for item in observed.get("issues", [])],
+        )
+        return False
 
     # Protocol repair is a transaction, not a normal debug retry.  Every
     # intermediate stage is journaled and requeued but cannot consume GPU.
@@ -657,7 +766,10 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
 
     replay_repair_child = bool(
         node.replay_source
-        and node.replay_source.get("requires_repair") is True
+        and (
+            node.replay_source.get("requires_repair") is True
+            or node.replay_source.get("requires_full_runtime_migration") is True
+        )
         and node.leakage_repair_context
     )
     repair_seed_only = bool(
@@ -675,7 +787,11 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
             if item.get("issue_code")
         ]
         if replay_repair_child:
-            node.replay_status = "mandatory_audit_repair_clean_pending_execution"
+            node.replay_status = (
+                "derived_full_runtime_candidate_clean_pending_execution"
+                if node.replay_source.get("requires_full_runtime_migration") is True
+                else "mandatory_audit_repair_clean_pending_execution"
+            )
     leakage_audit.persist_audit(agent, node)
     if audit.get("status") == "clean" and not repair_seed_only:
         return False
@@ -747,6 +863,16 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
             )
             node.replay_status = "staged_protocol_repair_runtime_blocked"
     merged_audit["observed_metric"] = response.get("metric")
+    if _legacy_ast_mode(agent) == "shadow":
+        node.leakage_audit = _shadow_only_audit(merged_audit)
+        node.audit_repair_required = False
+        _persist_leakage_audit(agent, node)
+        logger.warning(
+            "Node %s legacy post-execution leakage review is shadow-only: observed_status=%s",
+            node.id,
+            merged_audit.get("status"),
+        )
+        return
     node.leakage_audit = merged_audit
     node.audit_repair_required = merged_audit.get("status") != "clean"
     if merged_audit.get("status") == "clean" and node.leakage_repair_context:
@@ -762,10 +888,17 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
             node.replay_status = "staged_protocol_repair_executed_clean"
         elif (
             node.replay_source
-            and node.replay_source.get("requires_repair") is True
+            and (
+                node.replay_source.get("requires_repair") is True
+                or node.replay_source.get("requires_full_runtime_migration") is True
+            )
             and node.leakage_repair_context
         ):
-            node.replay_status = "mandatory_audit_repair_executed_clean"
+            node.replay_status = (
+                "derived_full_runtime_candidate_executed_clean"
+                if node.replay_source.get("requires_full_runtime_migration") is True
+                else "mandatory_audit_repair_executed_clean"
+            )
 
     if merged_audit.get("hard_block"):
         logger.error(
@@ -968,6 +1101,22 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
             status = "FAIL" if node.is_buggy else "PASS"
             metric_val = node.metric.value if node.metric else None
             logger.info(f"[parse] node {node.id}: {status} | metric={metric_val}")
+
+            adapter = getattr(agent, "evaluation_authority", None)
+            finalize_actuation = getattr(
+                adapter, "finalize_production_actuation", None
+            )
+            if callable(finalize_actuation):
+                try:
+                    finalize_actuation(node)
+                except Exception as error:
+                    # Actuation/writeback is fail-closed and must not turn a
+                    # completed candidate into fabricated provenance.
+                    logger.warning(
+                        "Production actuation finalization failed closed for node %s: %s",
+                        node.id,
+                        type(error).__name__,
+                    )
 
             _save_to_global_memory(agent, node)
 

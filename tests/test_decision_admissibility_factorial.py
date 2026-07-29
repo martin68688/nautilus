@@ -374,7 +374,7 @@ def test_attack_specific_failure_modes_use_real_authority_evidence() -> None:
     }.issubset(selection["authority_decisions"][0]["missing_obligations"])
 
     drift = _case(report, protocol, "protocol_drift", "invalid")
-    assert drift["authority_decisions"][0]["outcome"] == "require_replay"
+    assert drift["authority_decisions"][0]["outcome"] == "require_human_review"
     assert "active_protocol_compatibility" in drift["authority_decisions"][0][
         "missing_obligations"
     ]

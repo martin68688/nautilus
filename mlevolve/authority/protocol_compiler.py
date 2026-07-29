@@ -4,6 +4,11 @@ from dataclasses import dataclass, field
 
 from .models import AuthorityRequest, Claim, ClaimType, Operation, ReceiptType
 from .protocol_registry import ProtocolRegistry
+from .protocol_execution_contract import (
+    ProtocolExecutionContract,
+    compile_protocol_execution_contract,
+    protocol_payload_requirements,
+)
 
 
 @dataclass
@@ -38,6 +43,48 @@ class ProtocolCompiler:
 
     def __init__(self, registry: ProtocolRegistry):
         self.registry = registry
+
+    def compile_execution_contract(
+        self,
+        active_protocol,
+        *,
+        task_context,
+        train_view_ref: str,
+        validation_view_ref: str,
+        terminal_view_ref: str,
+        execution_budget,
+        allowed_import_roots=(
+            "PIL",
+            "cv2",
+            "lightgbm",
+            "numpy",
+            "pandas",
+            "scipy",
+            "sklearn",
+            "timm",
+            "torch",
+            "torchvision",
+            "transformers",
+            "xgboost",
+        ),
+        collector_spec=None,
+        adapter_spec=None,
+    ) -> ProtocolExecutionContract:
+        """Compile one deterministic Host-owned contract for a task execution."""
+
+        spec = self.registry.resolve(active_protocol)
+        return compile_protocol_execution_contract(
+            spec,
+            task_id=task_context.task_id,
+            task_family=task_context.task_family,
+            train_view_ref=train_view_ref,
+            validation_view_ref=validation_view_ref,
+            terminal_view_ref=terminal_view_ref,
+            execution_budget=execution_budget,
+            allowed_import_roots=tuple(allowed_import_roots),
+            collector_spec=collector_spec,
+            adapter_spec=adapter_spec,
+        )
 
     @staticmethod
     def claim_operation_compatible(claim_type: ClaimType, operation: Operation) -> bool:
@@ -133,45 +180,10 @@ class ProtocolCompiler:
                 protocol.promotion_policy.get("enforce_protocol_payloads")
                 is True
             ):
-                split_strategy = str(
-                    protocol.data_split_policy.get("strategy") or ""
-                )
-                if split_strategy:
-                    split_flags: dict[str, object] = {
-                        "split_strategy": split_strategy,
-                    }
-                    if split_strategy == "stratified_random":
-                        split_flags["stratification_verified"] = True
-                    elif split_strategy == "grouped":
-                        split_flags["group_overlap_count"] = 0
-                    elif split_strategy == "chronological":
-                        split_flags.update(
-                            {
-                                "future_to_past_count": 0,
-                                "chronological_order_verified": True,
-                            }
-                        )
-                    else:
-                        split_flags["unsupported_split_strategy"] = False
-                    payload_flags[ReceiptType.SPLIT_LINEAGE] = split_flags
-                fit_scope = str(
-                    protocol.preprocessing_policy.get("fit_scope") or ""
-                )
-                if fit_scope:
-                    payload_flags[ReceiptType.FIT_SCOPE] = {
-                        "fit_scope": fit_scope,
-                    }
-                metric_name = str(protocol.metric_spec.get("name") or "")
-                metric_direction = str(
-                    protocol.metric_spec.get("direction") or ""
-                )
-                evaluator_flags: dict[str, object] = {}
-                if metric_name:
-                    evaluator_flags["metric_name"] = metric_name
-                if metric_direction in {"maximize", "minimize"}:
-                    evaluator_flags["metric_direction"] = metric_direction
-                if evaluator_flags:
-                    payload_flags[ReceiptType.EVALUATOR] = evaluator_flags
+                for receipt_name, flags in protocol_payload_requirements(
+                    protocol
+                ).items():
+                    payload_flags[ReceiptType(receipt_name)] = flags
         minimum: dict[ReceiptType, int] = {}
         if claim.claim_type == ClaimType.PAIRWISE_SUPERIORITY:
             required.update({ReceiptType.SEED_AGGREGATION, ReceiptType.REPLICATION})
@@ -206,7 +218,6 @@ class ProtocolCompiler:
             Operation.PUBLISH_ADOPTION,
             Operation.PUBLISH_CAUSAL,
             Operation.PROMOTE,
-            Operation.CODE_SEED,
         }:
             required.update(
                 {ReceiptType.STATIC_ACTUATION, ReceiptType.RUNTIME_ACTUATION}

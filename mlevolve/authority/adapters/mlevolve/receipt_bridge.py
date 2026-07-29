@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from typing import Any
 
 from ...collectors import (
@@ -129,7 +130,83 @@ def _trusted_runtime_protocol_receipts(
     protocol_ref: ProtocolRef,
     run_id: str,
     host: TrustedCollectorHost,
+    task_id: str | None = None,
 ) -> list[Receipt]:
+    full_runtime = dict(
+        (getattr(node, "protocol_observation", None) or {}).get(
+            "host_full_runtime"
+        )
+        or {}
+    )
+    if full_runtime:
+        try:
+            from authority.protocol_execution_contract import (
+                ProtocolExecutionContract,
+            )
+            from protocol_runtime.collector_bridge import (
+                bridge_signed_journal_to_receipts,
+            )
+
+            evidence_hash = str(full_runtime.get("evidence_hash") or "")
+            expected_evidence_hash = _sha256(
+                canonical_json(
+                    {
+                        key: value
+                        for key, value in full_runtime.items()
+                        if key != "evidence_hash"
+                    }
+                )
+            )
+            contract = ProtocolExecutionContract.from_dict(
+                dict(full_runtime["contract"])
+            )
+            expected_code_sha256 = str(
+                getattr(node, "code_sha256_expected", "")
+                or _sha256(str(getattr(node, "code", "") or ""))
+            )
+            if (
+                full_runtime.get("schema")
+                != "mlevolve_full_runtime_evidence_v1"
+                or full_runtime.get("status") != "pass"
+                or evidence_hash != expected_evidence_hash
+                or full_runtime.get("node_id") != str(node.id)
+                or full_runtime.get("code_sha256") != expected_code_sha256
+                or full_runtime.get("contract_hash") != contract.contract_hash
+                or contract.protocol_ref != protocol_ref
+                or (task_id is not None and contract.task_id != str(task_id))
+                or full_runtime.get("missing_events") != []
+            ):
+                return []
+            receipts = bridge_signed_journal_to_receipts(
+                str(full_runtime["collector_root"]), contract=contract
+            )
+            required = {
+                ReceiptType.CODE_EXECUTION,
+                ReceiptType.METHOD_IDENTITY,
+                ReceiptType.SPLIT_LINEAGE,
+                ReceiptType.FIT_SCOPE,
+                ReceiptType.PREDICTION_SCOPE,
+                ReceiptType.EVALUATOR,
+                ReceiptType.SELECTION_FREEZE,
+            }
+            by_type = {receipt.receipt_type: receipt for receipt in receipts}
+            if not required <= set(by_type):
+                return []
+            metric = getattr(getattr(node, "metric", None), "value", None)
+            evaluator_metric = by_type[ReceiptType.EVALUATOR].payload.get(
+                "metric_value"
+            )
+            if metric is None or evaluator_metric is None or not math.isclose(
+                float(metric),
+                float(evaluator_metric),
+                rel_tol=1e-9,
+                abs_tol=1e-12,
+            ):
+                return []
+            return receipts
+        except (KeyError, TypeError, ValueError, OSError):
+            return []
+
     observation = getattr(node, "protocol_observation", None) or {}
     audit = getattr(node, "leakage_audit", None) or {}
     expected_code_sha256 = str(
@@ -448,6 +525,7 @@ def receipts_for_node(
     run_id: str,
     *,
     collector_host: TrustedCollectorHost | None = None,
+    task_id: str | None = None,
 ) -> list[Receipt]:
     if collector_host is None:
         receipts = _legacy_method_and_execution_receipts(node, protocol_ref, run_id)
@@ -457,7 +535,11 @@ def receipts_for_node(
         )
         receipts.extend(
             _trusted_runtime_protocol_receipts(
-                node, protocol_ref, run_id, collector_host
+                node,
+                protocol_ref,
+                run_id,
+                collector_host,
+                task_id=task_id,
             )
         )
     receipts.extend(_legacy_static_audit_receipts(node, protocol_ref, run_id))
@@ -472,6 +554,7 @@ def receipts_for_replay_source(
     run_id: str,
     *,
     collector_host: TrustedCollectorHost | None = None,
+    source_execution_verified: bool = False,
 ) -> list[Receipt]:
     proxy = type(
         "ReplayArtifact",
@@ -482,7 +565,9 @@ def receipts_for_replay_source(
             "method_fingerprint": code_sha256,
             "code_sha256_expected": code_sha256,
             "metric": None,
-            "exec_time": None,
+            # The loader may assert this only after checking the immutable
+            # source journal node, code hash, validity and target manifest.
+            "exec_time": 0.0 if source_execution_verified else None,
             "is_buggy": False,
             "is_valid": True,
             "leakage_audit": audit,

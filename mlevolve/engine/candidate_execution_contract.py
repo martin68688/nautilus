@@ -141,18 +141,16 @@ def build_candidate_execution_contract(
     }
     if not payload["contract_id"]:
         raise ValueError("An enabled candidate execution contract requires contract_id")
-    for field in (
-        "max_execution_seconds",
-        "max_epochs",
-        "max_cv_folds",
-        "max_trainable_models",
-    ):
-        if payload[field] <= 0:
-            raise ValueError(f"An enabled candidate execution contract requires {field} > 0")
-    if not payload["allowed_import_roots"]:
+    if payload["max_execution_seconds"] <= 0:
         raise ValueError(
-            "An enabled candidate execution contract requires allowed_import_roots"
+            "An enabled candidate execution contract requires "
+            "max_execution_seconds > 0"
         )
+    for field in ("max_epochs", "max_cv_folds", "max_trainable_models"):
+        if payload[field] < 0:
+            raise ValueError(
+                f"An enabled candidate execution contract requires {field} >= 0"
+            )
     if payload["allow_source_score_inheritance"]:
         raise ValueError(
             "Candidate execution contracts cannot authorize source-score inheritance"
@@ -272,6 +270,23 @@ def _looks_like_model_target(name: str) -> bool:
     return lowered in _MODEL_TARGETS or lowered.endswith(_MODEL_TARGET_SUFFIXES)
 
 
+def _looks_like_model_factory(name: str) -> bool:
+    """Return whether a locally defined function explicitly builds a model.
+
+    Assigning a feature helper result to a ``*_model`` variable is common in
+    generated code (for example ``pca_model = add_pca_features(...)``). The
+    target name alone is therefore not sufficient evidence that the call
+    constructs a trainable model. Locally defined functions are counted only
+    when their own name identifies them as a model factory; class constructors
+    and imported calls retain the existing conservative policy.
+    """
+
+    return _looks_like_model_target(name) or any(
+        marker in name.lower()
+        for marker in ("classifier", "regressor", "estimator", "network", "learner")
+    )
+
+
 def _assignment_parts(node: ast.Assign | ast.AnnAssign) -> tuple[list[str], ast.AST | None]:
     if isinstance(node, ast.Assign):
         names = [name for target in node.targets for name in _target_names(target)]
@@ -357,6 +372,16 @@ def audit_candidate_code(
     """Audit machine-checkable clauses before candidate execution."""
 
     violations: list[str] = []
+    # The legacy schema still carries method-policy fields so old manifests can
+    # be read and hash-verified, but they are no longer enforcement inputs.
+    # Candidate method choice belongs to the Agent; leakage is enforced by the
+    # Host Protocol data/evidence lifecycle instead.
+    epoch_cap = 0
+    cv_cap = 0
+    model_cap = 0
+    allow_remote_assets = True
+    allow_unverified_local_assets = True
+    allow_dataset_wide_per_sample_precompute = True
     unauthorized_imports: set[str] = set()
     remote_asset_refs: set[str] = set()
     epoch_violations: set[str] = set()
@@ -373,6 +398,12 @@ def audit_candidate_code(
         syntax_valid = False
         violations.append(f"syntax_error:{error.msg}:line_{error.lineno}")
 
+    local_function_names = {
+        node.name
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
             value = _literal_int(node.value, symbols)
@@ -387,16 +418,23 @@ def audit_candidate_code(
                     symbols[name] = value
 
     allowed_roots = set(contract.get("allowed_import_roots") or [])
+    enforce_import_allowlist = False
     stdlib_roots = set(getattr(sys, "stdlib_module_names", set())) | {"__future__"}
     saved_literal_paths: set[str] = set()
     load_literal_paths: list[str] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             roots = {alias.name.split(".", 1)[0] for alias in node.names}
-            unauthorized_imports |= roots - allowed_roots - stdlib_roots
+            if enforce_import_allowlist:
+                unauthorized_imports |= roots - allowed_roots - stdlib_roots
         elif isinstance(node, ast.ImportFrom):
             root = (node.module or "").split(".", 1)[0]
-            if node.level == 0 and root and root not in allowed_roots | stdlib_roots:
+            if (
+                enforce_import_allowlist
+                and node.level == 0
+                and root
+                and root not in allowed_roots | stdlib_roots
+            ):
                 unauthorized_imports.add(root)
         elif isinstance(node, (ast.Assign, ast.AnnAssign)):
             target_names, value = _assignment_parts(node)
@@ -405,12 +443,20 @@ def audit_candidate_code(
             ):
                 call_name = _model_constructor_call_name(value)
                 short_name = call_name.rsplit(".", 1)[-1].lower()
-                if short_name not in _NON_CONSTRUCTOR_CALLS:
+                local_call_name = call_name.rsplit(".", 1)[-1]
+                is_local_feature_helper = (
+                    local_call_name in local_function_names
+                    and not _looks_like_model_factory(local_call_name)
+                )
+                if (
+                    short_name not in _NON_CONSTRUCTOR_CALLS
+                    and not is_local_feature_helper
+                ):
                     model_constructor_sites.add(
                         f"line_{getattr(node, 'lineno', 0)}:{call_name or 'call'}"
                     )
         elif isinstance(node, ast.Constant) and isinstance(node.value, str):
-            if not contract.get("allow_remote_assets") and node.value.strip().lower().startswith(
+            if not allow_remote_assets and node.value.strip().lower().startswith(
                 ("http://", "https://")
             ):
                 remote_asset_refs.add(node.value.strip())
@@ -419,7 +465,7 @@ def audit_candidate_code(
             short_name = call_name.rsplit(".", 1)[-1]
             lowered_call = call_name.lower()
             lowered_short = short_name.lower()
-            if not contract.get("allow_dataset_wide_per_sample_precompute"):
+            if not allow_dataset_wide_per_sample_precompute:
                 if (
                     ("extract" in lowered_short and "feature" in lowered_short)
                     or lowered_short in _HANDCRAFTED_IMAGE_CALLS
@@ -427,7 +473,7 @@ def audit_candidate_code(
                     per_sample_feature_sites.add(
                         f"line_{getattr(node, 'lineno', 0)}:{call_name}"
                     )
-            if not contract.get("allow_remote_assets"):
+            if not allow_remote_assets:
                 if call_name in _REMOTE_CALLS or short_name == "from_pretrained":
                     remote_asset_refs.add(call_name)
                 for keyword in node.keywords:
@@ -441,19 +487,23 @@ def audit_candidate_code(
                         and keyword.value.value is None
                     ):
                         remote_asset_refs.add(f"{call_name}:weights")
-            if short_name in _CV_CONSTRUCTORS:
+            if cv_cap > 0 and short_name in _CV_CONSTRUCTORS:
                 folds = None
                 if node.args:
                     folds = _literal_int(node.args[0], symbols)
                 for keyword in node.keywords:
                     if keyword.arg in {"n_splits", "n_repeats"}:
                         folds = _literal_int(keyword.value, symbols)
-                if folds is None or folds > int(contract["max_cv_folds"]):
+                if folds is None or folds > cv_cap:
                     cv_violations.add(f"{call_name}:folds={folds or 'unknown'}")
             for keyword in node.keywords:
-                if keyword.arg and keyword.arg.lower() in _EPOCH_NAMES:
+                if (
+                    epoch_cap > 0
+                    and keyword.arg
+                    and keyword.arg.lower() in _EPOCH_NAMES
+                ):
                     epochs = _literal_int(keyword.value, symbols)
-                    if epochs is None or epochs > int(contract["max_epochs"]):
+                    if epochs is None or epochs > epoch_cap:
                         epoch_violations.add(
                             f"{call_name}:{keyword.arg}={epochs or 'unknown'}"
                         )
@@ -470,16 +520,16 @@ def audit_candidate_code(
             if targets & {"epoch", "epochs", "fold", "fold_idx", "fold_id"}:
                 if isinstance(node.iter, ast.Call) and _call_name(node.iter.func) == "range":
                     iterations = _range_iteration_count(node.iter, symbols)
-                    if targets & {"epoch", "epochs"} and (
+                    if epoch_cap > 0 and targets & {"epoch", "epochs"} and (
                         iterations is None
-                        or iterations > int(contract["max_epochs"])
+                        or iterations > epoch_cap
                     ):
                         epoch_violations.add(
                             f"epoch_loop_iterations={iterations or 'unknown'}"
                         )
-                    if targets & {"fold", "fold_idx", "fold_id"} and (
+                    if cv_cap > 0 and targets & {"fold", "fold_idx", "fold_id"} and (
                         iterations is None
-                        or iterations > int(contract["max_cv_folds"])
+                        or iterations > cv_cap
                     ):
                         cv_violations.add(
                             f"fold_loop_iterations={iterations or 'unknown'}"
@@ -487,7 +537,7 @@ def audit_candidate_code(
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             lowered_name = node.name.lower()
             if (
-                not contract.get("allow_dataset_wide_per_sample_precompute")
+                not allow_dataset_wide_per_sample_precompute
                 and "extract" in lowered_name
                 and "feature" in lowered_name
             ):
@@ -496,9 +546,9 @@ def audit_candidate_code(
                 )
 
     for name, value in symbols.items():
-        if name.lower() in _EPOCH_NAMES and value > int(contract["max_epochs"]):
+        if epoch_cap > 0 and name.lower() in _EPOCH_NAMES and value > epoch_cap:
             epoch_violations.add(f"{name}={value}")
-    if not contract.get("allow_unverified_local_assets"):
+    if not allow_unverified_local_assets:
         for literal in load_literal_paths:
             if literal not in saved_literal_paths:
                 local_asset_violations.add(literal)
@@ -517,7 +567,7 @@ def audit_candidate_code(
         violations.append(
             "unverified_local_loads:" + ",".join(sorted(local_asset_violations))
         )
-    if len(model_constructor_sites) > int(contract["max_trainable_models"]):
+    if model_cap > 0 and len(model_constructor_sites) > model_cap:
         violations.append(
             "trainable_model_cap:" + ",".join(sorted(model_constructor_sites))
         )
@@ -541,10 +591,12 @@ def audit_candidate_code(
             "epoch_cap_static_check": not epoch_violations,
             "cv_fold_cap_static_check": not cv_violations,
             "literal_local_loads_created_in_candidate": not local_asset_violations,
-            "trainable_model_cap_static_check": len(model_constructor_sites)
-            <= int(contract["max_trainable_models"]),
+            "trainable_model_cap_static_check": (
+                model_cap == 0 or len(model_constructor_sites) <= model_cap
+            ),
             "dataset_wide_per_sample_precompute_static_check": not per_sample_feature_sites,
             "deadline_host_enforced": True,
+            "method_design_not_restricted": True,
         },
         "host_enforced_max_execution_seconds": contract.get(
             "max_execution_seconds"

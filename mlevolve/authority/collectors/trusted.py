@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from ..models import ClaimType, ReceiptType
@@ -41,6 +42,13 @@ _POSITIVE_ACTUATION_CLAIMS = (
 _TERMINAL_PROTOCOL_EVIDENCE_SCHEMA = (
     "fixed_holdout_terminal_protocol_evidence_v1"
 )
+
+
+def _validated_execution_contract(payload: dict[str, Any]) -> dict[str, str]:
+    value = payload.get("execution_contract_hash")
+    if value in (None, ""):
+        return {}
+    return {"execution_contract_hash": require_sha256(payload, "execution_contract_hash")}
 
 
 def _validated_hash_mapping(payload: dict[str, Any], key: str) -> dict[str, str]:
@@ -128,6 +136,7 @@ def _validated_terminal_protocol_evidence(
         "stratified_random",
         "grouped",
         "chronological",
+        "deterministic_random",
     }:
         raise UntrustedObservationError(
             "terminal protocol evidence has an unknown canonical split strategy"
@@ -189,6 +198,7 @@ class CodeExecutionCollector(TrustedReceiptCollector):
             "executed_path": executed_path,
             "run_hash": run_hash,
             "execution_verified": True,
+            **_validated_execution_contract(payload),
         }
 
 
@@ -202,6 +212,7 @@ class MethodIdentityCollector(TrustedReceiptCollector):
             "method_fingerprint": require_sha256(payload, "method_fingerprint"),
             "code_sha256": require_sha256(payload, "code_sha256"),
             "method_identity_verified": True,
+            **_validated_execution_contract(payload),
         }
 
 
@@ -220,10 +231,16 @@ class SplitLineageCollector(TrustedReceiptCollector):
             "partition_lineage_verified": True,
             **_validated_protocol_evidence(payload),
             **_validated_terminal_protocol_evidence(payload),
+            **_validated_execution_contract(payload),
         }
         strategy = str(payload.get("split_strategy") or "")
         if strategy:
-            if strategy not in {"stratified_random", "grouped", "chronological"}:
+            if strategy not in {
+                "stratified_random",
+                "grouped",
+                "chronological",
+                "deterministic_random",
+            }:
                 raise UntrustedObservationError("unknown split strategy")
             output["split_strategy"] = strategy
         terminal_evidence = output.get("terminal_protocol_evidence") or {}
@@ -254,6 +271,12 @@ class SplitLineageCollector(TrustedReceiptCollector):
                 )
             output["future_to_past_count"] = 0
             output["chronological_order_verified"] = True
+        if strategy == "deterministic_random":
+            if payload.get("deterministic_partition_verified") is not True:
+                raise UntrustedObservationError(
+                    "deterministic random partition was not verified"
+                )
+            output["deterministic_partition_verified"] = True
         return output
 
 
@@ -272,6 +295,7 @@ class FitScopeCollector(TrustedReceiptCollector):
             "fit_scope_verified": True,
             **_validated_protocol_evidence(payload),
             **_validated_terminal_protocol_evidence(payload),
+            **_validated_execution_contract(payload),
         }
         fit_scope = str(payload.get("fit_scope") or "")
         if fit_scope:
@@ -310,6 +334,7 @@ class PredictionScopeCollector(TrustedReceiptCollector):
             "prediction_scope_verified": True,
             **_validated_protocol_evidence(payload),
             **_validated_terminal_protocol_evidence(payload),
+            **_validated_execution_contract(payload),
         }
 
 
@@ -332,10 +357,16 @@ class EvaluatorIntegrityCollector(TrustedReceiptCollector):
             "evaluator_integrity_verified": True,
             **_validated_protocol_evidence(payload),
             **_validated_terminal_protocol_evidence(payload),
+            **_validated_execution_contract(payload),
         }
         metric_name = str(payload.get("metric_name") or "")
         if metric_name:
             output["metric_name"] = metric_name
+        if payload.get("metric_value") is not None:
+            metric_value = float(payload["metric_value"])
+            if not math.isfinite(metric_value):
+                raise UntrustedObservationError("metric_value must be finite")
+            output["metric_value"] = metric_value
         terminal_evidence = output.get("terminal_protocol_evidence") or {}
         if terminal_evidence:
             if metric_name != terminal_evidence.get("metric_name"):
@@ -363,6 +394,7 @@ class SelectionFreezeCollector(TrustedReceiptCollector):
             "selection_freeze_verified": True,
             **_validated_protocol_evidence(payload),
             **_validated_terminal_protocol_evidence(payload),
+            **_validated_execution_contract(payload),
         }
 
 
@@ -548,6 +580,47 @@ class CounterfactualCollector(TrustedReceiptCollector):
                 {"contract_hash": contract_hash}, "contract_hash"
             )
         return output
+
+
+class CounterfactualObservationCollector(TrustedReceiptCollector):
+    """Attest an observer-only pair, including a confirmed no-change pair.
+
+    Unlike ``CounterfactualCollector`` this receipt does not claim positive
+    actuation or efficacy.  It only proves that the Host captured both frozen
+    generation arms and that the counterfactual arm was never executed.
+    """
+
+    receipt_type = ReceiptType.COUNTERFACTUAL_OBSERVATION
+    collector_id = "host.counterfactual_observation"
+    supports_claim_types = ()
+
+    def validated_payload(self, payload: dict[str, Any]) -> dict[str, Any]:
+        on_action = require_sha256(payload, "memory_on_action_hash")
+        off_action = require_sha256(payload, "memory_off_action_hash")
+        on_code = require_sha256(payload, "memory_on_code_hash")
+        off_code = require_sha256(payload, "memory_off_code_hash")
+        changed = payload.get("action_or_code_changed") is True
+        observed_changed = on_action != off_action or on_code != off_code
+        if changed != observed_changed:
+            raise UntrustedObservationError(
+                "counterfactual change flag does not match the observed hashes"
+            )
+        if payload.get("never_submitted_to_executor") is not True:
+            raise UntrustedObservationError(
+                "prospective counterfactual must remain observer-only"
+            )
+        return {
+            "pair_id": str(require_nonempty(payload, "pair_id")),
+            "control_hash": require_sha256(payload, "control_hash"),
+            "memory_payload_hash": require_sha256(payload, "memory_payload_hash"),
+            "memory_on_action_hash": on_action,
+            "memory_off_action_hash": off_action,
+            "memory_on_code_hash": on_code,
+            "memory_off_code_hash": off_code,
+            "action_or_code_changed": changed,
+            "never_submitted_to_executor": True,
+            "counterfactual_observed": True,
+        }
 
 
 class DerivationCollector(TrustedReceiptCollector):

@@ -5,9 +5,19 @@ import time
 from typing import cast
 
 from llm import FunctionSpec, query
+from engine.candidate_execution_contract import (
+    audit_candidate_code,
+    candidate_execution_contract_from_cfg,
+)
 from engine.search_node import SearchNode
+from authority.protocol_execution_contract import read_contract_artifact
+from protocol_runtime.preflight import static_compatibility_check
 from agents.prompts.validation_template_prompts import get_code_review_prompt
-from agents.prompts import get_internet_clarification
+from agents.prompts import (
+    get_impl_guideline_from_agent,
+    get_internet_clarification,
+    host_protocol_preflight_enabled,
+)
 
 from agents.coder.diff_coder import SearchReplacePatcher
 
@@ -60,6 +70,38 @@ CODE_REVIEW_SPEC = FunctionSpec(
 )
 
 
+def _deterministic_contract_audit(agent, code: str) -> dict | None:
+    """Run the same machine-checkable Host feasibility audit before review."""
+
+    try:
+        contract = candidate_execution_contract_from_cfg(agent.cfg)
+        if contract is not None:
+            return audit_candidate_code(code, contract)
+        preflight = getattr(getattr(agent, "acfg", None), "protocol_preflight", None)
+        contract_path = str(getattr(preflight, "contract_path", "") or "")
+        if preflight is not None and getattr(preflight, "enabled", False) and contract_path:
+            static_report = static_compatibility_check(
+                code, read_contract_artifact(contract_path)
+            )
+            issues = list(static_report.get("violations") or [])
+            issues.extend(
+                "missing_full_runtime_coverage:" + str(value)
+                for value in static_report.get(
+                    "missing_full_runtime_coverage", []
+                )
+            )
+            return {
+                "valid": not bool(issues),
+                "violations": issues,
+                "code_sha256": static_report.get("code_sha256"),
+                "contract_hash": static_report.get("contract_hash"),
+            }
+        return None
+    except (AttributeError, TypeError, ValueError) as error:
+        logger.warning("Deterministic Host Contract review unavailable: %s", error)
+        return None
+
+
 def run(agent, node: SearchNode) -> str:
     logger.debug(f"[review] node {node.id}")
 
@@ -67,13 +109,27 @@ def run(agent, node: SearchNode) -> str:
         task_desc=agent.task_desc,
         code=node.code,
     )
-    internet_clarification = get_internet_clarification(getattr(agent.cfg, "pretrain_model_dir", ""))
     if "Instructions" not in prompt:
         prompt["Instructions"] = {}
-    if "Implementation guideline" in prompt["Instructions"]:
-        prompt["Instructions"]["Implementation guideline"].extend(internet_clarification)
-    else:
-        prompt["Instructions"]["⚠️ Internet Access Clarification"] = internet_clarification
+    prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
+    deterministic_audit = _deterministic_contract_audit(agent, node.code)
+    if deterministic_audit and deterministic_audit.get("violations"):
+        prompt["Instructions"][
+            "DETERMINISTIC HOST CONTRACT AUDIT - HIGHEST PRIORITY"
+        ] = [
+            "The Host static checker has already rejected this exact code. Set needs_revision=true and repair every listed violation; do not approve unchanged code.",
+            "Exact violations: "
+            + "; ".join(deterministic_audit["violations"]),
+            "Preserve the method, model family, metric, folds, ensembles, epochs, and training design. Repair only the listed leakage or Host-lifecycle violations.",
+            "Do not evade the checker through variable renaming; change the actual violating operation.",
+        ]
+    if not host_protocol_preflight_enabled(agent):
+        internet_clarification = get_internet_clarification(
+            getattr(agent.cfg, "pretrain_model_dir", "")
+        )
+        prompt["Instructions"]["Implementation guideline"].extend(
+            internet_clarification
+        )
 
     use_diff_for_review = agent.acfg.use_diff_mode
     max_retries = 3

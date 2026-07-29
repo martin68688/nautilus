@@ -83,8 +83,12 @@ def log_adoption(
     if not ref_ids:
         return
     layer = getattr(agent, "external_skill_memory", None)
-    visibility_pack = None
-    if layer is not None:
+    visibility_pack = (
+        getattr(agent, "methodology_visibility_pack", None)
+        if source == "methodology"
+        else None
+    )
+    if visibility_pack is None and layer is not None:
         getter = getattr(layer, "current_visibility_pack", None)
         if callable(getter):
             visibility_pack = getter()

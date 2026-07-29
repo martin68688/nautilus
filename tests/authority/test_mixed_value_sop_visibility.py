@@ -55,6 +55,22 @@ def test_mixed_value_debug_retains_repair_and_warning_without_score(tmp_path) ->
     assert MIXED_SOP_ID in {
         candidate["id"] for candidate in pack["direct_sop_candidates"]
     }
+    observer_rows = visibility.visibility_trace[
+        "raw_shadow_authority_decisions"
+    ]
+    by_clause = {row["clause_id"]: row for row in observer_rows}
+    assert set(by_clause) == {
+        REPAIR_CLAUSE_ID,
+        AUDIT_CLAUSE_ID,
+        SCORE_CLAUSE_ID,
+    }
+    # The score Claim is outside the clause's declared DEBUG scope, but the
+    # prospective observer must still produce a real Authority decision for
+    # that raw Claim-use.  This observation does not make it Prompt-visible.
+    score_observation = by_clause[SCORE_CLAUSE_ID]
+    assert score_observation["decision_id"] in engine.decisions
+    assert score_observation["outcome"]
+    assert SCORE_CLAUSE_ID in visibility.suppressed_clause_refs
 
 
 def test_mixed_value_rank_has_no_embedding_rrf_prompt_or_token_influence(tmp_path) -> None:

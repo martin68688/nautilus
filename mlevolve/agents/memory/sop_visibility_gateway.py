@@ -18,6 +18,7 @@ from authority.actuation import ExperienceContractCompiler
 from authority.domain_scope import canonical_domain, transfer_is_compatible
 from authority.models import (
     AuthorityDecision,
+    AuthorityRequest,
     ClaimType,
     Operation,
     SOPClauseV1,
@@ -26,7 +27,12 @@ from authority.models import (
     canonical_operation,
 )
 from authority.protocol_registry import canonical_json
-from authority.stage_ontology import GenerationStage, GovernanceStage
+from authority.stage_ontology import (
+    GenerationStage,
+    GovernanceStage,
+    StageAxes,
+    legacy_decision_stage_value,
+)
 
 
 VISIBILITY_MODES = {"off", "shadow", "enforce"}
@@ -615,6 +621,111 @@ class SOPVisibilityGateway:
                 claim_types=clause.claim_types,
             )
 
+    def _raw_shadow_authority_observations(
+        self,
+        clause: SOPClauseV1,
+        request: VisibilityRequest,
+    ) -> list[dict[str, Any]]:
+        """Observe every raw Claim-use without changing Prompt visibility.
+
+        Clause publication and declared operation/stage scope are Prompt-gate
+        concerns.  The prospective observer must still ask Authority what would
+        happen to each raw Claim under the actual request context, including a
+        Claim that the Prompt gate subsequently rejects for a scope mismatch.
+        """
+
+        graph = getattr(self.authority_engine, "graph", None)
+        claims = getattr(graph, "claims", {}) if graph is not None else {}
+        observations: list[dict[str, Any]] = []
+        for claim_ref in clause.claim_refs:
+            claim = claims.get(claim_ref)
+            declared_types = sorted(set(clause.claim_types))
+            claim_type = (
+                str(claim.claim_type.value)
+                if claim is not None
+                else (declared_types[0] if len(declared_types) == 1 else "")
+            )
+            artifact_id = (
+                str(claim.subject_artifact_id)
+                if claim is not None
+                else (
+                    str(clause.source_artifact_refs[0])
+                    if len(clause.source_artifact_refs) == 1
+                    else ""
+                )
+            )
+            base = {
+                "clause_id": clause.clause_id,
+                "claim_id": str(claim_ref),
+                "claim_type": claim_type,
+                "operation": request.operation.value,
+                "decision_stage": legacy_decision_stage_value(
+                    StageAxes(
+                        request.generation_stage,
+                        request.governance_stage,
+                    )
+                ),
+                "generation_stage": request.generation_stage.value,
+                "governance_stage": request.governance_stage.value,
+                "protocol_ref": request.active_protocol.key(),
+                "task_id": request.task_context.task_id,
+            }
+            if self.authority_engine is None:
+                observations.append(
+                    {
+                        **base,
+                        "decision_id": "",
+                        "outcome": "observer_unavailable",
+                        "allowed": False,
+                        "reason_codes": ["authority_engine_unavailable"],
+                        "missing_obligations": ["authority_engine"],
+                        "blocking_receipts": [],
+                    }
+                )
+                continue
+            try:
+                decision = self.authority_engine.authorize(
+                    AuthorityRequest(
+                        artifact_id=artifact_id,
+                        claim_id=str(claim_ref),
+                        operation=request.operation,
+                        decision_stage=None,
+                        active_protocol=request.active_protocol,
+                        task_context=request.task_context,
+                        requesting_component=(
+                            f"{request.requesting_component}:raw_shadow_observer"
+                        ),
+                        generation_stage=request.generation_stage,
+                        governance_stage=request.governance_stage,
+                    )
+                )
+                observations.append(
+                    {
+                        **base,
+                        "decision_id": decision.decision_id,
+                        "outcome": decision.outcome.value,
+                        "allowed": decision.allowed,
+                        "reason_codes": list(decision.reason_codes),
+                        "missing_obligations": list(decision.missing_obligations),
+                        "blocking_receipts": list(decision.blocking_receipts),
+                    }
+                )
+            except Exception as error:
+                observations.append(
+                    {
+                        **base,
+                        "decision_id": "",
+                        "outcome": "observer_error",
+                        "allowed": False,
+                        "reason_codes": [
+                            f"authority_observer_error:{type(error).__name__}"
+                        ],
+                        "missing_obligations": ["authority_observer_decision"],
+                        "blocking_receipts": [],
+                    }
+                )
+        return observations
+
     @staticmethod
     def _flat_domain_decision(
         clause: SOPClauseV1,
@@ -754,7 +865,11 @@ class SOPVisibilityGateway:
         decision_refs: list[str] = []
         request_enforced = self.should_enforce(request)
         reference_exact_decisions: dict[str, ClauseGateDecision] = {}
+        raw_shadow_authority_decisions: list[dict[str, Any]] = []
         for clause in clauses:
+            raw_shadow_authority_decisions.extend(
+                self._raw_shadow_authority_observations(clause, request)
+            )
             if self.mode == "off":
                 decision = ClauseGateDecision(
                     clause.clause_id,
@@ -948,6 +1063,13 @@ class SOPVisibilityGateway:
             "budget_suppressed_clause_refs": sorted(budget_suppressed),
             "suppressed_clause_refs": sorted(
                 set(suppressed) | set(budget_suppressed)
+            ),
+            "raw_shadow_authority_decisions": sorted(
+                raw_shadow_authority_decisions,
+                key=lambda item: (
+                    str(item.get("clause_id") or ""),
+                    str(item.get("claim_id") or ""),
+                ),
             ),
             "clause_decisions": {
                 clause_id: {

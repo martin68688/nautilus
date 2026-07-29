@@ -100,6 +100,14 @@ def file_sha256(path: Path) -> str:
 
 def display_path(path: Path, *, base: Path = REPO) -> str:
     """Return a stable readable path even when artifacts live outside this clone."""
+    # Preserve a path that is lexically inside the frozen source tree before
+    # resolving symlinks. Curated run directories intentionally symlink to a
+    # read-only corpus during build, while runtime remounts the exact replay
+    # journals at the same repo-relative locations.
+    absolute_path = path if path.is_absolute() else path.absolute()
+    absolute_base = base if base.is_absolute() else base.absolute()
+    if absolute_path.is_relative_to(absolute_base):
+        return str(absolute_path.relative_to(absolute_base))
     try:
         return str(path.resolve().relative_to(base.resolve()))
     except ValueError:
@@ -229,6 +237,19 @@ def canonical_task_id(task_id: str) -> str:
     value = str(task_id or "").strip()
     while value.startswith("full-"):
         value = value[len("full-") :]
+    # Experiment names commonly append rollout/memory labels to the benchmark
+    # ID (for example ``...-host-shadow-r7``) or prepend an orchestration label
+    # (for example ``same-task-memory-bcc1c73b-...``). Keep the raw run ID for
+    # provenance, but place every node in the canonical task-local forest.
+    known_tasks = (
+        "aerial-cactus-identification",
+        "denoising-dirty-documents",
+        "leaf-classification",
+        "new-york-city-taxi-fare-prediction",
+    )
+    for known_task in known_tasks:
+        if known_task in value:
+            return known_task
     return value or "unknown"
 
 
@@ -1064,7 +1085,11 @@ def build_artifact(
                 for sop in sops
             ),
             "journal_count": len(journals),
-            "source_runs": sorted({run_short_id(run_id) for run_id, _path, _journal in journals}),
+            # Full run IDs are required because different tasks can legitimately
+            # start in the same second (for example two 20260716_040229 runs).
+            # Collapsing to the timestamp prefix under-counts provenance and
+            # makes two independent task trees look like one source run.
+            "source_runs": sorted({run_id for run_id, _path, _journal in journals}),
             "allowlist": provenance.get("allowed_run_ids", []) if provenance else [],
             "allowlist_hash": provenance.get("hash", "") if provenance else "",
             "allowlist_path": (
@@ -1121,7 +1146,7 @@ def build_artifact(
         "positive_admission_enforced": graph["meta"]["positive_admission_enforced"],
         "paper_grade_provenance": graph["meta"]["paper_grade"],
         "leak_verified": graph["meta"]["leak_verified"],
-        "source_runs": sorted({run_short_id(run_id) for run_id, _path, _journal in journals}),
+        "source_runs": sorted({run_id for run_id, _path, _journal in journals}),
         "allowlist_path": graph["meta"]["allowlist_path"],
         "allowlist_hash": graph["meta"]["allowlist_hash"],
         "allowlist": graph["meta"]["allowlist"],

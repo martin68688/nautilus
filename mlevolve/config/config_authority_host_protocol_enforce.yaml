@@ -1,0 +1,31 @@
+extends: config_authority_canary_enforce.yaml
+
+# This profile is a launcher template, not cluster authorization. Every empty
+# binding must be frozen to a new run root before enforce execution.
+evaluation_authority:
+  mode: enforce
+  rollout_id: host-protocol-enforce-v1
+  runtime_protocol_observer_enabled: true
+  protocol_runtime_mode: host_sdk_enforce
+  protocol_runtime_artifact_root: ""
+
+agent:
+  # The Host Receipt is the enforcing authority.  The historical AST/LLM
+  # leakage observer remains diagnostic-only and cannot mutate or kill nodes.
+  protocol_repair:
+    enabled: false
+  protocol_preflight:
+    enabled: true
+    repair_enabled: false
+    max_repair_attempts: 1
+    binding_path: ${oc.env:MLEVOLVE_HOST_PROTOCOL_BINDING}
+    legacy_ast_mode: shadow
+    report_root: ""
+    expected_contract_hash: ""
+    contract_path: ""
+    data_view_manifest_path: ""
+    image_digest: ""
+    sdk_hash: ""
+    collector_private_key_path: ${oc.env:MLEVOLVE_HOST_COLLECTOR_KEY_FILE}
+    candidate_uid: 65534
+    consume_collector_private_key: true

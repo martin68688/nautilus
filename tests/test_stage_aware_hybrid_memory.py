@@ -623,6 +623,36 @@ def test_baseline_and_reproduction_roles_bypass_hybrid():
     assert layer.calls == 1
 
 
+def test_replacement_draft_retrieves_as_novel_exploration():
+    from agents.memory.external_skill_memory import fetch_external_skill_memory
+
+    class RoleCapturingHybrid:
+        mode = "run_forest_stage_hybrid"
+        source_name = "run_forest_stage_hybrid_memory"
+
+        def __init__(self):
+            self.roles = []
+
+        def retrieve_for_node(self, **kwargs):
+            self.roles.append(kwargs.get("draft_role"))
+            return "replacement memory", ["replacement-ref"]
+
+    layer = RoleCapturingHybrid()
+    agent = SimpleNamespace(
+        external_skill_memory=layer,
+        cfg=SimpleNamespace(exp_id="task"),
+        task_desc="task description",
+    )
+
+    text, refs, _source = fetch_external_skill_memory(
+        agent, "draft", draft_role="replacement_draft"
+    )
+
+    assert text == "replacement memory"
+    assert refs == ["replacement-ref"]
+    assert layer.roles == ["novel_exploration"]
+
+
 def test_hybrid_trace_is_thread_local_and_logged_on_node(tmp_path):
     from agents.adoption import log_adoption
 

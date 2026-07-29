@@ -7,12 +7,13 @@ from .evidence_graph import EvidenceGraph
 from .ledger import AuthorityLedger
 from .models import (
     AuthorityDecision,
+    AuthorityReasonCode,
     AuthorityRequest,
     AuthorityScope,
     DecisionOutcome,
     Operation,
 )
-from .policy import failure_outcome
+from .policy import failure_outcome, is_high_risk
 from .protocol_compiler import ProtocolCompiler
 from .protocol_registry import ProtocolRegistry
 
@@ -50,6 +51,63 @@ def _claim_task_scope_matches(claim_scope: dict, request_context) -> bool:
         and request_context.task_family not in task_families
         and "general" not in task_families
     )
+
+
+def _failure_diagnostics(
+    missing: list[str],
+    blockers: list[str],
+    *,
+    protocol_mismatch: bool,
+) -> dict:
+    missing_receipts = sorted(
+        {
+            value.split(":", 1)[1]
+            for value in missing
+            if value.startswith(("receipt:", "trusted_receipt:"))
+            and ":" in value
+        }
+    )
+    missing_payloads = sorted(
+        {value.split(":", 1)[1] for value in missing if value.startswith("payload:")}
+    )
+    if protocol_mismatch:
+        reason = AuthorityReasonCode.CONTRACT_MISMATCH
+        component = "protocol_registry"
+        repairable = False
+    elif blockers:
+        reason = AuthorityReasonCode.PROTOCOL_VIOLATION
+        component = "candidate_protocol_execution"
+        repairable = False
+    elif any(
+        value.startswith("trusted_receipt:") and value != "trusted_receipt:any"
+        for value in missing
+    ):
+        reason = AuthorityReasonCode.UNTRUSTED_EVIDENCE
+        component = "evidence_source"
+        repairable = True
+    elif any(
+        value.startswith(("receipt:", "payload:", "count:", "distinct:"))
+        or value in {"complete_evidence_path", "trusted_receipt:any"}
+        for value in missing
+    ):
+        reason = AuthorityReasonCode.MISSING_EVIDENCE
+        component = "evidence_collector"
+        repairable = True
+    else:
+        reason = AuthorityReasonCode.PROTOCOL_VIOLATION
+        component = "claim_or_request"
+        repairable = False
+    return {
+        "reason_codes": [reason.value],
+        "responsible_component": component,
+        "repairable": repairable,
+        "missing_receipts": missing_receipts,
+        "missing_payloads": missing_payloads,
+        "diagnostics": {
+            "legacy_missing_obligations": sorted(set(missing)),
+            "legacy_blocking_receipts": sorted(set(blockers)),
+        },
+    }
 
 
 class AuthorityEngine:
@@ -114,10 +172,35 @@ class AuthorityEngine:
                 generation_stages=[request.generation_stage.value],
                 governance_stages=[request.governance_stage.value],
             )
+            failure_diagnostics = {
+                "reason_codes": [],
+                "responsible_component": "",
+                "repairable": False,
+                "missing_receipts": [],
+                "missing_payloads": [],
+                "diagnostics": {},
+            }
         else:
             outcome, required_action = failure_outcome(
                 request.operation, protocol_mismatch=protocol_mismatch, blockers=bool(blockers)
             )
+            failure_diagnostics = _failure_diagnostics(
+                missing, blockers, protocol_mismatch=protocol_mismatch
+            )
+            reason = failure_diagnostics["reason_codes"][0]
+            if is_high_risk(request.operation):
+                if reason == AuthorityReasonCode.MISSING_EVIDENCE.value:
+                    outcome = DecisionOutcome.REQUIRE_REPLAY
+                    required_action = "collect the missing trusted evidence before retrying"
+                elif reason == AuthorityReasonCode.UNTRUSTED_EVIDENCE.value:
+                    outcome = DecisionOutcome.QUARANTINE
+                    required_action = "quarantine untrusted evidence and replay through a Host collector"
+                elif reason == AuthorityReasonCode.CONTRACT_MISMATCH.value:
+                    outcome = DecisionOutcome.REQUIRE_HUMAN_REVIEW
+                    required_action = "review or recompile the immutable Execution Contract"
+                elif reason == AuthorityReasonCode.PROTOCOL_VIOLATION.value:
+                    outcome = DecisionOutcome.DENY
+                    required_action = "correct the protocol violation before retrying"
             permitted_scope = None
         decision = AuthorityDecision(
             decision_id=uuid.uuid4().hex,
@@ -134,6 +217,7 @@ class AuthorityEngine:
             decision_stage=request.decision_stage.value,
             generation_stage=request.generation_stage.value,
             governance_stage=request.governance_stage.value,
+            **failure_diagnostics,
         )
         if self.ledger:
             self.ledger.append(
@@ -153,11 +237,14 @@ class AuthorityEngine:
             Operation.INSPECT,
             Operation.DEBUG_HYPOTHESIS,
         }
+        high_risk = is_high_risk(request.operation)
         decision = AuthorityDecision(
             decision_id=uuid.uuid4().hex,
             outcome=(
                 DecisionOutcome.ALLOW_WITH_WARNING
                 if navigation_only
+                else DecisionOutcome.QUARANTINE
+                if high_risk
                 else DecisionOutcome.DENY
             ),
             permitted_scope=None,
@@ -177,6 +264,10 @@ class AuthorityEngine:
             decision_stage=request.decision_stage.value,
             generation_stage=request.generation_stage.value,
             governance_stage=request.governance_stage.value,
+            reason_codes=[AuthorityReasonCode.COLLECTOR_INTERNAL_ERROR.value],
+            responsible_component="authority_engine",
+            repairable=False,
+            diagnostics={"error_type": error_type},
         )
         self.decisions[decision.decision_id] = decision
         if self.ledger:

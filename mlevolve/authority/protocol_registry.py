@@ -47,6 +47,12 @@ class ProtocolRegistry:
 
     def load_directory(self, directory: Path) -> None:
         for path in sorted(directory.glob("*.json")):
+            # A macOS-created archive can materialize hidden AppleDouble
+            # sidecars (``._protocol.json``) when extracted on Linux. They are
+            # metadata, not Protocol specs. Visible malformed JSON still fails
+            # closed on the read/parse below.
+            if path.name.startswith(".") or not path.is_file() or path.is_symlink():
+                continue
             payload = json.loads(path.read_text(encoding="utf-8"))
             self.register(ProtocolSpec(**payload))
 
@@ -74,3 +80,10 @@ class ProtocolRegistry:
 
     def refs(self) -> list[ProtocolRef]:
         return [spec.ref() for spec in self._specs.values()]
+
+    def compile_execution_contract(self, protocol: str | ProtocolRef, **kwargs):
+        """Compile via a lazy import so registry/model compatibility stays acyclic."""
+
+        from .protocol_execution_contract import compile_protocol_execution_contract
+
+        return compile_protocol_execution_contract(self.resolve(protocol), **kwargs)

@@ -8,6 +8,8 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "mlevolve"))
 
 from engine.run_control import (  # noqa: E402
+    draft_execution_lane,
+    focused_outcome_context,
     focused_protocol_status,
     focused_protocol_success_error,
     should_continue_focused_search,
@@ -88,6 +90,103 @@ def test_exhausted_focused_protocol_fails_job_outcome():
         status=status,
         focus_in_flight=False,
     ) is False
+
+
+def test_failed_focused_role_is_encoded_before_run_raises():
+    missing = focused_protocol_status([], "memory_transfer")
+    complete, reason = focused_outcome_context("memory_transfer", missing)
+    assert complete is False
+    assert reason.startswith("focused_role_incomplete:")
+    assert "never created" in reason
+
+    clean = focused_protocol_status(
+        [_node(state="completed", ctime=1, role="memory_transfer", clean=True)],
+        "memory_transfer",
+    )
+    assert focused_outcome_context("memory_transfer", clean) == (True, "")
+
+
+def test_clean_focused_execution_does_not_require_a_repair_transaction():
+    missing = focused_protocol_status([], "memory_transfer")
+    assert focused_outcome_context(
+        "memory_transfer",
+        missing,
+        require_protocol_repair=False,
+    ) == (False, "")
+
+
+def test_preexecution_blocked_draft_is_routed_only_to_repair_lane():
+    blocked = SimpleNamespace(
+        id="blocked-draft",
+        pending_execution=False,
+        audit_repair_required=True,
+    )
+    executable = SimpleNamespace(
+        id="executable-draft",
+        pending_execution=True,
+        audit_repair_required=False,
+    )
+    assert draft_execution_lane(blocked) == "repair"
+    assert draft_execution_lane(executable) == "execute"
+
+    invalid = SimpleNamespace(
+        id="invalid-draft",
+        pending_execution=False,
+        audit_repair_required=False,
+    )
+    try:
+        draft_execution_lane(invalid)
+    except RuntimeError as error:
+        assert "neither executable nor repair-queued" in str(error)
+    else:
+        raise AssertionError("invalid generated Draft must fail closed")
+
+
+def test_focused_status_tracks_ordinary_leakage_repair_until_exhaustion():
+    first = SimpleNamespace(
+        ctime=1,
+        draft_role="memory_transfer",
+        protocol_repair={},
+        leakage_audit={"status": "blocked", "repair_queue_status": "queued"},
+        leakage_repair_attempt=0,
+        audit_repair_required=True,
+        is_terminal=False,
+    )
+    pending = focused_protocol_status([first], "memory_transfer")
+    assert pending.seen is True
+    assert pending.repair_kind == "leakage"
+    assert pending.active is True
+
+    second = SimpleNamespace(
+        ctime=2,
+        draft_role="memory_transfer",
+        protocol_repair={},
+        leakage_audit={"status": "blocked", "repair_queue_status": "exhausted"},
+        leakage_repair_attempt=2,
+        audit_repair_required=True,
+        is_terminal=True,
+    )
+    exhausted = focused_protocol_status([first, second], "memory_transfer")
+    assert exhausted.state == "exhausted"
+    assert exhausted.active is False
+    assert "state=exhausted" in focused_protocol_success_error(exhausted)
+
+
+def test_focused_status_accepts_clean_ordinary_leakage_repair():
+    clean = SimpleNamespace(
+        ctime=2,
+        draft_role="memory_transfer",
+        protocol_repair={},
+        leakage_audit={"status": "clean", "rank_eligible": True},
+        leakage_repair_attempt=1,
+        audit_repair_required=False,
+        is_terminal=False,
+        replay_status="mandatory_audit_repair_executed_clean",
+        metric=SimpleNamespace(value=0.1),
+    )
+    status = focused_protocol_status([clean], "memory_transfer")
+    assert status.state == "completed"
+    assert focused_protocol_success_error(status) is None
 
 
 def _fixed_role_agent():

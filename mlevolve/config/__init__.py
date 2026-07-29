@@ -91,6 +91,24 @@ class ProtocolRepairConfig:
     stage_generation_timeout_seconds: int = 300
     stage_generation_backend_retries: int = 2
     require_runtime_provenance: bool = True
+
+
+@dataclass
+class ProtocolPreflightConfig:
+    enabled: bool = False
+    repair_enabled: bool = False
+    max_repair_attempts: int = 1
+    binding_path: str = ""
+    legacy_ast_mode: str = "enforce"
+    report_root: str = ""
+    expected_contract_hash: str = ""
+    contract_path: str = ""
+    data_view_manifest_path: str = ""
+    image_digest: str = ""
+    sdk_hash: str = ""
+    collector_private_key_path: str = ""
+    candidate_uid: int = 65534
+    consume_collector_private_key: bool = True
     
 
 @dataclass
@@ -98,6 +116,8 @@ class SearchConfig:
     max_debug_depth: int
     debug_prob: float
     num_drafts: int
+    replacement_drafts_enabled: bool
+    max_replacement_drafts: int
     metric_improvement_threshold: float
     back_debug_depth: int
     num_bugs: int
@@ -152,6 +172,9 @@ class AgentConfig:
         default_factory=CandidateExecutionContractConfig
     )
     protocol_repair: ProtocolRepairConfig = field(default_factory=ProtocolRepairConfig)
+    protocol_preflight: ProtocolPreflightConfig = field(
+        default_factory=ProtocolPreflightConfig
+    )
 @dataclass
 class ExecConfig:
     timeout: int
@@ -185,6 +208,16 @@ class AdoptionTrackingConfig:
     enable: bool = False          # 默认关：记账与分析全 no-op，run 行为与今天一致
     enable_analysis: bool = True  # enable=True 时是否在 run 末尾跑分析
     judge_mode: str = "keyword"   # "keyword" | "llm" | "llm-all" | "hybrid"
+    analysis_timeout_seconds: int = 300
+
+
+@dataclass
+class ProspectiveAuditConfig:
+    enabled: bool = False
+    allow_pending_counterfactual: bool = False
+    counterfactual_timeout_seconds: int = 300
+    counterfactual_generation_attempts: int = 2
+    counterfactual_memory_max_chars: int = 12000
 
 
 @dataclass
@@ -210,6 +243,8 @@ class EvaluationAuthorityConfig:
     emit_snapshot: bool = True
     enable_causal_actuation: bool = False
     runtime_protocol_observer_enabled: bool = True
+    protocol_runtime_mode: str = "legacy_ast"
+    protocol_runtime_artifact_root: str = ""
 
 
 @dataclass
@@ -241,6 +276,7 @@ class ExternalSkillMemoryConfig:
     enable_agentic: bool = False
     navigator_max_steps: int = 3
     navigator_reference_budget: int = 1200
+    selector_max_tokens: int = 1800
     top_k: int = 8
     depth: int = 2
     beam_width: int = 3
@@ -260,6 +296,8 @@ class ExternalSkillMemoryConfig:
     stage_quotas: dict = field(default_factory=dict)
     rrf_weights: dict = field(default_factory=dict)
     blocked_run_prefixes: list[str] = field(default_factory=list)
+    positive_control_probe_path: str = ""
+    positive_control_force_raw: bool = False
 
 
 @dataclass
@@ -312,10 +350,12 @@ class Config(Hashable):
 
     methodology_kb_path: str = ""
     methodology_dynamic: bool = False
+    finalize_reserve_seconds: int = 900
     use_grading_server: bool = True
     init_solution: InitSolutionConfig = field(default_factory=InitSolutionConfig)
     fixed_holdout: FixedHoldoutConfig = field(default_factory=FixedHoldoutConfig)
     adoption_tracking: AdoptionTrackingConfig = field(default_factory=AdoptionTrackingConfig)
+    prospective_audit: ProspectiveAuditConfig = field(default_factory=ProspectiveAuditConfig)
     evaluation_authority: EvaluationAuthorityConfig = field(default_factory=EvaluationAuthorityConfig)
     external_skill_memory: ExternalSkillMemoryConfig = field(default_factory=ExternalSkillMemoryConfig)
     run_identity: RunIdentityConfig = field(default_factory=RunIdentityConfig)
@@ -489,6 +529,63 @@ def load_cfg(path: Path | None = None) -> Config:
 
 
 def prep_cfg(cfg: Config):
+    if cfg.agent.protocol_preflight.enabled:
+        from protocol_runtime.activation import hash_sdk_tree, load_host_protocol_binding
+
+        preflight = cfg.agent.protocol_preflight
+        runtime_image_digest = os.environ.get(
+            "MLEVOLVE_RUNTIME_IMAGE_DIGEST", ""
+        ).strip()
+        if not runtime_image_digest:
+            raise ValueError(
+                "Host Protocol activation requires MLEVOLVE_RUNTIME_IMAGE_DIGEST"
+            )
+        runtime_sdk_hash = hash_sdk_tree(
+            Path(__file__).resolve().parents[1] / "protocol_runtime"
+        )
+        binding = load_host_protocol_binding(
+            preflight.binding_path,
+            expected_task_id=str(cfg.exp_id or ""),
+            expected_image_digest=runtime_image_digest,
+            expected_sdk_hash=runtime_sdk_hash,
+        )
+        runtime_mode = str(
+            getattr(cfg.evaluation_authority, "protocol_runtime_mode", "") or ""
+        )
+        if runtime_mode not in {"host_sdk_shadow", "host_sdk_enforce"}:
+            raise ValueError(
+                "Host Protocol Preflight requires a host_sdk_shadow or "
+                "host_sdk_enforce runtime mode"
+            )
+        if str(preflight.legacy_ast_mode or "") != "shadow":
+            raise ValueError(
+                "Host Protocol Preflight requires legacy_ast_mode=shadow"
+            )
+        if cfg.agent.protocol_repair.enabled:
+            raise ValueError(
+                "Host Protocol Preflight requires legacy protocol_repair.enabled=false"
+            )
+        preflight.report_root = binding["report_root"]
+        preflight.expected_contract_hash = binding["contract_hash"]
+        preflight.contract_path = binding["contract_path"]
+        preflight.data_view_manifest_path = binding["data_view_manifest_path"]
+        preflight.image_digest = binding["image_digest"]
+        preflight.sdk_hash = binding["sdk_hash"]
+        if not str(preflight.collector_private_key_path or "").strip():
+            raise ValueError(
+                "Host Protocol activation requires collector_private_key_path"
+            )
+        cfg.evaluation_authority.protocol_runtime_artifact_root = binding[
+            "runtime_artifact_root"
+        ]
+        # Shadow validates and dry-runs the frozen Host views without changing
+        # the Candidate's historical input surface.  Only a separately approved
+        # enforce canary may replace data_dir with the terminal-blind Host root.
+        if runtime_mode == "host_sdk_enforce":
+            cfg.data_dir = binding["data_view_root"]
+        if not cfg.desc_file:
+            cfg.desc_file = binding["description_path"]
+
     if cfg.data_dir is None:
         raise ValueError("`data_dir` must be provided.")
 

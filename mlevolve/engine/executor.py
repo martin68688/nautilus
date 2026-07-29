@@ -35,12 +35,37 @@ from engine.candidate_execution_contract import (
     build_candidate_execution_block_receipt,
     candidate_execution_contract_from_cfg,
 )
+from protocol_runtime.preflight import validate_preflight_admission
+from authority.protocol_execution_contract import read_contract_artifact
+from authority.protocol_registry import ProtocolRegistry
+from protocol_runtime.collector import HostCollectorIdentity
+from protocol_runtime.full_runtime import FullRuntimeEvidenceController
+from protocol_runtime.preflight import (
+    ProtocolPreflightRunner,
+    admission_report_path,
+)
 
 logger = logging.getLogger("MLEvolve")
 
 
-def _execution_environment() -> dict[str, str]:
-    """Expose mlevolve's internal runtime helpers to isolated runfiles."""
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _execution_environment(runtime_cache_root: Path | None = None) -> dict[str, str]:
+    """Expose runtime helpers and a writable cache home to isolated runfiles.
+
+    Enforcing Host runs drop the candidate subprocess to an unprivileged UID.
+    Inherited root-owned HOME/cache paths would otherwise break legitimate
+    libraries such as torch.hub, HuggingFace and matplotlib after Preflight.
+    Each candidate receives its own writable cache tree inside its working
+    directory; this changes no data-view or leakage permissions.
+    """
+
     env = dict(os.environ)
     package_root = str(Path(__file__).resolve().parents[1])
     existing = env.get("PYTHONPATH", "")
@@ -49,6 +74,27 @@ def _execution_environment() -> dict[str, str]:
         paths.insert(0, package_root)
     env["PYTHONPATH"] = os.pathsep.join(paths)
     env["PYTHONUNBUFFERED"] = "1"
+    if runtime_cache_root is not None:
+        cache_root = Path(runtime_cache_root).resolve()
+        locations = {
+            "HOME": cache_root / "home",
+            "XDG_CACHE_HOME": cache_root / "xdg-cache",
+            "XDG_CONFIG_HOME": cache_root / "xdg-config",
+            "TORCH_HOME": cache_root / "torch",
+            "HF_HOME": cache_root / "huggingface",
+            "HUGGINGFACE_HUB_CACHE": cache_root / "huggingface" / "hub",
+            "TRANSFORMERS_CACHE": cache_root / "huggingface" / "transformers",
+            "MPLCONFIGDIR": cache_root / "matplotlib",
+            "NUMBA_CACHE_DIR": cache_root / "numba",
+            "KERAS_HOME": cache_root / "keras",
+        }
+        cache_root.mkdir(parents=True, exist_ok=True)
+        cache_root.chmod(0o777)
+        for name, path in locations.items():
+            path.mkdir(parents=True, exist_ok=True)
+            path.chmod(0o777)
+            env[name] = str(path)
+        env["TOKENIZERS_PARALLELISM"] = "false"
     return env
 
 
@@ -58,7 +104,21 @@ def _runtime_protocol_observer_enabled(cfg) -> bool:
     enabled = bool(
         getattr(authority, "runtime_protocol_observer_enabled", True)
     )
-    return enabled and mode in {"shadow", "enforce"}
+    runtime_mode = str(
+        getattr(authority, "protocol_runtime_mode", "legacy_ast") or "legacy_ast"
+    ).lower()
+    return (
+        enabled
+        and mode in {"shadow", "enforce"}
+        and runtime_mode == "legacy_ast"
+    )
+
+
+def _protocol_runtime_mode(cfg) -> str:
+    authority = getattr(cfg, "evaluation_authority", None) if cfg else None
+    return str(
+        getattr(authority, "protocol_runtime_mode", "legacy_ast") or "legacy_ast"
+    ).lower()
 
 @dataclass
 class ExecutionResult(DataClassJsonMixin):
@@ -103,6 +163,60 @@ class Interpreter:
         self.candidate_execution_contract = (
             candidate_execution_contract_from_cfg(cfg) if cfg is not None else None
         )
+        self.protocol_preflight_config = (
+            getattr(getattr(cfg, "agent", None), "protocol_preflight", None)
+            if cfg is not None
+            else None
+        )
+        self.protocol_runtime_mode = _protocol_runtime_mode(cfg)
+        self._preflight_lock = threading.Lock()
+        self._protocol_contract = None
+        self._collector_identity = None
+        self._preflight_runner = None
+        auto_preflight = bool(
+            getattr(self.protocol_preflight_config, "enabled", False)
+            and getattr(self.protocol_preflight_config, "contract_path", "")
+            and getattr(
+                self.protocol_preflight_config, "collector_private_key_path", ""
+            )
+        )
+        if auto_preflight:
+            self._protocol_contract = read_contract_artifact(
+                self.protocol_preflight_config.contract_path
+            )
+            collector_key_path = Path(
+                self.protocol_preflight_config.collector_private_key_path
+            ).expanduser()
+            self._collector_identity = HostCollectorIdentity.from_private_key_file(
+                collector_key_path
+            )
+            expected_public = str(
+                self._protocol_contract.collector_spec.get(
+                    "public_key_ed25519", ""
+                )
+            )
+            if self._collector_identity.public_key_ed25519 != expected_public:
+                raise ValueError(
+                    "Host Collector private key does not match the frozen Contract"
+                )
+            if bool(
+                getattr(
+                    self.protocol_preflight_config,
+                    "consume_collector_private_key",
+                    True,
+                )
+            ):
+                collector_key_path.unlink()
+            registry_root = Path(cfg.evaluation_authority.protocol_registry)
+            if not registry_root.is_absolute():
+                registry_root = Path(__file__).resolve().parents[1] / registry_root
+            self._preflight_runner = ProtocolPreflightRunner(
+                ProtocolRegistry(registry_root)
+            )
+            if self.protocol_runtime_mode == "host_sdk_enforce" and os.geteuid() != 0:
+                raise ValueError(
+                    "host_sdk_enforce requires a root Host launcher so Candidate UID isolation can be applied"
+                )
         if self.candidate_execution_contract:
             self.timeout = min(
                 self.timeout,
@@ -124,6 +238,40 @@ class Interpreter:
         self.lock = Lock()
         self._procs_lock = threading.Lock()
         self._active_procs: dict[int, subprocess.Popen] = {}
+        self._active_candidate_ids: set[str] = set()
+        self.deadline_monotonic: float | None = None
+        self.finalize_reserve_seconds = 0
+
+    def set_run_deadline(
+        self,
+        deadline_monotonic: float,
+        *,
+        finalize_reserve_seconds: int = 0,
+    ) -> None:
+        if deadline_monotonic <= time.monotonic():
+            raise ValueError("Run deadline must be in the future")
+        self.deadline_monotonic = float(deadline_monotonic)
+        self.finalize_reserve_seconds = max(0, int(finalize_reserve_seconds))
+
+    def remaining_work_seconds(self) -> float | None:
+        if self.deadline_monotonic is None:
+            return None
+        return max(
+            0.0,
+            self.deadline_monotonic
+            - time.monotonic()
+            - self.finalize_reserve_seconds,
+        )
+
+    def effective_timeout_seconds(self) -> int:
+        remaining = self.remaining_work_seconds()
+        if remaining is None:
+            return int(self.timeout)
+        return max(0, min(int(self.timeout), int(remaining)))
+
+    def active_candidate_ids(self) -> list[str]:
+        with self._procs_lock:
+            return sorted(self._active_candidate_ids)
 
     def terminate_all_subprocesses(self) -> None:
         """Terminate all active subprocesses (for graceful Ctrl+C exit)."""
@@ -226,6 +374,21 @@ class Interpreter:
         """
         logger.info("REPL is executing code via subprocess")
         logger.info(f"Current running process: {self.current_parallel_run}")
+        effective_timeout = self.effective_timeout_seconds()
+        if effective_timeout <= 0:
+            return ExecutionResult(
+                term_out=[
+                    "RunDeadlineExceeded: candidate was not started because "
+                    "the finalization reserve has begun.\n"
+                ],
+                exec_time=0.0,
+                exc_type="RunDeadlineExceeded",
+                exc_info={
+                    "candidate_id": str(id),
+                    "finalize_reserve_seconds": self.finalize_reserve_seconds,
+                },
+                exc_stack=[],
+            )
         process_id = None
 
         with self.lock:
@@ -241,10 +404,14 @@ class Interpreter:
                     raise ValueError("reach max process parallel number")
 
         start_time = time.time()
+        candidate_deadline_monotonic = time.monotonic() + effective_timeout
         runfile_path = None
         proc = None
+        full_runtime_controller = None
         
         try:
+            with self._procs_lock:
+                self._active_candidate_ids.add(str(id))
             cpu_number_per_session = max(1, int(self.cpu_number / self.max_parallel_run))
             avail_cpus = (
                 sorted(os.sched_getaffinity(0))
@@ -269,6 +436,152 @@ class Interpreter:
 
             pre_code = "import os\nif hasattr(os, 'sched_setaffinity'):\n    os.sched_setaffinity(0, {cpu_set})\nos.environ['CUDA_VISIBLE_DEVICES'] = '{gpu_id}'\n".format(cpu_set=cpu_set, gpu_id=gpu_id)
             source_code_sha256 = hashlib.sha256(code.encode("utf-8")).hexdigest()
+            preflight_report = None
+            if bool(getattr(self.protocol_preflight_config, "enabled", False)):
+                try:
+                    report_root = Path(self.protocol_preflight_config.report_root).resolve()
+                    if self._preflight_runner is None:
+                        preflight_report = validate_preflight_admission(
+                            code,
+                            report_root=report_root,
+                            expected_contract_hash=str(
+                                self.protocol_preflight_config.expected_contract_hash
+                            ),
+                        )
+                    else:
+                        report_path = admission_report_path(
+                            report_root, source_code_sha256
+                        )
+                        with self._preflight_lock:
+                            if report_path.is_file() and not report_path.is_symlink():
+                                preflight_report = json.loads(
+                                    report_path.read_text(encoding="utf-8")
+                                )
+                            else:
+                                candidate_root = (
+                                    report_root / "candidates" / source_code_sha256
+                                )
+                                preflight_report = self._preflight_runner.run_source(
+                                    source=code,
+                                    contract=self._protocol_contract,
+                                    identity=self._collector_identity,
+                                    data_view_manifest_path=(
+                                        self.protocol_preflight_config.data_view_manifest_path
+                                    ),
+                                    output_root=candidate_root,
+                                    image_digest=self.protocol_preflight_config.image_digest,
+                                    sdk_hash=self.protocol_preflight_config.sdk_hash,
+                                    timeout_seconds=min(60, effective_timeout),
+                                    candidate_uid=(
+                                        int(self.protocol_preflight_config.candidate_uid)
+                                        if os.geteuid() == 0
+                                        else None
+                                    ),
+                                )
+                    if self.protocol_runtime_mode != "host_sdk_shadow":
+                        preflight_report = validate_preflight_admission(
+                            code,
+                            report_root=report_root,
+                            expected_contract_hash=str(
+                                self.protocol_preflight_config.expected_contract_hash
+                            ),
+                        )
+                except Exception as error:
+                    if self.protocol_runtime_mode != "host_sdk_shadow":
+                        rejection_report = dict(
+                            getattr(error, "report", None)
+                            or preflight_report
+                            or {}
+                        )
+                        rejection_report.setdefault("status", "rejected")
+                        rejection_report.setdefault(
+                            "code_sha256", source_code_sha256
+                        )
+                        rejection_report["admission_disposition"] = "rejected"
+                        rejection_report["admission_error"] = str(error)
+                        rejection_details = {
+                            "status": rejection_report.get("status"),
+                            "violations": list(
+                                rejection_report.get("violations") or []
+                            ),
+                            "missing_coverage": list(
+                                rejection_report.get("missing_coverage") or []
+                            ),
+                            "missing_full_runtime_coverage": list(
+                                rejection_report.get(
+                                    "missing_full_runtime_coverage"
+                                )
+                                or []
+                            ),
+                            "missing_receipts": list(
+                                rejection_report.get("missing_receipts") or []
+                            ),
+                        }
+                        return ExecutionResult(
+                            term_out=[
+                                "Protocol Preflight rejected full execution before "
+                                f"subprocess launch: {error}\n",
+                                "Protocol Preflight report: "
+                                + json.dumps(rejection_details, sort_keys=True)
+                                + "\n",
+                            ],
+                            exec_time=time.time() - start_time,
+                            exc_type="ProtocolPreflightError",
+                            exc_info={
+                                "message": str(error),
+                                "code_sha256": source_code_sha256,
+                                "candidate_subprocess_started": False,
+                                "preflight_report": rejection_report,
+                                **rejection_details,
+                            },
+                            exc_stack=[],
+                            protocol_observation={
+                                "protocol_preflight": rejection_report
+                            },
+                        )
+                    preflight_report = {
+                        "status": "shadow_error",
+                        "code_sha256": source_code_sha256,
+                        "reason": str(error),
+                        "enforcement_mode": "shadow",
+                    }
+                    logger.warning("Host Preflight shadow error: %s", error)
+                else:
+                    logger.info(
+                        "Protocol Preflight %s observation: status=%s report=%s",
+                        self.protocol_runtime_mode,
+                        preflight_report.get("status"),
+                        preflight_report.get("report_hash"),
+                    )
+
+            # Preflight consumes this candidate's wall-clock allowance. Recheck
+            # both the per-candidate deadline and the run finalization reserve
+            # immediately before launching the full training subprocess.
+            remaining_candidate = int(
+                candidate_deadline_monotonic - time.monotonic()
+            )
+            remaining_run = self.effective_timeout_seconds()
+            effective_timeout = min(remaining_candidate, remaining_run)
+            if effective_timeout <= 0:
+                return ExecutionResult(
+                    term_out=[
+                        "RunDeadlineExceeded: candidate preflight consumed the "
+                        "remaining work budget; full execution was not started.\n"
+                    ],
+                    exec_time=time.time() - start_time,
+                    exc_type="RunDeadlineExceeded",
+                    exc_info={
+                        "candidate_id": str(id),
+                        "candidate_subprocess_started": False,
+                        "finalize_reserve_seconds": self.finalize_reserve_seconds,
+                    },
+                    exc_stack=[],
+                    protocol_observation=(
+                        {"protocol_preflight": dict(preflight_report)}
+                        if preflight_report is not None
+                        else None
+                    ),
+                )
             if self.candidate_execution_contract:
                 contract_audit = audit_candidate_code(
                     code,
@@ -336,12 +649,97 @@ class Interpreter:
                         "Host runtime protocol instrumentation unavailable: %s",
                         type(error).__name__,
                     )
+            full_runtime_evidence = None
+            if (
+                self.protocol_runtime_mode
+                in {"host_sdk_shadow", "host_sdk_enforce"}
+                and self._protocol_contract is not None
+                and self._collector_identity is not None
+            ):
+                node_token = hashlib.sha256(str(id).encode("utf-8")).hexdigest()[:24]
+                full_runtime_root = (
+                    Path(self.protocol_preflight_config.report_root).resolve()
+                    / "full_runtime"
+                    / source_code_sha256
+                    / node_token
+                )
+                bootstrap_path = (
+                    run_wd / "working" / f"host_full_runtime_{node_token}.json"
+                )
+                try:
+                    full_runtime_controller = FullRuntimeEvidenceController(
+                        contract=self._protocol_contract,
+                        identity=self._collector_identity,
+                        data_view_manifest_path=(
+                            self.protocol_preflight_config.data_view_manifest_path
+                        ),
+                        output_root=full_runtime_root,
+                        bootstrap_path=bootstrap_path,
+                        run_id=f"full-runtime-{node_token}",
+                        node_id=str(id),
+                        code_sha256=source_code_sha256,
+                    ).start()
+                    pre_code += (
+                        "from protocol_runtime.full_runtime import "
+                        "activate_full_runtime_from_bootstrap as "
+                        "__mlevolve_activate_full_runtime\n"
+                        f"__mlevolve_activate_full_runtime({str(bootstrap_path)!r})\n"
+                    )
+                except Exception as error:
+                    if full_runtime_controller is not None:
+                        full_runtime_controller.stop()
+                        full_runtime_controller = None
+                    if self.protocol_runtime_mode == "host_sdk_enforce":
+                        return ExecutionResult(
+                            term_out=[
+                                "Host full-runtime bootstrap failed before subprocess "
+                                f"launch: {type(error).__name__}: {error}\n"
+                            ],
+                            exec_time=time.time() - start_time,
+                            exc_type="ProtocolRuntimeBootstrapError",
+                            exc_info={
+                                "message": str(error),
+                                "candidate_subprocess_started": False,
+                            },
+                            exc_stack=[],
+                            protocol_observation={
+                                "protocol_preflight": dict(preflight_report or {}),
+                                "host_full_runtime": {
+                                    "status": "bootstrap_error",
+                                    "error_type": type(error).__name__,
+                                    "error": str(error),
+                                },
+                            },
+                        )
+                    logger.warning(
+                        "Host full-runtime shadow bootstrap failed: %s", error
+                    )
             code = pre_code + candidate_code
 
             with open(runfile_path, "w") as f:
                 f.write(code)
 
             cmd = [sys.executable, str(runfile_path)]
+            popen_isolation = {}
+            if (
+                self.protocol_runtime_mode == "host_sdk_enforce"
+                and os.geteuid() == 0
+            ):
+                candidate_uid = int(
+                    getattr(self.protocol_preflight_config, "candidate_uid", 65534)
+                )
+                for writable in (
+                    run_wd,
+                    run_wd / "submission",
+                    run_wd / "working",
+                ):
+                    writable.mkdir(parents=True, exist_ok=True)
+                    writable.chmod(0o777)
+                popen_isolation = {
+                    "user": candidate_uid,
+                    "group": candidate_uid,
+                    "extra_groups": (),
+                }
             proc = subprocess.Popen(
                 cmd,
                 cwd=str(run_wd),
@@ -349,7 +747,13 @@ class Interpreter:
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,
-                env=_execution_environment(),
+                env=_execution_environment(
+                    run_wd
+                    / "working"
+                    / "candidate_runtime_cache"
+                    / hashlib.sha256(str(id).encode("utf-8")).hexdigest()[:24]
+                ),
+                **popen_isolation,
             )
             with self._procs_lock:
                 self._active_procs[process_id] = proc
@@ -360,7 +764,7 @@ class Interpreter:
             exc_stack = []
             
             try:
-                stdout, stderr = proc.communicate(timeout=self.timeout)
+                stdout, stderr = proc.communicate(timeout=effective_timeout)
                 exec_time = time.time() - start_time
                 
                 if proc.returncode != 0:
@@ -445,6 +849,43 @@ class Interpreter:
                 exc_type = "TimeoutError"
                 exc_info = {}
                 exc_stack = []
+
+            if full_runtime_controller is not None:
+                try:
+                    execution_succeeded = proc.returncode == 0 and exc_type is None
+                    full_runtime_evidence = full_runtime_controller.seal(
+                        exit_status=0 if execution_succeeded else 1,
+                        executed_path=str(runfile_path),
+                        run_hash=_sha256_file(runfile_path),
+                    )
+                    if (
+                        execution_succeeded
+                        and full_runtime_evidence.get("status") != "pass"
+                        and self.protocol_runtime_mode == "host_sdk_enforce"
+                    ):
+                        exc_type = "ProtocolRuntimeEvidenceError"
+                        exc_info = {
+                            "message": "Host full-runtime lifecycle evidence is incomplete",
+                            "missing_events": list(
+                                full_runtime_evidence.get("missing_events") or []
+                            ),
+                            "candidate_subprocess_started": True,
+                        }
+                except Exception as error:
+                    full_runtime_evidence = {
+                        "status": "collector_error",
+                        "error_type": type(error).__name__,
+                        "error": str(error),
+                    }
+                    if proc.returncode == 0 and self.protocol_runtime_mode == "host_sdk_enforce":
+                        exc_type = "ProtocolRuntimeEvidenceError"
+                        exc_info = {
+                            "message": str(error),
+                            "candidate_subprocess_started": True,
+                        }
+                finally:
+                    full_runtime_controller.stop()
+                    full_runtime_controller = None
             
             output: list[str] = []
             if stdout:
@@ -458,11 +899,11 @@ class Interpreter:
 
             if exc_type == "TimeoutError":
                 output.append(
-                    f"Execution time: TimeoutError: Execution exceeded the time limit of {humanize.naturaldelta(self.timeout)}"
+                    f"Execution time: TimeoutError: Execution exceeded the time limit of {humanize.naturaldelta(effective_timeout)}"
                 )
             else:
                 output.append(
-                    f"Execution time: {humanize.naturaldelta(exec_time)} seconds (time limit is {humanize.naturaldelta(self.timeout)})."
+                    f"Execution time: {humanize.naturaldelta(exec_time)} seconds (time limit is {humanize.naturaldelta(effective_timeout)})."
                 )
 
             protocol_observation = None
@@ -499,12 +940,27 @@ class Interpreter:
                     output.append("\n")
                 if exc_type == "TimeoutError":
                     output.append(
-                        f"Execution time: TimeoutError: Execution exceeded the time limit of {humanize.naturaldelta(self.timeout)}"
+                        f"Execution time: TimeoutError: Execution exceeded the time limit of {humanize.naturaldelta(effective_timeout)}"
                     )
                 else:
                     output.append(
-                        f"Execution time: {humanize.naturaldelta(exec_time)} seconds (time limit is {humanize.naturaldelta(self.timeout)})."
+                        f"Execution time: {humanize.naturaldelta(exec_time)} seconds (time limit is {humanize.naturaldelta(effective_timeout)})."
                     )
+
+            if preflight_report is not None:
+                if protocol_observation is None:
+                    protocol_observation = {}
+                attached_preflight = dict(preflight_report)
+                if self.protocol_runtime_mode == "host_sdk_shadow":
+                    attached_preflight["enforcement_mode"] = "shadow"
+                    attached_preflight["admission_disposition"] = "observe_only"
+                protocol_observation["protocol_preflight"] = attached_preflight
+            if full_runtime_evidence is not None:
+                if protocol_observation is None:
+                    protocol_observation = {}
+                protocol_observation["host_full_runtime"] = dict(
+                    full_runtime_evidence
+                )
 
             return ExecutionResult(
                 output,
@@ -529,9 +985,17 @@ class Interpreter:
                 exc_stack=[],
             )
         finally:
+            if full_runtime_controller is not None:
+                try:
+                    full_runtime_controller.stop()
+                except Exception as error:
+                    logger.warning(
+                        "Failed to stop Host full-runtime Collector: %s", error
+                    )
             if process_id is not None:
                 with self._procs_lock:
                     self._active_procs.pop(process_id, None)
+                    self._active_candidate_ids.discard(str(id))
             if proc is not None:
                 try:
                     if proc.poll() is None:

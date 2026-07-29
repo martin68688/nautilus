@@ -84,7 +84,8 @@ def test_agent_verified_payload_remains_legacy_and_cannot_satisfy_rank() -> None
             requesting_component="test",
         )
     )
-    assert decision.outcome == DecisionOutcome.DENY
+    assert decision.outcome == DecisionOutcome.QUARANTINE
+    assert decision.reason_codes == ["untrusted_evidence"]
     assert all(item.startswith("trusted_receipt:") for item in decision.missing_obligations)
 
 

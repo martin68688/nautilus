@@ -120,11 +120,11 @@ def test_failed_node_without_score_is_normal_fail_closed_decision(tmp_path):
 
     for operation, stage, expected_outcome in (
         (Operation.RANK, DecisionStage.BRANCH_SELECTION, DecisionOutcome.DENY),
-        (
-            Operation.PROMOTE,
-            DecisionStage.MEMORY_WRITEBACK,
-            DecisionOutcome.QUARANTINE,
-        ),
+            (
+                Operation.PROMOTE,
+                DecisionStage.MEMORY_WRITEBACK,
+                DecisionOutcome.DENY,
+            ),
     ):
         failed = node(f"failed-{operation.value}", True)
         failed.metric = Metric(None)

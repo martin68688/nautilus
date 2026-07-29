@@ -61,6 +61,12 @@ agent:
       - novel_exploration
   protocol_repair:
     enabled: false
+  # Historical formal runs did not use Host Protocol Preflight.  Keep this
+  # explicit and immutable; new Host Protocol configs enable it independently.
+  protocol_preflight:
+    enabled: false
+    repair_enabled: false
+    max_repair_attempts: 1
   check_data_leakage: false
 
 fixed_holdout:

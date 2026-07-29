@@ -1046,6 +1046,16 @@ class ActuationTracker:
                     by_id[receipt.receipt_id] = receipt
             return [by_id[key] for key in sorted(by_id)]
 
+    def contracts_for_artifact(self, artifact_id: str) -> list[ExperienceContract]:
+        """Return immutable contracts bound to one runtime artifact."""
+
+        with self._lock:
+            return [
+                self._states[key].contract
+                for key in sorted(self._states)
+                if key[0] == str(artifact_id)
+            ]
+
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             keys = sorted(self._states)

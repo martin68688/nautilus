@@ -22,8 +22,21 @@ def _is_repair_only(node: SearchNode) -> bool:
     )
 
 
+def _preflight_selectable(node: SearchNode) -> bool:
+    report = getattr(node, "protocol_preflight", None) or {}
+    return bool(
+        not report
+        or report.get("status") == "pass"
+        or report.get("enforcement_mode") == "shadow"
+    )
+
+
 def _uct_selectable(node: SearchNode) -> bool:
-    return not node.is_terminal and not _is_repair_only(node)
+    return (
+        not node.is_terminal
+        and not _is_repair_only(node)
+        and _preflight_selectable(node)
+    )
 
 
 def _piecewise_decay(t, initial_C=1.414, T1=100, T2=200, alpha=0.01, lower_bound=0.7):
@@ -138,7 +151,12 @@ def get_top_k_nodes_global(agent, k: int, max_from_same_branch: int) -> List[dic
     all_nodes = []
     for branch_id in agent.branch_all_nodes:
         for node in agent.branch_all_nodes[branch_id]:
-            if not node.is_buggy and node.metric is not None and node.metric.value is not None:
+            if (
+                not node.is_buggy
+                and _preflight_selectable(node)
+                and node.metric is not None
+                and node.metric.value is not None
+            ):
                 all_nodes.append(node)
 
     # Complete mediation: authorize the entire candidate set before metrics are

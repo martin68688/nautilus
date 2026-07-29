@@ -1,10 +1,12 @@
 import atexit
 import logging
 import os
+import signal
 import sys
 import shutil
 import time
 import threading
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from engine.agent_search import AgentSearch as Agent, SearchSpaceExhausted
 from engine.executor import Interpreter
@@ -16,21 +18,97 @@ from utils.visualization import journal_to_string_tree
 from utils.seed import set_global_seed
 from engine.coldstart import build_guidance_description
 from engine.run_control import (
+    draft_execution_lane,
+    focused_outcome_context,
     focused_protocol_status,
-    focused_protocol_success_error,
     should_continue_focused_search,
+)
+from engine.run_outcome import (
+    FailedRunError,
+    PartialRunError,
+    classify_run_outcome,
+    write_run_outcome,
 )
 from utils.logging_config import setup_logging
 import torch
 
 
+class SigtermFinalizer:
+    """Seal the latest journal/outcome before Kubernetes terminates the Pod."""
 
-def run():
+    def __init__(self, cfg, logger, runtime_state):
+        self.cfg = cfg
+        self.logger = logger
+        self.runtime_state = runtime_state
+
+    def persist_interrupted_outcome(self, reason: str) -> None:
+        journal = self.runtime_state.get("journal")
+        agent = self.runtime_state.get("agent")
+        interpreter = self.runtime_state.get("interpreter")
+        try:
+            if journal is not None:
+                save_run(self.cfg, journal)
+        except Exception as error:
+            self.logger.warning(
+                "Termination journal checkpoint failed: %s", error
+            )
+        active_ids = (
+            interpreter.active_candidate_ids()
+            if interpreter is not None
+            else []
+        )
+        log_dir = Path(self.cfg.log_dir)
+        outcome = classify_run_outcome(
+            completed_steps=int(self.runtime_state.get("completed") or 0),
+            total_steps=int(self.runtime_state.get("total_steps") or 0),
+            search_exhausted=False,
+            has_certified_solution=bool(
+                agent is not None
+                and getattr(agent, "best_node", None) is not None
+            ),
+            termination_reason=reason,
+            active_candidate_ids=active_ids,
+            journal_checkpoint_ref=str(
+                (log_dir / "journal.json").resolve()
+            ),
+        )
+        try:
+            write_run_outcome(log_dir, outcome)
+        except Exception as error:
+            self.logger.warning(
+                "Interrupted outcome was not published: %s", error
+            )
+
+    def __call__(self, signum, _frame):
+        if self.runtime_state["terminating"]:
+            raise SystemExit(128 + int(signum))
+        self.runtime_state["terminating"] = True
+        self.logger.warning("SIGTERM received; sealing partial run evidence")
+        interpreter = self.runtime_state.get("interpreter")
+        if interpreter is not None:
+            interpreter.terminate_all_subprocesses()
+        self.persist_interrupted_outcome("sigterm")
+        raise SystemExit(128 + int(signum))
+
+
+
+def _run_impl():
+    run_started_monotonic = time.monotonic()
     cfg = load_cfg()
     if cfg.torch_hub_dir:
         torch.hub.set_dir(cfg.torch_hub_dir)
     set_global_seed(cfg.agent.seed)
     logger = setup_logging(cfg)
+    runtime_state = {
+        "completed": 0,
+        "total_steps": int(cfg.agent.steps),
+        "journal": None,
+        "agent": None,
+        "interpreter": None,
+        "terminating": False,
+    }
+
+    signal.signal(signal.SIGTERM, SigtermFinalizer(cfg, logger, runtime_state))
     identity_path = save_run_identity(cfg)
     logger.info(f'Starting run "{cfg.exp_name}"')
     logger.info("Run identity persisted before draft generation: %s", identity_path)
@@ -54,15 +132,24 @@ def run():
     atexit.register(cleanup)
 
     journal = Journal()
+    runtime_state["journal"] = journal
     agent = Agent(
         task_desc=task_desc,
         cfg=cfg,
         journal=journal,
     )
+    runtime_state["agent"] = agent
 
     interpreter = Interpreter(
         cfg.workspace_dir, **OmegaConf.to_container(cfg.exec), cfg=cfg  # type: ignore
     )
+    interpreter.set_run_deadline(
+        run_started_monotonic + float(cfg.agent.time_limit),
+        finalize_reserve_seconds=int(
+            getattr(cfg, "finalize_reserve_seconds", 900) or 900
+        ),
+    )
+    runtime_state["interpreter"] = interpreter
 
     global_step = len(journal)
     status = Status("[green]Generating code...")
@@ -96,6 +183,8 @@ def run():
 
     lock = threading.Lock()
     completed = 0
+    search_exhausted = False
+    deadline_reached = False
 
     dev_execution_role = os.environ.get("RUNFOREST_DEV_EXECUTION_ROLE", "").strip()
     draft_indices = list(range(min(initial_draft_count, total_steps)))
@@ -118,7 +207,9 @@ def run():
             target_index,
         )
 
+    generated_draft_nodes = []
     pending_draft_nodes = []
+    blocked_draft_nodes = []
 
     def protocol_focus_status():
         return focused_protocol_status(agent.journal.nodes, dev_execution_role)
@@ -135,10 +226,29 @@ def run():
             )
 
         for draft_idx in draft_indices:
+            remaining_work = interpreter.remaining_work_seconds()
+            if remaining_work is not None and remaining_work <= 0:
+                deadline_reached = True
+                logger.warning(
+                    "Finalization reserve reached before draft slot %s",
+                    draft_idx,
+                )
+                break
             try:
                 logger.info(f"🔨 Generating draft {draft_idx + 1}/{min(initial_draft_count, total_steps)} (code only)")
                 cur_node = step_task_generate_only(draft_idx)
-                pending_draft_nodes.append(cur_node)
+                generated_draft_nodes.append(cur_node)
+                lane = draft_execution_lane(cur_node)
+                if lane == "execute":
+                    pending_draft_nodes.append(cur_node)
+                else:
+                    blocked_draft_nodes.append(cur_node)
+                    logger.warning(
+                        "Draft %s was blocked by pre-execution audit and will enter the repair lane",
+                        cur_node.id,
+                    )
+                save_run(cfg, journal)
+                runtime_state["completed"] = len(journal) - 1
                 logger.info(f"✅ Draft {draft_idx + 1} code generated: node.id={cur_node.id}, added to virtual_root.children")
 
             except Exception as e:
@@ -148,11 +258,17 @@ def run():
                         f"Fixed three-role Draft generation failed at slot {draft_idx}; refusing a partial root set"
                     ) from e
 
-        logger.info(f"✅ Phase 1 complete: {len(pending_draft_nodes)} draft codes generated")
+        completed = len(journal) - 1
+        logger.info(
+            "✅ Phase 1 complete: %s drafts generated (%s executable, %s repair-queued)",
+            len(generated_draft_nodes),
+            len(pending_draft_nodes),
+            len(blocked_draft_nodes),
+        )
 
         if dev_execution_role:
             matching_nodes = [
-                node for node in pending_draft_nodes
+                node for node in generated_draft_nodes
                 if getattr(node, "draft_role", None) == dev_execution_role
             ]
             if len(matching_nodes) != 1:
@@ -162,19 +278,26 @@ def run():
                 )
             skipped_roles = [
                 getattr(node, "draft_role", None)
-                for node in pending_draft_nodes
+                for node in generated_draft_nodes
                 if node not in matching_nodes
             ]
-            pending_draft_nodes = matching_nodes
+            matching_ids = {str(node.id) for node in matching_nodes}
+            pending_draft_nodes = [
+                node for node in pending_draft_nodes if str(node.id) in matching_ids
+            ]
+            blocked_draft_nodes = [
+                node for node in blocked_draft_nodes if str(node.id) in matching_ids
+            ]
             logger.warning(
                 "DEV role filter active: executing only role=%s; skipped=%s",
                 dev_execution_role,
                 skipped_roles,
             )
 
-    if pending_draft_nodes or completed < total_steps:
+    if pending_draft_nodes or blocked_draft_nodes or completed < total_steps:
         logger.info(f"🚀 Phase 2: Pipelined parallel execution")
         logger.info(f"   - Pending draft executions: {len(pending_draft_nodes)}")
+        logger.info(f"   - Pending preflight repairs: {len(blocked_draft_nodes)}")
         logger.info(f"   - Remaining steps: {total_steps - completed}")
 
         def execute_draft_node(node):
@@ -191,7 +314,6 @@ def run():
 
         executor = ThreadPoolExecutor(max_workers=max_workers)
         interrupted = False
-        search_exhausted = False
         try:
             futures = set()
             focus_futures = set()
@@ -204,6 +326,10 @@ def run():
                 return future
 
             for i, node in enumerate(pending_draft_nodes):
+                remaining_work = interpreter.remaining_work_seconds()
+                if remaining_work is not None and remaining_work <= 0:
+                    deadline_reached = True
+                    break
                 submit_future(
                     execute_draft_node,
                     node,
@@ -214,13 +340,31 @@ def run():
                     time.sleep(10)
                     logger.info(f"⏱️  Waiting 10s before next draft to stagger initialization...")
 
-            initial_step_tasks = min(max_workers, total_steps - completed) - len(pending_draft_nodes)
-            if initial_step_tasks > 0:
+            for node in blocked_draft_nodes:
+                if not dev_execution_role and completed + len(futures) >= total_steps:
+                    break
+                is_focused = bool(
+                    dev_execution_role and node.draft_role == dev_execution_role
+                )
+                submit_future(
+                    step_task,
+                    node,
+                    is_focused,
+                    focused=is_focused,
+                )
+                logger.info(
+                    "📤 Submitted mandatory preflight repair: %s", node.id
+                )
+
+            initial_step_tasks = (
+                min(max_workers, total_steps - completed) - len(futures)
+            )
+            if initial_step_tasks > 0 and not deadline_reached:
                 for _ in range(initial_step_tasks):
                     submit_future(step_task)
                     logger.info(f"📤 Submitted initial step_task to fill thread pool")
 
-            while (
+            while not deadline_reached and (
                 should_continue_focused_search(
                     completed_steps=completed,
                     total_steps=total_steps,
@@ -233,6 +377,17 @@ def run():
                 done, _ = wait(futures, return_when=FIRST_COMPLETED, timeout=1.0)
 
                 if not done:
+                    remaining_work = interpreter.remaining_work_seconds()
+                    if (
+                        remaining_work is not None
+                        and remaining_work <= 0
+                        and completed < total_steps
+                    ):
+                        deadline_reached = True
+                        logger.warning(
+                            "Finalization reserve reached; terminating active candidates"
+                        )
+                        interpreter.terminate_all_subprocesses()
                     continue  # timeout, no completed futures, retry (allows SIGINT handling)
 
                 # Process the focused lane first so its newly queued repair is
@@ -258,6 +413,7 @@ def run():
                     with lock:
                         save_run(cfg, journal)
                         completed = len(journal) - 1  # Exclude virtual node
+                        runtime_state["completed"] = completed
                         focus_status = protocol_focus_status()
                         if dev_execution_role and focus_status.completed:
                             logger.warning(
@@ -266,7 +422,18 @@ def run():
                         if completed >= total_steps or focus_status.completed:
                             logger.info(journal_to_string_tree(journal))
 
-                    within_shared_budget = completed + len(futures) < total_steps
+                    remaining_work = interpreter.remaining_work_seconds()
+                    if (
+                        remaining_work is not None
+                        and remaining_work <= 0
+                        and completed < total_steps
+                        and not focus_status.completed
+                    ):
+                        deadline_reached = True
+                    within_shared_budget = (
+                        not deadline_reached
+                        and completed + len(futures) < total_steps
+                    )
                     continue_focused_replay = bool(
                         dev_execution_role
                         and focus_status.active
@@ -297,56 +464,103 @@ def run():
                     for pending in futures:
                         pending.cancel()
                     break
+            if deadline_reached:
+                for pending in futures:
+                    pending.cancel()
+                interpreter.terminate_all_subprocesses()
         except KeyboardInterrupt:
             interrupted = True
             logger.info("KeyboardInterrupt received, terminating subprocesses and shutting down...")
             interpreter.terminate_all_subprocesses()
             executor.shutdown(wait=False, cancel_futures=True) if sys.version_info >= (3, 9) else executor.shutdown(wait=False)
             raise
+        except SystemExit:
+            interrupted = True
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise
         finally:
             if not interrupted:
                 executor.shutdown(wait=True)
 
-        if dev_execution_role:
-            focus_status = protocol_focus_status()
-            focus_error = focused_protocol_success_error(focus_status)
-            if focus_error:
-                raise RuntimeError(
-                    f"Focused replay role {dev_execution_role!r} did not complete cleanly: {focus_error}"
-                )
-        if search_exhausted and agent.best_node is None:
-            raise RuntimeError("Search space exhausted without a certified solution")
     else:
         logger.info(f"✅ All steps completed in Phase 1 (total_steps={total_steps} <= initial_draft_count={initial_draft_count})")
 
     interpreter.cleanup_session(-1)
 
-    try:
-        from fixed_holdout.handoff import write_evaluation_request
-
-        evaluation_request = write_evaluation_request(
-            cfg,
-            cfg.log_dir / "journal.json",
-            authority=getattr(agent, "evaluation_authority", None),
-            selected_node_id=(
-                agent.best_node.id if agent.best_node is not None else None
-            ),
-            selection_basis=(
-                {
-                    "type": "solver_internal_search_metric",
-                    "metric_value": agent.best_node.metric.value,
-                    "metric_maximize": agent.best_node.metric.maximize,
-                    "stage": agent.best_node.stage,
-                    "draft_role": agent.best_node.draft_role,
-                    "metric_disposition": "search_only",
-                    "terminal_metric_observed": False,
-                    "formal_rank_claim_authorized": False,
-                    "source_score_inherited": False,
-                }
-                if agent.best_node is not None
-                else None
-            ),
+    completed = max(completed, len(journal) - 1)
+    focused_protocol_repair_expected = bool(
+        dev_execution_role
+        and any(
+            getattr(node, "draft_role", None) == dev_execution_role
+            and bool(getattr(node, "audit_repair_required", False))
+            for node in generated_draft_nodes
         )
+    )
+    if dev_execution_role and not focused_protocol_repair_expected:
+        logger.warning(
+            "DEV focused role completed an execution smoke; no protocol-repair transaction was required"
+        )
+    focused_scope_complete, focused_termination_reason = focused_outcome_context(
+        dev_execution_role,
+        protocol_focus_status(),
+        require_protocol_repair=focused_protocol_repair_expected,
+    )
+    run_outcome = classify_run_outcome(
+        completed_steps=completed,
+        total_steps=total_steps,
+        search_exhausted=search_exhausted,
+        has_certified_solution=agent.best_node is not None,
+        focused_scope_complete=focused_scope_complete,
+        termination_reason=(
+            "finalization_reserve_reached"
+            if deadline_reached
+            else focused_termination_reason
+        ),
+        active_candidate_ids=interpreter.active_candidate_ids(),
+        journal_checkpoint_ref=str((cfg.log_dir / "journal.json").resolve()),
+    )
+    outcome_path = write_run_outcome(cfg.log_dir, run_outcome)
+    logger.info(
+        "Run outcome persisted: status=%s completed=%s/%s path=%s",
+        run_outcome["status"],
+        completed,
+        total_steps,
+        outcome_path,
+    )
+
+    try:
+        if run_outcome["status"] != "complete":
+            logger.warning(
+                "Skipping terminal evaluation handoff for non-complete run: %s",
+                run_outcome["status"],
+            )
+            evaluation_request = None
+        else:
+            from fixed_holdout.handoff import write_evaluation_request
+
+            evaluation_request = write_evaluation_request(
+                cfg,
+                cfg.log_dir / "journal.json",
+                authority=getattr(agent, "evaluation_authority", None),
+                selected_node_id=(
+                    agent.best_node.id if agent.best_node is not None else None
+                ),
+                selection_basis=(
+                    {
+                        "type": "solver_internal_search_metric",
+                        "metric_value": agent.best_node.metric.value,
+                        "metric_maximize": agent.best_node.metric.maximize,
+                        "stage": agent.best_node.stage,
+                        "draft_role": agent.best_node.draft_role,
+                        "metric_disposition": "search_only",
+                        "terminal_metric_observed": False,
+                        "formal_rank_claim_authorized": False,
+                        "source_score_inherited": False,
+                    }
+                    if agent.best_node is not None
+                    else None
+                ),
+            )
         if evaluation_request is not None:
             logger.info(
                 "Fixed-holdout search finished; external evaluation request: %s",
@@ -360,10 +574,35 @@ def run():
     # Only runs if adoption_tracking.enable + enable_analysis; failure is non-fatal.
     try:
         if getattr(cfg, "adoption_tracking", None) and cfg.adoption_tracking.enable and cfg.adoption_tracking.enable_analysis:
-            from analysis.adoption_tracker import run_adoption_analysis
-            run_adoption_analysis(cfg, journal)
+            from analysis.adoption_tracker import run_bounded_adoption_analysis
+
+            adoption_status = run_bounded_adoption_analysis(cfg, journal)
+            if adoption_status["status"] != "complete":
+                logger.warning(
+                    "[adoption_tracker] auxiliary analysis ended with status=%s",
+                    adoption_status["status"],
+                )
     except Exception as e:
         logger.warning(f"[adoption_tracker] analysis skipped: {e}")
+
+    if run_outcome["status"] == "partial":
+        raise PartialRunError(
+            f"Run ended partial at {completed}/{total_steps}: {run_outcome['reason']}"
+        )
+    if run_outcome["status"] == "failed":
+        raise FailedRunError(
+            f"Run failed at {completed}/{total_steps}: {run_outcome['reason']}"
+        )
+
+
+def run():
+    """Run one search and restore the caller's SIGTERM handler on every exit."""
+
+    previous_sigterm = signal.getsignal(signal.SIGTERM)
+    try:
+        return _run_impl()
+    finally:
+        signal.signal(signal.SIGTERM, previous_sigterm)
 
 
 if __name__ == "__main__":    

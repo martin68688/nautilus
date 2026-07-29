@@ -22,6 +22,15 @@ from agents import (
     result_parse_agent,
 )
 from agents import protocol_repair
+from agents.triggers import (
+    refresh_replay_lineage_after_instrumentation,
+    refresh_replay_lineage_after_revision,
+)
+from agents.prompts import enforce_host_candidate_entrypoint
+from protocol_runtime.preflight import (
+    PreflightStatus,
+    build_bounded_repair_receipt,
+)
 from engine import node_selection, evaluation, execution, solution_manager
 from engine.conditions import is_branch_stagnant
 from utils.data_preview import clean_task_desc
@@ -113,6 +122,9 @@ class AgentSearch:
 
         self._draft_role_lock = threading.Lock()
         self._draft_generation_count = 0
+        self._replacement_draft_lock = threading.Lock()
+        self._replacement_draft_count = 0
+        self._replacement_draft_inflight = False
         self._search_condition = threading.Condition()
         self._active_search_work_lock = threading.Lock()
         self._active_search_work = 0
@@ -127,7 +139,12 @@ class AgentSearch:
         self.coldstart_description = cfg.coldstart.description
         # Adoption tracking: side-channel snapshot of methodology ref_ids (never in prompt)
         from engine.coldstart import knowledge as _kb
-        self.methodology_ref_ids: list[str] = list(_kb._LAST_REF_IDS)
+        self.methodology_ref_ids: list[str] = []
+        self.methodology_candidates: list[dict[str, str]] = [
+            dict(item)
+            for item in getattr(_kb, "_LAST_METHODOLOGY_CANDIDATES", [])
+        ]
+        self.methodology_visibility_pack = None
         self.coldstart_external_ref_ids: list[str] = list(getattr(_kb, "_LAST_RUN_FOREST_REF_IDS", []))
         self.coldstart_external_source: str = str(getattr(_kb, "_LAST_RUN_FOREST_SOURCE", "") or "")
         self.coldstart_external_memory_text: str = str(getattr(_kb, "_LAST_RUN_FOREST_TEXT", "") or "")
@@ -164,6 +181,9 @@ class AgentSearch:
         self.evaluation_authority = MLEvolveAuthorityAdapter(self)
         self.journal.authority_enforced = self.evaluation_authority.mode == "enforce"
         self.journal.authority_agent = self
+
+        from agents.memory.prospective_audit import ProspectiveAuditLogger
+        self.prospective_audit = ProspectiveAuditLogger(self)
 
         # Global memory
         self.global_memory = None
@@ -282,6 +302,7 @@ class AgentSearch:
                             ext_cfg, "visibility_token_budget", 4096
                         ),
                         "memory_snapshot": self.memory_snapshot,
+                        "prospective_audit_logger": self.prospective_audit,
                     }
                 else:
                     memory_layer_cls = (
@@ -326,6 +347,12 @@ class AgentSearch:
                     include_evolution=getattr(ext_cfg, "include_evolution", True),
                     include_debug=getattr(ext_cfg, "include_debug", True),
                     include_fusion=getattr(ext_cfg, "include_fusion", True),
+                    positive_control_probe_path=getattr(
+                        ext_cfg, "positive_control_probe_path", ""
+                    ),
+                    positive_control_force_raw=getattr(
+                        ext_cfg, "positive_control_force_raw", False
+                    ),
                     cfg=self.cfg,
                     **visibility_kwargs,
                 )
@@ -343,6 +370,29 @@ class AgentSearch:
                 self.external_skill_memory = None
         else:
             logger.info("[AgentSearch] External skill memory is disabled by config")
+        if self.methodology_candidates:
+            from agents.memory.methodology_visibility import (
+                evaluate_methodology_visibility,
+            )
+
+            methodology_text, methodology_refs, methodology_pack = (
+                evaluate_methodology_visibility(
+                    self, self.methodology_candidates
+                )
+            )
+            self.methodology_visibility_pack = methodology_pack
+            self.methodology_ref_ids = methodology_refs
+            if methodology_text:
+                self.coldstart_description = (
+                    f"{self.coldstart_description}{methodology_text}"
+                )
+                self.cfg.coldstart.description = self.coldstart_description
+            logger.info(
+                "[AgentSearch] Methodology Authority gate proposed=%s visible=%s suppressed=%s",
+                len(self.methodology_candidates),
+                len(methodology_refs),
+                len(getattr(methodology_pack, "suppressed_clause_refs", []) or []),
+            )
         # Bundle binding, if configured, is complete at this point. Freeze the
         # policy/protocol/collector/bundle tuple before any retrieval decision.
         self.evaluation_authority.seal_rollout_versions()
@@ -409,6 +459,52 @@ class AgentSearch:
         role = explicit_role or configured_role
         logger.info("[draft-role] index=%s role=%s", draft_index, role)
         return role
+
+    def _claim_replacement_draft_slot(self) -> bool:
+        """Reserve one bounded root replacement after permanent branch exhaustion."""
+
+        if not bool(getattr(self.scfg, "replacement_drafts_enabled", False)):
+            return False
+        limit = max(0, int(getattr(self.scfg, "max_replacement_drafts", 0)))
+        lock = getattr(self, "_replacement_draft_lock", None)
+        if lock is None:
+            lock = threading.Lock()
+            self._replacement_draft_lock = lock
+        with lock:
+            if bool(getattr(self, "_replacement_draft_inflight", False)):
+                return False
+            used = int(getattr(self, "_replacement_draft_count", 0))
+            if used >= limit:
+                return False
+            completed = max(0, len(self.journal) - 1)
+            if completed >= int(self.acfg.steps):
+                return False
+            self._replacement_draft_count = used + 1
+            self._replacement_draft_inflight = True
+            logger.warning(
+                "[replacement-draft] reserved %s/%s after all existing branches became non-expandable",
+                self._replacement_draft_count,
+                limit,
+            )
+            return True
+
+    def _release_replacement_draft_slot(self) -> None:
+        """Release only the in-flight guard; the bounded attempt stays consumed."""
+
+        lock = getattr(self, "_replacement_draft_lock", None)
+        if lock is None:
+            self._replacement_draft_inflight = False
+            return
+        with lock:
+            self._replacement_draft_inflight = False
+        self._notify_search_state()
+
+    def claim_replacement_draft_role(self) -> str:
+        """Return a role without consuming the immutable initial Draft slots."""
+
+        index = int(getattr(self, "_replacement_draft_count", 0))
+        logger.info("[draft-role] replacement_index=%s role=replacement_draft", index)
+        return "replacement_draft"
 
     def _init_mandatory_repair_scheduler(self) -> None:
         """Initialize the process-local queue that forces blocked nodes into repair."""
@@ -667,6 +763,9 @@ class AgentSearch:
         should_backpropagate = evaluation.check_improvement(self, node, parent_node)
         with self.journal_lock:
             self.journal.append(node)
+        prospective_audit = getattr(self, "prospective_audit", None)
+        if prospective_audit is not None:
+            prospective_audit.finalize_node(node)
         self._enqueue_mandatory_repair(node)
         self._notify_search_state()
         logger.warning(
@@ -682,6 +781,7 @@ class AgentSearch:
         execute_immediately: bool = True,
         init_solution_path: Optional[str] = None,
         draft_role: Optional[str] = None,
+        replacement_draft: bool = False,
     ):
         """Run one search step: select action (draft/debug/improve), execute, parse, validate."""
         result_node = None
@@ -690,7 +790,19 @@ class AgentSearch:
         if not parent_node.is_terminal:
             try:
                 if self.is_root(parent_node):
-                    if (
+                    if replacement_draft:
+                        result_node = draft_agent.run(
+                            self,
+                            init_solution_path=None,
+                            draft_role="replacement_draft",
+                            replacement=True,
+                        )
+                        result_node.lock = True
+                        logger.warning(
+                            "[_run_single_step] Generated bounded replacement Draft %s",
+                            result_node.id,
+                        )
+                    elif (
                         self.fixed_draft_slots_exhausted()
                         or parent_node.reached_child_limit(scfg=self.scfg)
                     ):
@@ -798,12 +910,64 @@ class AgentSearch:
                     if init_solution_path or result_node.skip_code_review:
                         logger.info(f"Node {result_node.id} uses immutable source code, skipping code review")
                     else:
+                        pre_review_code = result_node.code
                         reviewed_code = code_review_agent.run(self, result_node)
                         if reviewed_code.strip() != result_node.code.strip():
                             logger.info(f"Node {result_node.id} code has been reviewed and modified")
                             result_node.code = reviewed_code
+                            refresh_replay_lineage_after_revision(
+                                result_node,
+                                original_code=pre_review_code,
+                                revision_kind="code_review_descendant",
+                            )
                         else:
                             logger.info(f"Node {result_node.id} passed code review without changes")
+
+                    pre_instrumentation_code = result_node.code
+                    immutable_migration_seed = bool(
+                        result_node.replay_source
+                        and result_node.replay_source.get(
+                            "requires_full_runtime_migration"
+                        ) is True
+                        and result_node.replay_source.get("execution_seed_only") is True
+                    )
+                    contract_bound_code = (
+                        pre_instrumentation_code
+                        if immutable_migration_seed
+                        else enforce_host_candidate_entrypoint(
+                            self, pre_instrumentation_code
+                        )
+                    )
+                    if contract_bound_code != pre_instrumentation_code:
+                        logger.info(
+                            "Node %s Host candidate entrypoint normalized after code review",
+                            result_node.id,
+                        )
+                        result_node.code = contract_bound_code
+                        receipt = build_bounded_repair_receipt(
+                            pre_instrumentation_code,
+                            contract_bound_code,
+                            preflight_status=PreflightStatus.MISSING_EVIDENCE.value,
+                            repair_kind="instrumentation",
+                            attempt=1,
+                            max_attempts=1,
+                        )
+                        if not receipt["method_identity_preserved"]:
+                            raise ValueError(
+                                "Host candidate instrumentation changed method identity"
+                            )
+                        refresh_replay_lineage_after_instrumentation(
+                            result_node,
+                            original_code=pre_instrumentation_code,
+                            instrumentation_receipt=receipt,
+                        )
+
+                    # Generate the paired raw-memory observer arm only after
+                    # the actual Candidate has completed the same code-review
+                    # policy, and always before any training execution.
+                    prospective_audit = getattr(self, "prospective_audit", None)
+                    if prospective_audit is not None:
+                        prospective_audit.prepare_counterfactuals(result_node)
 
                     if result_parse_agent.run_pre_execution_leakage_audit(self, result_node):
                         _root = self._finalize_preflight_block(result_node, parent_node)
@@ -818,6 +982,8 @@ class AgentSearch:
                             exec_result=exe_res
                         )
                         execution.validate_executed_node(self, result_node)
+                        if prospective_audit is not None:
+                            prospective_audit.finalize_node(result_node)
                         logger.info(f"The metric value of node {result_node.id} is {result_node.metric.value}.")
                         result_node.finish_time = time.strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -896,6 +1062,7 @@ class AgentSearch:
                 node.id,
             )
 
+        replacement_draft = False
         if not node or node.stage == "root":
             node = node_selection.select_with_soft_switch(self)
             if node is None:
@@ -906,11 +1073,21 @@ class AgentSearch:
                 node = node_selection.select_with_soft_switch(self)
                 if node is None:
                     if not self._has_pending_search_work():
-                        raise SearchSpaceExhausted(
-                            "No expandable node or in-flight search work remains"
-                        )
+                        if (
+                            execute_immediately
+                            and draft_role is None
+                            and init_solution_path is None
+                            and self._claim_replacement_draft_slot()
+                        ):
+                            node = self.virtual_root
+                            replacement_draft = True
+                        else:
+                            raise SearchSpaceExhausted(
+                                "No expandable node or in-flight search work remains"
+                            )
                     logger.info("[step] No expandable node after bounded wait")
-                    return None
+                    if node is None:
+                        return None
 
         self.begin_search_work()
         try:
@@ -921,6 +1098,7 @@ class AgentSearch:
                     execute_immediately=execute_immediately,
                     init_solution_path=init_solution_path,
                     draft_role=draft_role,
+                    replacement_draft=replacement_draft,
                 )
             except Exception:
                 if claimed_repair_parent is not None:
@@ -934,6 +1112,8 @@ class AgentSearch:
                     self._release_mandatory_repair_parent(claimed_repair_parent)
         finally:
             self.end_search_work()
+            if replacement_draft:
+                self._release_replacement_draft_slot()
 
         if result_node:
             metric_value = result_node.metric.value if result_node.metric else None
@@ -977,6 +1157,9 @@ class AgentSearch:
             )
 
             execution.validate_executed_node(self, node)
+            prospective_audit = getattr(self, "prospective_audit", None)
+            if prospective_audit is not None:
+                prospective_audit.finalize_node(node)
 
             logger.info(f"Node {node.id} execution completed: metric={node.metric.value}, is_buggy={node.is_buggy}")
 

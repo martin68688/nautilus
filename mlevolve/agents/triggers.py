@@ -1,5 +1,6 @@
 import logging
 import copy
+import hashlib
 
 from agents.leakage_audit import rank_eligible
 from engine.search_node import SearchNode
@@ -7,6 +8,130 @@ from engine.search_node import SearchNode
 from engine.conditions import should_trigger_branch_fusion
 
 logger = logging.getLogger("MLEvolve")
+
+
+_EXACT_REPLAY_STATUSES = {
+    "exact_source_loaded",
+    "exact_source_loaded_fixed_holdout",
+}
+
+
+def _sha256_code(code: str) -> str:
+    return hashlib.sha256(str(code or "").encode("utf-8")).hexdigest()
+
+
+def _update_replay_lineage(parent_node: SearchNode, node: SearchNode) -> None:
+    """Keep source provenance without laundering a modified child as exact replay.
+
+    ``replay_source`` describes the immutable historical origin and is therefore
+    inherited.  ``replay_status`` describes the *current* artifact and must be
+    recomputed whenever code changes.
+    """
+
+    if not node.replay_source:
+        return
+    source_hash = str(node.replay_source.get("code_sha256") or "")
+    child_hash = _sha256_code(node.code)
+    parent_hash = _sha256_code(parent_node.code)
+    node.replay_source["current_code_sha256"] = child_hash
+    node.replay_source["lineage_parent_node_id"] = str(parent_node.id)
+    node.replay_source["lineage_parent_code_sha256"] = parent_hash
+    node.replay_source["exact_source_match"] = bool(
+        source_hash and child_hash == source_hash
+    )
+
+    if source_hash and child_hash == source_hash:
+        # A byte-identical child can retain exact status (for example a
+        # protocol transaction that journals an immutable seed).
+        if node.replay_status is None:
+            node.replay_status = parent_node.replay_status
+        return
+
+    if node.replay_status in _EXACT_REPLAY_STATUSES or node.replay_status is None:
+        node.replay_status = "derived_modified_from_exact_source"
+    node.replay_source["lineage_kind"] = "modified_descendant"
+
+    # SearchNode lineage is distinct from Result Fact publication.  Result
+    # Facts intentionally keep derived_from_refs=[], while this run-scoped
+    # node field lets transition/adoption publication bind the real parents.
+    if not node.derived_from_refs:
+        parent_claims = list(getattr(parent_node, "claim_refs", []) or [])
+        if not parent_claims:
+            graph_node_id = str(node.replay_source.get("graph_node_id") or "")
+            if graph_node_id:
+                parent_claims = [
+                    f"replay:{graph_node_id}:method_hypothesis"
+                ]
+        node.derived_from_refs = list(dict.fromkeys(parent_claims))
+
+
+def refresh_replay_lineage_after_instrumentation(
+    node: SearchNode,
+    *,
+    original_code: str,
+    instrumentation_receipt: dict,
+) -> None:
+    """Recompute direct-replay lineage after deterministic Host instrumentation."""
+
+    if not node.replay_source:
+        return
+    source_hash = str(node.replay_source.get("code_sha256") or "")
+    original_hash = _sha256_code(original_code)
+    current_hash = _sha256_code(node.code)
+    recorded_hash = str(node.replay_source.get("current_code_sha256") or "")
+    if source_hash and original_hash != source_hash:
+        if recorded_hash and recorded_hash != original_hash:
+            raise ValueError(
+                "Host instrumentation input does not match the recorded derived replay candidate"
+            )
+    node.replay_source["current_code_sha256"] = current_hash
+    node.replay_source["exact_source_match"] = bool(
+        source_hash and current_hash == source_hash
+    )
+    if source_hash and current_hash == source_hash:
+        return
+    node.replay_status = "derived_modified_from_exact_source"
+    node.replay_source["lineage_kind"] = "host_instrumented_descendant"
+    node.replay_source["host_entrypoint_instrumentation_receipt"] = copy.deepcopy(
+        instrumentation_receipt
+    )
+    graph_node_id = str(node.replay_source.get("graph_node_id") or "")
+    if graph_node_id:
+        claim_ref = f"replay:{graph_node_id}:method_hypothesis"
+        if claim_ref not in node.derived_from_refs:
+            node.derived_from_refs.append(claim_ref)
+
+
+def refresh_replay_lineage_after_revision(
+    node: SearchNode,
+    *,
+    original_code: str,
+    revision_kind: str,
+) -> None:
+    """Record an LLM/reviewer rewrite as a derived replay candidate."""
+
+    if not node.replay_source:
+        return
+    original_hash = _sha256_code(original_code)
+    current_hash = _sha256_code(node.code)
+    if original_hash == current_hash:
+        return
+    recorded_hash = str(node.replay_source.get("current_code_sha256") or "")
+    source_hash = str(node.replay_source.get("code_sha256") or "")
+    if recorded_hash and recorded_hash not in {original_hash, source_hash}:
+        raise ValueError("Replay revision input does not match its recorded lineage")
+    node.replay_source["revision_parent_code_sha256"] = original_hash
+    node.replay_source["current_code_sha256"] = current_hash
+    node.replay_source["exact_source_match"] = bool(
+        source_hash and current_hash == source_hash
+    )
+    node.replay_source["lineage_kind"] = str(revision_kind)
+    node.replay_status = "derived_full_runtime_candidate"
+    graph_node_id = str(node.replay_source.get("graph_node_id") or "")
+    if graph_node_id:
+        claim_ref = f"replay:{graph_node_id}:method_hypothesis"
+        if claim_ref not in node.derived_from_refs:
+            node.derived_from_refs.append(claim_ref)
 
 
 def should_check_data_leakage(agent, node: SearchNode) -> bool:
@@ -75,6 +200,9 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
 
     node.prompt_input = agent._serialize_prompt(prompt)
     node.created_time = time.strftime("%Y-%m-%dT%H:%M:%S")
+    prospective = getattr(agent, "prospective_audit", None)
+    if prospective is not None:
+        prospective.bind_thread_to_node(node)
 
     if new_branch:
         node.branch_id = agent.next_branch_id
@@ -112,6 +240,7 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
             node.replay_source = copy.deepcopy(parent_node.replay_source)
         if node.replay_status is None:
             node.replay_status = parent_node.replay_status
+        _update_replay_lineage(parent_node, node)
         parent_audit = parent_node.leakage_audit or {}
         if parent_audit.get("status") not in {None, "clean"}:
             from agents.leakage_audit import build_repair_preservation_contract
@@ -134,6 +263,26 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
                 # immutable source node is a non-executable repair seed.
                 node.replay_source["repair_seed_only"] = False
                 node.replay_source["repair_parent_node_id"] = parent_node.id
-                node.replay_status = "mandatory_audit_repair"
+                if node.replay_source.get("requires_full_runtime_migration") is True:
+                    node.replay_source["execution_seed_only"] = False
+                    node.replay_source["migration_parent_node_id"] = parent_node.id
+                    node.replay_status = "derived_full_runtime_candidate"
+                else:
+                    node.replay_status = "mandatory_audit_repair"
         if node.branch_id in agent.branch_all_nodes:
             agent.branch_all_nodes[node.branch_id].append(node)
+
+    if node.replay_source:
+        adapter = getattr(agent, "evaluation_authority", None)
+        bind_replay = getattr(adapter, "record_replay_exposure", None)
+        if callable(bind_replay):
+            try:
+                bind_replay(node)
+            except Exception as error:
+                # The node may still execute, but no adoption/derivation edge
+                # can be published without a successfully bound contract.
+                logger.warning(
+                    "Failed to bind replay ExperienceContract for node %s: %s",
+                    node.id,
+                    type(error).__name__,
+                )

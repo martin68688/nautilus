@@ -13,11 +13,76 @@ pretrained), run an A/B control (memory on/off) and diff the two reports.
 """
 import json
 import logging
+import os
+import threading
+import time
 import re
 from pathlib import Path
 from typing import Callable, Optional
 
 logger = logging.getLogger("MLEvolve")
+
+
+def run_bounded_adoption_analysis(cfg, journal) -> dict:
+    """Run auxiliary post-hoc analysis without holding the GPU Job open.
+
+    The worker is daemonized intentionally: after the configured deadline it
+    cannot determine core run success and is abandoned when PID 1 exits.
+    Online Host actuation receipts remain the authoritative adoption evidence.
+    """
+
+    timeout = max(
+        0,
+        int(
+            getattr(
+                getattr(cfg, "adoption_tracking", None),
+                "analysis_timeout_seconds",
+                300,
+            )
+            or 0
+        ),
+    )
+    worker_state: dict[str, object] = {"status": "running", "error": ""}
+
+    def target() -> None:
+        try:
+            run_adoption_analysis(cfg, journal)
+            worker_state["status"] = "complete"
+        except Exception as error:  # pragma: no cover - exercised via wrapper tests
+            worker_state["status"] = "failed"
+            worker_state["error"] = f"{type(error).__name__}: {error}"
+
+    started = time.monotonic()
+    worker = threading.Thread(
+        target=target,
+        name="bounded-adoption-analysis",
+        daemon=True,
+    )
+    worker.start()
+    worker.join(timeout=timeout)
+    if worker.is_alive():
+        # Take an immutable terminal snapshot. The daemon may eventually
+        # finish, but it must not race this timeout back to ``complete``.
+        state: dict[str, object] = {
+            "status": "timeout",
+            "error": "analysis exceeded its independent timeout",
+        }
+    else:
+        state = dict(worker_state)
+    state["timeout_seconds"] = timeout
+    state["elapsed_seconds"] = time.monotonic() - started
+    state["authoritative_for_run_status"] = False
+    log_dir = Path(cfg.log_dir)
+    target_path = log_dir / "adoption_analysis_status.json"
+    temporary = target_path.with_suffix(
+        target_path.suffix + f".{os.getpid()}.tmp"
+    )
+    temporary.write_text(
+        json.dumps(state, sort_keys=True, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(target_path)
+    return dict(state)
 
 FINAL_ADOPTION_OUTCOMES = {
     "fully_adopted",

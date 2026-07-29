@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import json
 import multiprocessing
+from pathlib import Path
 import threading
 
 from authority.authority_engine import AuthorityEngine
@@ -155,6 +156,16 @@ def test_protocol_hash_is_canonical_and_version_immutable():
     assert registered.canonical_hash
 
 
+def test_protocol_registry_ignores_hidden_appledouble_json(tmp_path: Path):
+    source = Path("mlevolve/config/protocols/mlevolve-default-v1.json")
+    (tmp_path / source.name).write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    (tmp_path / f"._{source.name}").write_bytes(b"\x00\x05\x16\x07AppleDouble")
+    registry = ProtocolRegistry(tmp_path)
+    refs = registry.refs()
+    assert len(refs) == 1
+    assert refs[0].protocol_id == "mlevolve-default"
+
+
 def test_and_or_paths_cannot_combine_two_incomplete_paths():
     registry = ProtocolRegistry()
     spec = registry.register(protocol())
@@ -167,7 +178,8 @@ def test_and_or_paths_cannot_combine_two_incomplete_paths():
     graph.add_path(EvidencePath("right", "c1", [item.receipt_id for item in receipts[3:]]))
     engine = AuthorityEngine(registry, graph=graph)
     decision = engine.authorize(request(spec.ref()))
-    assert decision.outcome == DecisionOutcome.DENY
+    assert decision.outcome == DecisionOutcome.REQUIRE_REPLAY
+    assert decision.reason_codes == ["missing_evidence"]
     graph.add_path(EvidencePath("complete", "c1", [item.receipt_id for item in receipts]))
     decision = engine.authorize(request(spec.ref()))
     assert decision.outcome == DecisionOutcome.ALLOW
@@ -313,7 +325,8 @@ def test_protocol_drift_requires_new_replay_path():
         graph.add_receipt(receipt)
     graph.add_path(EvidencePath("v1-path", "c1", [item.receipt_id for item in receipts]))
     decision = AuthorityEngine(registry, graph=graph).authorize(request(v2.ref()))
-    assert decision.outcome == DecisionOutcome.REQUIRE_REPLAY
+    assert decision.outcome == DecisionOutcome.REQUIRE_HUMAN_REVIEW
+    assert decision.reason_codes == ["contract_mismatch"]
     assert "active_protocol_compatibility" in decision.missing_obligations
 
 

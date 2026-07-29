@@ -419,7 +419,8 @@ def test_runtime_closure_allows_clean_result_writeback_but_not_legacy_unactuated
     assert promote_result.outcome == DecisionOutcome.ALLOW
     assert "receipt:static_actuation" not in promote_result.missing_obligations
     assert "receipt:runtime_actuation" not in promote_result.missing_obligations
-    assert promote.outcome == DecisionOutcome.QUARANTINE
+    assert promote.outcome == DecisionOutcome.REQUIRE_REPLAY
+    assert promote.reason_codes == ["missing_evidence"]
     assert {
         "receipt:static_actuation",
         "receipt:runtime_actuation",

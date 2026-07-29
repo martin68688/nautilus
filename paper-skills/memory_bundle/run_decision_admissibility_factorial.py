@@ -822,7 +822,7 @@ def _authority_case(
         DecisionOutcome.ALLOW.value
         if variant == "clean"
         else (
-            DecisionOutcome.REQUIRE_REPLAY.value
+            DecisionOutcome.REQUIRE_HUMAN_REVIEW.value
             if attack == "protocol_drift"
             else DecisionOutcome.DENY.value
         )

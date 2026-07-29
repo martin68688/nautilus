@@ -20,6 +20,7 @@ from agents.prompts import (
     prompt_resp_fmt,
     get_internet_clarification,
     get_impl_guideline_from_agent,
+    host_protocol_preflight_enabled,
 )
 from agents.planner import run_planner, generate_initial_plan, refine_plan_to_json, build_planner_task, build_planner_suffix, build_chat_prompt_for_model
 from agents.coder import plan_and_code_query
@@ -249,8 +250,13 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
     prompt["Instructions"] |= prompt_leakage_prevention()
     prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
-    internet_clarification = get_internet_clarification(getattr(agent.cfg, "pretrain_model_dir", ""))
-    prompt["Instructions"]["Implementation guideline"].extend(internet_clarification)
+    if not host_protocol_preflight_enabled(agent):
+        internet_clarification = get_internet_clarification(
+            getattr(agent.cfg, "pretrain_model_dir", "")
+        )
+        prompt["Instructions"]["Implementation guideline"].extend(
+            internet_clarification
+        )
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY
 
     output = wrap_code(parent_node.term_out, lang="")
@@ -314,7 +320,6 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     register_node(agent, new_node, prompt_complete, parent_node=parent_node)
 
     from agents.adoption import log_adoption
-    log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "improve")
     log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "improve")
     if new_node.leakage_repair_context:
         log_adoption(

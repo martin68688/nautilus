@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Any, List, Tuple
 
@@ -10,6 +11,7 @@ from agents.prompts import (
     MODEL_ARCHITECTURE_SAFETY,
     get_internet_clarification,
     get_impl_guideline_from_agent,
+    host_protocol_preflight_enabled,
 )
 
 from agents.coder.diff_coder import SearchReplacePatcher, DIFF_SYS_FORMAT
@@ -25,7 +27,79 @@ from agents.memory.external_skill_memory import fetch_external_skill_memory, ext
 logger = logging.getLogger("MLEvolve")
 
 
-def _runtime_recovery_guidance(parent_node: SearchNode) -> list[str]:
+def _protocol_preflight_recovery_guidance(parent_node: SearchNode) -> list[str]:
+    """Expose exact fail-closed Preflight facts to the Debug Agent."""
+
+    report = dict(getattr(parent_node, "protocol_preflight", None) or {})
+    exc_info = dict(getattr(parent_node, "exc_info", None) or {})
+    report = dict(exc_info.get("preflight_report") or report)
+    raw_violations = list(
+        report.get("violations") or exc_info.get("violations") or []
+    )
+    retired_method_prefixes = (
+        "epoch_cap:",
+        "cv_fold_cap:",
+        "trainable_model_cap:",
+        "dataset_wide_per_sample_precompute:",
+        "unauthorized_import_roots:",
+        "remote_asset_refs:",
+        "unverified_local_loads:",
+    )
+    retired_method_observations = [
+        value
+        for value in raw_violations
+        if str(value).startswith(retired_method_prefixes)
+    ]
+    violations = [
+        value
+        for value in raw_violations
+        if not str(value).startswith(retired_method_prefixes)
+    ]
+    missing_coverage = list(
+        report.get("missing_coverage") or exc_info.get("missing_coverage") or []
+    )
+    missing_full_runtime = list(
+        report.get("missing_full_runtime_coverage")
+        or exc_info.get("missing_full_runtime_coverage")
+        or []
+    )
+    missing_receipts = list(
+        report.get("missing_receipts") or exc_info.get("missing_receipts") or []
+    )
+    if retired_method_observations and not any(
+        (violations, missing_coverage, missing_full_runtime, missing_receipts)
+    ):
+        return [
+            "The previous report contains retired method-limiting Host observations: "
+            + json.dumps(retired_method_observations, sort_keys=True),
+            "They are non-blocking under the current leakage-only Host policy. Preserve the folds, epochs, ensembles, model family, feature engineering, packages, checkpoints, and asset strategy; regenerate evidence under the current binding instead of changing the method.",
+        ]
+    if not any((violations, missing_coverage, missing_full_runtime, missing_receipts)):
+        return []
+    details = {
+        "status": report.get("status") or exc_info.get("status"),
+        "violations": violations,
+        "missing_coverage": missing_coverage,
+        "missing_full_runtime_coverage": missing_full_runtime,
+        "missing_receipts": missing_receipts,
+    }
+    guidance = [
+        "The Host rejected the previous candidate before training. Repair every exact item below; a generic runtime change will not pass Preflight.",
+        "Exact sealed Preflight facts: "
+        + json.dumps(details, sort_keys=True),
+        "Preserve the intended method, metric, model family, and legitimate training budget. Do not rename variables or delete evidence calls merely to evade the checker.",
+    ]
+    if retired_method_observations:
+        guidance.append(
+            "Ignore these retired method-limit observations and preserve the method: "
+            + json.dumps(retired_method_observations, sort_keys=True)
+        )
+    return guidance
+
+
+def _runtime_recovery_guidance(
+    parent_node: SearchNode, *, allow_remote_assets: bool = True
+) -> list[str]:
     """Return targeted constraints for deterministic environment failures."""
     failure_values = []
     for attribute in ("exc_type", "term_out", "analysis"):
@@ -57,6 +131,8 @@ def _runtime_recovery_guidance(parent_node: SearchNode) -> list[str]:
             "Do not redesign or simplify the branch: this is an execution-environment repair only.",
         ])
     if (
+        allow_remote_assets
+        and
         "filenotfounderror" in failure_text
         and ("hubconf.py" in failure_text or "torch.hub" in failure_text)
     ):
@@ -168,6 +244,17 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
                 "Do not remove or replace DeBERTa/XGBoost/Logistic Regression/TF-IDF/weight-blending "
                 "components merely to make the script easier to run."
             )
+        if (
+            parent_node.replay_source
+            and parent_node.replay_source.get("requires_full_runtime_migration") is True
+        ):
+            inherited.extend(
+                [
+                    "This is a Host full-runtime migration, not an ordinary model debug. The historical source is method evidence only and must not be executed byte-for-byte.",
+                    "Return a complete derived program that preserves every applicable source model, feature, ensemble, loss, optimizer, checkpoint, and training choice while moving the real fit, validation prediction, Host evaluation, and selection freeze into main() using the frozen ProtocolSession SDK.",
+                    "Do not inherit the historical metric. The derived program must obtain a fresh Host score and fresh signed runtime receipts under its new code hash.",
+                ]
+            )
         prompt["Instructions"]["Inherited draft role contract (MANDATORY)"] = inherited
     if parent_node.leakage_audit and parent_node.leakage_audit.get("status") != "clean":
         repair_contract = {
@@ -185,14 +272,27 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         }
         prompt["Instructions"] = repair_contract | prompt["Instructions"]
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
-    runtime_guidance = _runtime_recovery_guidance(parent_node)
+    preflight_guidance = _protocol_preflight_recovery_guidance(parent_node)
+    if preflight_guidance:
+        prompt["Instructions"][
+            "PROTOCOL PREFLIGHT REPAIR - HIGHEST PRIORITY"
+        ] = preflight_guidance
+    runtime_guidance = _runtime_recovery_guidance(
+        parent_node,
+        allow_remote_assets=not host_protocol_preflight_enabled(agent),
+    )
     if runtime_guidance:
         prompt["Instructions"]["RUNTIME RESOURCE RECOVERY - HIGHEST PRIORITY"] = runtime_guidance
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY
     prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
 
-    internet_clarification = get_internet_clarification(getattr(agent.cfg, "pretrain_model_dir", ""))
-    prompt["Instructions"]["Implementation guideline"].extend(internet_clarification)
+    if not host_protocol_preflight_enabled(agent):
+        internet_clarification = get_internet_clarification(
+            getattr(agent.cfg, "pretrain_model_dir", "")
+        )
+        prompt["Instructions"]["Implementation guideline"].extend(
+            internet_clarification
+        )
 
     debug_memory_guidance = ""
     if agent.global_memory and len(agent.global_memory.records) > 0:
@@ -414,7 +514,6 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     except NameError:
         _mem_ids = []
     log_adoption(new_node, agent, "global_memory", _mem_ids, "debug")
-    log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "debug")
     log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "debug")
     if new_node.leakage_repair_context:
         log_adoption(

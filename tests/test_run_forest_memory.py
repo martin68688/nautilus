@@ -1063,6 +1063,51 @@ def test_agent_step_ignores_stale_journal_reservations_when_exhausted(monkeypatc
         )
 
 
+def test_replacement_draft_slots_are_bounded_and_single_inflight():
+    import sys
+    import threading
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.agent_search import AgentSearch
+
+    agent = AgentSearch.__new__(AgentSearch)
+    agent.scfg = SimpleNamespace(
+        replacement_drafts_enabled=True,
+        max_replacement_drafts=2,
+    )
+    agent.acfg = SimpleNamespace(steps=80)
+    agent.journal = [object()]
+    agent._replacement_draft_lock = threading.Lock()
+    agent._replacement_draft_count = 0
+    agent._replacement_draft_inflight = False
+    agent._notify_search_state = lambda: None
+
+    assert agent._claim_replacement_draft_slot() is True
+    assert agent._claim_replacement_draft_slot() is False
+    assert agent._replacement_draft_count == 1
+
+    agent._release_replacement_draft_slot()
+    assert agent._claim_replacement_draft_slot() is True
+    agent._release_replacement_draft_slot()
+    assert agent._claim_replacement_draft_slot() is False
+    assert agent._replacement_draft_count == 2
+
+
+def test_expected_child_count_never_becomes_negative():
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.search_node import SearchNode
+
+    root = SearchNode(code="", plan="root", stage="root")
+    root.sub_expected_child_count()
+    assert root.expected_child_count == 0
+    root.add_expected_child_count()
+    root.sub_expected_child_count()
+    root.sub_expected_child_count()
+    assert root.expected_child_count == 0
+
+
 def test_topk_fully_expanded_selection_propagates_wait(monkeypatch):
     import sys
 
@@ -1171,6 +1216,10 @@ def test_debug_runtime_recovery_preserves_missing_torch_hub_model_family():
 
     assert "Do not replace the architecture or model family" in guidance
     assert "online GitHub source" in guidance
+    host_guidance = "\n".join(
+        _runtime_recovery_guidance(parent, allow_remote_assets=False)
+    )
+    assert "online GitHub source" not in host_guidance
 
 
 def test_d93_structural_rename_still_matches_failure_patterns():

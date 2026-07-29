@@ -61,6 +61,11 @@ MODEL_ARCHITECTURE_SAFETY = {
         "⚠️ **AMP Mixed Precision**: When using `torch.cuda.amp.autocast()`, NEVER use values outside [-65504, 65504] in `masked_fill`. Use `-1e4` instead of `-1e9` for attention masking. float16 cannot represent `-1e9`.",
         "",
         "⚠️ **Cross-fold Checkpoint Loading**: In k-fold CV, each fold trains a fresh model. Do NOT load a checkpoint from fold N into fold N+1 unless you handle key mismatches.",
+        "",
+        "⚠️ **Variable Image Shapes / DataLoader Collation**: Never assume every image has the first image's `(H, W)`. Before `np.stack`, `torch.stack`, tensor batching, or reshape-by-`h*w`, inspect all shapes and make them consistent.",
+        "- For classification: apply a deterministic `Resize((H, W))` or crop AFTER any augmentation that can change size.",
+        "- For image-to-image restoration: preserve each sample's original output shape; use fixed-size patches, shape-bucketed batches, padding plus masks, or `batch_size=1`, then reconstruct/crop each prediction to its own original `(H, W)`.",
+        "- Never reshape every sample using dimensions captured from only the first image, and never directly stack variable-size images.",
     ]
 }
 

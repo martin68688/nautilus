@@ -1,0 +1,29 @@
+extends: config_authority_shadow.yaml
+
+# Additive local/shadow profile. The legacy AST observer remains active only as
+# a diagnostic comparator; Host SDK evidence is not yet an enforcing positive.
+evaluation_authority:
+  mode: shadow
+  rollout_id: host-protocol-shadow-v1
+  runtime_protocol_observer_enabled: true
+  protocol_runtime_mode: host_sdk_shadow
+  protocol_runtime_artifact_root: ""
+
+agent:
+  protocol_repair:
+    enabled: false
+  protocol_preflight:
+    enabled: true
+    repair_enabled: false
+    max_repair_attempts: 1
+    binding_path: ${oc.env:MLEVOLVE_HOST_PROTOCOL_BINDING}
+    legacy_ast_mode: shadow
+    report_root: ""
+    expected_contract_hash: ""
+    contract_path: ""
+    data_view_manifest_path: ""
+    image_digest: ""
+    sdk_hash: ""
+    collector_private_key_path: ${oc.env:MLEVOLVE_HOST_COLLECTOR_KEY_FILE}
+    candidate_uid: 65534
+    consume_collector_private_key: true

@@ -38,6 +38,43 @@ def requires_protocol_repair(agent: Any, target_audit_status: str) -> bool:
     )
 
 
+def full_runtime_migration_report(agent: Any, code: str) -> dict[str, Any]:
+    """Describe why an otherwise legal replay needs a derived Host-SDK child.
+
+    Historical RunForest programs predate the Contract-bound ``main()``
+    lifecycle.  They remain valid method evidence, but must not be submitted as
+    byte-exact executable candidates when Host SDK preflight is enabled.
+    """
+
+    preflight = getattr(getattr(agent, "acfg", None), "protocol_preflight", None)
+    if not bool(getattr(preflight, "enabled", False)):
+        return {}
+    contract_path = str(getattr(preflight, "contract_path", "") or "")
+    if not contract_path:
+        return {}
+
+    from authority.protocol_execution_contract import read_contract_artifact
+    from protocol_runtime.preflight import static_compatibility_check
+
+    contract = read_contract_artifact(contract_path)
+    if not bool(contract.adapter_spec.get("full_runtime_sdk_required", False)):
+        return {}
+    static = static_compatibility_check(code, contract)
+    missing = list(static.get("missing_full_runtime_coverage") or [])
+    if not missing:
+        return {}
+    return {
+        "schema": "mlevolve_replay_full_runtime_migration_v1",
+        "status": "required",
+        "contract_hash": contract.contract_hash,
+        "code_sha256": str(static["code_sha256"]),
+        "static_report_hash": str(static["static_report_hash"]),
+        "missing_full_runtime_coverage": sorted(map(str, missing)),
+        "source_execution_allowed": False,
+        "derived_candidate_required": True,
+    }
+
+
 def validate_candidate_audit(
     target: dict[str, Any],
     replay_audit: dict[str, Any],
@@ -91,7 +128,9 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
     run_id = str(target.get("run_id") or "")
     original_node_id = str(target.get("original_node_id") or "")
     run_short = _short_run_id(run_id)
-    if run_short not in set(meta.get("source_runs") or []):
+    source_runs = {str(value) for value in (meta.get("source_runs") or [])}
+    source_run_shorts = {_short_run_id(value) for value in source_runs}
+    if run_id not in source_runs and run_short not in source_run_shorts:
         raise ValueError(f"Replay run {run_short} is not present in the clean graph source set")
     if any(run_short.startswith(str(prefix)) for prefix in meta.get("blocked_run_prefixes") or []):
         raise ValueError(f"Replay run {run_short} matches a blocked run prefix")
@@ -178,6 +217,7 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
         audit=replay_audit,
         source_run_id=run_id,
         repair_seed=requires_repair,
+        source_execution_verified=True,
     ):
         raise ValueError("Replay source lacks CODE_SEED authority under the active protocol")
 
@@ -190,6 +230,11 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
         if node.get("type") == "Transition" and node.get("child_node_id") == graph_node_id
     ]
     source_ref_ids = list(dict.fromkeys([graph_node_id, *transition_ids, *sop_ids]))
+    full_runtime_migration = (
+        full_runtime_migration_report(agent, code)
+        if not requires_repair and not external_holdout_mode
+        else {}
+    )
     replay_source = {
         "selection_mode": "audited_target_manifest_v2",
         "task_id": task_id,
@@ -213,6 +258,9 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
         "requires_repair": requires_repair,
         "repair_seed_only": requires_repair,
         "known_issue_codes": sorted({str(item) for item in target.get("known_issue_codes", []) if item}),
+        "requires_full_runtime_migration": bool(full_runtime_migration),
+        "full_runtime_migration": full_runtime_migration,
+        "execution_seed_only": bool(full_runtime_migration),
     }
     if requires_repair:
         replay_status = "blocked_exact_source_repair_seed"
@@ -229,6 +277,16 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
             "Execute the historical source byte-for-byte in the label-isolated train view. "
             "Its historical and self-reported validation metrics are search-only; only the "
             "terminal external fixed-holdout evaluator may rank this submission."
+        )
+    elif full_runtime_migration:
+        replay_status = "blocked_legacy_full_runtime_seed"
+        adoption_mode = "derived_full_runtime_migration_seed"
+        requirement = (
+            "Treat the byte-exact historical program as a non-executable method seed. "
+            "Create a derived child that preserves its model, feature, ensemble, checkpoint, "
+            "loss, optimizer, and training design while moving real fit, validation prediction, "
+            "Host evaluation, and selection freeze into the frozen full-runtime SDK lifecycle. "
+            "The child must receive a fresh code hash, Preflight, execution receipts, and score."
         )
     else:
         replay_status = "exact_source_loaded"

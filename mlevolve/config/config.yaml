@@ -36,6 +36,9 @@ pretrain_model_dir: ""  # path to pretrained model weights, e.g. /data/pretrain_
 methodology_kb_path: "../paper-skills/experience_kb"  # path to methodology knowledge base
 # methodology_kb_path: ""
 methodology_dynamic: True   # True=LLM dynamic search, False=static methodology_map.json
+# Stop scheduling/limit candidates early enough to persist terminal or partial
+# evidence before the enclosing Kubernetes deadline.
+finalize_reserve_seconds: 900
 
 # ============================================================
 #  Code execution
@@ -121,6 +124,25 @@ agent:
     stage_generation_backend_retries: 2
     require_runtime_provenance: True
 
+  # Host Protocol preflight is opt-in.  Keep the complete schema in the base
+  # config so ordinary/shadow runs can load without a missing-key error; host
+  # enforce overlays replace these values with their frozen binding.
+  protocol_preflight:
+    enabled: False
+    repair_enabled: False
+    max_repair_attempts: 1
+    binding_path: ""
+    legacy_ast_mode: shadow
+    report_root: ""
+    expected_contract_hash: ""
+    contract_path: ""
+    data_view_manifest_path: ""
+    image_digest: ""
+    sdk_hash: ""
+    collector_private_key_path: ""
+    candidate_uid: 65534
+    consume_collector_private_key: False
+
   # --- Branch strategy ---
   fusion_vs_evolution_prob: 0.3
   branch_fusion_trigger_prob: 1.0
@@ -145,6 +167,10 @@ agent:
 
     # Node expansion limits
     num_drafts: 5
+    # When every existing branch is permanently non-expandable, reserve a
+    # bounded number of fresh root hypotheses instead of ending the run early.
+    replacement_drafts_enabled: True
+    max_replacement_drafts: 5
     num_bugs: 1
     num_improves: 3
     topk_max_improves: 10
@@ -230,6 +256,10 @@ evaluation_authority:
   # Host-injected call tracing binds executed split/fit/prediction/evaluator
   # events to the immutable code snapshot. It is active only in shadow/enforce.
   runtime_protocol_observer_enabled: true
+  # legacy_ast | host_sdk_shadow | host_sdk_enforce. Historical/default runs
+  # remain legacy until an additive rollout profile is selected explicitly.
+  protocol_runtime_mode: legacy_ast
+  protocol_runtime_artifact_root: ""
 
 coldstart:
   use_coldstart: True
@@ -244,6 +274,17 @@ adoption_tracking:
   enable: False
   enable_analysis: True
   judge_mode: keyword    # keyword | llm | llm-all | hybrid
+  analysis_timeout_seconds: 300
+
+# Prospective dual-observer prevalence audit. Disabled for ordinary runs.
+prospective_audit:
+  enabled: false
+  # Online smoke may allow pending paired counterfactuals. Formal Experiment A
+  # keeps this false and the packet gate rejects incomplete counterfactuals.
+  allow_pending_counterfactual: false
+  counterfactual_timeout_seconds: 300
+  counterfactual_generation_attempts: 2
+  counterfactual_memory_max_chars: 12000
 
 # ============================================================
 #  External persistent skill memory
@@ -278,6 +319,7 @@ external_skill_memory:
   enable_agentic: False
   navigator_max_steps: 3
   navigator_reference_budget: 1200
+  selector_max_tokens: 1800
   top_k: 8
   depth: 2
   beam_width: 3
