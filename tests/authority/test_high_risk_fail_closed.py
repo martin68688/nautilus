@@ -80,6 +80,9 @@ def test_engine_internal_exception_denies_high_risk_operation(monkeypatch) -> No
     assert decision.reason_codes == ["collector_internal_error"]
     assert decision.permitted_scope is None
     assert decision.missing_obligations == ["authority_internal_error:RuntimeError"]
+    assert decision.diagnostics["error_message"] == "simulated compiler failure"
+    assert len(decision.diagnostics["error_message_sha256"]) == 64
+    assert decision.diagnostics["traceback_frames"][-1]["function"] == "broken"
 
 
 def test_low_risk_internal_exception_returns_warning_navigation_only(monkeypatch) -> None:
@@ -109,6 +112,32 @@ def test_low_risk_internal_exception_returns_warning_navigation_only(monkeypatch
     assert decision.missing_obligations == ["authority_internal_error:RuntimeError"]
     assert "navigation only" in str(decision.required_action)
     assert "abstain" in str(decision.required_action)
+
+
+def test_internal_error_diagnostics_redact_secret_values(monkeypatch) -> None:
+    registry, protocol_ref = _registry()
+    graph = EvidenceGraph()
+    graph.add_claim(
+        Claim(
+            claim_id="claim",
+            claim_type=ClaimType.SCORE,
+            subject_artifact_id="artifact",
+            task_scope={"task_id": "task"},
+            method_fingerprint="method",
+            protocol_ref=protocol_ref,
+            statement="score",
+        )
+    )
+    engine = AuthorityEngine(registry, graph=graph)
+
+    def broken(*_args, **_kwargs):
+        raise RuntimeError("api_key=sentinel collector failure")
+
+    monkeypatch.setattr(engine.compiler, "compile", broken)
+    decision = engine.authorize(_request(protocol_ref, Operation.RANK))
+
+    assert "sentinel" not in decision.diagnostics["error_message"]
+    assert decision.diagnostics["error_message"].startswith("api_key=<redacted>")
 
 
 def _agent(tmp_path: Path):

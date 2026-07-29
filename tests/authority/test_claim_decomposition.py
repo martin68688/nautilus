@@ -61,6 +61,59 @@ def test_mixed_node_splits_fact_claims_with_stable_ids_and_bindings() -> None:
     assert set(node.claim_refs) == {claim.claim_id for claim in first.claims}
 
 
+def test_repeated_audit_rule_at_distinct_lines_has_distinct_stable_claims() -> None:
+    node = _mixed_node()
+    node.leakage_audit["issues"] = [
+        {
+            "issue_code": "TRANSFORM_FIT_BEFORE_SPLIT",
+            "category": "validation_contamination",
+            "severity": "medium",
+            "line": 246,
+            "evidence": "StandardScaler.fit_transform(train_stats)",
+        },
+        {
+            "issue_code": "TRANSFORM_FIT_BEFORE_SPLIT",
+            "category": "validation_contamination",
+            "severity": "medium",
+            "line": 255,
+            "evidence": "StandardScaler.fit_transform(X_train)",
+        },
+    ]
+
+    first = decompose_node_claims(node, _protocol(), "task")
+    second = decompose_node_claims(_mixed_node_with_repeated_audit_rule(), _protocol(), "task")
+    findings = first.claims_of_type(ClaimType.AUDIT_FINDING)
+    repeated = second.claims_of_type(ClaimType.AUDIT_FINDING)
+
+    assert len(findings) == 2
+    assert len({claim.claim_id for claim in findings}) == 2
+    assert len({claim.evidence_refs[0] for claim in findings}) == 2
+    assert [claim.claim_id for claim in findings] == [
+        claim.claim_id for claim in repeated
+    ]
+
+
+def _mixed_node_with_repeated_audit_rule():
+    node = _mixed_node()
+    node.leakage_audit["issues"] = [
+        {
+            "issue_code": "TRANSFORM_FIT_BEFORE_SPLIT",
+            "category": "validation_contamination",
+            "severity": "medium",
+            "line": 246,
+            "evidence": "StandardScaler.fit_transform(train_stats)",
+        },
+        {
+            "issue_code": "TRANSFORM_FIT_BEFORE_SPLIT",
+            "category": "validation_contamination",
+            "severity": "medium",
+            "line": 255,
+            "evidence": "StandardScaler.fit_transform(X_train)",
+        },
+    ]
+    return node
+
+
 def test_llm_can_reword_one_bound_fact_but_cannot_invent_authority() -> None:
     node = _mixed_node()
     baseline = decompose_node_claims(node, _protocol(), "task")

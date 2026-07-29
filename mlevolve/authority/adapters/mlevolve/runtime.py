@@ -372,10 +372,11 @@ class MLEvolveAuthorityAdapter:
                 refs.append(decision.decision_id)
             log = logger.error if is_high_risk(operation) else logger.warning
             log(
-                "Authority internal error returned a fail-safe decision for %s on node %s: %s",
+                "Authority internal error returned a fail-safe decision for %s on node %s: %s: %s",
                 operation.value,
                 getattr(node, "id", "unknown"),
                 type(error).__name__,
+                decision.diagnostics.get("error_message", ""),
             )
             self._emit_snapshots()
             return decision

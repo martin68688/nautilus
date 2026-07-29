@@ -212,13 +212,11 @@ def birds_invalid_terminal_candidate(session: ProtocolSession) -> None:
         session.freeze_selection("invalid", based_on=views.validation)
 
 
-def taxi_invalid_random_resplit_candidate(session: ProtocolSession) -> None:
-    from sklearn.model_selection import train_test_split
-
+def taxi_invalid_terminal_candidate(session: ProtocolSession) -> None:
+    terminal_labels = "/data/evaluator/taxi_terminal_labels.csv"
     views = session.get_split()
     if False:
-        train_test_split([], shuffle=True)
-        session.fit_scope(component="invalid", data_view=views.train)
+        session.fit_scope(component=terminal_labels, data_view=views.train)
         session.prediction_scope(component="invalid", data_view=views.validation)
         session.evaluate_internal(views.validation, [], label_key="fare")
         session.freeze_selection("invalid", based_on=views.validation)
@@ -233,7 +231,7 @@ FRAMEWORK_CANDIDATES: dict[str, Callable[[ProtocolSession], None]] = {
 INVALID_CANDIDATES: dict[str, Callable[[ProtocolSession], None]] = {
     "aerial-cactus-identification": cactus_invalid_terminal_candidate,
     "mlsp-2013-birds": birds_invalid_terminal_candidate,
-    "new-york-city-taxi-fare-prediction": taxi_invalid_random_resplit_candidate,
+    "new-york-city-taxi-fare-prediction": taxi_invalid_terminal_candidate,
 }
 
 

@@ -150,6 +150,53 @@ def test_failed_node_without_score_is_normal_fail_closed_decision(tmp_path):
     assert all(event["event_type"] != "authority_internal_error" for event in events)
 
 
+def test_repeated_audit_rule_does_not_collide_in_immutable_graph(tmp_path):
+    agent = fake_agent(tmp_path, mode="enforce")
+    adapter = MLEvolveAuthorityAdapter(agent)
+    failed = node("leaf-repeated-audit", True)
+    failed.metric = Metric(None)
+    failed.is_buggy = True
+    failed.is_valid = None
+    failed.leakage_audit["issues"] = [
+        {
+            "issue_code": "TRANSFORM_FIT_BEFORE_SPLIT",
+            "category": "validation_contamination",
+            "severity": "medium",
+            "line": 246,
+            "evidence": "StandardScaler.fit_transform(train_stats)",
+        },
+        {
+            "issue_code": "TRANSFORM_FIT_BEFORE_SPLIT",
+            "category": "validation_contamination",
+            "severity": "medium",
+            "line": 255,
+            "evidence": "StandardScaler.fit_transform(X_train)",
+        },
+    ]
+
+    decision = adapter.authorize_node(
+        failed,
+        Operation.RANK,
+        DecisionStage.BRANCH_SELECTION,
+        "test.leaf_repeated_audit",
+    )
+
+    assert decision.outcome == DecisionOutcome.DENY
+    assert decision.missing_obligations == ["claim_exists"]
+    findings = [
+        claim
+        for claim in adapter.engine.graph.claims.values()
+        if claim.claim_type.value == "audit_finding"
+    ]
+    assert len(findings) == 2
+    assert len({claim.claim_id for claim in findings}) == 2
+    events = [
+        json.loads(line)
+        for line in (tmp_path / "authority_events.jsonl").read_text().splitlines()
+    ]
+    assert all(event["event_type"] != "authority_internal_error" for event in events)
+
+
 def test_global_top_k_authorizes_before_sorting(tmp_path):
     from engine.node_selection import get_top_k_nodes_global
 

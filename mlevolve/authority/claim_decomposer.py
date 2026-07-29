@@ -53,6 +53,33 @@ def _issue_code(issue: dict[str, Any], index: int) -> str:
     )
 
 
+def _audit_finding_fingerprint(issue: dict[str, Any], code_value: str) -> str:
+    """Identify one concrete finding, not only its reusable rule code.
+
+    A detector may report the same rule more than once at different source
+    locations.  Rule code alone is therefore not a Claim boundary: using it
+    caused distinct findings to collide in the immutable EvidenceGraph.
+    """
+
+    return _stable_digest(
+        {
+            "issue_code": code_value,
+            "category": str(issue.get("category") or ""),
+            "severity": str(issue.get("severity") or ""),
+            "line": str(issue.get("line") or ""),
+            "column": str(issue.get("column") or ""),
+            "detector": str(issue.get("detector") or ""),
+            "evidence": " ".join(
+                str(
+                    issue.get("evidence")
+                    or issue.get("message")
+                    or code_value
+                ).split()
+            ),
+        }
+    )
+
+
 def _short_text(value: Any, limit: int = 360) -> str:
     text = " ".join(str(value or "").split())
     return text[:limit]
@@ -155,9 +182,17 @@ class ClaimDecomposer:
                 {"fact": "debug_repair_candidate", "stage": stage, "signals": repair_signals},
             ))
 
+        seen_audit_findings: set[str] = set()
         for index, issue in enumerate(issues):
             code_value = _issue_code(issue, index)
-            evidence_ref = f"audit:{artifact_kind}:{artifact_id}:{code_value}"
+            finding_fingerprint = _audit_finding_fingerprint(issue, code_value)
+            if finding_fingerprint in seen_audit_findings:
+                continue
+            seen_audit_findings.add(finding_fingerprint)
+            evidence_ref = (
+                f"audit:{artifact_kind}:{artifact_id}:{code_value}:"
+                f"{finding_fingerprint[:16]}"
+            )
             evidence_catalog.add(evidence_ref)
             evidence = _short_text(issue.get("evidence") or issue.get("message") or code_value)
             claim_rows.append((
@@ -169,6 +204,7 @@ class ClaimDecomposer:
                     "issue_code": code_value,
                     "category": str(issue.get("category") or ""),
                     "severity": str(issue.get("severity") or ""),
+                    "finding_fingerprint": finding_fingerprint,
                 },
             ))
 

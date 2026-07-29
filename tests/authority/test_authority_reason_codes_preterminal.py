@@ -136,6 +136,8 @@ def test_authority_internal_error_is_quarantine_not_candidate_denial(monkeypatch
         AuthorityReasonCode.COLLECTOR_INTERNAL_ERROR.value
     ]
     assert decision.responsible_component == "authority_engine"
+    assert decision.diagnostics["error_message"] == "collector plumbing"
+    assert decision.diagnostics["traceback_frames"][-1]["function"] == "fail"
 
 
 def _attestation(manifest, closure):

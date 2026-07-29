@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import dataclasses
+import hashlib
+import re
+import traceback
 import uuid
 
 from .evidence_graph import EvidenceGraph
@@ -28,6 +31,33 @@ def _jsonable(value):
     if hasattr(value, "value"):
         return value.value
     return value
+
+
+_SENSITIVE_ERROR_VALUE_RE = re.compile(
+    r"(?i)(api[_-]?key|authorization|bearer|password|secret|token)"
+    r"(\s*[:=]\s*)([^\s,;]+)"
+)
+
+
+def _internal_error_diagnostics(error: Exception) -> dict:
+    raw_message = " ".join(str(error).split())
+    safe_message = _SENSITIVE_ERROR_VALUE_RE.sub(r"\1\2<redacted>", raw_message)
+    frames = [
+        {
+            "file": frame.filename.rsplit("/", 1)[-1],
+            "line": frame.lineno,
+            "function": frame.name,
+        }
+        for frame in traceback.extract_tb(error.__traceback__)[-12:]
+    ]
+    return {
+        "error_type": type(error).__name__,
+        "error_message": safe_message[:1000],
+        "error_message_sha256": hashlib.sha256(
+            safe_message.encode("utf-8")
+        ).hexdigest(),
+        "traceback_frames": frames,
+    }
 
 
 def _claim_task_scope_matches(claim_scope: dict, request_context) -> bool:
@@ -232,7 +262,8 @@ class AuthorityEngine:
         request: AuthorityRequest,
         error: Exception,
     ) -> AuthorityDecision:
-        error_type = type(error).__name__
+        error_diagnostics = _internal_error_diagnostics(error)
+        error_type = str(error_diagnostics["error_type"])
         navigation_only = request.operation in {
             Operation.INSPECT,
             Operation.DEBUG_HYPOTHESIS,
@@ -267,7 +298,7 @@ class AuthorityEngine:
             reason_codes=[AuthorityReasonCode.COLLECTOR_INTERNAL_ERROR.value],
             responsible_component="authority_engine",
             repairable=False,
-            diagnostics={"error_type": error_type},
+            diagnostics=error_diagnostics,
         )
         self.decisions[decision.decision_id] = decision
         if self.ledger:
@@ -278,6 +309,7 @@ class AuthorityEngine:
                         "request": _jsonable(request),
                         "decision": _jsonable(decision),
                         "error_type": error_type,
+                        "error_diagnostics": error_diagnostics,
                     },
                 )
             except Exception:
