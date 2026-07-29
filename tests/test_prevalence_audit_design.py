@@ -15,7 +15,7 @@ from experiments.prevalence_audit_20260729.run_full_runtime_gate import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-JOB_PATH = ROOT / "deploy" / "prevalence-audit-20260729-five-a100.yaml"
+JOB_PATH = ROOT / "deploy" / "prevalence-audit-20260729-five-a100-r4.yaml"
 VALIDATOR = (
     ROOT / "experiments" / "prevalence_audit_20260729" / "validate_run_packet.py"
 )
@@ -47,7 +47,7 @@ def test_five_job_design_has_requested_resources_and_profiles():
         env = {row["name"]: row["value"] for row in container["env"]}
         task_id = env["TASK_ID"]
         memory, profile, seeds = expected[task_id]
-        assert name.startswith("mlev-prevalence-") and "-a100-r" in name
+        assert name.startswith("mlev-prevalence-") and name.endswith("-a100-r4")
         for side in ("requests", "limits"):
             assert container["resources"][side] == {
                 "cpu": "16",
@@ -66,6 +66,8 @@ def test_five_job_design_has_requested_resources_and_profiles():
         assert "protocol_runtime.activation verify" in command
         assert "/mlevolve/config/config_prevalence_audit_20260729_host_enforce.yaml" in command
         assert "validate_run_packet.py" in command
+        assert "prevalence-audit-20260729-r4" in command
+        assert "prevalence-audit-20260729-r3" not in command
 
 
 def test_formal_prevalence_config_disables_methodology_but_keeps_runforest():

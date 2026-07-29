@@ -12,6 +12,7 @@ import shutil
 
 
 SOURCE_SHA_RE = re.compile(r"^[0-9a-f]{64}$")
+RELEASE_TAG_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 CONTROL_ID = "control::spooky::deberta-leaky-replay-v1"
 
 
@@ -34,6 +35,7 @@ def write_json(path: Path, payload: object) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-archive-sha256", required=True)
+    parser.add_argument("--release-tag", required=True)
     parser.add_argument("--graph", required=True, type=Path)
     parser.add_argument("--index", required=True, type=Path)
     parser.add_argument("--replay-targets", required=True, type=Path)
@@ -44,6 +46,9 @@ def main() -> None:
     source_sha = str(args.source_archive_sha256)
     if not SOURCE_SHA_RE.fullmatch(source_sha):
         raise SystemExit("source archive SHA256 is invalid")
+    release_tag = str(args.release_tag)
+    if not RELEASE_TAG_RE.fullmatch(release_tag):
+        raise SystemExit("release tag is invalid")
     if args.output_root.exists():
         raise SystemExit(f"refusing to replace memory root: {args.output_root}")
     if not args.graph.is_file() or not args.index.is_file():
@@ -170,7 +175,7 @@ def main() -> None:
     natural_manifest = {
         "schema": "mlevolve_prevalence_memory_manifest_v1",
         "profile": "natural",
-        "artifact_version": "prevalence-natural-fourtask-v2-20260729-r3",
+        "artifact_version": f"prevalence-natural-fourtask-v2-20260729-{release_tag}",
         "source_archive_sha256": source_sha,
         "graph_sha256": graph_sha,
         "index_sha256": index_sha,
@@ -183,7 +188,9 @@ def main() -> None:
     control_manifest = {
         "schema": "mlevolve_prevalence_memory_manifest_v1",
         "profile": "spooky-positive-control",
-        "artifact_version": "prevalence-spooky-positive-control-20260729-r3",
+        "artifact_version": (
+            f"prevalence-spooky-positive-control-20260729-{release_tag}"
+        ),
         "source_archive_sha256": source_sha,
         "graph_sha256": sha256_file(control / "run_forest_graph.json"),
         "index_sha256": sha256_file(control / "run_forest_index.npz"),

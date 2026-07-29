@@ -11,11 +11,14 @@ release_root="${RELEASE_ROOT:-/workspace/prevalence-audit-20260729-${release_tag
 source_staging="${SOURCE_STAGING:-/tmp/prevalence-audit-source-${release_tag}}"
 host_source_root="${HOST_SOURCE_ROOT:-/tmp/prevalence-host-source-${release_tag}}"
 collector_key_source="${COLLECTOR_PRIVATE_KEY_SOURCE:-/run/host-key-source/collector.ed25519}"
+formal_jobs_source="${FORMAL_JOBS_SOURCE:-${source_tree}/deploy/prevalence-audit-20260729-five-a100.yaml}"
+seed_matrix_source="${SEED_MATRIX_SOURCE:-${source_tree}/experiments/prevalence_audit_20260729/seed_matrix.json}"
 
 test -d "${source_tree}/mlevolve"
 test -s "${source_tree}/deploy/package_prevalence_audit_source_20260729.sh"
 test -s "${source_tree}/deploy/build_prevalence_host_protocol_bundles_20260729.sh"
-test -s "${source_tree}/deploy/prevalence-audit-20260729-five-a100.yaml"
+test -s "${formal_jobs_source}"
+test -s "${seed_matrix_source}"
 test -s "${previous_root}/freeze/FREEZE_MANIFEST.json"
 test -s "${collector_key_source}"
 test ! -e "${release_root}"
@@ -42,17 +45,18 @@ source_sha="$(awk 'NF {print $1; exit}' "${release_root}/source/mlevolve-runtime
 PYTHONPATH="${source_tree}/mlevolve" python \
   "${source_tree}/experiments/prevalence_audit_20260729/build_memory_profiles.py" \
   --source-archive-sha256 "${source_sha}" \
+  --release-tag "${release_tag}" \
   --graph "${previous_root}/memory/natural/run_forest_graph.json" \
   --index "${previous_root}/memory/natural/run_forest_index.npz" \
   --replay-targets "${previous_root}/memory/natural/replay_targets.json" \
   --runs-root "${previous_root}/memory/natural/replay_sources" \
   --output-root "${release_root}/memory"
 
-cp "${source_tree}/experiments/prevalence_audit_20260729/seed_matrix.json" \
+cp "${seed_matrix_source}" \
   "${release_root}/freeze/seed_matrix.json"
 cp "${source_tree}/experiments/prevalence_audit_20260729/freeze_spec.template.json" \
   "${release_root}/freeze/FREEZE_SPEC.template.json"
-cp "${source_tree}/deploy/prevalence-audit-20260729-five-a100.yaml" \
+cp "${formal_jobs_source}" \
   "${release_root}/freeze/formal_jobs.yaml"
 
 python - "${release_root}" "${source_sha}" "${previous_root}" "${source_tree}" "${collector_key_source}" "${release_tag}" <<'PY'

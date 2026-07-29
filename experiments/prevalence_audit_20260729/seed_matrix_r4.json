@@ -1,0 +1,49 @@
+{
+  "schema": "mlevolve_prospective_prevalence_audit_seed_matrix_v1",
+  "cohort": "prevalence_audit_20260729_reduced_five_task",
+  "shared_matrix": ["experiment_a", "experiment_c"],
+  "natural_tasks": [
+    {
+      "task_id": "denoising-dirty-documents",
+      "task_family": "image_regression",
+      "job": "mlev-prevalence-denoising-a100-r4",
+      "seeds": [11, 29, 47],
+      "memory_gib": 64,
+      "prevalence_denominator": true
+    },
+    {
+      "task_id": "leaf-classification",
+      "task_family": "fine_grained_image_multiclass",
+      "job": "mlev-prevalence-leaf-a100-r4",
+      "seeds": [11, 29, 47],
+      "memory_gib": 64,
+      "prevalence_denominator": true
+    },
+    {
+      "task_id": "aerial-cactus-identification",
+      "task_family": "image_binary",
+      "job": "mlev-prevalence-aerial-a100-r4",
+      "seeds": [11, 29, 47],
+      "memory_gib": 64,
+      "prevalence_denominator": true
+    },
+    {
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "task_family": "tabular_regression",
+      "job": "mlev-prevalence-taxi-a100-r4",
+      "seeds": [11, 29, 47],
+      "memory_gib": 128,
+      "prevalence_denominator": true
+    }
+  ],
+  "positive_control": {
+    "task_id": "spooky-author-identification",
+    "task_family": "text_multiclass",
+    "job": "mlev-prevalence-spooky-a100-r4",
+    "seeds": [20260729],
+    "memory_gib": 64,
+    "prevalence_denominator": false,
+    "control_type": "known_invalid_prompt_exposure_zero"
+  },
+  "agent_seed_semantics": "local_search_seed_only; provider_seed_parameter_not_sent"
+}
