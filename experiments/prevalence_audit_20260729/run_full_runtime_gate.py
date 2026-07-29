@@ -323,10 +323,10 @@ def run_task(args: argparse.Namespace, task_id: str) -> dict[str, Any]:
 
     expected_metric, expected_direction = EXPECTED_TASKS[task_id]
     bundle = args.bundle_root / task_id
-    contract_path = bundle / "contract" / "PROTOCOL_EXECUTION_CONTRACT.json"
-    manifest_path = bundle / "data_views" / "DATA_VIEW_MANIFEST.json"
     binding_path = bundle / "HOST_PROTOCOL_BINDING.json"
     binding = json.loads(binding_path.read_text(encoding="utf-8"))
+    contract_path = Path(binding["contract_path"])
+    manifest_path = Path(binding["data_view_manifest_path"])
     contract = read_contract_artifact(contract_path)
     metric_spec = dict(contract.evaluator_spec.get("metric") or {})
     if metric_spec != {"name": expected_metric, "direction": expected_direction, "best_seed_selection": False}:
