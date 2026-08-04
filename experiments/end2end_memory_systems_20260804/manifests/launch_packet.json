@@ -4,11 +4,11 @@
     "evaluators": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
     "memory_bundles": "c2ba26869d436dabb0097480641a2b8097e1e7627437d370d6ce0b48d6d0d345",
     "schemas": "d36ec65bf5ea7d5714ade79665cf99437caf8acb1b3a1202812e0d83261fc0a5",
-    "source_lock": "d1433dc3e2a0001cc1b6bf288a8ebb67e24ddd8d8ee1e6d8badce4eda8d837c3",
+    "source_lock": "31893c7ecd8f28bd222f7961f074479f859b73678e3f8c2caee4fbc85a2fb6ab",
     "systems": "a1601fa144f7a1ecb90c368cb708f0fe6934336c170f10d32a0352a923ea1d44",
     "tasks": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
   },
-  "feasibility_smoke_manifest_hash": "f77a7259fe3efaf2bfb9ccd74ae323bf8956644b960cc1662bb9f2abe997755e",
+  "feasibility_smoke_manifest_hash": "0a8e7d9b8b36dc3b64606d11a14f029fb417971945eb7c77182b991805d63ee8",
   "job_count": 6,
   "jobs": [
     "pilot-aerial-indexed-job.yaml",
@@ -19,12 +19,12 @@
     "smoke-aerial-dynamic-hybrid-job.yaml"
   ],
   "launch_gate": "explicit_user_authorization_required",
-  "packet_hash": "d2a5889865dca93e7e0a31704e4504d936e7b656e89eaed07721a2d09bc9f251",
-  "pilot_manifest_hash": "6935e028c1015121c5db69cd8bb86c8dd6c13a9c94f66229126956a8e9eec9b3",
+  "packet_hash": "82970206c217bea8d125e49470a72096279844529d80b29c369ad647542af812",
+  "pilot_manifest_hash": "9cabc7a2415185a1ba8b48ca6c68027674dfc514280422353351177bc8d8cdfb",
   "pilot_requires_passing_smoke_gate": true,
   "schema": "mlevolve_end2end_launch_packet_v1",
   "smoke_gate_output": "/workspace/experiment-end2end-memory-agent-v2/runs/SMOKE_GATE.json",
-  "smoke_manifest_hash": "adbcd3616946b3eb0334e04169feba1e2a46f5870618affbf31cf3bad3f86c0c",
+  "smoke_manifest_hash": "07d9fd690c10ea80794aa540b975d4dd6ccaabbbc7475d61b6aad03175243048",
   "status": "generated_not_submitted",
   "workload_objects_created": 0
 }
