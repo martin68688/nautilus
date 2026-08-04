@@ -420,3 +420,52 @@ overwriting this record.
 - All index-0 logs and the measurement remain on the PVC; the v1 output root
   will be retained unchanged. The replacement is a new `end2end-agent-v2`
   release with an AST regression test requiring the call and import together.
+
+## Pre-Agent launch L9 — retained v2 staging transfer abort
+
+- The first full Git-archive stream to
+  `/workspace/nautilus-exp-end2end-agent-v2-stage` failed after about 56 MiB
+  with a Kubernetes API TCP read timeout.
+- The active `/workspace/nautilus-exp-end2end` directory was not touched. The
+  incomplete staging directory was deleted, rebuilt by copying the complete v1
+  snapshot inside the PVC, and updated with the exact tracked delta from frozen
+  source head `a5689cdf7a979783f218b0c2bee400b1e2cd8cfb`.
+- Before the atomic switch, v2 passed manifest/source-lock dry-run, Leaf Bundle,
+  Host binding, terminal evaluator, and Host SDK hash verification. The old v1
+  snapshot was retained as
+  `/workspace/nautilus-exp-end2end-agent-v1-archive-20260804`.
+
+## Launch L10 — retained Agent-verifier v2 prerequisite failure
+
+- Job: `mlevolve-e2e-agent-smoke-leaf-v2`, UID
+  `a3f5c503-6143-495a-bc6a-31dc18fe1584`.
+- Release/output: `end2end-agent-v2` and
+  `/workspace/experiment-end2end-agent-runs-v2`.
+- Requested resources per index: one generic A100, 16 CPUs, 64 GiB memory;
+  indexed parallelism 1, Leaf task, seed 1, two MLEvolve steps.
+- Index 0 first remained Pending in `ContainerCreating` for 180 seconds on
+  `rci-nrp-gpu-04.sdsu.edu`. The exact-owned child Pod was ordinarily deleted
+  under the user-specified stale-Pending policy; Kubernetes retained this as an
+  infrastructure failure.
+- After the container finally started during its termination grace period, and
+  on subsequent indexes, Python failed before Agent search with
+  `ImportError: cannot import name 'is_historical_replay_anchor' from
+  'agents.memory.run_forest_replay'`.
+- Root cause: the verifier commit came from a reference branch whose parent
+  already defined the replay-anchor predicate. The earlier conflict repair
+  added the import and an AST syntax test, but did not port that prerequisite
+  implementation or execute the import in the test.
+- The Job was suspended as soon as the common defect was confirmed and then
+  ordinarily deleted. Five immutable attempt-000 infrastructure measurements
+  remain for `runforest_only`, `gome_style_port`, `static_hybrid`,
+  `reversed_router`, and `rcr_router_style_port`; no score was imputed and no
+  Agent outcome is claimed.
+- Measurement hashes in that order:
+  `3aed2421b3620a82b9671ea1811d839dfdc5e1db58893d4cb0ead347590e4152`,
+  `15a96942a576a797dbc96eb8507c26d07c7d45f73a269e2404b19a95aa488c28`,
+  `fa05c11456b4eb00a74336dc5f67153c8030f5ed9ebaf4548e4a39c0839247fd`,
+  `a5b60fd3cb6add78df268efe9db1e820ba9b99615d9d231f7b1702966bcb2c4c`,
+  and `e112f9041e0d61d51e133ea20655f488e75f9707cc02186c46a3512d32985844`.
+- The formal Pilot remained blocked. Replacement release v3 ports the exact
+  prerequisite predicate from the read-only reference branch and adds a real
+  import/classification regression test.

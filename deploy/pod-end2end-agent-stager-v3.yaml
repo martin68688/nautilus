@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: end2end-agent-stager-v3
+  namespace: ecepxie
+  labels:
+    ecepxie.nrp/owner: haoming
+    app.kubernetes.io/managed-by: codex-nrp-training
+    experiment: experiment-end2end-memory-agent-v3
+    role: end2end-agent-stager
+spec:
+  activeDeadlineSeconds: 3600
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 30
+  containers:
+    - name: stager
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command: ["sleep", "3600"]
+      env:
+        - name: NVIDIA_VISIBLE_DEVICES
+          value: void
+      resources:
+        requests:
+          cpu: "1"
+          memory: 2Gi
+          ephemeral-storage: 2Gi
+        limits:
+          cpu: "1"
+          memory: 2Gi
+          ephemeral-storage: 2Gi
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage

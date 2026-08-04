@@ -565,3 +565,23 @@ def test_agent_search_imports_replay_anchor_used_by_verifier_guard() -> None:
 
     assert "is_historical_replay_anchor" in called
     assert "is_historical_replay_anchor" in imported
+
+
+def test_replay_anchor_guard_is_importable_and_classifies_exact_anchor() -> None:
+    """Exercise the imported dependency instead of checking syntax alone."""
+
+    from types import SimpleNamespace
+
+    from agents.memory.run_forest_replay import is_historical_replay_anchor
+
+    anchor = SimpleNamespace(
+        replay_source={"historical_anchor_only": True},
+        replay_status="historical_exact_anchor_loaded",
+    )
+    derived = SimpleNamespace(
+        replay_source={"historical_anchor_only": False},
+        replay_status="derived_modified_from_exact_source",
+    )
+
+    assert is_historical_replay_anchor(anchor) is True
+    assert is_historical_replay_anchor(derived) is False

@@ -15,6 +15,17 @@ from fixed_holdout.mode import bypass_protocol_gates
 REPLAY_SCHEMA = "run-forest-replay-targets-v1"
 
 
+def is_historical_replay_anchor(node: Any) -> bool:
+    """Identify exact historical anchors that must not receive current-run evidence."""
+
+    source = dict(getattr(node, "replay_source", None) or {})
+    return bool(
+        source.get("historical_anchor_only") is True
+        and str(getattr(node, "replay_status", "") or "")
+        == "historical_exact_anchor_loaded"
+    )
+
+
 def _short_run_id(run_id: str) -> str:
     parts = str(run_id).split("_")
     return "_".join(parts[:2]) if len(parts) >= 2 else str(run_id)

@@ -683,7 +683,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             ),
             "MLEVOLVE_CONDITION_STARTED_AT_NS": str(started_ns),
             "MLEVOLVE_HOST_ARTIFACT_NAMESPACE": (
-                f"end2end-agent-v2/{row['logical_run_id']}/attempt-{args.attempt:03d}"
+                f"end2end-agent-v3/{row['logical_run_id']}/attempt-{args.attempt:03d}"
             ),
             "MLEVOLVE_FIRST_VALID_EVENT_PATH": str(
                 run_root / "logs" / "FIRST_PROTOCOL_VALID_CANDIDATE.json"
@@ -838,7 +838,7 @@ def main() -> int:
     parser.add_argument("--attempt", type=int, default=0)
     parser.add_argument(
         "--output-root",
-        default="/workspace/experiment-end2end-agent-runs-v2",
+        default="/workspace/experiment-end2end-agent-runs-v3",
     )
     parser.add_argument(
         "--collector-key-source",
