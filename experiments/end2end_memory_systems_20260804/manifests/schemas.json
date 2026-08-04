@@ -1,5 +1,5 @@
 {
-  "manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+  "manifest_hash": "333445f504859e689276513323a9cc47386d36ccf29cee887f8b6e632f9e52a5",
   "schema": "mlevolve_end2end_schema_manifest_v1",
   "schemas": [
     {
@@ -8,7 +8,7 @@
     },
     {
       "path": "schemas/execution_manifest.schema.json",
-      "sha256": "afae478459822e7f6a8cd2c551ca0baaeb9092a39fe17c3ab8b2efc19fa4d6ec"
+      "sha256": "b8cb86b00b1557499b27314ffd4af3003c07cd3a8696ea3c2d79b5ff1be13dca"
     },
     {
       "path": "schemas/smoke_gate.schema.json",

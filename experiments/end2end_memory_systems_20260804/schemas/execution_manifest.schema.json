@@ -4,6 +4,8 @@
   "type": "object",
   "required": [
     "schema",
+    "release_id",
+    "comparison_baseline_release_id",
     "kind",
     "formal_result_eligible",
     "exploratory_pilot",
@@ -17,6 +19,8 @@
   ],
   "properties": {
     "schema": {"const": "mlevolve_end2end_execution_manifest_v1"},
+    "release_id": {"const": "end2end-agent-temp05-v1"},
+    "comparison_baseline_release_id": {"const": "end2end-agent-v3"},
     "kind": {"enum": ["smoke", "pilot"]},
     "seed": {"const": 1},
     "exploratory_pilot": {"const": true},

@@ -17,7 +17,7 @@
     "preserve_all_attempts": true,
     "score_imputation": false
   },
-  "manifest_hash": "e1f93a23b67263a8c169f66ad2f05e1726005340aea50dedc4f7e3891b402273",
+  "manifest_hash": "9fa6059d26cfa6960e94fed85d4b34b0073c9b160a971061e4d140985a9cfa0b",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,
@@ -60,5 +60,13 @@
     "max_replacement_drafts": 0,
     "memory_gib": 64,
     "parallel_search_num": 1
+  },
+  "solver_sampling": {
+    "adoption_verifier_temperature": 0.0,
+    "all_other_frozen_axes_unchanged": true,
+    "baseline_release_id": "end2end-agent-v3",
+    "code_temperature": 0.5,
+    "comparison_axis": "generation_temperature",
+    "feedback_temperature": 0.5
   }
 }

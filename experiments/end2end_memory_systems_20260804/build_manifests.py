@@ -25,8 +25,12 @@ SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-agent-v3"
-OUTPUT_ROOT = "/workspace/experiment-end2end-agent-runs-v3"
+RELEASE_ID = "end2end-agent-temp05-v1"
+BASELINE_RELEASE_ID = "end2end-agent-v3"
+RANDOMIZATION_RELEASE_ID = BASELINE_RELEASE_ID
+OUTPUT_ROOT = "/workspace/experiment-end2end-agent-runs-temp05-v1"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-temp05-v1"
+SOLVER_TEMPERATURE = 0.5
 SYSTEMS = (
     ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
     ("S1", "flat_retrieval", "internal", "Mixed global relevance Top-6"),
@@ -152,6 +156,10 @@ methodology_dynamic: false
 
 agent:
   use_global_memory: false
+  code:
+    temp: 0.5
+  feedback:
+    temp: 0.5
   search:
     num_gpus: 1
     parallel_search_num: 1
@@ -351,6 +359,14 @@ def component_manifests() -> dict[str, dict[str, Any]]:
         {
             "schema": "mlevolve_end2end_budget_manifest_v1",
             "runtime": runtime,
+            "solver_sampling": {
+                "comparison_axis": "generation_temperature",
+                "baseline_release_id": BASELINE_RELEASE_ID,
+                "code_temperature": SOLVER_TEMPERATURE,
+                "feedback_temperature": SOLVER_TEMPERATURE,
+                "adoption_verifier_temperature": 0.0,
+                "all_other_frozen_axes_unchanged": True,
+            },
             "shared_memory": {
                 "raw_candidates_per_source": 12,
                 "raw_candidate_max": 24,
@@ -476,7 +492,7 @@ def component_manifests() -> dict[str, dict[str, Any]]:
 
 def shuffled_system_ids(task_id: str) -> list[str]:
     digest = hashlib.sha256(
-        f"{RELEASE_ID}|{task_id}|seed-{SEED}".encode()
+        f"{RANDOMIZATION_RELEASE_ID}|{task_id}|seed-{SEED}".encode()
     ).digest()
     rng = random.Random(int.from_bytes(digest[:8], "big"))
     values = [system_id for _label, system_id, _kind, _description in SYSTEMS]
@@ -490,11 +506,11 @@ def execution_manifest(
     if kind == "smoke":
         task_ids = ["leaf-classification"]
         formal = False
-        prefix = "e2e-smoke-agent-v3"
+        prefix = "e2e-smoke-agent-temp05-v1"
     else:
         task_ids = [task_id for task_id, _display, _metric, _direction in TASKS]
         formal = True
-        prefix = "e2e-pilot-agent-v3"
+        prefix = "e2e-pilot-agent-temp05-v1"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -522,6 +538,8 @@ def execution_manifest(
     return finalize(
         {
             "schema": "mlevolve_end2end_execution_manifest_v1",
+            "release_id": RELEASE_ID,
+            "comparison_baseline_release_id": BASELINE_RELEASE_ID,
             "kind": kind,
             "formal_result_eligible": formal,
             "exploratory_pilot": True,
@@ -530,7 +548,10 @@ def execution_manifest(
             "system_ids": [system_id for _label, system_id, _kind, _desc in SYSTEMS],
             "task_ids": task_ids,
             "run_count": len(runs),
-            "launch_order_randomization": "task-local SHA256-seeded deterministic shuffle",
+            "launch_order_randomization": (
+                "task-local SHA256-seeded deterministic shuffle; comparison order "
+                f"locked to {RANDOMIZATION_RELEASE_ID}"
+            ),
             "bindings": bindings,
             "runs": runs,
             "manifest_hash": "",
@@ -547,7 +568,7 @@ def job(
     global_active_deadline = active_deadline * index_waves
     labels = {
         "app": "mlevolve-end2end",
-        "experiment": "experiment-end2end-memory-agent-v3",
+        "experiment": EXPERIMENT_LABEL,
         "ecepxie.nrp/owner": "haoming",
         "app.kubernetes.io/managed-by": "codex-nrp-training",
     }
@@ -699,7 +720,7 @@ def build() -> dict[str, Any]:
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
     smoke_job = job(
-        name="mlevolve-e2e-agent-smoke-leaf-v3",
+        name="mlevolve-e2e-agent-smoke-leaf-temp05-v1",
         manifest_name="smoke_manifest.json",
         completions=10,
         task_id=None,
@@ -712,7 +733,7 @@ def build() -> dict[str, Any]:
     )
     for task_id, display, _metric, _direction in TASKS:
         pilot_job = job(
-            name=f"mlevolve-e2e-agent-pilot-{display.lower()}-v3",
+            name=f"mlevolve-e2e-agent-pilot-{display.lower()}-temp05-v1",
             manifest_name="pilot_manifest.json",
             completions=10,
             task_id=task_id,

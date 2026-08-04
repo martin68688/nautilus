@@ -356,6 +356,25 @@ def test_pilot_is_exact_cartesian_product_and_smoke_is_all_systems() -> None:
     assert smoke["task_ids"] == ["leaf-classification"]
     assert smoke["formal_result_eligible"] is False
     assert pilot["formal_result_eligible"] is True
+    assert smoke["release_id"] == pilot["release_id"] == (
+        "end2end-agent-temp05-v1"
+    )
+    assert smoke["comparison_baseline_release_id"] == (
+        pilot["comparison_baseline_release_id"]
+    )
+    assert smoke["comparison_baseline_release_id"] == "end2end-agent-v3"
+    assert [row["system_id"] for row in smoke["runs"]] == [
+        "sop_only",
+        "flat_retrieval",
+        "no_memory",
+        "gome_style_port",
+        "static_hybrid",
+        "dynamic_hybrid",
+        "reversed_router",
+        "rcr_router_style_port",
+        "runforest_only",
+        "macla_style_port",
+    ]
     assert {
         (row["task_id"], row["system_id"], row["seed"])
         for row in pilot["runs"]
@@ -392,6 +411,8 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
         assert merged.external_skill_memory.enable is True
         assert merged.agent.search.num_gpus == 1
         assert merged.agent.search.parallel_search_num == 1
+        assert merged.agent.code.temp == 0.5
+        assert merged.agent.feedback.temp == 0.5
         assert merged.agent.use_global_memory is False
         assert merged.agent.draft_role_policy.enabled is False
         assert merged.evaluation_authority.mode == "enforce"
@@ -436,6 +457,9 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         labels = job["metadata"]["labels"]
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
+        assert labels["experiment"] == (
+            "experiment-end2end-memory-agent-temp05-v1"
+        )
         assert job["metadata"]["annotations"]["mlevolve.ai/generated-not-submitted"] == "true"
         assert job["metadata"]["annotations"]["mlevolve.ai/gpu-contract"] == (
             "nvidia.com/a100-family-unpinned"
@@ -483,11 +507,27 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         if path.name.startswith("pilot-"):
             assert "--smoke-gate" in container["args"]
             assert (
-                "/workspace/experiment-end2end-agent-runs-v3/SMOKE_GATE.json"
+                "/workspace/experiment-end2end-agent-runs-temp05-v1/SMOKE_GATE.json"
                 in container["args"]
             )
         else:
             assert "--smoke-gate" not in container["args"]
+
+
+def test_temp05_stager_is_owned_finite_cpu_only_pod() -> None:
+    path = REPO / "deploy" / "pod-end2end-agent-stager-temp05-v1.yaml"
+    pod = yaml.safe_load(path.read_text(encoding="utf-8"))
+    assert pod["kind"] == "Pod"
+    assert pod["metadata"]["name"] == "end2end-agent-stager-temp05-v1"
+    labels = pod["metadata"]["labels"]
+    assert labels["ecepxie.nrp/owner"] == "haoming"
+    assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
+    assert labels["experiment"] == "experiment-end2end-memory-agent-temp05-v1"
+    assert pod["spec"]["restartPolicy"] == "Never"
+    assert pod["spec"]["activeDeadlineSeconds"] == 3600
+    resources = pod["spec"]["containers"][0]["resources"]
+    assert resources["requests"] == resources["limits"]
+    assert not any(key.startswith("nvidia.com/") for key in resources["requests"])
 
 
 def test_launch_packet_records_programmatic_smoke_gate() -> None:
@@ -495,7 +535,7 @@ def test_launch_packet_records_programmatic_smoke_gate() -> None:
     assert packet["pilot_requires_passing_smoke_gate"] is True
     assert (
         packet["smoke_gate_output"]
-        == "/workspace/experiment-end2end-agent-runs-v3/SMOKE_GATE.json"
+        == "/workspace/experiment-end2end-agent-runs-temp05-v1/SMOKE_GATE.json"
     )
 
 
@@ -843,6 +883,14 @@ def test_budget_couples_gpu_search_and_cpu_controls() -> None:
         "token_counter": "whitespace_split_v1",
         "top_k": 6,
         "visibility_token_budget": 4096,
+    }
+    assert budget["solver_sampling"] == {
+        "comparison_axis": "generation_temperature",
+        "baseline_release_id": "end2end-agent-v3",
+        "code_temperature": 0.5,
+        "feedback_temperature": 0.5,
+        "adoption_verifier_temperature": 0.0,
+        "all_other_frozen_axes_unchanged": True,
     }
     assert budget["adoption_verifier"] == {
         "enabled": True,

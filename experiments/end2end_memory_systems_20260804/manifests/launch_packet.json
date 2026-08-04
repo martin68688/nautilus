@@ -1,10 +1,10 @@
 {
   "component_manifest_hashes": {
-    "budget": "e1f93a23b67263a8c169f66ad2f05e1726005340aea50dedc4f7e3891b402273",
+    "budget": "9fa6059d26cfa6960e94fed85d4b34b0073c9b160a971061e4d140985a9cfa0b",
     "evaluators": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
     "memory_bundles": "0c5c9ae50d019d3ff9999484f0bb57586e8238aca90c98d31864e4ef954f157b",
-    "schemas": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
-    "source_lock": "d6de20411a6ac0653507fb3882a917aa0736815a4a6907f8f0b121ea7a5e06ed",
+    "schemas": "333445f504859e689276513323a9cc47386d36ccf29cee887f8b6e632f9e52a5",
+    "source_lock": "af062bbd10c8fd04ff5fe4fce3bcee44a3f8e27d5e56b0a473a76c8fcaed7576",
     "systems": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
     "tasks": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
   },
@@ -17,12 +17,12 @@
     "smoke-leaf-indexed-job.yaml"
   ],
   "launch_gate": "explicit_user_authorization_required",
-  "packet_hash": "f6171dcded41c0bb921c105813f167e486a23e4e033c8e21000b08b2b4c23196",
-  "pilot_manifest_hash": "ca898e160de23a88b30126bacc3cba808b840a19cc8ade97e103ff77a8351e2e",
+  "packet_hash": "51b77ba04b84e7e9a595345b9cea937ae42404307c1dfedf1b9630dd8b5e4334",
+  "pilot_manifest_hash": "06ffd34171295ee571683861bc313e03e9d910df8e0d5e4b257b877c7e1cb0a4",
   "pilot_requires_passing_smoke_gate": true,
   "schema": "mlevolve_end2end_launch_packet_v1",
-  "smoke_gate_output": "/workspace/experiment-end2end-agent-runs-v3/SMOKE_GATE.json",
-  "smoke_manifest_hash": "bf582122849b4cf75d197954a33663294cc1ffdac619b75f07ff4d389a41c043",
+  "smoke_gate_output": "/workspace/experiment-end2end-agent-runs-temp05-v1/SMOKE_GATE.json",
+  "smoke_manifest_hash": "d956b05c474892100aab0829693e85e6f2286524b7fbc9f4b9363cc1f38d84e5",
   "status": "generated_not_submitted",
   "workload_objects_created": 0
 }

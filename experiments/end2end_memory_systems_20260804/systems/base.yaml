@@ -5,6 +5,10 @@ methodology_dynamic: false
 
 agent:
   use_global_memory: false
+  code:
+    temp: 0.5
+  feedback:
+    temp: 0.5
   search:
     num_gpus: 1
     parallel_search_num: 1
