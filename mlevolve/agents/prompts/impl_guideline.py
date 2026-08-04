@@ -202,6 +202,14 @@ def enforce_host_candidate_entrypoint(agent, code: str) -> str:
 
     if not host_protocol_preflight_enabled(agent):
         return code
+    if not bool(
+        getattr(
+            agent.acfg.protocol_preflight,
+            "install_host_candidate_entrypoint",
+            True,
+        )
+    ):
+        return code
     contract = get_host_protocol_contract_from_agent(agent)
     return _install_host_candidate_source(code, _host_candidate_source(contract))
 

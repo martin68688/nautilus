@@ -843,7 +843,7 @@ def main() -> int:
     parser.add_argument("--attempt", type=int, default=0)
     parser.add_argument(
         "--output-root",
-        default="/workspace/experiment-end2end-memory-agent-v2/runs",
+        default="/workspace/experiment-end2end-memory-agent-v3/runs",
     )
     parser.add_argument(
         "--collector-key-source",

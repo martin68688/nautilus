@@ -97,6 +97,140 @@ def _flat_score(
     return float(layer._bounded_token_similarity(query_text, text))
 
 
+def _experiment_r_clean_sop_support(
+    layer: Any, sop_id: str
+) -> tuple[list[str], list[dict[str, str]]]:
+    """Close formal clause-scoped SOP support after Authority projection.
+
+    Production formal-method publication deliberately emits
+    ``navigation_attached_to`` edges whose authority is decided per clause at
+    use time.  Once a clause is present in the enforced visibility projection,
+    Exp-R may treat its exact, positive supporting transition as clean evidence.
+    This does not authorize legacy navigation edges: every admitted edge must
+    bind the same visible clause, SOP, and supporting transition.
+    """
+
+    clean, rejected = layer._clean_sop_support(sop_id)
+    clean = list(dict.fromkeys(map(str, clean)))
+    rejected = list(rejected)
+    visibility_enforced = bool(
+        getattr(layer, "_visibility_is_enforced", lambda: False)()
+    )
+    projection = (
+        getattr(layer, "_visibility_projection", lambda _sop_id: None)(sop_id)
+        if visibility_enforced
+        else None
+    )
+    visible_clause_ids = set(
+        map(str, (projection or {}).get("clause_ids") or [])
+    )
+    effective_sop_ids = getattr(
+        layer, "_effective_visibility_sop_ids", lambda: None
+    )()
+    if (
+        not visibility_enforced
+        or not visible_clause_ids
+        or (effective_sop_ids is not None and sop_id not in effective_sop_ids)
+    ):
+        return clean, rejected
+
+    navigation = getattr(layer, "_navigation_transitions_by_sop", {}).get(
+        sop_id, []
+    )
+    edge_metadata = getattr(layer, "_sop_edge_metadata", {})
+    for transition_id in navigation:
+        transition_id = str(transition_id)
+        if transition_id in clean:
+            continue
+        edge = edge_metadata.get((transition_id, sop_id)) or {}
+        if str(edge.get("kind") or edge.get("type") or "") != (
+            "navigation_attached_to"
+        ):
+            continue
+        matching_clause_ids = visible_clause_ids & set(
+            map(str, edge.get("clause_ids") or [])
+        )
+        if not matching_clause_ids:
+            continue
+        clause_bound = False
+        for clause_id in sorted(matching_clause_ids):
+            clause = layer.nodes.get(clause_id, {})
+            support = (
+                clause.get("supporting_transition")
+                or (clause.get("contract_spec") or {}).get(
+                    "supporting_transition"
+                )
+                or {}
+            )
+            declared_transition_refs = set(
+                map(str, clause.get("source_transition_refs") or [])
+            )
+            if (
+                str(clause.get("type") or "") != "SOPClause"
+                or str(clause.get("sop_id") or "") != sop_id
+                or (
+                    str(support.get("transition_ref") or "") != transition_id
+                    and transition_id not in declared_transition_refs
+                )
+            ):
+                continue
+            checks = support.get("checks") or {}
+            if checks and any(value is not True for value in checks.values()):
+                continue
+            clause_bound = True
+            break
+        if not clause_bound:
+            rejected.append(
+                {
+                    "transition_id": transition_id,
+                    "reason": "visible_clause_transition_binding_mismatch",
+                }
+            )
+            continue
+        eligible, reason = layer._positive_transition(transition_id)
+        if eligible:
+            clean.append(transition_id)
+        else:
+            rejected.append(
+                {"transition_id": transition_id, "reason": str(reason)}
+            )
+    return clean, rejected
+
+
+def _refresh_experiment_r_sop_rows(
+    layer: Any, rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    for row in rows:
+        clean, rejected = _experiment_r_clean_sop_support(
+            layer, str(row["id"])
+        )
+        row["clean_supporting_transition_ids"] = clean[:8]
+        row["clean_supporting_transition_count"] = len(clean)
+        row["rejected_support"] = rejected[:8]
+        row["rejected_support_count"] = len(rejected)
+        components = row.get("hybrid_score_components")
+        if isinstance(components, dict):
+            components["clean_evidence"] = min(1.0, len(clean) / 3.0)
+    return rows
+
+
+def _experiment_r_sops_for_execution(
+    layer: Any, execution_id: str
+) -> list[str]:
+    values = list(layer._active_sops_for_execution(execution_id))
+    if bool(getattr(layer, "_visibility_is_enforced", lambda: False)()):
+        values.extend(
+            getattr(layer, "_navigation_sops_by_execution", {}).get(
+                execution_id, []
+            )
+        )
+    return [
+        sop_id
+        for sop_id in dict.fromkeys(map(str, values))
+        if _experiment_r_clean_sop_support(layer, sop_id)[0]
+    ]
+
+
 def _sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -192,7 +326,7 @@ def _candidate_pool_from_qualification(
                 f"Qualification SOP candidate is not Authority-visible: {sop_id}"
             )
         node = layer.nodes[sop_id]
-        clean, rejected = layer._clean_sop_support(sop_id)
+        clean, rejected = _experiment_r_clean_sop_support(layer, sop_id)
         if not clean:
             raise ValueError(
                 f"Qualification SOP candidate lost clean support: {sop_id}"
@@ -396,6 +530,7 @@ def _agentic_sop_search(
         task_desc=task_desc,
         allowed_sop_ids=visible_sop_ids,
     )
+    rows = _refresh_experiment_r_sop_rows(layer, rows)
     rows = [row for row in rows if row["clean_supporting_transition_ids"]]
     for row in rows:
         row["source"] = "sop"
@@ -588,13 +723,13 @@ def _same_task_best_rows(
 
     sop_ids: list[str] = []
     for row in best_run_rows:
-        for sop_id in layer._active_sops_for_execution(row["id"]):
+        for sop_id in _experiment_r_sops_for_execution(layer, row["id"]):
             if sop_id not in sop_ids:
                 sop_ids.append(sop_id)
     for sop_id in layer._sops:
         if sop_id in sop_ids:
             continue
-        clean, _rejected = layer._clean_sop_support(sop_id)
+        clean, _rejected = _experiment_r_clean_sop_support(layer, sop_id)
         if any(
             _canonical_task(layer.nodes.get(transition_id, {}).get("task"))
             == target
@@ -605,7 +740,7 @@ def _same_task_best_rows(
     for sop_id in sop_ids:
         if visible_sop_ids is not None and sop_id not in visible_sop_ids:
             continue
-        clean, rejected = layer._clean_sop_support(sop_id)
+        clean, rejected = _experiment_r_clean_sop_support(layer, sop_id)
         same_task_support = [
             transition_id
             for transition_id in clean
@@ -652,9 +787,11 @@ def _agentic_expand_rows(
     node = layer.nodes.get(candidate_id, {})
     proposed: list[str] = []
     if row["source"] == "sop":
-        proposed.extend(layer._active_transitions_for_sop(candidate_id))
+        proposed.extend(
+            _experiment_r_clean_sop_support(layer, candidate_id)[0]
+        )
     else:
-        proposed.extend(layer._active_sops_for_execution(candidate_id))
+        proposed.extend(_experiment_r_sops_for_execution(layer, candidate_id))
         proposed.extend(
             str(node.get(key) or "")
             for key in ("parent_node_id", "child_node_id", "parent_id")
@@ -666,7 +803,7 @@ def _agentic_expand_rows(
         if node_id in layer._sops:
             if visible_sop_ids is not None and node_id not in visible_sop_ids:
                 continue
-            clean, rejected = layer._clean_sop_support(node_id)
+            clean, rejected = _experiment_r_clean_sop_support(layer, node_id)
             if not clean:
                 continue
             sop = layer.nodes[node_id]
@@ -740,11 +877,21 @@ def _call_retrieval_agent(
         "target_task_id": task_id,
         "task_description": task_desc[:2400],
         "current_context": query_text[-6000:],
-        "recent_tool_observations": observations,
-        "known_candidates": [
-            _compact_agent_row(layer, known[node_id])
-            for node_id in list(known)[:24]
-        ],
+        # Prompt compilation accepts lists of strings, not lists of mappings.
+        # Serialize structured, untrusted observations once so the real LLM
+        # path follows the same stable representation covered by the harness.
+        "recent_tool_observations": json.dumps(
+            observations, sort_keys=True, ensure_ascii=False, indent=2
+        ),
+        "known_candidates": json.dumps(
+            [
+                _compact_agent_row(layer, known[node_id])
+                for node_id in list(known)[:24]
+            ],
+            sort_keys=True,
+            ensure_ascii=False,
+            indent=2,
+        ),
         "policy": [
             "Target-task history was searched first by the Host; prefer its best clean "
             "historical result when it is applicable to the current state.",
@@ -1112,6 +1259,7 @@ def _candidate_pool(
         task_desc=task_desc,
         allowed_sop_ids=visible_sop_ids,
     )
+    all_sop_rows = _refresh_experiment_r_sop_rows(layer, all_sop_rows)
     neutral_sops = [
         row for row in all_sop_rows if row["clean_supporting_transition_ids"]
     ]

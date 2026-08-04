@@ -85,8 +85,16 @@ class StepAgent:
             code = extract_code(completion_text)
             nl_text = extract_text_up_to_code(completion_text)
 
-            if code and nl_text:
-                return nl_text, code
+            if code:
+                # A code-only fenced response is a valid module. Requiring
+                # prose before the fence caused otherwise valid Python to be
+                # retried and, after exhaustion, returned with raw markdown
+                # fences still attached to the executable source.
+                return (
+                    nl_text
+                    or f"Implemented the {self.name} module as executable Python.",
+                    code,
+                )
 
             logger.debug(f"Extraction retry for {self.name}...")
         logger.warning(f"Code extraction failed after retries for {self.name}")
@@ -318,12 +326,19 @@ class MetaAgent:
             code = extract_code(completion_text)
             nl_text = extract_text_up_to_code(completion_text)
 
-            if code and nl_text:
-                return nl_text, code
+            if code:
+                # Some solver completions contain only the requested code
+                # block.  The code is still valid and must not fall through to
+                # the raw fenced completion after retry exhaustion.
+                return (
+                    nl_text
+                    or "Merged the specialist steps into one executable Python pipeline.",
+                    code,
+                )
 
             logger.debug("Extraction retry for MetaAgent merge...")
         logger.warning("Code extraction failed after retries for MetaAgent merge")
-        return "", completion_text 
+        return "", completion_text or ""
 
     def _build_merge_prompt(
         self,

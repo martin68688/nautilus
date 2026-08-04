@@ -100,6 +100,7 @@ class SearchNode(DataClassJsonMixin):
     # intermediate stages are journaled and audited, but never executed/ranked.
     protocol_repair: dict = field(default_factory=dict, kw_only=True)
     protocol_preflight: dict = field(default_factory=dict, kw_only=True)
+    agent_semantic_review: dict = field(default_factory=dict, kw_only=True)
     # Evaluation Authority stores stable references only. The append-only
     # ledger/evidence graph owns the full claims, receipts, and decisions.
     claim_refs: list[str] = field(default_factory=list, kw_only=True)
@@ -151,6 +152,10 @@ class SearchNode(DataClassJsonMixin):
         self.protocol_preflight = copy.deepcopy(
             self.protocol_observation.get("protocol_preflight") or {}
         )
+        if self.agent_semantic_review:
+            self.protocol_observation["agent_semantic_review"] = copy.deepcopy(
+                self.agent_semantic_review
+            )
         self.adoption_runtime_trace = copy.deepcopy(
             getattr(exec_result, "adoption_trace", None) or {}
         )

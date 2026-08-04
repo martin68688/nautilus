@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "mlevolve"))
 
 from agents.memory.experiment_r_router import (
+    _experiment_r_clean_sop_support,
     _prompt_marker_visible,
     _truncate_prompt,
     count_prompt_tokens,
@@ -615,3 +616,59 @@ def test_agentic_router_invalid_id_falls_back_and_retains_failure(tmp_path):
     assert pack["ranking_contract"] == "agentic_invalid_deterministic_fallback_v1"
     assert pack["retrieval_agent"]["fallback_used"] is True
     assert "unobserved candidate" in pack["retrieval_agent"]["fallback_reason"]
+
+
+def test_formal_visible_clause_closes_exact_navigation_support_only():
+    sop_id = "sop::formal"
+    transition_id = "transition::clean"
+    clause_id = "clause::generate"
+    layer = SimpleNamespace(
+        nodes={
+            clause_id: {
+                "id": clause_id,
+                "type": "SOPClause",
+                "sop_id": sop_id,
+                "source_transition_refs": [transition_id],
+                "contract_spec": {
+                    "supporting_transition": {
+                        "transition_ref": transition_id,
+                        "checks": {
+                            "audit_clean": True,
+                            "not_buggy": True,
+                            "positive_or_initial_outcome": True,
+                            "valid": True,
+                        },
+                    }
+                },
+            },
+            transition_id: {"id": transition_id, "type": "Transition"},
+        },
+        _clean_sop_support=lambda _sop_id: ([], []),
+        _visibility_is_enforced=lambda: True,
+        _visibility_projection=lambda _sop_id: {"clause_ids": [clause_id]},
+        _effective_visibility_sop_ids=lambda: {sop_id},
+        _navigation_transitions_by_sop={sop_id: [transition_id]},
+        _sop_edge_metadata={
+            (transition_id, sop_id): {
+                "kind": "navigation_attached_to",
+                "clause_ids": [clause_id],
+            }
+        },
+        _positive_transition=lambda _transition_id: (True, "clean"),
+    )
+    clean, rejected = _experiment_r_clean_sop_support(layer, sop_id)
+    assert clean == [transition_id]
+    assert rejected == []
+
+    layer.nodes[clause_id]["source_transition_refs"] = ["transition::other"]
+    layer.nodes[clause_id]["contract_spec"]["supporting_transition"][
+        "transition_ref"
+    ] = "transition::other"
+    clean, rejected = _experiment_r_clean_sop_support(layer, sop_id)
+    assert clean == []
+    assert rejected == [
+        {
+            "transition_id": transition_id,
+            "reason": "visible_clause_transition_binding_mismatch",
+        }
+    ]

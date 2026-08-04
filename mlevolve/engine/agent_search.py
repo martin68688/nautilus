@@ -19,7 +19,7 @@ from agents import (
     draft_agent, improve_agent, debug_agent,
     evolution_agent, fusion_agent, aggregation_agent,
     code_review_agent, protocol_repair_agent,
-    result_parse_agent,
+    result_parse_agent, agent_protocol_review_agent,
 )
 from agents import protocol_repair
 from agents.triggers import (
@@ -930,6 +930,23 @@ class AgentSearch:
                             )
                         else:
                             logger.info(f"Node {result_node.id} passed code review without changes")
+
+                    semantic_source = result_node.code
+                    reviewed_source, semantic_report = (
+                        agent_protocol_review_agent.run(self, result_node)
+                    )
+                    result_node.agent_semantic_review = semantic_report
+                    if reviewed_source.strip() != semantic_source.strip():
+                        logger.info(
+                            "Node %s Agent semantic protocol repair changed source",
+                            result_node.id,
+                        )
+                        result_node.code = reviewed_source
+                        refresh_replay_lineage_after_revision(
+                            result_node,
+                            original_code=semantic_source,
+                            revision_kind="agent_semantic_protocol_repair",
+                        )
 
                     pre_instrumentation_code = result_node.code
                     immutable_migration_seed = bool(

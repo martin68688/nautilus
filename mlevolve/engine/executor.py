@@ -125,6 +125,26 @@ def _protocol_runtime_mode(cfg) -> str:
         getattr(authority, "protocol_runtime_mode", "legacy_ast") or "legacy_ast"
     ).lower()
 
+
+def _candidate_uid_isolation_enabled(cfg) -> bool:
+    """Keep OS-level Candidate isolation independent of receipt admission."""
+
+    runtime_mode = _protocol_runtime_mode(cfg)
+    preflight = (
+        getattr(getattr(cfg, "agent", None), "protocol_preflight", None)
+        if cfg is not None
+        else None
+    )
+    return bool(
+        runtime_mode == "host_sdk_enforce"
+        or (
+            runtime_mode == "host_sdk_shadow"
+            and preflight is not None
+            and getattr(preflight, "candidate_process_isolation", False)
+        )
+    )
+
+
 @dataclass
 class ExecutionResult(DataClassJsonMixin):
     """
@@ -219,9 +239,9 @@ class Interpreter:
             self._preflight_runner = ProtocolPreflightRunner(
                 ProtocolRegistry(registry_root)
             )
-            if self.protocol_runtime_mode == "host_sdk_enforce" and os.geteuid() != 0:
+            if _candidate_uid_isolation_enabled(cfg) and os.geteuid() != 0:
                 raise ValueError(
-                    "host_sdk_enforce requires a root Host launcher so Candidate UID isolation can be applied"
+                    "Candidate UID isolation requires a root Host launcher"
                 )
         if self.candidate_execution_contract:
             self.timeout = min(
@@ -460,6 +480,20 @@ class Interpreter:
             run_wd = Path(working_dir).resolve() if working_dir is not None else self.working_dir
             runfile_path = run_wd / self.agent_file_name[process_id]
             run_wd.mkdir(parents=True, exist_ok=True)
+            candidate_runtime_cache_root = (
+                run_wd
+                / "working"
+                / "candidate_runtime_cache"
+                / hashlib.sha256(str(id).encode("utf-8")).hexdigest()[:24]
+            )
+            if _candidate_uid_isolation_enabled(self.cfg) and os.geteuid() == 0:
+                for writable in (
+                    run_wd,
+                    run_wd / "submission",
+                    run_wd / "working",
+                ):
+                    writable.mkdir(parents=True, exist_ok=True)
+                    writable.chmod(0o777)
 
             pre_code = "import os\nif hasattr(os, 'sched_setaffinity'):\n    os.sched_setaffinity(0, {cpu_set})\nos.environ['CUDA_VISIBLE_DEVICES'] = '{gpu_id}'\n".format(cpu_set=cpu_set, gpu_id=gpu_id)
             source_code_sha256 = hashlib.sha256(code.encode("utf-8")).hexdigest()
@@ -501,7 +535,8 @@ class Interpreter:
                                     timeout_seconds=min(60, effective_timeout),
                                     candidate_uid=(
                                         int(self.protocol_preflight_config.candidate_uid)
-                                        if os.geteuid() == 0
+                                        if _candidate_uid_isolation_enabled(self.cfg)
+                                        and os.geteuid() == 0
                                         else None
                                     ),
                                 )
@@ -792,7 +827,7 @@ class Interpreter:
             cmd = [sys.executable, str(runfile_path)]
             popen_isolation = {}
             if (
-                self.protocol_runtime_mode == "host_sdk_enforce"
+                _candidate_uid_isolation_enabled(self.cfg)
                 and os.geteuid() == 0
             ):
                 candidate_uid = int(
@@ -818,10 +853,7 @@ class Interpreter:
                 text=True,
                 bufsize=1,
                 env=_execution_environment(
-                    run_wd
-                    / "working"
-                    / "candidate_runtime_cache"
-                    / hashlib.sha256(str(id).encode("utf-8")).hexdigest()[:24]
+                    candidate_runtime_cache_root
                 ),
                 **popen_isolation,
             )

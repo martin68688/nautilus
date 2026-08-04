@@ -177,6 +177,16 @@ class ProtocolPreflightConfig:
     collector_private_key_path: str = ""
     candidate_uid: int = 65534
     consume_collector_private_key: bool = True
+    # Experiment End2End full-system option: an Agent reviews and may repair
+    # the actual training entrypoint before execution.  Host Preflight remains
+    # an evidence observer in host_sdk_shadow and never becomes this reviewer's
+    # semantic decision maker.
+    agent_semantic_review_enabled: bool = False
+    agent_semantic_max_repair_attempts: int = 2
+    agent_semantic_temperature: float = 0.0
+    agent_semantic_max_tokens: int = 4096
+    install_host_candidate_entrypoint: bool = True
+    candidate_process_isolation: bool = False
     
 
 @dataclass
