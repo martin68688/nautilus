@@ -1,17 +1,17 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mlevolve-e2e-agentic-pilot-denoising-v3
+  name: mlevolve-e2e-agentic-pilot-denoising-v4
   namespace: ecepxie
   labels: &id001
     app: mlevolve-end2end
-    experiment: experiment-end2end-memory-agent-v3
+    experiment: experiment-end2end-memory-agent-v4
     ecepxie.nrp/owner: haoming
     app.kubernetes.io/managed-by: codex-nrp-training
   annotations:
     mlevolve.ai/launch-gate: explicit-user-authorization-required
     mlevolve.ai/generated-not-submitted: 'true'
-    mlevolve.ai/gpu-contract: nvidia.com/a100-family-unpinned
+    mlevolve.ai/gpu-contract: nvidia.com/gpu=1;product=NVIDIA-L40S
     mlevolve.ai/preserve-failed-index-artifacts: 'true'
     mlevolve.ai/per-index-deadline-seconds: '25200'
     mlevolve.ai/global-deadline-seconds: '252000'
@@ -31,6 +31,15 @@ spec:
       tolerations:
       - key: nvidia.com/gpu
         operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: nvidia.com/gpu.product
+                operator: In
+                values:
+                - NVIDIA-L40S
       containers:
       - name: end2end-runner
         image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
@@ -39,13 +48,13 @@ spec:
         - /usr/local/bin/python
         - -u
         args:
-        - /workspace/nautilus-exp-end2end-agent-v4/experiments/end2end_memory_systems_20260804/run_assignment.py
+        - /workspace/nautilus-exp-end2end-agent-v5/experiments/end2end_memory_systems_20260804/run_assignment.py
         - --manifest
-        - /workspace/nautilus-exp-end2end-agent-v4/experiments/end2end_memory_systems_20260804/manifests/pilot_manifest.json
+        - /workspace/nautilus-exp-end2end-agent-v5/experiments/end2end_memory_systems_20260804/manifests/pilot_manifest.json
         - --output-root
-        - /workspace/experiment-end2end-memory-agent-v3/runs
+        - /workspace/experiment-end2end-memory-agent-v4/runs
         - --smoke-gate
-        - /workspace/experiment-end2end-memory-agent-v3/runs/SMOKE_GATE.json
+        - /workspace/experiment-end2end-memory-agent-v4/runs/SMOKE_GATE.json
         - --task
         - denoising-dirty-documents
         envFrom:
@@ -81,7 +90,7 @@ spec:
         - name: PYTHONDONTWRITEBYTECODE
           value: '1'
         - name: PYTHONPATH
-          value: /workspace/nautilus-exp-end2end-agent-v4/mlevolve
+          value: /workspace/nautilus-exp-end2end-agent-v5/mlevolve
         - name: MLEVOLVE_CONTAINER_IMAGE_REFERENCE
           value: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
         - name: MLEVOLVE_SOLVER_BINDING_ID
@@ -93,12 +102,12 @@ spec:
             cpu: '16'
             memory: 64Gi
             ephemeral-storage: 64Gi
-            nvidia.com/a100: '1'
+            nvidia.com/gpu: '1'
           limits:
             cpu: '16'
             memory: 64Gi
             ephemeral-storage: 64Gi
-            nvidia.com/a100: '1'
+            nvidia.com/gpu: '1'
         volumeMounts:
         - name: workspace
           mountPath: /workspace
