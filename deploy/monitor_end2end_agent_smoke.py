@@ -23,13 +23,34 @@ def kubectl(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
         "https_proxy", "http_proxy", "all_proxy", "no_proxy",
     ):
         env.pop(key, None)
-    return subprocess.run(
-        ["kubectl", *args],
-        env=env,
-        text=True,
-        capture_output=True,
-        check=check,
-    )
+    attempts = 3 if check else 1
+    result: subprocess.CompletedProcess[str] | None = None
+    for attempt in range(attempts):
+        result = subprocess.run(
+            ["kubectl", "--request-timeout=20s", *args],
+            env=env,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        if result.returncode == 0 or not check:
+            return result
+        if attempt + 1 < attempts:
+            print(
+                json.dumps(
+                    {
+                        "event": "kubectl_read_retry",
+                        "attempt": attempt + 1,
+                        "stderr": result.stderr.strip()[-500:],
+                    },
+                    sort_keys=True,
+                ),
+                flush=True,
+            )
+            time.sleep(2 ** attempt)
+    assert result is not None
+    result.check_returncode()
+    raise AssertionError("unreachable")
 
 
 def get_json(*args: str) -> dict[str, Any]:

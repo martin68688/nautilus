@@ -58,3 +58,23 @@ def test_pending_recycle_requires_labels_and_exact_controller_uid() -> None:
         assert not MONITOR.is_exact_owned_child_pod(
             candidate, job_name="smoke-v2", job_uid="job-uid"
         )
+
+
+def test_kubectl_read_retries_transient_failures(monkeypatch) -> None:
+    calls = []
+    outcomes = [
+        MONITOR.subprocess.CompletedProcess(["kubectl"], 1, "", "timeout"),
+        MONITOR.subprocess.CompletedProcess(["kubectl"], 0, "{}", ""),
+    ]
+
+    def fake_run(argv, **kwargs):
+        calls.append((argv, kwargs))
+        return outcomes.pop(0)
+
+    monkeypatch.setattr(MONITOR.subprocess, "run", fake_run)
+    monkeypatch.setattr(MONITOR.time, "sleep", lambda _seconds: None)
+
+    result = MONITOR.kubectl("get", "pods")
+    assert result.returncode == 0
+    assert len(calls) == 2
+    assert calls[0][0][:2] == ["kubectl", "--request-timeout=20s"]
