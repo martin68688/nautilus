@@ -851,7 +851,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "e6449dd2dd6570906f4d7f9f16b946ce96800711f4ab4d9e898f63861ea3ae8f"
+      "sha256": "bcd96478084dc6d146b9a2c183ccb6c6397595cbc5fc98449415ece338136a2b"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/publish_smoke_memory_bundle.py",
@@ -859,7 +859,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/run_assignment.py",
-      "sha256": "4b15d3ec82d6bb4354945976ab04d6b01af6dee7bba2e9e19a25bbe76b408f11"
+      "sha256": "c9b1798706e2d3d2babda1ab4315438f523f31db9f558b69d2edecaed86f7524"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/validate_smoke_gate.py",
@@ -915,7 +915,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/execution_manifest.schema.json",
-      "sha256": "9b9ad8600755d504d552be21666eca4b9898663b83bf9c04ce11fee6e11fb191"
+      "sha256": "852f21228fbd05c490d1906dfe3b6c40d6186cd6fb9ff8a5e2f192fc6a425898"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/smoke_gate.schema.json",
@@ -938,8 +938,8 @@
       "sha256": "955e0489e38b0fd3b8850cd68df686884ee538e5748e453c43049bd9e50dc1b5"
     }
   ],
-  "git_head": "aff61ce2898333915221b779f81350761d190233",
+  "git_head": "ae45107c268c597dcae374b1b069f3737675beee",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
+  "manifest_hash": "49b94e51ccc8bc8218b5d80e176bb1061dc4d42328caf4e3a22571d2fb225f60",
   "schema": "mlevolve_end2end_source_lock_v1"
 }

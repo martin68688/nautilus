@@ -2,13 +2,13 @@
   "component_manifest_hashes": {
     "budget": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
     "evaluators": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-    "memory_bundles": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
-    "schemas": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
-    "source_lock": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
+    "memory_bundles": "060b95bcd7ce25713cd16300f89b51196ff5ce585dcfdcc29dd21b9e8d403d0b",
+    "schemas": "98de044845b06626e6abc898f9d067fe10ff6ec419fa2cd8015e002589676d21",
+    "source_lock": "49b94e51ccc8bc8218b5d80e176bb1061dc4d42328caf4e3a22571d2fb225f60",
     "systems": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
     "tasks": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
   },
-  "feasibility_smoke_manifest_hash": "4294c47d97362c9e989676321bc482bc8a3bf0d586c8c46c86f1a87b54be7d4e",
+  "feasibility_smoke_manifest_hash": "1b9cb45088f93c7bed8706cc8989fcf83be9fb9ce273fe7d83b1e54cad7cc19f",
   "job_count": 6,
   "jobs": [
     "pilot-aerial-indexed-job.yaml",
@@ -19,12 +19,12 @@
     "smoke-aerial-dynamic-hybrid-job.yaml"
   ],
   "launch_gate": "explicit_user_authorization_required",
-  "packet_hash": "8abb79b2a5c1fad04195111be7498899533db20aad7c856e9dbf3574bafbf19c",
-  "pilot_manifest_hash": "681c69ee3183a236f27f1cf83110ccd14899b3cb56dafd34d9787da1ec505a8f",
+  "packet_hash": "2b929c505566ad22b829e79542454df35d4440cdf26b653d15eec97f9952ed17",
+  "pilot_manifest_hash": "44ddbf00aaa257ee1f53aeacc7a79871c197e642256ab10ce600f5b49dbc9ad0",
   "pilot_requires_passing_smoke_gate": true,
   "schema": "mlevolve_end2end_launch_packet_v1",
-  "smoke_gate_output": "/workspace/experiment-end2end-memory-agent-v6/runs/SMOKE_GATE.json",
-  "smoke_manifest_hash": "882f4eebc467125900923e5b2e955167338b2f5d9481aaf6f0926c19bff7cca7",
+  "smoke_gate_output": "/workspace/experiment-end2end-memory-agent-v7/runs/SMOKE_GATE.json",
+  "smoke_manifest_hash": "f65d643cba8b5fef35a52c3a18429afe3165f37ea1414c28e6630910bb0043ed",
   "status": "generated_not_submitted",
   "workload_objects_created": 0
 }
