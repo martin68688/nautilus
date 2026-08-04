@@ -7,7 +7,10 @@ import shutil
 import tempfile
 from types import SimpleNamespace
 
-from authority.adapters.mlevolve.receipt_bridge import receipts_for_node
+from authority.adapters.mlevolve.receipt_bridge import (
+    receipts_for_node,
+    trusted_runtime_metric,
+)
 from authority.authority_engine import AuthorityEngine
 from authority.collectors import TrustedCollectorHost
 from authority.evidence_graph import EvidenceGraph, EvidencePath
@@ -190,6 +193,15 @@ def test_full_training_session_mints_score_bound_trusted_receipts(tmp_path: Path
         receipt for receipt in receipts if receipt.receipt_type == ReceiptType.EVALUATOR
     )
     assert evaluator.payload["metric_value"] == score
+    node.metric.value = score + 1.0
+    signed_metric = trusted_runtime_metric(
+        node,
+        contract.protocol_ref,
+        task_id=contract.task_id,
+    )
+    assert signed_metric is not None
+    assert signed_metric["metric_value"] == score
+    node.metric.value = score
     graph = EvidenceGraph()
     claim = Claim(
         claim_id="node-a:score",

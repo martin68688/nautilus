@@ -5,6 +5,8 @@ import hashlib
 import json
 import logging
 import os
+import threading
+import uuid
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -137,6 +139,7 @@ class MLEvolveAuthorityAdapter:
             ledger=self.ledger if self.mode != "off" else None,
         )
         self._latest_decisions: dict[tuple[str, str], AuthorityDecision] = {}
+        self._snapshot_lock = threading.RLock()
         self.memory_snapshot = None
         self._overlay_written_artifacts: set[str] = set()
         self._overlay_written_links: set[tuple[str, str, str]] = set()
@@ -160,29 +163,42 @@ class MLEvolveAuthorityAdapter:
     def _emit_snapshots(self) -> None:
         if not self.emit_snapshot or self.mode == "off":
             return
-        log_dir = Path(self.cfg.log_dir)
-        snapshot = self.engine.snapshot()
-        actuation_snapshot = self.actuation_tracker.snapshot()
-        rollout_snapshot = self.rollout.report()
-        snapshot["rollout"] = rollout_snapshot
-        evidence = {
-            "claims": snapshot["claims"],
-            "receipts": snapshot["receipts"],
-            "paths": snapshot["paths"],
-        }
-        for filename, payload in (
-            ("authority_snapshot.json", snapshot),
-            ("evidence_graph.json", evidence),
-            ("actuation_reports.json", actuation_snapshot),
-            ("authority_rollout_report.json", rollout_snapshot),
-        ):
-            target = log_dir / filename
-            temporary = target.with_suffix(target.suffix + f".{os.getpid()}.tmp")
-            temporary.write_text(
-                json.dumps(payload, sort_keys=True, ensure_ascii=False, indent=2),
-                encoding="utf-8",
-            )
-            temporary.replace(target)
+        with self._snapshot_lock:
+            log_dir = Path(self.cfg.log_dir)
+            snapshot = self.engine.snapshot()
+            actuation_snapshot = self.actuation_tracker.snapshot()
+            rollout_snapshot = self.rollout.report()
+            snapshot["rollout"] = rollout_snapshot
+            evidence = {
+                "claims": snapshot["claims"],
+                "receipts": snapshot["receipts"],
+                "paths": snapshot["paths"],
+            }
+            for filename, payload in (
+                ("authority_snapshot.json", snapshot),
+                ("evidence_graph.json", evidence),
+                ("actuation_reports.json", actuation_snapshot),
+                ("authority_rollout_report.json", rollout_snapshot),
+            ):
+                target = log_dir / filename
+                temporary = target.with_suffix(
+                    target.suffix
+                    + f".{os.getpid()}.{threading.get_ident()}."
+                    + f"{uuid.uuid4().hex}.tmp"
+                )
+                try:
+                    temporary.write_text(
+                        json.dumps(
+                            payload,
+                            sort_keys=True,
+                            ensure_ascii=False,
+                            indent=2,
+                        ),
+                        encoding="utf-8",
+                    )
+                    temporary.replace(target)
+                finally:
+                    temporary.unlink(missing_ok=True)
 
     def _sealed_authority_snapshot_pointer(self) -> dict[str, str]:
         """Return an immutable, content-addressed Authority snapshot pointer."""

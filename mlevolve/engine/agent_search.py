@@ -303,6 +303,9 @@ class AgentSearch:
                         ),
                         "memory_snapshot": self.memory_snapshot,
                         "prospective_audit_logger": self.prospective_audit,
+                        "excluded_run_ids": list(
+                            getattr(ext_cfg, "excluded_run_ids", None) or []
+                        ),
                     }
                 else:
                     memory_layer_cls = (

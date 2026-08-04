@@ -1,0 +1,44 @@
+{
+  "aggregate_binding_hash": "668896c08bd1c748ccb5a89220312daccae19ef4ad066db642518f00b9d67e47",
+  "aggregate_binding_path": "/workspace/experiment-c-formal-releases-r3/FORMAL_RELEASE_BINDING.json",
+  "failed_terminal_score": null,
+  "formal_releases_root": "/workspace/experiment-c-formal-releases-r3",
+  "manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+  "reuse_scope": "task data and evaluator assets only; no Exp-C source/config/system manifest",
+  "schema": "mlevolve_end2end_evaluator_manifest_v1",
+  "tasks": {
+    "aerial-cactus-identification": {
+      "direction": "maximize",
+      "metric": "roc_auc",
+      "release_root": "/workspace/experiment-c-formal-releases-r3/aerial-cactus-identification/release",
+      "runtime_spec": "RUNTIME_SPEC.json",
+      "terminal_evaluator_spec": "transitively pinned by the aggregate release binding",
+      "terminal_metric": "roc_auc"
+    },
+    "denoising-dirty-documents": {
+      "direction": "minimize",
+      "metric": "rmse",
+      "release_root": "/workspace/experiment-c-formal-releases-r3/denoising-dirty-documents/release",
+      "runtime_spec": "RUNTIME_SPEC.json",
+      "terminal_evaluator_spec": "transitively pinned by the aggregate release binding",
+      "terminal_metric": "rmse"
+    },
+    "leaf-classification": {
+      "direction": "minimize",
+      "metric": "log_loss",
+      "release_root": "/workspace/experiment-c-formal-releases-r3/leaf-classification/release",
+      "runtime_spec": "RUNTIME_SPEC.json",
+      "terminal_evaluator_spec": "transitively pinned by the aggregate release binding",
+      "terminal_metric": "log_loss"
+    },
+    "new-york-city-taxi-fare-prediction": {
+      "direction": "minimize",
+      "metric": "rmse",
+      "release_root": "/workspace/experiment-c-formal-releases-r3/new-york-city-taxi-fare-prediction/release",
+      "runtime_spec": "RUNTIME_SPEC.json",
+      "terminal_evaluator_spec": "transitively pinned by the aggregate release binding",
+      "terminal_metric": "rmse"
+    }
+  },
+  "timing": "after Agent exit and candidate-set freeze"
+}

@@ -1,0 +1,237 @@
+{
+  "bindings": {
+    "budget_manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+    "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+    "memory_bundles_manifest_hash": "3b4a1d780b39cd48998036d04b0755c46c0160aac6f925b3a1c9f0e890863df6",
+    "schemas_manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+    "source_lock_manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+    "systems_manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+    "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+  },
+  "exploratory_pilot": true,
+  "formal_result_eligible": false,
+  "kind": "smoke",
+  "launch_order_randomization": "task-local SHA256-seeded deterministic shuffle",
+  "manifest_hash": "00782e0d9c03cf6b7bdec28e7721f4bb2af8e7fee970735c1da1e355f8717a0e",
+  "run_count": 10,
+  "runs": [
+    {
+      "bindings": {
+        "budget_manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+        "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+        "memory_bundles_manifest_hash": "3b4a1d780b39cd48998036d04b0755c46c0160aac6f925b3a1c9f0e890863df6",
+        "schemas_manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+        "source_lock_manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+        "systems_manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 0,
+      "logical_run_id": "e2e-smoke-v1__leaf-classification__gome_style_port__seed-1",
+      "row_hash": "faa09815a189d3c782458ed76455e04b191f2efba8fddfc5723c24b55e16635f",
+      "seed": 1,
+      "system_id": "gome_style_port",
+      "task_id": "leaf-classification",
+      "task_launch_position": 0
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+        "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+        "memory_bundles_manifest_hash": "3b4a1d780b39cd48998036d04b0755c46c0160aac6f925b3a1c9f0e890863df6",
+        "schemas_manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+        "source_lock_manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+        "systems_manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 1,
+      "logical_run_id": "e2e-smoke-v1__leaf-classification__runforest_only__seed-1",
+      "row_hash": "79ca4fe686725d329ca6895a24f73e36ab1890b1f177e57fb811daee49ed1281",
+      "seed": 1,
+      "system_id": "runforest_only",
+      "task_id": "leaf-classification",
+      "task_launch_position": 1
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+        "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+        "memory_bundles_manifest_hash": "3b4a1d780b39cd48998036d04b0755c46c0160aac6f925b3a1c9f0e890863df6",
+        "schemas_manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+        "source_lock_manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+        "systems_manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 2,
+      "logical_run_id": "e2e-smoke-v1__leaf-classification__reversed_router__seed-1",
+      "row_hash": "5e9de6c92f130b984111fcfc06cfbad5b1c242bbaa743fb7fbd84ac0a21e92e6",
+      "seed": 1,
+      "system_id": "reversed_router",
+      "task_id": "leaf-classification",
+      "task_launch_position": 2
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+        "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+        "memory_bundles_manifest_hash": "3b4a1d780b39cd48998036d04b0755c46c0160aac6f925b3a1c9f0e890863df6",
+        "schemas_manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+        "source_lock_manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+        "systems_manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 3,
+      "logical_run_id": "e2e-smoke-v1__leaf-classification__no_memory__seed-1",
+      "row_hash": "bb346eace4a4e0936d97519012b2c4722ad906b7a57b6146d6b48f7b25231a0b",
+      "seed": 1,
+      "system_id": "no_memory",
+      "task_id": "leaf-classification",
+      "task_launch_position": 3
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+        "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+        "memory_bundles_manifest_hash": "3b4a1d780b39cd48998036d04b0755c46c0160aac6f925b3a1c9f0e890863df6",
+        "schemas_manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+        "source_lock_manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+        "systems_manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 4,
+      "logical_run_id": "e2e-smoke-v1__leaf-classification__static_hybrid__seed-1",
+      "row_hash": "f93c203e4542e3f103e48a9db67a1a1f8d5f9fa016d239e1579ebe1867d30934",
+      "seed": 1,
+      "system_id": "static_hybrid",
+      "task_id": "leaf-classification",
+      "task_launch_position": 4
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+        "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+        "memory_bundles_manifest_hash": "3b4a1d780b39cd48998036d04b0755c46c0160aac6f925b3a1c9f0e890863df6",
+        "schemas_manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+        "source_lock_manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+        "systems_manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 5,
+      "logical_run_id": "e2e-smoke-v1__leaf-classification__sop_only__seed-1",
+      "row_hash": "752eadc8a7c62834ad031c00b75774d550fd1e80093d471b8b3911c61d6a6f8c",
+      "seed": 1,
+      "system_id": "sop_only",
+      "task_id": "leaf-classification",
+      "task_launch_position": 5
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+        "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+        "memory_bundles_manifest_hash": "3b4a1d780b39cd48998036d04b0755c46c0160aac6f925b3a1c9f0e890863df6",
+        "schemas_manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+        "source_lock_manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+        "systems_manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 6,
+      "logical_run_id": "e2e-smoke-v1__leaf-classification__dynamic_hybrid__seed-1",
+      "row_hash": "9314167bba07e1868c45c82ebd7db16c705c4adc5fce25a5485834938eeb1726",
+      "seed": 1,
+      "system_id": "dynamic_hybrid",
+      "task_id": "leaf-classification",
+      "task_launch_position": 6
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+        "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+        "memory_bundles_manifest_hash": "3b4a1d780b39cd48998036d04b0755c46c0160aac6f925b3a1c9f0e890863df6",
+        "schemas_manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+        "source_lock_manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+        "systems_manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 7,
+      "logical_run_id": "e2e-smoke-v1__leaf-classification__macla_style_port__seed-1",
+      "row_hash": "bd5d74b2b941008a318c6ea88b8c3be1dab06a4fdcad538daa5e8e0e99df6cf5",
+      "seed": 1,
+      "system_id": "macla_style_port",
+      "task_id": "leaf-classification",
+      "task_launch_position": 7
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+        "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+        "memory_bundles_manifest_hash": "3b4a1d780b39cd48998036d04b0755c46c0160aac6f925b3a1c9f0e890863df6",
+        "schemas_manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+        "source_lock_manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+        "systems_manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 8,
+      "logical_run_id": "e2e-smoke-v1__leaf-classification__rcr_router_style_port__seed-1",
+      "row_hash": "e580aa9e0bf78c633ea4fdff0e1bc255015decadda30859514283479b4362792",
+      "seed": 1,
+      "system_id": "rcr_router_style_port",
+      "task_id": "leaf-classification",
+      "task_launch_position": 8
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+        "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+        "memory_bundles_manifest_hash": "3b4a1d780b39cd48998036d04b0755c46c0160aac6f925b3a1c9f0e890863df6",
+        "schemas_manifest_hash": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
+        "source_lock_manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+        "systems_manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 9,
+      "logical_run_id": "e2e-smoke-v1__leaf-classification__flat_retrieval__seed-1",
+      "row_hash": "04193e641867124bd2eda463854fcc7baea31e9a68d5b76c5ba7d3c7932286c2",
+      "seed": 1,
+      "system_id": "flat_retrieval",
+      "task_id": "leaf-classification",
+      "task_launch_position": 9
+    }
+  ],
+  "schema": "mlevolve_end2end_execution_manifest_v1",
+  "seed": 1,
+  "statistical_significance_claim_allowed": false,
+  "system_ids": [
+    "no_memory",
+    "flat_retrieval",
+    "sop_only",
+    "runforest_only",
+    "static_hybrid",
+    "dynamic_hybrid",
+    "reversed_router",
+    "gome_style_port",
+    "macla_style_port",
+    "rcr_router_style_port"
+  ],
+  "task_ids": [
+    "leaf-classification"
+  ]
+}

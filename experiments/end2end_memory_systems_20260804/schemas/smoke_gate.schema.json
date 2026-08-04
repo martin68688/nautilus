@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mlevolve_end2end_smoke_gate_v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "status",
+    "formal_result_eligible",
+    "exploratory_pilot",
+    "smoke_manifest_hash",
+    "pilot_manifest_hash",
+    "component_manifest_hashes",
+    "source_lock_manifest_hash",
+    "system_ids",
+    "selected_run_count",
+    "selected_runs",
+    "retained_attempts",
+    "gate_hash"
+  ],
+  "properties": {
+    "schema": {"const": "mlevolve_end2end_smoke_gate_v1"},
+    "status": {"const": "pass"},
+    "formal_result_eligible": {"const": false},
+    "exploratory_pilot": {"const": true},
+    "smoke_manifest_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "pilot_manifest_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "component_manifest_hashes": {
+      "type": "object",
+      "minProperties": 7,
+      "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+    },
+    "source_lock_manifest_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "system_ids": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "uniqueItems": true
+    },
+    "selected_run_count": {"const": 10},
+    "selected_runs": {"type": "array", "minItems": 10, "maxItems": 10},
+    "retained_attempts": {"type": "array", "minItems": 10, "maxItems": 10},
+    "gate_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

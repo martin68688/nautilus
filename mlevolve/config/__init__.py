@@ -5,7 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Hashable, cast
+from typing import Any, Hashable, Mapping, cast
 import datetime
 import coolname
 import rich
@@ -25,6 +25,74 @@ from utils import copytree, preproc_data, serialize
 
 shutup.mute_warnings()
 logger = logging.getLogger("MLEvolve")
+
+
+def _resolve_host_artifact_roots(
+    binding: Mapping[str, Any], namespace: str
+) -> tuple[str, str]:
+    """Resolve collision-free Host roots without mutating the signed binding."""
+
+    report_root = str(binding["report_root"])
+    runtime_root = str(binding["runtime_artifact_root"])
+    namespace = str(namespace or "").strip()
+    if not namespace:
+        return report_root, runtime_root
+    relative = Path(namespace)
+    if (
+        relative.is_absolute()
+        or not relative.parts
+        or any(
+            part in {"", ".", ".."}
+            or not part.replace("-", "").replace("_", "").isalnum()
+            for part in relative.parts
+        )
+    ):
+        raise ValueError("Host artifact namespace is unsafe")
+    return (
+        str(Path(report_root) / "runs" / relative),
+        str(Path(runtime_root) / "runs" / relative),
+    )
+
+
+def _candidate_runtime_guidance(task_id: str) -> str:
+    """Candidate-visible guidance that does not mutate the frozen Host SDK."""
+
+    lines = [
+        "Generate internal-validation predictions inside "
+        "`session.prediction_scope(...)`, exit that context, and only then "
+        "call `session.evaluate_internal(...)`.",
+        "After evaluation, call `session.freeze_selection(...)` before "
+        "opening `session.inference_scope(...)`.",
+    ]
+    if str(task_id) == "aerial-cactus-identification":
+        lines.extend(
+            [
+                "Aerial Host image paths are exactly "
+                "`row[\"assets\"][\"image\"]`; `asset_path` and `image_path` "
+                "are not Host row fields.",
+                "Use `row[\"sample_id\"]` only as the submission ID; never "
+                "derive the asset filename from it.",
+            ]
+        )
+    return "\n".join(lines)
+
+
+def _host_enforce_data_dir(
+    configured_data_dir: str | Path,
+    binding: Mapping[str, Any],
+    *,
+    terminal_fixed_holdout: bool,
+) -> str | Path:
+    """Keep the evaluator-bound public view when terminal holdout is active.
+
+    Host SDK execution still consumes the Contract's protected DataViews. The
+    public ``data_dir`` is needed only to satisfy the independent terminal
+    evaluator's immutable train-view binding and contains no hidden labels.
+    """
+
+    if terminal_fixed_holdout:
+        return configured_data_dir
+    return str(binding["data_view_root"])
 
 
 """ these dataclasses are just for type hinting, the actual config is in config.yaml """
@@ -298,6 +366,12 @@ class ExternalSkillMemoryConfig:
     blocked_run_prefixes: list[str] = field(default_factory=list)
     positive_control_probe_path: str = ""
     positive_control_force_raw: bool = False
+    # Experiment End2End uses one shared Authority-filtered candidate pool and
+    # changes only this registered selection policy.
+    end2end_memory_system: str = ""
+    end2end_prompt_token_budget: int = 1536
+    end2end_candidate_pool_limit: int = 12
+    excluded_run_ids: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -317,6 +391,16 @@ class RunIdentityConfig:
     code_revision: str = ""
     code_worktree_sha256: str = ""
     identity_source: str = "declared_at_runtime"
+    experiment_manifest_sha256: str = ""
+    system_manifest_sha256: str = ""
+    task_manifest_sha256: str = ""
+    budget_manifest_sha256: str = ""
+    memory_bundle_binding_sha256: str = ""
+    evaluator_manifest_sha256: str = ""
+    logical_run_id: str = ""
+    system_id: str = ""
+    rng_state_hash: str = ""
+    rng_state_components: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -567,7 +651,13 @@ def prep_cfg(cfg: Config):
             raise ValueError(
                 "Host Protocol Preflight requires legacy protocol_repair.enabled=false"
             )
-        preflight.report_root = binding["report_root"]
+        (
+            preflight.report_root,
+            cfg.evaluation_authority.protocol_runtime_artifact_root,
+        ) = _resolve_host_artifact_roots(
+            binding,
+            os.environ.get("MLEVOLVE_HOST_ARTIFACT_NAMESPACE", ""),
+        )
         preflight.expected_contract_hash = binding["contract_hash"]
         preflight.contract_path = binding["contract_path"]
         preflight.data_view_manifest_path = binding["data_view_manifest_path"]
@@ -577,9 +667,6 @@ def prep_cfg(cfg: Config):
             raise ValueError(
                 "Host Protocol activation requires collector_private_key_path"
             )
-        cfg.evaluation_authority.protocol_runtime_artifact_root = binding[
-            "runtime_artifact_root"
-        ]
         # The Host Contract is the protocol authority for an activated run.
         # Bind claim-use Authority to the exact same registered ProtocolRef so
         # valid signed runtime Receipts cannot be silently quarantined merely
@@ -606,7 +693,16 @@ def prep_cfg(cfg: Config):
         # the Candidate's historical input surface.  Only a separately approved
         # enforce canary may replace data_dir with the terminal-blind Host root.
         if runtime_mode == "host_sdk_enforce":
-            cfg.data_dir = binding["data_view_root"]
+            cfg.data_dir = _host_enforce_data_dir(
+                cfg.data_dir,
+                binding,
+                terminal_fixed_holdout=bool(
+                    getattr(cfg.fixed_holdout, "enabled", False)
+                    and getattr(
+                        cfg.fixed_holdout, "bypass_protocol_gates", False
+                    )
+                ),
+            )
             # Use the immutable Host copy as the sole schema authority. It
             # carries a generated normalized-row appendix that resolves stale
             # benchmark descriptions (notably Leaf's margin_1 vs margin1).
@@ -703,6 +799,10 @@ def load_task_desc(cfg: Config):
             task_desc = f.read()
         if cfg.fixed_holdout.enabled:
             task_desc += _fixed_holdout_task_note()
+        if cfg.agent.protocol_preflight.enabled:
+            task_desc += "\n\n# Host Candidate Lifecycle\n" + _candidate_runtime_guidance(
+                str(cfg.exp_id or "")
+            )
         return task_desc
 
     # or generate it from the goal and eval args

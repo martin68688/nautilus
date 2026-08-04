@@ -1,5 +1,6 @@
 import copy
 import logging
+import math
 import time
 from typing import cast
 
@@ -13,6 +14,7 @@ from agents import data_leakage_agent, leakage_audit, protocol_repair
 from agents.triggers import should_check_data_leakage
 from fixed_holdout.mode import bypass_protocol_gates, enabled, train_manifest_path
 from fixed_holdout.validation import validate_submission as validate_fixed_submission
+from authority.adapters.mlevolve.receipt_bridge import trusted_runtime_metric
 
 logger = logging.getLogger("MLEvolve")
 
@@ -993,6 +995,16 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
 
             node.absorb_exec_result(exec_result)
 
+            signed_metric = None
+            authority = getattr(agent, "evaluation_authority", None)
+            active_protocol = getattr(authority, "active_protocol", None)
+            if active_protocol is not None:
+                signed_metric = trusted_runtime_metric(
+                    node,
+                    active_protocol,
+                    task_id=str(getattr(agent.cfg, "exp_id", "") or ""),
+                )
+
             introduction = _build_introduction(agent)
             prompt = {
                 "Introduction": introduction,
@@ -1018,6 +1030,43 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
             response.setdefault("metric", None)
             response.setdefault("lower_is_better",
                                 not agent.metric_maximize if agent.metric_maximize is not None else False)
+
+            if signed_metric is not None:
+                llm_metric = response.get("metric")
+                host_metric = float(signed_metric["metric_value"])
+                if (
+                    not isinstance(llm_metric, (int, float))
+                    or not math.isclose(
+                        float(llm_metric),
+                        host_metric,
+                        rel_tol=1e-9,
+                        abs_tol=1e-12,
+                    )
+                ):
+                    logger.warning(
+                        "Signed Host evaluator metric overrides result-parser "
+                        "value for node %s: parser=%r host=%s",
+                        node.id,
+                        llm_metric,
+                        host_metric,
+                    )
+                response["metric"] = host_metric
+                response["is_bug"] = False
+                direction = str(
+                    signed_metric.get("metric_direction") or ""
+                ).lower()
+                if direction in {"minimize", "maximize"}:
+                    response["lower_is_better"] = direction == "minimize"
+                observation = getattr(node, "protocol_observation", None)
+                if not isinstance(observation, dict):
+                    observation = {}
+                    node.protocol_observation = observation
+                observation["trusted_evaluator_metric"] = {
+                    "metric_name": signed_metric.get("metric_name"),
+                    "metric_value": host_metric,
+                    "metric_direction": direction,
+                    "source": "signed_host_runtime_receipt",
+                }
 
             metric_val = response.get("metric")
             if not isinstance(metric_val, (int, float)):

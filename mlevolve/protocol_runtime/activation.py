@@ -119,7 +119,12 @@ def hash_sdk_tree(root: str | Path) -> str:
     sdk_root = _directory(root, label="Host SDK root", create=False)
     rows: list[str] = []
     for path in sorted(sdk_root.rglob("*.py")):
-        if "__pycache__" in path.parts or path.is_symlink() or not path.is_file():
+        if (
+            "__pycache__" in path.parts
+            or path.name.startswith("._")
+            or path.is_symlink()
+            or not path.is_file()
+        ):
             continue
         rows.append(f"{path.relative_to(sdk_root).as_posix()}\0{_sha256_file(path)}")
     if not rows:

@@ -358,6 +358,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         visibility_token_budget: int | None = None,
         prospective_audit_logger: Any | None = None,
         memory_snapshot: Any | None = None,
+        end2end_memory_system: str | None = None,
+        end2end_prompt_token_budget: int | None = None,
+        end2end_candidate_pool_limit: int | None = None,
         **kwargs: Any,
     ) -> None:
         self._trace_local = threading.local()
@@ -402,7 +405,53 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         self.retrieval_control = str(retrieval_control or "stage_hybrid")
         if self.retrieval_control not in RETRIEVAL_CONTROLS:
             raise ValueError(f"Unsupported stage-hybrid retrieval_control: {self.retrieval_control}")
+        if excluded_run_ids is None and ext_cfg is not None:
+            excluded_run_ids = list(
+                getattr(ext_cfg, "excluded_run_ids", None) or []
+            )
         self.excluded_run_ids = {str(value) for value in (excluded_run_ids or [])}
+        if end2end_memory_system is None and ext_cfg is not None:
+            end2end_memory_system = getattr(
+                ext_cfg, "end2end_memory_system", ""
+            )
+        self.end2end_memory_system = str(
+            end2end_memory_system or ""
+        ).strip()
+        if end2end_prompt_token_budget is None and ext_cfg is not None:
+            end2end_prompt_token_budget = getattr(
+                ext_cfg, "end2end_prompt_token_budget", 1536
+            )
+        self.end2end_prompt_token_budget = int(
+            end2end_prompt_token_budget
+            if end2end_prompt_token_budget is not None
+            else 1536
+        )
+        if end2end_candidate_pool_limit is None and ext_cfg is not None:
+            end2end_candidate_pool_limit = getattr(
+                ext_cfg, "end2end_candidate_pool_limit", 12
+            )
+        self.end2end_candidate_pool_limit = int(
+            end2end_candidate_pool_limit
+            if end2end_candidate_pool_limit is not None
+            else 12
+        )
+        self.end2end_controller = None
+        if self.end2end_memory_system:
+            from agents.memory.end2end_memory_system import (
+                EndToEndMemoryController,
+            )
+
+            self.end2end_controller = EndToEndMemoryController(
+                self.end2end_memory_system
+            )
+            if self.end2end_prompt_token_budget != 1536:
+                raise ValueError(
+                    "Experiment End2End requires a 1536-whitespace-token prompt budget"
+                )
+            if self.end2end_candidate_pool_limit != 12:
+                raise ValueError(
+                    "Experiment End2End requires 12 candidates per source"
+                )
         self.stage_quotas = _merge_quotas(stage_quotas)
         self.rrf_weights = _merge_weights(rrf_weights)
         self._injected_gateway_selector = gateway_selector
@@ -426,6 +475,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         super().__init__(*args, memory_snapshot=memory_snapshot, **kwargs)
         if self.mode != "run_forest_stage_hybrid":
             raise ValueError("StageAwareHybridMemoryLayer requires mode=run_forest_stage_hybrid")
+        if self.end2end_controller is not None and self.top_k != 6:
+            raise ValueError("Experiment End2End requires top_k=6")
         self.domain_scope_required = (
             (self.graph.get("meta") or {}).get("domain_scope_required") is True
         )
@@ -3241,6 +3292,324 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 lines.append(f"- {pattern_id}: {node.get('issue_code')} {str(node.get('text', ''))[:300]}")
         return "\n".join(lines)
 
+    def _end2end_candidate_text(
+        self,
+        candidate_id: str,
+        *,
+        source: str,
+        detail: dict[str, Any],
+    ) -> tuple[str, str]:
+        node = self.nodes.get(candidate_id, {})
+        if source == "sop":
+            visible = str(detail.get("visible_text") or "").strip()
+            if visible:
+                return visible, "authorized SOP clause projection"
+            parts = self._sop_text_parts(node)
+            text = "\n".join(
+                value for value in parts.values() if str(value).strip()
+            ).strip()
+            return text, "SOP procedure"
+        evidence = detail.get("transition_evidence") or {}
+        plan = str(
+            node.get("plan")
+            or node.get("description")
+            or node.get("code_summary")
+            or node.get("text")
+            or ""
+        ).strip()
+        feedback_parts = [
+            str(evidence.get("parent_failure") or "").strip(),
+            str(evidence.get("code_change") or "").strip(),
+            str(evidence.get("child_result") or "").strip(),
+        ]
+        feedback = " | ".join(value for value in feedback_parts if value)
+        if feedback and feedback not in plan:
+            plan = f"{plan}\nStructured execution feedback: {feedback}".strip()
+        return plan, feedback or "verified successful execution"
+
+    def _end2end_common_pool(
+        self,
+        *,
+        stage: str,
+        task_id: str,
+        task_desc: str,
+        query_text: str,
+    ) -> tuple[list[Any], Any]:
+        """Return one shared, authorized SOP + RunForest candidate pool."""
+
+        from agents.memory.end2end_memory_system import MemoryCandidate
+
+        visibility_pack = self._prepare_visibility(
+            stage=stage,
+            task_id=task_id,
+            task_desc=task_desc,
+        )
+        visibility_ids = self._effective_visibility_sop_ids()
+        sop_rows = self._rank_sops(
+            query_text,
+            stage,
+            self.end2end_candidate_pool_limit,
+            task_id=task_id,
+            task_desc=task_desc,
+            allowed_sop_ids=visibility_ids,
+        )
+        if stage == "debug":
+            tree_rows = self._rank_debug_transition_rows(
+                query_text=query_text,
+                task_id=task_id,
+                task_desc=task_desc,
+                limit=self.end2end_candidate_pool_limit,
+                allowed_sop_ids=visibility_ids,
+            )
+        else:
+            tree_rows = self._rank_tree_rows(
+                stage=stage,
+                query_text=query_text,
+                task_id=task_id,
+                task_desc=task_desc,
+                limit=self.end2end_candidate_pool_limit,
+            )
+
+        steps = [
+            int(self.nodes.get(row.get("id"), {}).get("step") or 0)
+            for row in tree_rows
+        ]
+        max_step = max(steps, default=0)
+        candidates: list[MemoryCandidate] = []
+        for source, rows in (("sop", sop_rows), ("runforest", tree_rows)):
+            for source_rank, row in enumerate(rows, 1):
+                candidate_id = str(row.get("id") or "")
+                if not candidate_id:
+                    continue
+                node = self.nodes.get(candidate_id, {})
+                text, feedback = self._end2end_candidate_text(
+                    candidate_id,
+                    source=source,
+                    detail=row,
+                )
+                if not text:
+                    continue
+                relevance = self._bounded_token_similarity(query_text, text)
+                success_support = int(
+                    row.get("clean_supporting_transition_count") or 0
+                )
+                rejected_support = int(row.get("rejected_support_count") or 0)
+                if source == "runforest":
+                    if node.get("type") == "Transition":
+                        verified_success = self._positive_transition(candidate_id)[0]
+                    else:
+                        verified_success = self._successful_run_node(candidate_id)
+                    success_support = max(success_support, int(verified_success))
+                else:
+                    verified_success = success_support > 0
+                step = int(node.get("step") or 0)
+                recency = float(step / max_step) if max_step > 0 else 0.0
+                if source == "sop":
+                    stage_fit = float(bool(row.get("stage_compatible")))
+                else:
+                    stage_fit = float(
+                        bool(
+                            float(
+                                (row.get("score_components") or {}).get("stage")
+                                or 0.0
+                            )
+                            > 0
+                            or stage == "debug"
+                        )
+                    )
+                candidates.append(
+                    MemoryCandidate(
+                        candidate_id=candidate_id,
+                        source=source,
+                        relevance=float(relevance),
+                        prompt_text=text,
+                        source_stage=str(
+                            node.get("stage") or node.get("stage_pair") or ""
+                        ),
+                        source_task_id=str(node.get("task") or ""),
+                        rank=source_rank,
+                        metadata={
+                            "authorized": True,
+                            "source_rank": source_rank,
+                            "source_ranking_score": float(row.get("score") or 0.0),
+                            "verified_success": bool(verified_success),
+                            "success_support_count": success_support,
+                            "rejected_support_count": rejected_support,
+                            "failure_risk": min(1.0, rejected_support / 3.0),
+                            "execution_feedback": feedback,
+                            "score_delta": node.get("metric_improvement"),
+                            "recency": recency,
+                            "stage_fit": stage_fit,
+                            "visible_clause_ids": list(
+                                row.get("visible_clause_ids") or []
+                            ),
+                        },
+                    )
+                )
+        return candidates, visibility_pack
+
+    def _retrieve_end2end_for_node(
+        self,
+        *,
+        stage: str,
+        task_id: str,
+        task_desc: str,
+        query_parts: list[str] | None,
+    ) -> tuple[str, list[str]]:
+        from agents.memory.end2end_memory_system import MemorySystemContext
+
+        stage = STAGE_ALIASES.get(stage, stage)
+        if stage not in STAGE_QUOTAS:
+            raise ValueError(f"Unsupported End2End retrieval stage: {stage}")
+        if not self.stage_enabled(stage):
+            return "", []
+        query_text = "\n".join([task_desc or "", *(query_parts or [])])
+        candidates, visibility_pack = self._end2end_common_pool(
+            stage=stage,
+            task_id=task_id,
+            task_desc=task_desc,
+            query_text=query_text,
+        )
+        snapshot = getattr(self, "memory_snapshot", None)
+        base = getattr(snapshot, "base_bundle", None)
+        selection = self.end2end_controller.retrieve(
+            candidates,
+            MemorySystemContext(
+                stage=stage,
+                task_id=task_id,
+                task_description=task_desc,
+                prompt_token_budget=self.end2end_prompt_token_budget,
+                top_k=self.top_k,
+                memory_bundle_manifest_sha256=str(
+                    getattr(base, "manifest_sha256", "") or ""
+                ),
+            ),
+        )
+        selection_pack = selection.to_pack()
+        raw_rows = [
+            {
+                "candidate_id": item.candidate_id,
+                "rank": rank,
+                "score": item.relevance,
+                "source_run_id": self.nodes.get(item.candidate_id, {}).get(
+                    "run_id"
+                ),
+                "source_task_id": item.source_task_id,
+                "source_stage": item.source_stage,
+                "operation_authorized": True,
+                "gate_reason": "authorized_common_pool",
+                "final_prompt_visible": (
+                    item.candidate_id in selection.prompt_candidate_ids
+                ),
+            }
+            for rank, item in enumerate(selection.raw_candidates, 1)
+        ]
+        suppressed_by_id = {
+            str(item.get("candidate_id")): str(item.get("reason") or "")
+            for item in selection.suppressed_candidates
+        }
+        navigation_trace = [
+            {
+                "retrieval_channel": "end2end_common_pool",
+                "candidate_class": item.source,
+                "gateway_sop_id": (
+                    item.candidate_id if item.source == "sop" else None
+                ),
+                "candidate_id": item.candidate_id,
+                "supporting_transition_ids": list(
+                    item.metadata.get("visible_clause_ids") or []
+                ),
+                "selection_reason": (
+                    "selected_by_frozen_system_policy"
+                    if item.candidate_id in selection.prompt_candidate_ids
+                    else suppressed_by_id.get(
+                        item.candidate_id,
+                        "not_selected_by_frozen_system_policy",
+                    )
+                ),
+                "selection_state": (
+                    "injected"
+                    if item.candidate_id in selection.prompt_candidate_ids
+                    else "suppressed"
+                ),
+            }
+            for item in selection.raw_candidates
+        ]
+        pool_payload = [item.to_dict() for item in selection.raw_candidates]
+        candidate_pool_hash = hashlib.sha256(
+            json.dumps(
+                pool_payload,
+                sort_keys=True,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        visibility_trace = copy.deepcopy(
+            getattr(visibility_pack, "visibility_trace", {}) or {}
+        )
+        pack = {
+            "schema": "mlevolve_end2end_memory_pack_v1",
+            "algorithm_version": "end2end_memory_systems_pilot_v1",
+            "system_id": selection.system_id,
+            "stage_route": {
+                "stage": stage,
+                "control": "end2end_memory_system",
+                **selection.route,
+            },
+            "target_task_id": str(task_id),
+            "candidate_pool_source": "shared_authority_filtered_sop_runforest",
+            "candidate_pool_hash": candidate_pool_hash,
+            "candidate_pool": pool_payload,
+            "raw_pool_observed": True,
+            "pre_gate_raw_candidates": raw_rows,
+            "selected_candidates": selection_pack["selected_candidates"],
+            "suppressed_candidates": selection_pack["suppressed_candidates"],
+            "final_prompt_candidate_ids": list(selection.prompt_candidate_ids),
+            "prompt_visible_refs": list(selection.prompt_candidate_ids),
+            "prompt_text": selection.prompt_text,
+            "prompt_token_count": selection.prompt_token_count,
+            "prompt_truncated": selection.prompt_truncated,
+            "navigation_trace": navigation_trace,
+            "visible_clause_ids": list(
+                getattr(visibility_pack, "effective_clause_ids", []) or []
+            ),
+            "visibility_trace": visibility_trace,
+            "visibility_safety_gate": {
+                "mode": self.visibility_mode,
+                "pre_ranking": True,
+                "unauthorized_prompt_exposure": 0,
+                "unauthorized_activation": 0,
+            },
+            "unauthorized_prompt_exposure": 0,
+            "memory_snapshot_bound_but_not_exposed": (
+                selection.system_id == "no_memory"
+            ),
+            "memory_bundle": {
+                "bundle_id": str(getattr(base, "bundle_id", "") or ""),
+                "bundle_version": str(
+                    getattr(base, "bundle_version", "") or ""
+                ),
+                "manifest_sha256": str(
+                    getattr(base, "manifest_sha256", "") or ""
+                ),
+                "snapshot_sha256": str(
+                    getattr(snapshot, "snapshot_sha256", "") or ""
+                ),
+            },
+            # Compatibility fields consumed by existing audit/adoption code.
+            "fused_execution_candidates": [],
+            "selected_sop_gateways": [],
+            "sop_only_candidates": [],
+            "evidence_refs": [],
+            "failure_patterns": [],
+        }
+        self._mark_empty_visibility_abstention(pack)
+        self._last_agentic_pack = pack
+        self._trace_local.pack = pack
+        if self.prospective_audit_logger is not None:
+            self.prospective_audit_logger.record_run_candidates(pack, self.nodes)
+        return selection.prompt_text, list(selection.prompt_candidate_ids)
+
     def current_navigation_pack(self) -> dict[str, Any]:
         """Return a defensive copy of this thread's latest retrieval pack."""
         return copy.deepcopy(getattr(self._trace_local, "pack", {}))
@@ -3276,6 +3645,13 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         authority_operation: Operation | str | None = None,
         active_protocol: ProtocolRef | str | None = None,
     ) -> tuple[str, list[str]]:
+        if self.end2end_controller is not None:
+            return self._retrieve_end2end_for_node(
+                stage=stage,
+                task_id=task_id,
+                task_desc=task_desc,
+                query_parts=query_parts,
+            )
         if self.retrieval_control == "no_memory":
             self._trace_local.visibility_pack = None
             self._trace_local.pack = {

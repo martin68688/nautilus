@@ -1,0 +1,108 @@
+{
+  "manifest_hash": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
+  "schema": "mlevolve_end2end_systems_manifest_v1",
+  "sole_experimental_axis": "external_skill_memory.end2end_memory_system",
+  "system_count": 10,
+  "systems": [
+    {
+      "config_path": "systems/no_memory.yaml",
+      "config_sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8",
+      "description": "Bundle-bound zero Prompt exposure",
+      "kind": "internal",
+      "label": "S0",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "no_memory"
+    },
+    {
+      "config_path": "systems/flat_retrieval.yaml",
+      "config_sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7",
+      "description": "Mixed global relevance Top-6",
+      "kind": "internal",
+      "label": "S1",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "flat_retrieval"
+    },
+    {
+      "config_path": "systems/sop_only.yaml",
+      "config_sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc",
+      "description": "SOP Top-6",
+      "kind": "internal",
+      "label": "S2",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "sop_only"
+    },
+    {
+      "config_path": "systems/runforest_only.yaml",
+      "config_sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2",
+      "description": "RunForest Top-6",
+      "kind": "internal",
+      "label": "S3",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "runforest_only"
+    },
+    {
+      "config_path": "systems/static_hybrid.yaml",
+      "config_sha256": "2d3cfd715e42481ba749b92f0a82221b94d54cd844aa7518a8548577b599a92d",
+      "description": "3 SOP / 3 RunForest",
+      "kind": "internal",
+      "label": "S4",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "static_hybrid"
+    },
+    {
+      "config_path": "systems/dynamic_hybrid.yaml",
+      "config_sha256": "33b6800805f45d868723d3b830eb0ab97e0b336f746f7be2cf4ff6c280ab788e",
+      "description": "Draft 4/2, Improve 3/3, Debug 2/4",
+      "kind": "internal",
+      "label": "S5",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "dynamic_hybrid"
+    },
+    {
+      "config_path": "systems/reversed_router.yaml",
+      "config_sha256": "c25ae0075cd8cc7bad86e42a01fca3e875c558ca8d50d3646a42c9296e326076",
+      "description": "Draft 2/4, Improve 3/3, Debug 4/2",
+      "kind": "internal",
+      "label": "S6",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "reversed_router"
+    },
+    {
+      "config_path": "systems/gome_style_port.yaml",
+      "config_sha256": "451abc8087cbfc2c2b8b2a5bbaefbadf0a99d539e5fcc0b22b737e5affb0ae03",
+      "description": "Verified Success Memory cards",
+      "kind": "competitor_style_port",
+      "label": "C1",
+      "limitation": "Not the full GOME multi-trace optimizer",
+      "primary_reference": "https://arxiv.org/abs/2603.01692",
+      "system_id": "gome_style_port"
+    },
+    {
+      "config_path": "systems/macla_style_port.yaml",
+      "config_sha256": "ade946a3e98de146c7c1bbcb654662e21f08bc76ee1db16bb74f9c3c0a522991",
+      "description": "Beta reliability utility",
+      "kind": "competitor_style_port",
+      "label": "C2",
+      "limitation": "No full online contrastive refinement",
+      "primary_reference": "https://arxiv.org/abs/2512.18950",
+      "system_id": "macla_style_port"
+    },
+    {
+      "config_path": "systems/rcr_router_style_port.yaml",
+      "config_sha256": "ab23b4f6fb4de089080a9bf11a97d194e4f933eaf1faf2b0d5d9d15e4a8994f2",
+      "description": "Role/stage/recency token routing",
+      "kind": "competitor_style_port",
+      "label": "C3",
+      "limitation": "Not the original multi-agent QA environment",
+      "primary_reference": "https://arxiv.org/abs/2508.04903",
+      "system_id": "rcr_router_style_port"
+    }
+  ]
+}

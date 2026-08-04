@@ -1,0 +1,70 @@
+extends: ../../../mlevolve/config/config_prevalence_audit_20260729_host_enforce.yaml
+
+methodology_kb_path: ""
+methodology_dynamic: false
+
+agent:
+  use_global_memory: false
+  search:
+    num_gpus: 1
+    parallel_search_num: 1
+    num_drafts: 3
+  draft_role_policy:
+    enabled: false
+    roles: []
+  protocol_repair:
+    enabled: false
+
+adoption_tracking:
+  enable: true
+  enable_analysis: false
+  judge_mode: keyword
+
+prospective_audit:
+  enabled: true
+  allow_pending_counterfactual: true
+
+external_skill_memory:
+  enable: true
+  bundle_root: ""
+  current_pointer_path: CURRENT.json
+  session_overlay_path: ""
+  graph_path: ""
+  index_path: ""
+  text_model_path: ""
+  source_name: run_forest_stage_hybrid_memory
+  mode: run_forest_stage_hybrid
+  scoring_mode: flat_twin
+  enable_agentic: false
+  top_k: 6
+  max_chars: 0
+  include_draft: true
+  include_improve: true
+  include_evolution: true
+  include_debug: true
+  include_fusion: true
+  retrieval_control: stage_hybrid
+  visibility_token_budget: 4096
+  end2end_memory_system: ""
+  end2end_prompt_token_budget: 1536
+  end2end_candidate_pool_limit: 12
+  excluded_run_ids:
+    - "20260701_180146"
+    - "20260701_145201"
+    - "20260701_145250"
+    - "20260516_125444"
+    - "20260701_155016"
+    - "20260510_025317"
+    - "20260701_180038"
+
+evaluation_authority:
+  require_bound_bundle: true
+
+run_identity:
+  schema: mlevolve_run_identity_v1
+  experiment_group: experiment_end2end_memory_systems_pilot_v1
+  baseline_reference_group: experiment_end2end_no_memory_v1
+  memory_enabled: true
+  memory_system: ""
+  memory_version: experiment_r_task_heldout_production_v2
+  identity_source: end2end_frozen_manifest_v1

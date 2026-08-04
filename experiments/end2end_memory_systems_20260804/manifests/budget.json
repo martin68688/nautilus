@@ -1,0 +1,53 @@
+{
+  "failure_policy": {
+    "automatic_job_retry": false,
+    "backoff_limit_per_index": 0,
+    "explicit_retry_only_for": "infrastructure",
+    "preserve_all_attempts": true,
+    "score_imputation": false
+  },
+  "manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+  "pilot": {
+    "agent_steps": 80,
+    "agent_time_limit_seconds": 21600,
+    "cpu_count": 16,
+    "execution_timeout_seconds": 18000,
+    "finalize_reserve_seconds": 900,
+    "gpu_count": 1,
+    "initial_drafts": 3,
+    "max_replacement_drafts": 5,
+    "memory_gib": 64,
+    "parallel_search_num": 1
+  },
+  "runtime": {
+    "container_image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+    "gpu_product_constraint": null,
+    "gpu_resource_key": "nvidia.com/a100",
+    "gpu_type": "NVIDIA A100 family",
+    "provider_seed_supported": false,
+    "rng_commitment_scope": "Python/NumPy/Torch local RNG state; no provider determinism claim",
+    "solver_model_id": "deepseek-production-solver",
+    "solver_model_revision": "sha256:6c72890187efc83ef04ac6527c8f22f823708d99c83b7f7b3393dfe27fe4efc6"
+  },
+  "schema": "mlevolve_end2end_budget_manifest_v1",
+  "shared_memory": {
+    "prompt_token_budget": 1536,
+    "raw_candidate_max": 24,
+    "raw_candidates_per_source": 12,
+    "token_counter": "whitespace_split_v1",
+    "top_k": 6,
+    "visibility_token_budget": 4096
+  },
+  "smoke": {
+    "agent_steps": 2,
+    "agent_time_limit_seconds": 1800,
+    "cpu_count": 16,
+    "execution_timeout_seconds": 900,
+    "finalize_reserve_seconds": 120,
+    "gpu_count": 1,
+    "initial_drafts": 1,
+    "max_replacement_drafts": 0,
+    "memory_gib": 64,
+    "parallel_search_num": 1
+  }
+}

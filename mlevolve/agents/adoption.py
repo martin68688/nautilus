@@ -79,10 +79,65 @@ def log_adoption(
         ref_ids: list of memory entry ids injected into this node's prompt.
         stage: "draft" | "improve" | "debug".
     """
+    layer = getattr(agent, "external_skill_memory", None)
     ref_ids = [ref_id for ref_id in (ref_ids or []) if ref_id]
+    pack = {}
+    if source == "run_forest_stage_hybrid_memory" and layer is not None:
+        getter = getattr(layer, "current_navigation_pack", None)
+        if callable(getter):
+            pack = getter()
+            node.memory_navigation_trace = copy.deepcopy(
+                pack.get("navigation_trace", [])
+            )
+            if pack.get("schema") == "mlevolve_end2end_memory_pack_v1":
+                node.memory_routing_trace = {
+                    "schema": "mlevolve_memory_routing_trace_v1",
+                    "memory_pack_schema": str(pack.get("schema") or ""),
+                    "algorithm_version": str(
+                        pack.get("algorithm_version") or ""
+                    ),
+                    "system_id": str(pack.get("system_id") or ""),
+                    "stage_route": copy.deepcopy(pack.get("stage_route") or {}),
+                    "target_task_id": str(pack.get("target_task_id") or ""),
+                    "candidate_pool_hash": str(
+                        pack.get("candidate_pool_hash") or ""
+                    ),
+                    "candidate_pool_source": str(
+                        pack.get("candidate_pool_source") or ""
+                    ),
+                    "raw_pool_observed": bool(pack.get("raw_pool_observed")),
+                    "raw_candidates": copy.deepcopy(
+                        pack.get("candidate_pool") or []
+                    ),
+                    "selected_candidates": copy.deepcopy(
+                        pack.get("selected_candidates") or []
+                    ),
+                    "suppressed_candidates": copy.deepcopy(
+                        pack.get("suppressed_candidates") or []
+                    ),
+                    "final_prompt_candidate_ids": list(
+                        pack.get("final_prompt_candidate_ids") or []
+                    ),
+                    "visible_clause_ids": list(
+                        pack.get("visible_clause_ids") or []
+                    ),
+                    "prompt_token_count": int(
+                        pack.get("prompt_token_count") or 0
+                    ),
+                    "prompt_truncated": bool(pack.get("prompt_truncated")),
+                    "visibility_safety_gate": copy.deepcopy(
+                        pack.get("visibility_safety_gate") or {}
+                    ),
+                    "unauthorized_prompt_exposure": int(
+                        pack.get("unauthorized_prompt_exposure") or 0
+                    ),
+                    "memory_snapshot_bound_but_not_exposed": bool(
+                        pack.get("memory_snapshot_bound_but_not_exposed")
+                    ),
+                    "memory_bundle": copy.deepcopy(pack.get("memory_bundle") or {}),
+                }
     if not ref_ids:
         return
-    layer = getattr(agent, "external_skill_memory", None)
     visibility_pack = (
         getattr(agent, "methodology_visibility_pack", None)
         if source == "methodology"
@@ -112,12 +167,6 @@ def log_adoption(
     if not getattr(agent, "adoption_tracking_enabled", False):
         return
     ts = time.strftime("%Y-%m-%dT%H:%M:%S")
-    pack = {}
-    if source == "run_forest_stage_hybrid_memory" and layer is not None:
-        getter = getattr(layer, "current_navigation_pack", None)
-        if callable(getter):
-            pack = getter()
-            node.memory_navigation_trace = copy.deepcopy(pack.get("navigation_trace", []))
     for rid in ref_ids:
         trace = _hybrid_trace_for_ref(pack, rid)
         record = {

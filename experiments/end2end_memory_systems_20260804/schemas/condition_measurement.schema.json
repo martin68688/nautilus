@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mlevolve_end2end_condition_measurement_v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "logical_run_id",
+    "attempt",
+    "manifest_hash",
+    "task_id",
+    "system_id",
+    "seed",
+    "formal_result_eligible",
+    "exploratory_pilot",
+    "status",
+    "failure_class",
+    "completed",
+    "terminal_metric",
+    "direction",
+    "terminal_score",
+    "time_to_first_valid_seconds",
+    "allocated_gpu_hours",
+    "measurement_hash"
+  ],
+  "properties": {
+    "schema": {"const": "mlevolve_end2end_condition_measurement_v1"},
+    "attempt": {"type": "integer", "minimum": 0},
+    "seed": {"const": 1},
+    "exploratory_pilot": {"const": true},
+    "failure_class": {"enum": ["none", "agent", "evaluator", "infrastructure"]},
+    "completed": {"type": "boolean"},
+    "direction": {"enum": ["minimize", "maximize"]},
+    "terminal_score": {"type": ["number", "null"]},
+    "time_to_first_valid_seconds": {"type": ["number", "null"], "minimum": 0},
+    "allocated_gpu_hours": {"type": "number", "minimum": 0},
+    "measurement_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"completed": {"const": false}}},
+      "then": {"properties": {"terminal_score": {"type": "null"}}}
+    }
+  ]
+}

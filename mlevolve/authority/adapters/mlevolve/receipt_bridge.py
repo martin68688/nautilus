@@ -125,6 +125,103 @@ def _trusted_method_and_execution_receipts(
     return receipts
 
 
+def _verified_full_runtime_receipts(
+    node: Any,
+    protocol_ref: ProtocolRef,
+    task_id: str | None = None,
+) -> list[Receipt]:
+    """Verify a signed Host full-runtime journal independently of LLM parsing."""
+
+    full_runtime = dict(
+        (getattr(node, "protocol_observation", None) or {}).get(
+            "host_full_runtime"
+        )
+        or {}
+    )
+    if not full_runtime:
+        return []
+    try:
+        from authority.protocol_execution_contract import (
+            ProtocolExecutionContract,
+        )
+        from protocol_runtime.collector_bridge import (
+            bridge_signed_journal_to_receipts,
+        )
+
+        evidence_hash = str(full_runtime.get("evidence_hash") or "")
+        expected_evidence_hash = _sha256(
+            canonical_json(
+                {
+                    key: value
+                    for key, value in full_runtime.items()
+                    if key != "evidence_hash"
+                }
+            )
+        )
+        contract = ProtocolExecutionContract.from_dict(
+            dict(full_runtime["contract"])
+        )
+        expected_code_sha256 = str(
+            getattr(node, "code_sha256_expected", "")
+            or _sha256(str(getattr(node, "code", "") or ""))
+        )
+        if (
+            full_runtime.get("schema") != "mlevolve_full_runtime_evidence_v1"
+            or full_runtime.get("status") != "pass"
+            or evidence_hash != expected_evidence_hash
+            or full_runtime.get("node_id") != str(node.id)
+            or full_runtime.get("code_sha256") != expected_code_sha256
+            or full_runtime.get("contract_hash") != contract.contract_hash
+            or contract.protocol_ref != protocol_ref
+            or (task_id is not None and contract.task_id != str(task_id))
+            or full_runtime.get("missing_events") != []
+        ):
+            return []
+        receipts = bridge_signed_journal_to_receipts(
+            str(full_runtime["collector_root"]), contract=contract
+        )
+        required = {
+            ReceiptType.CODE_EXECUTION,
+            ReceiptType.METHOD_IDENTITY,
+            ReceiptType.SPLIT_LINEAGE,
+            ReceiptType.FIT_SCOPE,
+            ReceiptType.PREDICTION_SCOPE,
+            ReceiptType.EVALUATOR,
+            ReceiptType.SELECTION_FREEZE,
+        }
+        if not required <= {receipt.receipt_type for receipt in receipts}:
+            return []
+        return receipts
+    except (KeyError, TypeError, ValueError, OSError):
+        return []
+
+
+def trusted_runtime_metric(
+    node: Any,
+    protocol_ref: ProtocolRef,
+    *,
+    task_id: str | None = None,
+) -> dict[str, Any] | None:
+    """Return the signed Host evaluator payload for a verified execution."""
+
+    evaluator = next(
+        (
+            receipt
+            for receipt in _verified_full_runtime_receipts(
+                node, protocol_ref, task_id
+            )
+            if receipt.receipt_type == ReceiptType.EVALUATOR
+        ),
+        None,
+    )
+    if evaluator is None:
+        return None
+    payload = dict(evaluator.payload)
+    if payload.get("metric_value") is None or payload.get("tampered") is True:
+        return None
+    return payload
+
+
 def _trusted_runtime_protocol_receipts(
     node: Any,
     protocol_ref: ProtocolRef,
@@ -139,73 +236,24 @@ def _trusted_runtime_protocol_receipts(
         or {}
     )
     if full_runtime:
-        try:
-            from authority.protocol_execution_contract import (
-                ProtocolExecutionContract,
-            )
-            from protocol_runtime.collector_bridge import (
-                bridge_signed_journal_to_receipts,
-            )
-
-            evidence_hash = str(full_runtime.get("evidence_hash") or "")
-            expected_evidence_hash = _sha256(
-                canonical_json(
-                    {
-                        key: value
-                        for key, value in full_runtime.items()
-                        if key != "evidence_hash"
-                    }
-                )
-            )
-            contract = ProtocolExecutionContract.from_dict(
-                dict(full_runtime["contract"])
-            )
-            expected_code_sha256 = str(
-                getattr(node, "code_sha256_expected", "")
-                or _sha256(str(getattr(node, "code", "") or ""))
-            )
-            if (
-                full_runtime.get("schema")
-                != "mlevolve_full_runtime_evidence_v1"
-                or full_runtime.get("status") != "pass"
-                or evidence_hash != expected_evidence_hash
-                or full_runtime.get("node_id") != str(node.id)
-                or full_runtime.get("code_sha256") != expected_code_sha256
-                or full_runtime.get("contract_hash") != contract.contract_hash
-                or contract.protocol_ref != protocol_ref
-                or (task_id is not None and contract.task_id != str(task_id))
-                or full_runtime.get("missing_events") != []
-            ):
-                return []
-            receipts = bridge_signed_journal_to_receipts(
-                str(full_runtime["collector_root"]), contract=contract
-            )
-            required = {
-                ReceiptType.CODE_EXECUTION,
-                ReceiptType.METHOD_IDENTITY,
-                ReceiptType.SPLIT_LINEAGE,
-                ReceiptType.FIT_SCOPE,
-                ReceiptType.PREDICTION_SCOPE,
-                ReceiptType.EVALUATOR,
-                ReceiptType.SELECTION_FREEZE,
-            }
-            by_type = {receipt.receipt_type: receipt for receipt in receipts}
-            if not required <= set(by_type):
-                return []
-            metric = getattr(getattr(node, "metric", None), "value", None)
-            evaluator_metric = by_type[ReceiptType.EVALUATOR].payload.get(
-                "metric_value"
-            )
-            if metric is None or evaluator_metric is None or not math.isclose(
-                float(metric),
-                float(evaluator_metric),
-                rel_tol=1e-9,
-                abs_tol=1e-12,
-            ):
-                return []
-            return receipts
-        except (KeyError, TypeError, ValueError, OSError):
+        receipts = _verified_full_runtime_receipts(
+            node, protocol_ref, task_id
+        )
+        by_type = {receipt.receipt_type: receipt for receipt in receipts}
+        if ReceiptType.EVALUATOR not in by_type:
             return []
+        metric = getattr(getattr(node, "metric", None), "value", None)
+        evaluator_metric = by_type[ReceiptType.EVALUATOR].payload.get(
+            "metric_value"
+        )
+        if metric is None or evaluator_metric is None or not math.isclose(
+            float(metric),
+            float(evaluator_metric),
+            rel_tol=1e-9,
+            abs_tol=1e-12,
+        ):
+            return []
+        return receipts
 
     observation = getattr(node, "protocol_observation", None) or {}
     audit = getattr(node, "leakage_audit", None) or {}

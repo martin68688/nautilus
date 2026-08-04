@@ -1,0 +1,8 @@
+extends: base.yaml
+
+external_skill_memory:
+  end2end_memory_system: gome_style_port
+
+run_identity:
+  memory_system: gome_style_port
+  system_id: gome_style_port

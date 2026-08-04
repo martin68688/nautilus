@@ -30,6 +30,24 @@ def test_leaf_host_description_uses_real_normalized_feature_names() -> None:
     assert "`margin_1`" in appendix and "do not exist" in appendix
 
 
+def test_aerial_candidate_guidance_exposes_asset_path_and_lifecycle() -> None:
+    from config import _candidate_runtime_guidance
+
+    appendix = _candidate_runtime_guidance("aerial-cactus-identification")
+    assert '`row["assets"]["image"]`' in appendix
+    assert "`asset_path` and `image_path` are not Host row fields" in appendix
+    assert '`row["sample_id"]` only as the submission ID' in appendix
+    assert appendix.index("exit that context") < appendix.index(
+        "`session.evaluate_internal(...)`"
+    )
+    assert appendix.index("`session.evaluate_internal(...)`") < appendix.index(
+        "`session.freeze_selection(...)`"
+    )
+    assert appendix.index("`session.freeze_selection(...)`") < appendix.index(
+        "`session.inference_scope(...)`"
+    )
+
+
 def _bundle(tmp_path: Path) -> tuple[Path, Path]:
     records = tmp_path / "records.jsonl"
     records.write_text(

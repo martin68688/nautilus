@@ -6,6 +6,7 @@ import copy
 import hashlib
 import json
 import threading
+import time
 
 from authority.adapters.mlevolve.runtime import MLEvolveAuthorityAdapter
 from authority.adapters.mlevolve.protocol_adapter import build_registry
@@ -100,6 +101,51 @@ def test_enforce_allows_clean_and_denies_contaminated_node(tmp_path):
     assert (tmp_path / "authority_events.jsonl").exists()
     assert (tmp_path / "authority_snapshot.json").exists()
     assert (tmp_path / "evidence_graph.json").exists()
+
+
+def test_snapshot_emission_is_serialized_across_search_threads(
+    tmp_path, monkeypatch
+):
+    adapter = MLEvolveAuthorityAdapter(fake_agent(tmp_path))
+    original_write_text = Path.write_text
+    monitor = threading.Lock()
+    barrier = threading.Barrier(8)
+    active_writes = 0
+    maximum_active_writes = 0
+    errors = []
+
+    def observed_write_text(path, *args, **kwargs):
+        nonlocal active_writes, maximum_active_writes
+        with monitor:
+            active_writes += 1
+            maximum_active_writes = max(maximum_active_writes, active_writes)
+        try:
+            time.sleep(0.01)
+            return original_write_text(path, *args, **kwargs)
+        finally:
+            with monitor:
+                active_writes -= 1
+
+    monkeypatch.setattr(Path, "write_text", observed_write_text)
+
+    def emit():
+        try:
+            barrier.wait()
+            adapter._emit_snapshots()
+        except BaseException as error:
+            errors.append(error)
+
+    threads = [threading.Thread(target=emit) for _ in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=10)
+
+    assert not any(thread.is_alive() for thread in threads)
+    assert errors == []
+    assert maximum_active_writes == 1
+    assert not list(tmp_path.glob("*.tmp"))
+    assert json.loads((tmp_path / "authority_snapshot.json").read_text())
 
 
 def test_shadow_records_same_decision_but_preserves_legacy_behavior(tmp_path):

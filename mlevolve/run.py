@@ -97,7 +97,9 @@ def _run_impl():
     cfg = load_cfg()
     if cfg.torch_hub_dir:
         torch.hub.set_dir(cfg.torch_hub_dir)
-    set_global_seed(cfg.agent.seed)
+    rng_identity = set_global_seed(cfg.agent.seed)
+    cfg.run_identity.rng_state_hash = str(rng_identity["rng_state_hash"])
+    cfg.run_identity.rng_state_components = dict(rng_identity)
     logger = setup_logging(cfg)
     runtime_state = {
         "completed": 0,

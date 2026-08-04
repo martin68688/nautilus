@@ -117,6 +117,29 @@ class HostCollectorIdentity:
             "public_key_ed25519": self.public_key_ed25519,
         }
 
+    def sign_canonical_payload(self, payload: Mapping[str, Any]) -> str:
+        """Sign a Host-created canonical JSON payload with the Collector key."""
+
+        private = Ed25519PrivateKey.from_private_bytes(self._private_key_raw)
+        return _b64(private.sign(canonical_json(dict(payload)).encode("utf-8")))
+
+
+def verify_host_canonical_signature(
+    payload: Mapping[str, Any],
+    *,
+    signature_ed25519: str,
+    public_key_ed25519: str,
+) -> None:
+    """Verify a detached Host signature or raise a fail-closed error."""
+
+    try:
+        Ed25519PublicKey.from_public_bytes(_unb64(public_key_ed25519)).verify(
+            _unb64(signature_ed25519),
+            canonical_json(dict(payload)).encode("utf-8"),
+        )
+    except Exception as error:
+        raise ValueError("Host canonical payload signature mismatch") from error
+
 
 def _write_exclusive(path: Path, content: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -530,7 +553,7 @@ class HostCollectorSidecar:
         self._process = None
         self._control = None
 
-    def start(self, timeout_seconds: float = 10.0) -> "HostCollectorSidecar":
+    def start(self, timeout_seconds: float = 30.0) -> "HostCollectorSidecar":
         if self._process is not None:
             raise RuntimeError("Collector sidecar already started")
         if self.output_dir.exists() and any(self.output_dir.iterdir()):
@@ -740,5 +763,6 @@ def verify_collector_artifacts(
 __all__ = [
     "HostCollectorIdentity",
     "HostCollectorSidecar",
+    "verify_host_canonical_signature",
     "verify_collector_artifacts",
 ]

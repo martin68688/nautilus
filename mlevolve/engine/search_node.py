@@ -77,6 +77,7 @@ class SearchNode(DataClassJsonMixin):
     # ---- adoption tracking (side-channel: 记录 prompt 注入了哪些记忆条目 id，绝不进 prompt) ----
     adoption_log: list = field(default_factory=list, kw_only=True)
     memory_navigation_trace: list = field(default_factory=list, kw_only=True)
+    memory_routing_trace: dict = field(default_factory=dict, kw_only=True)
     draft_role: Optional[str] = field(default=None, kw_only=True)
     role_contract: dict = field(default_factory=dict, kw_only=True)
     source_ref_ids: list[str] = field(default_factory=list, kw_only=True)

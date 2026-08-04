@@ -1,0 +1,8 @@
+extends: base.yaml
+
+external_skill_memory:
+  end2end_memory_system: dynamic_hybrid
+
+run_identity:
+  memory_system: dynamic_hybrid
+  system_id: dynamic_hybrid
