@@ -361,7 +361,7 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     assert smoke["formal_result_eligible"] is False
     assert pilot["formal_result_eligible"] is True
     assert smoke["release_id"] == pilot["release_id"] == (
-        "end2end-agentic-three-role-v4"
+        "end2end-agentic-three-role-v5"
     )
     assert smoke["comparison_baseline_release_id"] == (
         pilot["comparison_baseline_release_id"]
@@ -485,11 +485,11 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
         assert labels["experiment"] == (
-            "experiment-end2end-memory-agent-v4"
+            "experiment-end2end-memory-agent-v5"
         )
         assert job["metadata"]["annotations"]["mlevolve.ai/generated-not-submitted"] == "true"
         assert job["metadata"]["annotations"]["mlevolve.ai/gpu-contract"] == (
-            "nvidia.com/gpu=1;product=NVIDIA-L40S"
+            "nvidia.com/gpu=1;product=NVIDIA-A10"
         )
         spec = job["spec"]
         assert spec["completionMode"] == "Indexed"
@@ -513,7 +513,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert expression == {
             "key": "nvidia.com/gpu.product",
             "operator": "In",
-            "values": ["NVIDIA-L40S"],
+            "values": ["NVIDIA-A10"],
         }
         assert container["command"] == ["/usr/local/bin/python", "-u"]
         rendered = json.dumps(container)
@@ -537,12 +537,12 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-            "/workspace/nautilus-exp-end2end-agent-v5/mlevolve"
+            "/workspace/nautilus-exp-end2end-agent-v6/mlevolve"
         )
         if path.name.startswith("pilot-"):
             assert "--smoke-gate" in container["args"]
             assert (
-                "/workspace/experiment-end2end-memory-agent-v4/runs/SMOKE_GATE.json"
+                "/workspace/experiment-end2end-memory-agent-v5/runs/SMOKE_GATE.json"
                 in container["args"]
             )
         else:
@@ -570,7 +570,7 @@ def test_launch_packet_records_programmatic_smoke_gate() -> None:
     assert packet["pilot_requires_passing_smoke_gate"] is True
     assert (
         packet["smoke_gate_output"]
-        == "/workspace/experiment-end2end-memory-agent-v4/runs/SMOKE_GATE.json"
+        == "/workspace/experiment-end2end-memory-agent-v5/runs/SMOKE_GATE.json"
     )
 
 
@@ -903,9 +903,9 @@ def test_smoke_gate_rejects_tampered_agent_trace_signature(tmp_path) -> None:
 
 def test_budget_couples_gpu_search_and_cpu_controls() -> None:
     budget = _read(MANIFESTS / "budget.json")
-    assert budget["runtime"]["gpu_type"] == "NVIDIA L40S"
+    assert budget["runtime"]["gpu_type"] == "NVIDIA A10"
     assert budget["runtime"]["gpu_resource_key"] == "nvidia.com/gpu"
-    assert budget["runtime"]["gpu_product_constraint"] == ["NVIDIA-L40S"]
+    assert budget["runtime"]["gpu_product_constraint"] == ["NVIDIA-A10"]
     for phase in ("smoke", "pilot"):
         row = budget[phase]
         assert row["gpu_count"] == row["parallel_search_num"] == 1
@@ -945,21 +945,21 @@ def test_budget_couples_gpu_search_and_cpu_controls() -> None:
 def test_hardware_receipt_records_frozen_product_constraint(monkeypatch) -> None:
     class Result:
         returncode = 0
-        stdout = "NVIDIA L40S\n"
+        stdout = "NVIDIA A10\n"
 
-    monkeypatch.setenv("KUBERNETES_NODE_NAME", "node-l40s.example")
+    monkeypatch.setenv("KUBERNETES_NODE_NAME", "node-a10.example")
     monkeypatch.setattr(run_assignment.subprocess, "run", lambda *args, **kwargs: Result())
     receipt = run_assignment.capture_hardware_receipt(
         {
             "gpu_resource_key": "nvidia.com/gpu",
-            "gpu_product_constraint": ["NVIDIA-L40S"],
+            "gpu_product_constraint": ["NVIDIA-A10"],
         }
     )
     assert receipt == {
         "requested_gpu_resource": "nvidia.com/gpu",
-        "gpu_product_constraint": ["NVIDIA-L40S"],
-        "node_name": "node-l40s.example",
-        "observed_gpu_products": ["NVIDIA L40S"],
+        "gpu_product_constraint": ["NVIDIA-A10"],
+        "node_name": "node-a10.example",
+        "observed_gpu_products": ["NVIDIA A10"],
         "gpu_query_error": "",
     }
 

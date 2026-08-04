@@ -1,0 +1,20 @@
+{
+  "schema": "mlevolve_end2end_infrastructure_attempt_v1",
+  "logical_run_id": "e2e-feasibility-smoke-agentic-three-role-v4__aerial-cactus-identification__dynamic_hybrid__seed-1",
+  "attempt": 9,
+  "job_name": "mlevolve-e2e-agentic-three-role-feasibility-aerial-v4",
+  "pod_name": "mlevolve-e2e-agentic-three-role-feasibility-aerial-v4-0-2gdch",
+  "gpu_contract": {
+    "resource_key": "nvidia.com/gpu",
+    "count": 1,
+    "product_constraint": ["NVIDIA-L40S"]
+  },
+  "created_at_utc": "2026-08-04T17:57:14Z",
+  "decision_at_utc": "2026-08-04T18:01:04Z",
+  "pending_seconds": 230,
+  "phase": "Pending",
+  "scheduler_reason": "Unschedulable",
+  "scheduler_summary": "The L40S-constrained pool had insufficient nvidia.com/gpu capacity; the remaining nodes did not match the frozen product affinity or had unrelated taints/resources unavailable.",
+  "method_failure": false,
+  "disposition": "delete_after_user_frozen_180_second_pending_threshold_and_switch_to_a10"
+}
