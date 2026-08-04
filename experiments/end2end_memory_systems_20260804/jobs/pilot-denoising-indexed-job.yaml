@@ -1,11 +1,11 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mlevolve-e2e-agent-pilot-denoising-v1
+  name: mlevolve-e2e-agent-pilot-denoising-v2
   namespace: ecepxie
   labels: &id001
     app: mlevolve-end2end
-    experiment: experiment-end2end-memory-agent-v1
+    experiment: experiment-end2end-memory-agent-v2
     ecepxie.nrp/owner: haoming
     app.kubernetes.io/managed-by: codex-nrp-training
   annotations:
@@ -43,9 +43,9 @@ spec:
         - --manifest
         - /workspace/nautilus-exp-end2end/experiments/end2end_memory_systems_20260804/manifests/pilot_manifest.json
         - --output-root
-        - /workspace/experiment-end2end-agent-runs-v1
+        - /workspace/experiment-end2end-agent-runs-v2
         - --smoke-gate
-        - /workspace/experiment-end2end-agent-runs-v1/SMOKE_GATE.json
+        - /workspace/experiment-end2end-agent-runs-v2/SMOKE_GATE.json
         - --task
         - denoising-dirty-documents
         envFrom:

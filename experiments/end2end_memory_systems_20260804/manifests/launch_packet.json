@@ -4,7 +4,7 @@
     "evaluators": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
     "memory_bundles": "0c5c9ae50d019d3ff9999484f0bb57586e8238aca90c98d31864e4ef954f157b",
     "schemas": "8de69b955dcffdac3ffad4769c48d3f916bb5898eeaf6951be584f06c7abdf04",
-    "source_lock": "52eb0b9000c312e15c05362395796c6e5b719c42c5d4d03c8f352fd014d74001",
+    "source_lock": "c38ce857ff8188cbb29fec92e0838ea28678f67e36e6294c1a650d9057d4f766",
     "systems": "0ee440c0052fd64842a0ad2dcd2084f36add5781cd65e028094ef1d879fe5ea2",
     "tasks": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
   },
@@ -17,12 +17,12 @@
     "smoke-leaf-indexed-job.yaml"
   ],
   "launch_gate": "explicit_user_authorization_required",
-  "packet_hash": "761783f26ba5d717840ae2f8abfeb39759e647bed4bdfbb7c6b6b2b7ce1668f4",
-  "pilot_manifest_hash": "60388cb8891bb0de7e392fa6c41b5d3b1da297e7c385624b01e5f33c2a585f1b",
+  "packet_hash": "20ee96f54bc22ff8f94268d910c8a83386ba5c52b3c8dd2f57260ca48a656ec4",
+  "pilot_manifest_hash": "cfe3f3ce993d62fecfc907ea7a9f65c7c9a1cf052c5b03e79390e9e1d8e723c3",
   "pilot_requires_passing_smoke_gate": true,
   "schema": "mlevolve_end2end_launch_packet_v1",
-  "smoke_gate_output": "/workspace/experiment-end2end-agent-runs-v1/SMOKE_GATE.json",
-  "smoke_manifest_hash": "2632bc3855dfad0d4a70e943ab7e0474294ac0f7fc5ca5d5508df9d57071f42f",
+  "smoke_gate_output": "/workspace/experiment-end2end-agent-runs-v2/SMOKE_GATE.json",
+  "smoke_manifest_hash": "f29ae360e233123e177e243507398a8416287babf0d2b06a2ca516227c225028",
   "status": "generated_not_submitted",
   "workload_objects_created": 0
 }
