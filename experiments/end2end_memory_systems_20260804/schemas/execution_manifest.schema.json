@@ -19,7 +19,7 @@
   ],
   "properties": {
     "schema": {"const": "mlevolve_end2end_execution_manifest_v1"},
-    "release_id": {"const": "end2end-agentic-three-role-v3"},
+    "release_id": {"const": "end2end-agentic-three-role-v4"},
     "comparison_baseline_release_id": {"const": "end2end-agent-v3"},
     "kind": {"enum": ["smoke", "pilot"]},
     "seed": {"const": 1},

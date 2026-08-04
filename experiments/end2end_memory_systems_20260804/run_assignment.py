@@ -134,8 +134,8 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def capture_hardware_receipt() -> dict[str, Any]:
-    """Record the actual A100 product without constraining scheduler choice."""
+def capture_hardware_receipt(runtime: Mapping[str, Any]) -> dict[str, Any]:
+    """Record the observed GPU against the frozen scheduler contract."""
 
     products: list[str] = []
     query_error = ""
@@ -154,8 +154,8 @@ def capture_hardware_receipt() -> dict[str, Any]:
     except (OSError, subprocess.SubprocessError) as error:
         query_error = f"{type(error).__name__}: {error}"
     return {
-        "requested_gpu_resource": "nvidia.com/a100",
-        "gpu_product_constraint": None,
+        "requested_gpu_resource": str(runtime["gpu_resource_key"]),
+        "gpu_product_constraint": runtime.get("gpu_product_constraint"),
         "node_name": os.environ.get("KUBERNETES_NODE_NAME", ""),
         "observed_gpu_products": products,
         "gpu_query_error": query_error,
@@ -594,7 +594,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         run_root=run_root,
         manifest=manifest,
     )
-    hardware = capture_hardware_receipt()
+    hardware = capture_hardware_receipt(budget["runtime"])
     key_source = Path(args.collector_key_source).resolve(strict=True)
     private_key_raw = key_source.read_bytes()
     if len(private_key_raw) != 32:
@@ -843,7 +843,7 @@ def main() -> int:
     parser.add_argument("--attempt", type=int, default=0)
     parser.add_argument(
         "--output-root",
-        default="/workspace/experiment-end2end-memory-agent-v3/runs",
+        default="/workspace/experiment-end2end-memory-agent-v4/runs",
     )
     parser.add_argument(
         "--collector-key-source",

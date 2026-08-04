@@ -1,0 +1,15 @@
+{
+  "schema": "mlevolve_end2end_infrastructure_attempt_v1",
+  "logical_run_id": "e2e-feasibility-smoke-agentic-three-role-v3__aerial-cactus-identification__dynamic_hybrid__seed-1",
+  "attempt": 4,
+  "job_name": "mlevolve-e2e-agentic-three-role-feasibility-aerial-v3",
+  "pod_name": "mlevolve-e2e-agentic-three-role-feasibility-aerial-v3-0-nl859",
+  "created_at_utc": "2026-08-04T17:19:06Z",
+  "decision_at_utc": "2026-08-04T17:22:17Z",
+  "pending_seconds": 191,
+  "phase": "Pending",
+  "scheduler_reason": "Unschedulable",
+  "scheduler_summary": "Insufficient nvidia.com/a100 among currently eligible nodes",
+  "method_failure": false,
+  "disposition": "delete_after_user_frozen_180_second_pending_threshold_and_retry_same_a100_contract"
+}
