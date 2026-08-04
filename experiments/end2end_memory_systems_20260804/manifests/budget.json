@@ -10,6 +10,18 @@
     "runtime_probe": "line_range_executed",
     "temperature": 0.0
   },
+  "agent_semantic_protocol_review": {
+    "actual_entrypoint_required": true,
+    "enabled_for_systems": [
+      "dynamic_hybrid"
+    ],
+    "host_receipt_admission_authority": false,
+    "max_repair_attempts": 2,
+    "max_tokens_per_call": 4096,
+    "method_preservation_required": true,
+    "temperature": 0.0,
+    "unresolved_disposition": "observe_then_execute"
+  },
   "failure_policy": {
     "automatic_job_retry": false,
     "backoff_limit_per_index": 0,
@@ -17,7 +29,7 @@
     "preserve_all_attempts": true,
     "score_imputation": false
   },
-  "manifest_hash": "caf6dbbd732e90a00bb4b42531d7a0ecd17d942e84c6fca8c8babae00add21c0",
+  "manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,

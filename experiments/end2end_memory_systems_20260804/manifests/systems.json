@@ -1,6 +1,6 @@
 {
   "experimental_axis": "system_id; dynamic_hybrid is the full Agentic three-role proposed system while the other nine retain their frozen controller behavior",
-  "manifest_hash": "a1601fa144f7a1ecb90c368cb708f0fe6934336c170f10d32a0352a923ea1d44",
+  "manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
   "schema": "mlevolve_end2end_systems_manifest_v1",
   "system_count": 10,
   "systems": [
@@ -56,7 +56,7 @@
     },
     {
       "config_path": "systems/dynamic_hybrid.yaml",
-      "config_sha256": "5e28e58cf819ef39aa52be9f392ef2b01e962296837ddb78aea52f3286c3df75",
+      "config_sha256": "4f2c20bb97cff76e2ff34645ff7fd2dd92d034a54dcffedb9fea76e06b4b6f53",
       "description": "Draft 4/2, Improve 3/3, Debug 2/4",
       "kind": "internal",
       "label": "S5",

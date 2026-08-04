@@ -11,9 +11,6 @@ agent:
       - memory_transfer
       - novel_exploration
   protocol_preflight:
-    # Full-system End2End policy: the Agent reviews/repairs the actual training
-    # program.  Host Protocol remains a signed observer and cannot reject a
-    # Candidate merely because lifecycle receipts are missing.
     agent_semantic_review_enabled: true
     agent_semantic_max_repair_attempts: 2
     agent_semantic_temperature: 0.0
@@ -39,8 +36,6 @@ external_skill_memory:
   experiment_r_memory_transfer_runtime_gate: true
 
 evaluation_authority:
-  # Memory/claim-use Authority remains enforce.  Only Host Protocol admission
-  # is shadow/observe-only for this full-system condition.
   mode: enforce
   protocol_runtime_mode: host_sdk_shadow
 

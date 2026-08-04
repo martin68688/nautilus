@@ -18,6 +18,10 @@
       "sha256": "80516589a2b33fad499a748bdb08d51511228e44d215069144c1df3b28c9a6e4"
     },
     {
+      "path": "mlevolve/agents/agent_protocol_review_agent.py",
+      "sha256": "42c261099c029d2ba3e59793f47c6f35317275db830ab4752acf5734b8880789"
+    },
+    {
       "path": "mlevolve/agents/aggregation_agent.py",
       "sha256": "141d055e081d1c4cc022c2ba26ab48710b78ef4965b83c834023610bed7a27ff"
     },
@@ -55,7 +59,7 @@
     },
     {
       "path": "mlevolve/agents/coder/stepwise_coder.py",
-      "sha256": "d403ee13f7152e345661578af0a7839bbe71b41087fb0273d37394b66e23e2aa"
+      "sha256": "cea1052bc7a630ec23aeb414594164959cdc99a4781557c0475490459386d836"
     },
     {
       "path": "mlevolve/agents/data_leakage_agent.py",
@@ -99,7 +103,7 @@
     },
     {
       "path": "mlevolve/agents/memory/experiment_r_router.py",
-      "sha256": "6a8f376b4b5d514af8ecd448022755ea09e3ee12e7b9744547db93c81d0aa735"
+      "sha256": "c1426be66713e343f3fe40167d5bc7bbd54375aad9f6e0ceae9759c7accf0124"
     },
     {
       "path": "mlevolve/agents/memory/external_skill_memory.py",
@@ -159,7 +163,7 @@
     },
     {
       "path": "mlevolve/agents/prompts/impl_guideline.py",
-      "sha256": "3003159a2b4893d58a1694789f8857f30459ba156f567fd13e4aca1544257d12"
+      "sha256": "8e4830bac01e2b08322ca1d71d106d282afa071b6c671c4a90a4dc400e5e36c3"
     },
     {
       "path": "mlevolve/agents/prompts/shared.py",
@@ -379,7 +383,7 @@
     },
     {
       "path": "mlevolve/config/__init__.py",
-      "sha256": "7ddda39e74e267f5f4605dec26aefaae2737459539c8230d0ec96ce8bfc75fae"
+      "sha256": "1bf1327d1c3c633072d63ecbb2f624fad7e564c81625ea56815496f9204fcc63"
     },
     {
       "path": "mlevolve/config/config.yaml",
@@ -479,7 +483,7 @@
     },
     {
       "path": "mlevolve/engine/agent_search.py",
-      "sha256": "7b4ae9f14ecbbe0cefbd77bacc30cc1d49fd4fb7699984c3e31d69cbb2f4153b"
+      "sha256": "39526043714fa4e81ff49b1a930e0d598f53c6cd0202d6f84bd15b980657841d"
     },
     {
       "path": "mlevolve/engine/candidate_execution_contract.py",
@@ -527,7 +531,7 @@
     },
     {
       "path": "mlevolve/engine/executor.py",
-      "sha256": "cf3c25b1c502209d56a4cca84d8b74e06d3c7feee21d48de7225feb9b98756bc"
+      "sha256": "cf96ac7509c04feb35ba5baa73f282a3418f0d1e63d2c1336ca9a7b9873ff82a"
     },
     {
       "path": "mlevolve/engine/node_selection.py",
@@ -543,7 +547,7 @@
     },
     {
       "path": "mlevolve/engine/search_node.py",
-      "sha256": "94f2faf5fba454943e778c9dfa5b5afea07053c256e3114efb5aebdeda5776b8"
+      "sha256": "e2a78be38f8600ed5270c1b2e036c7fb8ec5fb69329d2d16497ee953ab26cc64"
     },
     {
       "path": "mlevolve/engine/solution_manager.py",
@@ -847,7 +851,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "16a5eef36c195a9374a9ce0035c70eaeb8bc566e24a24da657309a31d63422fa"
+      "sha256": "de7900ae341e247ffc6cac495948d96aadb9aa86268ced670f9f79919ed0cce4"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/publish_smoke_memory_bundle.py",
@@ -855,7 +859,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/run_assignment.py",
-      "sha256": "537f6c4ad3baa265b5b197cd48356935693b15fdbb368b30bfd0298f3c263c99"
+      "sha256": "b729333389f32db7765cf76a2f7b8adda7a41c79d84b41c7ca8c286ba739d167"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/validate_smoke_gate.py",
@@ -867,7 +871,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/dynamic_hybrid.yaml",
-      "sha256": "5e28e58cf819ef39aa52be9f392ef2b01e962296837ddb78aea52f3286c3df75"
+      "sha256": "4f2c20bb97cff76e2ff34645ff7fd2dd92d034a54dcffedb9fea76e06b4b6f53"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/flat_retrieval.yaml",
@@ -911,7 +915,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/execution_manifest.schema.json",
-      "sha256": "72a5ccb604c858e6984b7803c529c756896072c622672e47b2b40c6743aacc24"
+      "sha256": "008a03e5184e94490c649360c5ecdb170e9847b95b83e61b411e5dd45b67b7e9"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/smoke_gate.schema.json",
@@ -934,8 +938,8 @@
       "sha256": "955e0489e38b0fd3b8850cd68df686884ee538e5748e453c43049bd9e50dc1b5"
     }
   ],
-  "git_head": "8cb928f4b40f2b35db824af07901db634b39e619",
+  "git_head": "b16a75f623075c03b1f9fd4aea2c99f59d6c45b3",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "31893c7ecd8f28bd222f7961f074479f859b73678e3f8c2caee4fbc85a2fb6ab",
+  "manifest_hash": "19422b334e4d1df1032551daf369e4fcccc284a6601c79c182c97a20d3286730",
   "schema": "mlevolve_end2end_source_lock_v1"
 }
