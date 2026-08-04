@@ -162,6 +162,15 @@ def capture_hardware_receipt(runtime: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def frozen_hardware_runtime(components: Mapping[str, Any]) -> dict[str, Any]:
+    """Select hardware identity from the global budget manifest, not a phase budget."""
+
+    runtime = dict(components["budget"]["runtime"])
+    if not str(runtime.get("gpu_resource_key") or ""):
+        raise ValueError("Frozen runtime is missing gpu_resource_key")
+    return runtime
+
+
 def read_object(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, dict):
@@ -594,7 +603,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         run_root=run_root,
         manifest=manifest,
     )
-    hardware = capture_hardware_receipt(budget["runtime"])
+    hardware = capture_hardware_receipt(frozen_hardware_runtime(components))
     key_source = Path(args.collector_key_source).resolve(strict=True)
     private_key_raw = key_source.read_bytes()
     if len(private_key_raw) != 32:
@@ -843,7 +852,7 @@ def main() -> int:
     parser.add_argument("--attempt", type=int, default=0)
     parser.add_argument(
         "--output-root",
-        default="/workspace/experiment-end2end-memory-agent-v6/runs",
+        default="/workspace/experiment-end2end-memory-agent-v7/runs",
     )
     parser.add_argument(
         "--collector-key-source",

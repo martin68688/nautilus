@@ -361,7 +361,7 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     assert smoke["formal_result_eligible"] is False
     assert pilot["formal_result_eligible"] is True
     assert smoke["release_id"] == pilot["release_id"] == (
-        "end2end-agentic-three-role-v6"
+        "end2end-agentic-three-role-v7"
     )
     assert smoke["comparison_baseline_release_id"] == (
         pilot["comparison_baseline_release_id"]
@@ -485,7 +485,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
         assert labels["experiment"] == (
-            "experiment-end2end-memory-agent-v6"
+            "experiment-end2end-memory-agent-v7"
         )
         assert job["metadata"]["annotations"]["mlevolve.ai/generated-not-submitted"] == "true"
         assert job["metadata"]["annotations"]["mlevolve.ai/gpu-contract"] == (
@@ -529,12 +529,12 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-            "/workspace/nautilus-exp-end2end-agent-v7/mlevolve"
+            "/workspace/nautilus-exp-end2end-agent-v8/mlevolve"
         )
         if path.name.startswith("pilot-"):
             assert "--smoke-gate" in container["args"]
             assert (
-                "/workspace/experiment-end2end-memory-agent-v6/runs/SMOKE_GATE.json"
+                "/workspace/experiment-end2end-memory-agent-v7/runs/SMOKE_GATE.json"
                 in container["args"]
             )
         else:
@@ -562,7 +562,7 @@ def test_launch_packet_records_programmatic_smoke_gate() -> None:
     assert packet["pilot_requires_passing_smoke_gate"] is True
     assert (
         packet["smoke_gate_output"]
-        == "/workspace/experiment-end2end-memory-agent-v6/runs/SMOKE_GATE.json"
+        == "/workspace/experiment-end2end-memory-agent-v7/runs/SMOKE_GATE.json"
     )
 
 
@@ -953,6 +953,27 @@ def test_hardware_receipt_records_unpinned_a100_contract(monkeypatch) -> None:
         "node_name": "node-a100.example",
         "observed_gpu_products": ["NVIDIA A100-SXM4-80GB"],
         "gpu_query_error": "",
+    }
+
+
+def test_runner_selects_hardware_from_global_runtime_not_phase_budget() -> None:
+    components = {
+        "budget": {
+            "runtime": {
+                "gpu_resource_key": "nvidia.com/a100",
+                "gpu_product_constraint": None,
+            },
+            "smoke": {
+                "gpu_count": 1,
+                "cpu_count": 16,
+                "memory_gib": 64,
+            },
+        }
+    }
+    assert "runtime" not in components["budget"]["smoke"]
+    assert run_assignment.frozen_hardware_runtime(components) == {
+        "gpu_resource_key": "nvidia.com/a100",
+        "gpu_product_constraint": None,
     }
 
 

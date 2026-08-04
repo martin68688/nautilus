@@ -16,7 +16,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v7")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v8")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
 MANIFESTS = ROOT / "manifests"
 SYSTEM_DIR = ROOT / "systems"
@@ -25,11 +25,11 @@ SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-agentic-three-role-v6"
+RELEASE_ID = "end2end-agentic-three-role-v7"
 BASELINE_RELEASE_ID = "end2end-agent-v3"
 RANDOMIZATION_RELEASE_ID = BASELINE_RELEASE_ID
-OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v6/runs"
-EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v6"
+OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v7/runs"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v7"
 SOLVER_TEMPERATURE = 1.0
 SYSTEMS = (
     ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
@@ -575,7 +575,7 @@ def execution_manifest(
         task_ids = [task_id for task_id, _display, _metric, _direction in TASKS]
         system_ids = None
         formal = True
-        prefix = "e2e-pilot-agentic-three-role-v6"
+        prefix = "e2e-pilot-agentic-three-role-v7"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -793,7 +793,7 @@ def build() -> dict[str, Any]:
         kind="smoke",
         components=components,
         system_ids_override=["dynamic_hybrid"],
-        prefix_override="e2e-feasibility-smoke-agentic-three-role-v6",
+        prefix_override="e2e-feasibility-smoke-agentic-three-role-v7",
     )
     pilot = execution_manifest(kind="pilot", components=components)
     dump_json(MANIFESTS / "smoke_manifest.json", smoke)
@@ -801,7 +801,7 @@ def build() -> dict[str, Any]:
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
     smoke_job = job(
-        name="mlevolve-e2e-all-systems-smoke-aerial-v6",
+        name="mlevolve-e2e-all-systems-smoke-aerial-v7",
         manifest_name="smoke_manifest.json",
         completions=10,
         task_id=None,
@@ -813,7 +813,7 @@ def build() -> dict[str, Any]:
         yaml.safe_dump(smoke_job, sort_keys=False), encoding="utf-8"
     )
     feasibility_job = job(
-        name="mlevolve-e2e-agentic-three-role-feasibility-aerial-v6",
+        name="mlevolve-e2e-agentic-three-role-feasibility-aerial-v7",
         manifest_name="feasibility_smoke_manifest.json",
         completions=1,
         task_id=None,
@@ -826,7 +826,7 @@ def build() -> dict[str, Any]:
     )
     for task_id, display, _metric, _direction in TASKS:
         pilot_job = job(
-            name=f"mlevolve-e2e-agentic-pilot-{display.lower()}-v6",
+            name=f"mlevolve-e2e-agentic-pilot-{display.lower()}-v7",
             manifest_name="pilot_manifest.json",
             completions=10,
             task_id=task_id,
