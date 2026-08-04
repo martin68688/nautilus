@@ -29,7 +29,7 @@
     "preserve_all_attempts": true,
     "score_imputation": false
   },
-  "manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+  "manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,
@@ -44,11 +44,9 @@
   },
   "runtime": {
     "container_image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
-    "gpu_product_constraint": [
-      "NVIDIA-A10"
-    ],
-    "gpu_resource_key": "nvidia.com/gpu",
-    "gpu_type": "NVIDIA A10",
+    "gpu_product_constraint": null,
+    "gpu_resource_key": "nvidia.com/a100",
+    "gpu_type": "NVIDIA A100 family",
     "provider_seed_supported": false,
     "rng_commitment_scope": "Python/NumPy/Torch local RNG state; no provider determinism claim",
     "solver_model_id": "deepseek-production-solver",

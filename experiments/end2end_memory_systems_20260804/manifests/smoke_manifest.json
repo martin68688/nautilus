@@ -1,10 +1,10 @@
 {
   "bindings": {
-    "budget_manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+    "budget_manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
     "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-    "memory_bundles_manifest_hash": "445ebb39e36ab49c18b4403a23a7ef65102b0b0c2fa400ba01b054458ee33afe",
-    "schemas_manifest_hash": "32fc05febfc1d9ff76bf30f33a8fabe61896d8ea08379849e85a102a0362ed19",
-    "source_lock_manifest_hash": "09aeb832a5f25337ca7f4e027e0d754b74312e82e7a4ba9ceb2a9fa854195744",
+    "memory_bundles_manifest_hash": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
+    "schemas_manifest_hash": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
+    "source_lock_manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
     "systems_manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
     "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
   },
@@ -13,17 +13,17 @@
   "formal_result_eligible": false,
   "kind": "smoke",
   "launch_order_randomization": "task-local SHA256-seeded deterministic shuffle; comparison order locked to end2end-agent-v3",
-  "manifest_hash": "b3957697eaf775fb9ac5fe3f2b2132403caa76425f464334b815b4d0135fada9",
-  "release_id": "end2end-agentic-three-role-v5",
+  "manifest_hash": "882f4eebc467125900923e5b2e955167338b2f5d9481aaf6f0926c19bff7cca7",
+  "release_id": "end2end-agentic-three-role-v6",
   "run_count": 10,
   "runs": [
     {
       "bindings": {
-        "budget_manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+        "budget_manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
         "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-        "memory_bundles_manifest_hash": "445ebb39e36ab49c18b4403a23a7ef65102b0b0c2fa400ba01b054458ee33afe",
-        "schemas_manifest_hash": "32fc05febfc1d9ff76bf30f33a8fabe61896d8ea08379849e85a102a0362ed19",
-        "source_lock_manifest_hash": "09aeb832a5f25337ca7f4e027e0d754b74312e82e7a4ba9ceb2a9fa854195744",
+        "memory_bundles_manifest_hash": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
+        "schemas_manifest_hash": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
+        "source_lock_manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
         "systems_manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -31,7 +31,7 @@
       "formal_result_eligible": false,
       "launch_position": 0,
       "logical_run_id": "e2e-smoke-all-systems-v2__aerial-cactus-identification__no_memory__seed-1",
-      "row_hash": "2e486399a2e39b456d811522be0c74bc37e871e320861e0ac4d5beae4e8c694d",
+      "row_hash": "0039e4a6a5c15eddfd9b07cc1040c52279e103dfa2b8f41df94074a73b9b06c7",
       "seed": 1,
       "system_id": "no_memory",
       "task_id": "aerial-cactus-identification",
@@ -39,11 +39,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+        "budget_manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
         "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-        "memory_bundles_manifest_hash": "445ebb39e36ab49c18b4403a23a7ef65102b0b0c2fa400ba01b054458ee33afe",
-        "schemas_manifest_hash": "32fc05febfc1d9ff76bf30f33a8fabe61896d8ea08379849e85a102a0362ed19",
-        "source_lock_manifest_hash": "09aeb832a5f25337ca7f4e027e0d754b74312e82e7a4ba9ceb2a9fa854195744",
+        "memory_bundles_manifest_hash": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
+        "schemas_manifest_hash": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
+        "source_lock_manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
         "systems_manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -51,7 +51,7 @@
       "formal_result_eligible": false,
       "launch_position": 1,
       "logical_run_id": "e2e-smoke-all-systems-v2__aerial-cactus-identification__rcr_router_style_port__seed-1",
-      "row_hash": "f0c5e60491c9ce8564db9ced6874346ead6117e26e2d06f9936eb557ecbdd1a9",
+      "row_hash": "c29fc1f05a6c59336308ab3c1472b7de033725339db9a1aea29f593a6c9de111",
       "seed": 1,
       "system_id": "rcr_router_style_port",
       "task_id": "aerial-cactus-identification",
@@ -59,11 +59,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+        "budget_manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
         "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-        "memory_bundles_manifest_hash": "445ebb39e36ab49c18b4403a23a7ef65102b0b0c2fa400ba01b054458ee33afe",
-        "schemas_manifest_hash": "32fc05febfc1d9ff76bf30f33a8fabe61896d8ea08379849e85a102a0362ed19",
-        "source_lock_manifest_hash": "09aeb832a5f25337ca7f4e027e0d754b74312e82e7a4ba9ceb2a9fa854195744",
+        "memory_bundles_manifest_hash": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
+        "schemas_manifest_hash": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
+        "source_lock_manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
         "systems_manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -71,7 +71,7 @@
       "formal_result_eligible": false,
       "launch_position": 2,
       "logical_run_id": "e2e-smoke-all-systems-v2__aerial-cactus-identification__reversed_router__seed-1",
-      "row_hash": "da04f3b510cfa13a951a883198ffe881c51e7eba89c878c3c451b335b16896be",
+      "row_hash": "9b3e5cc91dd6031f57c2f403f0d092735ae67c200bddea78a98d5914a5b0113b",
       "seed": 1,
       "system_id": "reversed_router",
       "task_id": "aerial-cactus-identification",
@@ -79,11 +79,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+        "budget_manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
         "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-        "memory_bundles_manifest_hash": "445ebb39e36ab49c18b4403a23a7ef65102b0b0c2fa400ba01b054458ee33afe",
-        "schemas_manifest_hash": "32fc05febfc1d9ff76bf30f33a8fabe61896d8ea08379849e85a102a0362ed19",
-        "source_lock_manifest_hash": "09aeb832a5f25337ca7f4e027e0d754b74312e82e7a4ba9ceb2a9fa854195744",
+        "memory_bundles_manifest_hash": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
+        "schemas_manifest_hash": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
+        "source_lock_manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
         "systems_manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -91,7 +91,7 @@
       "formal_result_eligible": false,
       "launch_position": 3,
       "logical_run_id": "e2e-smoke-all-systems-v2__aerial-cactus-identification__macla_style_port__seed-1",
-      "row_hash": "2155535f2931811a8f21b6a28c8daecdfdbe1a1a3d901a95202dad3018bda6f0",
+      "row_hash": "418cfc621a169f1db20f2a850519d3039cccff656571fc78887089979503fef8",
       "seed": 1,
       "system_id": "macla_style_port",
       "task_id": "aerial-cactus-identification",
@@ -99,11 +99,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+        "budget_manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
         "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-        "memory_bundles_manifest_hash": "445ebb39e36ab49c18b4403a23a7ef65102b0b0c2fa400ba01b054458ee33afe",
-        "schemas_manifest_hash": "32fc05febfc1d9ff76bf30f33a8fabe61896d8ea08379849e85a102a0362ed19",
-        "source_lock_manifest_hash": "09aeb832a5f25337ca7f4e027e0d754b74312e82e7a4ba9ceb2a9fa854195744",
+        "memory_bundles_manifest_hash": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
+        "schemas_manifest_hash": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
+        "source_lock_manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
         "systems_manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -111,7 +111,7 @@
       "formal_result_eligible": false,
       "launch_position": 4,
       "logical_run_id": "e2e-smoke-all-systems-v2__aerial-cactus-identification__gome_style_port__seed-1",
-      "row_hash": "5a2042121b88fbde69e59f9a69046f3dca46eac9f1c9801f33fd58b19a299392",
+      "row_hash": "7ea4633f514e6889e5e066dd34523ed8858ab8e7eb22a2af4248187af9266b10",
       "seed": 1,
       "system_id": "gome_style_port",
       "task_id": "aerial-cactus-identification",
@@ -119,11 +119,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+        "budget_manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
         "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-        "memory_bundles_manifest_hash": "445ebb39e36ab49c18b4403a23a7ef65102b0b0c2fa400ba01b054458ee33afe",
-        "schemas_manifest_hash": "32fc05febfc1d9ff76bf30f33a8fabe61896d8ea08379849e85a102a0362ed19",
-        "source_lock_manifest_hash": "09aeb832a5f25337ca7f4e027e0d754b74312e82e7a4ba9ceb2a9fa854195744",
+        "memory_bundles_manifest_hash": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
+        "schemas_manifest_hash": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
+        "source_lock_manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
         "systems_manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -131,7 +131,7 @@
       "formal_result_eligible": false,
       "launch_position": 5,
       "logical_run_id": "e2e-smoke-all-systems-v2__aerial-cactus-identification__sop_only__seed-1",
-      "row_hash": "7b24b9fb6b2152cccb9c3a61de45cb0b7a1d8accfb538822ef3735743cedeef2",
+      "row_hash": "25a9e304788cfdef6856f40e46deb7adf1f28efdbf7cef17969ab13a9de13d13",
       "seed": 1,
       "system_id": "sop_only",
       "task_id": "aerial-cactus-identification",
@@ -139,11 +139,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+        "budget_manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
         "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-        "memory_bundles_manifest_hash": "445ebb39e36ab49c18b4403a23a7ef65102b0b0c2fa400ba01b054458ee33afe",
-        "schemas_manifest_hash": "32fc05febfc1d9ff76bf30f33a8fabe61896d8ea08379849e85a102a0362ed19",
-        "source_lock_manifest_hash": "09aeb832a5f25337ca7f4e027e0d754b74312e82e7a4ba9ceb2a9fa854195744",
+        "memory_bundles_manifest_hash": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
+        "schemas_manifest_hash": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
+        "source_lock_manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
         "systems_manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -151,7 +151,7 @@
       "formal_result_eligible": false,
       "launch_position": 6,
       "logical_run_id": "e2e-smoke-all-systems-v2__aerial-cactus-identification__dynamic_hybrid__seed-1",
-      "row_hash": "1388c837424ac4fb919290eec1931b67615605ce3d1890665b7778ff7181c7cb",
+      "row_hash": "94707f3ce8eb2f23e95419d436f832b083e72badcde4685014d2fb2b50ef5ebf",
       "seed": 1,
       "system_id": "dynamic_hybrid",
       "task_id": "aerial-cactus-identification",
@@ -159,11 +159,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+        "budget_manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
         "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-        "memory_bundles_manifest_hash": "445ebb39e36ab49c18b4403a23a7ef65102b0b0c2fa400ba01b054458ee33afe",
-        "schemas_manifest_hash": "32fc05febfc1d9ff76bf30f33a8fabe61896d8ea08379849e85a102a0362ed19",
-        "source_lock_manifest_hash": "09aeb832a5f25337ca7f4e027e0d754b74312e82e7a4ba9ceb2a9fa854195744",
+        "memory_bundles_manifest_hash": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
+        "schemas_manifest_hash": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
+        "source_lock_manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
         "systems_manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -171,7 +171,7 @@
       "formal_result_eligible": false,
       "launch_position": 7,
       "logical_run_id": "e2e-smoke-all-systems-v2__aerial-cactus-identification__runforest_only__seed-1",
-      "row_hash": "f8787b16db92b53bcca3b4eca3fcd6050950d6cb3f2664c213a0411ce7925255",
+      "row_hash": "d33028b60e1c7d488b0faec418b00a401b2d00b5772fca1add60a84b5b5d5e6a",
       "seed": 1,
       "system_id": "runforest_only",
       "task_id": "aerial-cactus-identification",
@@ -179,11 +179,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+        "budget_manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
         "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-        "memory_bundles_manifest_hash": "445ebb39e36ab49c18b4403a23a7ef65102b0b0c2fa400ba01b054458ee33afe",
-        "schemas_manifest_hash": "32fc05febfc1d9ff76bf30f33a8fabe61896d8ea08379849e85a102a0362ed19",
-        "source_lock_manifest_hash": "09aeb832a5f25337ca7f4e027e0d754b74312e82e7a4ba9ceb2a9fa854195744",
+        "memory_bundles_manifest_hash": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
+        "schemas_manifest_hash": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
+        "source_lock_manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
         "systems_manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -191,7 +191,7 @@
       "formal_result_eligible": false,
       "launch_position": 8,
       "logical_run_id": "e2e-smoke-all-systems-v2__aerial-cactus-identification__static_hybrid__seed-1",
-      "row_hash": "3e0344cb19b7f78d5ea1b4df3ac4f1ff7eda2ae41fe3c0cab3299b94fbefe5aa",
+      "row_hash": "2f45b925bb4b97fca4e3b718e474f5c082c73f718031083cb1c3615c59d84c98",
       "seed": 1,
       "system_id": "static_hybrid",
       "task_id": "aerial-cactus-identification",
@@ -199,11 +199,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "2becc626036cd56a898849683f1de4637c0f9b91418c8138e97e4eb91320877b",
+        "budget_manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
         "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-        "memory_bundles_manifest_hash": "445ebb39e36ab49c18b4403a23a7ef65102b0b0c2fa400ba01b054458ee33afe",
-        "schemas_manifest_hash": "32fc05febfc1d9ff76bf30f33a8fabe61896d8ea08379849e85a102a0362ed19",
-        "source_lock_manifest_hash": "09aeb832a5f25337ca7f4e027e0d754b74312e82e7a4ba9ceb2a9fa854195744",
+        "memory_bundles_manifest_hash": "7acfd9e6240bce7b91d3e2e949ea43156281fc0721eb6068dad7820e8556ac82",
+        "schemas_manifest_hash": "7e0963ef5eca2f641b5edcde0b3b523ce8a11783aa2064e397ccf38577681c8c",
+        "source_lock_manifest_hash": "32f792398b9efd54f1aae75a027330c9eb1bb9bd78ec7e4f904453bad69b419f",
         "systems_manifest_hash": "1f223f8f88245d38d67e081a4413990e93a820766c24d17074a526403e789a57",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -211,7 +211,7 @@
       "formal_result_eligible": false,
       "launch_position": 9,
       "logical_run_id": "e2e-smoke-all-systems-v2__aerial-cactus-identification__flat_retrieval__seed-1",
-      "row_hash": "a0ac59c2851917ad79aca2f55c58c3ce834070279c3b17a5fff63c9fa9203832",
+      "row_hash": "ada66fd653c4008c4ce3c263fe99a99e02f2151f44480bfd89554edb58126298",
       "seed": 1,
       "system_id": "flat_retrieval",
       "task_id": "aerial-cactus-identification",
