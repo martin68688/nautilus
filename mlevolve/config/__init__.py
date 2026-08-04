@@ -383,6 +383,22 @@ class ExternalSkillMemoryConfig:
     end2end_memory_system: str = ""
     end2end_prompt_token_budget: int = 1536
     end2end_candidate_pool_limit: int = 12
+    # Full Experiment-R router. End2End enables this only for dynamic_hybrid;
+    # the other nine frozen systems keep the existing controller above.
+    experiment_r_enabled: bool = False
+    experiment_r_candidate_limit: int = 12
+    experiment_r_top_k: int = 6
+    experiment_r_prompt_token_budget: int = 1536
+    experiment_r_memory_pool_sha256: str = ""
+    experiment_r_debug_confidence_threshold: float = 0.50
+    experiment_r_memory_transfer_static_gate: bool = False
+    experiment_r_memory_transfer_runtime_gate: bool = False
+    experiment_r_agentic_retrieval_enabled: bool = False
+    experiment_r_agentic_max_steps: int = 4
+    experiment_r_agentic_per_step_top_k: int = 8
+    experiment_r_agentic_max_observed: int = 48
+    experiment_r_agentic_temperature: float = 0.0
+    experiment_r_agentic_max_tokens: int = 1200
     excluded_run_ids: list[str] = field(default_factory=list)
 
 
@@ -408,6 +424,7 @@ class RunIdentityConfig:
     task_manifest_sha256: str = ""
     budget_manifest_sha256: str = ""
     memory_bundle_binding_sha256: str = ""
+    memory_current_sha256: str = ""
     evaluator_manifest_sha256: str = ""
     logical_run_id: str = ""
     system_id: str = ""

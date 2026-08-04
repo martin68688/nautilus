@@ -6,9 +6,9 @@ methodology_dynamic: false
 agent:
   use_global_memory: false
   code:
-    temp: 0.5
+    temp: 1.0
   feedback:
-    temp: 0.5
+    temp: 1.0
   search:
     num_gpus: 1
     parallel_search_num: 1
@@ -80,5 +80,5 @@ run_identity:
   baseline_reference_group: experiment_end2end_no_memory_v1
   memory_enabled: true
   memory_system: ""
-  memory_version: experiment_r_task_heldout_production_v2
+  memory_version: end2end_same_domain_seed_heldout_v1
   identity_source: end2end_frozen_manifest_v1

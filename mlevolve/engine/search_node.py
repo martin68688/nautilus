@@ -117,6 +117,7 @@ class SearchNode(DataClassJsonMixin):
     adoption_runtime_trace: dict = field(default_factory=dict, kw_only=True)
     adoption_verifier_verdict: dict = field(default_factory=dict, kw_only=True)
     adoption_verifier_mode: str = field(default="off", kw_only=True)
+    memory_transfer_adoption_gate: dict = field(default_factory=dict, kw_only=True)
     actuation_report_refs: list[str] = field(default_factory=list, kw_only=True)
     derived_from_refs: list[str] = field(default_factory=list, kw_only=True)
     protocol_ref: str = field(default="", kw_only=True)

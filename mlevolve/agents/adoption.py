@@ -89,7 +89,80 @@ def log_adoption(
             node.memory_navigation_trace = copy.deepcopy(
                 pack.get("navigation_trace", [])
             )
-            if pack.get("schema") == "mlevolve_end2end_memory_pack_v1":
+            if bool(getattr(layer, "experiment_r_enabled", False)):
+                snapshot = getattr(layer, "memory_snapshot", None)
+                base = getattr(snapshot, "base_bundle", None)
+                run_identity = getattr(
+                    getattr(agent, "cfg", None), "run_identity", None
+                )
+                pool = pack.get("candidate_pool") or {}
+                node.memory_routing_trace = {
+                    "schema": "mlevolve_memory_routing_trace_v1",
+                    "memory_pack_schema": str(pack.get("schema") or ""),
+                    "algorithm_version": str(pack.get("algorithm_version") or ""),
+                    "system_id": "dynamic_hybrid",
+                    "stage_route": copy.deepcopy(pack.get("stage_route") or {}),
+                    "target_task_id": str(pack.get("target_task_id") or ""),
+                    "memory_pool_sha256": str(
+                        pack.get("memory_pool_sha256")
+                        or (pool.get("pool_identity") or {}).get("memory_pool_sha256")
+                        or ""
+                    ),
+                    "candidate_pool_hash": str(pack.get("candidate_pool_hash") or ""),
+                    "candidate_pool_source": str(pack.get("candidate_pool_source") or ""),
+                    "qualification_checkpoint_id": str(
+                        pack.get("qualification_checkpoint_id") or ""
+                    ),
+                    "qualification_candidate_pool_artifact_sha256": str(
+                        pack.get("qualification_candidate_pool_artifact_sha256") or ""
+                    ),
+                    "ranking_contract": str(pack.get("ranking_contract") or ""),
+                    "live_query_used_for_candidate_pool": bool(
+                        pack.get("live_query_used_for_candidate_pool", True)
+                    ),
+                    "candidate_pool_identity": copy.deepcopy(
+                        pool.get("pool_identity") or {}
+                    ),
+                    "raw_candidates": copy.deepcopy(pool),
+                    "selected_candidates": copy.deepcopy(
+                        pack.get("selected_items") or []
+                    ),
+                    "budget_contract": copy.deepcopy(pack.get("budget_contract") or {}),
+                    "safety_gate": copy.deepcopy(pack.get("safety_gate") or {}),
+                    "final_prompt_candidate_ids": list(
+                        pack.get("final_prompt_candidate_ids") or []
+                    ),
+                    "final_prompt_candidates": copy.deepcopy(
+                        pack.get("final_prompt_candidates") or []
+                    ),
+                    "visible_clause_ids": list(pack.get("visible_clause_ids") or []),
+                    "prompt_token_count": int(pack.get("prompt_token_count") or 0),
+                    "prompt_truncated": bool(pack.get("prompt_truncated")),
+                    "memory_snapshot_bound_but_not_exposed": bool(
+                        pack.get("memory_snapshot_bound_but_not_exposed")
+                    ),
+                    "base_bundle_id": str(getattr(base, "bundle_id", "") or ""),
+                    "base_manifest_sha256": str(
+                        getattr(base, "manifest_sha256", "") or ""
+                    ),
+                    "memory_snapshot_sha256": str(
+                        getattr(snapshot, "snapshot_sha256", "") or ""
+                    ),
+                    "session_overlay_path": str(
+                        getattr(snapshot, "session_overlay_path", "") or ""
+                    ),
+                    "production_binding_sha256": str(
+                        getattr(run_identity, "memory_bundle_binding_sha256", "") or ""
+                    ),
+                    "current_file_sha256": str(
+                        getattr(run_identity, "memory_current_sha256", "") or ""
+                    ),
+                }
+                adapter = getattr(agent, "evaluation_authority", None)
+                attester = getattr(adapter, "attest_experiment_r_candidate_pool", None)
+                if callable(attester):
+                    attester(node)
+            elif pack.get("schema") == "mlevolve_end2end_memory_pack_v1":
                 node.memory_routing_trace = {
                     "schema": "mlevolve_memory_routing_trace_v1",
                     "memory_pack_schema": str(pack.get("schema") or ""),
@@ -156,7 +229,10 @@ def log_adoption(
         adapter, "record_memory_candidate_exposure", None
     )
     if (
-        pack.get("schema") == "mlevolve_end2end_memory_pack_v1"
+        pack.get("schema") in {
+            "mlevolve_end2end_memory_pack_v1",
+            "experiment_r_memory_pack_v1",
+        }
         and callable(candidate_exposure_recorder)
     ):
         try:

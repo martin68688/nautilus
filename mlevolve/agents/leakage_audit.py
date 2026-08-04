@@ -934,6 +934,21 @@ def legacy_rank_eligible(agent: Any, node: Any) -> bool:
     )
     if not leakage_clean:
         return False
+    ext_cfg = getattr(getattr(agent, "cfg", None), "external_skill_memory", None)
+    if bool(
+        getattr(ext_cfg, "experiment_r_enabled", False)
+        and getattr(ext_cfg, "experiment_r_memory_transfer_runtime_gate", False)
+        and str(getattr(node, "draft_role", "") or "") == "memory_transfer"
+    ):
+        verdict = getattr(node, "adoption_verifier_verdict", None) or {}
+        activated = any(
+            isinstance(row, dict)
+            and row.get("verdict") in {"adopted", "partially_adopted"}
+            and row.get("runtime_evidence_valid") is True
+            for row in verdict.get("contract_results") or []
+        )
+        if not activated:
+            return False
     verifier_cfg = getattr(getattr(agent, "cfg", None), "adoption_verifier", None)
     verifier_enforced = bool(
         verifier_cfg is not None

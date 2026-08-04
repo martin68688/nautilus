@@ -1,0 +1,50 @@
+{
+  "bindings": {
+    "budget_manifest_hash": "caf6dbbd732e90a00bb4b42531d7a0ecd17d942e84c6fca8c8babae00add21c0",
+    "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+    "memory_bundles_manifest_hash": "c2ba26869d436dabb0097480641a2b8097e1e7627437d370d6ce0b48d6d0d345",
+    "schemas_manifest_hash": "d36ec65bf5ea7d5714ade79665cf99437caf8acb1b3a1202812e0d83261fc0a5",
+    "source_lock_manifest_hash": "d1433dc3e2a0001cc1b6bf288a8ebb67e24ddd8d8ee1e6d8badce4eda8d837c3",
+    "systems_manifest_hash": "a1601fa144f7a1ecb90c368cb708f0fe6934336c170f10d32a0352a923ea1d44",
+    "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+  },
+  "comparison_baseline_release_id": "end2end-agent-v3",
+  "exploratory_pilot": true,
+  "formal_result_eligible": false,
+  "kind": "smoke",
+  "launch_order_randomization": "task-local SHA256-seeded deterministic shuffle; comparison order locked to end2end-agent-v3",
+  "manifest_hash": "f77a7259fe3efaf2bfb9ccd74ae323bf8956644b960cc1662bb9f2abe997755e",
+  "release_id": "end2end-agentic-three-role-v2",
+  "run_count": 1,
+  "runs": [
+    {
+      "bindings": {
+        "budget_manifest_hash": "caf6dbbd732e90a00bb4b42531d7a0ecd17d942e84c6fca8c8babae00add21c0",
+        "evaluators_manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+        "memory_bundles_manifest_hash": "c2ba26869d436dabb0097480641a2b8097e1e7627437d370d6ce0b48d6d0d345",
+        "schemas_manifest_hash": "d36ec65bf5ea7d5714ade79665cf99437caf8acb1b3a1202812e0d83261fc0a5",
+        "source_lock_manifest_hash": "d1433dc3e2a0001cc1b6bf288a8ebb67e24ddd8d8ee1e6d8badce4eda8d837c3",
+        "systems_manifest_hash": "a1601fa144f7a1ecb90c368cb708f0fe6934336c170f10d32a0352a923ea1d44",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 0,
+      "logical_run_id": "e2e-feasibility-smoke-agentic-three-role-v2__aerial-cactus-identification__dynamic_hybrid__seed-1",
+      "row_hash": "2320c4cfe6a36917e4d99ba7a8e9dd604d47a4ad69b3e92e2d3c2d5ee15df650",
+      "seed": 1,
+      "system_id": "dynamic_hybrid",
+      "task_id": "aerial-cactus-identification",
+      "task_launch_position": 0
+    }
+  ],
+  "schema": "mlevolve_end2end_execution_manifest_v1",
+  "seed": 1,
+  "statistical_significance_claim_allowed": false,
+  "system_ids": [
+    "dynamic_hybrid"
+  ],
+  "task_ids": [
+    "aerial-cactus-identification"
+  ]
+}

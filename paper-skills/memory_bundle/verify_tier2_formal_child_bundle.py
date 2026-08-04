@@ -327,10 +327,14 @@ def verify_formal_child_publication(
         clause_by_id = {str(row.get("clause_id") or ""): row for row in clauses}
         check("clause_ids_unique", len(clause_by_id) == len(clauses))
         formal_clause_id = str(publication.get("formal_clause_id") or "")
+        formal_debug_clause_id = str(
+            publication.get("formal_debug_clause_id") or ""
+        )
         formal_claim_id = str(publication.get("formal_claim_id") or "")
         formal_path_id = str(publication.get("formal_path_id") or "")
         formal_receipt_ids = set(map(str, publication.get("formal_receipt_ids") or []))
         formal = clause_by_id.get(formal_clause_id) or {}
+        formal_debug = clause_by_id.get(formal_debug_clause_id) or {}
         check("formal_clause_present", bool(formal))
         check("formal_clause_claim", formal.get("claim_refs") == [formal_claim_id])
         check("formal_clause_type", formal.get("claim_types") == ["method_hypothesis"])
@@ -342,6 +346,25 @@ def verify_formal_child_publication(
         check("formal_clause_generation_stages", set(formal.get("permitted_generation_stages") or []) == GENERATION_STAGES)
         check("formal_clause_governance", formal.get("permitted_governance_stages") == ["retrieval"])
         check("formal_clause_receipts", set(map(str, formal.get("receipt_refs") or [])) == formal_receipt_ids)
+        check("formal_debug_clause_present", bool(formal_debug))
+        check(
+            "formal_debug_clause_claim",
+            formal_debug.get("claim_refs") == [formal_claim_id],
+        )
+        check(
+            "formal_debug_clause_operation",
+            formal_debug.get("permitted_operations") == ["debug_hypothesis"],
+        )
+        check(
+            "formal_debug_clause_stage",
+            formal_debug.get("permitted_generation_stages") == ["debug"],
+        )
+        check(
+            "formal_debug_clause_transition",
+            formal_debug.get("source_transition_refs")
+            == formal.get("source_transition_refs")
+            and len(formal_debug.get("source_transition_refs") or []) == 1,
+        )
         contract = formal.get("contract_spec") or {}
         check("formal_source_clause", contract.get("source_clause_id") == source_clause_id)
         check("formal_parent_bundle", contract.get("parent_bundle_id") == expected_parent_bundle_id)
@@ -355,9 +378,9 @@ def verify_formal_child_publication(
             row for row in clauses if protocol_ref in set(row.get("protocol_scope") or [])
         ]
         check(
-            "one_target_protocol_clause",
-            [str(row.get("clause_id") or "") for row in target_protocol_clauses]
-            == [formal_clause_id],
+            "target_protocol_clause_pair",
+            {str(row.get("clause_id") or "") for row in target_protocol_clauses}
+            == {formal_clause_id, formal_debug_clause_id},
         )
         check("flat_raw_population_present", len(clauses) > 1)
         check(
@@ -442,12 +465,26 @@ def verify_formal_child_publication(
             for row in base.read_jsonl("authority/derivations.jsonl")
             if row.get("claim_id") == formal_claim_id
         ]
-        check("one_formal_derivation", len(derivations) == 1)
-        derivation = derivations[0] if len(derivations) == 1 else {}
-        check("derivation_internal_hash", derivation.get("derivation_hash") == payload_hash(derivation, "derivation_hash"))
-        check("derivation_source_score_false", derivation.get("source_score_inheritance") is False)
-        check("derivation_historical_metric_false", derivation.get("historical_metric_used_as_evidence") is False)
-        check("derivation_issue_set", derivation.get("allowed_protocol_issue_codes") == expected_issues)
+        check("formal_derivation_pair", len(derivations) == 2)
+        for derivation in derivations:
+            derivation_id = str(derivation.get("derivation_id") or "")
+            check(
+                f"derivation_internal_hash:{derivation_id}",
+                derivation.get("derivation_hash")
+                == payload_hash(derivation, "derivation_hash"),
+            )
+            check(
+                f"derivation_source_score_false:{derivation_id}",
+                derivation.get("source_score_inheritance") is False,
+            )
+            check(
+                f"derivation_historical_metric_false:{derivation_id}",
+                derivation.get("historical_metric_used_as_evidence") is False,
+            )
+            check(
+                f"derivation_issue_set:{derivation_id}",
+                derivation.get("allowed_protocol_issue_codes") == expected_issues,
+            )
 
         with tempfile.TemporaryDirectory(prefix="wp8-formal-child-overlay-") as overlay:
             snapshot = loader.load(
@@ -495,6 +532,44 @@ def verify_formal_child_publication(
                     {str(row.get("clause_id") or "") for row in visible}
                     == {formal_clause_id},
                 )
+            debug_clause_value = SOPClauseV1(
+                **{
+                    key: value
+                    for key, value in formal_debug.items()
+                    if key in fields
+                }
+            )
+            debug_request = VisibilityRequest(
+                operation=Operation.DEBUG_HYPOTHESIS,
+                generation_stage=GenerationStage.DEBUG,
+                governance_stage=GovernanceStage.RETRIEVAL,
+                active_protocol=active_protocol,
+                task_context=TaskContext(
+                    task_id=target_task_id,
+                    task_family=target_task_family,
+                ),
+                memory_bundle_version=base.bundle_version,
+                token_budget=4096,
+                requesting_component="independent_formal_child_verifier",
+            )
+            debug_decision = authorize_clause_for_visibility(
+                debug_clause_value,
+                debug_request,
+                authority_engine=engine,
+            )
+            check("debug_hypothesis_allowed", debug_decision.allowed is True)
+            debug_visible = snapshot.base_clauses(
+                Operation.DEBUG_HYPOTHESIS,
+                task_id=target_task_id,
+                task_family=target_task_family,
+                generation_stage=GenerationStage.DEBUG.value,
+                governance_stage=GovernanceStage.RETRIEVAL.value,
+            )
+            check(
+                "debug_visible_exact",
+                {str(row.get("clause_id") or "") for row in debug_visible}
+                == {formal_debug_clause_id},
+            )
 
             denied = (
                 (Operation.RANK, GovernanceStage.BRANCH_SELECTION),

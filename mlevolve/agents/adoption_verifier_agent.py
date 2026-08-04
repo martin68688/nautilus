@@ -359,6 +359,64 @@ class AdoptionVerifierAgent:
             ledger.append("agent_adoption_verdict", verdict)
         return verdict
 
+    def evaluate_memory_transfer_static_gate(self, node: Any) -> dict[str, Any]:
+        """Require one implemented Prompt-visible memory on the transfer Draft.
+
+        This gate is deliberately role-scoped. Cold-start and novel branches
+        remain free controls, and a failed transfer Draft is retained rather
+        than silently regenerated until it happens to pass.
+        """
+
+        ext_cfg = getattr(self.cfg, "external_skill_memory", None)
+        enabled = bool(
+            getattr(ext_cfg, "experiment_r_enabled", False)
+            and getattr(
+                ext_cfg, "experiment_r_memory_transfer_static_gate", False
+            )
+            and str(getattr(node, "draft_role", "") or "")
+            == "memory_transfer"
+        )
+        plan = dict(getattr(node, "adoption_verification_plan", None) or {})
+        positive = [
+            str(row.get("contract_id") or "")
+            for row in plan.get("contract_results") or []
+            if isinstance(row, Mapping)
+            and row.get("disposition")
+            in {"implemented", "partially_implemented"}
+            and row.get("code_evidence")
+            and row.get("runtime_probes")
+        ]
+        result = {
+            "schema": "experiment_r_memory_transfer_static_gate_v1",
+            "enabled": enabled,
+            "role": str(getattr(node, "draft_role", "") or ""),
+            "plan_hash": str(plan.get("plan_hash") or ""),
+            "positive_contract_ids": positive,
+            "status": (
+                "pass"
+                if not enabled or positive
+                else "reject_before_execution"
+            ),
+            "reason": (
+                "at_least_one_memory_contract_is_statically_implemented"
+                if positive
+                else "no_prompt_visible_memory_contract_is_implemented"
+            ),
+        }
+        node.memory_transfer_adoption_gate = result
+        if enabled:
+            _atomic_json(
+                Path(self.cfg.log_dir)
+                / "adoption_verifier"
+                / f"{node.id}.memory-transfer-gate.json",
+                result,
+            )
+            adapter = getattr(self.agent, "evaluation_authority", None)
+            ledger = getattr(adapter, "ledger", None)
+            if ledger is not None:
+                ledger.append("memory_transfer_static_adoption_gate", result)
+        return result
+
 
 __all__ = [
     "AdoptionVerifierAgent",

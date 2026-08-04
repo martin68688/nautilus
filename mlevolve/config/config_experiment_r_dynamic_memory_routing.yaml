@@ -1,0 +1,65 @@
+extends: config_prevalence_audit_20260729_host_enforce.yaml
+
+agent:
+  draft_role_policy:
+    enabled: true
+    roles:
+      - coldstart_baseline
+      - memory_transfer
+      - novel_exploration
+
+# Experiment R preserves the complete production memory/Authority pipeline.
+# Only this scalar may change between online arms:
+#   no_memory | flat_retrieval | sop_only | runforest_only |
+#   static_hybrid | dynamic_hybrid | reversed_router
+external_skill_memory:
+  enable: true
+  bundle_binding_path: "${oc.env:EXPERIMENT_R_MEMORY_BINDING,../experiments/dynamic_memory_routing_injection_20260731/results/production_memory_binding_r2.json}"
+  expected_bundle_binding_sha256: "47e0d38a2183827f36ab44c9881c542690d154cd735fbfdb9c4de3019bf926f7"
+  bundle_root: ""
+  current_pointer_path: "CURRENT.json"
+  session_overlay_path: ""
+  graph_path: ""
+  index_path: ""
+  text_model_path: ""
+  source_name: "run_forest_stage_hybrid_memory"
+  mode: "run_forest_stage_hybrid"
+  scoring_mode: "flat_twin"
+  enable_agentic: false
+  top_k: 6
+  max_chars: 0
+  include_draft: true
+  include_improve: true
+  include_evolution: false
+  include_debug: true
+  include_fusion: false
+  retrieval_control: "dynamic_hybrid"
+  visibility_token_budget: 4096
+  excluded_run_ids:
+    - "20260701_180146"
+    - "20260701_145201"
+    - "20260701_145250"
+    - "20260516_125444"
+    - "20260701_155016"
+    - "20260510_025317"
+    - "20260701_180038"
+  experiment_r_enabled: true
+  experiment_r_candidate_limit: 12
+  experiment_r_top_k: 6
+  experiment_r_prompt_token_budget: 1536
+  # Populated per task from the hash-verified production Bundle binding.
+  experiment_r_memory_pool_sha256: ""
+  experiment_r_debug_confidence_threshold: 0.50
+
+run_identity:
+  experiment_group: "experiment_r_dynamic_memory_routing_v1"
+  baseline_reference_group: "experiment_r_no_memory_v1"
+  memory_enabled: true
+  memory_system: "run_forest_stage_hybrid"
+  memory_version: "experiment_r_task_heldout_production_v2"
+  memory_snapshot_sha256: ""
+  memory_index_sha256: ""
+  identity_source: "experiment_r_frozen_release"
+
+evaluation_authority:
+  require_bound_bundle: true

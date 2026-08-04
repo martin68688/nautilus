@@ -76,6 +76,18 @@ class MLEvolveAuthorityAdapter:
         self.protocol_registry = registry
         self.active_protocol_spec = active
         self.active_protocol = active.ref()
+        self._experiment_r_collector_identity = None
+        self._experiment_r_collector_public_key = ""
+        external_memory_cfg = getattr(self.cfg, "external_skill_memory", None)
+        if self.mode == "enforce" and bool(
+            getattr(external_memory_cfg, "experiment_r_enabled", False)
+        ):
+            self._experiment_r_collector_identity = (
+                self._load_experiment_r_collector_identity()
+            )
+            self._experiment_r_collector_public_key = (
+                self._experiment_r_collector_identity.public_key_ed25519
+            )
         ledger_path = Path(self.cfg.log_dir) / "authority_events.jsonl"
         self.ledger = AuthorityLedger(ledger_path)
         self.engine = AuthorityEngine(
@@ -146,6 +158,199 @@ class MLEvolveAuthorityAdapter:
         self._overlay_written_links: set[tuple[str, str, str]] = set()
         if self.mode != "off":
             self.ledger.append("protocol_registered", dataclasses.asdict(active))
+
+    def _load_experiment_r_collector_identity(self) -> Any:
+        """Pin the Protocol-bound Host key before Candidate isolation consumes it."""
+
+        from authority.protocol_execution_contract import read_contract_artifact
+        from protocol_runtime.collector import HostCollectorIdentity
+
+        preflight = getattr(
+            getattr(self.cfg, "agent", None), "protocol_preflight", None
+        )
+        contract_path = str(getattr(preflight, "contract_path", "") or "")
+        expected_contract_hash = str(
+            getattr(preflight, "expected_contract_hash", "") or ""
+        )
+        if not contract_path or not expected_contract_hash:
+            raise ValueError(
+                "Experiment R Host Protocol execution contract is missing"
+            )
+        contract = read_contract_artifact(contract_path)
+        if contract.contract_hash != expected_contract_hash:
+            raise ValueError(
+                "Experiment R Host Protocol execution contract hash mismatch"
+            )
+        if contract.protocol_ref != self.active_protocol:
+            raise ValueError(
+                "Experiment R Host Protocol execution contract is not active"
+            )
+        if contract.task_id != self.task_id:
+            raise ValueError(
+                "Experiment R Host Protocol execution contract task mismatch"
+            )
+        key_path = str(
+            getattr(preflight, "collector_private_key_path", "") or ""
+        )
+        if not key_path:
+            raise ValueError(
+                "Experiment R Host candidate-pool attestation key is missing"
+            )
+        identity = HostCollectorIdentity.from_private_key_file(key_path)
+        expected_public_key = str(
+            (contract.collector_spec or {}).get("public_key_ed25519") or ""
+        )
+        if not expected_public_key:
+            raise ValueError(
+                "Experiment R Host Protocol Collector public key is missing"
+            )
+        if identity.public_key_ed25519 != expected_public_key:
+            raise ValueError(
+                "Experiment R Host candidate-pool key is not Protocol-bound"
+            )
+        return identity
+
+    def attest_experiment_r_candidate_pool(self, node: Any) -> dict[str, Any]:
+        """Host-sign the exact live pool and Prompt-visible selection."""
+
+        ext_cfg = getattr(self.cfg, "external_skill_memory", None)
+        if not bool(getattr(ext_cfg, "experiment_r_enabled", False)):
+            return {}
+        trace = getattr(node, "memory_routing_trace", None)
+        if not isinstance(trace, dict) or not trace:
+            return {}
+        if trace.get("host_candidate_pool_attestation_ref"):
+            return {
+                "attestation_id": trace["host_candidate_pool_attestation_ref"],
+                "event_hash": trace.get(
+                    "host_candidate_pool_attestation_event_hash", ""
+                ),
+            }
+        if self.mode != "enforce":
+            return {}
+        pool_identity = trace.get("candidate_pool_identity")
+        budget_contract = trace.get("budget_contract")
+        final_ids = trace.get("final_prompt_candidate_ids")
+        if not isinstance(pool_identity, dict) or not pool_identity:
+            raise ValueError("Experiment R candidate pool identity is missing")
+        if not isinstance(budget_contract, dict) or not budget_contract:
+            raise ValueError("Experiment R candidate pool budget is missing")
+        routing_control = str(
+            (trace.get("stage_route") or {}).get("control") or ""
+        )
+        if not isinstance(final_ids, list) or (
+            not final_ids and routing_control != "no_memory"
+        ):
+            raise ValueError("Experiment R final prompt candidate IDs are missing")
+
+        def digest(value: Any) -> str:
+            return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
+
+        pool_hash = str(trace.get("candidate_pool_hash") or "")
+        if pool_hash != digest(pool_identity):
+            raise ValueError("Experiment R candidate pool hash mismatch")
+        if str(pool_identity.get("task_id") or "") != self.task_id:
+            raise ValueError("Experiment R candidate pool task mismatch")
+        stage = str((trace.get("stage_route") or {}).get("stage") or "")
+        if str(pool_identity.get("stage") or "") != stage:
+            raise ValueError("Experiment R candidate pool stage mismatch")
+        if str(pool_identity.get("memory_pool_sha256") or "") != str(
+            trace.get("memory_pool_sha256") or ""
+        ):
+            raise ValueError("Experiment R memory pool identity mismatch")
+        raw_ids = {
+            str(value)
+            for key in ("sop_ids", "runforest_ids")
+            for value in (pool_identity.get(key) or [])
+            if str(value)
+        }
+        if (
+            len(final_ids) != len(set(map(str, final_ids)))
+            or not set(map(str, final_ids)).issubset(raw_ids)
+            or len(final_ids)
+            > int(budget_contract.get("max_injected_items") or 0)
+        ):
+            raise ValueError(
+                "Experiment R prompt selection is outside the live frozen pool"
+            )
+        identity = getattr(self, "_experiment_r_collector_identity", None)
+        if identity is None:
+            raise ValueError(
+                "Experiment R Host candidate-pool signing identity was not pinned"
+            )
+        expected_public_key = str(
+            getattr(self, "_experiment_r_collector_public_key", "") or ""
+        )
+        if identity.public_key_ed25519 != expected_public_key:
+            raise ValueError(
+                "Experiment R Host candidate-pool key is not Protocol-bound"
+            )
+        attestation: dict[str, Any] = {
+            "schema": "mlevolve_experiment_r_host_candidate_pool_attestation_v1",
+            "attestation_id": "",
+            "run_id": self.run_id,
+            "task_id": self.task_id,
+            "node_id": str(node.id),
+            "stage": stage,
+            "routing_control": routing_control,
+            "authority_mode": self.mode,
+            "active_protocol_ref": self.active_protocol.key(),
+            "memory_pool_sha256": str(trace.get("memory_pool_sha256") or ""),
+            "memory_snapshot_sha256": str(
+                trace.get("memory_snapshot_sha256") or ""
+            ),
+            "candidate_pool_hash": pool_hash,
+            "candidate_pool_identity_sha256": digest(pool_identity),
+            "final_prompt_candidate_ids": list(map(str, final_ids)),
+            "visible_clause_ids": list(
+                map(str, trace.get("visible_clause_ids") or [])
+            ),
+            "budget_contract_sha256": digest(budget_contract),
+            "production_binding_sha256": str(
+                trace.get("production_binding_sha256") or ""
+            ),
+            "current_file_sha256": str(
+                trace.get("current_file_sha256") or ""
+            ),
+            "public_key_ed25519": identity.public_key_ed25519,
+            "attestation_hash": "",
+        }
+        attestation["attestation_id"] = "candidate-pool::" + digest(
+            {
+                "run_id": self.run_id,
+                "node_id": str(node.id),
+                "candidate_pool_hash": pool_hash,
+            }
+        )[:32]
+        attestation["attestation_hash"] = digest(
+            {
+                key: value
+                for key, value in attestation.items()
+                if key != "attestation_hash"
+            }
+        )
+        signature = identity.sign_canonical_payload(dict(attestation))
+        event = self.ledger.append(
+            "experiment_r_candidate_pool_attested",
+            {
+                "attestation": dict(attestation),
+                "signature_ed25519": signature,
+            },
+        )
+        trace["host_candidate_pool_attestation_ref"] = attestation[
+            "attestation_id"
+        ]
+        trace["host_candidate_pool_attestation_hash"] = attestation[
+            "attestation_hash"
+        ]
+        trace["host_candidate_pool_attestation_event_hash"] = event[
+            "event_hash"
+        ]
+        return {
+            "attestation_id": attestation["attestation_id"],
+            "attestation_hash": attestation["attestation_hash"],
+            "event_hash": event["event_hash"],
+        }
 
     def seal_rollout_versions(self) -> None:
         if self.require_bound_bundle and self.memory_snapshot is None:

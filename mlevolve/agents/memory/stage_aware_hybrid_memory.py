@@ -115,6 +115,11 @@ RETRIEVAL_CONTROLS = {
     "sop_only",
     "tree_only",
     "naive_concat",
+    "flat_retrieval",
+    "runforest_only",
+    "static_hybrid",
+    "dynamic_hybrid",
+    "reversed_router",
 }
 
 FORMAL_FLAT_RELEVANCE_CONTROLS = {
@@ -361,6 +366,14 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         end2end_memory_system: str | None = None,
         end2end_prompt_token_budget: int | None = None,
         end2end_candidate_pool_limit: int | None = None,
+        experiment_r_enabled: bool | None = None,
+        experiment_r_candidate_limit: int | None = None,
+        experiment_r_top_k: int | None = None,
+        experiment_r_prompt_token_budget: int | None = None,
+        experiment_r_memory_pool_sha256: str | None = None,
+        experiment_r_debug_confidence_threshold: float | None = None,
+        experiment_r_agentic_retrieval_enabled: bool | None = None,
+        experiment_r_agentic_query_fn: Callable[..., dict[str, Any]] | None = None,
         **kwargs: Any,
     ) -> None:
         self._trace_local = threading.local()
@@ -410,6 +423,99 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 getattr(ext_cfg, "excluded_run_ids", None) or []
             )
         self.excluded_run_ids = {str(value) for value in (excluded_run_ids or [])}
+        if experiment_r_enabled is None and ext_cfg is not None:
+            experiment_r_enabled = getattr(ext_cfg, "experiment_r_enabled", False)
+        self.experiment_r_enabled = bool(experiment_r_enabled)
+        self.experiment_r_candidate_limit = int(
+            experiment_r_candidate_limit
+            if experiment_r_candidate_limit is not None
+            else getattr(ext_cfg, "experiment_r_candidate_limit", 12)
+            if ext_cfg is not None
+            else 12
+        )
+        self.experiment_r_top_k = int(
+            experiment_r_top_k
+            if experiment_r_top_k is not None
+            else getattr(ext_cfg, "experiment_r_top_k", 6)
+            if ext_cfg is not None
+            else 6
+        )
+        self.experiment_r_prompt_token_budget = int(
+            experiment_r_prompt_token_budget
+            if experiment_r_prompt_token_budget is not None
+            else getattr(ext_cfg, "experiment_r_prompt_token_budget", 1536)
+            if ext_cfg is not None
+            else 1536
+        )
+        self.experiment_r_memory_pool_sha256 = str(
+            experiment_r_memory_pool_sha256
+            if experiment_r_memory_pool_sha256 is not None
+            else getattr(ext_cfg, "experiment_r_memory_pool_sha256", "")
+            if ext_cfg is not None
+            else ""
+        )
+        self.experiment_r_debug_confidence_threshold = float(
+            experiment_r_debug_confidence_threshold
+            if experiment_r_debug_confidence_threshold is not None
+            else getattr(ext_cfg, "experiment_r_debug_confidence_threshold", 0.50)
+            if ext_cfg is not None
+            else 0.50
+        )
+        self.experiment_r_agentic_retrieval_enabled = bool(
+            experiment_r_agentic_retrieval_enabled
+            if experiment_r_agentic_retrieval_enabled is not None
+            else getattr(
+                ext_cfg, "experiment_r_agentic_retrieval_enabled", False
+            )
+            if ext_cfg is not None
+            else False
+        )
+        self.experiment_r_agentic_max_steps = int(
+            getattr(ext_cfg, "experiment_r_agentic_max_steps", 4)
+            if ext_cfg is not None
+            else 4
+        )
+        self.experiment_r_agentic_per_step_top_k = int(
+            getattr(ext_cfg, "experiment_r_agentic_per_step_top_k", 8)
+            if ext_cfg is not None
+            else 8
+        )
+        self.experiment_r_agentic_max_observed = int(
+            getattr(ext_cfg, "experiment_r_agentic_max_observed", 48)
+            if ext_cfg is not None
+            else 48
+        )
+        self.experiment_r_agentic_temperature = float(
+            getattr(ext_cfg, "experiment_r_agentic_temperature", 0.0)
+            if ext_cfg is not None
+            else 0.0
+        )
+        self.experiment_r_agentic_max_tokens = int(
+            getattr(ext_cfg, "experiment_r_agentic_max_tokens", 1200)
+            if ext_cfg is not None
+            else 1200
+        )
+        self._experiment_r_agentic_query_fn = experiment_r_agentic_query_fn
+        if self.experiment_r_enabled:
+            from agents.memory.experiment_r_router import ONLINE_CONTROLS
+
+            if self.retrieval_control not in ONLINE_CONTROLS:
+                raise ValueError(
+                    "Experiment R requires one frozen online routing control; "
+                    f"got {self.retrieval_control}"
+                )
+            if self.experiment_r_candidate_limit < self.experiment_r_top_k:
+                raise ValueError("Experiment R candidate limit must be >= Top-K")
+            if self.experiment_r_top_k != 6:
+                raise ValueError("Experiment R v1 requires the frozen Top-K of 6")
+            if self.experiment_r_prompt_token_budget <= 0:
+                raise ValueError("Experiment R prompt token budget must be positive")
+            if self.experiment_r_agentic_max_steps not in range(1, 9):
+                raise ValueError("Agentic retrieval max steps must be in [1, 8]")
+            if self.experiment_r_agentic_per_step_top_k not in range(1, 13):
+                raise ValueError("Agentic retrieval per-step Top-K must be in [1, 12]")
+            if self.experiment_r_agentic_max_observed < self.experiment_r_top_k:
+                raise ValueError("Agentic retrieval observation budget is too small")
         if end2end_memory_system is None and ext_cfg is not None:
             end2end_memory_system = getattr(
                 ext_cfg, "end2end_memory_system", ""
@@ -2408,12 +2514,20 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         return {"sop": 1.0 - tree_weight, "tree": tree_weight}, confidence, None
 
     def _rank_tree_rows(
-        self, *, stage: str, query_text: str, task_id: str, task_desc: str, limit: int
+        self,
+        *,
+        stage: str,
+        query_text: str,
+        task_id: str,
+        task_desc: str,
+        limit: int,
+        allowed_node_ids: set[str] | None = None,
     ) -> list[dict[str, Any]]:
         candidates = [
             node_id
             for node_id in self._run_nodes
             if self._successful_run_node(node_id)
+            and (allowed_node_ids is None or node_id in allowed_node_ids)
         ]
         stage_bonus = {
             "draft": {"draft": 0.08},
@@ -2819,6 +2933,19 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         stage = STAGE_ALIASES.get(stage, stage)
         if stage not in STAGE_QUOTAS:
             raise ValueError(f"Unsupported stage-hybrid stage: {stage}")
+        if self.experiment_r_enabled:
+            from agents.memory.experiment_r_router import build_experiment_r_pack
+
+            return build_experiment_r_pack(
+                self,
+                stage=stage,
+                task_id=task_id,
+                task_desc=task_desc,
+                query_text=query_text,
+                visibility_request=visibility_request,
+                authority_operation=authority_operation,
+                active_protocol=active_protocol,
+            )
         visibility_pack = self._prepare_visibility(
             stage=stage,
             task_id=task_id,
@@ -3206,6 +3333,10 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         trace["consumer_disposition"] = copy.deepcopy(disposition)
 
     def _format_hybrid_pack(self, pack: dict[str, Any]) -> str:
+        if pack.get("schema") == "experiment_r_memory_pack_v1":
+            from agents.memory.experiment_r_router import format_experiment_r_pack
+
+            return format_experiment_r_pack(self, pack)
         lines = [
             "## Stage-Aware Hybrid Run-Forest Memory",
             "Candidates are suggestions. Verified execution evidence and risk warnings are separate.",
@@ -3653,7 +3784,23 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 task_desc=task_desc,
                 query_parts=query_parts,
             )
+        query_text = "\n".join([task_desc or "", *(query_parts or [])])
         if self.retrieval_control == "no_memory":
+            if self.experiment_r_enabled:
+                from agents.memory.experiment_r_router import build_no_memory_pack
+
+                self._trace_local.visibility_pack = None
+                self._trace_local.pack = build_no_memory_pack(
+                    self,
+                    stage=STAGE_ALIASES.get(stage, stage),
+                    task_id=str(task_id),
+                    task_desc=str(task_desc or ""),
+                    query_text=query_text,
+                    visibility_request=visibility_request,
+                    authority_operation=authority_operation,
+                    active_protocol=active_protocol,
+                )
+                return "", []
             self._trace_local.visibility_pack = None
             self._trace_local.pack = {
                 "schema": "stage_hybrid_no_memory_pack_v1",
@@ -3676,7 +3823,6 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             return "", []
         if not self.stage_enabled(stage):
             return "", []
-        query_text = "\n".join([task_desc or "", *(query_parts or [])])
         if draft_role in {"coldstart_baseline", "memory_reproduction"}:
             return "", []
         if self.retrieval_control == "layered_strategy" and stage == "draft":
@@ -3748,16 +3894,21 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             authority_operation=authority_operation,
             active_protocol=active_protocol,
         )
+        if pack.get("schema") == "experiment_r_memory_pack_v1":
+            pack["draft_role"] = str(draft_role or "")
         self._mark_empty_visibility_abstention(pack)
         self._last_agentic_pack = pack
         self._trace_local.pack = pack
         if self.prospective_audit_logger is not None:
             self.prospective_audit_logger.record_run_candidates(pack, self.nodes)
-        refs = [item["id"] for item in pack["fused_execution_candidates"][: self.top_k]]
-        refs += [item["id"] for item in pack["selected_sop_gateways"]]
-        refs += [item["id"] for item in pack["sop_only_candidates"]]
-        refs += pack["evidence_refs"] + pack["failure_patterns"]
         text = self._format_hybrid_pack(pack)
+        if pack.get("schema") == "experiment_r_memory_pack_v1":
+            refs = list(pack.get("final_prompt_candidate_ids") or [])
+        else:
+            refs = [item["id"] for item in pack["fused_execution_candidates"][: self.top_k]]
+            refs += [item["id"] for item in pack["selected_sop_gateways"]]
+            refs += [item["id"] for item in pack["sop_only_candidates"]]
+            refs += pack["evidence_refs"] + pack["failure_patterns"]
         if self.max_chars > 0 and len(text) > self.max_chars:
             text = text[: self.max_chars].rstrip() + "\n... (stage-hybrid memory truncated)"
         return text, self._prompt_visible_refs(text, refs)

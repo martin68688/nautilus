@@ -344,36 +344,40 @@ def test_all_frozen_manifests_have_valid_self_hashes() -> None:
         assert payload[field] == _hash(payload, field), path
 
 
-def test_pilot_is_exact_cartesian_product_and_smoke_is_all_systems() -> None:
+def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     pilot = _read(MANIFESTS / "pilot_manifest.json")
     smoke = _read(MANIFESTS / "smoke_manifest.json")
+    feasibility = _read(MANIFESTS / "feasibility_smoke_manifest.json")
     systems = pilot["system_ids"]
     tasks = pilot["task_ids"]
     assert len(systems) == 10 and len(set(systems)) == 10
     assert len(tasks) == 4 and len(set(tasks)) == 4
     assert pilot["run_count"] == 40
     assert smoke["run_count"] == 10
-    assert smoke["task_ids"] == ["leaf-classification"]
+    assert smoke["task_ids"] == ["aerial-cactus-identification"]
+    assert feasibility["run_count"] == 1
+    assert feasibility["task_ids"] == ["aerial-cactus-identification"]
+    assert feasibility["system_ids"] == ["dynamic_hybrid"]
     assert smoke["formal_result_eligible"] is False
     assert pilot["formal_result_eligible"] is True
     assert smoke["release_id"] == pilot["release_id"] == (
-        "end2end-agent-temp05-v1"
+        "end2end-agentic-three-role-v2"
     )
     assert smoke["comparison_baseline_release_id"] == (
         pilot["comparison_baseline_release_id"]
     )
     assert smoke["comparison_baseline_release_id"] == "end2end-agent-v3"
     assert [row["system_id"] for row in smoke["runs"]] == [
-        "sop_only",
-        "flat_retrieval",
         "no_memory",
-        "gome_style_port",
-        "static_hybrid",
-        "dynamic_hybrid",
-        "reversed_router",
         "rcr_router_style_port",
-        "runforest_only",
+        "reversed_router",
         "macla_style_port",
+        "gome_style_port",
+        "sop_only",
+        "dynamic_hybrid",
+        "runforest_only",
+        "static_hybrid",
+        "flat_retrieval",
     ]
     assert {
         (row["task_id"], row["system_id"], row["seed"])
@@ -404,17 +408,29 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
         cfg.goal = "config validation"
         cfg.desc_file = None
         merged = OmegaConf.merge(OmegaConf.structured(Config), cfg)
-        assert merged.external_skill_memory.end2end_memory_system == row["system_id"]
+        if row["system_id"] == "dynamic_hybrid":
+            assert merged.external_skill_memory.end2end_memory_system == ""
+            assert merged.external_skill_memory.retrieval_control == "dynamic_hybrid"
+            assert merged.external_skill_memory.experiment_r_enabled is True
+            assert merged.external_skill_memory.experiment_r_agentic_retrieval_enabled is True
+            assert merged.external_skill_memory.experiment_r_memory_transfer_static_gate is True
+            assert merged.external_skill_memory.experiment_r_memory_transfer_runtime_gate is True
+            assert merged.agent.draft_role_policy.enabled is True
+            assert list(merged.agent.draft_role_policy.roles) == [
+                "coldstart_baseline", "memory_transfer", "novel_exploration"
+            ]
+        else:
+            assert merged.external_skill_memory.end2end_memory_system == row["system_id"]
+            assert merged.agent.draft_role_policy.enabled is False
         assert merged.external_skill_memory.top_k == 6
         assert merged.external_skill_memory.end2end_prompt_token_budget == 1536
         assert merged.external_skill_memory.end2end_candidate_pool_limit == 12
         assert merged.external_skill_memory.enable is True
         assert merged.agent.search.num_gpus == 1
         assert merged.agent.search.parallel_search_num == 1
-        assert merged.agent.code.temp == 0.5
-        assert merged.agent.feedback.temp == 0.5
+        assert merged.agent.code.temp == 1.0
+        assert merged.agent.feedback.temp == 1.0
         assert merged.agent.use_global_memory is False
-        assert merged.agent.draft_role_policy.enabled is False
         assert merged.evaluation_authority.mode == "enforce"
         assert merged.evaluation_authority.require_bound_bundle is True
         assert merged.adoption_verifier.enabled is True
@@ -448,8 +464,9 @@ def test_source_lock_covers_and_matches_runtime_files() -> None:
 
 
 def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
-    jobs = sorted((ROOT / "jobs").glob("*.yaml"))
-    assert len(jobs) == 5
+    packet = _read(MANIFESTS / "launch_packet.json")
+    jobs = [ROOT / "jobs" / name for name in packet["jobs"]]
+    assert len(jobs) == 6
     for path in jobs:
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
         assert job["kind"] == "Job"
@@ -458,7 +475,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
         assert labels["experiment"] == (
-            "experiment-end2end-memory-agent-temp05-v1"
+            "experiment-end2end-memory-agent-v2"
         )
         assert job["metadata"]["annotations"]["mlevolve.ai/generated-not-submitted"] == "true"
         assert job["metadata"]["annotations"]["mlevolve.ai/gpu-contract"] == (
@@ -469,10 +486,10 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert spec["backoffLimitPerIndex"] == 0
         assert spec["parallelism"] == 1
         if path.name.startswith("smoke-"):
-            assert spec["activeDeadlineSeconds"] == 36000
+            assert spec["activeDeadlineSeconds"] == 5400 * spec["completions"]
             assert job["metadata"]["annotations"][
                 "mlevolve.ai/per-index-deadline-seconds"
-            ] == "3600"
+            ] == "5400"
         else:
             assert spec["activeDeadlineSeconds"] == 252000
             assert job["metadata"]["annotations"][
@@ -502,12 +519,12 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-            "/workspace/nautilus-exp-end2end-temp05-v1/mlevolve"
+            "/workspace/nautilus-exp-end2end-agent-v3/mlevolve"
         )
         if path.name.startswith("pilot-"):
             assert "--smoke-gate" in container["args"]
             assert (
-                "/workspace/experiment-end2end-agent-runs-temp05-v1/SMOKE_GATE.json"
+                "/workspace/experiment-end2end-memory-agent-v2/runs/SMOKE_GATE.json"
                 in container["args"]
             )
         else:
@@ -535,7 +552,7 @@ def test_launch_packet_records_programmatic_smoke_gate() -> None:
     assert packet["pilot_requires_passing_smoke_gate"] is True
     assert (
         packet["smoke_gate_output"]
-        == "/workspace/experiment-end2end-agent-runs-temp05-v1/SMOKE_GATE.json"
+        == "/workspace/experiment-end2end-memory-agent-v2/runs/SMOKE_GATE.json"
     )
 
 
@@ -883,12 +900,12 @@ def test_budget_couples_gpu_search_and_cpu_controls() -> None:
         "token_counter": "whitespace_split_v1",
         "top_k": 6,
         "visibility_token_budget": 4096,
-    }
+        }
     assert budget["solver_sampling"] == {
-        "comparison_axis": "generation_temperature",
+        "comparison_axis": "memory_system",
         "baseline_release_id": "end2end-agent-v3",
-        "code_temperature": 0.5,
-        "feedback_temperature": 0.5,
+        "code_temperature": 1.0,
+        "feedback_temperature": 1.0,
         "adoption_verifier_temperature": 0.0,
         "all_other_frozen_axes_unchanged": True,
     }

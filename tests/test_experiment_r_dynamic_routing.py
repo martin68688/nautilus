@@ -1,0 +1,617 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "mlevolve"))
+
+from agents.memory.experiment_r_router import (
+    _prompt_marker_visible,
+    _truncate_prompt,
+    count_prompt_tokens,
+)
+from agents.adoption import log_adoption
+from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+from authority.adapters.mlevolve.runtime import MLEvolveAuthorityAdapter
+from authority.ledger import AuthorityLedger
+from authority.models import ProtocolRef, ProtocolSpec
+from authority.protocol_execution_contract import ProtocolExecutionContract
+from config import _load_cfg
+from protocol_runtime.collector import (
+    HostCollectorIdentity,
+    verify_host_canonical_signature,
+)
+from experiments.dynamic_memory_routing_injection_20260731.design import (
+    HELDOUT_RUN_IDS,
+    MAX_INJECTED_ITEMS,
+    MEMORY_PROMPT_TOKEN_BUDGET,
+    ONLINE_SYSTEMS,
+    RAW_CANDIDATES_PER_SOURCE,
+    validate_design,
+)
+from tests.test_stage_aware_hybrid_memory import _write_fixture
+
+
+CONFIG = (
+    ROOT / "mlevolve" / "config" / "config_experiment_r_dynamic_memory_routing.yaml"
+)
+
+
+def _host_contract(tmp_path: Path, identity: HostCollectorIdentity):
+    protocol_ref = ProtocolRef(
+        protocol_id="experiment-r-test",
+        version="1",
+        canonical_hash="e" * 64,
+    )
+    contract = ProtocolExecutionContract.create(
+        protocol_ref=protocol_ref,
+        task_id="leaf-classification",
+        task_family="image",
+        split_strategy="deterministic_random",
+        train_view_ref="view://leaf/train",
+        validation_view_ref="view://leaf/validation",
+        terminal_view_ref="evaluator-only://leaf/terminal",
+        required_runtime_events=(),
+        required_receipts=(),
+        required_payloads={},
+        allowed_import_roots=(),
+        execution_budget={"timeout_seconds": 60},
+        evaluator_spec={},
+        collector_spec=identity.collector_spec(),
+        adapter_spec={},
+    )
+    contract_path = tmp_path / "PROTOCOL_EXECUTION_CONTRACT.json"
+    contract_path.write_text(
+        contract.canonical_json() + "\n",
+        encoding="utf-8",
+    )
+    protocol_spec = ProtocolSpec(
+        protocol_id=protocol_ref.protocol_id,
+        version=protocol_ref.version,
+        canonical_hash=protocol_ref.canonical_hash,
+    )
+    return protocol_spec, contract, contract_path
+
+
+def _collector_adapter(
+    *,
+    protocol_spec: ProtocolSpec,
+    contract: ProtocolExecutionContract,
+    contract_path: Path,
+    key_path: Path,
+):
+    return SimpleNamespace(
+        cfg=SimpleNamespace(
+            exp_id="leaf-classification",
+            agent=SimpleNamespace(
+                protocol_preflight=SimpleNamespace(
+                    contract_path=str(contract_path),
+                    expected_contract_hash=contract.contract_hash,
+                    collector_private_key_path=str(key_path),
+                )
+            ),
+        ),
+        active_protocol_spec=protocol_spec,
+        active_protocol=protocol_spec.ref(),
+        task_id="leaf-classification",
+    )
+
+
+def _layer(tmp_path: Path, control: str, *, excluded_run_ids=None):
+    graph, index = _write_fixture(tmp_path)
+    return StageAwareHybridMemoryLayer(
+        graph_path=str(graph),
+        index_path=str(index),
+        source_name="run_forest_stage_hybrid_memory",
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        enable_agentic=False,
+        top_k=MAX_INJECTED_ITEMS,
+        max_chars=0,
+        retrieval_control=control,
+        visibility_mode="shadow",
+        excluded_run_ids=excluded_run_ids or [],
+        experiment_r_enabled=True,
+        experiment_r_candidate_limit=RAW_CANDIDATES_PER_SOURCE,
+        experiment_r_top_k=MAX_INJECTED_ITEMS,
+        experiment_r_prompt_token_budget=MEMORY_PROMPT_TOKEN_BUDGET,
+        experiment_r_memory_pool_sha256="a" * 64,
+    )
+
+
+def _retrieve(layer, stage="draft", query="transformer validation ensemble"):
+    text, refs = layer.retrieve_for_node(
+        stage=stage,
+        task_id="task",
+        task_desc="text classification",
+        query_parts=[query],
+        draft_role="memory_transfer",
+    )
+    return text, refs, layer.current_navigation_pack()
+
+
+def test_frozen_design_and_config_are_structurally_valid():
+    validate_design()
+    cfg = _load_cfg(CONFIG, use_cli_args=False)
+    ext = cfg.external_skill_memory
+    assert ext.experiment_r_enabled is True
+    assert ext.retrieval_control == "dynamic_hybrid"
+    assert ext.top_k == MAX_INJECTED_ITEMS == ext.experiment_r_top_k
+    assert ext.experiment_r_candidate_limit == RAW_CANDIDATES_PER_SOURCE
+    assert ext.experiment_r_prompt_token_budget == MEMORY_PROMPT_TOKEN_BUDGET
+    assert tuple(ext.excluded_run_ids) == HELDOUT_RUN_IDS
+    assert cfg.evaluation_authority.mode == "enforce"
+    assert cfg.methodology_dynamic is False
+    assert cfg.methodology_kb_path == ""
+
+
+def test_host_candidate_pool_attestation_signature_is_fail_closed():
+    identity = HostCollectorIdentity.generate()
+    payload = {
+        "schema": "mlevolve_experiment_r_host_candidate_pool_attestation_v1",
+        "candidate_pool_hash": "a" * 64,
+        "final_prompt_candidate_ids": ["sop::1", "run::1"],
+    }
+    signature = identity.sign_canonical_payload(payload)
+    verify_host_canonical_signature(
+        payload,
+        signature_ed25519=signature,
+        public_key_ed25519=identity.public_key_ed25519,
+    )
+    with pytest.raises(ValueError, match="signature mismatch"):
+        verify_host_canonical_signature(
+            {**payload, "candidate_pool_hash": "b" * 64},
+            signature_ed25519=signature,
+            public_key_ed25519=identity.public_key_ed25519,
+        )
+
+
+def test_enforce_runtime_writes_signed_candidate_pool_attestation(
+    tmp_path, monkeypatch
+):
+    identity = HostCollectorIdentity.generate()
+    key_path = identity.write_private_key_file(tmp_path / "collector.ed25519")
+    monkeypatch.setenv("MLEVOLVE_HOST_COLLECTOR_KEY_FILE", str(key_path))
+    pool_identity = {
+        "stage": "improve",
+        "task_id": "leaf-classification",
+        "memory_pool_sha256": "a" * 64,
+        "sop_ids": ["sop::1"],
+        "runforest_ids": ["run::1"],
+    }
+    import hashlib
+    import json
+
+    pool_hash = hashlib.sha256(
+        json.dumps(
+            pool_identity,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode()
+    ).hexdigest()
+    trace = {
+        "stage_route": {"stage": "improve"},
+        "memory_pool_sha256": "a" * 64,
+        "memory_snapshot_sha256": "b" * 64,
+        "candidate_pool_hash": pool_hash,
+        "candidate_pool_identity": pool_identity,
+        "final_prompt_candidate_ids": ["sop::1", "run::1"],
+        "visible_clause_ids": ["clause::1"],
+        "budget_contract": {
+            "max_injected_items": 6,
+            "memory_prompt_token_budget": 1536,
+        },
+        "production_binding_sha256": "c" * 64,
+        "current_file_sha256": "d" * 64,
+    }
+    adapter = SimpleNamespace(
+        cfg=SimpleNamespace(
+            external_skill_memory=SimpleNamespace(experiment_r_enabled=True)
+        ),
+        mode="enforce",
+        task_id="leaf-classification",
+        run_id="run::1",
+        active_protocol=SimpleNamespace(key=lambda: "protocol@1#" + "e" * 64),
+        active_protocol_spec=ProtocolSpec(
+            protocol_id="experiment-r-test",
+            version="1",
+            canonical_hash="e" * 64,
+        ),
+        ledger=AuthorityLedger(tmp_path / "authority_events.jsonl"),
+        _experiment_r_collector_identity=identity,
+        _experiment_r_collector_public_key=identity.public_key_ed25519,
+    )
+    # The enforced Executor consumes this file before Candidate execution. The
+    # Host Authority adapter must retain its separately pinned in-memory copy.
+    key_path.unlink()
+    node = SimpleNamespace(id="node::1", memory_routing_trace=trace)
+    result = MLEvolveAuthorityAdapter.attest_experiment_r_candidate_pool(adapter, node)
+    assert result["attestation_id"].startswith("candidate-pool::")
+    assert trace["host_candidate_pool_attestation_ref"] == result["attestation_id"]
+    events = adapter.ledger.read()
+    assert events[-1]["event_type"] == "experiment_r_candidate_pool_attested"
+    payload = events[-1]["payload"]
+    verify_host_canonical_signature(
+        payload["attestation"],
+        signature_ed25519=payload["signature_ed25519"],
+        public_key_ed25519=identity.public_key_ed25519,
+    )
+
+
+def test_experiment_r_collector_identity_is_pinned_before_key_consumption(
+    tmp_path,
+):
+    identity = HostCollectorIdentity.generate()
+    key_path = identity.write_private_key_file(tmp_path / "collector.ed25519")
+    protocol_spec, contract, contract_path = _host_contract(tmp_path, identity)
+    adapter = _collector_adapter(
+        protocol_spec=protocol_spec,
+        contract=contract,
+        contract_path=contract_path,
+        key_path=key_path,
+    )
+    pinned = MLEvolveAuthorityAdapter._load_experiment_r_collector_identity(adapter)
+    key_path.unlink()
+    assert pinned.public_key_ed25519 == identity.public_key_ed25519
+    assert pinned.sign_canonical_payload({"after": "consumption"})
+
+
+def test_experiment_r_collector_identity_binding_mismatches_fail_closed(tmp_path):
+    identity = HostCollectorIdentity.generate()
+    key_path = identity.write_private_key_file(tmp_path / "collector.ed25519")
+    protocol_spec, contract, contract_path = _host_contract(tmp_path, identity)
+
+    hash_mismatch = _collector_adapter(
+        protocol_spec=protocol_spec,
+        contract=contract,
+        contract_path=contract_path,
+        key_path=key_path,
+    )
+    hash_mismatch.cfg.agent.protocol_preflight.expected_contract_hash = "0" * 64
+    with pytest.raises(ValueError, match="contract hash mismatch"):
+        MLEvolveAuthorityAdapter._load_experiment_r_collector_identity(hash_mismatch)
+
+    protocol_mismatch = _collector_adapter(
+        protocol_spec=protocol_spec,
+        contract=contract,
+        contract_path=contract_path,
+        key_path=key_path,
+    )
+    protocol_mismatch.active_protocol = ProtocolRef(
+        protocol_id="foreign-protocol",
+        version="1",
+        canonical_hash="f" * 64,
+    )
+    with pytest.raises(ValueError, match="contract is not active"):
+        MLEvolveAuthorityAdapter._load_experiment_r_collector_identity(
+            protocol_mismatch
+        )
+
+    task_mismatch = _collector_adapter(
+        protocol_spec=protocol_spec,
+        contract=contract,
+        contract_path=contract_path,
+        key_path=key_path,
+    )
+    task_mismatch.task_id = "spooky-author-identification"
+    with pytest.raises(ValueError, match="contract task mismatch"):
+        MLEvolveAuthorityAdapter._load_experiment_r_collector_identity(task_mismatch)
+
+    unbound_identity = HostCollectorIdentity.generate()
+    unbound_key_path = unbound_identity.write_private_key_file(
+        tmp_path / "unbound-collector.ed25519"
+    )
+    key_mismatch = _collector_adapter(
+        protocol_spec=protocol_spec,
+        contract=contract,
+        contract_path=contract_path,
+        key_path=unbound_key_path,
+    )
+    with pytest.raises(ValueError, match="key is not Protocol-bound"):
+        MLEvolveAuthorityAdapter._load_experiment_r_collector_identity(key_mismatch)
+
+
+def test_all_memory_arms_share_one_candidate_pool_and_budget(tmp_path):
+    hashes = set()
+    identities = set()
+    for control in ONLINE_SYSTEMS:
+        layer = _layer(tmp_path / control, control)
+        text, refs, pack = _retrieve(layer)
+        assert pack["schema"] == "experiment_r_memory_pack_v1"
+        assert pack["budget_contract"]["max_injected_items"] == MAX_INJECTED_ITEMS
+        assert (
+            pack["budget_contract"]["memory_prompt_token_budget"]
+            == MEMORY_PROMPT_TOKEN_BUDGET
+        )
+        assert len(refs) <= MAX_INJECTED_ITEMS
+        assert count_prompt_tokens(text) <= MEMORY_PROMPT_TOKEN_BUDGET
+        assert pack["safety_gate"]["unsafe_candidate_escape_count"] == 0
+        if control == "no_memory":
+            assert text == "" and refs == []
+            assert pack["memory_snapshot_bound_but_not_exposed"] is True
+        hashes.add(pack["candidate_pool_hash"])
+        assert pack["final_prompt_candidate_ids"] == refs
+        assert set(refs) == {row["id"] for row in pack["selected_items"]}
+        identity = pack["candidate_pool"]["pool_identity"]
+        identities.add((tuple(identity["sop_ids"]), tuple(identity["runforest_ids"])))
+    assert len(hashes) == 1
+    assert len(identities) == 1
+
+
+def test_paired_route_uses_hash_bound_qualification_pool_not_live_query(
+    tmp_path, monkeypatch
+):
+    source = _layer(tmp_path / "source", "dynamic_hybrid")
+    _text, _refs, source_pack = _retrieve(
+        source, query="qualification query that selected the frozen universe"
+    )
+    source_pool = source_pack["candidate_pool"]
+    artifact = tmp_path / "candidate_pool.json"
+    artifact.write_text(
+        json.dumps(
+            {
+                "candidate_pool_hash": source_pool["candidate_pool_hash"],
+                "candidate_pool_identity": source_pool["pool_identity"],
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    artifact_sha256 = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    monkeypatch.setenv("EXPERIMENT_R_QUALIFICATION_CANDIDATE_POOL", str(artifact))
+    monkeypatch.setenv(
+        "EXPERIMENT_R_QUALIFICATION_CANDIDATE_POOL_SHA256", artifact_sha256
+    )
+    monkeypatch.setenv(
+        "EXPERIMENT_R_QUALIFICATION_CANDIDATE_POOL_HASH",
+        source_pool["candidate_pool_hash"],
+    )
+    monkeypatch.setenv("EXPERIMENT_R_QUALIFICATION_CHECKPOINT_ID", "checkpoint::frozen")
+
+    paired = _layer(tmp_path / "paired", "reversed_router")
+    _text, _refs, paired_pack = _retrieve(
+        paired, query="a deliberately different online LLM-cleaned query"
+    )
+    assert paired_pack["candidate_pool_hash"] == source_pool["candidate_pool_hash"]
+    assert (
+        paired_pack["candidate_pool"]["pool_identity"] == source_pool["pool_identity"]
+    )
+    assert paired_pack["candidate_pool_source"] == "qualification_checkpoint_artifact"
+    assert paired_pack["qualification_checkpoint_id"] == "checkpoint::frozen"
+    assert (
+        paired_pack["qualification_candidate_pool_artifact_sha256"] == artifact_sha256
+    )
+    assert paired_pack["ranking_contract"] == "qualification_frozen_source_rank_v1"
+    assert paired_pack["live_query_used_for_candidate_pool"] is False
+
+
+def test_paired_route_rejects_substituted_qualification_pool(tmp_path, monkeypatch):
+    source = _layer(tmp_path / "source", "dynamic_hybrid")
+    _text, _refs, source_pack = _retrieve(source)
+    source_pool = source_pack["candidate_pool"]
+    artifact = tmp_path / "candidate_pool.json"
+    artifact.write_text(
+        json.dumps(
+            {
+                "candidate_pool_hash": source_pool["candidate_pool_hash"],
+                "candidate_pool_identity": source_pool["pool_identity"],
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("EXPERIMENT_R_QUALIFICATION_CANDIDATE_POOL", str(artifact))
+    monkeypatch.setenv("EXPERIMENT_R_QUALIFICATION_CANDIDATE_POOL_SHA256", "0" * 64)
+    monkeypatch.setenv(
+        "EXPERIMENT_R_QUALIFICATION_CANDIDATE_POOL_HASH",
+        source_pool["candidate_pool_hash"],
+    )
+    monkeypatch.setenv("EXPERIMENT_R_QUALIFICATION_CHECKPOINT_ID", "checkpoint::frozen")
+    paired = _layer(tmp_path / "paired", "dynamic_hybrid")
+    with pytest.raises(ValueError, match="artifact SHA-256 mismatch"):
+        _retrieve(paired, query="different query")
+
+
+def test_no_memory_persists_a_bound_zero_exposure_routing_trace(tmp_path):
+    layer = _layer(tmp_path, "no_memory")
+    text, refs, pack = _retrieve(layer)
+    assert text == "" and refs == []
+    node = SimpleNamespace(
+        adoption_log=[],
+        memory_navigation_trace=[],
+        memory_routing_trace={},
+    )
+    agent = SimpleNamespace(
+        external_skill_memory=layer,
+        cfg=SimpleNamespace(
+            run_identity=SimpleNamespace(
+                memory_bundle_binding_sha256="b" * 64,
+                memory_current_sha256="c" * 64,
+            )
+        ),
+    )
+
+    log_adoption(
+        node,
+        agent,
+        "run_forest_stage_hybrid_memory",
+        refs,
+        "draft",
+    )
+
+    trace = node.memory_routing_trace
+    assert trace["memory_pack_schema"] == "experiment_r_memory_pack_v1"
+    assert trace["stage_route"]["control"] == "no_memory"
+    assert trace["memory_pool_sha256"] == "a" * 64
+    assert trace["memory_snapshot_bound_but_not_exposed"] is True
+    assert trace["final_prompt_candidate_ids"] == []
+    assert trace["production_binding_sha256"] == "b" * 64
+    assert node.adoption_log == []
+
+
+def test_prompt_truncation_counts_the_marker_inside_the_budget():
+    text, count, truncated = _truncate_prompt(
+        " ".join(f"token-{i}" for i in range(20)), 5
+    )
+    assert truncated is True
+    assert count == count_prompt_tokens(text) == 5
+
+
+def test_prompt_visibility_requires_an_exact_item_marker():
+    row = {"source": "runforest", "id": "node::abc"}
+    assert _prompt_marker_visible("- [RunForest] node::abc type=RunNode", row)
+    assert not _prompt_marker_visible("Evidence mentions node::abc incidentally.", row)
+
+
+def test_dynamic_and_reversed_router_change_only_source_allocation(tmp_path):
+    observed = {}
+    for control in ("dynamic_hybrid", "static_hybrid", "reversed_router"):
+        layer = _layer(tmp_path / control, control)
+        _text, _refs, pack = _retrieve(layer, stage="draft")
+        observed[control] = pack
+    pool_hashes = {pack["candidate_pool_hash"] for pack in observed.values()}
+    assert len(pool_hashes) == 1
+    assert observed["dynamic_hybrid"]["stage_route"]["requested_slots"] == {
+        "sop": 4,
+        "runforest": 2,
+    }
+    assert observed["static_hybrid"]["stage_route"]["requested_slots"] == {
+        "sop": 3,
+        "runforest": 3,
+    }
+    assert observed["reversed_router"]["stage_route"]["requested_slots"] == {
+        "sop": 2,
+        "runforest": 4,
+    }
+
+
+def test_debug_dynamic_falls_back_when_causal_transition_confidence_is_low(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    _text, _refs, pack = _retrieve(
+        layer,
+        stage="debug",
+        query="an unclassified failure without a known mechanism",
+    )
+    assert (
+        pack["stage_route"]["fallback_reason"] == "insufficient_causal_tree_confidence"
+    )
+    assert pack["stage_route"]["requested_slots"] == {
+        "sop": 2,
+        "runforest": 4,
+    }
+
+
+def test_heldout_run_is_removed_from_both_sop_support_and_runforest(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid", excluded_run_ids=["clean_run"])
+    _text, refs, pack = _retrieve(layer)
+    assert "n0" not in refs and "n1" not in refs and "t1" not in refs
+    pool = pack["candidate_pool"]
+    assert not pool["pool_identity"]["runforest_ids"]
+    assert not pool["pool_identity"]["sop_ids"]
+
+
+def test_agentic_router_searches_same_task_best_first_without_role_policy(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer.experiment_r_agentic_max_steps = 2
+    actions = iter(
+        [
+            {
+                "action": "search_runforest",
+                "reason": "look for another same-task improvement",
+                "query": "task best validation improvement",
+                "top_k": 4,
+            },
+            {
+                "action": "finish",
+                "reason": "enough clean same-task evidence",
+                "selected_ids": ["n1", "s1"],
+            },
+        ]
+    )
+    layer._experiment_r_agentic_query_fn = lambda **_kwargs: next(actions)
+
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="task",
+        task_desc="text classification",
+        query_parts=["build the best reliable model"],
+        draft_role=None,
+    )
+    pack = layer.current_navigation_pack()
+    agent = pack["retrieval_agent"]
+    assert text and refs
+    assert pack["candidate_pool_source"] == "live_agentic_retrieval"
+    assert agent["fallback_used"] is False
+    assert agent["trace"][0]["action"] == "search_same_task_best"
+    same_task_ids = agent["trace"][0]["observation"]["candidate_ids"]
+    # The fixture has no trustworthy metric direction, so positive
+    # metric_improvement is the fail-closed best-history signal. This proves
+    # the mandatory first pass is not ordinary prompt-text similarity.
+    assert same_task_ids[:3] == ["n1", "t1", "n0"]
+    assert agent["same_task_best_first"] == {
+        "enforced": True,
+        "independent_of_draft_role_policy": True,
+        "target_task_id": "task",
+        "eligible_history_found": True,
+        "observed_candidate_ids": same_task_ids,
+        "best_runforest_id": "n1",
+        "best_sop_id": "s1",
+        "ranking_contract": "same_task_best_history_v2",
+    }
+    assert agent["agent_selected_ids"] == ["n1", "s1"]
+    assert pack["candidate_pool"]["pool_identity"][
+        "retrieval_agent_trace_sha256"
+    ] == agent["trace_sha256"]
+
+
+def test_same_task_best_history_respects_minimize_metric_direction(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.nodes["n0"]["metric"] = 0.42
+    layer.nodes["n0"]["maximize"] = False
+    layer.nodes["n1"]["metric"] = 0.31
+    layer.nodes["n1"]["maximize"] = False
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer.experiment_r_agentic_max_steps = 1
+    layer._experiment_r_agentic_query_fn = lambda **_kwargs: {
+        "action": "finish",
+        "reason": "best direction-aware history observed",
+        "selected_ids": ["n1"],
+    }
+
+    layer.retrieve_for_node(
+        stage="draft",
+        task_id="task",
+        task_desc="text classification with log loss",
+        query_parts=["build a reliable model"],
+        draft_role=None,
+    )
+    agent = layer.current_navigation_pack()["retrieval_agent"]
+    assert agent["same_task_best_first"]["best_runforest_id"] == "n1"
+    first_rows = agent["trace"][0]["observation"]["candidates"]
+    assert [row["id"] for row in first_rows[:2]] == ["n1", "n0"]
+
+
+def test_agentic_router_invalid_id_falls_back_and_retains_failure(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer.experiment_r_agentic_max_steps = 1
+    layer._experiment_r_agentic_query_fn = lambda **_kwargs: {
+        "action": "finish",
+        "reason": "malformed attempt",
+        "selected_ids": ["invented::candidate"],
+    }
+    _text, _refs, pack = _retrieve(layer)
+    assert pack["candidate_pool_source"] == "live_retrieval_deterministic_fallback"
+    assert pack["ranking_contract"] == "agentic_invalid_deterministic_fallback_v1"
+    assert pack["retrieval_agent"]["fallback_used"] is True
+    assert "unobserved candidate" in pack["retrieval_agent"]["fallback_reason"]

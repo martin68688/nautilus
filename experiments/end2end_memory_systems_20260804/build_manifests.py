@@ -16,7 +16,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-temp05-v1")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v3")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
 MANIFESTS = ROOT / "manifests"
 SYSTEM_DIR = ROOT / "systems"
@@ -25,12 +25,12 @@ SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-agent-temp05-v1"
+RELEASE_ID = "end2end-agentic-three-role-v2"
 BASELINE_RELEASE_ID = "end2end-agent-v3"
 RANDOMIZATION_RELEASE_ID = BASELINE_RELEASE_ID
-OUTPUT_ROOT = "/workspace/experiment-end2end-agent-runs-temp05-v1"
-EXPERIMENT_LABEL = "experiment-end2end-memory-agent-temp05-v1"
-SOLVER_TEMPERATURE = 0.5
+OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v2/runs"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v2"
+SOLVER_TEMPERATURE = 1.0
 SYSTEMS = (
     ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
     ("S1", "flat_retrieval", "internal", "Mixed global relevance Top-6"),
@@ -51,13 +51,13 @@ TASKS = (
 )
 MEMORY = {
     "aerial-cactus-identification": {
-        "bundle_id": "experiment-r-aerial-image-task-heldout-v2",
-        "bundle_root": "/workspace/experiment-r-dev-r1/memory/authority-r3/aerial-cactus-identification",
-        "bundle_version": "v2",
-        "bundle_manifest_sha256": "e997b016052d434791ee16c95f537ccaff28fa433340a3d6473e4dea1d56649b",
-        "graph_sha256": "896ecf8bdd27c274f007058fcf364f75246ff8777c21d89dae6fb9594549fba8",
-        "index_sha256": "48b207e54185c06826645b79424e5d1ab451e8459ff1244872fec0f461deff13",
-        "current_file_sha256": "ef9dea34870582fae850a213123e0104758f3fd6f18edf4a1380fc4eee8b1a69",
+        "bundle_id": "end2end-aerial-image-same-domain-seed-heldout-v1",
+        "bundle_root": "/workspace/experiment-end2end-memory-agent-v2/smoke-memory-v2/aerial-cactus-identification",
+        "bundle_version": "v1",
+        "bundle_manifest_sha256": "43f6eb01e913983a6320842f535a81c7b8e6b3e818876f311c2b1539820fd987",
+        "graph_sha256": "d20a1e63ac04222d53cc1bfb473aa004805ea5d541349cd7df852a53393ebdba",
+        "index_sha256": "01f0d6ed593800bd3643dde4ee1c8961c1fdf5ed0798297fa88d23dd65f640a6",
+        "current_file_sha256": "8bf5fa1b97a22aeeb5d5e2c5e247e1ae63b4139ef63f027b94043fd6f195b2be",
         "protocol_ref": "stratified-roc-auc-classification@1#799541fb3a05e1759d76887ae970f061573393a380b185cdfb60ef6f2172a9b1",
     },
     "leaf-classification": {
@@ -157,9 +157,9 @@ methodology_dynamic: false
 agent:
   use_global_memory: false
   code:
-    temp: 0.5
+    temp: 1.0
   feedback:
-    temp: 0.5
+    temp: 1.0
   search:
     num_gpus: 1
     parallel_search_num: 1
@@ -231,12 +231,47 @@ run_identity:
   baseline_reference_group: experiment_end2end_no_memory_v1
   memory_enabled: true
   memory_system: ""
-  memory_version: experiment_r_task_heldout_production_v2
+  memory_version: end2end_same_domain_seed_heldout_v1
   identity_source: end2end_frozen_manifest_v1
 """
 
 
 def system_config(system_id: str) -> str:
+    if system_id == "dynamic_hybrid":
+        return """extends: base.yaml
+
+agent:
+  initial_drafts: 3
+  search:
+    num_drafts: 3
+  draft_role_policy:
+    enabled: true
+    roles:
+      - coldstart_baseline
+      - memory_transfer
+      - novel_exploration
+
+external_skill_memory:
+  end2end_memory_system: ""
+  retrieval_control: dynamic_hybrid
+  experiment_r_enabled: true
+  experiment_r_candidate_limit: 12
+  experiment_r_top_k: 6
+  experiment_r_prompt_token_budget: 1536
+  experiment_r_debug_confidence_threshold: 0.50
+  experiment_r_agentic_retrieval_enabled: true
+  experiment_r_agentic_max_steps: 4
+  experiment_r_agentic_per_step_top_k: 8
+  experiment_r_agentic_max_observed: 48
+  experiment_r_agentic_temperature: 0.0
+  experiment_r_agentic_max_tokens: 1200
+  experiment_r_memory_transfer_static_gate: true
+  experiment_r_memory_transfer_runtime_gate: true
+
+run_identity:
+  memory_system: dynamic_hybrid
+  system_id: dynamic_hybrid
+"""
     return f"""extends: base.yaml
 
 external_skill_memory:
@@ -322,7 +357,10 @@ def component_manifests() -> dict[str, dict[str, Any]]:
         {
             "schema": "mlevolve_end2end_systems_manifest_v1",
             "system_count": 10,
-            "sole_experimental_axis": "external_skill_memory.end2end_memory_system",
+            "experimental_axis": (
+                "system_id; dynamic_hybrid is the full Agentic three-role proposed "
+                "system while the other nine retain their frozen controller behavior"
+            ),
             "systems": systems,
             "manifest_hash": "",
         }
@@ -360,7 +398,7 @@ def component_manifests() -> dict[str, dict[str, Any]]:
             "schema": "mlevolve_end2end_budget_manifest_v1",
             "runtime": runtime,
             "solver_sampling": {
-                "comparison_axis": "generation_temperature",
+                "comparison_axis": "memory_system",
                 "baseline_release_id": BASELINE_RELEASE_ID,
                 "code_temperature": SOLVER_TEMPERATURE,
                 "feedback_temperature": SOLVER_TEMPERATURE,
@@ -399,11 +437,11 @@ def component_manifests() -> dict[str, dict[str, Any]]:
                 "memory_gib": 64,
             },
             "smoke": {
-                "agent_steps": 2,
-                "agent_time_limit_seconds": 1800,
+                "agent_steps": 3,
+                "agent_time_limit_seconds": 3600,
                 "execution_timeout_seconds": 900,
                 "finalize_reserve_seconds": 120,
-                "initial_drafts": 1,
+                "initial_drafts": 3,
                 "max_replacement_drafts": 0,
                 "parallel_search_num": 1,
                 "gpu_count": 1,
@@ -423,8 +461,8 @@ def component_manifests() -> dict[str, dict[str, Any]]:
     memory_manifest = finalize(
         {
             "schema": "mlevolve_end2end_memory_bundle_manifest_v1",
-            "production_binding_path": "/workspace/experiment-r-dev-r1/memory/authority-r3/PRODUCTION_MEMORY_BINDING.json",
-            "production_binding_sha256": "47e0d38a2183827f36ab44c9881c542690d154cd735fbfdb9c4de3019bf926f7",
+            "production_binding_path": "/workspace/experiment-end2end-memory-agent-v2/smoke-memory-v2/SMOKE_MEMORY_BINDING.json",
+            "production_binding_sha256": "6c0b50e7f49626e673b0ae02254268104aa1c4214470bc8a9ba83e8cf2ccc614",
             "task_bundles": MEMORY,
             "excluded_run_ids": [
                 "20260701_180146", "20260701_145201", "20260701_145250",
@@ -501,16 +539,22 @@ def shuffled_system_ids(task_id: str) -> list[str]:
 
 
 def execution_manifest(
-    *, kind: str, components: Mapping[str, Mapping[str, Any]]
+    *,
+    kind: str,
+    components: Mapping[str, Mapping[str, Any]],
+    system_ids_override: list[str] | None = None,
+    prefix_override: str | None = None,
 ) -> dict[str, Any]:
     if kind == "smoke":
-        task_ids = ["leaf-classification"]
+        task_ids = ["aerial-cactus-identification"]
+        system_ids = system_ids_override
         formal = False
-        prefix = "e2e-smoke-agent-temp05-v1"
+        prefix = prefix_override or "e2e-smoke-all-systems-v2"
     else:
         task_ids = [task_id for task_id, _display, _metric, _direction in TASKS]
+        system_ids = None
         formal = True
-        prefix = "e2e-pilot-agent-temp05-v1"
+        prefix = "e2e-pilot-agentic-three-role-v2"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -518,7 +562,8 @@ def execution_manifest(
     runs = []
     global_position = 0
     for task_id in task_ids:
-        for task_position, system_id in enumerate(shuffled_system_ids(task_id)):
+        ordered_systems = system_ids or shuffled_system_ids(task_id)
+        for task_position, system_id in enumerate(ordered_systems):
             logical_run_id = f"{prefix}__{task_id}__{system_id}__seed-{SEED}"
             row = {
                 "logical_run_id": logical_run_id,
@@ -545,7 +590,11 @@ def execution_manifest(
             "exploratory_pilot": True,
             "seed": SEED,
             "statistical_significance_claim_allowed": False,
-            "system_ids": [system_id for _label, system_id, _kind, _desc in SYSTEMS],
+            "system_ids": (
+                system_ids
+                if system_ids is not None
+                else [system_id for _label, system_id, _kind, _desc in SYSTEMS]
+            ),
             "task_ids": task_ids,
             "run_count": len(runs),
             "launch_order_randomization": (
@@ -715,25 +764,44 @@ def build() -> dict[str, Any]:
     for key, payload in components.items():
         dump_json(MANIFESTS / f"{key}.json", payload)
     smoke = execution_manifest(kind="smoke", components=components)
+    feasibility_smoke = execution_manifest(
+        kind="smoke",
+        components=components,
+        system_ids_override=["dynamic_hybrid"],
+        prefix_override="e2e-feasibility-smoke-agentic-three-role-v2",
+    )
     pilot = execution_manifest(kind="pilot", components=components)
     dump_json(MANIFESTS / "smoke_manifest.json", smoke)
+    dump_json(MANIFESTS / "feasibility_smoke_manifest.json", feasibility_smoke)
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
     smoke_job = job(
-        name="mlevolve-e2e-agent-smoke-leaf-temp05-v1",
+        name="mlevolve-e2e-all-systems-smoke-aerial-v2",
         manifest_name="smoke_manifest.json",
         completions=10,
         task_id=None,
-        active_deadline=3600,
+        active_deadline=5400,
         parallelism=1,
         components=components,
     )
-    (JOB_DIR / "smoke-leaf-indexed-job.yaml").write_text(
+    (JOB_DIR / "smoke-aerial-all-systems-job.yaml").write_text(
         yaml.safe_dump(smoke_job, sort_keys=False), encoding="utf-8"
+    )
+    feasibility_job = job(
+        name="mlevolve-e2e-agentic-three-role-feasibility-aerial-v2",
+        manifest_name="feasibility_smoke_manifest.json",
+        completions=1,
+        task_id=None,
+        active_deadline=5400,
+        parallelism=1,
+        components=components,
+    )
+    (JOB_DIR / "smoke-aerial-dynamic-hybrid-job.yaml").write_text(
+        yaml.safe_dump(feasibility_job, sort_keys=False), encoding="utf-8"
     )
     for task_id, display, _metric, _direction in TASKS:
         pilot_job = job(
-            name=f"mlevolve-e2e-agent-pilot-{display.lower()}-temp05-v1",
+            name=f"mlevolve-e2e-agentic-pilot-{display.lower()}-v2",
             manifest_name="pilot_manifest.json",
             completions=10,
             task_id=task_id,
@@ -744,6 +812,11 @@ def build() -> dict[str, Any]:
         (JOB_DIR / f"pilot-{display.lower()}-indexed-job.yaml").write_text(
             yaml.safe_dump(pilot_job, sort_keys=False), encoding="utf-8"
         )
+    generated_jobs = [
+        path.name
+        for path in sorted(JOB_DIR.glob("*.yaml"))
+        if yaml.safe_load(path.read_text(encoding="utf-8")).get("kind") == "Job"
+    ]
     packet = finalize(
         {
             "schema": "mlevolve_end2end_launch_packet_v1",
@@ -752,12 +825,13 @@ def build() -> dict[str, Any]:
             "smoke_gate_output": f"{OUTPUT_ROOT}/SMOKE_GATE.json",
             "pilot_requires_passing_smoke_gate": True,
             "smoke_manifest_hash": smoke["manifest_hash"],
+            "feasibility_smoke_manifest_hash": feasibility_smoke["manifest_hash"],
             "pilot_manifest_hash": pilot["manifest_hash"],
             "component_manifest_hashes": {
                 key: value["manifest_hash"] for key, value in components.items()
             },
-            "jobs": [path.name for path in sorted(JOB_DIR.glob("*.yaml"))],
-            "job_count": 5,
+            "jobs": generated_jobs,
+            "job_count": len(generated_jobs),
             "workload_objects_created": 0,
             "packet_hash": "",
         },
@@ -775,12 +849,20 @@ def check() -> dict[str, Any]:
             raise ValueError(f"Self-hash mismatch: {path}")
     pilot = json.loads((MANIFESTS / "pilot_manifest.json").read_text())
     smoke = json.loads((MANIFESTS / "smoke_manifest.json").read_text())
-    if pilot["run_count"] != 40 or smoke["run_count"] != 10:
+    feasibility = json.loads(
+        (MANIFESTS / "feasibility_smoke_manifest.json").read_text()
+    )
+    if (
+        pilot["run_count"] != 40
+        or smoke["run_count"] != 10
+        or feasibility["run_count"] != 1
+    ):
         raise ValueError("Frozen matrix cardinality mismatch")
     if len({row["logical_run_id"] for row in pilot["runs"]}) != 40:
         raise ValueError("Pilot logical run IDs are not unique")
     packet = json.loads((MANIFESTS / "launch_packet.json").read_text())
-    for path in JOB_DIR.glob("*.yaml"):
+    for name in packet["jobs"]:
+        path = JOB_DIR / name
         workload = yaml.safe_load(path.read_text(encoding="utf-8"))
         if workload.get("kind") != "Job":
             raise ValueError(f"Generated workload is not a Job: {path}")

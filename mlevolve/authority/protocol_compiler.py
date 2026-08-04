@@ -90,7 +90,14 @@ class ProtocolCompiler:
     def claim_operation_compatible(claim_type: ClaimType, operation: Operation) -> bool:
         allowed = {
             Operation.INSPECT: set(ClaimType),
-            Operation.DEBUG_HYPOTHESIS: {ClaimType.DEBUG_REPAIR, ClaimType.AUDIT_FINDING},
+            # A trusted, same-domain METHOD_HYPOTHESIS may be used as a
+            # navigation-only Debug hint. It still cannot rank, select, or
+            # write back memory; clause scope remains the final gate.
+            Operation.DEBUG_HYPOTHESIS: {
+                ClaimType.DEBUG_REPAIR,
+                ClaimType.AUDIT_FINDING,
+                ClaimType.METHOD_HYPOTHESIS,
+            },
             Operation.GENERATE_CANDIDATE: {ClaimType.METHOD_HYPOTHESIS, ClaimType.DEBUG_REPAIR},
             Operation.RANK: {ClaimType.SCORE, ClaimType.PAIRWISE_SUPERIORITY, ClaimType.GENERALIZATION},
             Operation.SELECT: {ClaimType.SCORE, ClaimType.PAIRWISE_SUPERIORITY, ClaimType.GENERALIZATION},

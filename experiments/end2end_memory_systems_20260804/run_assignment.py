@@ -491,6 +491,8 @@ def build_solver_command(
         f"finalize_reserve_seconds={budget['finalize_reserve_seconds']}",
         f"external_skill_memory.bundle_root={bundle['task']['bundle_root']}",
         "external_skill_memory.current_pointer_path=CURRENT.json",
+        "external_skill_memory.experiment_r_memory_pool_sha256="
+        f"{bundle['base'].manifest_sha256}",
         f"evaluation_authority.rollout_id={row['logical_run_id']}",
         f"evaluation_authority.expected_bundle_id={bundle['base'].bundle_id}",
         "evaluation_authority.expected_bundle_manifest_sha256="
@@ -504,6 +506,8 @@ def build_solver_command(
         f"run_identity.budget_manifest_sha256={identity['budget_manifest_hash']}",
         "run_identity.memory_bundle_binding_sha256="
         f"{identity['memory_bundles_manifest_hash']}",
+        "run_identity.memory_current_sha256="
+        f"{bundle['task']['current_file_sha256']}",
         f"run_identity.evaluator_manifest_sha256={identity['evaluators_manifest_hash']}",
         *_fixed_holdout_overrides(evaluator_release["runtime"]),
     ]
@@ -839,7 +843,7 @@ def main() -> int:
     parser.add_argument("--attempt", type=int, default=0)
     parser.add_argument(
         "--output-root",
-        default="/workspace/experiment-end2end-agent-runs-temp05-v1",
+        default="/workspace/experiment-end2end-memory-agent-v2/runs",
     )
     parser.add_argument(
         "--collector-key-source",

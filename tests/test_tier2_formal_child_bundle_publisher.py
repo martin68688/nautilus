@@ -21,6 +21,7 @@ from publish_tier2_formal_child_bundle import (  # noqa: E402
     _parent_validation_disposition,
     publish_formal_child_bundle,
 )
+from runforest_v2 import journal_parent_links  # noqa: E402
 from schema import read_json, sha256_json, write_json_atomic  # noqa: E402
 from validate_memory_bundle import validate_bundle  # noqa: E402
 from verify_tier2_formal_child_bundle import (  # noqa: E402
@@ -33,6 +34,23 @@ CREATED_AT = "2026-07-22T00:00:00Z"
 SOURCE_CLAUSE_ID = "clause::formal-provisional-source-test"
 SOURCE_SOP_ID = "sop::formal-provisional-source-test"
 PROTOCOL_ISSUE = "TEMPORAL_SPLIT_LEAKAGE"
+
+
+def test_formal_publisher_topology_helper_supports_modern_journals_fail_closed() -> None:
+    nodes = [("root", {}), ("child", {"parent_id": "root"})]
+    assert journal_parent_links(
+        {"node2parent": {"child": "root"}}, nodes
+    ) == {"child": "root"}
+    with pytest.raises(ValueError, match="disagrees"):
+        journal_parent_links(
+            {"node2parent": {"child": "other"}},
+            [*nodes, ("other", {})],
+        )
+    with pytest.raises(ValueError, match="cycle"):
+        journal_parent_links(
+            {"node2parent": {"root": "child", "child": "root"}},
+            [("root", {}), ("child", {})],
+        )
 
 
 def _add_execution_evidence(run_dir: Path) -> None:
@@ -240,6 +258,7 @@ def _publish(
     protocol_file: Path,
     *,
     allowed_issues: tuple[str, ...],
+    split_mode: str = "seed-heldout",
 ) -> dict:
     base = ImmutableBaseBundle.load(parent["bundle_dir"], verify_artifacts=True)
     return publish_formal_child_bundle(
@@ -251,7 +270,7 @@ def _publish(
         target_task_id="task-a",
         target_task_family="family-a",
         target_domain="family_a",
-        split_mode="seed-heldout",
+        split_mode=split_mode,
         source_clause_id=SOURCE_CLAUSE_ID,
         source_run_id=parent["source_run_id"],
         source_node_id=parent["source_node_id"],
@@ -260,6 +279,31 @@ def _publish(
         agent_seeds=(104729, 130363, 155921),
         allowed_protocol_issue_codes=allowed_issues,
         created_at=CREATED_AT,
+    )
+
+
+def test_same_domain_seed_child_keeps_target_history_and_other_domain_peers(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    parent = _prepare_parent_bundle(tmp_path, monkeypatch)
+    result = _publish(
+        parent,
+        tmp_path / "same-domain-seed-child",
+        _write_target_protocol(tmp_path),
+        allowed_issues=(PROTOCOL_ISSUE,),
+        split_mode="same-domain-seed-heldout",
+    )
+    child = ImmutableBaseBundle.load(
+        result["publication"]["bundle_path"], verify_artifacts=True
+    )
+    split = child.read_json("splits/active.json")
+    assert split["split_kind"] == "same-domain-seed-heldout"
+    assert set(split["source_task_ids"]) == {"task-a", "task-b"}
+    assert split["validation"]["target_history_in_source_count"] > 0
+    assert split["validation"]["cross_domain_source_run_count"] == 0
+    assert set(split["source_seed_groups"]).isdisjoint(
+        split["heldout_seed_groups"]
     )
 
 

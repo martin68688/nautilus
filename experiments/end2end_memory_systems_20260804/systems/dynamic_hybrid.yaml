@@ -1,7 +1,32 @@
 extends: base.yaml
 
+agent:
+  initial_drafts: 3
+  search:
+    num_drafts: 3
+  draft_role_policy:
+    enabled: true
+    roles:
+      - coldstart_baseline
+      - memory_transfer
+      - novel_exploration
+
 external_skill_memory:
-  end2end_memory_system: dynamic_hybrid
+  end2end_memory_system: ""
+  retrieval_control: dynamic_hybrid
+  experiment_r_enabled: true
+  experiment_r_candidate_limit: 12
+  experiment_r_top_k: 6
+  experiment_r_prompt_token_budget: 1536
+  experiment_r_debug_confidence_threshold: 0.50
+  experiment_r_agentic_retrieval_enabled: true
+  experiment_r_agentic_max_steps: 4
+  experiment_r_agentic_per_step_top_k: 8
+  experiment_r_agentic_max_observed: 48
+  experiment_r_agentic_temperature: 0.0
+  experiment_r_agentic_max_tokens: 1200
+  experiment_r_memory_transfer_static_gate: true
+  experiment_r_memory_transfer_runtime_gate: true
 
 run_identity:
   memory_system: dynamic_hybrid

@@ -49,9 +49,9 @@ def run_node_ref(run_id: str, node_id: str) -> str:
 
 
 def transition_ref(run_id: str, parent_id: str, child_id: str) -> str:
-    suffix = hashlib.sha256(
-        f"{run_id}\0{parent_id}\0{child_id}".encode()
-    ).hexdigest()[:16]
+    suffix = hashlib.sha256(f"{run_id}\0{parent_id}\0{child_id}".encode()).hexdigest()[
+        :16
+    ]
     return f"run::{run_id}::transition::{suffix}"
 
 
@@ -88,12 +88,162 @@ def _improvement(child: Mapping[str, Any], parent: Mapping[str, Any]) -> float |
     )
 
 
+def transition_outcome(
+    child: Mapping[str, Any], parent: Mapping[str, Any]
+) -> str:
+    """Classify an observed journal edge without inventing outcome evidence."""
+
+    if (
+        str(parent.get("stage") or "") == "root"
+        and child.get("is_buggy") is False
+        and child.get("is_valid") is True
+    ):
+        return "initial_valid"
+    if parent.get("is_buggy") is True and child.get("is_buggy") is False:
+        return "debug_fixed"
+    if child.get("is_buggy") is True:
+        return "buggy"
+    improvement = _improvement(child, parent)
+    if improvement is None:
+        return "unknown"
+    if improvement > 1e-12:
+        return "metric_improved"
+    if improvement < -1e-12:
+        return "metric_worsened"
+    return "metric_flat"
+
+
+def journal_parent_links(
+    journal: Mapping[str, Any],
+    indexed_nodes: Iterable[tuple[str, Mapping[str, Any]]],
+) -> dict[str, str]:
+    """Resolve the serialized search tree from modern and legacy journals.
+
+    Production MLEvolve journals store topology in the top-level
+    ``node2parent`` map; small legacy fixtures sometimes inline ``parent_id``.
+    When both are present they must agree.
+    """
+
+    nodes = {str(node_id): node for node_id, node in indexed_nodes}
+    parents: dict[str, str] = {}
+    raw_topology = journal.get("node2parent") or {}
+    if not isinstance(raw_topology, Mapping):
+        raise ValueError("Journal node2parent must be an object")
+    for child, parent in raw_topology.items():
+        child_id = str(child)
+        parent_id = str(parent)
+        if child_id not in nodes or parent_id not in nodes:
+            raise ValueError(
+                f"Journal topology references an unknown node: {parent_id}->{child_id}"
+            )
+        if child_id == parent_id:
+            raise ValueError(f"Journal topology contains a self edge: {child_id}")
+        parents[child_id] = parent_id
+    for child_id, node in nodes.items():
+        inline = str(node.get("parent_id") or "")
+        if not inline:
+            continue
+        if inline not in nodes or inline == child_id:
+            raise ValueError(
+                f"Journal inline parent is invalid: {inline}->{child_id}"
+            )
+        if child_id in parents and parents[child_id] != inline:
+            raise ValueError(
+                f"Journal topology disagrees for {child_id}: "
+                f"{parents[child_id]} != {inline}"
+            )
+        parents[child_id] = inline
+
+    # A cycle would make both causal transition semantics and depth undefined.
+    for node_id in nodes:
+        seen: set[str] = set()
+        current = node_id
+        while current in parents:
+            if current in seen:
+                raise ValueError(f"Journal topology contains a cycle at {current}")
+            seen.add(current)
+            current = parents[current]
+    return parents
+
+
+def journal_local_best_links(
+    journal: Mapping[str, Any],
+    indexed_nodes: Iterable[tuple[str, Mapping[str, Any]]],
+) -> dict[str, str]:
+    nodes = {str(node_id) for node_id, _node in indexed_nodes}
+    raw = journal.get("node2best_local_node") or {}
+    if not isinstance(raw, Mapping):
+        raise ValueError("Journal node2best_local_node must be an object")
+    links: dict[str, str] = {}
+    for node_id, best_id in raw.items():
+        node_text = str(node_id)
+        best_text = str(best_id)
+        if node_text not in nodes or best_text not in nodes:
+            raise ValueError(
+                "Journal local-best topology references an unknown node: "
+                f"{node_text}->{best_text}"
+            )
+        links[node_text] = best_text
+    return links
+
+
+def audit_projection(sidecar: Mapping[str, Any]) -> dict[str, Any]:
+    """Reconstruct the production leakage disposition from an immutable sidecar."""
+
+    status = str(sidecar.get("status") or "audit_unavailable")
+    dispositions = {
+        "clean": ("positive_eligible", "accept", "allow", "normal"),
+        "blocked": ("quarantine", "reject", "block", "blocked"),
+        "protocol_biased": (
+            "negative_only",
+            "protocol_biased",
+            "allow_diagnostic",
+            "repair_only",
+        ),
+        "warning": (
+            "negative_only",
+            "unverified",
+            "allow_diagnostic",
+            "repair_only",
+        ),
+        "audit_unavailable": (
+            "negative_only",
+            "unverified",
+            "allow_diagnostic",
+            "provisional",
+        ),
+    }
+    if status not in dispositions:
+        raise ValueError(f"Unsupported audit sidecar status: {status}")
+    memory, metric, execution, search = dispositions[status]
+    clean = status == "clean"
+    return {
+        "schema": sidecar.get("detector_schema"),
+        "detector_version": sidecar.get("detector_version"),
+        "status": status,
+        "hard_block": status == "blocked",
+        "paper_grade_eligible": clean,
+        "metric_disposition": metric,
+        "memory_disposition": memory,
+        "execution_disposition": execution,
+        "search_disposition": search,
+        "rank_eligible": clean,
+        "repair_required": not clean,
+        "issues": sidecar.get("issues") or [],
+        "legacy_receipt_level": sidecar.get("legacy_receipt_level"),
+        "audit_sidecar_sha256": sidecar.get("sidecar_sha256"),
+    }
+
+
 def _short(value: Any, limit: int = 1200) -> str:
     text = str(value or "").strip()
     return text if len(text) <= limit else f"{text[:limit]} …"
 
 
 def _node_text(node: Mapping[str, Any]) -> str:
+    terminal = node.get("_term_out")
+    if isinstance(terminal, list):
+        terminal = "".join(str(value) for value in terminal)
     return "\n".join(
         text
         for text in (
@@ -101,6 +251,7 @@ def _node_text(node: Mapping[str, Any]) -> str:
             _short(node.get("code_summary")),
             _short(node.get("analysis")),
             _short(node.get("exc_info")),
+            _short(terminal),
         )
         if text
     )
@@ -149,7 +300,9 @@ def _decision_allows(
         if str(decision.get("outcome")) not in {"allow", "allow_with_warning"}:
             continue
         scope = decision.get("permitted_scope") or {}
-        if not set(clause.get("claim_refs") or []) & {str(decision.get("claim_id") or "")}:
+        if not set(clause.get("claim_refs") or []) & {
+            str(decision.get("claim_id") or "")
+        }:
             continue
         if not set(clause.get("permitted_operations") or []) & set(
             scope.get("operations") or []
@@ -198,23 +351,17 @@ def build_runforest_v2(
         raise ValueError(f"Unknown source runs: {sorted(missing_runs)}")
     missing_heldout_runs = heldout_runs - set(entries)
     if missing_heldout_runs:
-        raise ValueError(
-            f"Unknown held-out runs: {sorted(missing_heldout_runs)}"
-        )
+        raise ValueError(f"Unknown held-out runs: {sorted(missing_heldout_runs)}")
     if any(entries[run_id].status != "complete" for run_id in source_runs):
         raise ValueError("Split source includes non-complete run")
     if any("spooky" in entries[run_id].canonical_task_id for run_id in source_runs):
         raise ValueError("Spooky run cannot enter a formal bundle")
-    source_task_ids = {
-        str(entries[run_id].canonical_task_id) for run_id in source_runs
-    }
+    source_task_ids = {str(entries[run_id].canonical_task_id) for run_id in source_runs}
     source_task_families = {
         str(entries[run_id].task_family or "").strip() for run_id in source_runs
     }
     source_task_families.discard("")
-    source_domains = {
-        canonical_domain(family) for family in source_task_families
-    }
+    source_domains = {canonical_domain(family) for family in source_task_families}
     source_domains.discard("")
     heldout_task_ids = {
         str(entries[run_id].canonical_task_id)
@@ -227,15 +374,11 @@ def build_runforest_v2(
         if run_id in entries
     }
     heldout_task_families.discard("")
-    heldout_domains = {
-        canonical_domain(family) for family in heldout_task_families
-    }
+    heldout_domains = {canonical_domain(family) for family in heldout_task_families}
     heldout_domains.discard("")
     same_domain_split = split.split_kind == "same-domain-task-heldout"
     target_task_id = str(split.allocation.get("target_task_id") or "")
-    target_task_family = str(
-        split.allocation.get("target_task_family") or ""
-    )
+    target_task_family = str(split.allocation.get("target_task_family") or "")
     target_domain = canonical_domain(
         split.allocation.get("target_domain") or target_task_family
     )
@@ -250,9 +393,23 @@ def build_runforest_v2(
             raise ValueError(
                 "Same-domain split source domains do not match target domain"
             )
-        if heldout_domains != {target_domain}:
+        if heldout_runs:
+            if heldout_domains != {target_domain}:
+                raise ValueError(
+                    "Same-domain split held-out domain does not match target domain"
+                )
+        elif (
+            heldout_domains
+            or split.allocation.get("transfer_design")
+            != "same_domain_different_task_target_history_absent"
+        ):
+            # A genuinely new task has no historical held-out run from which
+            # to infer a domain.  In that stricter design the target domain is
+            # bound directly by the split allocation, while the source view
+            # above must still be exactly same-domain and target-history-free.
             raise ValueError(
-                "Same-domain split held-out domain does not match target domain"
+                "Same-domain split without held-out runs lacks an explicit "
+                "target-history-absent binding"
             )
     sidecars = _audit_sidecars(audit_dir)
     raw_clauses = read_jsonl(clauses_path)
@@ -263,9 +420,7 @@ def build_runforest_v2(
     decisions = {
         str(row["decision_id"]): row
         for row in (
-            read_jsonl(authority_decisions_path)
-            if authority_decisions_path
-            else []
+            read_jsonl(authority_decisions_path) if authority_decisions_path else []
         )
     }
     selected_clauses: list[dict[str, Any]] = []
@@ -292,10 +447,7 @@ def build_runforest_v2(
         )
         declared_task_ids = {
             str(value)
-            for value in (
-                task_scope.get("task_ids")
-                or [task_scope.get("task_id")]
-            )
+            for value in (task_scope.get("task_ids") or [task_scope.get("task_id")])
             if value not in {None, ""}
         }
         referenced_task_ids = {
@@ -332,9 +484,7 @@ def build_runforest_v2(
             reason = "missing_source_task_lineage"
         elif not referenced_task_families or not referenced_domains:
             reason = "missing_source_domain_lineage"
-        elif raw_transfer_scope and not normalize_transfer_scope(
-            raw_transfer_scope
-        ):
+        elif raw_transfer_scope and not normalize_transfer_scope(raw_transfer_scope):
             reason = "invalid_transfer_scope"
         elif (
             same_domain_split
@@ -355,9 +505,7 @@ def build_runforest_v2(
             value["task_scope"] = task_scope
             value["source_run_ids"] = sorted(referenced_runs)
             value["source_task_ids"] = sorted(referenced_task_ids)
-            value["source_task_families"] = sorted(
-                referenced_task_families
-            )
+            value["source_task_families"] = sorted(referenced_task_families)
             value["source_domains"] = sorted(referenced_domains)
             value["transfer_scope"] = transfer_scope
             value["admissible_target_domains"] = (
@@ -367,9 +515,7 @@ def build_runforest_v2(
             )
             selected_clauses.append(value)
     selected_clause_ids = {row["clause_id"] for row in selected_clauses}
-    selected_clauses_by_id = {
-        str(row["clause_id"]): row for row in selected_clauses
-    }
+    selected_clauses_by_id = {str(row["clause_id"]): row for row in selected_clauses}
     selected_containers: list[dict[str, Any]] = []
     clause_container: dict[str, str] = {}
     for container in raw_containers:
@@ -420,8 +566,7 @@ def build_runforest_v2(
             and value["source_task_families"]
             and value["source_domains"]
             and all(
-                normalize_transfer_scope(scope)
-                for scope in value["transfer_scopes"]
+                normalize_transfer_scope(scope) for scope in value["transfer_scopes"]
             )
         )
         selected_containers.append(value)
@@ -457,14 +602,30 @@ def build_runforest_v2(
         journal_path = source_root / str(entry.journal_path)
         if sha256_file(journal_path) != entry.artifact_hashes.get("journal"):
             raise ValueError(f"Journal hash drift: {run_id}")
-        journal = journal_nodes(read_json(journal_path))
+        journal_payload = read_json(journal_path)
+        journal = journal_nodes(journal_payload)
         raw_to_ref: dict[str, str] = {}
         indexed_nodes: list[tuple[str, dict[str, Any]]] = []
         for index, raw_node in enumerate(journal):
             raw_id = _node_id(raw_node, index)
+            if raw_id in raw_to_ref:
+                raise ValueError(f"Duplicate raw journal node id: {raw_id}")
             reference = run_node_ref(run_id, raw_id)
             raw_to_ref[raw_id] = reference
             indexed_nodes.append((raw_id, raw_node))
+        indexed_node_by_id = {raw_id: node for raw_id, node in indexed_nodes}
+        parent_links = journal_parent_links(journal_payload, indexed_nodes)
+        local_best_links = journal_local_best_links(journal_payload, indexed_nodes)
+        children: dict[str, list[str]] = collections.defaultdict(list)
+        for child_id, parent_id in parent_links.items():
+            children[parent_id].append(child_id)
+        for values in children.values():
+            values.sort(
+                key=lambda node_id: (
+                    int(indexed_node_by_id[node_id].get("step") or 0),
+                    node_id,
+                )
+            )
         for raw_id, raw_node in indexed_nodes:
             reference = raw_to_ref[raw_id]
             node_refs.add(reference)
@@ -489,33 +650,71 @@ def build_runforest_v2(
                 "branch_id": raw_node.get("branch_id"),
                 "step": raw_node.get("step"),
                 "stage": raw_node.get("stage"),
+                "parent_id": (
+                    raw_to_ref[parent_links[raw_id]]
+                    if raw_id in parent_links
+                    else None
+                ),
+                "local_best_node_id": (
+                    raw_to_ref[local_best_links[raw_id]]
+                    if raw_id in local_best_links
+                    else None
+                ),
+                "is_leaf": not bool(children.get(raw_id)),
+                "num_children": len(children.get(raw_id, [])),
                 "is_buggy": raw_node.get("is_buggy"),
                 "is_valid": raw_node.get("is_valid"),
                 "metric": _metric(raw_node.get("metric")),
                 "metric_maximize": _maximize(raw_node),
+                "metric_improvement": (
+                    _improvement(
+                        raw_node,
+                        next(
+                            node
+                            for node_id, node in indexed_nodes
+                            if node_id == parent_links[raw_id]
+                        ),
+                    )
+                    if raw_id in parent_links
+                    else None
+                ),
                 "code_sha256": (
                     hashlib.sha256(code.encode()).hexdigest() if code.strip() else ""
                 ),
                 "audit_sidecar_ref": (
                     str(sidecar.get("sidecar_sha256")) if sidecar else ""
                 ),
-                "leakage_audit": (
-                    {
-                        "status": sidecar.get("status"),
-                        "issues": sidecar.get("issues") or [],
-                        "legacy_receipt_level": sidecar.get("legacy_receipt_level"),
-                    }
+                "leakage_audit": audit_projection(sidecar) if sidecar else {},
+                "audit_status": sidecar.get("status") if sidecar else None,
+                "paper_grade_eligible": (
+                    audit_projection(sidecar)["paper_grade_eligible"]
                     if sidecar
-                    else {}
+                    else False
+                ),
+                "memory_disposition": (
+                    audit_projection(sidecar)["memory_disposition"]
+                    if sidecar
+                    else "negative_only"
+                ),
+                "plan": _short(raw_node.get("plan")),
+                "code_summary": _short(raw_node.get("code_summary")),
+                "analysis": _short(raw_node.get("analysis")),
+                "terminal_excerpt": _short(
+                    "".join(
+                        str(value)
+                        for value in (
+                            raw_node.get("_term_out")
+                            if isinstance(raw_node.get("_term_out"), list)
+                            else [raw_node.get("_term_out") or ""]
+                        )
+                    )
                 ),
                 "text": _node_text(raw_node),
             }
             graph_nodes.append(node)
             edges.append({"src": run_ref, "dst": reference, "kind": "contains_node"})
             if sidecar:
-                evidence_id = (
-                    f"evidence::{hashlib.sha256(f'{reference}:audit'.encode()).hexdigest()[:20]}"
-                )
+                evidence_id = f"evidence::{hashlib.sha256(f'{reference}:audit'.encode()).hexdigest()[:20]}"
                 graph_nodes.append(
                     {
                         "id": evidence_id,
@@ -530,8 +729,8 @@ def build_runforest_v2(
                 edges.append(
                     {"src": reference, "dst": evidence_id, "kind": "supported_by"}
                 )
-            parent_raw = str(raw_node.get("parent_id") or "")
-            if parent_raw and parent_raw in raw_to_ref:
+            parent_raw = parent_links.get(raw_id, "")
+            if parent_raw:
                 parent_ref = raw_to_ref[parent_raw]
                 edges.append({"src": parent_ref, "dst": reference, "kind": "parent_of"})
                 parent_node = next(
@@ -548,37 +747,70 @@ def build_runforest_v2(
                     "task_domain": canonical_domain(entry.task_family),
                     "parent_node_id": parent_ref,
                     "child_node_id": reference,
+                    "parent_original_node_id": parent_raw,
+                    "child_original_node_id": raw_id,
+                    "branch_id": raw_node.get("branch_id"),
                     "stage_pair": f"{parent_node.get('stage')}->{raw_node.get('stage')}",
-                    "metric_improvement": _improvement(raw_node, parent_node),
-                    "outcome": (
-                        "buggy" if raw_node.get("is_buggy") else "executed"
+                    "parent_metric": _metric(parent_node.get("metric")),
+                    "child_metric": _metric(raw_node.get("metric")),
+                    "metric_delta": (
+                        None
+                        if _metric(parent_node.get("metric")) is None
+                        or _metric(raw_node.get("metric")) is None
+                        else _metric(raw_node.get("metric"))
+                        - _metric(parent_node.get("metric"))
                     ),
-                    "text": _short(raw_node.get("plan") or raw_node.get("code_summary")),
+                    "metric_improvement": _improvement(raw_node, parent_node),
+                    "outcome": transition_outcome(raw_node, parent_node),
+                    "parent_buggy": parent_node.get("is_buggy"),
+                    "child_buggy": raw_node.get("is_buggy"),
+                    "text": _short(
+                        "\n".join(
+                            value
+                            for value in (
+                                _node_text(parent_node),
+                                _node_text(raw_node),
+                            )
+                            if value
+                        )
+                    ),
                 }
                 graph_nodes.append(transition)
                 edges.extend(
                     [
-                        {"src": parent_ref, "dst": transition_id, "kind": "has_transition"},
-                        {"src": transition_id, "dst": reference, "kind": "transition_to"},
+                        {
+                            "src": parent_ref,
+                            "dst": transition_id,
+                            "kind": "has_transition",
+                        },
+                        {
+                            "src": transition_id,
+                            "dst": reference,
+                            "kind": "transition_to",
+                        },
                     ]
                 )
             if sidecar:
                 for issue_index, issue in enumerate(sidecar.get("issues") or []):
-                    failure_id = (
-                        f"failure::{hashlib.sha256(f'{reference}:{issue_index}'.encode()).hexdigest()[:20]}"
-                    )
+                    failure_id = f"failure::{hashlib.sha256(f'{reference}:{issue_index}'.encode()).hexdigest()[:20]}"
                     graph_nodes.append(
                         {
                             "id": failure_id,
                             "type": "FailurePattern",
                             "issue_code": issue.get("issue_code"),
                             "category": issue.get("category"),
-                            "text": _short(issue.get("evidence") or issue.get("reason")),
+                            "text": _short(
+                                issue.get("evidence") or issue.get("reason")
+                            ),
                             "audit_sidecar_ref": sidecar.get("sidecar_sha256"),
                         }
                     )
                     edges.append(
-                        {"src": reference, "dst": failure_id, "kind": "has_failure_pattern"}
+                        {
+                            "src": reference,
+                            "dst": failure_id,
+                            "kind": "has_failure_pattern",
+                        }
                     )
 
     for container in sorted(selected_containers, key=lambda row: row["sop_id"]):
@@ -592,21 +824,17 @@ def build_runforest_v2(
                 "clause_ids": container.get("clause_ids"),
                 "source_run_ids": container.get("source_run_ids") or [],
                 "source_task_ids": container.get("source_task_ids") or [],
-                "source_task_families": container.get(
-                    "source_task_families"
-                )
-                or [],
+                "source_task_families": container.get("source_task_families") or [],
                 "source_domains": container.get("source_domains") or [],
                 "task_families": container.get("source_domains") or [],
                 "transfer_scopes": container.get("transfer_scopes") or [],
-                "domain_scope_complete": container.get(
-                    "domain_scope_complete"
-                )
-                is True,
+                "domain_scope_complete": container.get("domain_scope_complete") is True,
             }
         )
     navigation_pairs: set[tuple[str, str]] = set()
     authorized_pairs: set[tuple[str, str]] = set()
+    navigation_edges: dict[tuple[str, str], dict[str, Any]] = {}
+    authorized_edges: dict[tuple[str, str], dict[str, Any]] = {}
     visibility_rows: list[dict[str, Any]] = []
     for clause in sorted(selected_clauses, key=lambda row: row["clause_id"]):
         container_id = clause_container[clause["clause_id"]]
@@ -622,35 +850,64 @@ def build_runforest_v2(
             if source_ref not in node_refs:
                 raise ValueError(f"Unresolved clause artifact ref: {source_ref}")
             edges.append(
-                {"src": source_ref, "dst": clause["clause_id"], "kind": "derived_into_clause"}
+                {
+                    "src": source_ref,
+                    "dst": clause["clause_id"],
+                    "kind": "derived_into_clause",
+                }
             )
         authorized = _decision_allows(clause, decisions)
         for source_ref in clause.get("source_transition_refs") or []:
             if source_ref not in transition_refs:
                 raise ValueError(f"Unresolved clause transition ref: {source_ref}")
             edges.append(
-                {"src": source_ref, "dst": clause["clause_id"], "kind": "derived_into_clause"}
+                {
+                    "src": source_ref,
+                    "dst": clause["clause_id"],
+                    "kind": "derived_into_clause",
+                }
             )
             pair = (source_ref, container_id)
             if pair not in navigation_pairs:
                 navigation_pairs.add(pair)
-                edges.append(
-                    {
-                        "src": source_ref,
-                        "dst": container_id,
-                        "kind": "navigation_attached_to",
-                        "authority_outcome": "navigation_only",
-                    }
-                )
+                navigation_edges[pair] = {
+                    "src": source_ref,
+                    "dst": container_id,
+                    "kind": "navigation_attached_to",
+                    "authority_outcome": "runtime_clause_authority_required",
+                    "clause_ids": [],
+                    "quality": "direct_clause_transition_lineage",
+                    "score": 1.0,
+                }
+            navigation_edges[pair]["clause_ids"] = sorted(
+                {
+                    *navigation_edges[pair]["clause_ids"],
+                    str(clause["clause_id"]),
+                }
+            )
             if authorized and pair not in authorized_pairs:
                 authorized_pairs.add(pair)
-                edges.append(
+                authorized_edges[pair] = {
+                    "src": source_ref,
+                    "dst": container_id,
+                    "kind": "authorized_distills_to",
+                    "authority_outcome": "allow",
+                    "authority_decision_refs": [],
+                    "clause_ids": [],
+                    "quality": "direct_clause_transition_lineage",
+                    "score": 1.0,
+                }
+            if authorized:
+                authorized_edges[pair]["clause_ids"] = sorted(
                     {
-                        "src": source_ref,
-                        "dst": container_id,
-                        "kind": "authorized_distills_to",
-                        "authority_outcome": "allow",
-                        "authority_decision_refs": clause.get("authority_decision_refs") or [],
+                        *authorized_edges[pair]["clause_ids"],
+                        str(clause["clause_id"]),
+                    }
+                )
+                authorized_edges[pair]["authority_decision_refs"] = sorted(
+                    {
+                        *authorized_edges[pair]["authority_decision_refs"],
+                        *map(str, clause.get("authority_decision_refs") or []),
                     }
                 )
         visibility_rows.append(
@@ -658,45 +915,52 @@ def build_runforest_v2(
                 "clause_id": clause["clause_id"],
                 "sop_id": container_id,
                 "claim_refs": clause.get("claim_refs") or [],
-                "source_artifact_refs": clause.get("source_artifact_refs")
-                or [],
-                "source_transition_refs": clause.get(
-                    "source_transition_refs"
-                )
-                or [],
+                "source_artifact_refs": clause.get("source_artifact_refs") or [],
+                "source_transition_refs": clause.get("source_transition_refs") or [],
                 "source_run_ids": clause.get("source_run_ids") or [],
                 "source_task_ids": clause.get("source_task_ids") or [],
-                "source_task_families": clause.get(
-                    "source_task_families"
-                )
-                or [],
+                "source_task_families": clause.get("source_task_families") or [],
                 "source_domains": clause.get("source_domains") or [],
                 "transfer_scope": clause.get("transfer_scope"),
-                "admissible_target_domains": clause.get(
-                    "admissible_target_domains"
-                )
+                "admissible_target_domains": clause.get("admissible_target_domains")
                 or [],
                 "protocol_scope": clause.get("protocol_scope") or [],
                 "task_scope": clause.get("task_scope") or {},
                 "permitted_operations": clause.get("permitted_operations") or [],
-                "permitted_generation_stages": clause.get("permitted_generation_stages") or [],
-                "permitted_governance_stages": clause.get("permitted_governance_stages") or [],
+                "permitted_generation_stages": clause.get("permitted_generation_stages")
+                or [],
+                "permitted_governance_stages": clause.get("permitted_governance_stages")
+                or [],
                 "publication_class": clause.get("publication_class"),
                 "legacy_status": clause.get("legacy_status"),
             }
         )
 
+    edges.extend(navigation_edges[pair] for pair in sorted(navigation_edges))
+    edges.extend(authorized_edges[pair] for pair in sorted(authorized_edges))
+
     ids = [str(node["id"]) for node in graph_nodes]
     if len(ids) != len(set(ids)):
-        duplicates = [item for item, count in collections.Counter(ids).items() if count > 1]
+        duplicates = [
+            item for item, count in collections.Counter(ids).items() if count > 1
+        ]
         raise ValueError(f"Duplicate RunForest node IDs: {duplicates[:10]}")
     node_types = [str(node["type"]) for node in graph_nodes]
     texts = [str(node.get("text") or node.get("title") or "") for node in graph_nodes]
     poincare = _coordinates(ids, node_types)
-    euclidean = np.stack([_hash_embedding(text) for text in texts]) if texts else np.zeros((0, 64), dtype=np.float32)
+    euclidean = (
+        np.stack([_hash_embedding(text) for text in texts])
+        if texts
+        else np.zeros((0, 64), dtype=np.float32)
+    )
     clause_ids = [str(row["clause_id"]) for row in selected_clauses]
     clause_embeddings = (
-        np.stack([_hash_embedding(str(row.get("retrieval_text") or "")) for row in selected_clauses])
+        np.stack(
+            [
+                _hash_embedding(str(row.get("retrieval_text") or ""))
+                for row in selected_clauses
+            ]
+        )
         if selected_clauses
         else np.zeros((0, 64), dtype=np.float32)
     )
@@ -806,6 +1070,21 @@ def build_runforest_v2(
             entries[run_id].code_node_count for run_id in source_runs
         ),
         "audited_code_node_count": audited_code_nodes,
+        "transition_count": sum(
+            node.get("type") == "Transition" for node in graph_nodes
+        ),
+        "source_runs_with_transitions": sorted(
+            {
+                str(node.get("run_id") or "")
+                for node in graph_nodes
+                if node.get("type") == "Transition" and node.get("run_id")
+            }
+        ),
+        "rank_eligible_run_node_count": sum(
+            node.get("type") == "RunNode"
+            and (node.get("leakage_audit") or {}).get("rank_eligible") is True
+            for node in graph_nodes
+        ),
         "all_code_nodes_have_sidecars": audited_code_nodes
         == sum(entries[run_id].code_node_count for run_id in source_runs),
         "input_clause_count": len(raw_clauses),
@@ -813,9 +1092,7 @@ def build_runforest_v2(
         "excluded_clauses": excluded_clauses,
         "excluded_clause_reason_counts": dict(
             sorted(
-                collections.Counter(
-                    row["reason"] for row in excluded_clauses
-                ).items()
+                collections.Counter(row["reason"] for row in excluded_clauses).items()
             )
         ),
         "task_scope_exclusion_enabled": split.split_kind
@@ -832,8 +1109,7 @@ def build_runforest_v2(
             str(row["clause_id"])
             for row in selected_clauses
             if same_domain_split
-            and normalize_transfer_scope(row.get("transfer_scope"))
-            == SAME_DOMAIN
+            and normalize_transfer_scope(row.get("transfer_scope")) == SAME_DOMAIN
             and not transfer_is_compatible(
                 row.get("source_domains") or [],
                 target_domain,
@@ -843,8 +1119,7 @@ def build_runforest_v2(
         "domain_general_clause_ids": sorted(
             str(row["clause_id"])
             for row in selected_clauses
-            if normalize_transfer_scope(row.get("transfer_scope"))
-            == DOMAIN_GENERAL
+            if normalize_transfer_scope(row.get("transfer_scope")) == DOMAIN_GENERAL
         ),
         "all_clause_sources_resolve": True,
         "navigation_edge_count": len(navigation_pairs),

@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mlevolve-e2e-agentic-pilot-aerial-v2
+  name: mlevolve-e2e-all-systems-smoke-aerial-v2
   namespace: ecepxie
   labels: &id001
     app: mlevolve-end2end
@@ -13,15 +13,15 @@ metadata:
     mlevolve.ai/generated-not-submitted: 'true'
     mlevolve.ai/gpu-contract: nvidia.com/a100-family-unpinned
     mlevolve.ai/preserve-failed-index-artifacts: 'true'
-    mlevolve.ai/per-index-deadline-seconds: '25200'
-    mlevolve.ai/global-deadline-seconds: '252000'
+    mlevolve.ai/per-index-deadline-seconds: '5400'
+    mlevolve.ai/global-deadline-seconds: '54000'
 spec:
   completionMode: Indexed
   completions: 10
   parallelism: 1
   backoffLimitPerIndex: 0
   maxFailedIndexes: 10
-  activeDeadlineSeconds: 252000
+  activeDeadlineSeconds: 54000
   template:
     metadata:
       labels: *id001
@@ -41,13 +41,9 @@ spec:
         args:
         - /workspace/nautilus-exp-end2end-agent-v3/experiments/end2end_memory_systems_20260804/run_assignment.py
         - --manifest
-        - /workspace/nautilus-exp-end2end-agent-v3/experiments/end2end_memory_systems_20260804/manifests/pilot_manifest.json
+        - /workspace/nautilus-exp-end2end-agent-v3/experiments/end2end_memory_systems_20260804/manifests/smoke_manifest.json
         - --output-root
         - /workspace/experiment-end2end-memory-agent-v2/runs
-        - --smoke-gate
-        - /workspace/experiment-end2end-memory-agent-v2/runs/SMOKE_GATE.json
-        - --task
-        - aerial-cactus-identification
         envFrom:
         - secretRef:
             name: prevalence-audit-deepseek-r1

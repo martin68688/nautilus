@@ -1,11 +1,11 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mlevolve-e2e-agent-smoke-leaf-temp05-v1
+  name: mlevolve-e2e-agentic-three-role-feasibility-aerial-v2
   namespace: ecepxie
   labels: &id001
     app: mlevolve-end2end
-    experiment: experiment-end2end-memory-agent-temp05-v1
+    experiment: experiment-end2end-memory-agent-v2
     ecepxie.nrp/owner: haoming
     app.kubernetes.io/managed-by: codex-nrp-training
   annotations:
@@ -13,15 +13,15 @@ metadata:
     mlevolve.ai/generated-not-submitted: 'true'
     mlevolve.ai/gpu-contract: nvidia.com/a100-family-unpinned
     mlevolve.ai/preserve-failed-index-artifacts: 'true'
-    mlevolve.ai/per-index-deadline-seconds: '3600'
-    mlevolve.ai/global-deadline-seconds: '36000'
+    mlevolve.ai/per-index-deadline-seconds: '5400'
+    mlevolve.ai/global-deadline-seconds: '5400'
 spec:
   completionMode: Indexed
-  completions: 10
+  completions: 1
   parallelism: 1
   backoffLimitPerIndex: 0
-  maxFailedIndexes: 10
-  activeDeadlineSeconds: 36000
+  maxFailedIndexes: 1
+  activeDeadlineSeconds: 5400
   template:
     metadata:
       labels: *id001
@@ -39,11 +39,11 @@ spec:
         - /usr/local/bin/python
         - -u
         args:
-        - /workspace/nautilus-exp-end2end-temp05-v1/experiments/end2end_memory_systems_20260804/run_assignment.py
+        - /workspace/nautilus-exp-end2end-agent-v3/experiments/end2end_memory_systems_20260804/run_assignment.py
         - --manifest
-        - /workspace/nautilus-exp-end2end-temp05-v1/experiments/end2end_memory_systems_20260804/manifests/smoke_manifest.json
+        - /workspace/nautilus-exp-end2end-agent-v3/experiments/end2end_memory_systems_20260804/manifests/feasibility_smoke_manifest.json
         - --output-root
-        - /workspace/experiment-end2end-agent-runs-temp05-v1
+        - /workspace/experiment-end2end-memory-agent-v2/runs
         envFrom:
         - secretRef:
             name: prevalence-audit-deepseek-r1
@@ -77,7 +77,7 @@ spec:
         - name: PYTHONDONTWRITEBYTECODE
           value: '1'
         - name: PYTHONPATH
-          value: /workspace/nautilus-exp-end2end-temp05-v1/mlevolve
+          value: /workspace/nautilus-exp-end2end-agent-v3/mlevolve
         - name: MLEVOLVE_CONTAINER_IMAGE_REFERENCE
           value: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
         - name: MLEVOLVE_SOLVER_BINDING_ID

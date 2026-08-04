@@ -17,7 +17,7 @@
     "preserve_all_attempts": true,
     "score_imputation": false
   },
-  "manifest_hash": "9fa6059d26cfa6960e94fed85d4b34b0073c9b160a971061e4d140985a9cfa0b",
+  "manifest_hash": "caf6dbbd732e90a00bb4b42531d7a0ecd17d942e84c6fca8c8babae00add21c0",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,
@@ -50,13 +50,13 @@
     "visibility_token_budget": 4096
   },
   "smoke": {
-    "agent_steps": 2,
-    "agent_time_limit_seconds": 1800,
+    "agent_steps": 3,
+    "agent_time_limit_seconds": 3600,
     "cpu_count": 16,
     "execution_timeout_seconds": 900,
     "finalize_reserve_seconds": 120,
     "gpu_count": 1,
-    "initial_drafts": 1,
+    "initial_drafts": 3,
     "max_replacement_drafts": 0,
     "memory_gib": 64,
     "parallel_search_num": 1
@@ -65,8 +65,8 @@
     "adoption_verifier_temperature": 0.0,
     "all_other_frozen_axes_unchanged": true,
     "baseline_release_id": "end2end-agent-v3",
-    "code_temperature": 0.5,
-    "comparison_axis": "generation_temperature",
-    "feedback_temperature": 0.5
+    "code_temperature": 1.0,
+    "comparison_axis": "memory_system",
+    "feedback_temperature": 1.0
   }
 }

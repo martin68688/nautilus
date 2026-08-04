@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: end2end-bundle-publisher-v2
+  namespace: ecepxie
+  labels:
+    ecepxie.nrp/owner: haoming
+    app.kubernetes.io/managed-by: codex-nrp-training
+    experiment: experiment-end2end-memory-agent-v2
+    component: bundle-publisher
+spec:
+  restartPolicy: Never
+  containers:
+    - name: publisher
+      image: haomingwang22/mlevolve:v1
+      command: ["/bin/sh", "-c"]
+      args:
+        - exec tail -f /dev/null
+      resources:
+        limits:
+          cpu: "4"
+          memory: "16Gi"
+        requests:
+          cpu: "4"
+          memory: "16Gi"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage

@@ -914,6 +914,7 @@ class AgentSearch:
                     logger.warning(f"[_run_single_step] node {parent_node.id} is_buggy is None.")
 
                 if result_node:
+                    memory_transfer_adoption_blocked = False
                     if init_solution_path or result_node.skip_code_review:
                         logger.info(f"Node {result_node.id} uses immutable source code, skipping code review")
                     else:
@@ -980,6 +981,19 @@ class AgentSearch:
                                 str(result_node.id)
                             )
                             verifier.prepare(result_node, contracts)
+                            adoption_gate = verifier.evaluate_memory_transfer_static_gate(
+                                result_node
+                            )
+                            if adoption_gate.get("status") == "reject_before_execution":
+                                result_node.is_buggy = True
+                                result_node.is_valid = False
+                                result_node.metric = WorstMetricValue()
+                                result_node.analysis = (
+                                    "MEMORY_TRANSFER_ADOPTION_REQUIRED: no Prompt-visible "
+                                    "memory contract was implemented in executable code."
+                                )
+                                result_node._term_out = [result_node.analysis]
+                                memory_transfer_adoption_blocked = True
                         except Exception as error:
                             logger.warning(
                                 "Agent adoption verification planning failed for node %s: %s",
@@ -996,7 +1010,11 @@ class AgentSearch:
                     if prospective_audit is not None:
                         prospective_audit.prepare_counterfactuals(result_node)
 
-                    if result_parse_agent.run_pre_execution_leakage_audit(self, result_node):
+                    if memory_transfer_adoption_blocked:
+                        _root = self._finalize_preflight_block(
+                            result_node, parent_node
+                        )
+                    elif result_parse_agent.run_pre_execution_leakage_audit(self, result_node):
                         _root = self._finalize_preflight_block(result_node, parent_node)
                     elif not execute_immediately:
                         logger.info(f"Node {result_node.id} code generated and reviewed, execution deferred")

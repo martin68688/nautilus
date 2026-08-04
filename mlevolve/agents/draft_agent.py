@@ -190,8 +190,10 @@ def run(
         role_contract = {
             "role": draft_role,
             "requirement": (
-                "No exact clean same-task replay exists. Build a runnable solution using only the explicitly "
-                "retrieved cross-task clean RunForest/SOP evidence; do not present it as exact replay."
+                "Build a runnable solution that materially implements at least one explicitly retrieved, "
+                "Authority-approved RunForest/SOP memory item in executable code. Historical memory may "
+                "come from the same task or another task, but it is evidence rather than an answer key. "
+                "Name the adopted idea in the plan and preserve the frozen Host Protocol Contract."
             ),
         }
         prompt["Instructions"]["Draft role contract (MANDATORY)"] = [role_contract["requirement"]]
