@@ -373,10 +373,25 @@ def run(
     all_source_refs = list(dict.fromkeys(list(external_skill_ref_ids) + l2_ref_ids))
     selected_strategy = strategy_context.get("selected_strategy") or {}
     strategy_alignment = {}
-    if selected_strategy:
+    verifier_cfg = getattr(agent.cfg, "adoption_verifier", None)
+    verifier_enforced = bool(
+        verifier_cfg is not None
+        and getattr(verifier_cfg, "enabled", False)
+        and str(getattr(verifier_cfg, "mode", "shadow") or "shadow").lower()
+        == "enforce"
+    )
+    if selected_strategy and not verifier_enforced:
         from agents.memory.stage_aware_hybrid_memory import strategy_alignment_for_code
 
         strategy_alignment = strategy_alignment_for_code(selected_strategy, code)
+    elif selected_strategy:
+        strategy_alignment = {
+            "schema": "agent_adoption_verifier_pending_v1",
+            "method_family": str(selected_strategy.get("method_family") or ""),
+            "status": "pending_agent_verification",
+            "checks": [],
+            "rank_eligible": None,
+        }
     new_node = SearchNode(
         plan=plan,
         code=code,

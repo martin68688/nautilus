@@ -934,8 +934,16 @@ def legacy_rank_eligible(agent: Any, node: Any) -> bool:
     )
     if not leakage_clean:
         return False
+    verifier_cfg = getattr(getattr(agent, "cfg", None), "adoption_verifier", None)
+    verifier_enforced = bool(
+        verifier_cfg is not None
+        and getattr(verifier_cfg, "enabled", False)
+        and str(getattr(verifier_cfg, "mode", "shadow") or "shadow").lower()
+        == "enforce"
+    )
     if (
-        getattr(node, "draft_role", None) == "novel_exploration"
+        not verifier_enforced
+        and getattr(node, "draft_role", None) == "novel_exploration"
         and getattr(node, "selected_strategy", None)
     ):
         alignment = getattr(node, "strategy_alignment", None) or {}

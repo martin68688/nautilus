@@ -17,6 +17,7 @@ from ...actuation import (
     ExperienceContract,
     Predicate,
 )
+from ...adoption_verification import plan_row, verdict_row
 from ...claim_decomposer import select_claim_for_operation
 from ...collectors import (
     AdoptionPublicationCollector,
@@ -704,6 +705,41 @@ class MLEvolveAuthorityAdapter:
         if not contracts:
             return []
 
+        verifier = getattr(self.agent, "adoption_verifier", None)
+        verifier_enabled = bool(
+            verifier is not None and getattr(verifier, "enabled", False)
+        )
+        verifier_enforced = bool(
+            verifier_enabled and getattr(verifier, "mode", "shadow") == "enforce"
+        )
+        if verifier_enabled:
+            try:
+                verifier.finalize(node)
+            except Exception as error:
+                # Enforce mode remains fail closed below because no valid
+                # contract verdict can be selected from an empty result.
+                logger.warning(
+                    "Final Agent adoption verdict failed for node %s: %s",
+                    node.id,
+                    type(error).__name__,
+                )
+        verification_plan = dict(
+            getattr(node, "adoption_verification_plan", None) or {}
+        )
+        verifier_verdict = dict(
+            getattr(node, "adoption_verifier_verdict", None) or {}
+        )
+        verifier_trace = dict(
+            getattr(node, "adoption_runtime_trace", None) or {}
+        )
+        require_signed_trace = bool(
+            getattr(
+                getattr(self.cfg, "adoption_verifier", None),
+                "require_signed_trace",
+                False,
+            )
+        )
+
         selected = dict(getattr(node, "selected_strategy", None) or {})
         selected_sop = str(selected.get("sop_id") or "")
         alignment = dict(getattr(node, "strategy_alignment", None) or {})
@@ -735,13 +771,33 @@ class MLEvolveAuthorityAdapter:
         )
 
         for contract in contracts:
+            agent_plan = plan_row(verification_plan, contract.contract_id) or {}
+            agent_verdict = verdict_row(
+                verifier_verdict, contract.contract_id
+            ) or {}
             direct_replay = contract.clause_id.startswith("replay_clause::")
             selected_strategy = bool(
                 selected_sop
                 and contract.sop_id == selected_sop
                 and alignment.get("status") == "verified"
             )
-            admitted = replay_preserved if direct_replay else selected_strategy
+            legacy_admitted = replay_preserved if direct_replay else selected_strategy
+            if verifier_enforced:
+                signed_trace_ok = bool(
+                    not require_signed_trace
+                    or (
+                        verifier_trace.get("signature_algorithm") == "ed25519"
+                        and bool(verifier_trace.get("signature_ed25519"))
+                    )
+                )
+                admitted = bool(
+                    agent_verdict.get("verdict")
+                    in {"adopted", "partially_adopted"}
+                    and agent_verdict.get("runtime_evidence_valid") is True
+                    and signed_trace_ok
+                )
+            else:
+                admitted = legacy_admitted
             if not admitted:
                 continue
             report = self.actuation_tracker.report(
@@ -762,6 +818,16 @@ class MLEvolveAuthorityAdapter:
                 or {}
             )
             preconditions = dict(supplied.get("preconditions") or {})
+            if verifier_enforced:
+                preconditions.update(
+                    {
+                        str(item["name"]): item.get("value")
+                        for item in agent_plan.get(
+                            "precondition_observations", []
+                        )
+                        if isinstance(item, dict) and item.get("name")
+                    }
+                )
             if direct_replay:
                 preconditions["source_replay_claim_authorized"] = True
             static: dict[str, Any] = {
@@ -770,6 +836,14 @@ class MLEvolveAuthorityAdapter:
                 f"clause_applied::{contract.clause_id}": True,
             }
             static.update(dict(supplied.get("static") or {}))
+            if verifier_enforced:
+                static.update(
+                    {
+                        str(item["name"]): item.get("value")
+                        for item in agent_plan.get("static_observations", [])
+                        if isinstance(item, dict) and item.get("name")
+                    }
+                )
             if direct_replay:
                 static["replay_lineage_preserved"] = replay_preserved
             if protocol_clean:
@@ -796,7 +870,19 @@ class MLEvolveAuthorityAdapter:
             if not execution_observed:
                 continue
             runtime = dict(supplied.get("runtime") or {})
-            runtime["target_path_executed"] = True
+            if verifier_enforced:
+                if agent_verdict.get("runtime_evidence_valid") is not True:
+                    continue
+                runtime.update(
+                    {
+                        str(item["name"]): item.get("value")
+                        for item in agent_plan.get("runtime_observations", [])
+                        if isinstance(item, dict) and item.get("name")
+                    }
+                )
+                runtime["target_path_executed"] = True
+            else:
+                runtime["target_path_executed"] = True
             report = self.actuation_tracker.report(
                 artifact_id=artifact_id,
                 contract_id=contract.contract_id,

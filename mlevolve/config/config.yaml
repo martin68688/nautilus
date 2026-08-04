@@ -276,6 +276,19 @@ adoption_tracking:
   judge_mode: keyword    # keyword | llm | llm-all | hybrid
   analysis_timeout_seconds: 300
 
+# General, task-independent memory-adoption verifier. In shadow mode it emits
+# plans/verdicts without replacing the legacy adoption gate. ``enforce`` makes
+# its code evidence + executed probes authoritative for adoption publication.
+adoption_verifier:
+  enabled: false
+  mode: shadow            # shadow | enforce
+  model: ""                # empty -> agent.feedback.model
+  temperature: 0.0
+  max_tokens: 4096
+  max_contracts_per_call: 8
+  max_code_chars: 120000
+  require_signed_trace: false
+
 # Prospective dual-observer prevalence audit. Disabled for ordinary runs.
 prospective_audit:
   enabled: false

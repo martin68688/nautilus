@@ -280,6 +280,18 @@ class AdoptionTrackingConfig:
 
 
 @dataclass
+class AdoptionVerifierConfig:
+    enabled: bool = False
+    mode: str = "shadow"  # shadow | enforce
+    model: str = ""
+    temperature: float = 0.0
+    max_tokens: int = 4096
+    max_contracts_per_call: int = 8
+    max_code_chars: int = 120000
+    require_signed_trace: bool = False
+
+
+@dataclass
 class ProspectiveAuditConfig:
     enabled: bool = False
     allow_pending_counterfactual: bool = False
@@ -439,6 +451,7 @@ class Config(Hashable):
     init_solution: InitSolutionConfig = field(default_factory=InitSolutionConfig)
     fixed_holdout: FixedHoldoutConfig = field(default_factory=FixedHoldoutConfig)
     adoption_tracking: AdoptionTrackingConfig = field(default_factory=AdoptionTrackingConfig)
+    adoption_verifier: AdoptionVerifierConfig = field(default_factory=AdoptionVerifierConfig)
     prospective_audit: ProspectiveAuditConfig = field(default_factory=ProspectiveAuditConfig)
     evaluation_authority: EvaluationAuthorityConfig = field(default_factory=EvaluationAuthorityConfig)
     external_skill_memory: ExternalSkillMemoryConfig = field(default_factory=ExternalSkillMemoryConfig)
@@ -612,7 +625,39 @@ def load_cfg(path: Path | None = None) -> Config:
     return prep_cfg(_load_cfg(path))
 
 
+def _validate_adoption_verifier_config(cfg) -> None:
+    verifier = getattr(cfg, "adoption_verifier", None)
+    if verifier is None or not getattr(verifier, "enabled", False):
+        return
+    mode = str(getattr(verifier, "mode", "shadow") or "shadow").lower()
+    if mode not in {"shadow", "enforce"}:
+        raise ValueError("adoption_verifier.mode must be shadow or enforce")
+    authority = getattr(cfg, "evaluation_authority", None)
+    authority_mode = str(getattr(authority, "mode", "off") or "off").lower()
+    runtime_mode = str(
+        getattr(authority, "protocol_runtime_mode", "legacy_ast") or "legacy_ast"
+    ).lower()
+    if authority_mode == "off":
+        raise ValueError("Agent adoption verification requires Evaluation Authority")
+    if mode == "enforce" and runtime_mode not in {
+        "host_sdk_shadow",
+        "host_sdk_enforce",
+    }:
+        raise ValueError(
+            "Agent adoption verifier enforce mode requires host_sdk_shadow or "
+            "host_sdk_enforce so memory-specific probes can be observed"
+        )
+    if getattr(verifier, "require_signed_trace", False):
+        preflight = getattr(getattr(cfg, "agent", None), "protocol_preflight", None)
+        if preflight is None or not getattr(preflight, "enabled", False):
+            raise ValueError(
+                "Signed Agent adoption traces require Host Protocol Preflight "
+                "and its Host-only collector identity"
+            )
+
+
 def prep_cfg(cfg: Config):
+    _validate_adoption_verifier_config(cfg)
     if cfg.agent.protocol_preflight.enabled:
         from authority.protocol_execution_contract import read_contract_artifact
         from authority.protocol_registry import ProtocolRegistry

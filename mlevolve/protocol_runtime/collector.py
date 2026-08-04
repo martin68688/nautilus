@@ -123,6 +123,20 @@ class HostCollectorIdentity:
         private = Ed25519PrivateKey.from_private_bytes(self._private_key_raw)
         return _b64(private.sign(canonical_json(dict(payload)).encode("utf-8")))
 
+    def sign_payload(self, payload: Mapping[str, Any]) -> str:
+        """Sign one canonical Host-owned envelope without exposing key bytes."""
+
+        return self.sign_canonical_payload(payload)
+
+    def verify_payload(self, payload: Mapping[str, Any], signature: str) -> None:
+        """Verify an envelope signed by this Host identity."""
+
+        verify_host_canonical_signature(
+            payload,
+            signature_ed25519=str(signature),
+            public_key_ed25519=self.public_key_ed25519,
+        )
+
 
 def verify_host_canonical_signature(
     payload: Mapping[str, Any],

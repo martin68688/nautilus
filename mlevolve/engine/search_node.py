@@ -110,6 +110,10 @@ class SearchNode(DataClassJsonMixin):
     # never self-satisfies a contract; only explicitly attached static/runtime
     # observations may close non-generic predicates.
     experience_actuation_observations: dict = field(default_factory=dict, kw_only=True)
+    adoption_verification_plan: dict = field(default_factory=dict, kw_only=True)
+    adoption_runtime_trace: dict = field(default_factory=dict, kw_only=True)
+    adoption_verifier_verdict: dict = field(default_factory=dict, kw_only=True)
+    adoption_verifier_mode: str = field(default="off", kw_only=True)
     actuation_report_refs: list[str] = field(default_factory=list, kw_only=True)
     derived_from_refs: list[str] = field(default_factory=list, kw_only=True)
     protocol_ref: str = field(default="", kw_only=True)
@@ -142,6 +146,9 @@ class SearchNode(DataClassJsonMixin):
         )
         self.protocol_preflight = copy.deepcopy(
             self.protocol_observation.get("protocol_preflight") or {}
+        )
+        self.adoption_runtime_trace = copy.deepcopy(
+            getattr(exec_result, "adoption_trace", None) or {}
         )
 
     @property

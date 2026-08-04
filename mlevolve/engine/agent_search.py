@@ -185,6 +185,9 @@ class AgentSearch:
         from agents.memory.prospective_audit import ProspectiveAuditLogger
         self.prospective_audit = ProspectiveAuditLogger(self)
 
+        from agents.adoption_verifier_agent import AdoptionVerifierAgent
+        self.adoption_verifier = AdoptionVerifierAgent(self)
+
         # Global memory
         self.global_memory = None
         if self.acfg.use_global_memory:
@@ -965,6 +968,26 @@ class AgentSearch:
                             instrumentation_receipt=receipt,
                         )
 
+                    verifier = getattr(self, "adoption_verifier", None)
+                    if (
+                        verifier is not None
+                        and verifier.enabled
+                        and not is_historical_replay_anchor(result_node)
+                    ):
+                        try:
+                            contracts = self.evaluation_authority.actuation_tracker.contracts_for_artifact(
+                                str(result_node.id)
+                            )
+                            verifier.prepare(result_node, contracts)
+                        except Exception as error:
+                            logger.warning(
+                                "Agent adoption verification planning failed for node %s: %s",
+                                result_node.id,
+                                type(error).__name__,
+                            )
+                            if verifier.mode == "enforce":
+                                raise
+
                     # Generate the paired raw-memory observer arm only after
                     # the actual Candidate has completed the same code-review
                     # policy, and always before any training execution.
@@ -979,7 +1002,14 @@ class AgentSearch:
                         result_node.pending_execution = True
                         return _root, result_node
                     else:
-                        exe_res = exec_callback(result_node.code, result_node.id, True)
+                        exe_res = exec_callback(
+                            result_node.code,
+                            result_node.id,
+                            True,
+                            adoption_verification_plan=(
+                                result_node.adoption_verification_plan or None
+                            ),
+                        )
                         result_node = result_parse_agent.run(self,
                             node=result_node,
                             exec_result=exe_res
@@ -1153,7 +1183,14 @@ class AgentSearch:
                 self._finalize_preflight_block(node, parent_node)
                 node.pending_execution = False
                 return node
-            exe_res = exec_callback(node.code, node.id, True)
+            exe_res = exec_callback(
+                node.code,
+                node.id,
+                True,
+                adoption_verification_plan=(
+                    node.adoption_verification_plan or None
+                ),
+            )
             node = result_parse_agent.run(self,
                 node=node,
                 exec_result=exe_res

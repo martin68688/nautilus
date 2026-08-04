@@ -487,8 +487,13 @@ def _legacy_static_audit_receipts(
         if isinstance(item, dict) and item.get("category")
     })
     strategy_clean = True
-    if getattr(node, "draft_role", None) == "novel_exploration" and getattr(
-        node, "selected_strategy", None
+    verifier_enforced = str(
+        getattr(node, "adoption_verifier_mode", "off") or "off"
+    ).lower() == "enforce"
+    if (
+        not verifier_enforced
+        and getattr(node, "draft_role", None) == "novel_exploration"
+        and getattr(node, "selected_strategy", None)
     ):
         alignment = getattr(node, "strategy_alignment", None) or {}
         strategy_clean = bool(

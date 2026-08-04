@@ -40,6 +40,11 @@ from authority.protocol_execution_contract import read_contract_artifact
 from authority.protocol_registry import ProtocolRegistry
 from protocol_runtime.collector import HostCollectorIdentity
 from protocol_runtime.full_runtime import FullRuntimeEvidenceController
+from protocol_runtime.adoption_trace import (
+    bootstrap_for_prefix as adoption_trace_bootstrap,
+    seal_runtime_trace as seal_adoption_runtime_trace,
+)
+from authority.adoption_verification import verify_plan as verify_adoption_plan
 from protocol_runtime.preflight import (
     ProtocolPreflightRunner,
     admission_report_path,
@@ -133,6 +138,7 @@ class ExecutionResult(DataClassJsonMixin):
     exc_info: dict | None = None
     exc_stack: list[tuple] | None = None
     protocol_observation: dict | None = None
+    adoption_trace: dict | None = None
 
 
 
@@ -353,7 +359,14 @@ class Interpreter:
         """Clean up resources for the given process slot."""
         pass
 
-    def run(self, code: str, id, reset_session=True, working_dir: str | None = None):
+    def run(
+        self,
+        code: str,
+        id,
+        reset_session=True,
+        working_dir: str | None = None,
+        adoption_verification_plan: dict | None = None,
+    ):
         """
         Execute the provided Python command in a subprocess and return its output.
 
@@ -365,9 +378,20 @@ class Interpreter:
         Returns:
             ExecutionResult: output, exec_time, exc_type, exc_info, exc_stack.
         """
-        return self._run_subprocess(code=code, id=id, working_dir=working_dir)
+        return self._run_subprocess(
+            code=code,
+            id=id,
+            working_dir=working_dir,
+            adoption_verification_plan=adoption_verification_plan,
+        )
 
-    def _run_subprocess(self, code: str, id, working_dir: str | None = None):
+    def _run_subprocess(
+        self,
+        code: str,
+        id,
+        working_dir: str | None = None,
+        adoption_verification_plan: dict | None = None,
+    ):
         """
         Execute code via subprocess (avoids CUDA fork issues).
         Aligned with multiprocessing mode for consistency.
@@ -408,6 +432,9 @@ class Interpreter:
         runfile_path = None
         proc = None
         full_runtime_controller = None
+        adoption_trace_path = None
+        adoption_trace_nonce = ""
+        adoption_trace_evidence = None
         
         try:
             with self._procs_lock:
@@ -714,6 +741,49 @@ class Interpreter:
                     logger.warning(
                         "Host full-runtime shadow bootstrap failed: %s", error
                     )
+            if adoption_verification_plan:
+                try:
+                    if self.protocol_runtime_mode == "legacy_ast":
+                        raise ValueError(
+                            "Agent adoption tracing requires host_sdk_shadow or host_sdk_enforce"
+                        )
+                    verify_adoption_plan(
+                        adoption_verification_plan,
+                        artifact_id=str(id),
+                        source=code,
+                    )
+                    adoption_trace_nonce = secrets.token_hex(32)
+                    trace_token = hashlib.sha256(
+                        f"{id}|{adoption_verification_plan['plan_hash']}".encode("utf-8")
+                    ).hexdigest()[:24]
+                    adoption_trace_path = (
+                        run_wd / "working" / f"adoption_trace_{trace_token}.json"
+                    )
+                    adoption_trace_path.unlink(missing_ok=True)
+                    pre_code += adoption_trace_bootstrap(
+                        adoption_verification_plan,
+                        output_path=adoption_trace_path,
+                        nonce=adoption_trace_nonce,
+                        prefix=pre_code,
+                    )
+                except Exception as error:
+                    logger.warning(
+                        "Agent adoption runtime tracing unavailable for node %s: %s",
+                        id,
+                        error,
+                    )
+                    adoption_trace_evidence = {
+                        "schema": "agent_adoption_runtime_trace_error_v1",
+                        "artifact_id": str(id),
+                        "code_sha256": source_code_sha256,
+                        "plan_hash": str(
+                            adoption_verification_plan.get("plan_hash") or ""
+                        ),
+                        "status": "unavailable",
+                        "reason": f"{type(error).__name__}: {error}",
+                        "probe_results": [],
+                        "trace_hash": "",
+                    }
             code = pre_code + candidate_code
 
             with open(runfile_path, "w") as f:
@@ -886,6 +956,37 @@ class Interpreter:
                 finally:
                     full_runtime_controller.stop()
                     full_runtime_controller = None
+
+            if adoption_trace_path is not None:
+                try:
+                    adoption_trace_evidence = seal_adoption_runtime_trace(
+                        raw_path=adoption_trace_path,
+                        plan=adoption_verification_plan or {},
+                        nonce=adoption_trace_nonce,
+                        exit_status=(0 if proc.returncode == 0 and exc_type is None else 1),
+                        identity=self._collector_identity,
+                    )
+                    adoption_trace_path.chmod(
+                        adoption_trace_path.stat().st_mode & ~0o222
+                    )
+                except Exception as error:
+                    logger.warning(
+                        "Failed to seal Agent adoption trace for node %s: %s",
+                        id,
+                        error,
+                    )
+                    adoption_trace_evidence = {
+                        "schema": "agent_adoption_runtime_trace_error_v1",
+                        "artifact_id": str(id),
+                        "code_sha256": source_code_sha256,
+                        "plan_hash": str(
+                            (adoption_verification_plan or {}).get("plan_hash") or ""
+                        ),
+                        "status": "unavailable",
+                        "reason": f"{type(error).__name__}: {error}",
+                        "probe_results": [],
+                        "trace_hash": "",
+                    }
             
             output: list[str] = []
             if stdout:
@@ -969,6 +1070,7 @@ class Interpreter:
                 exc_info,
                 exc_stack,
                 protocol_observation,
+                adoption_trace_evidence,
             )
             
         except Exception as e:
