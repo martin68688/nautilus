@@ -158,6 +158,85 @@ def test_shared_whitespace_budget_is_deterministic_and_auditable() -> None:
         item["reason"] == "shared_prompt_token_budget"
         for item in first.suppressed_candidates
     )
+    assert [item["candidate_id"] for item in first.prompt_candidates] == list(
+        first.prompt_candidate_ids
+    )
+    for item in first.prompt_candidates:
+        assert item["prompt_text"] in first.prompt_text
+    assert first.prompt_candidates[-1]["prompt_text"] == first.prompt_text.split(
+        "\n\n"
+    )[-1]
+
+
+def test_end2end_log_binds_exact_visible_sop_and_runforest_cards() -> None:
+    selection = EndToEndMemoryController("static_hybrid").retrieve(
+        _candidates(), _context("draft")
+    )
+    pack = {
+        "schema": "mlevolve_end2end_memory_pack_v1",
+        "algorithm_version": "end2end_memory_systems_pilot_v1",
+        "system_id": "static_hybrid",
+        "stage_route": {"stage": "draft"},
+        "target_task_id": "task",
+        "candidate_pool_hash": "a" * 64,
+        "candidate_pool_source": "shared_authority_filtered_sop_runforest",
+        "raw_pool_observed": True,
+        "candidate_pool": [item.to_dict() for item in selection.raw_candidates],
+        "selected_candidates": [
+            item.to_dict() for item in selection.selected_candidates
+        ],
+        "suppressed_candidates": list(selection.suppressed_candidates),
+        "final_prompt_candidates": list(selection.prompt_candidates),
+        "final_prompt_candidate_ids": list(selection.prompt_candidate_ids),
+        "visible_clause_ids": [],
+        "prompt_token_count": selection.prompt_token_count,
+        "prompt_truncated": selection.prompt_truncated,
+        "visibility_safety_gate": {
+            "unauthorized_prompt_exposure": 0,
+            "unauthorized_activation": 0,
+        },
+        "unauthorized_prompt_exposure": 0,
+        "memory_snapshot_bound_but_not_exposed": False,
+        "memory_bundle": {"manifest_sha256": "b" * 64},
+        "navigation_trace": [],
+    }
+    observed = []
+    adapter = SimpleNamespace(
+        record_memory_candidate_exposure=lambda **kwargs: observed.append(kwargs)
+    )
+    layer = SimpleNamespace(
+        current_navigation_pack=lambda: pack,
+        current_visibility_pack=lambda: SimpleNamespace(request_id="request-1"),
+    )
+    agent = SimpleNamespace(
+        external_skill_memory=layer,
+        evaluation_authority=adapter,
+        adoption_tracking_enabled=True,
+    )
+    node = SearchNode(
+        id="node-visible", code="", plan="", prompt_input=selection.prompt_text,
+        stage="draft"
+    )
+
+    log_adoption(
+        node,
+        agent,
+        "run_forest_stage_hybrid_memory",
+        list(selection.prompt_candidate_ids),
+        "draft",
+    )
+
+    assert len(observed) == 1
+    assert observed[0]["node"] is node
+    assert observed[0]["request_id"] == "request-1"
+    assert observed[0]["candidates"] == list(selection.prompt_candidates)
+    assert {item["source"] for item in observed[0]["candidates"]} == {
+        "sop",
+        "runforest",
+    }
+    assert node.memory_routing_trace["final_prompt_candidates"] == list(
+        selection.prompt_candidates
+    )
 
 
 def test_no_memory_routing_trace_is_serialized_before_empty_ref_return() -> None:
@@ -172,6 +251,7 @@ def test_no_memory_routing_trace_is_serialized_before_empty_ref_return() -> None
         "raw_pool_observed": True,
         "selected_candidates": [],
         "suppressed_candidates": [{"candidate_id": "sop-0"}],
+        "final_prompt_candidates": [],
         "final_prompt_candidate_ids": [],
         "visible_clause_ids": ["clause-1"],
         "prompt_token_count": 0,

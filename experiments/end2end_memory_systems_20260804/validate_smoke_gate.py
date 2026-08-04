@@ -10,12 +10,15 @@ before a canonical self-hashed ``SMOKE_GATE.json`` can be created.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import math
 from pathlib import Path
 import re
 from typing import Any, Mapping, Sequence
+
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 
 ROOT = Path(__file__).resolve().parent
@@ -26,6 +29,9 @@ TRACE_SCHEMA = "mlevolve_memory_routing_trace_v1"
 GATE_SCHEMA = "mlevolve_end2end_smoke_gate_v1"
 MEASUREMENT_SCHEMA = "mlevolve_end2end_condition_measurement_v1"
 NO_MEMORY = "no_memory"
+PLAN_SCHEMA = "agent_adoption_verification_plan_v1"
+TRACE_ADOPTION_SCHEMA = "agent_adoption_runtime_trace_v1"
+VERDICT_SCHEMA = "agent_adoption_verdict_v1"
 
 
 def canonical_bytes(value: object) -> bytes:
@@ -117,6 +123,206 @@ def _candidate_ids(rows: object, label: str) -> list[str]:
     return values
 
 
+def _rows_by(rows: object, key: str, label: str) -> dict[str, Mapping[str, Any]]:
+    if not isinstance(rows, list):
+        raise ValueError(f"{label} must be a list")
+    output: dict[str, Mapping[str, Any]] = {}
+    for row in rows:
+        if not isinstance(row, Mapping):
+            raise ValueError(f"{label} contains a non-object")
+        value = str(row.get(key) or "")
+        if not value or value in output:
+            raise ValueError(f"{label} contains an empty or duplicate {key}")
+        output[value] = row
+    return output
+
+
+def validate_agent_adoption_evidence(
+    node: Mapping[str, Any],
+    *,
+    system_id: str,
+    prompt_candidate_ids: Sequence[str],
+    expected_collector_public_key_ed25519: str,
+) -> dict[str, Any]:
+    """Verify complete candidate→Contract→plan→trace→verdict bindings."""
+
+    candidate_ids = [str(value) for value in prompt_candidate_ids]
+    raw_mapping = node.get("memory_candidate_contract_refs") or {}
+    contract_refs = node.get("experience_contract_refs") or []
+    plan = node.get("adoption_verification_plan") or {}
+    trace = node.get("adoption_runtime_trace") or {}
+    verdict = node.get("adoption_verifier_verdict") or {}
+    if system_id == NO_MEMORY or not candidate_ids:
+        if raw_mapping or contract_refs or plan or trace or verdict:
+            raise ValueError(
+                f"{system_id}: non-exposed route contains adoption evidence"
+            )
+        return {
+            "agent_plan_contract_count": 0,
+            "agent_static_positive_count": 0,
+            "executed_probe_count": 0,
+            "agent_positive_verdict_count": 0,
+            "signed_trace": False,
+            "collector_public_key_ed25519": "",
+        }
+
+    if not isinstance(raw_mapping, Mapping):
+        raise ValueError(f"{system_id}: memory candidate Contract map is malformed")
+    mapping = {str(key): str(value) for key, value in raw_mapping.items()}
+    if set(mapping) != set(candidate_ids) or any(not value for value in mapping.values()):
+        raise ValueError(
+            f"{system_id}: Agent Contract map does not cover every Prompt candidate"
+        )
+    mapped_contracts = set(mapping.values())
+    if len(mapped_contracts) != len(mapping):
+        raise ValueError(f"{system_id}: multiple Prompt candidates share one Contract")
+    if not isinstance(contract_refs, list) or not mapped_contracts <= {
+        str(value) for value in contract_refs
+    }:
+        raise ValueError(f"{system_id}: mapped Contract is absent from node refs")
+
+    code = str(node.get("code") or "")
+    code_sha256 = hashlib.sha256(code.encode("utf-8")).hexdigest()
+    artifact_id = str(node.get("id") or "")
+    if (
+        plan.get("schema") != PLAN_SCHEMA
+        or plan.get("artifact_id") != artifact_id
+        or plan.get("code_sha256") != code_sha256
+    ):
+        raise ValueError(f"{system_id}: Agent plan binding mismatch")
+    verify_self_hash(plan, "plan_hash", f"{system_id} Agent plan")
+    plan_rows = _rows_by(
+        plan.get("contract_results"), "contract_id", f"{system_id} Agent plan rows"
+    )
+    if not mapped_contracts <= set(plan_rows):
+        raise ValueError(f"{system_id}: Agent plan omits Prompt-visible Contract")
+    planned_probes: dict[str, str] = {}
+    static_positive = 0
+    for contract_id in mapped_contracts:
+        row = plan_rows[contract_id]
+        require_hash(
+            row.get("contract_hash"), f"{system_id} Agent plan Contract hash"
+        )
+        disposition = str(row.get("disposition") or "")
+        if disposition not in {
+            "implemented",
+            "partially_implemented",
+            "not_implemented",
+            "uncertain",
+        }:
+            raise ValueError(f"{system_id}: invalid Agent static disposition")
+        positive = disposition in {"implemented", "partially_implemented"}
+        static_positive += int(positive)
+        probes = _rows_by(
+            row.get("runtime_probes"),
+            "probe_id",
+            f"{system_id} Agent runtime probes",
+        )
+        if positive and not probes:
+            raise ValueError(f"{system_id}: positive Agent plan has no runtime probe")
+        for probe_id, probe in probes.items():
+            if probe_id in planned_probes:
+                raise ValueError(f"{system_id}: runtime probe is shared across Contracts")
+            if probe.get("kind") != "line_range_executed":
+                raise ValueError(f"{system_id}: unsupported Agent runtime probe")
+            planned_probes[probe_id] = contract_id
+
+    if (
+        trace.get("schema") != TRACE_ADOPTION_SCHEMA
+        or trace.get("artifact_id") != artifact_id
+        or trace.get("code_sha256") != code_sha256
+        or trace.get("plan_hash") != plan.get("plan_hash")
+    ):
+        raise ValueError(f"{system_id}: signed Agent trace binding mismatch")
+    hash_input = {
+        key: value
+        for key, value in trace.items()
+        if key not in {"trace_hash", "signature_ed25519"}
+    }
+    if trace.get("trace_hash") != hashlib.sha256(canonical_bytes(hash_input)).hexdigest():
+        raise ValueError(f"{system_id}: signed Agent trace hash mismatch")
+    if trace.get("signature_algorithm") != "ed25519":
+        raise ValueError(f"{system_id}: Agent trace is not Ed25519 signed")
+    public_key = str(trace.get("public_key_ed25519") or "")
+    signature = str(trace.get("signature_ed25519") or "")
+    if public_key != expected_collector_public_key_ed25519:
+        raise ValueError(f"{system_id}: Agent trace used the wrong Host public key")
+    try:
+        signed_payload = {
+            key: value for key, value in trace.items() if key != "signature_ed25519"
+        }
+        Ed25519PublicKey.from_public_bytes(
+            base64.b64decode(public_key.encode("ascii"), validate=True)
+        ).verify(
+            base64.b64decode(signature.encode("ascii"), validate=True),
+            canonical_bytes(signed_payload),
+        )
+    except Exception as error:
+        raise ValueError(f"{system_id}: Agent trace signature mismatch") from error
+    trace_rows = _rows_by(
+        trace.get("probe_results"), "probe_id", f"{system_id} Agent trace probes"
+    )
+    if set(trace_rows) != set(planned_probes):
+        raise ValueError(f"{system_id}: Agent trace probe set mismatch")
+    executed_probe_count = 0
+    for row in trace_rows.values():
+        if row.get("kind") != "line_range_executed":
+            raise ValueError(f"{system_id}: Agent trace probe kind mismatch")
+        executed = row.get("executed") is True
+        executed_probe_count += int(executed)
+        if executed != bool(row.get("executed_lines")):
+            raise ValueError(f"{system_id}: Agent trace execution accounting mismatch")
+        hit_count = row.get("hit_count")
+        if not isinstance(hit_count, int) or isinstance(hit_count, bool) or hit_count < 0:
+            raise ValueError(f"{system_id}: Agent trace hit count is malformed")
+
+    if (
+        verdict.get("schema") != VERDICT_SCHEMA
+        or verdict.get("artifact_id") != artifact_id
+        or verdict.get("code_sha256") != code_sha256
+        or verdict.get("plan_hash") != plan.get("plan_hash")
+        or verdict.get("trace_hash") != trace.get("trace_hash")
+    ):
+        raise ValueError(f"{system_id}: Agent verdict binding mismatch")
+    verify_self_hash(verdict, "verdict_hash", f"{system_id} Agent verdict")
+    verdict_rows = _rows_by(
+        verdict.get("contract_results"),
+        "contract_id",
+        f"{system_id} Agent verdict rows",
+    )
+    if not mapped_contracts <= set(verdict_rows):
+        raise ValueError(f"{system_id}: Agent verdict omits Prompt-visible Contract")
+    positive_verdicts = 0
+    for contract_id in mapped_contracts:
+        row = verdict_rows[contract_id]
+        if row.get("contract_hash") != plan_rows[contract_id].get("contract_hash"):
+            raise ValueError(f"{system_id}: Agent verdict Contract hash mismatch")
+        value = str(row.get("verdict") or "")
+        if value not in {"adopted", "partially_adopted", "rejected", "uncertain"}:
+            raise ValueError(f"{system_id}: invalid Agent final verdict")
+        supporting = {
+            str(probe_id) for probe_id in row.get("supporting_probe_ids") or []
+        }
+        if not supporting <= {
+            probe_id
+            for probe_id, owner in planned_probes.items()
+            if owner == contract_id and trace_rows[probe_id].get("executed") is True
+        }:
+            raise ValueError(f"{system_id}: Agent verdict cites an invalid probe")
+        positive = value in {"adopted", "partially_adopted"}
+        positive_verdicts += int(positive)
+        if positive and (row.get("runtime_evidence_valid") is not True or not supporting):
+            raise ValueError(f"{system_id}: positive Agent verdict lacks runtime evidence")
+    return {
+        "agent_plan_contract_count": len(mapped_contracts),
+        "agent_static_positive_count": static_positive,
+        "executed_probe_count": executed_probe_count,
+        "agent_positive_verdict_count": positive_verdicts,
+        "signed_trace": True,
+        "collector_public_key_ed25519": public_key,
+    }
+
+
 def validate_trace(
     trace: Mapping[str, Any],
     *,
@@ -180,6 +386,17 @@ def validate_trace(
         raise ValueError(f"{system_id}: suppressed candidate lies outside raw pool")
     if set(suppressed_ids) != set(raw_ids) - set(prompt_ids):
         raise ValueError(f"{system_id}: suppression trace is incomplete")
+    prompt_candidates = trace.get("final_prompt_candidates")
+    prompt_candidate_rows = _rows_by(
+        prompt_candidates, "candidate_id", f"{system_id} final Prompt candidates"
+    )
+    if list(prompt_candidate_rows) != prompt_ids:
+        raise ValueError(f"{system_id}: Prompt candidate text/ID binding mismatch")
+    for candidate_id, row in prompt_candidate_rows.items():
+        if row.get("source") not in {"sop", "runforest"}:
+            raise ValueError(f"{system_id}: Prompt candidate source is invalid")
+        if not str(row.get("prompt_text") or "").strip():
+            raise ValueError(f"{system_id}: Prompt candidate text is empty")
 
     prompt_tokens = trace.get("prompt_token_count")
     if (
@@ -230,6 +447,7 @@ def validate_trace(
     return {
         "raw_candidate_count": len(raw_ids),
         "prompt_candidate_count": len(prompt_ids),
+        "prompt_candidate_ids": prompt_ids,
         "prompt_token_count": prompt_tokens,
         "stage": route["stage"],
     }
@@ -246,6 +464,7 @@ def validate_journal(
     prompt_token_budget: int,
     top_k: int,
     candidate_limit_per_source: int,
+    expected_collector_public_key_ed25519: str,
 ) -> dict[str, Any]:
     path = _below(attempt_root, path, f"{system_id} journal")
     journal = read_object(path)
@@ -288,17 +507,24 @@ def validate_journal(
             continue
         if not isinstance(trace, Mapping):
             raise ValueError(f"{system_id}: node routing trace is not an object")
-        summaries.append(
-            validate_trace(
-                trace,
-                system_id=system_id,
-                task_id=task_id,
-                bundle_manifest_sha256=bundle_manifest_sha256,
-                prompt_token_budget=prompt_token_budget,
-                top_k=top_k,
-                candidate_limit_per_source=candidate_limit_per_source,
-            )
+        route_summary = validate_trace(
+            trace,
+            system_id=system_id,
+            task_id=task_id,
+            bundle_manifest_sha256=bundle_manifest_sha256,
+            prompt_token_budget=prompt_token_budget,
+            top_k=top_k,
+            candidate_limit_per_source=candidate_limit_per_source,
         )
+        adoption_summary = validate_agent_adoption_evidence(
+            node,
+            system_id=system_id,
+            prompt_candidate_ids=route_summary["prompt_candidate_ids"],
+            expected_collector_public_key_ed25519=(
+                expected_collector_public_key_ed25519
+            ),
+        )
+        summaries.append({**route_summary, **adoption_summary})
     if not summaries:
         raise ValueError(f"{system_id}: no complete memory routing trace in journal")
     raw_routes = sum(item["raw_candidate_count"] > 0 for item in summaries)
@@ -317,6 +543,24 @@ def validate_journal(
         "prompt_visible_route_count": prompt_routes,
         "stages_observed": sorted({str(item["stage"]) for item in summaries}),
         "max_prompt_token_count": max(item["prompt_token_count"] for item in summaries),
+        "agent_plan_contract_count": sum(
+            item["agent_plan_contract_count"] for item in summaries
+        ),
+        "agent_static_positive_count": sum(
+            item["agent_static_positive_count"] for item in summaries
+        ),
+        "executed_probe_count": sum(item["executed_probe_count"] for item in summaries),
+        "agent_positive_verdict_count": sum(
+            item["agent_positive_verdict_count"] for item in summaries
+        ),
+        "signed_agent_trace_route_count": sum(item["signed_trace"] for item in summaries),
+        "collector_public_keys": sorted(
+            {
+                item["collector_public_key_ed25519"]
+                for item in summaries
+                if item["collector_public_key_ed25519"]
+            }
+        ),
         "terminal_candidate_code_retained": True,
         "terminal_candidate_host_runtime_pass": True,
     }
@@ -444,6 +688,7 @@ def build_smoke_gate(
     output_root: Path,
     smoke_manifest_path: Path = MANIFESTS / "smoke_manifest.json",
     pilot_manifest_path: Path = MANIFESTS / "pilot_manifest.json",
+    _test_collector_public_key_ed25519: str | None = None,
 ) -> dict[str, Any]:
     smoke = load_manifest(smoke_manifest_path, kind="smoke")
     pilot = load_manifest(pilot_manifest_path, kind="pilot")
@@ -470,6 +715,29 @@ def build_smoke_gate(
     budget = components["budget"]
     shared = budget["shared_memory"]
     task_bundles = components["memory_bundles"]["task_bundles"]
+    frozen_collector_key = str(
+        components["memory_bundles"].get(
+            "host_collector_public_key_ed25519"
+        )
+        or ""
+    )
+    if _test_collector_public_key_ed25519 is not None:
+        frozen_collector_key = str(_test_collector_public_key_ed25519)
+    try:
+        decoded_collector_key = base64.b64decode(
+            frozen_collector_key.encode("ascii"), validate=True
+        )
+    except Exception as error:
+        raise ValueError("Frozen Host collector public key is invalid") from error
+    if len(decoded_collector_key) != 32:
+        raise ValueError("Frozen Host collector public key has the wrong length")
+    if _test_collector_public_key_ed25519 is None and hashlib.sha256(
+        decoded_collector_key
+    ).hexdigest() != str(
+        components["memory_bundles"].get("host_collector_public_key_sha256")
+        or ""
+    ):
+        raise ValueError("Frozen Host collector public key hash mismatch")
 
     output_root = output_root.resolve(strict=True)
     selected_rows = []
@@ -503,6 +771,7 @@ def build_smoke_gate(
             prompt_token_budget=int(shared["prompt_token_budget"]),
             top_k=int(shared["top_k"]),
             candidate_limit_per_source=int(shared["raw_candidates_per_source"]),
+            expected_collector_public_key_ed25519=frozen_collector_key,
         )
         selected_rows.append(
             {
@@ -521,6 +790,14 @@ def build_smoke_gate(
                 "attempts": inventory,
             }
         )
+
+    observed_collector_keys = {
+        key
+        for row in selected_rows
+        for key in row.get("collector_public_keys") or []
+    }
+    if observed_collector_keys != {frozen_collector_key}:
+        raise ValueError("Smoke did not use one frozen Host collector identity")
 
     gate = {
         "schema": GATE_SCHEMA,

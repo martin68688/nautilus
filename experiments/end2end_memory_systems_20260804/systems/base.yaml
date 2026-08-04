@@ -20,6 +20,16 @@ adoption_tracking:
   enable_analysis: false
   judge_mode: keyword
 
+adoption_verifier:
+  enabled: true
+  mode: enforce
+  model: ""
+  temperature: 0.0
+  max_tokens: 4096
+  max_contracts_per_call: 8
+  max_code_chars: 120000
+  require_signed_trace: true
+
 prospective_audit:
   enabled: true
   allow_pending_counterfactual: true

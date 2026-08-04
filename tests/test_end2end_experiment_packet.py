@@ -10,10 +10,13 @@ import sys
 import yaml
 import jsonschema
 
+from protocol_runtime.collector import HostCollectorIdentity
+
 
 REPO = Path(__file__).resolve().parents[1]
 ROOT = REPO / "experiments" / "end2end_memory_systems_20260804"
 MANIFESTS = ROOT / "manifests"
+TEST_COLLECTOR_IDENTITY = HostCollectorIdentity.generate()
 
 sys.path.insert(0, str(ROOT))
 try:
@@ -44,6 +47,15 @@ def _write_hashed(path: Path, payload: dict, field: str) -> None:
     payload[field] = _hash(payload, field)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, sort_keys=True), encoding="utf-8")
+
+
+def _build_synthetic_gate(output_root: Path) -> dict:
+    return validate_smoke_gate.build_smoke_gate(
+        output_root=output_root,
+        _test_collector_public_key_ed25519=(
+            TEST_COLLECTOR_IDENTITY.public_key_ed25519
+        ),
+    )
 
 
 def _synthetic_smoke_output(tmp_path: Path) -> Path:
@@ -78,6 +90,18 @@ def _synthetic_smoke_output(tmp_path: Path) -> Path:
         ]
         visible = [] if system_id == "no_memory" else [raw[0]["candidate_id"]]
         selected = [] if system_id == "no_memory" else [raw[0]]
+        prompt_candidates = [] if system_id == "no_memory" else [
+            {
+                "candidate_id": raw[0]["candidate_id"],
+                "source": raw[0]["source"],
+                "source_stage": raw[0]["source_stage"],
+                "source_task_id": raw[0]["source_task_id"],
+                "prompt_text": (
+                    f"### {raw[0]['candidate_id']} [{raw[0]['source']}]\n"
+                    f"{raw[0]['prompt_text']}"
+                ),
+            }
+        ]
         suppressed = [
             {
                 "candidate_id": item["candidate_id"],
@@ -111,6 +135,7 @@ def _synthetic_smoke_output(tmp_path: Path) -> Path:
             "raw_candidates": raw,
             "selected_candidates": selected,
             "suppressed_candidates": suppressed,
+            "final_prompt_candidates": prompt_candidates,
             "final_prompt_candidate_ids": visible,
             "visible_clause_ids": [],
             "prompt_token_count": 0 if system_id == "no_memory" else 5,
@@ -130,6 +155,126 @@ def _synthetic_smoke_output(tmp_path: Path) -> Path:
                 ],
             },
         }
+        code = "def train_and_predict():\n    return 1\n"
+        memory_candidate_contract_refs = {}
+        experience_contract_refs = []
+        plan = {}
+        adoption_trace = {}
+        verdict = {}
+        if visible:
+            contract_hash = hashlib.sha256(
+                f"synthetic-contract:{visible[0]}".encode()
+            ).hexdigest()
+            contract_id = f"experience_contract::{contract_hash[:24]}"
+            memory_candidate_contract_refs = {visible[0]: contract_id}
+            experience_contract_refs = [contract_id]
+            plan = {
+                "schema": "agent_adoption_verification_plan_v1",
+                "artifact_id": "candidate-1",
+                "code_sha256": hashlib.sha256(code.encode()).hexdigest(),
+                "verifier_model": "synthetic-agent-verifier",
+                "contract_results": [
+                    {
+                        "contract_id": contract_id,
+                        "contract_hash": contract_hash,
+                        "clause_id": "synthetic-clause",
+                        "sop_id": visible[0],
+                        "disposition": "implemented",
+                        "reasoning": "synthetic complete-chain fixture",
+                        "code_evidence": [
+                            {
+                                "evidence_id": "evidence-1",
+                                "start_line": 1,
+                                "end_line": 2,
+                                "source_sha256": hashlib.sha256(
+                                    code.rstrip("\n").encode()
+                                ).hexdigest(),
+                                "description": "candidate path",
+                                "ordinal": 0,
+                            }
+                        ],
+                        "runtime_probes": [
+                            {
+                                "probe_id": "probe-1",
+                                "kind": "line_range_executed",
+                                "start_line": 1,
+                                "end_line": 2,
+                                "description": "candidate path",
+                            }
+                        ],
+                        "precondition_observations": [],
+                        "static_observations": [],
+                        "runtime_observations": [],
+                    }
+                ],
+                "plan_hash": "",
+            }
+            plan["plan_hash"] = _hash(plan, "plan_hash")
+            adoption_trace = {
+                "schema": "agent_adoption_runtime_trace_v1",
+                "artifact_id": "candidate-1",
+                "code_sha256": plan["code_sha256"],
+                "plan_hash": plan["plan_hash"],
+                "raw_trace_sha256": "b" * 64,
+                "exit_status": 0,
+                "probe_results": [
+                    {
+                        "probe_id": "probe-1",
+                        "kind": "line_range_executed",
+                        "executed": True,
+                        "executed_lines": [1, 2],
+                        "hit_count": 2,
+                    }
+                ],
+                "trace_hash": "",
+                "signature_algorithm": "ed25519",
+                "public_key_ed25519": (
+                    TEST_COLLECTOR_IDENTITY.public_key_ed25519
+                ),
+                "signature_ed25519": "",
+            }
+            trace_hash_input = {
+                key: value
+                for key, value in adoption_trace.items()
+                if key not in {"trace_hash", "signature_ed25519"}
+            }
+            adoption_trace["trace_hash"] = hashlib.sha256(
+                json.dumps(
+                    trace_hash_input,
+                    sort_keys=True,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ).encode()
+            ).hexdigest()
+            adoption_trace["signature_ed25519"] = (
+                TEST_COLLECTOR_IDENTITY.sign_payload(
+                    {
+                        key: value
+                        for key, value in adoption_trace.items()
+                        if key != "signature_ed25519"
+                    }
+                )
+            )
+            verdict = {
+                "schema": "agent_adoption_verdict_v1",
+                "artifact_id": "candidate-1",
+                "code_sha256": plan["code_sha256"],
+                "plan_hash": plan["plan_hash"],
+                "trace_hash": adoption_trace["trace_hash"],
+                "verifier_model": "synthetic-agent-verifier",
+                "contract_results": [
+                    {
+                        "contract_id": contract_id,
+                        "contract_hash": contract_hash,
+                        "verdict": "adopted",
+                        "reasoning": "synthetic probe executed",
+                        "supporting_probe_ids": ["probe-1"],
+                        "runtime_evidence_valid": True,
+                    }
+                ],
+                "verdict_hash": "",
+            }
+            verdict["verdict_hash"] = _hash(verdict, "verdict_hash")
         journal_path.parent.mkdir(parents=True, exist_ok=True)
         journal_path.write_text(
             json.dumps(
@@ -138,12 +283,19 @@ def _synthetic_smoke_output(tmp_path: Path) -> Path:
                         {
                             "id": "candidate-1",
                             "stage": "draft",
-                            "code": "def train_and_predict():\n    return 1\n",
+                            "code": code,
                             "exec_time": 1.0,
                             "protocol_observation": {
                                 "host_full_runtime": {"status": "pass"}
                             },
                             "memory_routing_trace": trace,
+                            "memory_candidate_contract_refs": (
+                                memory_candidate_contract_refs
+                            ),
+                            "experience_contract_refs": experience_contract_refs,
+                            "adoption_verification_plan": plan,
+                            "adoption_runtime_trace": adoption_trace,
+                            "adoption_verifier_verdict": verdict,
                         }
                     ]
                 }
@@ -244,6 +396,13 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
         assert merged.agent.draft_role_policy.enabled is False
         assert merged.evaluation_authority.mode == "enforce"
         assert merged.evaluation_authority.require_bound_bundle is True
+        assert merged.adoption_verifier.enabled is True
+        assert merged.adoption_verifier.mode == "enforce"
+        assert merged.adoption_verifier.model == ""
+        assert merged.adoption_verifier.temperature == 0.0
+        assert merged.adoption_verifier.max_tokens == 4096
+        assert merged.adoption_verifier.max_contracts_per_call == 8
+        assert merged.adoption_verifier.require_signed_trace is True
 
 
 def test_source_lock_covers_and_matches_runtime_files() -> None:
@@ -251,6 +410,9 @@ def test_source_lock_covers_and_matches_runtime_files() -> None:
     assert lock["complete_runtime_file_hash_lock"] is True
     paths = {row["path"] for row in lock["files"]}
     assert "mlevolve/agents/memory/end2end_memory_system.py" in paths
+    assert "mlevolve/agents/adoption_verifier_agent.py" in paths
+    assert "mlevolve/authority/adoption_verification.py" in paths
+    assert "mlevolve/protocol_runtime/adoption_trace.py" in paths
     assert "experiments/end2end_memory_systems_20260804/run_assignment.py" in paths
     assert "experiments/end2end_memory_systems_20260804/analyze_results.py" in paths
     assert "experiments/end2end_memory_systems_20260804/validate_smoke_gate.py" in paths
@@ -455,7 +617,7 @@ def test_solver_forwards_sigterm_for_child_checkpoint_finalizer() -> None:
 
 def test_smoke_gate_accepts_all_ten_systems_and_binds_exact_pilot(tmp_path) -> None:
     output_root = _synthetic_smoke_output(tmp_path)
-    gate = validate_smoke_gate.build_smoke_gate(output_root=output_root)
+    gate = _build_synthetic_gate(output_root)
     assert gate["status"] == "pass"
     assert gate["formal_result_eligible"] is False
     assert gate["selected_run_count"] == 10
@@ -505,7 +667,7 @@ def test_smoke_gate_accepts_retained_infrastructure_retry(tmp_path) -> None:
         }
     )
     _write_hashed(attempt_zero / "MEASUREMENT.json", failure, "measurement_hash")
-    gate = validate_smoke_gate.build_smoke_gate(output_root=output_root)
+    gate = _build_synthetic_gate(output_root)
     retained = next(
         item for item in gate["retained_attempts"] if item["system_id"] == row["system_id"]
     )
@@ -528,7 +690,7 @@ def test_smoke_gate_rejects_missing_system(tmp_path) -> None:
     )
     measurement.unlink()
     with pytest.raises(ValueError, match="Missing retained measurement"):
-        validate_smoke_gate.build_smoke_gate(output_root=output_root)
+        _build_synthetic_gate(output_root)
 
 
 def test_smoke_gate_rejects_failed_system_without_valid_retry(tmp_path) -> None:
@@ -555,7 +717,7 @@ def test_smoke_gate_rejects_failed_system_without_valid_retry(tmp_path) -> None:
     )
     _write_hashed(measurement_path, measurement, "measurement_hash")
     with pytest.raises(ValueError, match="no complete terminal-scored Smoke attempt"):
-        validate_smoke_gate.build_smoke_gate(output_root=output_root)
+        _build_synthetic_gate(output_root)
 
 
 def test_smoke_gate_rejects_no_memory_prompt_exposure(tmp_path) -> None:
@@ -574,11 +736,20 @@ def test_smoke_gate_rejects_no_memory_prompt_exposure(tmp_path) -> None:
     trace["final_prompt_candidate_ids"] = [
         trace["raw_candidates"][0]["candidate_id"]
     ]
+    trace["final_prompt_candidates"] = [
+        {
+            "candidate_id": trace["raw_candidates"][0]["candidate_id"],
+            "source": trace["raw_candidates"][0]["source"],
+            "source_stage": trace["raw_candidates"][0]["source_stage"],
+            "source_task_id": trace["raw_candidates"][0]["source_task_id"],
+            "prompt_text": "unauthorized exposure",
+        }
+    ]
     trace["suppressed_candidates"] = trace["suppressed_candidates"][1:]
     trace["prompt_token_count"] = 5
     journal_path.write_text(json.dumps(journal), encoding="utf-8")
     with pytest.raises(ValueError, match="external memory reached the Prompt"):
-        validate_smoke_gate.build_smoke_gate(output_root=output_root)
+        _build_synthetic_gate(output_root)
 
 
 def test_smoke_gate_rejects_memory_on_without_prompt_activation(tmp_path) -> None:
@@ -597,6 +768,7 @@ def test_smoke_gate_rejects_memory_on_without_prompt_activation(tmp_path) -> Non
     trace = journal["nodes"][0]["memory_routing_trace"]
     trace["selected_candidates"] = []
     trace["final_prompt_candidate_ids"] = []
+    trace["final_prompt_candidates"] = []
     trace["prompt_token_count"] = 0
     trace["suppressed_candidates"] = [
         {
@@ -606,9 +778,52 @@ def test_smoke_gate_rejects_memory_on_without_prompt_activation(tmp_path) -> Non
         }
         for item in trace["raw_candidates"]
     ]
+    journal["nodes"][0]["memory_candidate_contract_refs"] = {}
+    journal["nodes"][0]["experience_contract_refs"] = []
+    journal["nodes"][0]["adoption_verification_plan"] = {}
+    journal["nodes"][0]["adoption_runtime_trace"] = {}
+    journal["nodes"][0]["adoption_verifier_verdict"] = {}
     journal_path.write_text(json.dumps(journal), encoding="utf-8")
     with pytest.raises(ValueError, match="no Prompt-visible route"):
-        validate_smoke_gate.build_smoke_gate(output_root=output_root)
+        _build_synthetic_gate(output_root)
+
+
+def test_smoke_gate_rejects_memory_on_without_candidate_contract_map(tmp_path) -> None:
+    import pytest
+
+    output_root = _synthetic_smoke_output(tmp_path)
+    smoke = _read(MANIFESTS / "smoke_manifest.json")
+    row = next(item for item in smoke["runs"] if item["system_id"] == "runforest_only")
+    measurement = _read(
+        output_root / row["logical_run_id"] / "attempt-000" / "MEASUREMENT.json"
+    )
+    journal_path = Path(measurement["journal_path"])
+    journal = _read(journal_path)
+    journal["nodes"][0]["memory_candidate_contract_refs"] = {}
+    journal_path.write_text(json.dumps(journal), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="does not cover every Prompt candidate"):
+        _build_synthetic_gate(output_root)
+
+
+def test_smoke_gate_rejects_tampered_agent_trace_signature(tmp_path) -> None:
+    import pytest
+
+    output_root = _synthetic_smoke_output(tmp_path)
+    smoke = _read(MANIFESTS / "smoke_manifest.json")
+    row = next(item for item in smoke["runs"] if item["system_id"] == "dynamic_hybrid")
+    measurement = _read(
+        output_root / row["logical_run_id"] / "attempt-000" / "MEASUREMENT.json"
+    )
+    journal_path = Path(measurement["journal_path"])
+    journal = _read(journal_path)
+    journal["nodes"][0]["adoption_runtime_trace"]["signature_ed25519"] = (
+        "A" * 88
+    )
+    journal_path.write_text(json.dumps(journal), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="signature mismatch"):
+        _build_synthetic_gate(output_root)
 
 
 def test_budget_couples_gpu_search_and_cpu_controls() -> None:
@@ -628,6 +843,17 @@ def test_budget_couples_gpu_search_and_cpu_controls() -> None:
         "token_counter": "whitespace_split_v1",
         "top_k": 6,
         "visibility_token_budget": 4096,
+    }
+    assert budget["adoption_verifier"] == {
+        "enabled": True,
+        "mode": "enforce",
+        "model_source": "agent.feedback.model",
+        "temperature": 0.0,
+        "max_tokens_per_call": 4096,
+        "max_contracts_per_call": 8,
+        "max_code_chars": 120000,
+        "require_signed_trace": True,
+        "runtime_probe": "line_range_executed",
     }
     assert budget["failure_policy"]["automatic_job_retry"] is False
     assert budget["failure_policy"]["preserve_all_attempts"] is True
@@ -709,6 +935,18 @@ def test_analyzer_orders_terminal_before_noncausal_mechanism(tmp_path) -> None:
     finally:
         sys.path.pop(0)
 
+    synthetic_root = _synthetic_smoke_output(tmp_path / "synthetic")
+    smoke = _read(MANIFESTS / "smoke_manifest.json")
+    synthetic_row = next(
+        row for row in smoke["runs"] if row["system_id"] == "dynamic_hybrid"
+    )
+    synthetic_measurement = _read(
+        synthetic_root
+        / synthetic_row["logical_run_id"]
+        / "attempt-000"
+        / "MEASUREMENT.json"
+    )
+
     outcomes = [
         {
             "logical_run_id": "no-memory",
@@ -736,32 +974,9 @@ def test_analyzer_orders_terminal_before_noncausal_mechanism(tmp_path) -> None:
             "allocated_gpu_hours": 0.2,
             "llm_token_usage": None,
             "llm_cost_usd": None,
-            "journal_path": str(tmp_path / "journal.json"),
+            "journal_path": synthetic_measurement["journal_path"],
         },
     ]
-    journal = {
-        "nodes": [
-            {
-                "stage": "draft",
-                "code": "def train_xgboost(): return ensemble_features",
-                "protocol_observation": {"host_full_runtime": {"status": "pass"}},
-                "memory_routing_trace": {
-                    "schema": "mlevolve_memory_routing_trace_v1",
-                    "stage_route": {"stage": "draft"},
-                    "raw_candidates": [{"candidate_id": "m1"}, {"candidate_id": "m2"}],
-                    "selected_candidates": [
-                        {
-                            "candidate_id": "m1",
-                            "prompt_text": "train xgboost ensemble features",
-                        }
-                    ],
-                    "suppressed_candidates": [{"candidate_id": "m2"}],
-                    "final_prompt_candidate_ids": ["m1"],
-                },
-            }
-        ]
-    }
-    (tmp_path / "journal.json").write_text(json.dumps(journal), encoding="utf-8")
     terminal = analyze_results.terminal_summary(
         outcomes, ["leaf-classification"], ["no_memory", "dynamic_hybrid"]
     )
@@ -769,7 +984,12 @@ def test_analyzer_orders_terminal_before_noncausal_mechanism(tmp_path) -> None:
     assert terminal["analysis_order"] == 1
     assert dynamic["negative_transfer_rate"] == 1.0
     assert dynamic["cells"][0]["normalized_delta_vs_no_memory"] < 0
-    mechanism = analyze_results.mechanism_summary(outcomes)
+    mechanism = analyze_results.mechanism_summary(
+        outcomes,
+        _test_collector_public_key_ed25519=(
+            TEST_COLLECTOR_IDENTITY.public_key_ed25519
+        ),
+    )
     dynamic_mechanism = next(
         row for row in mechanism["runs"] if row["system_id"] == "dynamic_hybrid"
     )
@@ -777,3 +997,5 @@ def test_analyzer_orders_terminal_before_noncausal_mechanism(tmp_path) -> None:
     assert mechanism["definitions"]["causal_attribution"] is False
     assert dynamic_mechanism["static_adopted"] == 1
     assert dynamic_mechanism["runtime_activated"] == 1
+    assert dynamic_mechanism["adopted"] == 1
+    assert dynamic_mechanism["invalid_agent_evidence_routes"] == 0

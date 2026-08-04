@@ -23,6 +23,8 @@ SYSTEM_DIR = ROOT / "systems"
 JOB_DIR = ROOT / "jobs"
 SCHEMA_DIR = ROOT / "schemas"
 SEED = 1
+RELEASE_ID = "end2end-agent-v1"
+OUTPUT_ROOT = "/workspace/experiment-end2end-agent-runs-v1"
 SYSTEMS = (
     ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
     ("S1", "flat_retrieval", "internal", "Mixed global relevance Top-6"),
@@ -162,6 +164,16 @@ adoption_tracking:
   enable: true
   enable_analysis: false
   judge_mode: keyword
+
+adoption_verifier:
+  enabled: true
+  mode: enforce
+  model: ""
+  temperature: 0.0
+  max_tokens: 4096
+  max_contracts_per_call: 8
+  max_code_chars: 120000
+  require_signed_trace: true
 
 prospective_audit:
   enabled: true
@@ -344,6 +356,17 @@ def component_manifests() -> dict[str, dict[str, Any]]:
                 "token_counter": "whitespace_split_v1",
                 "visibility_token_budget": 4096,
             },
+            "adoption_verifier": {
+                "enabled": True,
+                "mode": "enforce",
+                "model_source": "agent.feedback.model",
+                "temperature": 0.0,
+                "max_tokens_per_call": 4096,
+                "max_contracts_per_call": 8,
+                "max_code_chars": 120000,
+                "require_signed_trace": True,
+                "runtime_probe": "line_range_executed",
+            },
             "pilot": {
                 "agent_steps": 80,
                 "agent_time_limit_seconds": 21600,
@@ -391,6 +414,7 @@ def component_manifests() -> dict[str, dict[str, Any]]:
             ],
             "host_bindings_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings",
             "host_runtime_sdk_hash": "1084155c01632ba93c581949cdcf40fc8df372333fdf82a8c6d878a1d75b2375",
+            "host_collector_public_key_ed25519": "qb++TPUVPeBugazDY22lXrAEOSFEaxK7uo72cWWXs0w=",
             "host_collector_public_key_sha256": "34a0b39b04a60dc781e9c5699a6771653613b7b582a096dd45f68155cb76f853",
             "host_task_bindings": HOST,
             "manifest_hash": "",
@@ -444,7 +468,9 @@ def component_manifests() -> dict[str, dict[str, Any]]:
 
 
 def shuffled_system_ids(task_id: str) -> list[str]:
-    digest = hashlib.sha256(f"end2end-v1|{task_id}|seed-{SEED}".encode()).digest()
+    digest = hashlib.sha256(
+        f"{RELEASE_ID}|{task_id}|seed-{SEED}".encode()
+    ).digest()
     rng = random.Random(int.from_bytes(digest[:8], "big"))
     values = [system_id for _label, system_id, _kind, _description in SYSTEMS]
     rng.shuffle(values)
@@ -457,11 +483,11 @@ def execution_manifest(
     if kind == "smoke":
         task_ids = ["leaf-classification"]
         formal = False
-        prefix = "e2e-smoke-v1"
+        prefix = "e2e-smoke-agent-v1"
     else:
         task_ids = [task_id for task_id, _display, _metric, _direction in TASKS]
         formal = True
-        prefix = "e2e-pilot-v1"
+        prefix = "e2e-pilot-agent-v1"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -514,20 +540,20 @@ def job(
     global_active_deadline = active_deadline * index_waves
     labels = {
         "app": "mlevolve-end2end",
-        "experiment": "experiment-end2end-memory-v1",
+        "experiment": "experiment-end2end-memory-agent-v1",
         "ecepxie.nrp/owner": "haoming",
         "app.kubernetes.io/managed-by": "codex-nrp-training",
     }
     args = [
         str(CLUSTER_ROOT / "run_assignment.py"),
         "--manifest", str(CLUSTER_ROOT / "manifests" / manifest_name),
-        "--output-root", "/workspace/experiment-end2end-runs-v1",
+        "--output-root", OUTPUT_ROOT,
     ]
     if manifest_name == "pilot_manifest.json":
         args.extend(
             [
                 "--smoke-gate",
-                "/workspace/experiment-end2end-runs-v1/SMOKE_GATE.json",
+                f"{OUTPUT_ROOT}/SMOKE_GATE.json",
             ]
         )
     if task_id:
@@ -666,7 +692,7 @@ def build() -> dict[str, Any]:
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
     smoke_job = job(
-        name="mlevolve-e2e-smoke-leaf-v1",
+        name="mlevolve-e2e-agent-smoke-leaf-v1",
         manifest_name="smoke_manifest.json",
         completions=10,
         task_id=None,
@@ -679,7 +705,7 @@ def build() -> dict[str, Any]:
     )
     for task_id, display, _metric, _direction in TASKS:
         pilot_job = job(
-            name=f"mlevolve-e2e-pilot-{display.lower()}-v1",
+            name=f"mlevolve-e2e-agent-pilot-{display.lower()}-v1",
             manifest_name="pilot_manifest.json",
             completions=10,
             task_id=task_id,
@@ -695,7 +721,7 @@ def build() -> dict[str, Any]:
             "schema": "mlevolve_end2end_launch_packet_v1",
             "status": "generated_not_submitted",
             "launch_gate": "explicit_user_authorization_required",
-            "smoke_gate_output": "/workspace/experiment-end2end-runs-v1/SMOKE_GATE.json",
+            "smoke_gate_output": f"{OUTPUT_ROOT}/SMOKE_GATE.json",
             "pilot_requires_passing_smoke_gate": True,
             "smoke_manifest_hash": smoke["manifest_hash"],
             "pilot_manifest_hash": pilot["manifest_hash"],

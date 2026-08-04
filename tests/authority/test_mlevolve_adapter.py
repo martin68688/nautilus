@@ -160,6 +160,66 @@ def test_shadow_records_same_decision_but_preserves_legacy_behavior(tmp_path):
     assert not agent.evaluation_authority.permits(decision, legacy_allowed=False)
 
 
+def test_end2end_candidate_contracts_cover_sop_and_runforest_exactly(tmp_path):
+    agent = fake_agent(tmp_path)
+    adapter = MLEvolveAuthorityAdapter(agent)
+    candidate = node("prompt-visible", True)
+    candidate.prompt_input = "visible prompt"
+    candidate.experience_contract_refs = []
+    candidate.memory_candidate_contract_refs = {}
+    cards = [
+        {
+            "candidate_id": "sop-card",
+            "source": "sop",
+            "source_stage": "draft",
+            "source_task_id": "source-task",
+            "prompt_text": "### sop-card [sop]\nfit only on training data",
+        },
+        {
+            "candidate_id": "run-card",
+            "source": "runforest",
+            "source_stage": "improve",
+            "source_task_id": "source-task",
+            "prompt_text": "### run-card [runforest]\nreuse the validated transform",
+        },
+    ]
+
+    contract_ids = adapter.record_memory_candidate_exposure(
+        node=candidate, candidates=cards, request_id="end2end-request"
+    )
+    contracts = adapter.actuation_tracker.contracts_for_artifact(candidate.id)
+
+    assert len(contract_ids) == len(contracts) == 2
+    assert candidate.experience_contract_refs == contract_ids
+    assert candidate.memory_candidate_contract_refs == dict(
+        zip(["sop-card", "run-card"], contract_ids, strict=True)
+    )
+    by_source = {
+        contract.source_artifact_refs[0]: contract for contract in contracts
+    }
+    assert by_source["sop-card"].sop_id == "sop-card"
+    assert by_source["run-card"].sop_id == ""
+    for card in cards:
+        contract = by_source[card["candidate_id"]]
+        assert contract.compiler_version == "agent_memory_candidate_contract_v1"
+        assert contract.source_task_ids == ["source-task"]
+        assert contract.must_change[0].description == card["prompt_text"]
+
+
+def test_end2end_no_memory_records_zero_candidate_contracts(tmp_path):
+    adapter = MLEvolveAuthorityAdapter(fake_agent(tmp_path))
+    candidate = node("no-memory", True)
+    candidate.experience_contract_refs = []
+    candidate.memory_candidate_contract_refs = {}
+
+    assert adapter.record_memory_candidate_exposure(
+        node=candidate, candidates=[], request_id="no-memory"
+    ) == []
+    assert adapter.actuation_tracker.contracts_for_artifact(candidate.id) == []
+    assert candidate.experience_contract_refs == []
+    assert candidate.memory_candidate_contract_refs == {}
+
+
 def test_failed_node_without_score_is_normal_fail_closed_decision(tmp_path):
     agent = fake_agent(tmp_path, mode="shadow")
     adapter = MLEvolveAuthorityAdapter(agent)

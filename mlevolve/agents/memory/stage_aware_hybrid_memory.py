@@ -3564,6 +3564,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             "pre_gate_raw_candidates": raw_rows,
             "selected_candidates": selection_pack["selected_candidates"],
             "suppressed_candidates": selection_pack["suppressed_candidates"],
+            "final_prompt_candidates": selection_pack["prompt_candidates"],
             "final_prompt_candidate_ids": list(selection.prompt_candidate_ids),
             "prompt_visible_refs": list(selection.prompt_candidate_ids),
             "prompt_text": selection.prompt_text,

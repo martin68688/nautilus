@@ -507,6 +507,125 @@ class MLEvolveAuthorityAdapter:
         self._emit_snapshots()
         return contract_ids
 
+    def record_memory_candidate_exposure(
+        self,
+        *,
+        node: Any,
+        candidates: Iterable[dict[str, Any]],
+        request_id: str = "",
+    ) -> list[str]:
+        """Bind every exact Prompt-visible memory card to one generic contract.
+
+        End2End compares SOP and RunForest candidates through one shared
+        ``MemorySystem`` interface. RunForest nodes do not necessarily project
+        to an SOP clause, so relying only on SOP-compiled contracts would leave
+        several systems invisible to the Agent verifier. These contracts claim
+        only that the exact authorized card influenced executable code; they do
+        not promote the source memory's historical score or truth.
+        """
+
+        if self.mode == "off":
+            return []
+        axes = resolve_stage_axes(runtime_stage=getattr(node, "stage", None))
+        operation = (
+            Operation.DEBUG_HYPOTHESIS
+            if str(getattr(node, "stage", "") or "").lower() == "debug"
+            else Operation.GENERATE_CANDIDATE
+        )
+        contracts: list[ExperienceContract] = []
+        candidate_ids: list[str] = []
+        seen: set[str] = set()
+        for raw in candidates:
+            if not isinstance(raw, dict):
+                continue
+            candidate_id = str(raw.get("candidate_id") or "")
+            prompt_text = str(raw.get("prompt_text") or "").strip()
+            source = str(raw.get("source") or "")
+            if (
+                not candidate_id
+                or candidate_id in seen
+                or not prompt_text
+                or source not in {"sop", "runforest"}
+            ):
+                continue
+            seen.add(candidate_id)
+            token = hashlib.sha256(
+                f"{source}\0{candidate_id}".encode("utf-8")
+            ).hexdigest()[:24]
+            clause_id = f"memory_candidate::{token}"
+            source_task_id = str(raw.get("source_task_id") or "")
+            candidate_ids.append(candidate_id)
+            contracts.append(
+                ExperienceContract(
+                    preconditions=[],
+                    must_preserve=[
+                        Predicate("active_protocol_ref", self.active_protocol.key()),
+                        Predicate("task_id", self.task_id),
+                    ],
+                    must_change=[
+                        Predicate(
+                            f"clause_applied::{clause_id}",
+                            True,
+                            prompt_text,
+                        )
+                    ],
+                    must_not_use=[
+                        Predicate("forbidden_dependency_count", 0),
+                        Predicate("holdout_used_for_selection", False),
+                    ],
+                    expected_runtime_observations=[
+                        Predicate("target_path_executed", True)
+                    ],
+                    clause_id=clause_id,
+                    sop_id=candidate_id if source == "sop" else "",
+                    source_artifact_refs=[candidate_id],
+                    source_task_ids=[source_task_id] if source_task_id else [],
+                    task_scope={"task_id": self.task_id},
+                    active_protocol_ref=self.active_protocol.key(),
+                    target_task_id=self.task_id,
+                    operation=operation.value,
+                    generation_stage=axes.generation_stage.value,
+                    governance_stage=axes.governance_stage.value,
+                    publication_class="certified",
+                    minimum_writeback_level=int(ActuationLevel.RUNTIME_CONFORMANT),
+                    policy_version=self.engine.policy_version,
+                    compiler_version="agent_memory_candidate_contract_v1",
+                ).finalize()
+            )
+        if not contracts:
+            return []
+        prompt_text = str(getattr(node, "prompt_input", "") or "")
+        contract_ids = self.actuation_tracker.record_exposure(
+            artifact_id=str(node.id),
+            contracts=contracts,
+            request_id=str(request_id or f"memory-candidates::{node.id}"),
+            prompt_sha256=(
+                hashlib.sha256(prompt_text.encode("utf-8")).hexdigest()
+                if prompt_text
+                else ""
+            ),
+        )
+        refs_field = getattr(node, "experience_contract_refs", None)
+        if not isinstance(refs_field, list):
+            refs_field = []
+            setattr(node, "experience_contract_refs", refs_field)
+        for contract_id in contract_ids:
+            if contract_id not in refs_field:
+                refs_field.append(contract_id)
+        mapping = getattr(node, "memory_candidate_contract_refs", None)
+        if not isinstance(mapping, dict):
+            mapping = {}
+            setattr(node, "memory_candidate_contract_refs", mapping)
+        for candidate_id, contract_id in zip(candidate_ids, contract_ids, strict=True):
+            existing = mapping.get(candidate_id)
+            if existing not in {None, contract_id}:
+                raise ValueError(
+                    "Prompt-visible memory candidate changed ExperienceContract identity"
+                )
+            mapping[candidate_id] = contract_id
+        self._emit_snapshots()
+        return contract_ids
+
     def record_replay_exposure(self, node: Any) -> list[str]:
         """Bind a direct replay/code-seed delivery to a real ExperienceContract.
 

@@ -106,6 +106,9 @@ class SearchNode(DataClassJsonMixin):
     receipt_refs: list[str] = field(default_factory=list, kw_only=True)
     authority_decision_refs: list[str] = field(default_factory=list, kw_only=True)
     experience_contract_refs: list[str] = field(default_factory=list, kw_only=True)
+    memory_candidate_contract_refs: dict[str, str] = field(
+        default_factory=dict, kw_only=True
+    )
     # Host-owned observations keyed by ExperienceContract ID. Candidate prose
     # never self-satisfies a contract; only explicitly attached static/runtime
     # observations may close non-generic predicates.

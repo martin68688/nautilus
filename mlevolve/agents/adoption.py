@@ -118,6 +118,9 @@ def log_adoption(
                     "final_prompt_candidate_ids": list(
                         pack.get("final_prompt_candidate_ids") or []
                     ),
+                    "final_prompt_candidates": copy.deepcopy(
+                        pack.get("final_prompt_candidates") or []
+                    ),
                     "visible_clause_ids": list(
                         pack.get("visible_clause_ids") or []
                     ),
@@ -149,7 +152,28 @@ def log_adoption(
             visibility_pack = getter()
     adapter = getattr(agent, "evaluation_authority", None)
     exposure_recorder = getattr(adapter, "record_prompt_exposure", None)
-    if callable(exposure_recorder) and visibility_pack is not None:
+    candidate_exposure_recorder = getattr(
+        adapter, "record_memory_candidate_exposure", None
+    )
+    if (
+        pack.get("schema") == "mlevolve_end2end_memory_pack_v1"
+        and callable(candidate_exposure_recorder)
+    ):
+        try:
+            candidate_exposure_recorder(
+                node=node,
+                candidates=pack.get("final_prompt_candidates") or [],
+                request_id=str(
+                    getattr(visibility_pack, "request_id", "") or ""
+                ),
+            )
+        except Exception as error:
+            logger.warning(
+                "Failed to record End2End candidate exposure for node %s: %s",
+                getattr(node, "id", "unknown"),
+                type(error).__name__,
+            )
+    elif callable(exposure_recorder) and visibility_pack is not None:
         try:
             exposure_recorder(
                 node=node,

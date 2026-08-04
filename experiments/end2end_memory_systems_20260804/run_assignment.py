@@ -10,6 +10,7 @@ creates a new immutable directory and never replaces the original failure.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import math
@@ -22,6 +23,9 @@ import sys
 import time
 from contextlib import contextmanager
 from typing import Any, Iterator, Mapping, Sequence
+
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 
 ROOT = Path(__file__).resolve().parent
@@ -583,6 +587,35 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         manifest=manifest,
     )
     hardware = capture_hardware_receipt()
+    key_source = Path(args.collector_key_source).resolve(strict=True)
+    private_key_raw = key_source.read_bytes()
+    if len(private_key_raw) != 32:
+        raise ValueError("Frozen Host collector private key must be 32 raw bytes")
+    collector_public_raw = Ed25519PrivateKey.from_private_bytes(
+        private_key_raw
+    ).public_key().public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw,
+    )
+    collector_public_key = base64.b64encode(collector_public_raw).decode("ascii")
+    expected_collector_key = str(
+        components["memory_bundles"].get(
+            "host_collector_public_key_ed25519"
+        )
+        or ""
+    )
+    expected_collector_key_hash = str(
+        components["memory_bundles"].get(
+            "host_collector_public_key_sha256"
+        )
+        or ""
+    )
+    if (
+        collector_public_key != expected_collector_key
+        or hashlib.sha256(collector_public_raw).hexdigest()
+        != expected_collector_key_hash
+    ):
+        raise ValueError("Mounted Host collector key does not match frozen identity")
     started_ns = time.time_ns()
     launch = {
         "schema": "mlevolve_end2end_launch_receipt_v1",
@@ -605,6 +638,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "completion_index": os.environ.get("JOB_COMPLETION_INDEX", ""),
         },
         "hardware": hardware,
+        "host_collector_public_key_ed25519": collector_public_key,
+        "host_collector_public_key_sha256": hashlib.sha256(
+            collector_public_raw
+        ).hexdigest(),
         "receipt_hash": "",
     }
     _write_exclusive(condition_root / "LAUNCH_RECEIPT.json", launch, "receipt_hash")
@@ -615,7 +652,6 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         if key not in {"KUBECONFIG", "GITHUB_TOKEN", "GH_TOKEN", "OPENAI_API_KEY"}
         and not key.startswith(("AWS_", "AZURE_", "KUBERNETES_SERVICE_"))
     }
-    key_source = Path(args.collector_key_source).resolve(strict=True)
     key_runtime = Path(args.collector_key_runtime).resolve()
     key_runtime.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(key_source, key_runtime)
@@ -643,7 +679,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             ),
             "MLEVOLVE_CONDITION_STARTED_AT_NS": str(started_ns),
             "MLEVOLVE_HOST_ARTIFACT_NAMESPACE": (
-                f"end2end-v1/{row['logical_run_id']}/attempt-{args.attempt:03d}"
+                f"end2end-agent-v1/{row['logical_run_id']}/attempt-{args.attempt:03d}"
             ),
             "MLEVOLVE_FIRST_VALID_EVENT_PATH": str(
                 run_root / "logs" / "FIRST_PROTOCOL_VALID_CANDIDATE.json"
@@ -797,7 +833,8 @@ def main() -> int:
     parser.add_argument("--task", default=None)
     parser.add_argument("--attempt", type=int, default=0)
     parser.add_argument(
-        "--output-root", default="/workspace/experiment-end2end-runs-v1"
+        "--output-root",
+        default="/workspace/experiment-end2end-agent-runs-v1",
     )
     parser.add_argument(
         "--collector-key-source",

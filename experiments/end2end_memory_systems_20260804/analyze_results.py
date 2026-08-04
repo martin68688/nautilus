@@ -13,17 +13,13 @@ import hashlib
 import json
 import math
 from pathlib import Path
-import re
 from typing import Any, Iterable, Mapping
+
+from validate_smoke_gate import validate_agent_adoption_evidence
 
 
 ROOT = Path(__file__).resolve().parent
 MANIFESTS = ROOT / "manifests"
-TOKEN = re.compile(r"[A-Za-z][A-Za-z0-9_]{2,}")
-STOP = {
-    "the", "and", "for", "with", "from", "this", "that", "model",
-    "memory", "candidate", "procedure", "stage", "task", "using",
-}
 
 
 def canonical_bytes(value: object) -> bytes:
@@ -211,19 +207,95 @@ def _journal_nodes(payload: object) -> list[dict[str, Any]]:
     return []
 
 
-def _tokens(text: str) -> set[str]:
-    return {
-        token.lower()
-        for token in TOKEN.findall(str(text or "").replace("_", " "))
-        if token.lower() not in STOP
+def _agent_contract_counts(
+    node: Mapping[str, Any], visible: list[str], *, system_id: str,
+    expected_collector_public_key_ed25519: str,
+) -> dict[str, int]:
+    counts = {
+        "plan_covered": 0,
+        "static_implemented": 0,
+        "static_partially_implemented": 0,
+        "static_not_implemented": 0,
+        "static_uncertain": 0,
+        "runtime_activated": 0,
+        "verdict_adopted": 0,
+        "verdict_partially_adopted": 0,
+        "verdict_rejected": 0,
+        "verdict_uncertain": 0,
+        "valid_agent_evidence_routes": 0,
+        "invalid_agent_evidence_routes": 0,
     }
+    try:
+        validate_agent_adoption_evidence(
+            node,
+            system_id=system_id,
+            prompt_candidate_ids=visible,
+            expected_collector_public_key_ed25519=(
+                expected_collector_public_key_ed25519
+            ),
+        )
+    except ValueError:
+        counts["invalid_agent_evidence_routes"] = 1
+        return counts
+    counts["valid_agent_evidence_routes"] = 1
+    mapping = {
+        str(key): str(value)
+        for key, value in (
+            node.get("memory_candidate_contract_refs") or {}
+        ).items()
+    }
+    plan_rows = {
+        str(row.get("contract_id")): row
+        for row in (node.get("adoption_verification_plan") or {}).get(
+            "contract_results", []
+        )
+        if isinstance(row, Mapping) and row.get("contract_id")
+    }
+    trace_rows = {
+        str(row.get("probe_id")): row
+        for row in (node.get("adoption_runtime_trace") or {}).get(
+            "probe_results", []
+        )
+        if isinstance(row, Mapping) and row.get("probe_id")
+    }
+    verdict_rows = {
+        str(row.get("contract_id")): row
+        for row in (node.get("adoption_verifier_verdict") or {}).get(
+            "contract_results", []
+        )
+        if isinstance(row, Mapping) and row.get("contract_id")
+    }
+    for candidate_id in visible:
+        contract_id = mapping[candidate_id]
+        plan = plan_rows[contract_id]
+        counts["plan_covered"] += 1
+        disposition = str(plan.get("disposition") or "uncertain")
+        counts[f"static_{disposition}"] += 1
+        probe_ids = {
+            str(row.get("probe_id"))
+            for row in plan.get("runtime_probes") or []
+            if isinstance(row, Mapping) and row.get("probe_id")
+        }
+        counts["runtime_activated"] += int(
+            any(trace_rows.get(probe_id, {}).get("executed") is True for probe_id in probe_ids)
+        )
+        final = str(verdict_rows[contract_id].get("verdict") or "uncertain")
+        counts[f"verdict_{final}"] += 1
+    return counts
 
 
-def _static_adoption(code: str, memory_text: str) -> bool:
-    return len(_tokens(code) & _tokens(memory_text)) >= 2
-
-
-def mechanism_summary(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
+def mechanism_summary(
+    outcomes: list[dict[str, Any]],
+    *,
+    _test_collector_public_key_ed25519: str | None = None,
+) -> dict[str, Any]:
+    memory_manifest = read_object(MANIFESTS / "memory_bundles.json")
+    verify(memory_manifest, "manifest_hash", "memory bundle manifest")
+    collector_public_key = str(
+        memory_manifest.get("host_collector_public_key_ed25519") or ""
+    )
+    if _test_collector_public_key_ed25519 is not None:
+        collector_public_key = str(_test_collector_public_key_ed25519)
     rows = []
     for outcome in outcomes:
         journal_path = Path(str(outcome.get("journal_path") or ""))
@@ -233,6 +305,13 @@ def mechanism_summary(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
             "suppressed": 0,
             "static_adopted": 0,
             "runtime_activated": 0,
+            "adopted": 0,
+            "partially_adopted": 0,
+            "rejected": 0,
+            "uncertain": 0,
+            "plan_covered": 0,
+            "valid_agent_evidence_routes": 0,
+            "invalid_agent_evidence_routes": 0,
         }
         by_stage: dict[str, dict[str, int]] = {}
         if journal_path.is_file():
@@ -244,15 +323,12 @@ def mechanism_summary(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
                 stage = str((route.get("stage_route") or {}).get("stage") or node.get("stage") or "unknown")
                 stage_counts = by_stage.setdefault(
                     stage,
-                    {"raw_candidates": 0, "prompt_visible": 0, "suppressed": 0,
-                     "static_adopted": 0, "runtime_activated": 0},
+                    {key: 0 for key in counters},
                 )
-                selected = {
-                    str(item.get("candidate_id")): item
-                    for item in route.get("selected_candidates") or []
-                    if isinstance(item, dict)
-                }
-                visible = list(route.get("final_prompt_candidate_ids") or [])
+                visible = [
+                    str(value)
+                    for value in route.get("final_prompt_candidate_ids") or []
+                ]
                 raw_count = len(route.get("raw_candidates") or [])
                 suppressed_count = len(
                     {
@@ -267,20 +343,35 @@ def mechanism_summary(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
                 stage_counts["raw_candidates"] += raw_count
                 stage_counts["prompt_visible"] += len(visible)
                 stage_counts["suppressed"] += suppressed_count
-                code = str(node.get("code") or "")
-                runtime_pass = (
-                    ((node.get("protocol_observation") or {}).get("host_full_runtime") or {}).get("status")
-                    == "pass"
+                agent_counts = _agent_contract_counts(
+                    node,
+                    visible,
+                    system_id=str(outcome["system_id"]),
+                    expected_collector_public_key_ed25519=collector_public_key,
                 )
-                for candidate_id in visible:
-                    candidate = selected.get(str(candidate_id)) or {}
-                    adopted = _static_adoption(code, str(candidate.get("prompt_text") or ""))
-                    if adopted:
-                        counters["static_adopted"] += 1
-                        stage_counts["static_adopted"] += 1
-                    if adopted and runtime_pass:
-                        counters["runtime_activated"] += 1
-                        stage_counts["runtime_activated"] += 1
+                translated = {
+                    "plan_covered": agent_counts["plan_covered"],
+                    "static_adopted": (
+                        agent_counts["static_implemented"]
+                        + agent_counts["static_partially_implemented"]
+                    ),
+                    "runtime_activated": agent_counts["runtime_activated"],
+                    "adopted": agent_counts["verdict_adopted"],
+                    "partially_adopted": agent_counts[
+                        "verdict_partially_adopted"
+                    ],
+                    "rejected": agent_counts["verdict_rejected"],
+                    "uncertain": agent_counts["verdict_uncertain"],
+                    "valid_agent_evidence_routes": agent_counts[
+                        "valid_agent_evidence_routes"
+                    ],
+                    "invalid_agent_evidence_routes": agent_counts[
+                        "invalid_agent_evidence_routes"
+                    ],
+                }
+                for key, value in translated.items():
+                    counters[key] += value
+                    stage_counts[key] += value
         rows.append(
             {
                 "logical_run_id": outcome["logical_run_id"],
@@ -299,6 +390,11 @@ def mechanism_summary(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
                     counters["runtime_activated"] / counters["prompt_visible"]
                     if counters["prompt_visible"] else None
                 ),
+                "agent_adoption_rate": (
+                    (counters["adopted"] + counters["partially_adopted"])
+                    / counters["prompt_visible"]
+                    if counters["prompt_visible"] else None
+                ),
                 "by_stage": by_stage,
             }
         )
@@ -309,8 +405,10 @@ def mechanism_summary(outcomes: list[dict[str, Any]]) -> dict[str, Any]:
         "definitions": {
             "routing": "serialized frozen system route over the common authorized pool",
             "suppression": "raw authorized candidate not visible in the final Prompt",
-            "static_adoption": "at least two non-generic memory tokens occur in generated code",
-            "runtime_activation": "static adoption on a node with signed Host full-runtime status=pass",
+            "static_adoption": "independent Agent plan disposition is implemented or partially_implemented",
+            "runtime_activation": "at least one Contract-bound line_range_executed probe fired in the Host-signed trace",
+            "adoption": "independent Agent final verdict is adopted or partially_adopted and is bound to executed probes",
+            "evidence_validation": "candidate→Contract→plan→code→signed trace→verdict hashes and Ed25519 signature are verified before counting",
             "causal_attribution": False,
         },
         "runs": rows,

@@ -93,6 +93,7 @@ class MemorySelection:
     raw_candidates: tuple[MemoryCandidate, ...]
     selected_candidates: tuple[MemoryCandidate, ...]
     suppressed_candidates: tuple[dict[str, Any], ...]
+    prompt_candidates: tuple[dict[str, str], ...]
     prompt_candidate_ids: tuple[str, ...]
     prompt_text: str
     prompt_token_count: int
@@ -107,6 +108,7 @@ class MemorySelection:
                 item.to_dict() for item in self.selected_candidates
             ],
             "suppressed_candidates": [dict(item) for item in self.suppressed_candidates],
+            "prompt_candidates": [dict(item) for item in self.prompt_candidates],
             "final_prompt_candidate_ids": list(self.prompt_candidate_ids),
             "prompt_text": self.prompt_text,
             "prompt_token_count": self.prompt_token_count,
@@ -193,6 +195,7 @@ class _BaseMemorySystem:
             header += f"\nPort scope: {self.limitation}"
         parts = [header]
         visible: list[str] = []
+        prompt_candidates: list[dict[str, str]] = []
         truncated = False
         for candidate in chosen:
             card = self._format_candidate(candidate)
@@ -200,6 +203,15 @@ class _BaseMemorySystem:
             if len(whitespace_tokens(prospective)) <= context.prompt_token_budget:
                 parts.append(card)
                 visible.append(candidate.candidate_id)
+                prompt_candidates.append(
+                    {
+                        "candidate_id": candidate.candidate_id,
+                        "source": candidate.source,
+                        "source_stage": candidate.source_stage,
+                        "source_task_id": candidate.source_task_id,
+                        "prompt_text": card,
+                    }
+                )
                 continue
             remaining = context.prompt_token_budget - len(
                 whitespace_tokens("\n\n".join(parts))
@@ -207,8 +219,18 @@ class _BaseMemorySystem:
             if remaining > 0:
                 clipped = whitespace_tokens(card)[:remaining]
                 if clipped:
-                    parts.append(" ".join(clipped))
+                    clipped_text = " ".join(clipped)
+                    parts.append(clipped_text)
                     visible.append(candidate.candidate_id)
+                    prompt_candidates.append(
+                        {
+                            "candidate_id": candidate.candidate_id,
+                            "source": candidate.source,
+                            "source_stage": candidate.source_stage,
+                            "source_task_id": candidate.source_task_id,
+                            "prompt_text": clipped_text,
+                        }
+                    )
             truncated = True
             break
 
@@ -234,6 +256,7 @@ class _BaseMemorySystem:
             raw_candidates=tuple(raw),
             selected_candidates=tuple(chosen),
             suppressed_candidates=tuple(suppressed),
+            prompt_candidates=tuple(prompt_candidates),
             prompt_candidate_ids=tuple(visible),
             prompt_text=prompt,
             prompt_token_count=len(whitespace_tokens(prompt)),
