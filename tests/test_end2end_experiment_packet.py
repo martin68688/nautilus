@@ -361,7 +361,7 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     assert smoke["formal_result_eligible"] is False
     assert pilot["formal_result_eligible"] is True
     assert smoke["release_id"] == pilot["release_id"] == (
-        "end2end-agentic-three-role-v5"
+        "end2end-agentic-three-role-v6"
     )
     assert smoke["comparison_baseline_release_id"] == (
         pilot["comparison_baseline_release_id"]
@@ -485,11 +485,11 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
         assert labels["experiment"] == (
-            "experiment-end2end-memory-agent-v5"
+            "experiment-end2end-memory-agent-v6"
         )
         assert job["metadata"]["annotations"]["mlevolve.ai/generated-not-submitted"] == "true"
         assert job["metadata"]["annotations"]["mlevolve.ai/gpu-contract"] == (
-            "nvidia.com/gpu=1;product=NVIDIA-A10"
+            "nvidia.com/a100=1"
         )
         spec = job["spec"]
         assert spec["completionMode"] == "Indexed"
@@ -506,15 +506,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
                 "mlevolve.ai/per-index-deadline-seconds"
             ] == "25200"
         container = spec["template"]["spec"]["containers"][0]
-        affinity = spec["template"]["spec"]["affinity"]
-        expression = affinity["nodeAffinity"][
-            "requiredDuringSchedulingIgnoredDuringExecution"
-        ]["nodeSelectorTerms"][0]["matchExpressions"][0]
-        assert expression == {
-            "key": "nvidia.com/gpu.product",
-            "operator": "In",
-            "values": ["NVIDIA-A10"],
-        }
+        assert "affinity" not in spec["template"]["spec"]
         assert container["command"] == ["/usr/local/bin/python", "-u"]
         rendered = json.dumps(container)
         assert "sleep" not in rendered
@@ -522,7 +514,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         requests = container["resources"]["requests"]
         limits = container["resources"]["limits"]
         assert requests == limits
-        assert requests["nvidia.com/gpu"] == "1"
+        assert requests["nvidia.com/a100"] == "1"
         assert requests["memory"] == "64Gi"
         assert "nvidia.com/a40" not in requests
         assert "agent.search.num_gpus=1" not in rendered  # runner owns overrides
@@ -537,12 +529,12 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-            "/workspace/nautilus-exp-end2end-agent-v6/mlevolve"
+            "/workspace/nautilus-exp-end2end-agent-v7/mlevolve"
         )
         if path.name.startswith("pilot-"):
             assert "--smoke-gate" in container["args"]
             assert (
-                "/workspace/experiment-end2end-memory-agent-v5/runs/SMOKE_GATE.json"
+                "/workspace/experiment-end2end-memory-agent-v6/runs/SMOKE_GATE.json"
                 in container["args"]
             )
         else:
@@ -570,7 +562,7 @@ def test_launch_packet_records_programmatic_smoke_gate() -> None:
     assert packet["pilot_requires_passing_smoke_gate"] is True
     assert (
         packet["smoke_gate_output"]
-        == "/workspace/experiment-end2end-memory-agent-v5/runs/SMOKE_GATE.json"
+        == "/workspace/experiment-end2end-memory-agent-v6/runs/SMOKE_GATE.json"
     )
 
 
@@ -903,9 +895,9 @@ def test_smoke_gate_rejects_tampered_agent_trace_signature(tmp_path) -> None:
 
 def test_budget_couples_gpu_search_and_cpu_controls() -> None:
     budget = _read(MANIFESTS / "budget.json")
-    assert budget["runtime"]["gpu_type"] == "NVIDIA A10"
-    assert budget["runtime"]["gpu_resource_key"] == "nvidia.com/gpu"
-    assert budget["runtime"]["gpu_product_constraint"] == ["NVIDIA-A10"]
+    assert budget["runtime"]["gpu_type"] == "NVIDIA A100 family"
+    assert budget["runtime"]["gpu_resource_key"] == "nvidia.com/a100"
+    assert budget["runtime"]["gpu_product_constraint"] is None
     for phase in ("smoke", "pilot"):
         row = budget[phase]
         assert row["gpu_count"] == row["parallel_search_num"] == 1
@@ -942,24 +934,24 @@ def test_budget_couples_gpu_search_and_cpu_controls() -> None:
     assert budget["failure_policy"]["preserve_all_attempts"] is True
 
 
-def test_hardware_receipt_records_frozen_product_constraint(monkeypatch) -> None:
+def test_hardware_receipt_records_unpinned_a100_contract(monkeypatch) -> None:
     class Result:
         returncode = 0
-        stdout = "NVIDIA A10\n"
+        stdout = "NVIDIA A100-SXM4-80GB\n"
 
-    monkeypatch.setenv("KUBERNETES_NODE_NAME", "node-a10.example")
+    monkeypatch.setenv("KUBERNETES_NODE_NAME", "node-a100.example")
     monkeypatch.setattr(run_assignment.subprocess, "run", lambda *args, **kwargs: Result())
     receipt = run_assignment.capture_hardware_receipt(
         {
-            "gpu_resource_key": "nvidia.com/gpu",
-            "gpu_product_constraint": ["NVIDIA-A10"],
+            "gpu_resource_key": "nvidia.com/a100",
+            "gpu_product_constraint": None,
         }
     )
     assert receipt == {
-        "requested_gpu_resource": "nvidia.com/gpu",
-        "gpu_product_constraint": ["NVIDIA-A10"],
-        "node_name": "node-a10.example",
-        "observed_gpu_products": ["NVIDIA A10"],
+        "requested_gpu_resource": "nvidia.com/a100",
+        "gpu_product_constraint": None,
+        "node_name": "node-a100.example",
+        "observed_gpu_products": ["NVIDIA A100-SXM4-80GB"],
         "gpu_query_error": "",
     }
 

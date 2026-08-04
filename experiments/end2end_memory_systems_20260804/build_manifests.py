@@ -16,7 +16,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v6")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v7")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
 MANIFESTS = ROOT / "manifests"
 SYSTEM_DIR = ROOT / "systems"
@@ -25,11 +25,11 @@ SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-agentic-three-role-v5"
+RELEASE_ID = "end2end-agentic-three-role-v6"
 BASELINE_RELEASE_ID = "end2end-agent-v3"
 RANDOMIZATION_RELEASE_ID = BASELINE_RELEASE_ID
-OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v5/runs"
-EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v5"
+OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v6/runs"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v6"
 SOLVER_TEMPERATURE = 1.0
 SYSTEMS = (
     ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
@@ -400,9 +400,9 @@ def component_manifests() -> dict[str, dict[str, Any]]:
         "solver_model_revision": "sha256:6c72890187efc83ef04ac6527c8f22f823708d99c83b7f7b3393dfe27fe4efc6",
         "provider_seed_supported": False,
         "rng_commitment_scope": "Python/NumPy/Torch local RNG state; no provider determinism claim",
-        "gpu_type": "NVIDIA A10",
-        "gpu_product_constraint": ["NVIDIA-A10"],
-        "gpu_resource_key": "nvidia.com/gpu",
+        "gpu_type": "NVIDIA A100 family",
+        "gpu_product_constraint": None,
+        "gpu_resource_key": "nvidia.com/a100",
     }
     budget_manifest = finalize(
         {
@@ -575,7 +575,7 @@ def execution_manifest(
         task_ids = [task_id for task_id, _display, _metric, _direction in TASKS]
         system_ids = None
         formal = True
-        prefix = "e2e-pilot-agentic-three-role-v5"
+        prefix = "e2e-pilot-agentic-three-role-v6"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -662,6 +662,10 @@ def job(
         "ephemeral-storage": "64Gi",
         runtime["gpu_resource_key"]: "1",
     }
+    gpu_contract = f"{runtime['gpu_resource_key']}=1"
+    product_constraint = runtime.get("gpu_product_constraint")
+    if product_constraint:
+        gpu_contract += ";product=" + ",".join(product_constraint)
     return {
         "apiVersion": "batch/v1",
         "kind": "Job",
@@ -672,7 +676,7 @@ def job(
             "annotations": {
                 "mlevolve.ai/launch-gate": "explicit-user-authorization-required",
                 "mlevolve.ai/generated-not-submitted": "true",
-                "mlevolve.ai/gpu-contract": "nvidia.com/gpu=1;product=NVIDIA-A10",
+                "mlevolve.ai/gpu-contract": gpu_contract,
                 "mlevolve.ai/preserve-failed-index-artifacts": "true",
                 "mlevolve.ai/per-index-deadline-seconds": str(active_deadline),
                 "mlevolve.ai/global-deadline-seconds": str(
@@ -695,27 +699,6 @@ def job(
                     "tolerations": [
                         {"key": "nvidia.com/gpu", "operator": "Exists"}
                     ],
-                    "affinity": {
-                        "nodeAffinity": {
-                            "requiredDuringSchedulingIgnoredDuringExecution": {
-                                "nodeSelectorTerms": [
-                                    {
-                                        "matchExpressions": [
-                                            {
-                                                "key": "nvidia.com/gpu.product",
-                                                "operator": "In",
-                                                "values": list(
-                                                    runtime[
-                                                        "gpu_product_constraint"
-                                                    ]
-                                                ),
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }
-                        }
-                    },
                     "containers": [
                         {
                             "name": "end2end-runner",
@@ -810,7 +793,7 @@ def build() -> dict[str, Any]:
         kind="smoke",
         components=components,
         system_ids_override=["dynamic_hybrid"],
-        prefix_override="e2e-feasibility-smoke-agentic-three-role-v5",
+        prefix_override="e2e-feasibility-smoke-agentic-three-role-v6",
     )
     pilot = execution_manifest(kind="pilot", components=components)
     dump_json(MANIFESTS / "smoke_manifest.json", smoke)
@@ -818,7 +801,7 @@ def build() -> dict[str, Any]:
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
     smoke_job = job(
-        name="mlevolve-e2e-all-systems-smoke-aerial-v5",
+        name="mlevolve-e2e-all-systems-smoke-aerial-v6",
         manifest_name="smoke_manifest.json",
         completions=10,
         task_id=None,
@@ -830,7 +813,7 @@ def build() -> dict[str, Any]:
         yaml.safe_dump(smoke_job, sort_keys=False), encoding="utf-8"
     )
     feasibility_job = job(
-        name="mlevolve-e2e-agentic-three-role-feasibility-aerial-v5",
+        name="mlevolve-e2e-agentic-three-role-feasibility-aerial-v6",
         manifest_name="feasibility_smoke_manifest.json",
         completions=1,
         task_id=None,
@@ -843,7 +826,7 @@ def build() -> dict[str, Any]:
     )
     for task_id, display, _metric, _direction in TASKS:
         pilot_job = job(
-            name=f"mlevolve-e2e-agentic-pilot-{display.lower()}-v5",
+            name=f"mlevolve-e2e-agentic-pilot-{display.lower()}-v6",
             manifest_name="pilot_manifest.json",
             completions=10,
             task_id=task_id,
