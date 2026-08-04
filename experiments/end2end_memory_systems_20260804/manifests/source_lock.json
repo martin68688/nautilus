@@ -123,7 +123,7 @@
     },
     {
       "path": "mlevolve/agents/memory/run_forest_replay.py",
-      "sha256": "692f4228d77957b1a25427497a8c35ab1ead6eeeedb8fb99b93cc5b3accf8de3"
+      "sha256": "c145270a9f06f3acea2b2f6096b17f969d53f81983b78e86b80eb16dccc06a82"
     },
     {
       "path": "mlevolve/agents/memory/sop_visibility_gateway.py",
@@ -839,11 +839,11 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "fc0cc72715792cbc672aafea992a7e39f437d04ceaa040d515351df8e43f5e89"
+      "sha256": "e4df13b7c0bab4e810cc94a294252bfa97b4270db6df0880666429bd43e7da70"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/run_assignment.py",
-      "sha256": "bdf8d9c1625dfa1877b6cebf59b3c9835393dec54d9b3b5a0405010e06d97a42"
+      "sha256": "469366562ea3a8477ade36b98d9aa1de2ad5dd6eb920b0838503dbf105d79033"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/validate_smoke_gate.py",
@@ -922,8 +922,8 @@
       "sha256": "955e0489e38b0fd3b8850cd68df686884ee538e5748e453c43049bd9e50dc1b5"
     }
   ],
-  "git_head": "099000a0cf10b799df6f2261bf4306e29ee16d43",
+  "git_head": "eefecad64b43a560bc9c857a426ca84bc503670c",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "c38ce857ff8188cbb29fec92e0838ea28678f67e36e6294c1a650d9057d4f766",
+  "manifest_hash": "d6de20411a6ac0653507fb3882a917aa0736815a4a6907f8f0b121ea7a5e06ed",
   "schema": "mlevolve_end2end_source_lock_v1"
 }
