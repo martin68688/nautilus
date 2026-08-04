@@ -1,0 +1,19 @@
+{
+  "binding_hash": "bbe0a89db4a7f9ece9031c0aafb76ef5fcc65708b405dba3100cac1be9070e6f",
+  "contract_file_sha256": "06a4bb8bc716e599b1c4891f4623ccaa835bf187e40b09ffcc4c3bdf8b51dadb",
+  "contract_hash": "84c1e5764b64abede9be3e841f2a37d3043c5f1bf18e6190e957a41c84dc4a09",
+  "contract_path": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/leaf-classification/contract/PROTOCOL_EXECUTION_CONTRACT.json",
+  "data_view_manifest_file_sha256": "77323036e2af3459e531058177ffed07959fc291db810ec04161d03e25696c81",
+  "data_view_manifest_hash": "6073c8cd004c84aa048945eeeed408592bebf87581a5c6720b52e3f920daad5d",
+  "data_view_manifest_path": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/leaf-classification/data_views/DATA_VIEW_MANIFEST.json",
+  "data_view_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/leaf-classification/data_views",
+  "description_path": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/leaf-classification/TASK_DESCRIPTION.md",
+  "description_sha256": "4390a446f8916e71e729beb17c570bcce09944815fc97b6341924e778fc537b1",
+  "image_digest": "sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+  "report_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/leaf-classification/reports",
+  "runtime_artifact_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/leaf-classification/runtime",
+  "schema": "mlevolve_host_protocol_binding_v1",
+  "sdk_hash": "b0abd7c1dcc8dbd86b033406215f5cd82b0af0a996c85746aa0b3d36997ed31d",
+  "task_id": "leaf-classification",
+  "terminal_exposure_count": 0
+}

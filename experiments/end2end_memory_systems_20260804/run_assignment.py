@@ -573,6 +573,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     )
     evaluator = verify_evaluator_release(row["task_id"], components["evaluators"])
     condition_root.mkdir(parents=True, exist_ok=False)
+    runtime_binding_path = condition_root / "host" / "HOST_PROTOCOL_BINDING.json"
+    runtime_binding_path.parent.mkdir(parents=True)
+    shutil.copyfile(host_binding_path, runtime_binding_path)
+    runtime_binding_path.chmod(0o444)
     run_root = condition_root / "agent"
     (run_root / "logs").mkdir(parents=True)
     (run_root / "workspace").mkdir(parents=True)
@@ -659,7 +663,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     env.update(
         {
             "MLEVOLVE_CONFIG": str((ROOT / system["config_path"]).resolve()),
-            "MLEVOLVE_HOST_PROTOCOL_BINDING": str(host_binding_path),
+            "MLEVOLVE_HOST_PROTOCOL_BINDING": str(runtime_binding_path),
             "MLEVOLVE_HOST_COLLECTOR_KEY_FILE": str(key_runtime),
             "MLEVOLVE_RUNTIME_IMAGE_DIGEST": str(host_binding["image_digest"]),
             "MLEVOLVE_CONTAINER_IMAGE_REFERENCE": str(

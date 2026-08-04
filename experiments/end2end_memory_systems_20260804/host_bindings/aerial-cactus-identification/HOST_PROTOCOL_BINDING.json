@@ -1,0 +1,19 @@
+{
+  "binding_hash": "bc4467b9577d3f280b669bc8df9cabe76c5bd094e04d590b0b28090d32f1e4e1",
+  "contract_file_sha256": "098108bc7bf4098989fd20927d6e6b6476271ab0be40ff76fae98b82221ff020",
+  "contract_hash": "3313f15076012774921d2bf4de7ebeafc2845e5a452f7ba87701a08382d45df4",
+  "contract_path": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/aerial-cactus-identification/contract/PROTOCOL_EXECUTION_CONTRACT.json",
+  "data_view_manifest_file_sha256": "12dc8e7f43722d463278bfd15633eb65cc52912de290ac7b869276ed21e8dfb0",
+  "data_view_manifest_hash": "a8cc51d255986f1e21c34aa7c13aaad21e6e17eec8506e22e7e0e9cede38caeb",
+  "data_view_manifest_path": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/aerial-cactus-identification/data_views/DATA_VIEW_MANIFEST.json",
+  "data_view_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/aerial-cactus-identification/data_views",
+  "description_path": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/aerial-cactus-identification/TASK_DESCRIPTION.md",
+  "description_sha256": "39b02d277bea1107a17eb1980cf2b86a741d97e5ee6529f63cff46492fb5f3df",
+  "image_digest": "sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+  "report_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/aerial-cactus-identification/reports",
+  "runtime_artifact_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/aerial-cactus-identification/runtime",
+  "schema": "mlevolve_host_protocol_binding_v1",
+  "sdk_hash": "b0abd7c1dcc8dbd86b033406215f5cd82b0af0a996c85746aa0b3d36997ed31d",
+  "task_id": "aerial-cactus-identification",
+  "terminal_exposure_count": 0
+}

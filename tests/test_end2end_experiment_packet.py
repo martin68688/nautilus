@@ -483,7 +483,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         if path.name.startswith("pilot-"):
             assert "--smoke-gate" in container["args"]
             assert (
-                "/workspace/experiment-end2end-runs-v1/SMOKE_GATE.json"
+                "/workspace/experiment-end2end-agent-runs-v1/SMOKE_GATE.json"
                 in container["args"]
             )
         else:
@@ -495,7 +495,7 @@ def test_launch_packet_records_programmatic_smoke_gate() -> None:
     assert packet["pilot_requires_passing_smoke_gate"] is True
     assert (
         packet["smoke_gate_output"]
-        == "/workspace/experiment-end2end-runs-v1/SMOKE_GATE.json"
+        == "/workspace/experiment-end2end-agent-runs-v1/SMOKE_GATE.json"
     )
 
 
@@ -899,6 +899,19 @@ def test_runtime_sdk_exactly_matches_frozen_host_bindings() -> None:
     assert hash_sdk_tree(REPO / "mlevolve" / "protocol_runtime") == memory[
         "host_runtime_sdk_hash"
     ]
+    assert memory["host_bindings_root"].endswith(
+        "/experiments/end2end_memory_systems_20260804/host_bindings"
+    )
+    for task_id, expected in memory["host_task_bindings"].items():
+        path = ROOT / "host_bindings" / task_id / "HOST_PROTOCOL_BINDING.json"
+        payload = _read(path)
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == expected[
+            "binding_file_sha256"
+        ]
+        assert payload["binding_hash"] == _hash(payload, "binding_hash")
+        assert payload["binding_hash"] == expected["binding_hash"]
+        assert payload["sdk_hash"] == memory["host_runtime_sdk_hash"]
+        assert payload["contract_hash"] == expected["contract_hash"]
 
 
 def test_terminal_holdout_keeps_release_public_view_while_host_uses_dataviews() -> None:
