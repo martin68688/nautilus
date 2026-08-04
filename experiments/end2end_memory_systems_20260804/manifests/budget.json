@@ -1,4 +1,15 @@
 {
+  "adoption_verifier": {
+    "enabled": true,
+    "max_code_chars": 120000,
+    "max_contracts_per_call": 8,
+    "max_tokens_per_call": 4096,
+    "mode": "enforce",
+    "model_source": "agent.feedback.model",
+    "require_signed_trace": true,
+    "runtime_probe": "line_range_executed",
+    "temperature": 0.0
+  },
   "failure_policy": {
     "automatic_job_retry": false,
     "backoff_limit_per_index": 0,
@@ -6,7 +17,7 @@
     "preserve_all_attempts": true,
     "score_imputation": false
   },
-  "manifest_hash": "f8b73e3338e8608d55a95c0fa25fb3109bd65913577d474a1ee47557e8c6377e",
+  "manifest_hash": "e1f93a23b67263a8c169f66ad2f05e1726005340aea50dedc4f7e3891b402273",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,

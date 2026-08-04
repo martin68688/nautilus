@@ -11,7 +11,11 @@
     },
     {
       "path": "mlevolve/agents/adoption.py",
-      "sha256": "9d0dd6d807002e97358f45e90859eb8045b5f07ede935360e754ed642b92e1dc"
+      "sha256": "64bb903e1bc6721821a78b86fe351598e80c4724a93a2cc9af5280a900d2069c"
+    },
+    {
+      "path": "mlevolve/agents/adoption_verifier_agent.py",
+      "sha256": "5b3b5d6d25ac1c4e09943506f0a55d5d841ddda6a867ea65181d2d144a3be08d"
     },
     {
       "path": "mlevolve/agents/aggregation_agent.py",
@@ -63,7 +67,7 @@
     },
     {
       "path": "mlevolve/agents/draft_agent.py",
-      "sha256": "9faa9b365f41d1594893891bc0e9e878beb8636a91f256be5ea131b488d2032f"
+      "sha256": "a6eaef833a5f046f223470096597ba169bb81d9ca2d65e38af00bd17d34c8fa1"
     },
     {
       "path": "mlevolve/agents/evolution_agent.py",
@@ -79,7 +83,7 @@
     },
     {
       "path": "mlevolve/agents/leakage_audit.py",
-      "sha256": "8f52b2ca627944d5716de30cd50f2e371ec641bc784edc95500b01d7f544f460"
+      "sha256": "52bb9c13c47549638fb81db01ef407b9f7f8ad9eff8dffd11342b3b10c2a6069"
     },
     {
       "path": "mlevolve/agents/memory/__init__.py",
@@ -91,7 +95,7 @@
     },
     {
       "path": "mlevolve/agents/memory/end2end_memory_system.py",
-      "sha256": "59422231e86924fd24542413846ff3a731cfe29daf053fc9904d0661934abc1e"
+      "sha256": "c1f3595308e812adeff68c27845f38c3dafa654defbe735d05b742f0610c686e"
     },
     {
       "path": "mlevolve/agents/memory/external_skill_memory.py",
@@ -127,7 +131,7 @@
     },
     {
       "path": "mlevolve/agents/memory/stage_aware_hybrid_memory.py",
-      "sha256": "a46c5671a7762f1c4057c4ecd9dd29a49a707cf29f55f9feff74be8f339960a3"
+      "sha256": "c6e08a85c2a84e453795338617ffe56af7c27f4193965eb6894d072a78aae968"
     },
     {
       "path": "mlevolve/agents/planner/__init__.py",
@@ -175,7 +179,7 @@
     },
     {
       "path": "mlevolve/agents/result_parse_agent.py",
-      "sha256": "fa250f3d3c753723a067167c960671d25f50685f84382ffbd571c73269d2042b"
+      "sha256": "3f7ea23a18f9aaf1ad3140c7fe141c37cf669c4cdc57d0c2c476a54dbdfdd0f9"
     },
     {
       "path": "mlevolve/agents/triggers.py",
@@ -188,6 +192,10 @@
     {
       "path": "mlevolve/analysis/adoption_tracker.py",
       "sha256": "ebe0001e3033e4c27b585d20bf78ff724a00144efd4e3687a2172bdda36d2064"
+    },
+    {
+      "path": "mlevolve/analysis/adoption_verifier_smoke.py",
+      "sha256": "f3b029c398d702c008b45977c92c1791de0e50c96bc769105c76589895106572"
     },
     {
       "path": "mlevolve/authority/__init__.py",
@@ -227,7 +235,7 @@
     },
     {
       "path": "mlevolve/authority/adapters/mlevolve/receipt_bridge.py",
-      "sha256": "ed11998f7a3930eb2aaa98bdccd35594ef0864298ed6e25c50c7821621ec36e0"
+      "sha256": "4dbac655075e9ad216cbecfe0100e3de411a2eb004571b7555a8f02f33d7fe8f"
     },
     {
       "path": "mlevolve/authority/adapters/mlevolve/replay_gate.py",
@@ -239,11 +247,15 @@
     },
     {
       "path": "mlevolve/authority/adapters/mlevolve/runtime.py",
-      "sha256": "9603793f0d7a10e951b9a108db6f82df3f4f4660b4ebc6c20c86fcb2d32ded87"
+      "sha256": "ee31955feb522c1516620a2cfc5bb8f1e68338cd14db640dce5b3a62cd98ec7a"
     },
     {
       "path": "mlevolve/authority/adapters/mlevolve/transition_adapter.py",
       "sha256": "cfeba9b3f0b6e5b4e13f822a9fd9201a003caad560e0243ac9d5e82594b10da9"
+    },
+    {
+      "path": "mlevolve/authority/adoption_verification.py",
+      "sha256": "f250de9b0ed7883b8ea2d9d3e0047434bf3367ca37201e72f12f4e0850202d90"
     },
     {
       "path": "mlevolve/authority/authority_engine.py",
@@ -363,11 +375,11 @@
     },
     {
       "path": "mlevolve/config/__init__.py",
-      "sha256": "2cc82626dd6e11a77414e0793c9a8c98c314edd0dc4fba3a7559644c198878f6"
+      "sha256": "267f5bd552622cff7e4ffb577b6fcd77949f0c0968ef1341361cbc3d959e62ed"
     },
     {
       "path": "mlevolve/config/config.yaml",
-      "sha256": "ad6b59ae170c8e35ed39cc08f0b81b588261d93b1e3d82d7991b61addf7fd71d"
+      "sha256": "19c8df031d5de06a27fd80f9e2dd2d118f6413b7b0e62d9800ee4d4217d75305"
     },
     {
       "path": "mlevolve/config/config_authority_canary_enforce.yaml",
@@ -459,7 +471,7 @@
     },
     {
       "path": "mlevolve/engine/agent_search.py",
-      "sha256": "c4360748eb4dba2fea0c4e6dea466fc433ee0c2ed7eaa198dfdfb736a0475736"
+      "sha256": "1aeba2dda95489d4d77643e2a9174b4a7cf89969b414dcf0d3c678196adc4949"
     },
     {
       "path": "mlevolve/engine/candidate_execution_contract.py",
@@ -507,7 +519,7 @@
     },
     {
       "path": "mlevolve/engine/executor.py",
-      "sha256": "60b8d2dcc93c11d3ea388b5ff5eed802132ed3d3d313883efb16feb1d61b514f"
+      "sha256": "cf3c25b1c502209d56a4cca84d8b74e06d3c7feee21d48de7225feb9b98756bc"
     },
     {
       "path": "mlevolve/engine/node_selection.py",
@@ -523,7 +535,7 @@
     },
     {
       "path": "mlevolve/engine/search_node.py",
-      "sha256": "36e8eb87de3a4837cad37ed32ff50ae3b6d26948f5fc62bdbd2da24aaf59eba6"
+      "sha256": "966f0ca884d0e454c4ea81373f4cdcecac789a5643923c14413ace0fdc20e880"
     },
     {
       "path": "mlevolve/engine/solution_manager.py",
@@ -714,12 +726,16 @@
       "sha256": "87ef02e35cde54fa9c89f0da3f5a8437731a9252066c73e69e4f3de560a9ab7e"
     },
     {
+      "path": "mlevolve/protocol_runtime/adoption_trace.py",
+      "sha256": "0f4399dac4e960fb38077c8d7bde5adfeb769d9148ea45155253f73584022a5e"
+    },
+    {
       "path": "mlevolve/protocol_runtime/closure.py",
       "sha256": "c74b91f58cd067e3ee1677e8cd79adeb888256be4b6817c199a7e4568d771cf3"
     },
     {
       "path": "mlevolve/protocol_runtime/collector.py",
-      "sha256": "1d3dc044a7660102c949bc10aa76f4fc567d97c585ee683bb934a046ff6356a9"
+      "sha256": "e318ef6dac403319ddc5e8757c0fa9f62bd840b0e2c6d7ab2446cf00986ae095"
     },
     {
       "path": "mlevolve/protocol_runtime/collector_bridge.py",
@@ -819,23 +835,23 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/analyze_results.py",
-      "sha256": "0c1f97d718a64fecd7f7e1f1c43dd252858b18add3df48acdccc37e227d647ee"
+      "sha256": "8ce5e9be20f9f016f2cf82c162ff0b403bec3de25ddd3e5f2fd63ded01198dc5"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "acc0f8b8815dde0a4aee32af051896e63a4f5899eeee43fcd966d65c468ff6c3"
+      "sha256": "ad7e66a099116a60bd3a391f47c71ae1788de78826aa51c724029c43c17e9856"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/run_assignment.py",
-      "sha256": "17b84a223052a8ba261a584077e76e52218824c36dc2766657834a542cc31eb4"
+      "sha256": "5d908a84a091abb766d30b94eb38c2621135a2c1d60ad27428ced728465740c7"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/validate_smoke_gate.py",
-      "sha256": "6cb0550dc9d1621e7c79e841df246c9d02f6886e72a3ead966baa86da09c351a"
+      "sha256": "bf54a69cbec5191b674cdc6399eeb5d6d672ce560e7960bbec67f322e3eb805b"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/base.yaml",
-      "sha256": "a0edc68a7a87f47525d0edadb4e62153f50b167cb72137a66c2ba10611113e56"
+      "sha256": "108c41aaa176960249562f87a6bd17eafe3ce1f76e25de6ed23d2a0b54f976a8"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/dynamic_hybrid.yaml",
@@ -888,10 +904,26 @@
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/smoke_gate.schema.json",
       "sha256": "917600987ab32042c202a545a01942e605b5112b3c94701bf14b5eb834ddc17f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/host_bindings/aerial-cactus-identification/HOST_PROTOCOL_BINDING.json",
+      "sha256": "f350b3081d44fd730679f1d14a4b2a500db818ae0d9aaeb4bec96cf203b63f80"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/host_bindings/denoising-dirty-documents/HOST_PROTOCOL_BINDING.json",
+      "sha256": "914730c3d9499d0c8a1c19d1d4ad832055f12f695af272784647c1270896966e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/host_bindings/leaf-classification/HOST_PROTOCOL_BINDING.json",
+      "sha256": "fb93cd0f55cbc6822726b61a7275f138d1ef3a6518ef8579a845d1cc99055957"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/host_bindings/new-york-city-taxi-fare-prediction/HOST_PROTOCOL_BINDING.json",
+      "sha256": "955e0489e38b0fd3b8850cd68df686884ee538e5748e453c43049bd9e50dc1b5"
     }
   ],
-  "git_head": "742a24090adebba8780a6ddf4479db84c28ae311",
+  "git_head": "a5689cdf7a979783f218b0c2bee400b1e2cd8cfb",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "9e25e11378422e2eae619179a8da632d465f29ad9071e95e383eeec1f81940f4",
+  "manifest_hash": "52eb0b9000c312e15c05362395796c6e5b719c42c5d4d03c8f352fd014d74001",
   "schema": "mlevolve_end2end_source_lock_v1"
 }
