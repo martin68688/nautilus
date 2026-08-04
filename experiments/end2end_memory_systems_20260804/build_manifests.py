@@ -16,7 +16,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-temp05-v1")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
 MANIFESTS = ROOT / "manifests"
 SYSTEM_DIR = ROOT / "systems"
@@ -682,7 +682,7 @@ def job(
                                 {"name": "PYTHONDONTWRITEBYTECODE", "value": "1"},
                                 {
                                     "name": "PYTHONPATH",
-                                    "value": "/workspace/nautilus-exp-end2end/mlevolve",
+                                    "value": str(CLUSTER_REPO / "mlevolve"),
                                 },
                                 {"name": "MLEVOLVE_CONTAINER_IMAGE_REFERENCE", "value": runtime["container_image"]},
                                 {"name": "MLEVOLVE_SOLVER_BINDING_ID", "value": runtime["solver_model_id"]},

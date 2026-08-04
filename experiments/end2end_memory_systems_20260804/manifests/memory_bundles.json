@@ -9,7 +9,7 @@
     "20260701_180038"
   ],
   "host_binding_asset_source": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings; only sdk_hash and binding_hash are rebound in immutable End2End copies",
-  "host_bindings_root": "/workspace/nautilus-exp-end2end/experiments/end2end_memory_systems_20260804/host_bindings",
+  "host_bindings_root": "/workspace/nautilus-exp-end2end-temp05-v1/experiments/end2end_memory_systems_20260804/host_bindings",
   "host_collector_public_key_ed25519": "qb++TPUVPeBugazDY22lXrAEOSFEaxK7uo72cWWXs0w=",
   "host_collector_public_key_sha256": "34a0b39b04a60dc781e9c5699a6771653613b7b582a096dd45f68155cb76f853",
   "host_runtime_sdk_hash": "b0abd7c1dcc8dbd86b033406215f5cd82b0af0a996c85746aa0b3d36997ed31d",
@@ -39,7 +39,7 @@
       "data_view_manifest_hash": "3611c0b87c21a5995990a8b7b4604a7b790daf491bc95411d0a768e0382da6a7"
     }
   },
-  "manifest_hash": "0c5c9ae50d019d3ff9999484f0bb57586e8238aca90c98d31864e4ef954f157b",
+  "manifest_hash": "cce9baab5c73ad63736f854d67164cfe3b83e65611535a5d8ad6aaccdcf935ff",
   "production_binding_path": "/workspace/experiment-r-dev-r1/memory/authority-r3/PRODUCTION_MEMORY_BINDING.json",
   "production_binding_sha256": "47e0d38a2183827f36ab44c9881c542690d154cd735fbfdb9c4de3019bf926f7",
   "schema": "mlevolve_end2end_memory_bundle_manifest_v1",
