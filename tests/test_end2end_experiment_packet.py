@@ -483,7 +483,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         if path.name.startswith("pilot-"):
             assert "--smoke-gate" in container["args"]
             assert (
-                "/workspace/experiment-end2end-agent-runs-v1/SMOKE_GATE.json"
+                "/workspace/experiment-end2end-agent-runs-v2/SMOKE_GATE.json"
                 in container["args"]
             )
         else:
@@ -495,7 +495,7 @@ def test_launch_packet_records_programmatic_smoke_gate() -> None:
     assert packet["pilot_requires_passing_smoke_gate"] is True
     assert (
         packet["smoke_gate_output"]
-        == "/workspace/experiment-end2end-agent-runs-v1/SMOKE_GATE.json"
+        == "/workspace/experiment-end2end-agent-runs-v2/SMOKE_GATE.json"
     )
 
 

@@ -25,8 +25,8 @@ SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-agent-v1"
-OUTPUT_ROOT = "/workspace/experiment-end2end-agent-runs-v1"
+RELEASE_ID = "end2end-agent-v2"
+OUTPUT_ROOT = "/workspace/experiment-end2end-agent-runs-v2"
 SYSTEMS = (
     ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
     ("S1", "flat_retrieval", "internal", "Mixed global relevance Top-6"),
@@ -490,11 +490,11 @@ def execution_manifest(
     if kind == "smoke":
         task_ids = ["leaf-classification"]
         formal = False
-        prefix = "e2e-smoke-agent-v1"
+        prefix = "e2e-smoke-agent-v2"
     else:
         task_ids = [task_id for task_id, _display, _metric, _direction in TASKS]
         formal = True
-        prefix = "e2e-pilot-agent-v1"
+        prefix = "e2e-pilot-agent-v2"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -547,7 +547,7 @@ def job(
     global_active_deadline = active_deadline * index_waves
     labels = {
         "app": "mlevolve-end2end",
-        "experiment": "experiment-end2end-memory-agent-v1",
+        "experiment": "experiment-end2end-memory-agent-v2",
         "ecepxie.nrp/owner": "haoming",
         "app.kubernetes.io/managed-by": "codex-nrp-training",
     }
@@ -699,7 +699,7 @@ def build() -> dict[str, Any]:
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
     smoke_job = job(
-        name="mlevolve-e2e-agent-smoke-leaf-v1",
+        name="mlevolve-e2e-agent-smoke-leaf-v2",
         manifest_name="smoke_manifest.json",
         completions=10,
         task_id=None,
@@ -712,7 +712,7 @@ def build() -> dict[str, Any]:
     )
     for task_id, display, _metric, _direction in TASKS:
         pilot_job = job(
-            name=f"mlevolve-e2e-agent-pilot-{display.lower()}-v1",
+            name=f"mlevolve-e2e-agent-pilot-{display.lower()}-v2",
             manifest_name="pilot_manifest.json",
             completions=10,
             task_id=task_id,

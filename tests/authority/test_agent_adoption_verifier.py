@@ -536,3 +536,32 @@ def test_enforce_config_rejects_legacy_hardcoded_runtime() -> None:
         assert "requires host_sdk_shadow or host_sdk_enforce" in str(error)
     else:  # pragma: no cover - explicit failure message is clearer than pytest magic here
         raise AssertionError("legacy hardcoded runtime unexpectedly accepted")
+
+
+def test_agent_search_imports_replay_anchor_used_by_verifier_guard() -> None:
+    """Catch conflict resolutions that retain the call but drop its import."""
+
+    import ast
+
+    path = (
+        Path(__file__).resolve().parents[2]
+        / "mlevolve"
+        / "engine"
+        / "agent_search.py"
+    )
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    imported = {
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
+        and node.module == "agents.memory.run_forest_replay"
+        for alias in node.names
+    }
+    called = {
+        node.func.id
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+    }
+
+    assert "is_historical_replay_anchor" in called
+    assert "is_historical_replay_anchor" in imported

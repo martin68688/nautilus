@@ -393,3 +393,30 @@ overwriting this record.
 - The terminal Kubernetes Job and child Pods were subsequently absent from
   the namespace inventory, but all logical attempts, measurements, journals,
   preflight reports, and terminal report remain on the persistent PVC.
+
+## Launch L8 — retained Agent-verifier v1 runtime failure
+
+- Release: `end2end-agent-v1`; output root:
+  `/workspace/experiment-end2end-agent-runs-v1`
+- Frozen order began with index 0 `runforest_only`, followed by index 1
+  `macla_style_port`.
+- Index 0 ran on `rci-nrp-gpu-02.sdsu.edu`; observed hardware was
+  `NVIDIA A100 80GB PCIe`.
+- The draft completed generation and code review, then failed before candidate
+  execution with `NameError: is_historical_replay_anchor is not defined` at
+  `mlevolve/engine/agent_search.py` while applying the Agent verifier guard.
+- Root cause: the Agent-verifier cherry-pick retained the function call but a
+  conflict resolution omitted the corresponding import from
+  `agents.memory.run_forest_replay`.
+- Measurement: status `retained_agent_failed`, failure class `agent`, completed
+  false, terminal score null, TTFV null, wall time 109.661929979 seconds,
+  allocated GPU time 0.03046164721638889 hours.
+- Measurement hash:
+  `39917014c15655580d9e5dd5cb270a28994baaa7d90a4565c8fcb9682de7b92c`.
+- Index 1 reached Running, but had not created an immutable attempt directory
+  when the common-runtime defect was diagnosed and the Job was ordinarily
+  stopped. No result is invented for that interrupted index.
+- `SMOKE_GATE.json` was not created. The formal 40-run Pilot remained blocked.
+- All index-0 logs and the measurement remain on the PVC; the v1 output root
+  will be retained unchanged. The replacement is a new `end2end-agent-v2`
+  release with an AST regression test requiring the call and import together.

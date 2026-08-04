@@ -27,6 +27,7 @@ from agents.triggers import (
     refresh_replay_lineage_after_revision,
 )
 from agents.prompts import enforce_host_candidate_entrypoint
+from agents.memory.run_forest_replay import is_historical_replay_anchor
 from protocol_runtime.preflight import (
     PreflightStatus,
     build_bounded_repair_receipt,
