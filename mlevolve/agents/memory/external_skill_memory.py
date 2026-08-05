@@ -2021,6 +2021,26 @@ class RunForestMemoryLayer:
         }
 
     def _positive_memory_eligible(self, node: dict[str, Any]) -> bool:
+        authority_cfg = (
+            getattr(self.cfg, "evaluation_authority", None)
+            if self.cfg is not None
+            else None
+        )
+        fast_nonblocking = bool(
+            str(getattr(authority_cfg, "mode", "") or "").lower() == "off"
+            and self.memory_snapshot is not None
+            and getattr(self.memory_snapshot, "verify_artifacts", True) is False
+        )
+        if fast_nonblocking:
+            metric = node.get("metric")
+            return bool(
+                node.get("type") == "RunNode"
+                and node.get("is_buggy") is False
+                and node.get("is_valid") is True
+                and isinstance(metric, (int, float))
+                and not isinstance(metric, bool)
+                and math.isfinite(float(metric))
+            )
         if node.get("strategy_alignment_eligible") is False:
             return False
         audit = node.get("leakage_audit")

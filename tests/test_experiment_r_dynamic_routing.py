@@ -610,6 +610,40 @@ def test_same_task_best_history_respects_minimize_metric_direction(tmp_path):
     assert [row["id"] for row in first_rows[:2]] == ["n1", "n0"]
 
 
+def test_fast_experiment_accepts_successful_history_without_paper_grade_markers(
+    tmp_path,
+):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.cfg = SimpleNamespace(
+        evaluation_authority=SimpleNamespace(mode="off")
+    )
+    layer.memory_snapshot = SimpleNamespace(verify_artifacts=False)
+    for node_id in ("n0", "n1"):
+        layer.nodes[node_id]["leakage_audit"] = {
+            "status": "clean",
+            "legacy_receipt_level": "legacy_static_only",
+        }
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer._experiment_r_agentic_query_fn = lambda **_kwargs: {
+        "action": "finish",
+        "reason": "use the successful same-task best",
+        "selected_ids": ["n1"],
+    }
+
+    _text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="task",
+        task_desc="text classification with log loss",
+        query_parts=["start from the strongest historical method"],
+        draft_role="memory_transfer",
+    )
+    pack = layer.current_navigation_pack()
+    same_task = pack["retrieval_agent"]["same_task_best_first"]
+    assert same_task["best_runforest_id"] == "n1"
+    assert same_task["prompt_pin"]["prompt_visible"] is True
+    assert "n1" in refs
+
+
 def test_dynamic_prompt_pins_same_task_best_when_retrieval_agent_declines_it(
     tmp_path,
 ):

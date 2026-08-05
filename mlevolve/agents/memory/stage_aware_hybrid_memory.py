@@ -1805,11 +1805,31 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         run_id = str(transition.get("run_short_id") or transition.get("run_id") or "")
         if run_id in self.excluded_run_ids:
             return False, "held_out_run"
+        fast_nonblocking = bool(
+            self.memory_snapshot is not None
+            and getattr(self.memory_snapshot, "verify_artifacts", True) is False
+            and str(getattr(getattr(self.cfg, "evaluation_authority", None), "mode", "") or "").lower()
+            == "off"
+        )
+        child = self.nodes.get(str(transition.get("child_node_id") or ""), {})
+        if fast_nonblocking:
+            metric = child.get("metric")
+            outcome = str(transition.get("outcome") or "")
+            if not (
+                child.get("is_buggy") is False
+                and child.get("is_valid") is True
+                and isinstance(metric, (int, float))
+                and not isinstance(metric, bool)
+                and math.isfinite(float(metric))
+            ):
+                return False, "child_execution_not_successful"
+            if outcome in {"buggy", "metric_worsened", "unknown"}:
+                return False, f"transition_outcome_{outcome or 'missing'}"
+            return True, "experiment_fast_successful_transition"
         if any(run_id.startswith(prefix) for prefix in self._blocked_run_prefixes):
             return False, "blocked_run_prefix"
         if transition.get("quarantined") is True or transition.get("protocol_biased") is True:
             return False, "transition_quarantined_or_protocol_biased"
-        child = self.nodes.get(str(transition.get("child_node_id") or ""), {})
         if not self._positive_memory_eligible(child):
             audit = child.get("leakage_audit") if isinstance(child.get("leakage_audit"), dict) else {}
             return False, str(audit.get("memory_disposition") or audit.get("status") or "child_not_code_audited_clean")
@@ -1835,15 +1855,24 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         audit = node.get("leakage_audit") if isinstance(node.get("leakage_audit"), dict) else {}
         metric = node.get("metric")
         run_id = str(node.get("run_short_id") or node.get("run_id") or "")
+        fast_nonblocking = bool(
+            self.memory_snapshot is not None
+            and getattr(self.memory_snapshot, "verify_artifacts", True) is False
+            and str(getattr(getattr(self.cfg, "evaluation_authority", None), "mode", "") or "").lower()
+            == "off"
+        )
         return bool(
-            audit.get("rank_eligible") is True
+            (fast_nonblocking or audit.get("rank_eligible") is True)
             and node.get("is_buggy") is False
             and node.get("is_valid") is True
             and isinstance(metric, (int, float))
             and not isinstance(metric, bool)
             and math.isfinite(float(metric))
             and run_id not in self.excluded_run_ids
-            and not any(run_id.startswith(prefix) for prefix in self._blocked_run_prefixes)
+            and (
+                fast_nonblocking
+                or not any(run_id.startswith(prefix) for prefix in self._blocked_run_prefixes)
+            )
         )
 
     def _sop_text_parts(self, node: dict[str, Any]) -> dict[str, str]:

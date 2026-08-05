@@ -75,6 +75,7 @@ def main() -> int:
             retrieval_control="dynamic_hybrid",
             visibility_mode="off",
             excluded_run_ids=list(ext.excluded_run_ids),
+            cfg=cfg,
             memory_snapshot=snapshot,
             experiment_r_enabled=True,
             experiment_r_candidate_limit=int(ext.experiment_r_candidate_limit),
