@@ -1,5 +1,5 @@
 {
-  "binding_hash": "bc4467b9577d3f280b669bc8df9cabe76c5bd094e04d590b0b28090d32f1e4e1",
+  "binding_hash": "39d9c644a15406fafa3c72ce55da1f9d3c7e3c24692985de07a5e2e934220681",
   "contract_file_sha256": "098108bc7bf4098989fd20927d6e6b6476271ab0be40ff76fae98b82221ff020",
   "contract_hash": "3313f15076012774921d2bf4de7ebeafc2845e5a452f7ba87701a08382d45df4",
   "contract_path": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/aerial-cactus-identification/contract/PROTOCOL_EXECUTION_CONTRACT.json",
@@ -13,7 +13,7 @@
   "report_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/aerial-cactus-identification/reports",
   "runtime_artifact_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/aerial-cactus-identification/runtime",
   "schema": "mlevolve_host_protocol_binding_v1",
-  "sdk_hash": "b0abd7c1dcc8dbd86b033406215f5cd82b0af0a996c85746aa0b3d36997ed31d",
+  "sdk_hash": "b4419cb4aa04bb0ee08456c8663525cc2a7bb12dcc56f61c94ffc021bb850819",
   "task_id": "aerial-cactus-identification",
   "terminal_exposure_count": 0
 }

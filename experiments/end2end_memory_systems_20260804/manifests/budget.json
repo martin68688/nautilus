@@ -12,11 +12,15 @@
   },
   "agent_semantic_protocol_review": {
     "actual_entrypoint_required": true,
+    "agent_controls_protocol_preflight": true,
     "enabled_for_systems": [
       "dynamic_hybrid"
     ],
+    "host_dry_run_executed": false,
     "host_receipt_admission_authority": false,
-    "max_repair_attempts": 2,
+    "host_runtime_semantic_disposition": "observe_only",
+    "max_repair_attempts": 3,
+    "max_review_attempts": 6,
     "max_tokens_per_call": 4096,
     "method_preservation_required": true,
     "temperature": 0.0,
@@ -29,7 +33,7 @@
     "preserve_all_attempts": true,
     "score_imputation": false
   },
-  "manifest_hash": "5d85eccd0284f8d7bce420019a260ebc4010d67778af990bdb70471af086da30",
+  "manifest_hash": "5f599eb7075a15e6022c2f6c0deb926d06e53865f0736ac929571370883d5096",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,

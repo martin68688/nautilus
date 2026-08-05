@@ -19,7 +19,7 @@
     },
     {
       "path": "mlevolve/agents/agent_protocol_review_agent.py",
-      "sha256": "42c261099c029d2ba3e59793f47c6f35317275db830ab4752acf5734b8880789"
+      "sha256": "531c05f67626328f4e71582a98ad987317f3b4ce0a805e3fb1a4dbc0e102f82b"
     },
     {
       "path": "mlevolve/agents/aggregation_agent.py",
@@ -383,7 +383,7 @@
     },
     {
       "path": "mlevolve/config/__init__.py",
-      "sha256": "1bf1327d1c3c633072d63ecbb2f624fad7e564c81625ea56815496f9204fcc63"
+      "sha256": "0c047f07d113679110fa1a6273df7173b141cbcb4562833b333cd2a14d2e12c0"
     },
     {
       "path": "mlevolve/config/config.yaml",
@@ -531,7 +531,7 @@
     },
     {
       "path": "mlevolve/engine/executor.py",
-      "sha256": "cf96ac7509c04feb35ba5baa73f282a3418f0d1e63d2c1336ca9a7b9873ff82a"
+      "sha256": "fe4abdc64cd2aee56496adad7088603eba46a97fa7011fe5aa6bec1b65a1307b"
     },
     {
       "path": "mlevolve/engine/node_selection.py",
@@ -775,7 +775,7 @@
     },
     {
       "path": "mlevolve/protocol_runtime/full_runtime.py",
-      "sha256": "77177eade1bd69f84fbf7722ee44261047cc7a9f08af095f276e38ee84766815"
+      "sha256": "3b11b5bf91fed2ddb7869a6a858bd9caf8bb30b963deddbdd1b8b0d88cf5a022"
     },
     {
       "path": "mlevolve/protocol_runtime/online_enforce_gate.py",
@@ -795,7 +795,7 @@
     },
     {
       "path": "mlevolve/protocol_runtime/session.py",
-      "sha256": "bcd0501f4ec568876e6d05eaaaab210691dc39251cd8d94db6b534f567001628"
+      "sha256": "8ebf06194d5a931c561f5509bccfbdb234654fee4bfafcccf6f46f15c0322c15"
     },
     {
       "path": "mlevolve/protocol_runtime/task_staging.py",
@@ -851,7 +851,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "bcd96478084dc6d146b9a2c183ccb6c6397595cbc5fc98449415ece338136a2b"
+      "sha256": "72b72b9563e4898139a07df616b7c05953659b0c7cb9759f8f99a75b99ec4970"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/publish_smoke_memory_bundle.py",
@@ -859,7 +859,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/run_assignment.py",
-      "sha256": "c9b1798706e2d3d2babda1ab4315438f523f31db9f558b69d2edecaed86f7524"
+      "sha256": "c82b6039edbdcf2baf9c9bd8ed96eda235e865b4d873af3d47c973b4b909accc"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/validate_smoke_gate.py",
@@ -871,7 +871,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/dynamic_hybrid.yaml",
-      "sha256": "4f2c20bb97cff76e2ff34645ff7fd2dd92d034a54dcffedb9fea76e06b4b6f53"
+      "sha256": "47fb73026c123b1e69bd3b4aeaa659efa05e8a345e51c640cb6394677e882a5c"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/flat_retrieval.yaml",
@@ -915,7 +915,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/execution_manifest.schema.json",
-      "sha256": "852f21228fbd05c490d1906dfe3b6c40d6186cd6fb9ff8a5e2f192fc6a425898"
+      "sha256": "b70cb5d47f12cac4e1aa4fc287aa1033913fb65a00d08b6299b0ed1533537b87"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/smoke_gate.schema.json",
@@ -923,23 +923,23 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/host_bindings/aerial-cactus-identification/HOST_PROTOCOL_BINDING.json",
-      "sha256": "f350b3081d44fd730679f1d14a4b2a500db818ae0d9aaeb4bec96cf203b63f80"
+      "sha256": "c78c025d14ccd581cfebf9b5f844a74f39242c3758f6deb67e35203341e8f9de"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/host_bindings/denoising-dirty-documents/HOST_PROTOCOL_BINDING.json",
-      "sha256": "914730c3d9499d0c8a1c19d1d4ad832055f12f695af272784647c1270896966e"
+      "sha256": "d4f811550be2418d37b54eb335049b6eaf398332394f81a33ef7078e73bc9045"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/host_bindings/leaf-classification/HOST_PROTOCOL_BINDING.json",
-      "sha256": "fb93cd0f55cbc6822726b61a7275f138d1ef3a6518ef8579a845d1cc99055957"
+      "sha256": "3302cd71e8ae7e8a8a995f1f29d02016c51463b21a20b73d1152749438cb68ce"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/host_bindings/new-york-city-taxi-fare-prediction/HOST_PROTOCOL_BINDING.json",
-      "sha256": "955e0489e38b0fd3b8850cd68df686884ee538e5748e453c43049bd9e50dc1b5"
+      "sha256": "6e240617568977113e7de63d8ab52e670b17671c4070750e366f0c41001b8be7"
     }
   ],
-  "git_head": "ae45107c268c597dcae374b1b069f3737675beee",
+  "git_head": "53cb912a2960ba50eb54ec643472972ffaf28ae6",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "49b94e51ccc8bc8218b5d80e176bb1061dc4d42328caf4e3a22571d2fb225f60",
+  "manifest_hash": "ee975e4dc05de3510030575ec4ece2f7808f076e3609a219c1f2dd632e55d7ea",
   "schema": "mlevolve_end2end_source_lock_v1"
 }

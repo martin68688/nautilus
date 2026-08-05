@@ -9,37 +9,37 @@
     "20260701_180038"
   ],
   "host_binding_asset_source": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings; only sdk_hash and binding_hash are rebound in immutable End2End copies",
-  "host_bindings_root": "/workspace/nautilus-exp-end2end-agent-v8/experiments/end2end_memory_systems_20260804/host_bindings",
+  "host_bindings_root": "/workspace/nautilus-exp-end2end-agent-v9/experiments/end2end_memory_systems_20260804/host_bindings",
   "host_collector_public_key_ed25519": "qb++TPUVPeBugazDY22lXrAEOSFEaxK7uo72cWWXs0w=",
   "host_collector_public_key_sha256": "34a0b39b04a60dc781e9c5699a6771653613b7b582a096dd45f68155cb76f853",
-  "host_runtime_sdk_hash": "b0abd7c1dcc8dbd86b033406215f5cd82b0af0a996c85746aa0b3d36997ed31d",
+  "host_runtime_sdk_hash": "b4419cb4aa04bb0ee08456c8663525cc2a7bb12dcc56f61c94ffc021bb850819",
   "host_task_bindings": {
     "aerial-cactus-identification": {
-      "binding_file_sha256": "f350b3081d44fd730679f1d14a4b2a500db818ae0d9aaeb4bec96cf203b63f80",
-      "binding_hash": "bc4467b9577d3f280b669bc8df9cabe76c5bd094e04d590b0b28090d32f1e4e1",
+      "binding_file_sha256": "c78c025d14ccd581cfebf9b5f844a74f39242c3758f6deb67e35203341e8f9de",
+      "binding_hash": "39d9c644a15406fafa3c72ce55da1f9d3c7e3c24692985de07a5e2e934220681",
       "contract_hash": "3313f15076012774921d2bf4de7ebeafc2845e5a452f7ba87701a08382d45df4",
       "data_view_manifest_hash": "a8cc51d255986f1e21c34aa7c13aaad21e6e17eec8506e22e7e0e9cede38caeb"
     },
     "denoising-dirty-documents": {
-      "binding_file_sha256": "914730c3d9499d0c8a1c19d1d4ad832055f12f695af272784647c1270896966e",
-      "binding_hash": "f6838699efd07a70f85e00cd6c1b115a3803e355fc99da7c8d28a2cdd133d50a",
+      "binding_file_sha256": "d4f811550be2418d37b54eb335049b6eaf398332394f81a33ef7078e73bc9045",
+      "binding_hash": "5cdd186837c80bce780cddb4faaea89f514533bcd7ee767e8820ba2e97fcd7d1",
       "contract_hash": "0e1cbf9f1fda429434375c5a6b68cc4fafd873a140884438a226688c362bbc6e",
       "data_view_manifest_hash": "74e20f50b39534b415f7878f172e29f2d91e467a1daf70d00b683c79ed02e3d9"
     },
     "leaf-classification": {
-      "binding_file_sha256": "fb93cd0f55cbc6822726b61a7275f138d1ef3a6518ef8579a845d1cc99055957",
-      "binding_hash": "bbe0a89db4a7f9ece9031c0aafb76ef5fcc65708b405dba3100cac1be9070e6f",
+      "binding_file_sha256": "3302cd71e8ae7e8a8a995f1f29d02016c51463b21a20b73d1152749438cb68ce",
+      "binding_hash": "433a8857a76aba46f4e29aaab5a1435ba823aef530800885a5b07a9f79c5efbf",
       "contract_hash": "84c1e5764b64abede9be3e841f2a37d3043c5f1bf18e6190e957a41c84dc4a09",
       "data_view_manifest_hash": "6073c8cd004c84aa048945eeeed408592bebf87581a5c6720b52e3f920daad5d"
     },
     "new-york-city-taxi-fare-prediction": {
-      "binding_file_sha256": "955e0489e38b0fd3b8850cd68df686884ee538e5748e453c43049bd9e50dc1b5",
-      "binding_hash": "23558307a297fd74d1cde12f0cb8e23e68280dbd5091f466f711e77a8345f4f8",
+      "binding_file_sha256": "6e240617568977113e7de63d8ab52e670b17671c4070750e366f0c41001b8be7",
+      "binding_hash": "148f16d8af4c1955891d76a41cb4b2209512723b0ebd20e6f32fc27ff7f361e3",
       "contract_hash": "aee52a4dbc04be10244003ae593f3c0276be3c75eca63331b864ae2f25eb3d1b",
       "data_view_manifest_hash": "3611c0b87c21a5995990a8b7b4604a7b790daf491bc95411d0a768e0382da6a7"
     }
   },
-  "manifest_hash": "060b95bcd7ce25713cd16300f89b51196ff5ce585dcfdcc29dd21b9e8d403d0b",
+  "manifest_hash": "b0827f9958ce282ebaf03f8812221860ebff95ba9086e0993819b338b7841dc8",
   "production_binding_path": "/workspace/experiment-end2end-memory-agent-v2/smoke-memory-v2/SMOKE_MEMORY_BINDING.json",
   "production_binding_sha256": "6c0b50e7f49626e673b0ae02254268104aa1c4214470bc8a9ba83e8cf2ccc614",
   "schema": "mlevolve_end2end_memory_bundle_manifest_v1",
