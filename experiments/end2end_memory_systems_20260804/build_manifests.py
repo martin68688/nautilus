@@ -16,7 +16,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v13")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v14")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
 MANIFESTS = ROOT / "manifests"
 SYSTEM_DIR = ROOT / "systems"
@@ -886,14 +886,14 @@ def build() -> dict[str, Any]:
         yaml.safe_dump(feasibility_job, sort_keys=False), encoding="utf-8"
     )
     leaf_dynamic_job = job(
-        name="mlevolve-e2e-leaf-dynamic-smoke-v13",
+        name="mlevolve-e2e-leaf-dynamic-smoke-v16",
         manifest_name="leaf_dynamic_smoke_manifest.json",
         completions=1,
         task_id=None,
         active_deadline=5400,
         parallelism=1,
         components=components,
-        attempt=1,
+        attempt=2,
     )
     (JOB_DIR / "smoke-leaf-dynamic-hybrid-job.yaml").write_text(
         yaml.safe_dump(leaf_dynamic_job, sort_keys=False), encoding="utf-8"

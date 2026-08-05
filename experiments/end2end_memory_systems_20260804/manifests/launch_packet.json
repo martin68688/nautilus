@@ -4,11 +4,11 @@
     "evaluators": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
     "memory_bundles": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
     "schemas": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-    "source_lock": "7cfb8bfc47a4b649356f741046ce77b6d51afe74e5b630eadf4b6f74188f2bbc",
+    "source_lock": "47e9211514e3a778046f476f100b81357f426cd5ca9c4fecaf38432d12fec1f9",
     "systems": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
     "tasks": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
   },
-  "feasibility_smoke_manifest_hash": "8c4c3bc1c044b0990c0aaf7b7661d21544c3d769bb52a4f53c059f3f414c3862",
+  "feasibility_smoke_manifest_hash": "9f43dfbc6c7e1bb8e5c83df83b007ca65bf4ee3dba8c87dd453bf73bb8f6cc2a",
   "job_count": 8,
   "jobs": [
     "pilot-aerial-indexed-job.yaml",
@@ -21,14 +21,14 @@
     "smoke-leaf-dynamic-hybrid-job.yaml"
   ],
   "launch_gate": "explicit_user_authorization_required",
-  "leaf_controls_smoke_manifest_hash": "269d9076f972f6e4c66af158dff0edbfc7e46fa2ccfdd9c93dc96e4d4e4c7983",
-  "leaf_dynamic_smoke_manifest_hash": "f29b89b43512963822e5b9fbe6bbb41ed32c216f03feacfd3030c83dcc67cf37",
-  "packet_hash": "019e6890fe4b1839b108a391457b9df0b03c69256f60852dace97c563e825ae1",
-  "pilot_manifest_hash": "bf1cd86d8d46ac310a8de6be8803cd15947fb463218fd8dce0be830d17f2b9bb",
+  "leaf_controls_smoke_manifest_hash": "d4069d0dec4f565ff6282e9f1ac6844d7011c034e41045abdc7c507f068673c5",
+  "leaf_dynamic_smoke_manifest_hash": "d60a6e5169a32297d17a903a4544e43a9b5734416a362e115a46f3c305a8dada",
+  "packet_hash": "3246b36a558c53b4845dbca38c8e7f4a96a54454355e84bf2887355d9b384cbc",
+  "pilot_manifest_hash": "039134c9dcd2e3f936d945c5eb12665014bdeb60662b3ab06a5017d4636af82b",
   "pilot_requires_passing_smoke_gate": false,
   "pre_run_confirmation": "one local human-facing intent confirmation only",
   "schema": "mlevolve_end2end_launch_packet_v1",
-  "smoke_manifest_hash": "d2217518f2faac5891e9747ef427f29f60df1612e66327c784f267d6c5b17813",
+  "smoke_manifest_hash": "910b4bf29cb9cbeb98a2adf25de6dc9a7174245e574a978b8a0a0b818755a8e6",
   "status": "generated_not_submitted",
   "workload_objects_created": 0
 }

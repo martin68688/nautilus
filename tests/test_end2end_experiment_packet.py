@@ -567,11 +567,11 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-            "/workspace/nautilus-exp-end2end-agent-v13/mlevolve"
+            "/workspace/nautilus-exp-end2end-agent-v14/mlevolve"
         )
         assert "--smoke-gate" not in container["args"]
         if path.name == "smoke-leaf-dynamic-hybrid-job.yaml":
-            assert container["args"][-2:] == ["--attempt", "1"]
+            assert container["args"][-2:] == ["--attempt", "2"]
         if path.name == "smoke-leaf-controls-job.yaml":
             assert job["metadata"]["name"] == (
                 "mlevolve-e2e-leaf-controls-smoke-v15"
