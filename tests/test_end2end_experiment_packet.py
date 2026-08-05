@@ -349,6 +349,7 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     smoke = _read(MANIFESTS / "smoke_manifest.json")
     feasibility = _read(MANIFESTS / "feasibility_smoke_manifest.json")
     leaf_dynamic = _read(MANIFESTS / "leaf_dynamic_smoke_manifest.json")
+    leaf_controls = _read(MANIFESTS / "leaf_controls_smoke_manifest.json")
     systems = pilot["system_ids"]
     tasks = pilot["task_ids"]
     assert len(systems) == 10 and len(set(systems)) == 10
@@ -362,6 +363,22 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     assert leaf_dynamic["run_count"] == 1
     assert leaf_dynamic["task_ids"] == ["leaf-classification"]
     assert leaf_dynamic["system_ids"] == ["dynamic_hybrid"]
+    assert leaf_controls["run_count"] == 9
+    assert leaf_controls["task_ids"] == ["leaf-classification"]
+    assert leaf_controls["system_ids"] == [
+        "sop_only",
+        "flat_retrieval",
+        "no_memory",
+        "gome_style_port",
+        "static_hybrid",
+        "reversed_router",
+        "rcr_router_style_port",
+        "runforest_only",
+        "macla_style_port",
+    ]
+    assert set(leaf_dynamic["system_ids"] + leaf_controls["system_ids"]) == set(
+        systems
+    )
     assert smoke["formal_result_eligible"] is False
     assert pilot["formal_result_eligible"] is True
     assert smoke["release_id"] == pilot["release_id"] == (
@@ -497,7 +514,7 @@ def test_source_lock_covers_and_matches_runtime_files() -> None:
 def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
     packet = _read(MANIFESTS / "launch_packet.json")
     jobs = [ROOT / "jobs" / name for name in packet["jobs"]]
-    assert len(jobs) == 7
+    assert packet["job_count"] == len(jobs) == 8
     for path in jobs:
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
         assert job["kind"] == "Job"
@@ -631,6 +648,7 @@ def test_intent_confirmation_is_local_and_does_not_launch_training() -> None:
     assert payload["status"] == "ready_for_user_confirmation"
     assert payload["launches_training"] is False
     assert payload["experiment"]["runs"] == 40
+    assert payload["experiment"]["kind"] == "pilot"
     assert payload["experiment"]["seeds"] == [1]
     assert payload["runtime_checks"] == {
         "host_protocol": False,
@@ -641,6 +659,27 @@ def test_intent_confirmation_is_local_and_does_not_launch_training() -> None:
         "adoption_gate": False,
         "prospective_audit": False,
     }
+
+
+def test_leaf_controls_intent_confirmation_covers_only_remaining_nine() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / "confirm_experiment_intent.py"),
+            "--manifest",
+            str(MANIFESTS / "leaf_controls_smoke_manifest.json"),
+        ],
+        cwd=REPO,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    payload = json.loads(completed.stdout)
+    assert payload["launches_training"] is False
+    assert payload["experiment"]["kind"] == "smoke"
+    assert payload["experiment"]["runs"] == 9
+    assert payload["experiment"]["tasks"] == ["leaf-classification"]
+    assert payload["dynamic_hybrid"]["included_in_this_manifest"] is False
 
 
 def test_runner_local_dry_run_makes_no_external_or_agent_calls(tmp_path) -> None:

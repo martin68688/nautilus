@@ -851,11 +851,11 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "3e9077746434d45ddce15f2fe024fd3323724a76586357a91c2168ed1735532a"
+      "sha256": "c9123cde4787c64853a050b7351b86c70618eb7ab79fad87663d9a4f7f797b34"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/confirm_experiment_intent.py",
-      "sha256": "449f2548daa0845956147e1beef9cb7d6e18512373bc974f17963286e68d9df3"
+      "sha256": "c41bec2c9f0d352e43ec21ff05d33a5fb2fa9332419c05e35171d4018726aa07"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/prepare_direct_leaf_memory.py",
@@ -950,8 +950,8 @@
       "sha256": "4300df74f961e7fcc34e7c38d35177e41a3423bd66f86ee1fd0ff9a89cebe7f0"
     }
   ],
-  "git_head": "0250e64b0c342182491d7b8f8bb04fad3796f351",
+  "git_head": "c1bbfde276ff091103edaaeda9cabef42f867a6a",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
+  "manifest_hash": "ffdbf95733c425a9c848f77ceb7505f0020502c284f974ee68c2c0b2cd7ff002",
   "schema": "mlevolve_end2end_source_lock_v1"
 }

@@ -47,8 +47,10 @@ def main() -> int:
     budget = read_object(MANIFESTS / "budget.json")
 
     rows = list(manifest.get("runs") or [])
-    system_ids = [str(row["system_id"]) for row in systems.get("systems") or []]
-    task_ids = [str(row["task_id"]) for row in tasks.get("tasks") or []]
+    all_system_ids = [str(row["system_id"]) for row in systems.get("systems") or []]
+    all_task_ids = [str(row["task_id"]) for row in tasks.get("tasks") or []]
+    system_ids = [str(value) for value in manifest.get("system_ids") or []]
+    task_ids = [str(value) for value in manifest.get("task_ids") or []]
     seeds = sorted({int(row["seed"]) for row in rows})
     expected = {
         (task_id, system_id, seed)
@@ -61,11 +63,18 @@ def main() -> int:
         for row in rows
     }
 
-    require(manifest.get("kind") == "pilot", "intent confirmation expects Pilot")
-    require(len(task_ids) == 4, "Pilot must contain exactly four tasks")
-    require(len(system_ids) == 10, "Pilot must contain exactly ten systems")
-    require(seeds == [1], "Pilot seed must be exactly 1")
-    require(len(rows) == 40 and observed == expected, "Pilot must be the full 10×4×1 matrix")
+    kind = str(manifest.get("kind") or "")
+    require(kind in {"smoke", "pilot"}, "intent confirmation expects Smoke or Pilot")
+    require(set(system_ids).issubset(all_system_ids), "Manifest contains an unknown system")
+    require(set(task_ids).issubset(all_task_ids), "Manifest contains an unknown task")
+    require(seeds == [1], "Experiment seed must be exactly 1")
+    require(len(rows) == len(expected) and observed == expected, "Manifest is not its declared Cartesian matrix")
+    if kind == "pilot":
+        require(len(task_ids) == 4, "Pilot must contain exactly four tasks")
+        require(len(system_ids) == 10, "Pilot must contain exactly ten systems")
+        require(len(rows) == 40, "Pilot must be the full 10×4×1 matrix")
+    else:
+        require(manifest.get("formal_result_eligible") is False, "Smoke must not be a formal result")
 
     sys.path.insert(0, str(REPO / "mlevolve"))
     sys.path.insert(0, str(REPO))
@@ -98,12 +107,12 @@ def main() -> int:
     )
 
     runtime = dict(budget["runtime"])
-    pilot_budget = dict(budget["pilot"])
+    run_budget = dict(budget[kind])
     require(runtime["gpu_resource_key"] == "nvidia.com/a100", "GPU request must be A100")
-    require(pilot_budget["gpu_count"] == 1, "Each run must request one GPU")
-    require(pilot_budget["parallel_search_num"] == 1, "Runs must execute sequentially per Job")
-    require(pilot_budget["cpu_count"] == 16, "Each run must request 16 CPU")
-    require(pilot_budget["memory_gib"] == 64, "Each run must request 64 GiB")
+    require(run_budget["gpu_count"] == 1, "Each run must request one GPU")
+    require(run_budget["parallel_search_num"] == 1, "Each run must use one candidate worker")
+    require(run_budget["cpu_count"] == 16, "Each run must request 16 CPU")
+    require(run_budget["memory_gib"] == 64, "Each run must request 64 GiB")
 
     per_task_order = {
         task_id: [
@@ -120,14 +129,17 @@ def main() -> int:
         "status": "ready_for_user_confirmation",
         "launches_training": False,
         "experiment": {
+            "kind": kind,
             "runs": len(rows),
             "systems": system_ids,
             "tasks": task_ids,
             "seeds": seeds,
             "exploratory_only": True,
+            "full_pilot_matrix": kind == "pilot",
             "system_order_by_task": per_task_order,
         },
         "dynamic_hybrid": {
+            "included_in_this_manifest": "dynamic_hybrid" in system_ids,
             "roles": roles,
             "retrieval_agent": True,
             "same_task_best_policy": "first when eligible same-task history exists",

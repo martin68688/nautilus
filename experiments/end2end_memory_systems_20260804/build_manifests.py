@@ -837,10 +837,26 @@ def build() -> dict[str, Any]:
         task_ids_override=["leaf-classification"],
         prefix_override="e2e-smoke-leaf-dynamic-v12",
     )
+    # Continue the exact frozen Leaf task-local order after the already-run
+    # Dynamic Hybrid condition.  This makes the two Smoke manifests disjoint
+    # and their union exactly the ten-system comparison.
+    leaf_control_systems = [
+        system_id
+        for system_id in shuffled_system_ids("leaf-classification")
+        if system_id != "dynamic_hybrid"
+    ]
+    leaf_controls_smoke = execution_manifest(
+        kind="smoke",
+        components=components,
+        system_ids_override=leaf_control_systems,
+        task_ids_override=["leaf-classification"],
+        prefix_override="e2e-smoke-leaf-controls-v14",
+    )
     pilot = execution_manifest(kind="pilot", components=components)
     dump_json(MANIFESTS / "smoke_manifest.json", smoke)
     dump_json(MANIFESTS / "feasibility_smoke_manifest.json", feasibility_smoke)
     dump_json(MANIFESTS / "leaf_dynamic_smoke_manifest.json", leaf_dynamic_smoke)
+    dump_json(MANIFESTS / "leaf_controls_smoke_manifest.json", leaf_controls_smoke)
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
     smoke_job = job(
@@ -880,6 +896,18 @@ def build() -> dict[str, Any]:
     (JOB_DIR / "smoke-leaf-dynamic-hybrid-job.yaml").write_text(
         yaml.safe_dump(leaf_dynamic_job, sort_keys=False), encoding="utf-8"
     )
+    leaf_controls_job = job(
+        name="mlevolve-e2e-leaf-controls-smoke-v14",
+        manifest_name="leaf_controls_smoke_manifest.json",
+        completions=9,
+        task_id=None,
+        active_deadline=5400,
+        parallelism=1,
+        components=components,
+    )
+    (JOB_DIR / "smoke-leaf-controls-job.yaml").write_text(
+        yaml.safe_dump(leaf_controls_job, sort_keys=False), encoding="utf-8"
+    )
     for task_id, display, _metric, _direction in TASKS:
         pilot_job = job(
             name=f"mlevolve-e2e-agentic-pilot-{display.lower()}-v12",
@@ -908,6 +936,7 @@ def build() -> dict[str, Any]:
             "smoke_manifest_hash": smoke["manifest_hash"],
             "feasibility_smoke_manifest_hash": feasibility_smoke["manifest_hash"],
             "leaf_dynamic_smoke_manifest_hash": leaf_dynamic_smoke["manifest_hash"],
+            "leaf_controls_smoke_manifest_hash": leaf_controls_smoke["manifest_hash"],
             "pilot_manifest_hash": pilot["manifest_hash"],
             "component_manifest_hashes": {
                 key: value["manifest_hash"] for key, value in components.items()

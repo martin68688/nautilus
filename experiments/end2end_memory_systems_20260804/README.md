@@ -28,8 +28,9 @@ The current sequence is:
 - `systems/`: one common config plus exactly 10 one-axis system overlays;
 - `manifests/`: system, task, budget, source, Bundle, evaluator, Smoke and Pilot
   locks with canonical SHA-256 self-hashes;
-- `jobs/`: Aerial/Leaf diagnostic Smoke Jobs and four unsubmitted Pilot Indexed
-  Jobs;
+- `jobs/`: Aerial diagnostics, the completed Leaf Dynamic condition, a
+  generated-but-unsubmitted sequential Leaf 9-control Smoke Job, and four
+  unsubmitted Pilot Indexed Jobs;
 - `prepare_direct_leaf_memory.py`: copies the already reviewed seed-heldout
   Base directly for Leaf. It deliberately performs no formal child publication,
   domain certification, or transition-to-SOP proof. The Base contains Leaf
