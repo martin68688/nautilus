@@ -486,13 +486,108 @@ def resolve_resume_attempt(
     attempt, path = max(attempts)
     measurement_path = path / "MEASUREMENT.json"
     if not measurement_path.is_file():
-        raise ValueError(
-            f"Cannot resume incomplete attempt without MEASUREMENT.json: {path}"
-        )
+        # A node loss or hard power-off can bypass both the MLEvolve and PID-1
+        # SIGTERM finalizers. Preserve the orphaned directory and allocate a
+        # fresh immutable attempt; ``run`` writes its infrastructure measurement
+        # before launching the replacement condition.
+        return attempt + 1, None
     measurement = read_object(measurement_path)
     if measurement.get("failure_class") == "infrastructure":
         return attempt + 1, None
     return attempt, measurement
+
+
+def recover_orphaned_attempt(
+    *,
+    attempt_root: Path,
+    row: Mapping[str, Any],
+    task: Mapping[str, Any],
+    budget: Mapping[str, Any],
+    manifest: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Finalize a hard-interrupted immutable attempt before condition retry."""
+
+    measurement_path = attempt_root / "MEASUREMENT.json"
+    if measurement_path.is_file():
+        return read_object(measurement_path)
+    attempt = int(attempt_root.name.removeprefix("attempt-"))
+    launch_path = attempt_root / "LAUNCH_RECEIPT.json"
+    launch = read_object(launch_path) if launch_path.is_file() else {}
+    started_ns = int(launch.get("started_at_ns") or 0)
+    artifact_times = [
+        path.stat().st_mtime_ns
+        for path in attempt_root.rglob("*")
+        if path.is_file() and not path.is_symlink()
+    ]
+    last_artifact_ns = max(artifact_times, default=started_ns)
+    observed_wall_seconds = (
+        max(0, last_artifact_ns - started_ns) / 1_000_000_000.0
+        if started_ns
+        else 0.0
+    )
+    log_parent = attempt_root / "agent" / "logs"
+    log_root = locate_runtime_directory(
+        log_parent, ("RUN_OUTCOME.json", "journal.json")
+    )
+    outcome_path = log_root / "RUN_OUTCOME.json"
+    request_path = log_root / "fixed_holdout_evaluation_request.json"
+    request = read_object(request_path) if request_path.is_file() else {}
+    ttfv, first_valid_sha = (
+        _first_valid(log_parent, started_ns) if started_ns else (None, "")
+    )
+    journal_path = log_root / "journal.json"
+    measurement = {
+        "schema": "mlevolve_end2end_condition_measurement_v1",
+        "logical_run_id": str(row["logical_run_id"]),
+        "attempt": attempt,
+        "retry_of": f"attempt-{attempt - 1:03d}" if attempt > 0 else None,
+        "manifest_hash": str(manifest["manifest_hash"]),
+        "task_id": str(row["task_id"]),
+        "system_id": str(row["system_id"]),
+        "seed": int(row["seed"]),
+        "formal_result_eligible": bool(row["formal_result_eligible"]),
+        "exploratory_pilot": True,
+        "status": "retained_infrastructure_hard_interruption",
+        "failure_class": "infrastructure",
+        "completed": False,
+        "terminal_metric": str(task["terminal_metric"]),
+        "direction": str(task["direction"]),
+        "terminal_score": None,
+        "selected_candidate_id": None,
+        "solver_exit_code": None,
+        "solver_error": (
+            "prior Pod exited without a final MEASUREMENT; recovered by --resume"
+        ),
+        "termination_signal": None,
+        "terminal_evaluator_error": "",
+        "candidate_set_frozen": bool(
+            request.get("selection_frozen_before_terminal_evaluation") is True
+            and str(request.get("candidate_set_hash") or "")
+        ),
+        "candidate_set_hash": str(request.get("candidate_set_hash") or ""),
+        "time_to_first_valid_seconds": ttfv,
+        "first_valid_event_sha256": first_valid_sha,
+        "agent_wall_seconds": observed_wall_seconds,
+        "allocated_gpu_hours": (
+            observed_wall_seconds / 3600.0 * int(budget["gpu_count"])
+        ),
+        "hardware": dict(launch.get("hardware") or {}),
+        "llm_token_usage": None,
+        "llm_cost_usd": None,
+        "cost_null_reason": (
+            "provider usage unavailable after hard Pod interruption; GPU time "
+            "estimated through the last durable artifact"
+        ),
+        "terminal_report_sha256": "",
+        "agent_outcome_sha256": (
+            sha256_file(outcome_path) if outcome_path.is_file() else ""
+        ),
+        "journal_path": str(journal_path) if journal_path.is_file() else "",
+        "recovered_last_artifact_ns": last_artifact_ns or None,
+        "measurement_hash": "",
+    }
+    _write_exclusive(measurement_path, measurement, "measurement_hash")
+    return measurement
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
@@ -529,6 +624,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError(f"Refusing to replace immutable attempt: {condition_root}")
     if args.attempt > 0:
         previous = output_root / row["logical_run_id"] / f"attempt-{args.attempt - 1:03d}" / "MEASUREMENT.json"
+        if not previous.is_file():
+            if not args.resume:
+                raise ValueError(
+                    "Explicit retry requires a retained prior infrastructure measurement"
+                )
+            recover_orphaned_attempt(
+                attempt_root=previous.parent,
+                row=row,
+                task=task,
+                budget=budget,
+                manifest=manifest,
+            )
         prior = read_object(previous)
         if prior.get("failure_class") != "infrastructure":
             raise ValueError("Explicit retry is allowed only after an infrastructure failure")

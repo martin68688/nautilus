@@ -1,30 +1,23 @@
 {
   "component_manifest_hashes": {
-    "budget": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
+    "budget": "5615feabbe85282c98b94d5a8ac6f9b1dbe3be1e63e044457264b738d34922c2",
     "evaluators": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
-    "memory_bundles": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
-    "schemas": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-    "source_lock": "827ae36cea31826ff94e1db44adc5357fd23e4e9b3a5a023e3c7bb6d9effe26f",
+    "memory_bundles": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
+    "schemas": "bc3a3b6aad773f0d5f67c531c505f2999a23656c947b81472aab952258526a38",
+    "source_lock": "19d7d6d65eb6b0e62af984b703bca36c7ceee5430c3c1d24eb4344cdb4a12e49",
     "systems": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
     "tasks": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
   },
   "feasibility_smoke_manifest_hash": "31cca88477184ff071c98abb2b58c1457e1d4a6e3df72d9bf51ca90b9be72646",
-  "job_count": 8,
+  "job_count": 1,
   "jobs": [
-    "pilot-aerial-indexed-job.yaml",
-    "pilot-denoising-indexed-job.yaml",
-    "pilot-leaf-indexed-job.yaml",
-    "pilot-taxi-indexed-job.yaml",
-    "smoke-aerial-all-systems-job.yaml",
-    "smoke-aerial-dynamic-hybrid-job.yaml",
-    "smoke-leaf-controls-job.yaml",
-    "smoke-leaf-dynamic-hybrid-job.yaml"
+    "pilot-all-40-indexed-job.yaml"
   ],
   "launch_gate": "explicit_user_authorization_required",
   "leaf_controls_smoke_manifest_hash": "f06a873f590dcce35011517d6697e50d4340c1f16263e250c746daa561794261",
   "leaf_dynamic_smoke_manifest_hash": "c0579d8d421af9ec5cdbcfa80910791dfce891c29d573c73eab7933bcf2a5e26",
-  "packet_hash": "77b351f465f4025b2e4d31c971cd0604275d9aa101bc5e2b0fbfd7072c1dd034",
-  "pilot_manifest_hash": "44e8dd57aa3f20d969ea6085c3294d6312f2e11147fdf68b7f0e87ce85914cc6",
+  "packet_hash": "47b0cfd4ea250218859ca0c57d122a607df05c38af8a5de93d5fb751f06352ce",
+  "pilot_manifest_hash": "4ab3d7ae4894c00f9060f7db09e1cff5a9970f48de35edd4285f434cdb194a51",
   "pilot_requires_passing_smoke_gate": false,
   "pre_run_confirmation": "one local human-facing intent confirmation only",
   "schema": "mlevolve_end2end_launch_packet_v1",

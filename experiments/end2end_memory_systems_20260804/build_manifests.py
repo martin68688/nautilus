@@ -16,7 +16,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v14")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v15")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
 MANIFESTS = ROOT / "manifests"
 SYSTEM_DIR = ROOT / "systems"
@@ -25,11 +25,11 @@ SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-agentic-three-role-v12"
+RELEASE_ID = "end2end-agentic-three-role-v13"
 BASELINE_RELEASE_ID = "end2end-agent-v3"
 RANDOMIZATION_RELEASE_ID = BASELINE_RELEASE_ID
-OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v12/runs"
-EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v12"
+OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v13/runs"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v13"
 SOLVER_TEMPERATURE = 1.0
 SYSTEMS = (
     ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
@@ -51,43 +51,63 @@ TASKS = (
 )
 MEMORY = {
     "aerial-cactus-identification": {
-        "bundle_id": "end2end-aerial-image-same-domain-seed-heldout-v1",
-        "bundle_root": "/workspace/experiment-end2end-memory-agent-v2/smoke-memory-v2/aerial-cactus-identification",
-        "bundle_version": "v1",
-        "bundle_manifest_sha256": "43f6eb01e913983a6320842f535a81c7b8e6b3e818876f311c2b1539820fd987",
-        "graph_sha256": "d20a1e63ac04222d53cc1bfb473aa004805ea5d541349cd7df852a53393ebdba",
-        "index_sha256": "01f0d6ed593800bd3643dde4ee1c8961c1fdf5ed0798297fa88d23dd65f640a6",
-        "current_file_sha256": "8bf5fa1b97a22aeeb5d5e2c5e247e1ae63b4139ef63f027b94043fd6f195b2be",
+        "bundle_id": "end2end-fourtask-direct-aerial-cactus-identification-v2",
+        "bundle_root": "/workspace/experiment-end2end-memory-agent-v13/memory-direct-v2/aerial-cactus-identification",
+        "bundle_version": "v2",
+        "bundle_manifest_sha256": "87b03da6fde381807b2ac58f18ad0404215c0c316d57e3cea556cf39e2a9c812",
+        "bundle_manifest_file_sha256": "9ce646336e5408a750ca313c00731cbf1f32e518f6beea3be6365e521caf6129",
+        "graph_sha256": "74ce8cd66d4b2b78399ad9a8f703029f33e22a78d2a5e721474dda5065d402fc",
+        "index_sha256": "4185ad3c55fce9a5d9af85ccd2059ccb81dad8991c5e98dd6b41cd7a8cb8fced",
+        "current_file_sha256": "1dfbbe9bbe752fd7ab68e828901d56935e8b7b7cee78c6fd7cd891334ff1bcba",
+        "memory_scope": "full_reviewed_fourtask_with_same_task_history",
+        "formal_child_publication": False,
+        "same_task_history_enabled": True,
+        "same_task_best_node_id": "run::20260725_051618_aerial-cactus-identification-deepseek-v4-full-r1::node::c7d2cb4075a04925a4cae8a98add9119",
         "protocol_ref": "stratified-roc-auc-classification@1#799541fb3a05e1759d76887ae970f061573393a380b185cdfb60ef6f2172a9b1",
     },
     "leaf-classification": {
-        "bundle_id": "mlevolve-be034ec-nonspooky-seed-heldout-v1",
-        "bundle_root": "/workspace/experiment-end2end-memory-agent-v12/memory-direct-v1/leaf-classification",
-        "bundle_version": "v1",
-        "bundle_manifest_sha256": "8d612b60a83d1469dbb05caad228be791280ebcd68027d0141ccdae1840ae7d8",
-        "graph_sha256": "092ee1294225d70b68491f1f06db612e3d36e5645b27616602a2cba32efa9144",
-        "index_sha256": "2244ca89d9d93052c14b37af9d6503b33118a44cc356053db1649ec1c24249f7",
-        "current_file_sha256": "ccc463a25c8f7584b966cf58d9ac60f94a15f0a9871ee1288ff05ff1e1d7b3b0",
+        "bundle_id": "end2end-fourtask-direct-leaf-classification-v2",
+        "bundle_root": "/workspace/experiment-end2end-memory-agent-v13/memory-direct-v2/leaf-classification",
+        "bundle_version": "v2",
+        "bundle_manifest_sha256": "4e4a3c3dbe541dc025431d9947a35e650093f008e995f108358e9450f4336d69",
+        "bundle_manifest_file_sha256": "c65ae7940d96dffdba3428da64a692e34f30298d9c3ef05a1169b782ebc288df",
+        "graph_sha256": "74ce8cd66d4b2b78399ad9a8f703029f33e22a78d2a5e721474dda5065d402fc",
+        "index_sha256": "4185ad3c55fce9a5d9af85ccd2059ccb81dad8991c5e98dd6b41cd7a8cb8fced",
+        "current_file_sha256": "ba458d44121a960493d04fe0b593dfaca341710ad280a8febf89e37f32c4bef0",
+        "memory_scope": "full_reviewed_fourtask_with_same_task_history",
+        "formal_child_publication": False,
+        "same_task_history_enabled": True,
+        "same_task_best_node_id": "run::20260717_060628_leaf-classification::node::c9368a59b9324c31afc4813545813045",
         "protocol_ref": "stratified-log-loss-classification@1#a7601be6346021743e01ab144b38e457109ca3ddc701a4aaae9cd562203d79d5",
     },
     "denoising-dirty-documents": {
-        "bundle_id": "experiment-r-denoising-image-task-heldout-v2",
-        "bundle_root": "/workspace/experiment-r-dev-r1/memory/authority-r3/denoising-dirty-documents",
+        "bundle_id": "end2end-fourtask-direct-denoising-dirty-documents-v2",
+        "bundle_root": "/workspace/experiment-end2end-memory-agent-v13/memory-direct-v2/denoising-dirty-documents",
         "bundle_version": "v2",
-        "bundle_manifest_sha256": "273b6b65cf71e29469694f726d2445ba71d95bd2976d787193124acda03901f5",
-        "graph_sha256": "ebfb855162915a2dd61c31f539f1bc9a94a62501dff2e124b6d4fe32f8021e53",
-        "index_sha256": "cd938ddc6a0699b7adcf5bf5aa745b966f176098551ca61d4c939fbcbfdc66b9",
-        "current_file_sha256": "ae5d62c75a0d7fc44e8df3ced30491ad2d7dd05cd647e43a23cc28b9232685c4",
+        "bundle_manifest_sha256": "4277332b560bdb3c512df198eff511352dd5c86ba88510a20e443811e2a753d7",
+        "bundle_manifest_file_sha256": "d2492775ed150b7cb527155aa2c06dc36c5d152e304560feb8b04793ad2b2502",
+        "graph_sha256": "74ce8cd66d4b2b78399ad9a8f703029f33e22a78d2a5e721474dda5065d402fc",
+        "index_sha256": "4185ad3c55fce9a5d9af85ccd2059ccb81dad8991c5e98dd6b41cd7a8cb8fced",
+        "current_file_sha256": "9c17b6327882485fb07bd33cbec4b36a461878829e81a7aa22bbbaf686be4e42",
+        "memory_scope": "full_reviewed_fourtask_with_same_task_history",
+        "formal_child_publication": False,
+        "same_task_history_enabled": True,
+        "same_task_best_node_id": "run::20260725_053032_denoising-dirty-documents-deepseek-v4-full-r2::node::92c40271e8874f249f2a951d595e7452",
         "protocol_ref": "deterministic-random-regression@1#ba944032aa890aa2b742030895b670a7780a7698341e249d57917d1cd898695d",
     },
     "new-york-city-taxi-fare-prediction": {
-        "bundle_id": "experiment-r-taxi-tabular-task-heldout-v2",
-        "bundle_root": "/workspace/experiment-r-dev-r1/memory/authority-r3/new-york-city-taxi-fare-prediction",
+        "bundle_id": "end2end-fourtask-direct-new-york-city-taxi-fare-prediction-v2",
+        "bundle_root": "/workspace/experiment-end2end-memory-agent-v13/memory-direct-v2/new-york-city-taxi-fare-prediction",
         "bundle_version": "v2",
-        "bundle_manifest_sha256": "58e7504411432430bf37d1ef0c18bf2c49cad116400084f7693062c8552ff499",
-        "graph_sha256": "e500ba241e10a45c1512c7fb0b64e89cec7cb0aa6bb3e5d73144d2b289e24487",
-        "index_sha256": "864fab630f1bb512b215671675446af6c344b7bef8df6595cea96ebe2e881726",
-        "current_file_sha256": "de8c6ec2204cace0dad06e97bd9d2c4c597a6756bad8362da704f65b434d7864",
+        "bundle_manifest_sha256": "b63abb958d96b0f7a275f0fb17d4c34b6cfb139a8e6451683c4559b6f0c92bcb",
+        "bundle_manifest_file_sha256": "d8e2a0f09fe33c7969078006754e6f183ded48aad211023491c307be2bf20e75",
+        "graph_sha256": "74ce8cd66d4b2b78399ad9a8f703029f33e22a78d2a5e721474dda5065d402fc",
+        "index_sha256": "4185ad3c55fce9a5d9af85ccd2059ccb81dad8991c5e98dd6b41cd7a8cb8fced",
+        "current_file_sha256": "7de18ababdf43dd9c81df00eb560ca6b9f7bd83d1a6cb368abc1b19b5cd631e2",
+        "memory_scope": "full_reviewed_fourtask_with_same_task_history",
+        "formal_child_publication": False,
+        "same_task_history_enabled": True,
+        "same_task_best_node_id": "run::20260726_022228_new-york-city-taxi-fare-prediction-host-shadow-r7::node::eeb6e2364829449ba6e1ce6c1600fc3d",
         "protocol_ref": "chronological-regression@1#bfc61957b422df5cf09dcb37cffe06aae2ccd2b11db4fee0721b90a2bc6dbf04",
     },
 }
@@ -250,15 +270,7 @@ external_skill_memory:
   end2end_memory_system: ""
   end2end_prompt_token_budget: 1536
   end2end_candidate_pool_limit: 12
-  excluded_run_ids:
-    - "20260717_183734_leaf-classification"
-    - "20260701_180146"
-    - "20260701_145201"
-    - "20260701_145250"
-    - "20260516_125444"
-    - "20260701_155016"
-    - "20260510_025317"
-    - "20260701_180038"
+  excluded_run_ids: []
 
 evaluation_authority:
   require_bound_bundle: false
@@ -276,7 +288,7 @@ run_identity:
   baseline_reference_group: experiment_end2end_no_memory_v1
   memory_enabled: true
   memory_system: ""
-  memory_version: end2end_same_domain_seed_heldout_v1
+  memory_version: end2end_fourtask_direct_v2
   identity_source: end2end_frozen_manifest_v1
 """
 
@@ -521,6 +533,15 @@ def component_manifests(
                 "preserve_all_attempts": True,
                 "explicit_retry_only_for": "infrastructure",
                 "score_imputation": False,
+                "condition_level_resume": True,
+                "completed_conditions_are_skipped": True,
+                "hard_interruption_orphans_finalized_as_infrastructure": True,
+                "epoch_level_checkpoint_guaranteed": False,
+                "resume_semantics": (
+                    "rerun only the interrupted frozen condition from a new "
+                    "immutable attempt; arbitrary generated training code may "
+                    "not expose epoch checkpoints"
+                ),
             },
             "manifest_hash": "",
         }
@@ -528,16 +549,18 @@ def component_manifests(
     memory_manifest = finalize(
         {
             "schema": "mlevolve_end2end_memory_bundle_manifest_v1",
-            "production_binding_path": "/workspace/experiment-end2end-memory-agent-v12/memory-direct-v1/MEMORY_BINDING.json",
-            "production_binding_sha256": "6b1c43fd95ea3f31d689674980b74d90192a742bdd69a6d501fe9fa475abdf0b",
+            "production_binding_path": "/workspace/experiment-end2end-memory-agent-v13/memory-direct-v2/MEMORY_BINDING.json",
+            "production_binding_sha256": "30854860e2a2cd79f788ddd94cd6225192d2ccb203d5c45b9281628baf2b9b56",
             "verification_mode": "experiment_fast_nonblocking_v1",
+            "source_graph_manifest_schema": "fourtask_runforest_graph_manifest_v2",
+            "source_graph_sha256": "74ce8cd66d4b2b78399ad9a8f703029f33e22a78d2a5e721474dda5065d402fc",
+            "source_index_sha256": "4185ad3c55fce9a5d9af85ccd2059ccb81dad8991c5e98dd6b41cd7a8cb8fced",
+            "same_task_history_policy": (
+                "enabled for all four tasks; Dynamic pins the direction-aware "
+                "best clean positive-eligible record"
+            ),
             "task_bundles": MEMORY,
-            "excluded_run_ids": [
-                "20260717_183734_leaf-classification",
-                "20260701_180146", "20260701_145201", "20260701_145250",
-                "20260516_125444", "20260701_155016", "20260510_025317",
-                "20260701_180038",
-            ],
+            "excluded_run_ids": [],
             "manifest_hash": "",
         }
     )
@@ -615,7 +638,7 @@ def execution_manifest(
         task_ids = [task_id for task_id, _display, _metric, _direction in TASKS]
         system_ids = None
         formal = True
-        prefix = "e2e-pilot-agentic-three-role-v12"
+        prefix = "e2e-pilot-agentic-three-role-v13"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -826,109 +849,37 @@ def build() -> dict[str, Any]:
     )
     for key, payload in components.items():
         dump_json(MANIFESTS / f"{key}.json", payload)
-    smoke = execution_manifest(kind="smoke", components=components)
-    feasibility_smoke = execution_manifest(
-        kind="smoke",
-        components=components,
-        system_ids_override=["dynamic_hybrid"],
-        prefix_override="e2e-feasibility-smoke-agentic-three-role-v12",
+    # Smoke is completed evidence from release v12. Never rewrite those
+    # manifests/jobs when preparing a later formal Pilot release.
+    smoke = json.loads((MANIFESTS / "smoke_manifest.json").read_text())
+    feasibility_smoke = json.loads(
+        (MANIFESTS / "feasibility_smoke_manifest.json").read_text()
     )
-    leaf_dynamic_smoke = execution_manifest(
-        kind="smoke",
-        components=components,
-        system_ids_override=["dynamic_hybrid"],
-        task_ids_override=["leaf-classification"],
-        prefix_override="e2e-smoke-leaf-dynamic-agent-v2",
+    leaf_dynamic_smoke = json.loads(
+        (MANIFESTS / "leaf_dynamic_smoke_manifest.json").read_text()
     )
-    # Continue the exact frozen Leaf task-local order after the already-run
-    # Dynamic Hybrid condition.  This makes the two Smoke manifests disjoint
-    # and their union exactly the ten-system comparison.
-    leaf_control_systems = [
-        system_id
-        for system_id in shuffled_system_ids("leaf-classification")
-        if system_id != "dynamic_hybrid"
-    ]
-    leaf_controls_smoke = execution_manifest(
-        kind="smoke",
-        components=components,
-        system_ids_override=leaf_control_systems,
-        task_ids_override=["leaf-classification"],
-        prefix_override="e2e-smoke-leaf-controls-v14",
+    leaf_controls_smoke = json.loads(
+        (MANIFESTS / "leaf_controls_smoke_manifest.json").read_text()
     )
     pilot = execution_manifest(kind="pilot", components=components)
-    dump_json(MANIFESTS / "smoke_manifest.json", smoke)
-    dump_json(MANIFESTS / "feasibility_smoke_manifest.json", feasibility_smoke)
-    dump_json(MANIFESTS / "leaf_dynamic_smoke_manifest.json", leaf_dynamic_smoke)
-    dump_json(MANIFESTS / "leaf_controls_smoke_manifest.json", leaf_controls_smoke)
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
-    smoke_job = job(
-        name="mlevolve-e2e-all-systems-smoke-aerial-v12",
-        manifest_name="smoke_manifest.json",
-        completions=10,
+    for stale in JOB_DIR.glob("pilot-*-indexed-job.yaml"):
+        stale.unlink()
+    pilot_job = job(
+        name="mlevolve-e2e-agentic-pilot-all-40-v13",
+        manifest_name="pilot_manifest.json",
+        completions=40,
         task_id=None,
-        active_deadline=5400,
-        parallelism=1,
-        components=components,
-    )
-    (JOB_DIR / "smoke-aerial-all-systems-job.yaml").write_text(
-        yaml.safe_dump(smoke_job, sort_keys=False), encoding="utf-8"
-    )
-    feasibility_job = job(
-        name="mlevolve-e2e-agentic-three-role-feasibility-aerial-v12",
-        manifest_name="feasibility_smoke_manifest.json",
-        completions=1,
-        task_id=None,
-        active_deadline=5400,
-        parallelism=1,
-        components=components,
-    )
-    (JOB_DIR / "smoke-aerial-dynamic-hybrid-job.yaml").write_text(
-        yaml.safe_dump(feasibility_job, sort_keys=False), encoding="utf-8"
-    )
-    leaf_dynamic_job = job(
-        name="mlevolve-e2e-leaf-dynamic-smoke-v17",
-        manifest_name="leaf_dynamic_smoke_manifest.json",
-        completions=1,
-        task_id=None,
-        active_deadline=5400,
-        parallelism=1,
-        components=components,
-    )
-    (JOB_DIR / "smoke-leaf-dynamic-hybrid-job.yaml").write_text(
-        yaml.safe_dump(leaf_dynamic_job, sort_keys=False), encoding="utf-8"
-    )
-    leaf_controls_job = job(
-        name="mlevolve-e2e-leaf-controls-smoke-v15",
-        manifest_name="leaf_controls_smoke_manifest.json",
-        completions=9,
-        task_id=None,
-        active_deadline=5400,
+        active_deadline=25200,
         parallelism=1,
         components=components,
         resume=True,
     )
-    (JOB_DIR / "smoke-leaf-controls-job.yaml").write_text(
-        yaml.safe_dump(leaf_controls_job, sort_keys=False), encoding="utf-8"
+    (JOB_DIR / "pilot-all-40-indexed-job.yaml").write_text(
+        yaml.safe_dump(pilot_job, sort_keys=False), encoding="utf-8"
     )
-    for task_id, display, _metric, _direction in TASKS:
-        pilot_job = job(
-            name=f"mlevolve-e2e-agentic-pilot-{display.lower()}-v12",
-            manifest_name="pilot_manifest.json",
-            completions=10,
-            task_id=task_id,
-            active_deadline=25200,
-            parallelism=1,
-            components=components,
-        )
-        (JOB_DIR / f"pilot-{display.lower()}-indexed-job.yaml").write_text(
-            yaml.safe_dump(pilot_job, sort_keys=False), encoding="utf-8"
-        )
-    generated_jobs = [
-        path.name
-        for path in sorted(JOB_DIR.glob("*.yaml"))
-        if yaml.safe_load(path.read_text(encoding="utf-8")).get("kind") == "Job"
-    ]
+    generated_jobs = ["pilot-all-40-indexed-job.yaml"]
     packet = finalize(
         {
             "schema": "mlevolve_end2end_launch_packet_v1",

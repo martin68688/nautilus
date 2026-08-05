@@ -1815,6 +1815,17 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if fast_nonblocking:
             metric = child.get("metric")
             outcome = str(transition.get("outcome") or "")
+            if not self._positive_memory_eligible(child):
+                audit = (
+                    child.get("leakage_audit")
+                    if isinstance(child.get("leakage_audit"), dict)
+                    else {}
+                )
+                return False, str(
+                    audit.get("memory_disposition")
+                    or audit.get("status")
+                    or "child_execution_not_successful"
+                )
             if not (
                 child.get("is_buggy") is False
                 and child.get("is_valid") is True

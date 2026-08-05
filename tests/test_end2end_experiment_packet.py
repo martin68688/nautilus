@@ -52,15 +52,35 @@ def _write_hashed(path: Path, payload: dict, field: str) -> None:
 def _build_synthetic_gate(output_root: Path) -> dict:
     return validate_smoke_gate.build_smoke_gate(
         output_root=output_root,
+        smoke_manifest_path=output_root.parent / "synthetic_smoke_manifest.json",
         _test_collector_public_key_ed25519=(
             TEST_COLLECTOR_IDENTITY.public_key_ed25519
         ),
     )
 
 
+def _pilot_compatible_synthetic_smoke(path: Path) -> dict:
+    smoke = _read(MANIFESTS / "smoke_manifest.json")
+    pilot = _read(MANIFESTS / "pilot_manifest.json")
+    smoke["release_id"] = pilot["release_id"]
+    smoke["comparison_baseline_release_id"] = pilot[
+        "comparison_baseline_release_id"
+    ]
+    smoke["bindings"] = dict(pilot["bindings"])
+    for row in smoke["runs"]:
+        row["bindings"] = dict(pilot["bindings"])
+        row["row_hash"] = _hash(row, "row_hash")
+    smoke["manifest_hash"] = _hash(smoke, "manifest_hash")
+    path.write_text(json.dumps(smoke, sort_keys=True), encoding="utf-8")
+    return smoke
+
+
 def _synthetic_smoke_output(tmp_path: Path) -> Path:
     output_root = tmp_path / "runs"
-    smoke = _read(MANIFESTS / "smoke_manifest.json")
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    smoke = _pilot_compatible_synthetic_smoke(
+        tmp_path / "synthetic_smoke_manifest.json"
+    )
     memory = _read(MANIFESTS / "memory_bundles.json")
     for row in smoke["runs"]:
         system_id = row["system_id"]
@@ -381,9 +401,10 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     )
     assert smoke["formal_result_eligible"] is False
     assert pilot["formal_result_eligible"] is True
-    assert smoke["release_id"] == pilot["release_id"] == (
-        "end2end-agentic-three-role-v12"
-    )
+    assert smoke["release_id"] == "end2end-agentic-three-role-v12"
+    assert leaf_dynamic["release_id"] == "end2end-agentic-three-role-v12"
+    assert leaf_controls["release_id"] == "end2end-agentic-three-role-v12"
+    assert pilot["release_id"] == "end2end-agentic-three-role-v13"
     assert smoke["comparison_baseline_release_id"] == (
         pilot["comparison_baseline_release_id"]
     )
@@ -413,22 +434,176 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     jsonschema.validate(smoke, schema)
 
 
-def test_leaf_uses_direct_seed_heldout_base_with_same_task_history() -> None:
+def test_all_tasks_use_direct_fourtask_base_with_clean_same_task_history() -> None:
     memory = _read(MANIFESTS / "memory_bundles.json")
-    leaf = memory["task_bundles"]["leaf-classification"]
     assert memory["production_binding_path"] == (
-        "/workspace/experiment-end2end-memory-agent-v12/"
-        "memory-direct-v1/MEMORY_BINDING.json"
+        "/workspace/experiment-end2end-memory-agent-v13/"
+        "memory-direct-v2/MEMORY_BINDING.json"
     )
-    assert memory["verification_mode"] == (
-        "experiment_fast_nonblocking_v1"
+    assert memory["verification_mode"] == "experiment_fast_nonblocking_v1"
+    assert memory["excluded_run_ids"] == []
+    assert memory["source_graph_sha256"] == (
+        "74ce8cd66d4b2b78399ad9a8f703029f33e22a78d2a5e721474dda5065d402fc"
     )
-    assert leaf["bundle_id"] == "mlevolve-be034ec-nonspooky-seed-heldout-v1"
-    assert leaf["bundle_root"] == (
-        "/workspace/experiment-end2end-memory-agent-v12/"
-        "memory-direct-v1/leaf-classification"
+    assert memory["source_index_sha256"] == (
+        "4185ad3c55fce9a5d9af85ccd2059ccb81dad8991c5e98dd6b41cd7a8cb8fced"
     )
-    assert "20260717_183734_leaf-classification" in memory["excluded_run_ids"]
+    expected_best = {
+        "aerial-cactus-identification": "run::20260725_051618_aerial-cactus-identification-deepseek-v4-full-r1::node::c7d2cb4075a04925a4cae8a98add9119",
+        "leaf-classification": "run::20260717_060628_leaf-classification::node::c9368a59b9324c31afc4813545813045",
+        "denoising-dirty-documents": "run::20260725_053032_denoising-dirty-documents-deepseek-v4-full-r2::node::92c40271e8874f249f2a951d595e7452",
+        "new-york-city-taxi-fare-prediction": "run::20260726_022228_new-york-city-taxi-fare-prediction-host-shadow-r7::node::eeb6e2364829449ba6e1ce6c1600fc3d",
+    }
+    for task_id, best_node_id in expected_best.items():
+        task = memory["task_bundles"][task_id]
+        assert task["bundle_root"] == (
+            "/workspace/experiment-end2end-memory-agent-v13/"
+            f"memory-direct-v2/{task_id}"
+        )
+        assert task["bundle_version"] == "v2"
+        assert task["graph_sha256"] == memory["source_graph_sha256"]
+        assert task["index_sha256"] == memory["source_index_sha256"]
+        assert task["same_task_history_enabled"] is True
+        assert task["same_task_best_node_id"] == best_node_id
+
+
+def test_fourtask_direct_publisher_enables_clean_same_task_best(tmp_path) -> None:
+    sys.path.insert(0, str(ROOT))
+    try:
+        import prepare_direct_fourtask_memory as publisher
+    finally:
+        sys.path.pop(0)
+    from authority.memory_snapshot import MemorySnapshotLoader
+
+    tasks = list(publisher.TASK_DIRECTIONS)
+    graph_path = tmp_path / "source-graph.json"
+    index_path = tmp_path / "source-index.npz"
+    source_manifest_path = tmp_path / "source-manifest.json"
+    frozen_path = tmp_path / "frozen-memory.json"
+    nodes = []
+    for index, task_id in enumerate(tasks):
+        direction = publisher.TASK_DIRECTIONS[task_id]
+        clean_metric = 0.9 if direction == "maximize" else 0.2 + index
+        negative_metric = 1.0 if direction == "maximize" else 0.1 + index
+        nodes.extend(
+            [
+                {
+                    "id": f"clean::{task_id}",
+                    "type": "RunNode",
+                    "task": task_id,
+                    "run_id": f"clean-run-{index}",
+                    "run_short_id": f"clean-{index}",
+                    "stage": "improve",
+                    "step": 2,
+                    "metric": clean_metric,
+                    "maximize": direction == "maximize",
+                    "metric_improvement": 0.1,
+                    "is_buggy": False,
+                    "is_valid": True,
+                    "leakage_audit": {
+                        "status": "clean",
+                        "memory_disposition": "positive_eligible",
+                        "paper_grade_eligible": True,
+                        "rank_eligible": True,
+                    },
+                },
+                {
+                    "id": f"negative::{task_id}",
+                    "type": "RunNode",
+                    "task": task_id,
+                    "run_id": f"negative-run-{index}",
+                    "run_short_id": f"negative-{index}",
+                    "stage": "improve",
+                    "step": 3,
+                    "metric": negative_metric,
+                    "maximize": direction == "maximize",
+                    "metric_improvement": 0.2,
+                    "is_buggy": False,
+                    "is_valid": True,
+                    "leakage_audit": {
+                        "status": "blocked",
+                        "memory_disposition": "quarantine",
+                        "paper_grade_eligible": False,
+                        "rank_eligible": False,
+                    },
+                },
+            ]
+        )
+    graph_path.write_text(
+        json.dumps(
+            {
+                "meta": {
+                    "source_membership_verified": True,
+                    "leak_verified": True,
+                    "leak_audited": True,
+                    "paper_grade": True,
+                    "positive_admission_enforced": True,
+                },
+                "nodes": nodes,
+                "edges": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    index_path.write_bytes(b"frozen-index")
+    source_manifest_path.write_text(
+        json.dumps(
+            {
+                "schema": "fourtask_runforest_graph_manifest_v2",
+                "artifact_version": "test-v2",
+                "graph_sha256": hashlib.sha256(graph_path.read_bytes()).hexdigest(),
+                "index_sha256": hashlib.sha256(index_path.read_bytes()).hexdigest(),
+                "source_archive_sha256": "a" * 64,
+                "task_ids": tasks,
+            }
+        ),
+        encoding="utf-8",
+    )
+    frozen_path.write_text(
+        json.dumps(
+            {
+                "task_bundles": {
+                    task_id: {"protocol_ref": f"protocol::{task_id}"}
+                    for task_id in tasks
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    output_root = tmp_path / "published"
+    binding = publisher.build(
+        source_graph=graph_path,
+        source_index=index_path,
+        source_manifest=source_manifest_path,
+        frozen_memory_manifest=frozen_path,
+        output_root=output_root,
+        created_at="2026-08-05T12:00:00Z",
+    )
+
+    assert binding["excluded_run_ids"] == []
+    assert binding["source_node_count"] == 8
+    assert binding["binding_sha256"] == publisher.payload_hash(
+        binding, "binding_sha256"
+    )
+    for task_id in tasks:
+        task = binding["tasks"][task_id]
+        best = binding["same_task_best_records"][task_id]
+        assert best["node_id"] == f"clean::{task_id}"
+        assert task["same_task_history_enabled"] is True
+        assert task["same_task_best_node_id"] == best["node_id"]
+        base = MemorySnapshotLoader(task["bundle_root"]).load_base(
+            verify_artifacts=True
+        )
+        assert base.bundle_id == task["bundle_id"]
+        assert base.manifest_sha256 == task["bundle_manifest_sha256"]
+        assert base.manifest["artifact_hashes"] == {
+            "runforest/graph.json": hashlib.sha256(
+                graph_path.read_bytes()
+            ).hexdigest(),
+            "runforest/index.npz": hashlib.sha256(index_path.read_bytes()).hexdigest(),
+        }
+
+
 def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
     from config import Config, _load_cfg
     from omegaconf import OmegaConf
@@ -497,6 +672,10 @@ def test_source_lock_covers_and_matches_runtime_files() -> None:
     assert "experiments/end2end_memory_systems_20260804/run_assignment.py" in paths
     assert "experiments/end2end_memory_systems_20260804/analyze_results.py" in paths
     assert (
+        "experiments/end2end_memory_systems_20260804/"
+        "prepare_direct_fourtask_memory.py"
+    ) in paths
+    assert (
         "experiments/end2end_memory_systems_20260804/smoke_memory_spec.json"
         in paths
     )
@@ -514,7 +693,10 @@ def test_source_lock_covers_and_matches_runtime_files() -> None:
 def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
     packet = _read(MANIFESTS / "launch_packet.json")
     jobs = [ROOT / "jobs" / name for name in packet["jobs"]]
-    assert packet["job_count"] == len(jobs) == 8
+    assert packet["job_count"] == len(jobs) == 1
+    assert [path.name for path in jobs if path.name.startswith("pilot-")] == [
+        "pilot-all-40-indexed-job.yaml"
+    ]
     for path in jobs:
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
         assert job["kind"] == "Job"
@@ -523,7 +705,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
         assert labels["experiment"] == (
-            "experiment-end2end-memory-agent-v12"
+            "experiment-end2end-memory-agent-v13"
         )
         assert job["metadata"]["annotations"]["mlevolve.ai/generated-not-submitted"] == "true"
         assert job["metadata"]["annotations"]["mlevolve.ai/gpu-contract"] == (
@@ -539,7 +721,8 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
                 "mlevolve.ai/per-index-deadline-seconds"
             ] == "5400"
         else:
-            assert spec["activeDeadlineSeconds"] == 252000
+            assert spec["completions"] == 40
+            assert spec["activeDeadlineSeconds"] == 1008000
             assert job["metadata"]["annotations"][
                 "mlevolve.ai/per-index-deadline-seconds"
             ] == "25200"
@@ -567,9 +750,14 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-            "/workspace/nautilus-exp-end2end-agent-v14/mlevolve"
+            "/workspace/nautilus-exp-end2end-agent-v15/mlevolve"
         )
         assert "--smoke-gate" not in container["args"]
+        if path.name == "pilot-all-40-indexed-job.yaml":
+            assert job["metadata"]["name"] == (
+                "mlevolve-e2e-agentic-pilot-all-40-v13"
+            )
+            assert container["args"][-1] == "--resume"
         if path.name == "smoke-leaf-dynamic-hybrid-job.yaml":
             assert "--attempt" not in container["args"]
         if path.name == "smoke-leaf-controls-job.yaml":
@@ -655,6 +843,15 @@ def test_intent_confirmation_is_local_and_does_not_launch_training() -> None:
     assert payload["experiment"]["runs"] == 40
     assert payload["experiment"]["kind"] == "pilot"
     assert payload["experiment"]["seeds"] == [1]
+    assert payload["memory_bundle"]["same_task_history_enabled"] is True
+    assert all(payload["memory_bundle"]["same_task_best_node_by_task"].values())
+    assert payload["formal_job"] == {
+        "name": "mlevolve-e2e-agentic-pilot-all-40-v13",
+        "completions": 40,
+        "parallelism": 1,
+        "condition_level_resume": True,
+        "epoch_checkpoint_guaranteed": False,
+    }
     assert payload["runtime_checks"] == {
         "host_protocol": False,
         "host_receipts": False,
@@ -801,6 +998,50 @@ def test_resume_starts_missing_and_retries_only_infrastructure(tmp_path) -> None
     assert attempt == 0
     assert observed == retained
 
+    orphan_id = "hard-interrupted"
+    orphan_root = tmp_path / orphan_id / "attempt-000"
+    orphan_root.mkdir(parents=True)
+    started_ns = 1_000_000_000
+    _write_hashed(
+        orphan_root / "LAUNCH_RECEIPT.json",
+        {
+            "logical_run_id": orphan_id,
+            "attempt": 0,
+            "started_at_ns": started_ns,
+            "hardware": {"requested_gpu_resource": "nvidia.com/a100"},
+            "receipt_hash": "",
+        },
+        "receipt_hash",
+    )
+    assert run_assignment.resolve_resume_attempt(tmp_path, orphan_id) == (
+        1,
+        None,
+    )
+    recovered = run_assignment.recover_orphaned_attempt(
+        attempt_root=orphan_root,
+        row={
+            "logical_run_id": orphan_id,
+            "task_id": "leaf-classification",
+            "system_id": "dynamic_hybrid",
+            "seed": 1,
+            "formal_result_eligible": True,
+        },
+        task={"terminal_metric": "log_loss", "direction": "minimize"},
+        budget={"gpu_count": 1},
+        manifest={"manifest_hash": "f" * 64},
+    )
+    assert recovered["status"] == "retained_infrastructure_hard_interruption"
+    assert recovered["failure_class"] == "infrastructure"
+    assert recovered["completed"] is False
+    assert recovered["terminal_score"] is None
+    assert recovered["measurement_hash"] == _hash(
+        recovered, "measurement_hash"
+    )
+    jsonschema.validate(
+        recovered,
+        _read(ROOT / "schemas" / "condition_measurement.schema.json"),
+    )
+
 
 def test_solver_forwards_sigterm_for_child_checkpoint_finalizer() -> None:
     import signal
@@ -845,7 +1086,9 @@ def test_smoke_gate_accepts_all_ten_systems_and_binds_exact_pilot(tmp_path) -> N
     validate_smoke_gate.write_gate(gate_path, gate)
     pilot = _read(MANIFESTS / "pilot_manifest.json")
     verified = validate_smoke_gate.verify_gate_for_pilot(
-        gate_path, pilot_manifest=pilot
+        gate_path,
+        pilot_manifest=pilot,
+        smoke_manifest_path=output_root.parent / "synthetic_smoke_manifest.json",
     )
     assert verified["gate_hash"] == gate["gate_hash"]
 

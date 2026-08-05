@@ -81,15 +81,7 @@ external_skill_memory:
   end2end_memory_system: ""
   end2end_prompt_token_budget: 1536
   end2end_candidate_pool_limit: 12
-  excluded_run_ids:
-    - "20260717_183734_leaf-classification"
-    - "20260701_180146"
-    - "20260701_145201"
-    - "20260701_145250"
-    - "20260516_125444"
-    - "20260701_155016"
-    - "20260510_025317"
-    - "20260701_180038"
+  excluded_run_ids: []
 
 evaluation_authority:
   require_bound_bundle: false
@@ -107,5 +99,5 @@ run_identity:
   baseline_reference_group: experiment_end2end_no_memory_v1
   memory_enabled: true
   memory_system: ""
-  memory_version: end2end_same_domain_seed_heldout_v1
+  memory_version: end2end_fourtask_direct_v2
   identity_source: end2end_frozen_manifest_v1

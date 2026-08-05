@@ -14,6 +14,8 @@ from pathlib import Path
 import sys
 from typing import Any
 
+import yaml
+
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
@@ -45,6 +47,7 @@ def main() -> int:
     systems = read_object(MANIFESTS / "systems.json")
     tasks = read_object(MANIFESTS / "tasks.json")
     budget = read_object(MANIFESTS / "budget.json")
+    memory = read_object(MANIFESTS / "memory_bundles.json")
 
     rows = list(manifest.get("runs") or [])
     all_system_ids = [str(row["system_id"]) for row in systems.get("systems") or []]
@@ -73,6 +76,30 @@ def main() -> int:
         require(len(task_ids) == 4, "Pilot must contain exactly four tasks")
         require(len(system_ids) == 10, "Pilot must contain exactly ten systems")
         require(len(rows) == 40, "Pilot must be the full 10×4×1 matrix")
+        require(
+            memory.get("excluded_run_ids") == [],
+            "Pilot must allow same-task historical memory",
+        )
+        task_bundles = dict(memory.get("task_bundles") or {})
+        require(set(task_bundles) == set(task_ids), "Pilot Bundle task set mismatch")
+        require(
+            all(
+                task_bundles[task_id].get("same_task_history_enabled") is True
+                and str(task_bundles[task_id].get("same_task_best_node_id") or "")
+                for task_id in task_ids
+            ),
+            "Every Pilot task must freeze a same-task clean best record",
+        )
+        pilot_job = yaml.safe_load(
+            (ROOT / "jobs" / "pilot-all-40-indexed-job.yaml").read_text(
+                encoding="utf-8"
+            )
+        )
+        pilot_spec = pilot_job["spec"]
+        pilot_args = pilot_spec["template"]["spec"]["containers"][0]["args"]
+        require(pilot_spec["completions"] == 40, "Pilot Job must cover 40 indices")
+        require(pilot_spec["parallelism"] == 1, "Pilot Job must use one A100 at a time")
+        require("--resume" in pilot_args, "Pilot Job must enable condition resume")
     else:
         require(manifest.get("formal_result_eligible") is False, "Smoke must not be a formal result")
 
@@ -143,7 +170,21 @@ def main() -> int:
             "roles": roles,
             "retrieval_agent": True,
             "same_task_best_policy": "first when eligible same-task history exists",
-            "prompt_selection": "agentic retrieval with deterministic router fallback",
+            "prompt_selection": (
+                "Retrieval Agent final Top-6; any invalid-Agent fallback is explicit "
+                "and retained"
+            ),
+        },
+        "memory_bundle": {
+            "binding_path": memory["production_binding_path"],
+            "binding_sha256": memory["production_binding_sha256"],
+            "same_task_history_enabled": memory.get("excluded_run_ids") == [],
+            "same_task_best_node_by_task": {
+                task_id: memory["task_bundles"][task_id].get(
+                    "same_task_best_node_id"
+                )
+                for task_id in task_ids
+            },
         },
         "resources_per_run": {
             "gpu": "1×A100",
@@ -151,6 +192,17 @@ def main() -> int:
             "memory_gib": 64,
             "parallel_runs_per_job": 1,
         },
+        "formal_job": (
+            {
+                "name": "mlevolve-e2e-agentic-pilot-all-40-v13",
+                "completions": 40,
+                "parallelism": 1,
+                "condition_level_resume": True,
+                "epoch_checkpoint_guaranteed": False,
+            }
+            if kind == "pilot"
+            else None
+        ),
         "runtime_checks": {
             "host_protocol": False,
             "host_receipts": False,

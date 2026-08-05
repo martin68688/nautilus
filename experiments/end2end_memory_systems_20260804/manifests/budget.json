@@ -31,11 +31,16 @@
   "failure_policy": {
     "automatic_job_retry": false,
     "backoff_limit_per_index": 0,
+    "completed_conditions_are_skipped": true,
+    "condition_level_resume": true,
+    "epoch_level_checkpoint_guaranteed": false,
     "explicit_retry_only_for": "infrastructure",
+    "hard_interruption_orphans_finalized_as_infrastructure": true,
     "preserve_all_attempts": true,
+    "resume_semantics": "rerun only the interrupted frozen condition from a new immutable attempt; arbitrary generated training code may not expose epoch checkpoints",
     "score_imputation": false
   },
-  "manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
+  "manifest_hash": "5615feabbe85282c98b94d5a8ac6f9b1dbe3be1e63e044457264b738d34922c2",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,

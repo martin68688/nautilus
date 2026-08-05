@@ -2033,7 +2033,7 @@ class RunForestMemoryLayer:
         )
         if fast_nonblocking:
             metric = node.get("metric")
-            return bool(
+            successful = bool(
                 node.get("type") == "RunNode"
                 and node.get("is_buggy") is False
                 and node.get("is_valid") is True
@@ -2041,6 +2041,29 @@ class RunForestMemoryLayer:
                 and not isinstance(metric, bool)
                 and math.isfinite(float(metric))
             )
+            if not successful:
+                return False
+            audit = node.get("leakage_audit")
+            modern_admission = bool(
+                isinstance(audit, dict)
+                and {
+                    "memory_disposition",
+                    "paper_grade_eligible",
+                    "rank_eligible",
+                }
+                & set(audit)
+            )
+            if modern_admission:
+                return bool(
+                    audit.get("status") == "clean"
+                    and audit.get("memory_disposition") == "positive_eligible"
+                    and audit.get("paper_grade_eligible") is True
+                    and audit.get("rank_eligible") is True
+                )
+            # Older reviewed Bundles predate the full admission tuple. Fast
+            # End2End mode may still use their successful finite records, but a
+            # modern graph's explicit negative/quarantine label is authoritative.
+            return True
         if node.get("strategy_alignment_eligible") is False:
             return False
         audit = node.get("leakage_audit")

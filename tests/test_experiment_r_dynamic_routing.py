@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "mlevolve"))
 from agents.memory.experiment_r_router import (
     _experiment_r_clean_sop_support,
     _prompt_marker_visible,
+    _same_task_best_rows,
     _truncate_prompt,
     count_prompt_tokens,
 )
@@ -739,6 +740,42 @@ def test_fast_experiment_accepts_successful_history_without_paper_grade_markers(
         "sop": 2,
         "runforest": 3,
     }
+
+
+def test_fast_experiment_respects_modern_positive_admission_labels(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.cfg = SimpleNamespace(evaluation_authority=SimpleNamespace(mode="off"))
+    layer.memory_snapshot = SimpleNamespace(verify_artifacts=False)
+    layer.nodes["n0"]["metric"] = 0.01
+    layer.nodes["n0"]["leakage_audit"] = {
+        "status": "blocked",
+        "memory_disposition": "quarantine",
+        "paper_grade_eligible": False,
+        "rank_eligible": False,
+    }
+    layer.nodes["n1"]["metric"] = 0.10
+    layer.nodes["n1"]["leakage_audit"] = {
+        "status": "clean",
+        "memory_disposition": "positive_eligible",
+        "paper_grade_eligible": True,
+        "rank_eligible": True,
+    }
+    assert layer._execution_candidate_eligibility("n0") == (
+        False,
+        "run_node_not_rank_eligible",
+    )
+    assert layer._execution_candidate_eligibility("n1") == (
+        True,
+        "clean_successful_run_node",
+    )
+    rows = _same_task_best_rows(
+        layer,
+        task_id="task",
+        visible_sop_ids=None,
+        limit=8,
+    )
+    runforest_ids = [row["id"] for row in rows if row["source"] == "runforest"]
+    assert runforest_ids == ["n1", "t1"]
 
 
 def test_dynamic_prompt_pins_same_task_best_when_retrieval_agent_declines_it(
