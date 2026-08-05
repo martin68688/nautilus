@@ -361,7 +361,7 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     assert smoke["formal_result_eligible"] is False
     assert pilot["formal_result_eligible"] is True
     assert smoke["release_id"] == pilot["release_id"] == (
-        "end2end-agentic-three-role-v9"
+        "end2end-agentic-three-role-v10"
     )
     assert smoke["comparison_baseline_release_id"] == (
         pilot["comparison_baseline_release_id"]
@@ -487,7 +487,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
         assert labels["experiment"] == (
-            "experiment-end2end-memory-agent-v9"
+            "experiment-end2end-memory-agent-v10"
         )
         assert job["metadata"]["annotations"]["mlevolve.ai/generated-not-submitted"] == "true"
         assert job["metadata"]["annotations"]["mlevolve.ai/gpu-contract"] == (
@@ -531,12 +531,12 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-            "/workspace/nautilus-exp-end2end-agent-v10/mlevolve"
+            "/workspace/nautilus-exp-end2end-agent-v11/mlevolve"
         )
         if path.name.startswith("pilot-"):
             assert "--smoke-gate" in container["args"]
             assert (
-                    "/workspace/experiment-end2end-memory-agent-v9/runs/SMOKE_GATE.json"
+                    "/workspace/experiment-end2end-memory-agent-v10/runs/SMOKE_GATE.json"
                 in container["args"]
             )
         else:
@@ -564,7 +564,7 @@ def test_launch_packet_records_programmatic_smoke_gate() -> None:
     assert packet["pilot_requires_passing_smoke_gate"] is True
     assert (
         packet["smoke_gate_output"]
-        == "/workspace/experiment-end2end-memory-agent-v9/runs/SMOKE_GATE.json"
+        == "/workspace/experiment-end2end-memory-agent-v10/runs/SMOKE_GATE.json"
     )
 
 
