@@ -217,7 +217,7 @@ def test_agent_semantic_review_retries_false_clean_static_finding(
                     "<<<<<<< SEARCH\n"
                     "    rows = list(views.validation)\n"
                     "=======\n"
-                    "    with session.prediction_scope(component=\"model\", data_view=views.validation) as rows:\n"
+                    '    with session.prediction_scope(component="model", data_view=views.validation) as rows:\n'
                     "        rows = list(rows)\n"
                     ">>>>>>> REPLACE"
                 ),
@@ -359,6 +359,16 @@ def test_real_retrieval_agent_prompt_compiles_structured_observations(
         query_text="query",
         trace=[{"observation": {"tool": "search", "candidate_ids": ["n1"]}}],
         known={"n1": {"id": "n1", "source": "runforest", "score": 1.0}},
+        step_index=0,
+        max_steps=2,
+        force_finish=False,
+        no_progress_searches=0,
+        selection_contract={
+            "exact_selection_count": 1,
+            "requested_source_slots": {"sop": 0, "runforest": 1},
+            "minimum_source_counts": {"sop": 0, "runforest": 1},
+            "available_source_counts": {"sop": 0, "runforest": 1},
+        },
     )
     assert action["action"] == "finish"
     assert '"candidate_ids"' in captured["compiled"]
@@ -366,9 +376,7 @@ def test_real_retrieval_agent_prompt_compiles_structured_observations(
 
 def test_shadow_host_can_retain_uid_isolation_without_enforcing_receipts():
     cfg = SimpleNamespace(
-        evaluation_authority=SimpleNamespace(
-            protocol_runtime_mode="host_sdk_shadow"
-        ),
+        evaluation_authority=SimpleNamespace(protocol_runtime_mode="host_sdk_shadow"),
         agent=SimpleNamespace(
             protocol_preflight=SimpleNamespace(candidate_process_isolation=True)
         ),

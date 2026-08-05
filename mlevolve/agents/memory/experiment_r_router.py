@@ -131,12 +131,8 @@ def _experiment_r_clean_sop_support(
         if visibility_enforced
         else None
     )
-    visible_clause_ids = set(
-        map(str, (projection or {}).get("clause_ids") or [])
-    )
-    effective_sop_ids = getattr(
-        layer, "_effective_visibility_sop_ids", lambda: None
-    )()
+    visible_clause_ids = set(map(str, (projection or {}).get("clause_ids") or []))
+    effective_sop_ids = getattr(layer, "_effective_visibility_sop_ids", lambda: None)()
     if (
         not visibility_enforced
         or not visible_clause_ids
@@ -144,9 +140,7 @@ def _experiment_r_clean_sop_support(
     ):
         return clean, rejected
 
-    navigation = getattr(layer, "_navigation_transitions_by_sop", {}).get(
-        sop_id, []
-    )
+    navigation = getattr(layer, "_navigation_transitions_by_sop", {}).get(sop_id, [])
     edge_metadata = getattr(layer, "_sop_edge_metadata", {})
     for transition_id in navigation:
         transition_id = str(transition_id)
@@ -167,9 +161,7 @@ def _experiment_r_clean_sop_support(
             clause = layer.nodes.get(clause_id, {})
             support = (
                 clause.get("supporting_transition")
-                or (clause.get("contract_spec") or {}).get(
-                    "supporting_transition"
-                )
+                or (clause.get("contract_spec") or {}).get("supporting_transition")
                 or {}
             )
             declared_transition_refs = set(
@@ -201,9 +193,7 @@ def _experiment_r_clean_sop_support(
         if eligible:
             clean.append(transition_id)
         else:
-            rejected.append(
-                {"transition_id": transition_id, "reason": str(reason)}
-            )
+            rejected.append({"transition_id": transition_id, "reason": str(reason)})
     return clean, rejected
 
 
@@ -211,9 +201,7 @@ def _refresh_experiment_r_sop_rows(
     layer: Any, rows: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
     for row in rows:
-        clean, rejected = _experiment_r_clean_sop_support(
-            layer, str(row["id"])
-        )
+        clean, rejected = _experiment_r_clean_sop_support(layer, str(row["id"]))
         row["clean_supporting_transition_ids"] = clean[:8]
         row["clean_supporting_transition_count"] = len(clean)
         row["rejected_support"] = rejected[:8]
@@ -224,15 +212,11 @@ def _refresh_experiment_r_sop_rows(
     return rows
 
 
-def _experiment_r_sops_for_execution(
-    layer: Any, execution_id: str
-) -> list[str]:
+def _experiment_r_sops_for_execution(layer: Any, execution_id: str) -> list[str]:
     values = list(layer._active_sops_for_execution(execution_id))
     if bool(getattr(layer, "_visibility_is_enforced", lambda: False)()):
         values.extend(
-            getattr(layer, "_navigation_sops_by_execution", {}).get(
-                execution_id, []
-            )
+            getattr(layer, "_navigation_sops_by_execution", {}).get(execution_id, [])
         )
     return [
         sop_id
@@ -457,14 +441,46 @@ def _candidate_pool_from_qualification(
     }
 
 
-def _agentic_action_spec() -> Any:
+def _agentic_action_spec(
+    *,
+    finish_only: bool = False,
+    exact_selection_count: int | None = None,
+) -> Any:
     from llm import FunctionSpec
+
+    actions = (
+        ["finish"]
+        if finish_only
+        else [
+            "search_sop",
+            "search_runforest",
+            "inspect_candidate",
+            "expand_candidate",
+            "finish",
+        ]
+    )
+    selected_ids_schema: dict[str, Any] = {
+        "type": "array",
+        "maxItems": 6,
+        "items": {"type": "string", "maxLength": 256},
+    }
+    if exact_selection_count is not None:
+        selected_ids_schema["minItems"] = int(exact_selection_count)
+        selected_ids_schema["maxItems"] = int(exact_selection_count)
+    required = ["action", "reason"]
+    if finish_only:
+        required.append("selected_ids")
 
     return FunctionSpec(
         name="choose_experiment_r_memory_retrieval_action",
         description=(
-            "Choose one read-only action over an Authority-filtered RunForest/SOP "
-            "memory bundle, or finish with IDs already observed through the tools."
+            "Submit the final observed memory IDs now."
+            if finish_only
+            else (
+                "Choose one read-only action over an Authority-filtered "
+                "RunForest/SOP memory bundle, or finish with IDs already "
+                "observed through the tools."
+            )
         ),
         json_schema={
             "type": "object",
@@ -472,25 +488,15 @@ def _agentic_action_spec() -> Any:
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": [
-                        "search_sop",
-                        "search_runforest",
-                        "inspect_candidate",
-                        "expand_candidate",
-                        "finish",
-                    ],
+                    "enum": actions,
                 },
                 "reason": {"type": "string", "maxLength": 800},
                 "query": {"type": "string", "maxLength": 1600},
                 "candidate_id": {"type": "string", "maxLength": 256},
                 "top_k": {"type": "integer", "minimum": 1, "maximum": 12},
-                "selected_ids": {
-                    "type": "array",
-                    "maxItems": 6,
-                    "items": {"type": "string", "maxLength": 256},
-                },
+                "selected_ids": selected_ids_schema,
             },
-            "required": ["action", "reason"],
+            "required": required,
         },
     )
 
@@ -520,6 +526,69 @@ def _compact_agent_row(layer: Any, row: dict[str, Any]) -> dict[str, Any]:
             or ""
         )[:700],
     }
+
+
+def _agentic_selection_contract(
+    layer: Any,
+    *,
+    stage: str,
+    known: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Describe the exact bounded choice the Retrieval Agent must submit."""
+
+    target_count = min(int(layer.experiment_r_top_k), len(known))
+    available = {
+        source: sum(row.get("source") == source for row in known.values())
+        for source in ("sop", "runforest")
+    }
+    control = str(getattr(layer, "retrieval_control", "dynamic_hybrid"))
+    requested = copy.deepcopy(
+        SLOT_POLICY.get(control, SLOT_POLICY["dynamic_hybrid"])[stage]
+    )
+    minimum = {
+        source: min(int(requested[source]), int(available[source]))
+        for source in ("sop", "runforest")
+    }
+    return {
+        "exact_selection_count": target_count,
+        "requested_source_slots": requested,
+        "minimum_source_counts": minimum,
+        "available_source_counts": available,
+        "selection_semantics": "agent_final_ids_with_frozen_source_minima_v1",
+    }
+
+
+def _validate_agentic_final_selection(
+    proposed: list[str],
+    *,
+    known: dict[str, dict[str, Any]],
+    contract: dict[str, Any],
+) -> None:
+    expected = int(contract["exact_selection_count"])
+    if len(proposed) != expected or len(proposed) != len(set(proposed)):
+        raise ValueError(
+            "Retrieval Agent returned invalid final ID cardinality: "
+            f"expected {expected} distinct IDs, got {len(proposed)}"
+        )
+    unknown = [node_id for node_id in proposed if node_id not in known]
+    if unknown:
+        raise ValueError(
+            "Retrieval Agent selected an unobserved candidate: " + ", ".join(unknown)
+        )
+    realized = {
+        source: sum(known[node_id]["source"] == source for node_id in proposed)
+        for source in ("sop", "runforest")
+    }
+    short = {
+        source: int(contract["minimum_source_counts"][source]) - realized[source]
+        for source in ("sop", "runforest")
+        if realized[source] < int(contract["minimum_source_counts"][source])
+    }
+    if short:
+        raise ValueError(
+            "Retrieval Agent final IDs violate frozen source minima: "
+            + json.dumps(short, sort_keys=True)
+        )
 
 
 def _agentic_sop_search(
@@ -742,8 +811,7 @@ def _same_task_best_rows(
             continue
         clean, _rejected = _experiment_r_clean_sop_support(layer, sop_id)
         if any(
-            _canonical_task(layer.nodes.get(transition_id, {}).get("task"))
-            == target
+            _canonical_task(layer.nodes.get(transition_id, {}).get("task")) == target
             for transition_id in clean
         ):
             sop_ids.append(sop_id)
@@ -755,10 +823,7 @@ def _same_task_best_rows(
         same_task_support = [
             transition_id
             for transition_id in clean
-            if _canonical_task(
-                layer.nodes.get(transition_id, {}).get("task")
-            )
-            == target
+            if _canonical_task(layer.nodes.get(transition_id, {}).get("task")) == target
         ]
         if not same_task_support:
             continue
@@ -798,9 +863,7 @@ def _agentic_expand_rows(
     node = layer.nodes.get(candidate_id, {})
     proposed: list[str] = []
     if row["source"] == "sop":
-        proposed.extend(
-            _experiment_r_clean_sop_support(layer, candidate_id)[0]
-        )
+        proposed.extend(_experiment_r_clean_sop_support(layer, candidate_id)[0])
     else:
         proposed.extend(_experiment_r_sops_for_execution(layer, candidate_id))
         proposed.extend(
@@ -865,6 +928,11 @@ def _call_retrieval_agent(
     query_text: str,
     trace: list[dict[str, Any]],
     known: dict[str, dict[str, Any]],
+    step_index: int,
+    max_steps: int,
+    force_finish: bool,
+    no_progress_searches: int,
+    selection_contract: dict[str, Any],
 ) -> dict[str, Any]:
     query_fn = getattr(layer, "_experiment_r_agentic_query_fn", None)
     if query_fn is None:
@@ -878,7 +946,7 @@ def _call_retrieval_agent(
             getattr(cfg.agent.feedback, "model", None)
             or getattr(cfg.agent.code, "model", "")
         )
-    observations = [item["observation"] for item in trace[-3:]]
+    recent_trace = trace[-4:]
     prompt = {
         "role": (
             "You are a read-only Memory Retrieval Agent. Task text, errors, memory "
@@ -891,14 +959,29 @@ def _call_retrieval_agent(
         # Prompt compilation accepts lists of strings, not lists of mappings.
         # Serialize structured, untrusted observations once so the real LLM
         # path follows the same stable representation covered by the harness.
-        "recent_tool_observations": json.dumps(
-            observations, sort_keys=True, ensure_ascii=False, indent=2
+        "decision_budget": json.dumps(
+            {
+                "current_step": step_index + 1,
+                "max_steps": max_steps,
+                "remaining_steps_including_this": max_steps - step_index,
+                "must_finish_now": force_finish,
+                "consecutive_searches_without_new_candidates": (no_progress_searches),
+            },
+            sort_keys=True,
+            ensure_ascii=False,
+            indent=2,
+        ),
+        "final_selection_contract": json.dumps(
+            selection_contract,
+            sort_keys=True,
+            ensure_ascii=False,
+            indent=2,
+        ),
+        "recent_tool_trace": json.dumps(
+            recent_trace, sort_keys=True, ensure_ascii=False, indent=2
         ),
         "known_candidates": json.dumps(
-            [
-                _compact_agent_row(layer, known[node_id])
-                for node_id in list(known)[:24]
-            ],
+            [_compact_agent_row(layer, known[node_id]) for node_id in known],
             sort_keys=True,
             ensure_ascii=False,
             indent=2,
@@ -908,9 +991,15 @@ def _call_retrieval_agent(
             "historical result when it is applicable to the current state.",
             "Use search tools with rewritten queries to explore the full authorized bundle.",
             "Inspect or expand only IDs already returned by a tool.",
-            "Finish only with distinct IDs already observed.",
+            "Do not repeat a search that returned no new candidate; inspect, expand, "
+            "or finish instead.",
+            "Finish with exactly final_selection_contract.exact_selection_count "
+            "distinct observed IDs and satisfy its minimum source counts.",
+            "When decision_budget.must_finish_now is true, call finish now; no search "
+            "or inspection action is allowed.",
             "Prefer evidence applicable to the current task, stage, code state, and failure.",
-            "The Host will enforce stage quotas, safety, Top-K, and prompt budget.",
+            "The Host validates source minima, candidate identity, Top-K, and prompt budget; "
+            "it will not silently replace a missing Agent decision.",
         ],
     }
     return query_fn(
@@ -919,7 +1008,14 @@ def _call_retrieval_agent(
         model=model,
         temperature=float(layer.experiment_r_agentic_temperature),
         max_tokens=int(layer.experiment_r_agentic_max_tokens),
-        func_spec=_agentic_action_spec(),
+        func_spec=_agentic_action_spec(
+            finish_only=force_finish,
+            exact_selection_count=(
+                int(selection_contract["exact_selection_count"])
+                if force_finish
+                else None
+            ),
+        ),
         cfg=cfg,
     )
 
@@ -941,22 +1037,34 @@ def _agentic_candidate_pool(
     known: dict[str, dict[str, Any]] = {}
     trace: list[dict[str, Any]] = []
 
-    def observe(tool: str, rows: list[dict[str, Any]], reason: str) -> None:
+    def observe(tool: str, rows: list[dict[str, Any]], reason: str) -> int:
         admitted: list[str] = []
+        returned: list[str] = []
         for row in rows:
             node_id = str(row.get("id") or "")
-            if not node_id or node_id in known:
+            if not node_id:
+                continue
+            returned.append(node_id)
+            if node_id in known:
                 continue
             if len(known) >= max_observed:
-                break
+                continue
             known[node_id] = copy.deepcopy(row)
             admitted.append(node_id)
         observation = {
             "tool": tool,
             "reason": reason,
-            "candidate_ids": admitted,
+            # ``candidate_ids`` remains the complete tool result for backwards
+            # compatibility.  ``new_candidate_ids`` makes novelty explicit so
+            # inspecting an already-known row still returns useful content.
+            "candidate_ids": returned,
+            "new_candidate_ids": admitted,
+            "new_candidate_count": len(admitted),
+            "no_new_candidates": not admitted,
             "candidates": [
-                _compact_agent_row(layer, known[node_id]) for node_id in admitted
+                _compact_agent_row(layer, known[node_id])
+                for node_id in returned
+                if node_id in known
             ],
         }
         trace.append(
@@ -967,6 +1075,7 @@ def _agentic_candidate_pool(
                 "observation_sha256": _sha(observation),
             }
         )
+        return len(admitted)
 
     # Safe landmarks keep the first Agent call grounded while every later
     # search still operates over the complete authorized Bundle.
@@ -1016,7 +1125,17 @@ def _agentic_candidate_pool(
     selected_ids: list[str] = []
     agent_calls = 0
     finish_reason = "step_budget_exhausted"
-    for _ in range(int(layer.experiment_r_agentic_max_steps)):
+    final_selection_contract: dict[str, Any] = {}
+    no_progress_searches = 0
+    forced_finalization_used = False
+    max_steps = int(layer.experiment_r_agentic_max_steps)
+    for step_index in range(max_steps):
+        selection_contract = _agentic_selection_contract(
+            layer,
+            stage=stage,
+            known=known,
+        )
+        force_finish = step_index == max_steps - 1 or no_progress_searches >= 2
         action = _call_retrieval_agent(
             layer,
             stage=stage,
@@ -1025,6 +1144,11 @@ def _agentic_candidate_pool(
             query_text=query_text,
             trace=trace,
             known=known,
+            step_index=step_index,
+            max_steps=max_steps,
+            force_finish=force_finish,
+            no_progress_searches=no_progress_searches,
+            selection_contract=selection_contract,
         )
         agent_calls += 1
         name = str(action.get("action") or "")
@@ -1036,15 +1160,37 @@ def _agentic_candidate_pool(
             "query": str(action.get("query") or ""),
             "candidate_id": str(action.get("candidate_id") or ""),
             "selected_ids": list(map(str, action.get("selected_ids") or [])),
+            "force_finish": force_finish,
         }
+        if force_finish and name != "finish":
+            raise ValueError(
+                "Retrieval Agent did not finish on the mandatory final decision step"
+            )
         if name == "finish":
             proposed = list(map(str, action.get("selected_ids") or []))
-            if len(proposed) != len(set(proposed)) or len(proposed) > 6:
-                raise ValueError("Retrieval Agent returned invalid final ID cardinality")
-            if any(node_id not in known for node_id in proposed):
-                raise ValueError("Retrieval Agent selected an unobserved candidate")
+            try:
+                _validate_agentic_final_selection(
+                    proposed,
+                    known=known,
+                    contract=selection_contract,
+                )
+            except ValueError as exc:
+                if force_finish:
+                    raise
+                rejection = {
+                    "tool": "finish_rejected",
+                    "error": str(exc),
+                    "selection_contract": selection_contract,
+                }
+                action_record["observation"] = rejection
+                action_record["observation_sha256"] = _sha(rejection)
+                trace.append(action_record)
+                no_progress_searches += 1
+                continue
             selected_ids = proposed
             finish_reason = reason or "agent_finished"
+            final_selection_contract = copy.deepcopy(selection_contract)
+            forced_finalization_used = force_finish
             action_record["observation"] = {"tool": "finish"}
             action_record["observation_sha256"] = _sha({"tool": "finish"})
             trace.append(action_record)
@@ -1089,15 +1235,26 @@ def _agentic_candidate_pool(
         else:
             raise ValueError(f"Retrieval Agent returned unknown action: {name}")
         before = len(trace)
-        observe(name, rows, reason)
-        trace[-1].update({key: value for key, value in action_record.items() if key != "step"})
+        new_count = observe(name, rows, reason)
+        trace[-1].update(
+            {key: value for key, value in action_record.items() if key != "step"}
+        )
         trace[-1]["step"] = before
+        if name in {"search_sop", "search_runforest"} and new_count == 0:
+            no_progress_searches += 1
+        else:
+            no_progress_searches = 0
 
     if not known:
         raise ValueError("Retrieval Agent observed no authorized memory candidates")
+    if not selected_ids:
+        raise ValueError(
+            "Retrieval Agent exhausted its decision budget without a final selection"
+        )
 
-    # Agent priorities lead each source list. The deterministic ranking of all
-    # other observed rows provides bounded, reproducible quota backfill.
+    # Preserve the complete observed pool for auditing, with the Agent's exact
+    # final IDs first in each source list. Dynamic selection below consumes the
+    # effective final IDs directly; the remainder is evidence, not backfill.
     selected_set = set(selected_ids)
     ordered: dict[str, list[dict[str, Any]]] = {"sop": [], "runforest": []}
     for source in ordered:
@@ -1132,13 +1289,14 @@ def _agentic_candidate_pool(
         "pre_gate_raw_runforest_ids": [],
         "retrieval_agent_trace_sha256": _sha(trace),
     }
-    tree_confidence = max(
-        (
-            float(row.get("confidence") or 0.0)
-            for row in ordered["runforest"]
-        ),
-        default=0.0,
-    ) if stage == "debug" else None
+    tree_confidence = (
+        max(
+            (float(row.get("confidence") or 0.0) for row in ordered["runforest"]),
+            default=0.0,
+        )
+        if stage == "debug"
+        else None
+    )
     fallback_reason = (
         "insufficient_causal_tree_confidence"
         if stage == "debug"
@@ -1156,7 +1314,7 @@ def _agentic_candidate_pool(
         "candidate_pool_hash": _sha(pool_identity),
         "pool_identity": pool_identity,
         "candidate_pool_source": "live_agentic_retrieval",
-        "ranking_contract": "authority_tool_agentic_navigation_v1",
+        "ranking_contract": "authority_tool_agentic_final_selection_v2",
         "live_query_used_for_candidate_pool": True,
         "tree_confidence": tree_confidence,
         "fallback_reason": fallback_reason,
@@ -1174,9 +1332,7 @@ def _agentic_candidate_pool(
                 "independent_of_draft_role_policy": True,
                 "target_task_id": task_id,
                 "eligible_history_found": bool(same_task_observation["candidate_ids"]),
-                "observed_candidate_ids": list(
-                    same_task_observation["candidate_ids"]
-                ),
+                "observed_candidate_ids": list(same_task_observation["candidate_ids"]),
                 "best_runforest_id": next(
                     (
                         node_id
@@ -1200,7 +1356,13 @@ def _agentic_candidate_pool(
             "agent_calls": agent_calls,
             "observed_candidate_count": len(known),
             "agent_selected_ids": selected_ids,
+            "effective_selected_ids": list(selected_ids),
+            "selection_complete": True,
+            "final_selection_authority": "retrieval_agent",
+            "selection_contract": final_selection_contract,
             "finish_reason": finish_reason,
+            "forced_finalization_used": forced_finalization_used,
+            "no_progress_searches": no_progress_searches,
             "elapsed_seconds": round(time.monotonic() - started, 6),
             "trace": trace,
             "trace_sha256": _sha(trace),
@@ -1224,11 +1386,8 @@ def _pin_same_task_best_for_dynamic(
     quota: one existing RunForest slot is occupied, never added.
     """
 
-    if (
-        str(getattr(layer, "retrieval_control", "")) != "dynamic_hybrid"
-        or not bool(
-            getattr(layer, "experiment_r_agentic_retrieval_enabled", False)
-        )
+    if str(getattr(layer, "retrieval_control", "")) != "dynamic_hybrid" or not bool(
+        getattr(layer, "experiment_r_agentic_retrieval_enabled", False)
     ):
         return pool
     rows = _same_task_best_rows(
@@ -1242,6 +1401,9 @@ def _pin_same_task_best_for_dynamic(
         return pool
 
     candidate_id = str(best["id"])
+    original_runforest_ids = {
+        str(row.get("id") or "") for row in pool.get("runforest_candidates") or []
+    }
     limit = int(layer.experiment_r_candidate_limit)
     for key in ("raw_runforest_candidates", "runforest_candidates"):
         remainder = [
@@ -1258,17 +1420,11 @@ def _pin_same_task_best_for_dynamic(
             row.setdefault("same_task_best_prompt_pin", False)
 
     identity = pool["pool_identity"]
-    identity["runforest_ids"] = [
-        row["id"] for row in pool["raw_runforest_candidates"]
-    ]
+    identity["runforest_ids"] = [row["id"] for row in pool["raw_runforest_candidates"]]
     identity["same_task_best_prompt_pin_id"] = candidate_id
     pool["candidate_pool_hash"] = _sha(identity)
-    pool["pool_counts"]["raw_runforest"] = len(
-        pool["raw_runforest_candidates"]
-    )
-    pool["pool_counts"]["ranked_runforest"] = len(
-        pool["runforest_candidates"]
-    )
+    pool["pool_counts"]["raw_runforest"] = len(pool["raw_runforest_candidates"])
+    pool["pool_counts"]["ranked_runforest"] = len(pool["runforest_candidates"])
     pool["ranking_contract"] = (
         f"{pool.get('ranking_contract', 'live_stage_ranking_v1')}"
         "+same_task_best_prompt_pin_v1"
@@ -1289,6 +1445,36 @@ def _pin_same_task_best_for_dynamic(
         "applied": False,
         "prompt_visible": False,
     }
+    effective = list(retrieval.get("effective_selected_ids") or [])
+    if retrieval.get("selection_complete") and candidate_id not in effective:
+        victim_index = next(
+            (
+                index
+                for index in range(len(effective) - 1, -1, -1)
+                if effective[index] in original_runforest_ids
+            ),
+            None,
+        )
+        if victim_index is None:
+            raise RuntimeError(
+                "Dynamic Agent final selection has no RunForest slot for the "
+                "mandatory same-task best"
+            )
+        replaced_id = effective[victim_index]
+        effective[victim_index] = candidate_id
+        retrieval["effective_selected_ids"] = effective
+        retrieval[
+            "final_selection_authority"
+        ] = "retrieval_agent_plus_mandatory_same_task_pin"
+        retrieval.setdefault("selection_overrides", []).append(
+            {
+                "reason": "mandatory_same_task_best",
+                "inserted_id": candidate_id,
+                "replaced_id": replaced_id,
+                "source": "runforest",
+                "quota_preserving": True,
+            }
+        )
     return pool
 
 
@@ -1542,43 +1728,51 @@ def _candidate_pool(
         ],
     }
     pool = {
-            "schema": "experiment_r_candidate_pool_v1",
-            "candidate_limit_per_source": layer.experiment_r_candidate_limit,
-            "raw_sop_candidates": raw_sops,
-            "raw_runforest_candidates": raw_runforest,
-            "sop_candidates": sops,
-            "runforest_candidates": runforest,
-            "pre_gate_raw_candidates": pre_gate_raw_candidates,
-            "candidate_pool_hash": _sha(pool_identity),
-            "pool_identity": pool_identity,
-            "candidate_pool_source": (
-                "live_retrieval_deterministic_fallback"
-                if agentic_error
-                else "live_retrieval"
+        "schema": "experiment_r_candidate_pool_v1",
+        "candidate_limit_per_source": layer.experiment_r_candidate_limit,
+        "raw_sop_candidates": raw_sops,
+        "raw_runforest_candidates": raw_runforest,
+        "sop_candidates": sops,
+        "runforest_candidates": runforest,
+        "pre_gate_raw_candidates": pre_gate_raw_candidates,
+        "candidate_pool_hash": _sha(pool_identity),
+        "pool_identity": pool_identity,
+        "candidate_pool_source": (
+            "live_retrieval_deterministic_fallback"
+            if agentic_error
+            else "live_retrieval"
+        ),
+        "ranking_contract": (
+            "agentic_invalid_deterministic_fallback_v1"
+            if agentic_error
+            else "live_stage_ranking_v1"
+        ),
+        "live_query_used_for_candidate_pool": True,
+        "tree_confidence": tree_confidence,
+        "fallback_reason": fallback_reason,
+        "pool_counts": {
+            "raw_sop": len(raw_sops),
+            "raw_runforest": len(raw_runforest),
+            "ranked_sop": len(sops),
+            "ranked_runforest": len(runforest),
+        },
+        "retrieval_agent": {
+            "enabled": bool(
+                getattr(layer, "experiment_r_agentic_retrieval_enabled", False)
             ),
-            "ranking_contract": (
-                "agentic_invalid_deterministic_fallback_v1"
-                if agentic_error
-                else "live_stage_ranking_v1"
+            "fallback_used": bool(agentic_error),
+            "fallback_reason": agentic_error,
+            # A failed nested call can exit before its local trace is returned.
+            # Do not misreport that as zero calls; verbose logs retain the raw
+            # function-call transcript.
+            "agent_calls": None if agentic_error else 0,
+            "agent_calls_unknown_due_to_exception": bool(agentic_error),
+            "selection_complete": False,
+            "final_selection_authority": (
+                "deterministic_fallback" if agentic_error else "not_enabled"
             ),
-            "live_query_used_for_candidate_pool": True,
-            "tree_confidence": tree_confidence,
-            "fallback_reason": fallback_reason,
-            "pool_counts": {
-                "raw_sop": len(raw_sops),
-                "raw_runforest": len(raw_runforest),
-                "ranked_sop": len(sops),
-                "ranked_runforest": len(runforest),
-            },
-            "retrieval_agent": {
-                "enabled": bool(
-                    getattr(layer, "experiment_r_agentic_retrieval_enabled", False)
-                ),
-                "fallback_used": bool(agentic_error),
-                "fallback_reason": agentic_error,
-                "agent_calls": 0,
-            },
-        }
+        },
+    }
     return (
         _pin_same_task_best_for_dynamic(
             layer,
@@ -1647,7 +1841,42 @@ def _select(
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     sops = pool["sop_candidates"]
     runforest = pool["runforest_candidates"]
-    if control == "flat_retrieval":
+    retrieval = pool.get("retrieval_agent") or {}
+    effective_agent_ids = list(retrieval.get("effective_selected_ids") or [])
+    if (
+        control == "dynamic_hybrid"
+        and retrieval.get("selection_complete") is True
+        and effective_agent_ids
+    ):
+        by_id = {str(row["id"]): row for row in [*sops, *runforest]}
+        missing = [node_id for node_id in effective_agent_ids if node_id not in by_id]
+        if missing:
+            raise RuntimeError(
+                "Retrieval Agent final selection escaped its candidate pool: "
+                + ", ".join(missing)
+            )
+        selected = [copy.deepcopy(by_id[node_id]) for node_id in effective_agent_ids]
+        for rank, row in enumerate(selected, 1):
+            row["agent_selection_rank"] = rank
+            row["routing_score"] = 1.0 / rank
+        slots = copy.deepcopy(SLOT_POLICY[control][stage])
+        realized = {
+            source: sum(row["source"] == source for row in selected)
+            for source in ("sop", "runforest")
+        }
+        route = {
+            "route": "dynamic_hybrid_agent_final_selection",
+            "decision_authority": retrieval.get(
+                "final_selection_authority", "retrieval_agent"
+            ),
+            "requested_slots": slots,
+            "realized_slots": realized,
+            "fusion_weights": copy.deepcopy(FUSION_WEIGHTS[control][stage]),
+            "agent_selected_ids": list(retrieval.get("agent_selected_ids") or []),
+            "effective_selected_ids": effective_agent_ids,
+            "deterministic_quota_selection_used": False,
+        }
+    elif control == "flat_retrieval":
         selected = sorted(
             [
                 *copy.deepcopy(pool["raw_sop_candidates"]),
@@ -1689,6 +1918,7 @@ def _select(
             "requested_slots": copy.deepcopy(slots),
             "realized_slots": realized,
             "fusion_weights": copy.deepcopy(weights),
+            "deterministic_quota_selection_used": True,
         }
     route.setdefault(
         "realized_slots",
@@ -1818,7 +2048,11 @@ def build_experiment_r_pack(
         row["final_prompt_visible"] = row["candidate_id"] in set(selected_ids)
     return {
         "schema": PACK_SCHEMA,
-        "algorithm_version": "experiment_r_matched_pool_v1",
+        "algorithm_version": (
+            "experiment_r_agentic_final_selection_v2"
+            if route.get("decision_authority")
+            else "experiment_r_matched_pool_v1"
+        ),
         "stage_route": {
             "stage": stage,
             "control": control,

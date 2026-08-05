@@ -535,7 +535,7 @@ def test_agentic_router_searches_same_task_best_first_without_role_policy(tmp_pa
             {
                 "action": "finish",
                 "reason": "enough clean same-task evidence",
-                "selected_ids": ["n1", "s1"],
+                "selected_ids": ["n1", "s1", "t1", "n0"],
             },
         ]
     )
@@ -552,6 +552,10 @@ def test_agentic_router_searches_same_task_best_first_without_role_policy(tmp_pa
     agent = pack["retrieval_agent"]
     assert text and refs
     assert pack["candidate_pool_source"] == "live_agentic_retrieval"
+    assert pack["ranking_contract"] == (
+        "authority_tool_agentic_final_selection_v2" "+same_task_best_prompt_pin_v1"
+    )
+    assert pack["algorithm_version"] == "experiment_r_agentic_final_selection_v2"
     assert agent["fallback_used"] is False
     assert agent["trace"][0]["action"] == "search_same_task_best"
     same_task_ids = agent["trace"][0]["observation"]["candidate_ids"]
@@ -577,10 +581,101 @@ def test_agentic_router_searches_same_task_best_first_without_role_policy(tmp_pa
             "prompt_visible": True,
         },
     }
-    assert agent["agent_selected_ids"] == ["n1", "s1"]
-    assert pack["candidate_pool"]["pool_identity"][
-        "retrieval_agent_trace_sha256"
-    ] == agent["trace_sha256"]
+    assert agent["agent_selected_ids"] == ["n1", "s1", "t1", "n0"]
+    assert agent["effective_selected_ids"] == ["n1", "s1", "t1", "n0"]
+    assert agent["selection_complete"] is True
+    assert pack["stage_route"]["route"] == ("dynamic_hybrid_agent_final_selection")
+    assert pack["stage_route"]["decision_authority"] == "retrieval_agent"
+    assert pack["stage_route"]["deterministic_quota_selection_used"] is False
+    assert (
+        pack["candidate_pool"]["pool_identity"]["retrieval_agent_trace_sha256"]
+        == agent["trace_sha256"]
+    )
+
+
+def test_agentic_router_forces_finish_after_repeated_no_progress_searches(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer.experiment_r_agentic_max_steps = 4
+    calls = []
+    actions = iter(
+        [
+            {
+                "action": "search_runforest",
+                "reason": "first rewritten search",
+                "query": "task best validation improvement",
+                "top_k": 4,
+            },
+            {
+                "action": "search_runforest",
+                "reason": "second rewritten search",
+                "query": "task strongest clean historical execution",
+                "top_k": 4,
+            },
+            {
+                "action": "finish",
+                "reason": "mandatory final decision",
+                "selected_ids": ["n1", "s1", "t1", "n0"],
+            },
+        ]
+    )
+
+    def query_fn(**kwargs):
+        calls.append(kwargs)
+        return next(actions)
+
+    layer._experiment_r_agentic_query_fn = query_fn
+    _text, _refs, pack = _retrieve(layer)
+    agent = pack["retrieval_agent"]
+
+    assert agent["agent_calls"] == 3
+    assert agent["forced_finalization_used"] is True
+    assert agent["selection_complete"] is True
+    assert [row["action"] for row in agent["trace"][-3:]] == [
+        "search_runforest",
+        "search_runforest",
+        "finish",
+    ]
+    final_prompt = calls[-1]["system_message"]
+    decision_budget = json.loads(final_prompt["decision_budget"])
+    assert decision_budget["must_finish_now"] is True
+    assert decision_budget["consecutive_searches_without_new_candidates"] == 2
+    final_schema = calls[-1]["func_spec"].json_schema
+    assert final_schema["properties"]["action"]["enum"] == ["finish"]
+    assert final_schema["properties"]["selected_ids"]["minItems"] == 4
+    assert "selected_ids" in final_schema["required"]
+
+
+def test_agentic_inspect_returns_known_candidate_content(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer.experiment_r_agentic_max_steps = 2
+    actions = iter(
+        [
+            {
+                "action": "inspect_candidate",
+                "reason": "inspect the strongest same-task execution",
+                "candidate_id": "n1",
+            },
+            {
+                "action": "finish",
+                "reason": "inspection complete",
+                "selected_ids": ["n1", "s1", "t1", "n0"],
+            },
+        ]
+    )
+    layer._experiment_r_agentic_query_fn = lambda **_kwargs: next(actions)
+
+    _text, _refs, pack = _retrieve(layer)
+    inspection = next(
+        row
+        for row in pack["retrieval_agent"]["trace"]
+        if row["action"] == "inspect_candidate"
+    )["observation"]
+    assert inspection["candidate_ids"] == ["n1"]
+    assert inspection["new_candidate_ids"] == []
+    assert inspection["candidates"][0]["id"] == "n1"
+    assert "transformer validation ensemble" in inspection["candidates"][0]["summary"]
 
 
 def test_same_task_best_history_respects_minimize_metric_direction(tmp_path):
@@ -594,7 +689,7 @@ def test_same_task_best_history_respects_minimize_metric_direction(tmp_path):
     layer._experiment_r_agentic_query_fn = lambda **_kwargs: {
         "action": "finish",
         "reason": "best direction-aware history observed",
-        "selected_ids": ["n1"],
+        "selected_ids": ["n1", "s1", "t1", "n0"],
     }
 
     layer.retrieve_for_node(
@@ -614,9 +709,7 @@ def test_fast_experiment_accepts_successful_history_without_paper_grade_markers(
     tmp_path,
 ):
     layer = _layer(tmp_path, "dynamic_hybrid")
-    layer.cfg = SimpleNamespace(
-        evaluation_authority=SimpleNamespace(mode="off")
-    )
+    layer.cfg = SimpleNamespace(evaluation_authority=SimpleNamespace(mode="off"))
     layer.memory_snapshot = SimpleNamespace(verify_artifacts=False)
     for node_id in ("n0", "n1"):
         layer.nodes[node_id]["leakage_audit"] = {
@@ -627,7 +720,7 @@ def test_fast_experiment_accepts_successful_history_without_paper_grade_markers(
     layer._experiment_r_agentic_query_fn = lambda **_kwargs: {
         "action": "finish",
         "reason": "use the successful same-task best",
-        "selected_ids": ["n1"],
+        "selected_ids": ["n1", "s1", "s2", "t1", "n0"],
     }
 
     _text, refs = layer.retrieve_for_node(
@@ -652,12 +745,13 @@ def test_dynamic_prompt_pins_same_task_best_when_retrieval_agent_declines_it(
     tmp_path,
 ):
     layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.experiment_r_top_k = 3
     layer.experiment_r_agentic_retrieval_enabled = True
     layer.experiment_r_agentic_max_steps = 1
     layer._experiment_r_agentic_query_fn = lambda **_kwargs: {
         "action": "finish",
         "reason": "prefer two other observed executions",
-        "selected_ids": ["t1", "n0"],
+        "selected_ids": ["t1", "n0", "s1"],
     }
 
     _text, refs = layer.retrieve_for_node(
@@ -679,15 +773,31 @@ def test_dynamic_prompt_pins_same_task_best_when_retrieval_agent_declines_it(
     }
     assert "n1" in refs
     assert "n1" in pack["final_prompt_candidate_ids"]
+    assert pack["retrieval_agent"]["agent_selected_ids"] == ["t1", "n0", "s1"]
+    assert pack["retrieval_agent"]["effective_selected_ids"] == [
+        "t1",
+        "n1",
+        "s1",
+    ]
+    assert pack["retrieval_agent"]["selection_overrides"] == [
+        {
+            "reason": "mandatory_same_task_best",
+            "inserted_id": "n1",
+            "replaced_id": "n0",
+            "source": "runforest",
+            "quota_preserving": True,
+        }
+    ]
     assert pack["stage_route"]["requested_slots"] == {
         "sop": 4,
         "runforest": 2,
     }
-    # The tiny fixture has only one eligible SOP, so ordinary deterministic
-    # backfill fills the shortfall with another RunForest item.
+    # The tiny fixture has only one eligible SOP. The Agent chooses the full
+    # realizable three-item set, then the mandatory best-history invariant
+    # replaces one RunForest choice without changing its source count.
     assert pack["stage_route"]["realized_slots"] == {
         "sop": 1,
-        "runforest": 3,
+        "runforest": 2,
     }
 
 
@@ -698,13 +808,12 @@ def test_agentic_router_invalid_id_falls_back_and_retains_failure(tmp_path):
     layer._experiment_r_agentic_query_fn = lambda **_kwargs: {
         "action": "finish",
         "reason": "malformed attempt",
-        "selected_ids": ["invented::candidate"],
+        "selected_ids": ["invented::candidate", "n1", "s1", "t1"],
     }
     _text, _refs, pack = _retrieve(layer)
     assert pack["candidate_pool_source"] == "live_retrieval_deterministic_fallback"
     assert pack["ranking_contract"] == (
-        "agentic_invalid_deterministic_fallback_v1"
-        "+same_task_best_prompt_pin_v1"
+        "agentic_invalid_deterministic_fallback_v1" "+same_task_best_prompt_pin_v1"
     )
     assert pack["retrieval_agent"]["fallback_used"] is True
     assert "unobserved candidate" in pack["retrieval_agent"]["fallback_reason"]
