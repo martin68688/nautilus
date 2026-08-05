@@ -1,11 +1,11 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mlevolve-e2e-all-systems-smoke-aerial-v8
+  name: mlevolve-e2e-all-systems-smoke-aerial-v9
   namespace: ecepxie
   labels: &id001
     app: mlevolve-end2end
-    experiment: experiment-end2end-memory-agent-v8
+    experiment: experiment-end2end-memory-agent-v9
     ecepxie.nrp/owner: haoming
     app.kubernetes.io/managed-by: codex-nrp-training
   annotations:
@@ -39,11 +39,11 @@ spec:
         - /usr/local/bin/python
         - -u
         args:
-        - /workspace/nautilus-exp-end2end-agent-v9/experiments/end2end_memory_systems_20260804/run_assignment.py
+        - /workspace/nautilus-exp-end2end-agent-v10/experiments/end2end_memory_systems_20260804/run_assignment.py
         - --manifest
-        - /workspace/nautilus-exp-end2end-agent-v9/experiments/end2end_memory_systems_20260804/manifests/smoke_manifest.json
+        - /workspace/nautilus-exp-end2end-agent-v10/experiments/end2end_memory_systems_20260804/manifests/smoke_manifest.json
         - --output-root
-        - /workspace/experiment-end2end-memory-agent-v8/runs
+        - /workspace/experiment-end2end-memory-agent-v9/runs
         envFrom:
         - secretRef:
             name: prevalence-audit-deepseek-r1
@@ -77,7 +77,7 @@ spec:
         - name: PYTHONDONTWRITEBYTECODE
           value: '1'
         - name: PYTHONPATH
-          value: /workspace/nautilus-exp-end2end-agent-v9/mlevolve
+          value: /workspace/nautilus-exp-end2end-agent-v10/mlevolve
         - name: MLEVOLVE_CONTAINER_IMAGE_REFERENCE
           value: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
         - name: MLEVOLVE_SOLVER_BINDING_ID

@@ -1,5 +1,5 @@
 {
-  "binding_hash": "5cdd186837c80bce780cddb4faaea89f514533bcd7ee767e8820ba2e97fcd7d1",
+  "binding_hash": "37ab6e5de0c668a442a8d41ac7fe12b7740ec6e7521e966eec0a8b851ae33c4c",
   "contract_file_sha256": "6987ef8de719763c74eaa228d61b6f06808967d4ef428393de438d6313198701",
   "contract_hash": "0e1cbf9f1fda429434375c5a6b68cc4fafd873a140884438a226688c362bbc6e",
   "contract_path": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/denoising-dirty-documents/contract/PROTOCOL_EXECUTION_CONTRACT.json",
@@ -13,7 +13,7 @@
   "report_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/denoising-dirty-documents/reports",
   "runtime_artifact_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/denoising-dirty-documents/runtime",
   "schema": "mlevolve_host_protocol_binding_v1",
-  "sdk_hash": "b4419cb4aa04bb0ee08456c8663525cc2a7bb12dcc56f61c94ffc021bb850819",
+  "sdk_hash": "6d3de12248255d22a0f5137eda57e7d100d7cc1cc30d2f288654af9e97a0d2e4",
   "task_id": "denoising-dirty-documents",
   "terminal_exposure_count": 0
 }

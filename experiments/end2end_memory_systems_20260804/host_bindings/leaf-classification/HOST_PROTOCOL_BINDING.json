@@ -1,5 +1,5 @@
 {
-  "binding_hash": "433a8857a76aba46f4e29aaab5a1435ba823aef530800885a5b07a9f79c5efbf",
+  "binding_hash": "02ecc3ef349fdc4ca6a43f63498564b51662cac5fc5100fd3cd9092915598b48",
   "contract_file_sha256": "06a4bb8bc716e599b1c4891f4623ccaa835bf187e40b09ffcc4c3bdf8b51dadb",
   "contract_hash": "84c1e5764b64abede9be3e841f2a37d3043c5f1bf18e6190e957a41c84dc4a09",
   "contract_path": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/leaf-classification/contract/PROTOCOL_EXECUTION_CONTRACT.json",
@@ -13,7 +13,7 @@
   "report_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/leaf-classification/reports",
   "runtime_artifact_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/leaf-classification/runtime",
   "schema": "mlevolve_host_protocol_binding_v1",
-  "sdk_hash": "b4419cb4aa04bb0ee08456c8663525cc2a7bb12dcc56f61c94ffc021bb850819",
+  "sdk_hash": "6d3de12248255d22a0f5137eda57e7d100d7cc1cc30d2f288654af9e97a0d2e4",
   "task_id": "leaf-classification",
   "terminal_exposure_count": 0
 }

@@ -19,7 +19,7 @@
     },
     {
       "path": "mlevolve/agents/agent_protocol_review_agent.py",
-      "sha256": "531c05f67626328f4e71582a98ad987317f3b4ce0a805e3fb1a4dbc0e102f82b"
+      "sha256": "0ac684bb23a9c160e3cb2e0320bb155b7a5749aec8dbc309948a23852bd2bef3"
     },
     {
       "path": "mlevolve/agents/aggregation_agent.py",
@@ -719,7 +719,7 @@
     },
     {
       "path": "mlevolve/protocol_runtime/activation.py",
-      "sha256": "639e98951c3310ca55e2ae4391ce45aba9726c8fcc0317d13eb7b7b719367245"
+      "sha256": "78840989f45bc8b0596c55de577ad543cae2fa04fc1f34365337f5a0b8b8923e"
     },
     {
       "path": "mlevolve/protocol_runtime/adapters/__init__.py",
@@ -763,7 +763,7 @@
     },
     {
       "path": "mlevolve/protocol_runtime/data_views.py",
-      "sha256": "c9f6261bcd4b4ba670823203e01196d9dcce0bd3ff94c905a226d4c8bf227299"
+      "sha256": "c7ba656118645bd51b8d0dd2b7925c60ced65fbaad187046209f3552091a2ea9"
     },
     {
       "path": "mlevolve/protocol_runtime/errors.py",
@@ -775,7 +775,7 @@
     },
     {
       "path": "mlevolve/protocol_runtime/full_runtime.py",
-      "sha256": "3b11b5bf91fed2ddb7869a6a858bd9caf8bb30b963deddbdd1b8b0d88cf5a022"
+      "sha256": "8eedc3a69f930b42a52eae058503482521db8748ece64051ff75e0baa3d2371c"
     },
     {
       "path": "mlevolve/protocol_runtime/online_enforce_gate.py",
@@ -803,7 +803,7 @@
     },
     {
       "path": "mlevolve/protocol_runtime/views.py",
-      "sha256": "f6a102a398e05e70b2c706238ed93d0754f921d19c9ffb210b1e3fce05126ea6"
+      "sha256": "4f749b3b80e81fe40c7c0261d8b88c6994d456d035b711ccb96f0b15fe3411b2"
     },
     {
       "path": "mlevolve/run.py",
@@ -851,7 +851,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "72b72b9563e4898139a07df616b7c05953659b0c7cb9759f8f99a75b99ec4970"
+      "sha256": "7f46c7b4c565c2d79fb08feca569ad2b9114beddc7447c19f5ed04a07eab57d3"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/publish_smoke_memory_bundle.py",
@@ -915,7 +915,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/execution_manifest.schema.json",
-      "sha256": "b70cb5d47f12cac4e1aa4fc287aa1033913fb65a00d08b6299b0ed1533537b87"
+      "sha256": "9ef5b72a20fcacd9a4bcb1e3f99f8817898bf2c62c6104f3a5b1f80562a57abb"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/smoke_gate.schema.json",
@@ -923,23 +923,23 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/host_bindings/aerial-cactus-identification/HOST_PROTOCOL_BINDING.json",
-      "sha256": "c78c025d14ccd581cfebf9b5f844a74f39242c3758f6deb67e35203341e8f9de"
+      "sha256": "a4b606827afb3b4c41a837b8dced5039dde0377b93f8d3fce77f48f21d635a90"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/host_bindings/denoising-dirty-documents/HOST_PROTOCOL_BINDING.json",
-      "sha256": "d4f811550be2418d37b54eb335049b6eaf398332394f81a33ef7078e73bc9045"
+      "sha256": "bada54e8c3def80cf635e9a52475465048b8db92320fcad2d870a2f6059d19d0"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/host_bindings/leaf-classification/HOST_PROTOCOL_BINDING.json",
-      "sha256": "3302cd71e8ae7e8a8a995f1f29d02016c51463b21a20b73d1152749438cb68ce"
+      "sha256": "38bbcc98503747fd6f37e8188f1449cbebdba328a5f6bbdebc16610db2542ee4"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/host_bindings/new-york-city-taxi-fare-prediction/HOST_PROTOCOL_BINDING.json",
-      "sha256": "6e240617568977113e7de63d8ab52e670b17671c4070750e366f0c41001b8be7"
+      "sha256": "4300df74f961e7fcc34e7c38d35177e41a3423bd66f86ee1fd0ff9a89cebe7f0"
     }
   ],
-  "git_head": "53cb912a2960ba50eb54ec643472972ffaf28ae6",
+  "git_head": "46b18a206a86031496b35e036064859a4fd77d1a",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "ee975e4dc05de3510030575ec4ece2f7808f076e3609a219c1f2dd632e55d7ea",
+  "manifest_hash": "ec334a1534eb59a109c414e7fd3d3c3ab44b0b8ba430a5aa0f4c7ae771a1c577",
   "schema": "mlevolve_end2end_source_lock_v1"
 }

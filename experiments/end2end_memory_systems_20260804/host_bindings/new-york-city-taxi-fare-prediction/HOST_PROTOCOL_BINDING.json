@@ -1,5 +1,5 @@
 {
-  "binding_hash": "148f16d8af4c1955891d76a41cb4b2209512723b0ebd20e6f32fc27ff7f361e3",
+  "binding_hash": "b2757aff88cd12e89c4fe750699371308c6f30feeb96ea834a573ab3a89d38ba",
   "contract_file_sha256": "9e41d431868058b7eb2615c891d837d4227b4efb2c5fd8c37ffd40a27897decf",
   "contract_hash": "aee52a4dbc04be10244003ae593f3c0276be3c75eca63331b864ae2f25eb3d1b",
   "contract_path": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/new-york-city-taxi-fare-prediction/contract/PROTOCOL_EXECUTION_CONTRACT.json",
@@ -13,7 +13,7 @@
   "report_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/new-york-city-taxi-fare-prediction/reports",
   "runtime_artifact_root": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings/new-york-city-taxi-fare-prediction/runtime",
   "schema": "mlevolve_host_protocol_binding_v1",
-  "sdk_hash": "b4419cb4aa04bb0ee08456c8663525cc2a7bb12dcc56f61c94ffc021bb850819",
+  "sdk_hash": "6d3de12248255d22a0f5137eda57e7d100d7cc1cc30d2f288654af9e97a0d2e4",
   "task_id": "new-york-city-taxi-fare-prediction",
   "terminal_exposure_count": 0
 }
