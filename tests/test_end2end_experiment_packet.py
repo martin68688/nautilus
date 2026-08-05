@@ -571,7 +571,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         )
         assert "--smoke-gate" not in container["args"]
         if path.name == "smoke-leaf-dynamic-hybrid-job.yaml":
-            assert container["args"][-2:] == ["--attempt", "2"]
+            assert "--attempt" not in container["args"]
         if path.name == "smoke-leaf-controls-job.yaml":
             assert job["metadata"]["name"] == (
                 "mlevolve-e2e-leaf-controls-smoke-v15"

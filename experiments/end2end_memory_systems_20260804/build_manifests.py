@@ -838,7 +838,7 @@ def build() -> dict[str, Any]:
         components=components,
         system_ids_override=["dynamic_hybrid"],
         task_ids_override=["leaf-classification"],
-        prefix_override="e2e-smoke-leaf-dynamic-v12",
+        prefix_override="e2e-smoke-leaf-dynamic-agent-v2",
     )
     # Continue the exact frozen Leaf task-local order after the already-run
     # Dynamic Hybrid condition.  This makes the two Smoke manifests disjoint
@@ -887,14 +887,13 @@ def build() -> dict[str, Any]:
         yaml.safe_dump(feasibility_job, sort_keys=False), encoding="utf-8"
     )
     leaf_dynamic_job = job(
-        name="mlevolve-e2e-leaf-dynamic-smoke-v16",
+        name="mlevolve-e2e-leaf-dynamic-smoke-v17",
         manifest_name="leaf_dynamic_smoke_manifest.json",
         completions=1,
         task_id=None,
         active_deadline=5400,
         parallelism=1,
         components=components,
-        attempt=2,
     )
     (JOB_DIR / "smoke-leaf-dynamic-hybrid-job.yaml").write_text(
         yaml.safe_dump(leaf_dynamic_job, sort_keys=False), encoding="utf-8"

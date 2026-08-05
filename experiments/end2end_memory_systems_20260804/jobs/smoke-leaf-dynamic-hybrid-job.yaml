@@ -1,12 +1,12 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mlevolve-e2e-leaf-dynamic-smoke-v16
+  name: mlevolve-e2e-leaf-dynamic-smoke-v17
   namespace: ecepxie
   labels: &id001
     app: mlevolve-end2end
     experiment: experiment-end2end-memory-agent-v12
-    mlevolve.ai/workload: mlevolve-e2e-leaf-dynamic-smoke-v16
+    mlevolve.ai/workload: mlevolve-e2e-leaf-dynamic-smoke-v17
     ecepxie.nrp/owner: haoming
     app.kubernetes.io/managed-by: codex-nrp-training
   annotations:
@@ -45,8 +45,6 @@ spec:
         - /workspace/nautilus-exp-end2end-agent-v14/experiments/end2end_memory_systems_20260804/manifests/leaf_dynamic_smoke_manifest.json
         - --output-root
         - /workspace/experiment-end2end-memory-agent-v12/runs
-        - --attempt
-        - '2'
         envFrom:
         - secretRef:
             name: prevalence-audit-deepseek-r1
