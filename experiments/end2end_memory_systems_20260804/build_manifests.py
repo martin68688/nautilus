@@ -672,7 +672,7 @@ def execution_manifest(
 def job(
     *, name: str, manifest_name: str, completions: int, task_id: str | None,
     active_deadline: int, parallelism: int, components: Mapping[str, Mapping[str, Any]],
-    attempt: int = 0,
+    attempt: int = 0, resume: bool = False,
 ) -> dict[str, Any]:
     runtime = components["budget"]["runtime"]
     index_waves = (completions + parallelism - 1) // parallelism
@@ -690,6 +690,8 @@ def job(
     ]
     if attempt:
         args.extend(["--attempt", str(attempt)])
+    if resume:
+        args.append("--resume")
     if task_id:
         args.extend(["--task", task_id])
     resources = {
@@ -897,13 +899,14 @@ def build() -> dict[str, Any]:
         yaml.safe_dump(leaf_dynamic_job, sort_keys=False), encoding="utf-8"
     )
     leaf_controls_job = job(
-        name="mlevolve-e2e-leaf-controls-smoke-v14",
+        name="mlevolve-e2e-leaf-controls-smoke-v15",
         manifest_name="leaf_controls_smoke_manifest.json",
         completions=9,
         task_id=None,
         active_deadline=5400,
         parallelism=1,
         components=components,
+        resume=True,
     )
     (JOB_DIR / "smoke-leaf-controls-job.yaml").write_text(
         yaml.safe_dump(leaf_controls_job, sort_keys=False), encoding="utf-8"

@@ -572,6 +572,11 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert "--smoke-gate" not in container["args"]
         if path.name == "smoke-leaf-dynamic-hybrid-job.yaml":
             assert container["args"][-2:] == ["--attempt", "1"]
+        if path.name == "smoke-leaf-controls-job.yaml":
+            assert job["metadata"]["name"] == (
+                "mlevolve-e2e-leaf-controls-smoke-v15"
+            )
+            assert container["args"][-1] == "--resume"
         volume_names = {
             row["name"] for row in spec["template"]["spec"]["volumes"]
         }
@@ -768,6 +773,33 @@ def test_runner_termination_guard_retains_sigterm_instead_of_exiting() -> None:
             os.kill(os.getpid(), signal.SIGTERM)
     assert interrupted.value.signum == signal.SIGTERM
     assert signal.getsignal(signal.SIGTERM) == previous
+
+
+def test_resume_starts_missing_and_retries_only_infrastructure(tmp_path) -> None:
+    logical_run_id = "leaf-control"
+    assert run_assignment.resolve_resume_attempt(tmp_path, logical_run_id) == (
+        0,
+        None,
+    )
+    measurement_path = (
+        tmp_path / logical_run_id / "attempt-000" / "MEASUREMENT.json"
+    )
+    measurement_path.parent.mkdir(parents=True)
+    measurement_path.write_text(
+        json.dumps({"failure_class": "infrastructure", "completed": False}),
+        encoding="utf-8",
+    )
+    assert run_assignment.resolve_resume_attempt(tmp_path, logical_run_id) == (
+        1,
+        None,
+    )
+    retained = {"failure_class": "agent", "completed": False}
+    measurement_path.write_text(json.dumps(retained), encoding="utf-8")
+    attempt, observed = run_assignment.resolve_resume_attempt(
+        tmp_path, logical_run_id
+    )
+    assert attempt == 0
+    assert observed == retained
 
 
 def test_solver_forwards_sigterm_for_child_checkpoint_finalizer() -> None:

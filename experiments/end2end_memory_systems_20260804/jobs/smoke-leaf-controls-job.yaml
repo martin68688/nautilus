@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mlevolve-e2e-leaf-controls-smoke-v14
+  name: mlevolve-e2e-leaf-controls-smoke-v15
   namespace: ecepxie
   labels: &id001
     app: mlevolve-end2end
@@ -44,6 +44,7 @@ spec:
         - /workspace/nautilus-exp-end2end-agent-v13/experiments/end2end_memory_systems_20260804/manifests/leaf_controls_smoke_manifest.json
         - --output-root
         - /workspace/experiment-end2end-memory-agent-v12/runs
+        - --resume
         envFrom:
         - secretRef:
             name: prevalence-audit-deepseek-r1

@@ -434,7 +434,6 @@ def build_solver_command(
         "agent.check_data_leakage=false",
         "agent.protocol_repair.enabled=false",
         "agent.protocol_preflight.enabled=false",
-        "evaluation_authority.mode=off",
         "evaluation_authority.emit_snapshot=false",
         "evaluation_authority.runtime_protocol_observer_enabled=false",
         "adoption_verifier.enabled=false",
@@ -462,10 +461,51 @@ def _write_exclusive(path: Path, payload: dict[str, Any], hash_field: str) -> No
         handle.write("\n")
 
 
+def resolve_resume_attempt(
+    output_root: Path, logical_run_id: str
+) -> tuple[int, dict[str, Any] | None]:
+    """Resume a missing run or a retained infrastructure failure.
+
+    A terminal, Agent, or evaluator outcome is already the result for that
+    condition and is returned without running it again.  One resumed Indexed
+    Job can therefore cover a mix of never-started and interrupted indices.
+    """
+
+    condition_root = output_root / logical_run_id
+    attempts: list[tuple[int, Path]] = []
+    if condition_root.is_dir():
+        for path in condition_root.glob("attempt-*"):
+            try:
+                attempt = int(path.name.removeprefix("attempt-"))
+            except ValueError:
+                continue
+            if path.is_dir():
+                attempts.append((attempt, path))
+    if not attempts:
+        return 0, None
+    attempt, path = max(attempts)
+    measurement_path = path / "MEASUREMENT.json"
+    if not measurement_path.is_file():
+        raise ValueError(
+            f"Cannot resume incomplete attempt without MEASUREMENT.json: {path}"
+        )
+    measurement = read_object(measurement_path)
+    if measurement.get("failure_class") == "infrastructure":
+        return attempt + 1, None
+    return attempt, measurement
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
     manifest_path = Path(args.manifest).resolve(strict=True)
     manifest = load_frozen_inputs(manifest_path)
     row = select_row(manifest, index=args.index, task_id=args.task)
+    output_root = Path(args.output_root).resolve()
+    if args.resume:
+        args.attempt, retained = resolve_resume_attempt(
+            output_root, str(row["logical_run_id"])
+        )
+        if retained is not None:
+            return retained
     components = manifest["_components"]
     tasks = _task_map(components["tasks"])
     systems = _system_map(components["systems"])
@@ -484,7 +524,6 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "filesystem_written": False,
         }
 
-    output_root = Path(args.output_root).resolve()
     condition_root = output_root / row["logical_run_id"] / f"attempt-{args.attempt:03d}"
     if condition_root.exists():
         raise ValueError(f"Refusing to replace immutable attempt: {condition_root}")
@@ -707,6 +746,11 @@ def main() -> int:
     parser.add_argument("--task", default=None)
     parser.add_argument("--attempt", type=int, default=0)
     parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="start missing conditions and retry only retained infrastructure failures",
+    )
+    parser.add_argument(
         "--output-root",
         default="/workspace/experiment-end2end-memory-agent-v8/runs",
     )
@@ -720,6 +764,8 @@ def main() -> int:
         args.index = int(raw)
     if args.attempt < 0:
         parser.error("--attempt must be non-negative")
+    if args.resume and args.attempt != 0:
+        parser.error("--resume and an explicit nonzero --attempt are mutually exclusive")
     result = run(args)
     print(json.dumps(result, sort_keys=True, ensure_ascii=False))
     return 0 if args.dry_run or result.get("completed") else 1
