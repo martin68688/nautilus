@@ -81,9 +81,15 @@ def main() -> int:
             experiment_r_top_k=int(ext.experiment_r_top_k),
             experiment_r_prompt_token_budget=int(ext.experiment_r_prompt_token_budget),
             experiment_r_memory_pool_sha256=str(base.manifest_sha256),
-            # The harness pin is deterministic and independent of the live LLM
-            # choice.  The real Smoke keeps the Retrieval Agent enabled.
-            experiment_r_agentic_retrieval_enabled=False,
+            # Exercise the real Agentic route while replacing only the network
+            # call with a deterministic finish action. The mandatory first
+            # same-task observation and final Prompt pin remain production code.
+            experiment_r_agentic_retrieval_enabled=True,
+            experiment_r_agentic_query_fn=lambda **_kwargs: {
+                "action": "finish",
+                "reason": "pre-run intent confirmation",
+                "selected_ids": [args.best_id],
+            },
         )
         prompt, refs = layer.retrieve_for_node(
             stage="draft",
