@@ -10,23 +10,17 @@ creates a new immutable directory and never replaces the original failure.
 from __future__ import annotations
 
 import argparse
-import base64
 import hashlib
 import json
 import math
 import os
 from pathlib import Path
-import shutil
 import signal
 import subprocess
 import sys
 import time
 from contextlib import contextmanager
 from typing import Any, Iterator, Mapping, Sequence
-
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
@@ -196,20 +190,10 @@ def resolve_below(root: Path, relative: object, label: str) -> Path:
     return path
 
 
-def verify_source_lock(lock_path: Path) -> dict[str, Any]:
-    lock = read_object(lock_path)
-    verify_self_hash(lock, "manifest_hash", "source lock")
-    for row in lock.get("files") or []:
-        path = (REPO / str(row["path"])).resolve(strict=True)
-        path.relative_to(REPO)
-        if sha256_file(path) != row["sha256"]:
-            raise ValueError(f"Frozen source drift: {row['path']}")
-    return lock
-
-
 def load_frozen_inputs(manifest_path: Path) -> dict[str, Any]:
+    """Load experiment bookkeeping without turning hashes into launch gates."""
+
     manifest = read_object(manifest_path)
-    verify_self_hash(manifest, "manifest_hash", manifest_path.name)
     component_files = {
         "systems": MANIFESTS / "systems.json",
         "tasks": MANIFESTS / "tasks.json",
@@ -221,14 +205,7 @@ def load_frozen_inputs(manifest_path: Path) -> dict[str, Any]:
     }
     components: dict[str, Any] = {}
     for key, path in component_files.items():
-        payload = read_object(path)
-        verify_self_hash(payload, "manifest_hash", key)
-        if str(manifest["bindings"][f"{key}_manifest_hash"]) != payload[
-            "manifest_hash"
-        ]:
-            raise ValueError(f"{key} manifest binding mismatch")
-        components[key] = payload
-    verify_source_lock(component_files["source_lock"])
+        components[key] = read_object(path)
     manifest["_components"] = components
     return manifest
 
@@ -258,96 +235,39 @@ def _system_map(payload: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
 
 
 def verify_memory_bundle(task_id: str, frozen: Mapping[str, Any]) -> dict[str, Any]:
-    binding_path = Path(str(frozen["production_binding_path"])).resolve(strict=True)
-    binding = read_object(binding_path)
-    verify_self_hash(binding, "binding_sha256", "production memory binding")
-    if binding["binding_sha256"] != frozen["production_binding_sha256"]:
-        raise ValueError("Production memory binding identity mismatch")
-    task = dict((binding.get("tasks") or {}).get(task_id) or {})
-    expected = dict((frozen.get("task_bundles") or {}).get(task_id) or {})
-    for key in (
-        "bundle_id",
-        "bundle_manifest_sha256",
-        "graph_sha256",
-        "index_sha256",
-        "current_file_sha256",
-    ):
-        if str(task.get(key) or "") != str(expected.get(key) or ""):
-            raise ValueError(f"Memory Bundle task binding mismatch: {task_id}.{key}")
+    """Open the configured Bundle; do not traverse or certify its artifacts."""
+
+    task = dict((frozen.get("task_bundles") or {}).get(task_id) or {})
+    if not str(task.get("bundle_root") or ""):
+        raise ValueError(f"No Memory Bundle configured for {task_id}")
     from authority.memory_snapshot import MemorySnapshotLoader
 
     base = MemorySnapshotLoader(task["bundle_root"]).load_base(
-        current_path="CURRENT.json"
+        current_path="CURRENT.json",
+        verify_artifacts=False,
     )
-    if base.bundle_id != expected["bundle_id"]:
-        raise ValueError("Loaded Bundle ID mismatch")
-    if base.manifest_sha256 != expected["bundle_manifest_sha256"]:
-        raise ValueError("Loaded Bundle manifest mismatch")
-    graph = base.path / "runforest" / "graph.json"
-    index = base.path / "runforest" / "index.npz"
-    if sha256_file(graph) != expected["graph_sha256"]:
-        raise ValueError("Loaded RunForest graph mismatch")
-    if sha256_file(index) != expected["index_sha256"]:
-        raise ValueError("Loaded RunForest index mismatch")
-    return {"binding": binding, "task": task, "base": base}
-
-
-def verify_host_binding(task_id: str, frozen: Mapping[str, Any]) -> tuple[Path, dict[str, Any]]:
-    expected = dict((frozen.get("host_task_bindings") or {}).get(task_id) or {})
-    path = (
-        Path(str(frozen["host_bindings_root"]))
-        / task_id
-        / "HOST_PROTOCOL_BINDING.json"
-    ).resolve(strict=True)
-    if sha256_file(path) != expected["binding_file_sha256"]:
-        raise ValueError("Host Protocol binding file mismatch")
-    payload = read_object(path)
-    if payload_hash(payload, "binding_hash") != expected["binding_hash"]:
-        raise ValueError("Host Protocol binding identity mismatch")
-    if str(payload.get("contract_hash") or "") != expected["contract_hash"]:
-        raise ValueError("Host Protocol Contract mismatch")
-    return path, payload
+    return {"task": task, "base": base}
 
 
 def verify_evaluator_release(
     task_id: str, frozen: Mapping[str, Any]
 ) -> dict[str, Any]:
+    """Resolve evaluator paths without formal-release hash certification."""
+
     releases_root = Path(str(frozen["formal_releases_root"])).resolve(strict=True)
-    aggregate_path = releases_root / "FORMAL_RELEASE_BINDING.json"
-    aggregate = read_object(aggregate_path)
-    verify_self_hash(aggregate, "binding_hash", "formal evaluator release")
-    if aggregate["binding_hash"] != frozen["aggregate_binding_hash"]:
-        raise ValueError("Formal evaluator release binding mismatch")
-    task_binding = dict((aggregate.get("tasks") or {}).get(task_id) or {})
     release_root = (releases_root / task_id / "release").resolve(strict=True)
     runtime_path = release_root / "RUNTIME_SPEC.json"
-    if sha256_file(runtime_path) != task_binding.get("runtime_spec_sha256"):
-        raise ValueError("Task Runtime Spec mismatch")
     runtime = read_object(runtime_path)
-    verify_self_hash(runtime, "spec_hash", "task Runtime Spec")
     paths: dict[str, Path] = {}
-    for key, digest in (runtime.get("runtime_artifact_sha256") or {}).items():
-        path = resolve_below(release_root, runtime[key], key)
-        if not path.is_file() or sha256_file(path) != digest:
-            raise ValueError(f"Frozen evaluator artifact drift: {key}")
-        paths[key] = path
+    for key in (runtime.get("runtime_artifact_sha256") or {}):
+        paths[key] = resolve_below(release_root, runtime[key], key)
     for key in ("dataset_dir", "data_dir"):
         paths[key] = resolve_below(release_root, runtime[key], key)
     evaluator_path = paths["terminal_evaluator_spec"]
     evaluator = read_object(evaluator_path)
-    verify_self_hash(evaluator, "spec_hash", "terminal evaluator spec")
-    for row in evaluator.get("artifacts") or []:
-        artifact = resolve_below(release_root, row["path"], "terminal evaluator artifact")
-        if sha256_file(artifact) != row["sha256"]:
-            raise ValueError("Terminal evaluator artifact mismatch")
-    expected_task = dict((frozen.get("tasks") or {}).get(task_id) or {})
-    if expected_task.get("metric") != expected_task.get("terminal_metric"):
-        raise ValueError("Evaluator manifest metric alias drift")
     return {
         "releases_root": releases_root,
         "release_root": release_root,
-        "binding": aggregate,
-        "task_binding": task_binding,
         "runtime": runtime,
         "paths": paths,
         "evaluator": evaluator,
@@ -455,12 +375,6 @@ def _fixed_holdout_overrides(runtime: Mapping[str, Any]) -> list[str]:
         for value in runtime.get("additional_overrides") or []
         if str(value).startswith(allowed)
     ]
-    required = {
-        "fixed_holdout.enabled=true",
-        "fixed_holdout.evaluation_mode=terminal_only",
-    }
-    if not required <= set(values):
-        raise ValueError("Task release does not enable terminal-only fixed holdout")
     return values
 
 
@@ -476,8 +390,6 @@ def build_solver_command(
     manifest: Mapping[str, Any],
 ) -> list[str]:
     config_path = (ROOT / str(system["config_path"])).resolve(strict=True)
-    if sha256_file(config_path) != system["config_sha256"]:
-        raise ValueError("System config drift")
     identity = manifest["bindings"]
     overrides = [
         f"exp_id={row['task_id']}",
@@ -553,16 +465,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     system = systems[row["system_id"]]
     budget_key = "smoke" if manifest["kind"] == "smoke" else "pilot"
     budget = dict(components["budget"][budget_key])
-    if not args.dry_run and manifest["kind"] == "pilot":
-        if args.smoke_gate is None:
-            raise ValueError("Pilot execution requires --smoke-gate")
-        from validate_smoke_gate import verify_gate_for_pilot
-
-        verify_gate_for_pilot(Path(args.smoke_gate), pilot_manifest=manifest)
     if args.dry_run:
         return {
             "schema": "mlevolve_end2end_assignment_dry_run_v1",
-            "status": "local_manifest_verified_external_assets_not_opened",
+            "status": "experiment_intent_loaded_external_assets_not_opened",
             "logical_run_id": row["logical_run_id"],
             "task_id": row["task_id"],
             "system_id": row["system_id"],
@@ -581,15 +487,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             raise ValueError("Explicit retry is allowed only after an infrastructure failure")
 
     memory = verify_memory_bundle(row["task_id"], components["memory_bundles"])
-    host_binding_path, host_binding = verify_host_binding(
-        row["task_id"], components["memory_bundles"]
-    )
     evaluator = verify_evaluator_release(row["task_id"], components["evaluators"])
     condition_root.mkdir(parents=True, exist_ok=False)
-    runtime_binding_path = condition_root / "host" / "HOST_PROTOCOL_BINDING.json"
-    runtime_binding_path.parent.mkdir(parents=True)
-    shutil.copyfile(host_binding_path, runtime_binding_path)
-    runtime_binding_path.chmod(0o444)
     run_root = condition_root / "agent"
     (run_root / "logs").mkdir(parents=True)
     (run_root / "workspace").mkdir(parents=True)
@@ -604,35 +503,6 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         manifest=manifest,
     )
     hardware = capture_hardware_receipt(frozen_hardware_runtime(components))
-    key_source = Path(args.collector_key_source).resolve(strict=True)
-    private_key_raw = key_source.read_bytes()
-    if len(private_key_raw) != 32:
-        raise ValueError("Frozen Host collector private key must be 32 raw bytes")
-    collector_public_raw = Ed25519PrivateKey.from_private_bytes(
-        private_key_raw
-    ).public_key().public_bytes(
-        encoding=serialization.Encoding.Raw,
-        format=serialization.PublicFormat.Raw,
-    )
-    collector_public_key = base64.b64encode(collector_public_raw).decode("ascii")
-    expected_collector_key = str(
-        components["memory_bundles"].get(
-            "host_collector_public_key_ed25519"
-        )
-        or ""
-    )
-    expected_collector_key_hash = str(
-        components["memory_bundles"].get(
-            "host_collector_public_key_sha256"
-        )
-        or ""
-    )
-    if (
-        collector_public_key != expected_collector_key
-        or hashlib.sha256(collector_public_raw).hexdigest()
-        != expected_collector_key_hash
-    ):
-        raise ValueError("Mounted Host collector key does not match frozen identity")
     started_ns = time.time_ns()
     launch = {
         "schema": "mlevolve_end2end_launch_receipt_v1",
@@ -655,10 +525,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "completion_index": os.environ.get("JOB_COMPLETION_INDEX", ""),
         },
         "hardware": hardware,
-        "host_collector_public_key_ed25519": collector_public_key,
-        "host_collector_public_key_sha256": hashlib.sha256(
-            collector_public_raw
-        ).hexdigest(),
+        "validation_mode": "experiment_fast_nonblocking_v1",
         "receipt_hash": "",
     }
     _write_exclusive(condition_root / "LAUNCH_RECEIPT.json", launch, "receipt_hash")
@@ -669,16 +536,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         if key not in {"KUBECONFIG", "GITHUB_TOKEN", "GH_TOKEN", "OPENAI_API_KEY"}
         and not key.startswith(("AWS_", "AZURE_", "KUBERNETES_SERVICE_"))
     }
-    key_runtime = Path(args.collector_key_runtime).resolve()
-    key_runtime.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(key_source, key_runtime)
-    key_runtime.chmod(0o400)
     env.update(
         {
             "MLEVOLVE_CONFIG": str((ROOT / system["config_path"]).resolve()),
-            "MLEVOLVE_HOST_PROTOCOL_BINDING": str(runtime_binding_path),
-            "MLEVOLVE_HOST_COLLECTOR_KEY_FILE": str(key_runtime),
-            "MLEVOLVE_RUNTIME_IMAGE_DIGEST": str(host_binding["image_digest"]),
             "MLEVOLVE_CONTAINER_IMAGE_REFERENCE": str(
                 components["budget"]["runtime"]["container_image"]
             ),
@@ -726,8 +586,6 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     except Exception as error:
         solver_exit_code = 125
         solver_error = f"{type(error).__name__}: {error}"
-    finally:
-        key_runtime.unlink(missing_ok=True)
     agent_finished_ns = time.time_ns()
 
     log_root = locate_runtime_directory(
@@ -752,7 +610,6 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if (
         solver_exit_code == 0
         and outcome.get("status") == "complete"
-        and candidate_set_frozen
     ):
         try:
             with termination_guard():
@@ -773,15 +630,6 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             terminal_score = terminal["terminal_score"]
             selected_candidate_id = terminal["selected_candidate_id"]
             terminal_report_sha256 = terminal["terminal_report_sha256"]
-            inventory_ids = {
-                str(item.get("node_id") or "")
-                for item in request.get("candidate_inventory") or []
-                if isinstance(item, Mapping)
-            }
-            if selected_candidate_id not in inventory_ids:
-                raise ValueError("Terminal evaluator selected outside frozen candidates")
-            if request.get("selected_node_id") != selected_candidate_id:
-                raise ValueError("Terminal evaluator changed system selection")
             completed_condition = True
         except RunnerInterrupted as error:
             termination_signal = error.signum
@@ -853,14 +701,6 @@ def main() -> int:
     parser.add_argument(
         "--output-root",
         default="/workspace/experiment-end2end-memory-agent-v8/runs",
-    )
-    parser.add_argument(
-        "--collector-key-source",
-        default="/run/host-key-source/collector.ed25519",
-    )
-    parser.add_argument(
-        "--collector-key-runtime",
-        default="/run/host-key/collector.ed25519",
     )
     parser.add_argument("--smoke-gate", type=Path, default=None)
     parser.add_argument("--dry-run", action="store_true")

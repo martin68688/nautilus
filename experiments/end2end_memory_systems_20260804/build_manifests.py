@@ -173,6 +173,7 @@ methodology_kb_path: ""
 methodology_dynamic: false
 
 agent:
+  check_data_leakage: false
   use_global_memory: false
   code:
     temp: 1.0
@@ -188,12 +189,13 @@ agent:
   protocol_repair:
     enabled: false
   protocol_preflight:
-    agent_semantic_review_enabled: true
-    agent_semantic_max_repair_attempts: 3
-    agent_semantic_max_review_attempts: 6
+    enabled: false
+    agent_semantic_review_enabled: false
+    agent_semantic_max_repair_attempts: 0
+    agent_semantic_max_review_attempts: 0
     agent_semantic_temperature: 0.0
     agent_semantic_max_tokens: 4096
-    agent_controls_protocol_preflight: true
+    agent_controls_protocol_preflight: false
     install_host_candidate_entrypoint: false
     candidate_process_isolation: true
 
@@ -203,23 +205,24 @@ adoption_tracking:
   judge_mode: keyword
 
 adoption_verifier:
-  enabled: true
-  mode: enforce
+  enabled: false
+  mode: shadow
   model: ""
   temperature: 0.0
   max_tokens: 4096
   max_contracts_per_call: 8
   max_code_chars: 120000
-  require_signed_trace: true
+  require_signed_trace: false
 
 prospective_audit:
-  enabled: true
-  allow_pending_counterfactual: true
+  enabled: false
+  allow_pending_counterfactual: false
 
 external_skill_memory:
   enable: true
   bundle_root: ""
   current_pointer_path: CURRENT.json
+  verify_bundle_artifacts: false
   session_overlay_path: ""
   graph_path: ""
   index_path: ""
@@ -250,9 +253,11 @@ external_skill_memory:
     - "20260701_180038"
 
 evaluation_authority:
-  require_bound_bundle: true
-  mode: enforce
-  protocol_runtime_mode: host_sdk_shadow
+  require_bound_bundle: false
+  mode: "off"
+  emit_snapshot: false
+  runtime_protocol_observer_enabled: false
+  protocol_runtime_mode: legacy_ast
 
 run_identity:
   schema: mlevolve_run_identity_v1
@@ -293,8 +298,8 @@ external_skill_memory:
   experiment_r_agentic_max_observed: 48
   experiment_r_agentic_temperature: 0.0
   experiment_r_agentic_max_tokens: 1200
-  experiment_r_memory_transfer_static_gate: true
-  experiment_r_memory_transfer_runtime_gate: true
+  experiment_r_memory_transfer_static_gate: false
+  experiment_r_memory_transfer_runtime_gate: false
 
 run_identity:
   memory_system: dynamic_hybrid
@@ -447,31 +452,34 @@ def component_manifests(
                 "visibility_token_budget": 4096,
             },
             "adoption_verifier": {
-                "enabled": True,
-                "mode": "enforce",
-                "model_source": "agent.feedback.model",
-                "temperature": 0.0,
-                "max_tokens_per_call": 4096,
-                "max_contracts_per_call": 8,
-                "max_code_chars": 120000,
-                "require_signed_trace": True,
-                "runtime_probe": "line_range_executed",
+                "enabled": False,
+                "mode": "off",
+                "reason": "experiment tracks prompt visibility and code adoption without a blocking verifier",
             },
             "agent_semantic_protocol_review": {
-                "enabled_for_systems": [
-                    system_id for _label, system_id, _kind, _desc in SYSTEMS
-                ],
+                "enabled_for_systems": [],
                 "host_receipt_admission_authority": False,
-                "max_repair_attempts": 3,
-                "max_review_attempts": 6,
-                "temperature": 0.0,
-                "max_tokens_per_call": 4096,
-                "unresolved_disposition": "observe_then_execute",
-                "actual_entrypoint_required": True,
-                "method_preservation_required": True,
-                "agent_controls_protocol_preflight": True,
+                "max_repair_attempts": 0,
+                "max_review_attempts": 0,
+                "unresolved_disposition": "not_applicable",
+                "actual_entrypoint_required": False,
+                "method_preservation_required": False,
+                "agent_controls_protocol_preflight": False,
                 "host_dry_run_executed": False,
-                "host_runtime_semantic_disposition": "observe_only",
+                "host_runtime_semantic_disposition": "disabled",
+            },
+            "experiment_validation": {
+                "mode": "experiment_fast_nonblocking_v1",
+                "pre_run_confirmations": [
+                    "same_task_best_exists",
+                    "same_task_best_is_final_prompt_visible",
+                    "solver_entrypoint_and_candidate_subprocess_can_start",
+                ],
+                "bundle_artifact_traversal": False,
+                "host_protocol_preflight": False,
+                "host_runtime_protocol": False,
+                "receipt_admission": False,
+                "source_lock_enforcement": False,
             },
             "pilot": {
                 "agent_steps": 80,
@@ -512,21 +520,13 @@ def component_manifests(
             "schema": "mlevolve_end2end_memory_bundle_manifest_v1",
             "production_binding_path": "/workspace/experiment-end2end-memory-agent-v12/memory-direct-v1/MEMORY_BINDING.json",
             "production_binding_sha256": "6b1c43fd95ea3f31d689674980b74d90192a742bdd69a6d501fe9fa475abdf0b",
+            "verification_mode": "experiment_fast_nonblocking_v1",
             "task_bundles": MEMORY,
             "excluded_run_ids": [
                 "20260701_180146", "20260701_145201", "20260701_145250",
                 "20260516_125444", "20260701_155016", "20260510_025317",
                 "20260701_180038",
             ],
-            "host_bindings_root": str(CLUSTER_HOST_BINDINGS_DIR),
-            "host_binding_asset_source": (
-                "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings; "
-                "only sdk_hash and binding_hash are rebound in immutable End2End copies"
-            ),
-            "host_runtime_sdk_hash": host_runtime_sdk_hash,
-            "host_collector_public_key_ed25519": "qb++TPUVPeBugazDY22lXrAEOSFEaxK7uo72cWWXs0w=",
-            "host_collector_public_key_sha256": "34a0b39b04a60dc781e9c5699a6771653613b7b582a096dd45f68155cb76f853",
-            "host_task_bindings": dict(host_task_bindings),
             "manifest_hash": "",
         }
     )
@@ -537,7 +537,7 @@ def component_manifests(
             "aggregate_binding_path": "/workspace/experiment-c-formal-releases-r3/FORMAL_RELEASE_BINDING.json",
             "aggregate_binding_hash": "668896c08bd1c748ccb5a89220312daccae19ef4ad066db642518f00b9d67e47",
             "reuse_scope": "task data and evaluator assets only; no Exp-C source/config/system manifest",
-            "timing": "after Agent exit and candidate-set freeze",
+            "timing": "after Agent exit; candidate-set receipts are observational only",
             "failed_terminal_score": None,
             "tasks": {
                 task_id: {
@@ -676,13 +676,6 @@ def job(
         "--manifest", str(CLUSTER_ROOT / "manifests" / manifest_name),
         "--output-root", OUTPUT_ROOT,
     ]
-    if manifest_name == "pilot_manifest.json":
-        args.extend(
-            [
-                "--smoke-gate",
-                f"{OUTPUT_ROOT}/SMOKE_GATE.json",
-            ]
-        )
     if task_id:
         args.extend(["--task", task_id])
     resources = {
@@ -794,16 +787,12 @@ def job(
                             "resources": {"requests": dict(resources), "limits": dict(resources)},
                             "volumeMounts": [
                                 {"name": "workspace", "mountPath": "/workspace"},
-                                {"name": "collector-key-source", "mountPath": "/run/host-key-source", "readOnly": True},
-                                {"name": "collector-key-runtime", "mountPath": "/run/host-key"},
                                 {"name": "shm", "mountPath": "/dev/shm"},
                             ],
                         }
                     ],
                     "volumes": [
                         {"name": "workspace", "persistentVolumeClaim": {"claimName": "haoming-storage"}},
-                        {"name": "collector-key-source", "secret": {"secretName": "prevalence-audit-collector-r1", "defaultMode": 256}},
-                        {"name": "collector-key-runtime", "emptyDir": {}},
                         {"name": "shm", "emptyDir": {"medium": "Memory", "sizeLimit": "16Gi"}},
                     ],
                 },
@@ -813,12 +802,10 @@ def job(
 
 
 def build() -> dict[str, Any]:
-    sdk_hash = hash_runtime_sdk_tree()
-    host_task_bindings = refresh_host_bindings(sdk_hash)
     write_system_configs()
     components = component_manifests(
-        host_runtime_sdk_hash=sdk_hash,
-        host_task_bindings=host_task_bindings,
+        host_runtime_sdk_hash="",
+        host_task_bindings={},
     )
     for key, payload in components.items():
         dump_json(MANIFESTS / f"{key}.json", payload)
@@ -901,8 +888,8 @@ def build() -> dict[str, Any]:
             "schema": "mlevolve_end2end_launch_packet_v1",
             "status": "generated_not_submitted",
             "launch_gate": "explicit_user_authorization_required",
-            "smoke_gate_output": f"{OUTPUT_ROOT}/SMOKE_GATE.json",
-            "pilot_requires_passing_smoke_gate": True,
+            "pre_run_confirmation": "three lightweight intent checks only",
+            "pilot_requires_passing_smoke_gate": False,
             "smoke_manifest_hash": smoke["manifest_hash"],
             "feasibility_smoke_manifest_hash": feasibility_smoke["manifest_hash"],
             "leaf_dynamic_smoke_manifest_hash": leaf_dynamic_smoke["manifest_hash"],

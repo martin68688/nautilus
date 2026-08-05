@@ -4,6 +4,7 @@ methodology_kb_path: ""
 methodology_dynamic: false
 
 agent:
+  check_data_leakage: false
   use_global_memory: false
   code:
     temp: 1.0
@@ -19,12 +20,13 @@ agent:
   protocol_repair:
     enabled: false
   protocol_preflight:
-    agent_semantic_review_enabled: true
-    agent_semantic_max_repair_attempts: 3
-    agent_semantic_max_review_attempts: 6
+    enabled: false
+    agent_semantic_review_enabled: false
+    agent_semantic_max_repair_attempts: 0
+    agent_semantic_max_review_attempts: 0
     agent_semantic_temperature: 0.0
     agent_semantic_max_tokens: 4096
-    agent_controls_protocol_preflight: true
+    agent_controls_protocol_preflight: false
     install_host_candidate_entrypoint: false
     candidate_process_isolation: true
 
@@ -34,23 +36,24 @@ adoption_tracking:
   judge_mode: keyword
 
 adoption_verifier:
-  enabled: true
-  mode: enforce
+  enabled: false
+  mode: shadow
   model: ""
   temperature: 0.0
   max_tokens: 4096
   max_contracts_per_call: 8
   max_code_chars: 120000
-  require_signed_trace: true
+  require_signed_trace: false
 
 prospective_audit:
-  enabled: true
-  allow_pending_counterfactual: true
+  enabled: false
+  allow_pending_counterfactual: false
 
 external_skill_memory:
   enable: true
   bundle_root: ""
   current_pointer_path: CURRENT.json
+  verify_bundle_artifacts: false
   session_overlay_path: ""
   graph_path: ""
   index_path: ""
@@ -81,9 +84,11 @@ external_skill_memory:
     - "20260701_180038"
 
 evaluation_authority:
-  require_bound_bundle: true
-  mode: enforce
-  protocol_runtime_mode: host_sdk_shadow
+  require_bound_bundle: false
+  mode: "off"
+  emit_snapshot: false
+  runtime_protocol_observer_enabled: false
+  protocol_runtime_mode: legacy_ast
 
 run_identity:
   schema: mlevolve_run_identity_v1

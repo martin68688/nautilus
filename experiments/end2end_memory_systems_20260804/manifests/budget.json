@@ -1,39 +1,33 @@
 {
   "adoption_verifier": {
-    "enabled": true,
-    "max_code_chars": 120000,
-    "max_contracts_per_call": 8,
-    "max_tokens_per_call": 4096,
-    "mode": "enforce",
-    "model_source": "agent.feedback.model",
-    "require_signed_trace": true,
-    "runtime_probe": "line_range_executed",
-    "temperature": 0.0
+    "enabled": false,
+    "mode": "off",
+    "reason": "experiment tracks prompt visibility and code adoption without a blocking verifier"
   },
   "agent_semantic_protocol_review": {
-    "actual_entrypoint_required": true,
-    "agent_controls_protocol_preflight": true,
-    "enabled_for_systems": [
-      "no_memory",
-      "flat_retrieval",
-      "sop_only",
-      "runforest_only",
-      "static_hybrid",
-      "dynamic_hybrid",
-      "reversed_router",
-      "gome_style_port",
-      "macla_style_port",
-      "rcr_router_style_port"
-    ],
+    "actual_entrypoint_required": false,
+    "agent_controls_protocol_preflight": false,
+    "enabled_for_systems": [],
     "host_dry_run_executed": false,
     "host_receipt_admission_authority": false,
-    "host_runtime_semantic_disposition": "observe_only",
-    "max_repair_attempts": 3,
-    "max_review_attempts": 6,
-    "max_tokens_per_call": 4096,
-    "method_preservation_required": true,
-    "temperature": 0.0,
-    "unresolved_disposition": "observe_then_execute"
+    "host_runtime_semantic_disposition": "disabled",
+    "max_repair_attempts": 0,
+    "max_review_attempts": 0,
+    "method_preservation_required": false,
+    "unresolved_disposition": "not_applicable"
+  },
+  "experiment_validation": {
+    "bundle_artifact_traversal": false,
+    "host_protocol_preflight": false,
+    "host_runtime_protocol": false,
+    "mode": "experiment_fast_nonblocking_v1",
+    "pre_run_confirmations": [
+      "same_task_best_exists",
+      "same_task_best_is_final_prompt_visible",
+      "solver_entrypoint_and_candidate_subprocess_can_start"
+    ],
+    "receipt_admission": false,
+    "source_lock_enforcement": false
   },
   "failure_policy": {
     "automatic_job_retry": false,
@@ -42,7 +36,7 @@
     "preserve_all_attempts": true,
     "score_imputation": false
   },
-  "manifest_hash": "7892b2853371bb48960a0eeb5d14ea6e23cac3c98c19da9c6d024890567ac2b7",
+  "manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,

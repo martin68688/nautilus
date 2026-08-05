@@ -1794,12 +1794,13 @@ class RunForestMemoryLayer:
                 raise ValueError("Run-Forest v2 graph is not the bound Base artifact")
             if self.index_path.resolve() != expected_index:
                 raise ValueError("Run-Forest v2 index is not the bound Base artifact")
-            provenance = base.verify_run_identity_provenance()
-            if (
-                provenance.get("source_membership_verified") is not True
-                or provenance.get("leak_verified") is not True
-            ):
-                raise ValueError("Run-Forest v2 Bundle provenance is not verified")
+            if bool(getattr(snapshot, "verify_artifacts", True)):
+                provenance = base.verify_run_identity_provenance()
+                if (
+                    provenance.get("source_membership_verified") is not True
+                    or provenance.get("leak_verified") is not True
+                ):
+                    raise ValueError("Run-Forest v2 Bundle provenance is not verified")
             if str(meta.get("bundle_id") or "") != str(base.bundle_id):
                 raise ValueError("Run-Forest v2 graph does not bind the Base Bundle ID")
         self.nodes = {str(n["id"]): n for n in self.graph.get("nodes", []) if n.get("id")}

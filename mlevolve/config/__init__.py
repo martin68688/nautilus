@@ -344,6 +344,7 @@ class ExternalSkillMemoryConfig:
     enable: bool = False
     bundle_root: str = ""
     current_pointer_path: str = "CURRENT.json"
+    verify_bundle_artifacts: bool = True
     session_overlay_path: str = ""
     graph_path: str = "../paper-skills/distillation/graph_build/graph_optimized_skillgraph.json"
     index_path: str = ""
@@ -520,7 +521,10 @@ def _populate_run_identity(cfg) -> None:
                 current_path=str(
                     getattr(memory_cfg, "current_pointer_path", "CURRENT.json")
                     or "CURRENT.json"
-                )
+                ),
+                verify_artifacts=bool(
+                    getattr(memory_cfg, "verify_bundle_artifacts", True)
+                ),
             )
             graph_path = base.path / "runforest" / "graph.json"
             index_path = base.path / "runforest" / "index.npz"
@@ -579,8 +583,16 @@ def _populate_run_identity(cfg) -> None:
                 )
             source_runs = [str(value) for value in (meta.get("source_runs") or [])]
         elif base is not None:
-            provenance = base.verify_run_identity_provenance()
-            source_runs = [str(value) for value in provenance["source_runs"]]
+            if bool(getattr(memory_cfg, "verify_bundle_artifacts", True)):
+                provenance = base.verify_run_identity_provenance()
+                source_runs = [str(value) for value in provenance["source_runs"]]
+            else:
+                corpus = base.read_json("corpus/manifest.json")
+                source_runs = [
+                    str(row["run_id"])
+                    for row in corpus.get("runs") or []
+                    if str(row.get("run_id") or "")
+                ]
         else:
             raise ValueError(
                 "Memory-enabled runs require a source-verified and leak-verified graph"

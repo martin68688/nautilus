@@ -85,6 +85,9 @@ class AgentSearch:
             session_overlay_path=overlay_path,
             active_protocol_ref=evaluation_authority.active_protocol.key(),
             authority_policy_version=evaluation_authority.engine.policy_version,
+            verify_artifacts=bool(
+                getattr(ext_cfg, "verify_bundle_artifacts", True)
+            ),
         )
         evaluation_authority.configure_memory_snapshot(snapshot)
         return (

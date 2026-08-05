@@ -3,7 +3,7 @@
   "aggregate_binding_path": "/workspace/experiment-c-formal-releases-r3/FORMAL_RELEASE_BINDING.json",
   "failed_terminal_score": null,
   "formal_releases_root": "/workspace/experiment-c-formal-releases-r3",
-  "manifest_hash": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
+  "manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
   "reuse_scope": "task data and evaluator assets only; no Exp-C source/config/system manifest",
   "schema": "mlevolve_end2end_evaluator_manifest_v1",
   "tasks": {
@@ -40,5 +40,5 @@
       "terminal_metric": "rmse"
     }
   },
-  "timing": "after Agent exit and candidate-set freeze"
+  "timing": "after Agent exit; candidate-set receipts are observational only"
 }

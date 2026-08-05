@@ -127,7 +127,7 @@ def _protocol_runtime_mode(cfg) -> str:
 
 
 def _candidate_uid_isolation_enabled(cfg) -> bool:
-    """Keep OS-level Candidate isolation independent of receipt admission."""
+    """Keep OS-level Candidate isolation independent of protocol machinery."""
 
     runtime_mode = _protocol_runtime_mode(cfg)
     preflight = (
@@ -138,8 +138,7 @@ def _candidate_uid_isolation_enabled(cfg) -> bool:
     return bool(
         runtime_mode == "host_sdk_enforce"
         or (
-            runtime_mode == "host_sdk_shadow"
-            and preflight is not None
+            preflight is not None
             and getattr(preflight, "candidate_process_isolation", False)
         )
     )

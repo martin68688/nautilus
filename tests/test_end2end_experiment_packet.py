@@ -403,6 +403,9 @@ def test_leaf_uses_direct_seed_heldout_base_with_same_task_history() -> None:
         "/workspace/experiment-end2end-memory-agent-v12/"
         "memory-direct-v1/MEMORY_BINDING.json"
     )
+    assert memory["verification_mode"] == (
+        "experiment_fast_nonblocking_v1"
+    )
     assert leaf["bundle_id"] == "mlevolve-be034ec-nonspooky-seed-heldout-v1"
     assert leaf["bundle_root"] == (
         "/workspace/experiment-end2end-memory-agent-v12/"
@@ -412,8 +415,6 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
     from config import Config, _load_cfg
     from omegaconf import OmegaConf
 
-    monkeypatch.setenv("MLEVOLVE_HOST_PROTOCOL_BINDING", "/tmp/binding.json")
-    monkeypatch.setenv("MLEVOLVE_HOST_COLLECTOR_KEY_FILE", "/tmp/key")
     systems = _read(MANIFESTS / "systems.json")
     for row in systems["systems"]:
         path = ROOT / row["config_path"]
@@ -424,13 +425,12 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
         cfg.goal = "config validation"
         cfg.desc_file = None
         merged = OmegaConf.merge(OmegaConf.structured(Config), cfg)
-        assert merged.evaluation_authority.protocol_runtime_mode == (
-            "host_sdk_shadow"
-        )
-        assert merged.agent.protocol_preflight.agent_semantic_review_enabled is True
-        assert merged.agent.protocol_preflight.agent_semantic_max_repair_attempts == 3
-        assert merged.agent.protocol_preflight.agent_semantic_max_review_attempts == 6
-        assert merged.agent.protocol_preflight.agent_controls_protocol_preflight is True
+        assert merged.evaluation_authority.protocol_runtime_mode == "legacy_ast"
+        assert merged.agent.protocol_preflight.enabled is False
+        assert merged.agent.protocol_preflight.agent_semantic_review_enabled is False
+        assert merged.agent.protocol_preflight.agent_semantic_max_repair_attempts == 0
+        assert merged.agent.protocol_preflight.agent_semantic_max_review_attempts == 0
+        assert merged.agent.protocol_preflight.agent_controls_protocol_preflight is False
         assert merged.agent.protocol_preflight.install_host_candidate_entrypoint is False
         assert merged.agent.protocol_preflight.candidate_process_isolation is True
         if row["system_id"] == "dynamic_hybrid":
@@ -438,8 +438,8 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
             assert merged.external_skill_memory.retrieval_control == "dynamic_hybrid"
             assert merged.external_skill_memory.experiment_r_enabled is True
             assert merged.external_skill_memory.experiment_r_agentic_retrieval_enabled is True
-            assert merged.external_skill_memory.experiment_r_memory_transfer_static_gate is True
-            assert merged.external_skill_memory.experiment_r_memory_transfer_runtime_gate is True
+            assert merged.external_skill_memory.experiment_r_memory_transfer_static_gate is False
+            assert merged.external_skill_memory.experiment_r_memory_transfer_runtime_gate is False
             assert merged.agent.draft_role_policy.enabled is True
             assert list(merged.agent.draft_role_policy.roles) == [
                 "coldstart_baseline", "memory_transfer", "novel_exploration"
@@ -451,20 +451,20 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
         assert merged.external_skill_memory.end2end_prompt_token_budget == 1536
         assert merged.external_skill_memory.end2end_candidate_pool_limit == 12
         assert merged.external_skill_memory.enable is True
+        assert merged.external_skill_memory.verify_bundle_artifacts is False
         assert merged.agent.search.num_gpus == 1
         assert merged.agent.search.parallel_search_num == 1
         assert merged.agent.code.temp == 1.0
         assert merged.agent.feedback.temp == 1.0
         assert merged.agent.use_global_memory is False
-        assert merged.evaluation_authority.mode == "enforce"
-        assert merged.evaluation_authority.require_bound_bundle is True
-        assert merged.adoption_verifier.enabled is True
-        assert merged.adoption_verifier.mode == "enforce"
-        assert merged.adoption_verifier.model == ""
-        assert merged.adoption_verifier.temperature == 0.0
-        assert merged.adoption_verifier.max_tokens == 4096
-        assert merged.adoption_verifier.max_contracts_per_call == 8
-        assert merged.adoption_verifier.require_signed_trace is True
+        assert merged.agent.check_data_leakage is False
+        assert merged.evaluation_authority.mode == "off"
+        assert merged.evaluation_authority.require_bound_bundle is False
+        assert merged.evaluation_authority.emit_snapshot is False
+        assert merged.evaluation_authority.runtime_protocol_observer_enabled is False
+        assert merged.adoption_verifier.enabled is False
+        assert merged.adoption_verifier.require_signed_trace is False
+        assert merged.prospective_audit.enabled is False
 
 
 def test_source_lock_covers_and_matches_runtime_files() -> None:
@@ -550,14 +550,12 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert env_values["PYTHONPATH"] == (
             "/workspace/nautilus-exp-end2end-agent-v13/mlevolve"
         )
-        if path.name.startswith("pilot-"):
-            assert "--smoke-gate" in container["args"]
-            assert (
-                    "/workspace/experiment-end2end-memory-agent-v12/runs/SMOKE_GATE.json"
-                in container["args"]
-            )
-        else:
-            assert "--smoke-gate" not in container["args"]
+        assert "--smoke-gate" not in container["args"]
+        volume_names = {
+            row["name"] for row in spec["template"]["spec"]["volumes"]
+        }
+        assert "collector-key-source" not in volume_names
+        assert "collector-key-runtime" not in volume_names
 
 
 def test_temp05_stager_is_owned_finite_cpu_only_pod() -> None:
@@ -576,12 +574,11 @@ def test_temp05_stager_is_owned_finite_cpu_only_pod() -> None:
     assert not any(key.startswith("nvidia.com/") for key in resources["requests"])
 
 
-def test_launch_packet_records_programmatic_smoke_gate() -> None:
+def test_launch_packet_records_lightweight_pre_run_confirmation() -> None:
     packet = _read(MANIFESTS / "launch_packet.json")
-    assert packet["pilot_requires_passing_smoke_gate"] is True
-    assert (
-        packet["smoke_gate_output"]
-        == "/workspace/experiment-end2end-memory-agent-v12/runs/SMOKE_GATE.json"
+    assert packet["pilot_requires_passing_smoke_gate"] is False
+    assert packet["pre_run_confirmation"] == (
+        "three lightweight intent checks only"
     )
 
 
@@ -637,7 +634,7 @@ def test_pilot_dry_run_does_not_require_smoke_gate_or_write(tmp_path) -> None:
     assert list(tmp_path.iterdir()) == []
 
 
-def test_pilot_normal_execution_fails_closed_without_smoke_gate(tmp_path) -> None:
+def test_pilot_normal_execution_does_not_require_smoke_gate(tmp_path) -> None:
     completed = subprocess.run(
         [
             sys.executable,
@@ -655,7 +652,8 @@ def test_pilot_normal_execution_fails_closed_without_smoke_gate(tmp_path) -> Non
         check=False,
     )
     assert completed.returncode != 0
-    assert "Pilot execution requires --smoke-gate" in completed.stderr
+    assert "Pilot execution requires --smoke-gate" not in completed.stderr
+    assert "CURRENT.json" in completed.stderr
     assert list(tmp_path.iterdir()) == []
 
 
@@ -939,40 +937,37 @@ def test_budget_couples_gpu_search_and_cpu_controls() -> None:
         "all_other_frozen_axes_unchanged": True,
     }
     assert budget["adoption_verifier"] == {
-        "enabled": True,
-        "mode": "enforce",
-        "model_source": "agent.feedback.model",
-        "temperature": 0.0,
-        "max_tokens_per_call": 4096,
-        "max_contracts_per_call": 8,
-        "max_code_chars": 120000,
-        "require_signed_trace": True,
-        "runtime_probe": "line_range_executed",
+        "enabled": False,
+        "mode": "off",
+        "reason": (
+            "experiment tracks prompt visibility and code adoption without a "
+            "blocking verifier"
+        ),
     }
     assert budget["agent_semantic_protocol_review"] == {
-        "enabled_for_systems": [
-            "no_memory",
-            "flat_retrieval",
-            "sop_only",
-            "runforest_only",
-            "static_hybrid",
-            "dynamic_hybrid",
-            "reversed_router",
-            "gome_style_port",
-            "macla_style_port",
-            "rcr_router_style_port",
-        ],
+        "enabled_for_systems": [],
         "host_receipt_admission_authority": False,
-        "max_repair_attempts": 3,
-        "max_review_attempts": 6,
-        "temperature": 0.0,
-        "max_tokens_per_call": 4096,
-        "unresolved_disposition": "observe_then_execute",
-        "actual_entrypoint_required": True,
-        "method_preservation_required": True,
-        "agent_controls_protocol_preflight": True,
+        "max_repair_attempts": 0,
+        "max_review_attempts": 0,
+        "unresolved_disposition": "not_applicable",
+        "actual_entrypoint_required": False,
+        "method_preservation_required": False,
+        "agent_controls_protocol_preflight": False,
         "host_dry_run_executed": False,
-        "host_runtime_semantic_disposition": "observe_only",
+        "host_runtime_semantic_disposition": "disabled",
+    }
+    assert budget["experiment_validation"] == {
+        "mode": "experiment_fast_nonblocking_v1",
+        "pre_run_confirmations": [
+            "same_task_best_exists",
+            "same_task_best_is_final_prompt_visible",
+            "solver_entrypoint_and_candidate_subprocess_can_start",
+        ],
+        "bundle_artifact_traversal": False,
+        "host_protocol_preflight": False,
+        "host_runtime_protocol": False,
+        "receipt_admission": False,
+        "source_lock_enforcement": False,
     }
     assert budget["failure_policy"]["automatic_job_retry"] is False
     assert budget["failure_policy"]["preserve_all_attempts"] is True
@@ -1037,26 +1032,12 @@ def test_host_artifact_namespace_is_collision_free_and_safe() -> None:
             _resolve_host_artifact_roots(binding, unsafe)
 
 
-def test_runtime_sdk_exactly_matches_frozen_host_bindings() -> None:
-    from protocol_runtime.activation import hash_sdk_tree
-
+def test_host_protocol_assets_are_not_bound_into_fast_experiment() -> None:
     memory = _read(MANIFESTS / "memory_bundles.json")
-    assert hash_sdk_tree(REPO / "mlevolve" / "protocol_runtime") == memory[
-        "host_runtime_sdk_hash"
-    ]
-    assert memory["host_bindings_root"].endswith(
-        "/experiments/end2end_memory_systems_20260804/host_bindings"
-    )
-    for task_id, expected in memory["host_task_bindings"].items():
-        path = ROOT / "host_bindings" / task_id / "HOST_PROTOCOL_BINDING.json"
-        payload = _read(path)
-        assert hashlib.sha256(path.read_bytes()).hexdigest() == expected[
-            "binding_file_sha256"
-        ]
-        assert payload["binding_hash"] == _hash(payload, "binding_hash")
-        assert payload["binding_hash"] == expected["binding_hash"]
-        assert payload["sdk_hash"] == memory["host_runtime_sdk_hash"]
-        assert payload["contract_hash"] == expected["contract_hash"]
+    assert "host_runtime_sdk_hash" not in memory
+    assert "host_bindings_root" not in memory
+    assert "host_task_bindings" not in memory
+    assert "host_collector_public_key_ed25519" not in memory
 
 
 def test_terminal_holdout_keeps_release_public_view_while_host_uses_dataviews() -> None:

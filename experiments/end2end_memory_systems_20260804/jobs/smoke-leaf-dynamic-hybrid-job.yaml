@@ -98,23 +98,12 @@ spec:
         volumeMounts:
         - name: workspace
           mountPath: /workspace
-        - name: collector-key-source
-          mountPath: /run/host-key-source
-          readOnly: true
-        - name: collector-key-runtime
-          mountPath: /run/host-key
         - name: shm
           mountPath: /dev/shm
       volumes:
       - name: workspace
         persistentVolumeClaim:
           claimName: haoming-storage
-      - name: collector-key-source
-        secret:
-          secretName: prevalence-audit-collector-r1
-          defaultMode: 256
-      - name: collector-key-runtime
-        emptyDir: {}
       - name: shm
         emptyDir:
           medium: Memory

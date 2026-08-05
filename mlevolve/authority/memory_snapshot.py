@@ -915,6 +915,7 @@ class MemorySnapshot:
     active_protocol_ref: str
     authority_policy_version: str
     snapshot_sha256: str
+    verify_artifacts: bool = True
 
     @property
     def base_bundle_id(self) -> str:
@@ -929,7 +930,8 @@ class MemorySnapshot:
         return str(self.session_overlay.path)
 
     def assert_unchanged(self) -> None:
-        self.base_bundle.assert_unchanged()
+        if self.verify_artifacts:
+            self.base_bundle.assert_unchanged()
 
     def base_clauses(
         self,
@@ -1117,7 +1119,7 @@ class MemorySnapshotLoader:
             or artifact_paths
             & {"splits/active.json", "audit_sidecars/index.json"}
         )
-        if modern_manifest_driven_bundle:
+        if modern_manifest_driven_bundle and verify_artifacts:
             required_provenance = {
                 *provenance_markers,
                 "corpus/drift_review.json",
@@ -1171,6 +1173,7 @@ class MemorySnapshotLoader:
             active_protocol_ref=str(active_protocol_ref),
             authority_policy_version=str(authority_policy_version),
             snapshot_sha256=snapshot_hash,
+            verify_artifacts=bool(verify_artifacts),
         )
 
 

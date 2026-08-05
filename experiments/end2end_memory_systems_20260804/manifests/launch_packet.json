@@ -1,14 +1,14 @@
 {
   "component_manifest_hashes": {
-    "budget": "7892b2853371bb48960a0eeb5d14ea6e23cac3c98c19da9c6d024890567ac2b7",
-    "evaluators": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-    "memory_bundles": "e20a09ecaddc1c18e90370aa9398b1b17493798469f3af229dd08a5efceacb55",
+    "budget": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+    "evaluators": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
+    "memory_bundles": "bbc38cfafbbf9a0688253845a1719c4c03514e1624c1d46992b12a6fae638f69",
     "schemas": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-    "source_lock": "5c8b243a8abc1790cef1a5495687610d26f4625068542e07f5ed601b78f5ec34",
-    "systems": "8069feb478c6ad98c5f7d2f519a7aabc7c35fdf1e8f4bc34b90c428ae9f79e61",
+    "source_lock": "bc9341b95b1b8b72bb17b05d6ca244b24d1657ee048a3daf4027a5013e08f7ed",
+    "systems": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
     "tasks": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
   },
-  "feasibility_smoke_manifest_hash": "7779fe118e8fda5ae81ebb9c1e108399dd214950e866cecaaf444d04ba88a842",
+  "feasibility_smoke_manifest_hash": "83dbda5074d35ff78b8ffc18eef18acd0409ece89f9cdab20e462e4c581ceb47",
   "job_count": 7,
   "jobs": [
     "pilot-aerial-indexed-job.yaml",
@@ -20,13 +20,13 @@
     "smoke-leaf-dynamic-hybrid-job.yaml"
   ],
   "launch_gate": "explicit_user_authorization_required",
-  "leaf_dynamic_smoke_manifest_hash": "d0af98650cf72b75a998d365fdb78c8797a698136e9d0d75a97f1bd1b4e91f4b",
-  "packet_hash": "d322f0a2336ae78f74238b59ab0a7aad89a482fa1d145bb1590900879136ebbe",
-  "pilot_manifest_hash": "084ab814b83f6a468943781605761906fe042f8d752c4e5fca448c23534c47f1",
-  "pilot_requires_passing_smoke_gate": true,
+  "leaf_dynamic_smoke_manifest_hash": "30002cc5cc815bf4b67e6e7cdefb17446fc84b8575d429663da8f3dc1a169341",
+  "packet_hash": "fc11541bfda3952538ae0f1ce17bef0f1ab6459b3c4ea78ca9e63d162ef5af15",
+  "pilot_manifest_hash": "8572471e33c150e9d9cde28ad51d24f9f5937157d416d1cd5a46443373b2acff",
+  "pilot_requires_passing_smoke_gate": false,
+  "pre_run_confirmation": "three lightweight intent checks only",
   "schema": "mlevolve_end2end_launch_packet_v1",
-  "smoke_gate_output": "/workspace/experiment-end2end-memory-agent-v12/runs/SMOKE_GATE.json",
-  "smoke_manifest_hash": "5ee40a9dadb577247baf758a70162a2cedb3fcca218af7016409b2d2b538fcbc",
+  "smoke_manifest_hash": "d1148f7c66c2233dcba758b23c18b3ca263182190f701011037a6603c55b848e",
   "status": "generated_not_submitted",
   "workload_objects_created": 0
 }

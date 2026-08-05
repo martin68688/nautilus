@@ -867,9 +867,10 @@ class SOPVisibilityGateway:
         reference_exact_decisions: dict[str, ClauseGateDecision] = {}
         raw_shadow_authority_decisions: list[dict[str, Any]] = []
         for clause in clauses:
-            raw_shadow_authority_decisions.extend(
-                self._raw_shadow_authority_observations(clause, request)
-            )
+            if self.mode != "off":
+                raw_shadow_authority_decisions.extend(
+                    self._raw_shadow_authority_observations(clause, request)
+                )
             if self.mode == "off":
                 decision = ClauseGateDecision(
                     clause.clause_id,
@@ -954,7 +955,7 @@ class SOPVisibilityGateway:
         rendered = self._rendered_by_sop(effective, effective_categories)
         experience_contracts: list[dict[str, Any]] = []
         contract_errors: dict[str, str] = {}
-        for clause in effective:
+        for clause in effective if self.mode != "off" else ():
             try:
                 contract = self.contract_compiler.compile(clause, request)
             except Exception as error:

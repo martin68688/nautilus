@@ -1,25 +1,27 @@
-# Experiment End2End — Frozen Pre-launch Packet
+# Experiment End2End — Fast Experimental Packet
 
 This directory is the executable, not-yet-submitted packet for the exploratory
 10-system × 4-task × seed-1 Pilot.
 
-## Launch gate
+## Execution mode
 
 The packet status is `generated_not_submitted`. Builders do not launch training.
-The current pre-Pilot sequence is:
+This experiment intentionally uses `experiment_fast_nonblocking_v1`: Bundle
+provenance traversal, Host Protocol Preflight/runtime receipts, Authority
+enforcement, adoption enforcement and the formal Smoke gate are disabled. The
+pre-run check only confirms that the same-task best exists, is visible in the
+final Prompt, and the solver/candidate subprocess entrypoints can start.
+
+The current sequence is:
 
 1. run the one-index `Leaf × Dynamic Hybrid` Smoke and inspect retrieval,
    Prompt exposure, generated code, adoption, runtime activation and outcome;
 2. only after that diagnostic is accepted, run the remaining Leaf controls;
-3. run `validate_smoke_gate.py` over the retained output root; it requires all
-   10 terminal-scored outcomes, verifies every infrastructure retry and full
-   routing/Prompt trace, then exclusively creates a self-hashed
-   `SMOKE_GATE.json`;
-4. only after separate explicit authorization submit the four task-specific
+3. only after separate explicit authorization submit the four task-specific
    10-index Pilot Jobs;
-5. create explicit higher-attempt retries only for retained infrastructure
+4. create explicit higher-attempt retries only for retained infrastructure
    failures; never delete or overwrite attempt 0;
-6. run terminal analysis before mechanism analysis.
+5. run terminal analysis before mechanism analysis.
 
 ## Frozen files
 
@@ -33,11 +35,11 @@ The current pre-Pilot sequence is:
   domain certification, or transition-to-SOP proof. The Base contains Leaf
   seed-43/44 history; Dynamic Hybrid pins the best eligible same-task RunForest
   item into one existing Prompt slot.
-- `run_assignment.py`: finite Job PID 1, Agent subprocess, candidate freeze,
-  terminal evaluator, immutable failure measurement, and a fail-closed Pilot
-  dependency on the exact `SMOKE_GATE.json`;
-- `validate_smoke_gate.py`: result-derived Smoke gate with distinct No Memory
-  and memory-on activation checks;
+- `confirm_experiment_intent.py`: the three lightweight pre-run confirmations;
+- `run_assignment.py`: finite Job PID 1, Agent subprocess, terminal evaluator
+  and immutable failure measurement; hashes/receipts remain metadata only;
+- `validate_smoke_gate.py`: retained as an optional offline diagnostic and is
+  not called by Smoke or Pilot Jobs;
 - `analyze_results.py`: terminal/completion/negative-transfer/TTFV/cost first,
   routing/suppression/static-adoption/runtime-activation second;
 - `build_manifests.py`: deterministic generator and non-mutating `--check`.
@@ -54,23 +56,8 @@ PYTHONPATH=mlevolve /tmp/nautilus-e2e-py311/bin/python \
   --index 0 --dry-run
 ```
 
-`--dry-run` verifies only the local frozen packet, performs zero Agent calls,
+`--dry-run` loads only the local packet, performs zero Agent calls,
 does not open cluster assets and writes no result directory.
-
-After the authorized Smoke Job has reached terminal outcomes, the only supported
-way to open the Pilot gate is:
-
-```bash
-/usr/local/bin/python -u \
-  /workspace/nautilus-exp-end2end/experiments/end2end_memory_systems_20260804/validate_smoke_gate.py \
-  --output-root /workspace/experiment-end2end-runs-v1 \
-  --output /workspace/experiment-end2end-runs-v1/SMOKE_GATE.json
-```
-
-The output is created exclusively (`O_EXCL` semantics); it cannot overwrite an
-earlier gate. All Pilot Job manifests pass that exact path to the runner, which
-revalidates its self-hash and all Smoke/Pilot/component/source bindings before
-opening any PVC-resident runtime asset.
 
 ## Interpretation boundary
 

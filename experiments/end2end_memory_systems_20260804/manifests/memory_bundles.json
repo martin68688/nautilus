@@ -8,38 +8,7 @@
     "20260510_025317",
     "20260701_180038"
   ],
-  "host_binding_asset_source": "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings; only sdk_hash and binding_hash are rebound in immutable End2End copies",
-  "host_bindings_root": "/workspace/nautilus-exp-end2end-agent-v13/experiments/end2end_memory_systems_20260804/host_bindings",
-  "host_collector_public_key_ed25519": "qb++TPUVPeBugazDY22lXrAEOSFEaxK7uo72cWWXs0w=",
-  "host_collector_public_key_sha256": "34a0b39b04a60dc781e9c5699a6771653613b7b582a096dd45f68155cb76f853",
-  "host_runtime_sdk_hash": "6d3de12248255d22a0f5137eda57e7d100d7cc1cc30d2f288654af9e97a0d2e4",
-  "host_task_bindings": {
-    "aerial-cactus-identification": {
-      "binding_file_sha256": "a4b606827afb3b4c41a837b8dced5039dde0377b93f8d3fce77f48f21d635a90",
-      "binding_hash": "7c998fd3a3b3aaf7a692c2eaab40a50e19952c502a7486d1ed5e4aa8919f6498",
-      "contract_hash": "3313f15076012774921d2bf4de7ebeafc2845e5a452f7ba87701a08382d45df4",
-      "data_view_manifest_hash": "8f5dad9cc4b03a50267cc6e1987da473a54e3dce3c51ebc294e9dfd0fe336d3c"
-    },
-    "denoising-dirty-documents": {
-      "binding_file_sha256": "bada54e8c3def80cf635e9a52475465048b8db92320fcad2d870a2f6059d19d0",
-      "binding_hash": "37ab6e5de0c668a442a8d41ac7fe12b7740ec6e7521e966eec0a8b851ae33c4c",
-      "contract_hash": "0e1cbf9f1fda429434375c5a6b68cc4fafd873a140884438a226688c362bbc6e",
-      "data_view_manifest_hash": "74e20f50b39534b415f7878f172e29f2d91e467a1daf70d00b683c79ed02e3d9"
-    },
-    "leaf-classification": {
-      "binding_file_sha256": "38bbcc98503747fd6f37e8188f1449cbebdba328a5f6bbdebc16610db2542ee4",
-      "binding_hash": "02ecc3ef349fdc4ca6a43f63498564b51662cac5fc5100fd3cd9092915598b48",
-      "contract_hash": "84c1e5764b64abede9be3e841f2a37d3043c5f1bf18e6190e957a41c84dc4a09",
-      "data_view_manifest_hash": "6073c8cd004c84aa048945eeeed408592bebf87581a5c6720b52e3f920daad5d"
-    },
-    "new-york-city-taxi-fare-prediction": {
-      "binding_file_sha256": "4300df74f961e7fcc34e7c38d35177e41a3423bd66f86ee1fd0ff9a89cebe7f0",
-      "binding_hash": "b2757aff88cd12e89c4fe750699371308c6f30feeb96ea834a573ab3a89d38ba",
-      "contract_hash": "aee52a4dbc04be10244003ae593f3c0276be3c75eca63331b864ae2f25eb3d1b",
-      "data_view_manifest_hash": "3611c0b87c21a5995990a8b7b4604a7b790daf491bc95411d0a768e0382da6a7"
-    }
-  },
-  "manifest_hash": "e20a09ecaddc1c18e90370aa9398b1b17493798469f3af229dd08a5efceacb55",
+  "manifest_hash": "bbc38cfafbbf9a0688253845a1719c4c03514e1624c1d46992b12a6fae638f69",
   "production_binding_path": "/workspace/experiment-end2end-memory-agent-v12/memory-direct-v1/MEMORY_BINDING.json",
   "production_binding_sha256": "6b1c43fd95ea3f31d689674980b74d90192a742bdd69a6d501fe9fa475abdf0b",
   "schema": "mlevolve_end2end_memory_bundle_manifest_v1",
@@ -84,5 +53,6 @@
       "index_sha256": "864fab630f1bb512b215671675446af6c344b7bef8df6595cea96ebe2e881726",
       "protocol_ref": "chronological-regression@1#bfc61957b422df5cf09dcb37cffe06aae2ccd2b11db4fee0721b90a2bc6dbf04"
     }
-  }
+  },
+  "verification_mode": "experiment_fast_nonblocking_v1"
 }

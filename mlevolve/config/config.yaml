@@ -308,6 +308,7 @@ external_skill_memory:
   # immutable Base Bundle and writes only to the run-scoped Session Overlay.
   bundle_root: ""
   current_pointer_path: "CURRENT.json"
+  verify_bundle_artifacts: true
   session_overlay_path: ""
   graph_path: "../paper-skills/distillation/graph_build/graph_optimized_skillgraph.json"
   index_path: ""
