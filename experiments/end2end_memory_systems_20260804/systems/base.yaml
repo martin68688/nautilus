@@ -75,6 +75,7 @@ external_skill_memory:
   end2end_prompt_token_budget: 1536
   end2end_candidate_pool_limit: 12
   excluded_run_ids:
+    - "20260717_183734_leaf-classification"
     - "20260701_180146"
     - "20260701_145201"
     - "20260701_145250"

@@ -1,5 +1,6 @@
 {
   "excluded_run_ids": [
+    "20260717_183734_leaf-classification",
     "20260701_180146",
     "20260701_145201",
     "20260701_145250",
@@ -8,7 +9,7 @@
     "20260510_025317",
     "20260701_180038"
   ],
-  "manifest_hash": "bbc38cfafbbf9a0688253845a1719c4c03514e1624c1d46992b12a6fae638f69",
+  "manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
   "production_binding_path": "/workspace/experiment-end2end-memory-agent-v12/memory-direct-v1/MEMORY_BINDING.json",
   "production_binding_sha256": "6b1c43fd95ea3f31d689674980b74d90192a742bdd69a6d501fe9fa475abdf0b",
   "schema": "mlevolve_end2end_memory_bundle_manifest_v1",

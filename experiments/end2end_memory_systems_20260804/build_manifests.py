@@ -244,6 +244,7 @@ external_skill_memory:
   end2end_prompt_token_budget: 1536
   end2end_candidate_pool_limit: 12
   excluded_run_ids:
+    - "20260717_183734_leaf-classification"
     - "20260701_180146"
     - "20260701_145201"
     - "20260701_145250"
@@ -523,6 +524,7 @@ def component_manifests(
             "verification_mode": "experiment_fast_nonblocking_v1",
             "task_bundles": MEMORY,
             "excluded_run_ids": [
+                "20260717_183734_leaf-classification",
                 "20260701_180146", "20260701_145201", "20260701_145250",
                 "20260516_125444", "20260701_155016", "20260510_025317",
                 "20260701_180038",

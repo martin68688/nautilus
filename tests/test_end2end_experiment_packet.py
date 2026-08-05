@@ -411,6 +411,7 @@ def test_leaf_uses_direct_seed_heldout_base_with_same_task_history() -> None:
         "/workspace/experiment-end2end-memory-agent-v12/"
         "memory-direct-v1/leaf-classification"
     )
+    assert "20260717_183734_leaf-classification" in memory["excluded_run_ids"]
 def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
     from config import Config, _load_cfg
     from omegaconf import OmegaConf
