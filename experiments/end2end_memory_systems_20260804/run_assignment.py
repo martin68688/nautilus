@@ -368,7 +368,6 @@ def _fixed_holdout_overrides(runtime: Mapping[str, Any]) -> list[str]:
         "fixed_holdout.",
         "agent.check_data_leakage=",
         "agent.protocol_repair.enabled=",
-        "prospective_audit.",
     )
     values = [
         str(value)

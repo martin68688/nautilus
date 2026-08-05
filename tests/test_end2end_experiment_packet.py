@@ -552,6 +552,8 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
             "/workspace/nautilus-exp-end2end-agent-v13/mlevolve"
         )
         assert "--smoke-gate" not in container["args"]
+        if path.name == "smoke-leaf-dynamic-hybrid-job.yaml":
+            assert container["args"][-2:] == ["--attempt", "1"]
         volume_names = {
             row["name"] for row in spec["template"]["spec"]["volumes"]
         }
