@@ -1,6 +1,10 @@
 import copy
+import hashlib
+import json
 import logging
 import math
+import os
+from pathlib import Path
 import time
 from typing import cast
 
@@ -17,6 +21,55 @@ from fixed_holdout.validation import validate_submission as validate_fixed_submi
 from authority.adapters.mlevolve.receipt_bridge import trusted_runtime_metric
 
 logger = logging.getLogger("MLEvolve")
+
+
+def _emit_first_protocol_valid_candidate(node: SearchNode) -> None:
+    """Durably timestamp the first runnable, submission-valid candidate.
+
+    The End2End runner supplies one attempt-scoped path.  ``x`` mode makes the
+    event first-writer-wins even if a future configuration executes candidates
+    concurrently.  This is measurement only: inability to write the optional
+    event must never change candidate validity.
+    """
+
+    raw_path = os.environ.get("MLEVOLVE_FIRST_VALID_EVENT_PATH", "").strip()
+    if not raw_path:
+        return
+    path = Path(raw_path)
+    event_time_ns = time.time_ns()
+    try:
+        started_ns = int(os.environ.get("MLEVOLVE_CONDITION_STARTED_AT_NS", "0"))
+    except ValueError:
+        started_ns = 0
+    payload = {
+        "schema": "mlevolve_first_protocol_valid_candidate_v1",
+        "node_id": str(node.id),
+        "event_time_ns": event_time_ns,
+        "condition_started_at_ns": started_ns,
+        "validation": "label_free_fixed_holdout_submission",
+        "event_hash": "",
+    }
+    payload["event_hash"] = hashlib.sha256(
+        json.dumps(
+            {key: value for key, value in payload.items() if key != "event_hash"},
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("x", encoding="utf-8") as handle:
+            json.dump(payload, handle, sort_keys=True, ensure_ascii=False, indent=2)
+            handle.write("\n")
+    except FileExistsError:
+        return
+    except OSError as error:
+        logger.warning(
+            "Unable to record first protocol-valid candidate %s: %s",
+            node.id,
+            error,
+        )
 
 
 def _legacy_ast_mode(agent) -> str:
@@ -1177,6 +1230,9 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                         node.id,
                         type(error).__name__,
                     )
+
+            if node.is_valid is True and not node.is_buggy:
+                _emit_first_protocol_valid_candidate(node)
 
             _save_to_global_memory(agent, node)
 

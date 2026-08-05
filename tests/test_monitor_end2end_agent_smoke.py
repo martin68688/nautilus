@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import importlib.util
 from pathlib import Path
 
@@ -24,7 +25,13 @@ def _pod() -> dict:
             "ownerReferences": [
                 {"kind": "Job", "name": "smoke-v2", "uid": "job-uid"}
             ],
-        }
+            "annotations": {
+                "batch.kubernetes.io/job-completion-index": "7"
+            },
+            "uid": "pod-uid",
+            "creationTimestamp": "2026-08-05T00:00:00Z",
+        },
+        "status": {"phase": "Pending", "conditions": []},
     }
 
 
@@ -78,3 +85,18 @@ def test_kubectl_read_retries_transient_failures(monkeypatch) -> None:
     assert result.returncode == 0
     assert len(calls) == 2
     assert calls[0][0][:2] == ["kubectl", "--request-timeout=20s"]
+
+
+def test_pending_archive_requires_explicit_retry_and_preserves_identity(
+    tmp_path,
+) -> None:
+    job = {"metadata": {"name": "smoke-v2", "uid": "job-uid"}}
+    path = MONITOR.archive_stale_pending_pod(
+        _pod(), job=job, artifact_dir=tmp_path
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["failure_class"] == "infrastructure"
+    assert payload["retry_required"] is True
+    assert payload["completion_index"] == "7"
+    assert payload["job_uid"] == "job-uid"
+    assert payload["pod_uid"] == "pod-uid"

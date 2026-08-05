@@ -7,6 +7,7 @@ import argparse
 from datetime import datetime, timezone
 import json
 import os
+from pathlib import Path
 import subprocess
 import time
 from typing import Any
@@ -90,12 +91,51 @@ def is_exact_owned_child_pod(
     )
 
 
+def archive_stale_pending_pod(
+    pod: dict[str, Any], *, job: dict[str, Any], artifact_dir: Path
+) -> Path:
+    """Preserve the scheduler failure before the user-requested Pod deletion."""
+
+    metadata = pod.get("metadata") or {}
+    annotations = metadata.get("annotations") or {}
+    index = str(annotations.get("batch.kubernetes.io/job-completion-index") or "")
+    payload = {
+        "schema": "mlevolve_end2end_pending_infrastructure_attempt_v1",
+        "failure_class": "infrastructure",
+        "reason": "pending_exceeded_user_limit",
+        "retry_required": True,
+        "job_name": str((job.get("metadata") or {}).get("name") or ""),
+        "job_uid": str((job.get("metadata") or {}).get("uid") or ""),
+        "pod_name": str(metadata.get("name") or ""),
+        "pod_uid": str(metadata.get("uid") or ""),
+        "completion_index": index,
+        "pod_created_at": str(metadata.get("creationTimestamp") or ""),
+        "archived_at": datetime.now(timezone.utc).isoformat(),
+        "pod_status": pod.get("status") or {},
+    }
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    safe_job = payload["job_name"].replace("/", "_")
+    safe_pod = payload["pod_name"].replace("/", "_")
+    path = artifact_dir / f"{safe_job}__index-{index}__{safe_pod}.json"
+    with path.open("x", encoding="utf-8") as handle:
+        json.dump(payload, handle, sort_keys=True, ensure_ascii=False, indent=2)
+        handle.write("\n")
+    return path
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--namespace", default="ecepxie")
     parser.add_argument("--job", required=True)
     parser.add_argument("--pending-seconds", type=int, default=180)
     parser.add_argument("--interval-seconds", type=int, default=15)
+    parser.add_argument(
+        "--artifact-dir",
+        type=Path,
+        default=Path(
+            "experiments/end2end_memory_systems_20260804/infrastructure_attempts"
+        ),
+    )
     args = parser.parse_args()
 
     job = get_json("get", "job", args.job, "-n", args.namespace)
@@ -161,6 +201,9 @@ def main() -> int:
                 or name in recycled
             ):
                 continue
+            archive_path = archive_stale_pending_pod(
+                pod, job=job, artifact_dir=args.artifact_dir
+            )
             result = kubectl(
                 "delete", "pod", name, "-n", args.namespace,
                 "--wait=false", check=False,
@@ -172,7 +215,14 @@ def main() -> int:
             recycled.add(name)
             print(
                 json.dumps(
-                    {"event": "stale_pending_pod_deleted", "pod": name},
+                    {
+                        "event": "stale_pending_index_failed_retry_job_required",
+                        "pod": name,
+                        "index": (
+                            metadata.get("annotations") or {}
+                        ).get("batch.kubernetes.io/job-completion-index"),
+                        "archive": str(archive_path),
+                    },
                     sort_keys=True,
                 ),
                 flush=True,
