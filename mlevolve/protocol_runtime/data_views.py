@@ -630,11 +630,20 @@ def materialize_data_views(
         )
         materialized_rows[role] = visible_rows
         asset_metadata[role] = visible_assets
-        content = "".join(
-            _canonical_json(row) + "\n"
-            for row in sorted(
-                visible_rows, key=lambda row: _canonical_json(row[sample_id_key])
+        # Search splits use a canonical order.  Submission inference is
+        # different: its frozen source order is part of the evaluator
+        # contract, so sorting otherwise-valid IDs would make every Host-order
+        # submission fail terminal alignment.
+        rows_to_write = (
+            visible_rows
+            if role == "inference"
+            else sorted(
+                visible_rows,
+                key=lambda row: _canonical_json(row[sample_id_key]),
             )
+        )
+        content = "".join(
+            _canonical_json(row) + "\n" for row in rows_to_write
         ).encode("utf-8")
         _write_exclusive(paths[role], content)
     views = {

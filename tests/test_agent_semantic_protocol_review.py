@@ -171,6 +171,31 @@ def main():
     }
 
 
+def test_static_observations_detect_none_passed_to_iterated_helper_parameter():
+    observations = agent_protocol_review_agent._host_sdk_static_observations(
+        """
+def train_model(train_loader, val_loader):
+    for images, labels in train_loader:
+        pass
+    for images, labels in val_loader:
+        pass
+
+def main():
+    train_model(train_loader=object(), val_loader=None)
+"""
+    )
+    assert observations == [
+        {
+            "code": "none_passed_to_iterated_parameter",
+            "line": 9,
+            "message": (
+                "train_model iterates parameter 'val_loader', but this call "
+                "passes None; repair the helper/call data flow before execution."
+            ),
+        }
+    ]
+
+
 def test_agent_semantic_review_retries_false_clean_static_finding(
     tmp_path, monkeypatch
 ):

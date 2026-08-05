@@ -101,6 +101,30 @@ def _host_sdk_static_observations(source: str) -> list[dict[str, Any]]:
             and node.value.id in split_names
         )
 
+    iterated_parameters: dict[str, tuple[list[str], set[str]]] = {}
+    for definition in ast.walk(tree):
+        if not isinstance(definition, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        positional = [
+            argument.arg
+            for argument in (
+                *definition.args.posonlyargs,
+                *definition.args.args,
+            )
+        ]
+        parameters = set(positional) | {
+            argument.arg for argument in definition.args.kwonlyargs
+        }
+        iterated: set[str] = set()
+        for child in ast.walk(definition):
+            iterator = None
+            if isinstance(child, (ast.For, ast.AsyncFor, ast.comprehension)):
+                iterator = child.iter
+            if isinstance(iterator, ast.Name) and iterator.id in parameters:
+                iterated.add(iterator.id)
+        if iterated:
+            iterated_parameters[definition.name] = (positional, iterated)
+
     observations: list[dict[str, Any]] = []
     seen: set[tuple[str, int]] = set()
 
@@ -114,6 +138,33 @@ def _host_sdk_static_observations(source: str) -> list[dict[str, Any]]:
         )
 
     for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id in iterated_parameters
+        ):
+            positional, iterated = iterated_parameters[node.func.id]
+            supplied = {
+                positional[index]: value
+                for index, value in enumerate(node.args)
+                if index < len(positional)
+            }
+            supplied.update(
+                {
+                    keyword.arg: keyword.value
+                    for keyword in node.keywords
+                    if keyword.arg is not None
+                }
+            )
+            for parameter in sorted(iterated):
+                value = supplied.get(parameter)
+                if isinstance(value, ast.Constant) and value.value is None:
+                    add(
+                        "none_passed_to_iterated_parameter",
+                        node,
+                        f"{node.func.id} iterates parameter {parameter!r}, but this call passes None; repair the helper/call data flow before execution.",
+                    )
+
         if (
             isinstance(node, ast.Call)
             and isinstance(node.func, ast.Name)
@@ -196,6 +247,7 @@ def _prompt(agent: Any, source: str, repair_attempt: int) -> dict[str, Any]:
             "views.train, views.validation, and views.inference are DataViewHandle capability tokens, not iterables; never call list/len/iter on them or loop over them directly.",
             "Exit prediction_scope before session.evaluate_internal; evaluation requires prediction evidence sealed when that context exits.",
             "The reported score must come from session.evaluate_internal on that same validation view and prediction array.",
+            "After every repair, recheck helper signatures and call sites: never pass None to a parameter that the helper iterates or otherwise dereferences.",
             "session.freeze_selection must happen after evaluation/model choice and before final inference.",
             "Final submission inference must consume views.inference after selection freeze.",
             "Import/module initialization must not train, read task data, create working artifacts, or perform other candidate side effects.",

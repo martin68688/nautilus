@@ -166,6 +166,11 @@ def test_unlabeled_inference_view_is_hash_bound_disjoint_and_read_only(
     assert manifest.views["inference"]["sample_count"] == 3
     assert verify_data_view_manifest(path, contract=contract)["status"] == "pass"
     inference_path = tmp_path / "views-with-inference/inference_view/data.jsonl"
+    materialized_ids = [
+        json.loads(line)["sample_id"]
+        for line in inference_path.read_text(encoding="utf-8").splitlines()
+    ]
+    assert materialized_ids == [row["sample_id"] for row in inference]
     assert os.stat(inference_path).st_mode & 0o222 == 0
     mount = json.loads(
         (tmp_path / "views-with-inference/TRAINING_MOUNT_CONTRACT.json").read_text()
