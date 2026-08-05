@@ -13,7 +13,6 @@ from authority.protocol_execution_contract import ProtocolExecutionContract
 
 from .collector import HostCollectorIdentity, HostCollectorSidecar
 from .collector_client import CollectorClient
-from .data_views import verify_data_view_manifest
 from .events import canonical_json
 from .session import (
     SHADOW_OBSERVATION_SCHEMA,
@@ -100,9 +99,6 @@ class FullRuntimeEvidenceController:
     def start(self) -> "FullRuntimeEvidenceController":
         if self.sidecar is not None:
             raise RuntimeError("Full-runtime evidence controller already started")
-        verify_data_view_manifest(
-            self.data_view_manifest_path, contract=self.contract
-        )
         self.sidecar = HostCollectorSidecar(
             self.output_root / "collector",
             self.contract.as_dict(),

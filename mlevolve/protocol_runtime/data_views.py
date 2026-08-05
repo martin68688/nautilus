@@ -725,7 +725,17 @@ def verify_data_view_manifest(
     label_key: str = "label",
     group_id_key: str = "group_id",
     time_key: str = "timestamp",
+    verify_asset_contents: bool = True,
 ) -> dict[str, Any]:
+    """Verify a DataView bundle and its split invariants.
+
+    ``verify_asset_contents`` is true for materialization/publication, where
+    every copied asset must be audited.  A runtime loading an immutable Host
+    binding may set it false and reuse that freeze-time content attestation;
+    the manifest, row files, asset manifests, and split invariants are still
+    checked.
+    """
+
     requested_manifest_path = Path(path)
     if requested_manifest_path.is_symlink():
         raise ValueError("Refusing symlink DataViewManifest")
@@ -789,14 +799,15 @@ def verify_data_view_manifest(
             entries = asset_manifest.get("entries") or []
             if len(entries) != asset_count:
                 raise ValueError(f"{role} asset count mismatch")
-            for entry in entries:
-                asset_path = _confined_regular_file(
-                    root,
-                    str(entry.get("relative_path") or ""),
-                    label=f"{role} asset",
-                )
-                if _sha256_file(asset_path) != entry.get("sha256"):
-                    raise ValueError(f"{role} asset hash mismatch")
+            if verify_asset_contents:
+                for entry in entries:
+                    asset_path = _confined_regular_file(
+                        root,
+                        str(entry.get("relative_path") or ""),
+                        label=f"{role} asset",
+                    )
+                    if _sha256_file(asset_path) != entry.get("sha256"):
+                        raise ValueError(f"{role} asset hash mismatch")
         elif asset_manifest_relative or metadata.get("asset_manifest_sha256"):
             raise ValueError(f"{role} empty asset metadata is inconsistent")
     train_ids = {_canonical_json(row[sample_id_key]) for row in loaded["train"]}

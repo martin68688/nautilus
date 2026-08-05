@@ -277,6 +277,49 @@ def test_host_assets_are_copied_hash_bound_and_source_independent(
         verify_data_view_manifest(manifest_path, contract=contract)
 
 
+def test_runtime_manifest_verification_reuses_frozen_asset_attestation(
+    tmp_path: Path,
+) -> None:
+    """Runtime checks stay cheap while the freeze-time check remains strict."""
+
+    contract = _contract("random-classification@1", "images", "image")
+    source_root = tmp_path / "raw-assets"
+    source_root.mkdir()
+    records = []
+    for label in (0, 1):
+        for index in range(4):
+            source = source_root / f"{label}-{index}.bin"
+            source.write_bytes(f"pixels-{label}-{index}".encode())
+            records.append(
+                {
+                    "sample_id": f"image-{label}-{index}",
+                    "label": label,
+                    "_host_assets": {"image": str(source)},
+                }
+            )
+    _manifest, manifest_path = materialize_data_views(
+        records,
+        tmp_path / "views",
+        contract,
+        split_id="images-runtime-attestation",
+    )
+
+    copied_asset = next((tmp_path / "views" / "train_view" / "assets").rglob("*.bin"))
+    copied_asset.chmod(0o644)
+    copied_asset.write_bytes(b"tampered-after-freeze")
+
+    # Loading an already frozen binding checks the immutable manifests and
+    # split invariants, without rereading every asset byte.
+    assert verify_data_view_manifest(
+        manifest_path,
+        contract=contract,
+        verify_asset_contents=False,
+    )["status"] == "pass"
+    # A new freeze/publication still performs the expensive content audit.
+    with pytest.raises(ValueError, match="asset hash mismatch"):
+        verify_data_view_manifest(manifest_path, contract=contract)
+
+
 def test_path_traversal_and_symlink_fail_closed(tmp_path: Path) -> None:
     contract = _contract("random-classification@1", "cactus", "image")
     manifest, path = materialize_data_views(

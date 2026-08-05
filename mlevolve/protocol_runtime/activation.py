@@ -312,6 +312,10 @@ def load_host_protocol_binding(
         manifest_file,
         contract=contract,
         label_key=manifest_label_key,
+        # The immutable binding was created only after a full content check.
+        # Runtime activation revalidates the signed manifests and split
+        # invariants, but must not reread every image before each experiment.
+        verify_asset_contents=False,
     )
     reports = _directory(
         payload["report_root"], label="Preflight report root", create=False

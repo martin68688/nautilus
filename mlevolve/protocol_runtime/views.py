@@ -65,7 +65,14 @@ def build_view_handles(
     contract: ProtocolExecutionContract,
     collector: HostCollectorSidecar,
 ) -> ProtocolSplit:
-    verify_data_view_manifest(manifest_path, contract=contract)
+    # Full asset bytes were verified when the immutable Host binding was
+    # frozen.  Candidate bootstrap rechecks manifests and split invariants,
+    # without serially hashing thousands of images again.
+    verify_data_view_manifest(
+        manifest_path,
+        contract=contract,
+        verify_asset_contents=False,
+    )
     manifest_file = Path(manifest_path).resolve(strict=True)
     manifest = read_data_view_manifest(manifest_file)
     root = manifest_file.parent
