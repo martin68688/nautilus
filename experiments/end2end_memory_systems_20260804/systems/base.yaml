@@ -1,7 +1,14 @@
-extends: ../../../mlevolve/config/config_prevalence_audit_20260729_host_enforce.yaml
+# End2End is an effectiveness experiment, not a Host-protocol or provenance
+# audit. Inherit directly from authority-off so Host gates cannot reactivate.
+extends: ../../../mlevolve/config/config_authority_off.yaml
 
 methodology_kb_path: ""
 methodology_dynamic: false
+
+fixed_holdout:
+  # The fixed split is already published. Never rescan and hash every public
+  # asset before an End2End condition.
+  preflight_validate_train_view: false
 
 agent:
   check_data_leakage: false
@@ -87,6 +94,9 @@ external_skill_memory:
 evaluation_authority:
   require_bound_bundle: false
   mode: "off"
+  enforce_operations: []
+  enforce_generation_stages: []
+  enforce_governance_stages: []
   emit_snapshot: false
   runtime_protocol_observer_enabled: false
   protocol_runtime_mode: legacy_ast

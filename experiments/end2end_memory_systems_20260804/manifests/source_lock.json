@@ -383,11 +383,11 @@
     },
     {
       "path": "mlevolve/config/__init__.py",
-      "sha256": "388229911f232aebed1ae8d088be2831cfadc072ea9d80b793eb6e44388e941c"
+      "sha256": "9260052da3612523b667cda1739a2b726a042e77bc431cce120f5c701b54dce7"
     },
     {
       "path": "mlevolve/config/config.yaml",
-      "sha256": "11f7716bae29298979c5818c9c3d5b5deabae6af291c1215809c996904020761"
+      "sha256": "dc028c724766ad9444ac4e43fea498d564caf619e3f60f35d38c5bc166b18193"
     },
     {
       "path": "mlevolve/config/config_authority_canary_enforce.yaml",
@@ -851,11 +851,11 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "e4fb03c68f4be007613967be6fb90f80a70d0d15eea0329a9ff483a131439f32"
+      "sha256": "3e9077746434d45ddce15f2fe024fd3323724a76586357a91c2168ed1735532a"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/confirm_experiment_intent.py",
-      "sha256": "644d005dfd292d850a6cb68f5f90c29993664f866a3d74c8ebb670ebba330b95"
+      "sha256": "449f2548daa0845956147e1beef9cb7d6e18512373bc974f17963286e68d9df3"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/prepare_direct_leaf_memory.py",
@@ -867,7 +867,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/run_assignment.py",
-      "sha256": "496054df9181404a0fbbe4f918edcd9c7666b97adf9c2eebf0a069dfac5668b3"
+      "sha256": "a6039d0c8c92a539a7cc979754c746e5af7de7212bbca75848fa9143d6750bf3"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/validate_smoke_gate.py",
@@ -879,7 +879,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/base.yaml",
-      "sha256": "60d63ede9b7e1932614a6715896dc1a6c1ff2bb382eb2c661c43c90917f21105"
+      "sha256": "bcdf0896950e88c51dca6d944e532179bdf4005f36b6fa4d78cf532ca26d6e8c"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/dynamic_hybrid.yaml",
@@ -950,8 +950,8 @@
       "sha256": "4300df74f961e7fcc34e7c38d35177e41a3423bd66f86ee1fd0ff9a89cebe7f0"
     }
   ],
-  "git_head": "f3018963d34ea85cc4bcb68e9f9dc26471ce6457",
+  "git_head": "0250e64b0c342182491d7b8f8bb04fad3796f351",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+  "manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
   "schema": "mlevolve_end2end_source_lock_v1"
 }

@@ -1,10 +1,10 @@
 {
   "bindings": {
-    "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+    "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
     "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
     "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
     "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-    "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+    "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
     "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
     "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
   },
@@ -13,17 +13,17 @@
   "formal_result_eligible": true,
   "kind": "pilot",
   "launch_order_randomization": "task-local SHA256-seeded deterministic shuffle; comparison order locked to end2end-agent-v3",
-  "manifest_hash": "2994353d2fc117c8776c586917d3eeed3491bd6483569a025f38f2d04aacbabd",
+  "manifest_hash": "3073173b604d07b0a0d7fc314fbf27dba064f2d5c6a1d981c6b7a1bb786127a7",
   "release_id": "end2end-agentic-three-role-v12",
   "run_count": 40,
   "runs": [
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -31,7 +31,7 @@
       "formal_result_eligible": true,
       "launch_position": 0,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__aerial-cactus-identification__no_memory__seed-1",
-      "row_hash": "4110186744a5e168f2982c5d05ac83352ed13b6bc7f536d2d42a99b58eab5ae4",
+      "row_hash": "da6a903235a96c7f466a4a11001259f6d749d4911e368cf0a353a01f70d8ba7c",
       "seed": 1,
       "system_id": "no_memory",
       "task_id": "aerial-cactus-identification",
@@ -39,11 +39,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -51,7 +51,7 @@
       "formal_result_eligible": true,
       "launch_position": 1,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__aerial-cactus-identification__rcr_router_style_port__seed-1",
-      "row_hash": "c080ab3ea0c89e261c477ab14b0004c7adc629c55f5e04b7a5dcabbf05993493",
+      "row_hash": "7f5b56e00d00eac356bbef478c7b35c29bba0da47f00a2abada7dc66e5d0ee08",
       "seed": 1,
       "system_id": "rcr_router_style_port",
       "task_id": "aerial-cactus-identification",
@@ -59,11 +59,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -71,7 +71,7 @@
       "formal_result_eligible": true,
       "launch_position": 2,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__aerial-cactus-identification__reversed_router__seed-1",
-      "row_hash": "bc044f195d0790c1b8122f959da3165ac76b75d8049336b1ed2db5644e9c797a",
+      "row_hash": "cf19dafb4624e87ab957e91cb33be6a63e5aaa925fd29e2b98c67a1713dd9de6",
       "seed": 1,
       "system_id": "reversed_router",
       "task_id": "aerial-cactus-identification",
@@ -79,11 +79,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -91,7 +91,7 @@
       "formal_result_eligible": true,
       "launch_position": 3,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__aerial-cactus-identification__macla_style_port__seed-1",
-      "row_hash": "0a2c484a2a0aad285593c290233c40c9c6fdf3fd6f7350c8f653e6c00b29d1fb",
+      "row_hash": "a12965360dfee67273b5a433c66b2bcea6428e37b0450c6c85ab2dccf2479a4a",
       "seed": 1,
       "system_id": "macla_style_port",
       "task_id": "aerial-cactus-identification",
@@ -99,11 +99,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -111,7 +111,7 @@
       "formal_result_eligible": true,
       "launch_position": 4,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__aerial-cactus-identification__gome_style_port__seed-1",
-      "row_hash": "af880808a39099f98b7508575087d2a2691ca9b5c02c5fc98b3562919aaf76c8",
+      "row_hash": "5e3aacaf1ef76301dc2df22992373606fc74050f0d033db9c46e4e895820a318",
       "seed": 1,
       "system_id": "gome_style_port",
       "task_id": "aerial-cactus-identification",
@@ -119,11 +119,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -131,7 +131,7 @@
       "formal_result_eligible": true,
       "launch_position": 5,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__aerial-cactus-identification__sop_only__seed-1",
-      "row_hash": "0539db37c90466cc4daa45b1e8a8417d958a24118baada0c83cc7fee08450886",
+      "row_hash": "10317713ea30a95d501234f4d6860efc4f0ede05d3844145991ba68c46aaa95c",
       "seed": 1,
       "system_id": "sop_only",
       "task_id": "aerial-cactus-identification",
@@ -139,11 +139,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -151,7 +151,7 @@
       "formal_result_eligible": true,
       "launch_position": 6,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__aerial-cactus-identification__dynamic_hybrid__seed-1",
-      "row_hash": "92285cc192d723f3c2368c89845ea6cb2ed072f272d4f7dced4c7665c1881376",
+      "row_hash": "38ec170154e75e8217ce3e59026548411a7a7e424d44a21595af355f5bfeb9be",
       "seed": 1,
       "system_id": "dynamic_hybrid",
       "task_id": "aerial-cactus-identification",
@@ -159,11 +159,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -171,7 +171,7 @@
       "formal_result_eligible": true,
       "launch_position": 7,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__aerial-cactus-identification__runforest_only__seed-1",
-      "row_hash": "ae2c36acb4db0c6d69bd9f8262366971619871703225bc5f46b55f52ecf78efe",
+      "row_hash": "ea45377f8c49bdd8cd6fba73934213a42becefea962997b17383b6bb0fe3f64c",
       "seed": 1,
       "system_id": "runforest_only",
       "task_id": "aerial-cactus-identification",
@@ -179,11 +179,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -191,7 +191,7 @@
       "formal_result_eligible": true,
       "launch_position": 8,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__aerial-cactus-identification__static_hybrid__seed-1",
-      "row_hash": "ce0b4e00a163199a0a7666c4a59aec9f1aa2393ce2dfcd6335191a11830bcff8",
+      "row_hash": "e35c33f51917a5279383305dbdef5e80ac2f31ecb89e580f592fec1300e71bcd",
       "seed": 1,
       "system_id": "static_hybrid",
       "task_id": "aerial-cactus-identification",
@@ -199,11 +199,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -211,7 +211,7 @@
       "formal_result_eligible": true,
       "launch_position": 9,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__aerial-cactus-identification__flat_retrieval__seed-1",
-      "row_hash": "7a5e1af531d494189758827b524ac44ee1b6558e0fad539c672f521ee24596df",
+      "row_hash": "fd33c48df5af82acbea6b5a2b74a978929c43b9f9695a768e70fbe6842961225",
       "seed": 1,
       "system_id": "flat_retrieval",
       "task_id": "aerial-cactus-identification",
@@ -219,11 +219,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -231,7 +231,7 @@
       "formal_result_eligible": true,
       "launch_position": 10,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__leaf-classification__sop_only__seed-1",
-      "row_hash": "6f94fe74b540e91bae13f344081826956e77d200187517e6bfc8703ca482a4b2",
+      "row_hash": "b0c836bf975306e0afabe170f7530f14377e49ceadbd4bfe1e512b230a560018",
       "seed": 1,
       "system_id": "sop_only",
       "task_id": "leaf-classification",
@@ -239,11 +239,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -251,7 +251,7 @@
       "formal_result_eligible": true,
       "launch_position": 11,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__leaf-classification__flat_retrieval__seed-1",
-      "row_hash": "457939e92b29d7223237f894f657c4d5db84a102b0a1f7ff36c2eee93d400939",
+      "row_hash": "daa0b603999bdb333533056db51fa30a12b64d7ff7188c8208b74fe534ca00ea",
       "seed": 1,
       "system_id": "flat_retrieval",
       "task_id": "leaf-classification",
@@ -259,11 +259,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -271,7 +271,7 @@
       "formal_result_eligible": true,
       "launch_position": 12,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__leaf-classification__no_memory__seed-1",
-      "row_hash": "7b82d9d0cc29749f229d70f988941b01b6adb91b5eafb67b601eff38807e92a1",
+      "row_hash": "68c097a0e2b962599aec2851be36ed2cb01f9edb8049d4127d2bb8b81b9f9ef9",
       "seed": 1,
       "system_id": "no_memory",
       "task_id": "leaf-classification",
@@ -279,11 +279,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -291,7 +291,7 @@
       "formal_result_eligible": true,
       "launch_position": 13,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__leaf-classification__gome_style_port__seed-1",
-      "row_hash": "6e71e99b44ceb5020754a79c7f097f625dbbb9b4783a883da5f2f50487ef8892",
+      "row_hash": "3a4d38fe93a126ccac3f70b79e97bb0ee217d3f2ad42d0e9c1007b97a24cbbda",
       "seed": 1,
       "system_id": "gome_style_port",
       "task_id": "leaf-classification",
@@ -299,11 +299,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -311,7 +311,7 @@
       "formal_result_eligible": true,
       "launch_position": 14,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__leaf-classification__static_hybrid__seed-1",
-      "row_hash": "9ad8430ec04366b06c4dac3b952757c1a3d3b1a9ca8a445c5aebdd5258de1bb0",
+      "row_hash": "12041170700de6cf2fa90a465bf0227f29202fa59e5ff8238d4cfc40c5bcab70",
       "seed": 1,
       "system_id": "static_hybrid",
       "task_id": "leaf-classification",
@@ -319,11 +319,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -331,7 +331,7 @@
       "formal_result_eligible": true,
       "launch_position": 15,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__leaf-classification__dynamic_hybrid__seed-1",
-      "row_hash": "cf9106ef30a3406cfdfc773b49071e9d3fc48ec25b36ac91bb7241f4d26085a3",
+      "row_hash": "ab1a5769cad820e715e7e2bcdc2dc9e16c5036c1b84cec1385c4d2d4f55e3a73",
       "seed": 1,
       "system_id": "dynamic_hybrid",
       "task_id": "leaf-classification",
@@ -339,11 +339,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -351,7 +351,7 @@
       "formal_result_eligible": true,
       "launch_position": 16,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__leaf-classification__reversed_router__seed-1",
-      "row_hash": "db4e3d292304962d91c450801bed29a21ffe705f2b507ecfbff80c30721a700e",
+      "row_hash": "b619ee7bcf94d643262a1be3b4f66fdf4ae092424f1f0fd3fc8350ac00b741e3",
       "seed": 1,
       "system_id": "reversed_router",
       "task_id": "leaf-classification",
@@ -359,11 +359,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -371,7 +371,7 @@
       "formal_result_eligible": true,
       "launch_position": 17,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__leaf-classification__rcr_router_style_port__seed-1",
-      "row_hash": "a24ab4c2ddcc0dda28dbb28b5f1c0b0a77e7a6d4d79ccaab004bd28987ae0471",
+      "row_hash": "f55378bdb39ba161ba7b45161b3b836b0549b9abcc3d1f25cf3bf75ae85e4d87",
       "seed": 1,
       "system_id": "rcr_router_style_port",
       "task_id": "leaf-classification",
@@ -379,11 +379,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -391,7 +391,7 @@
       "formal_result_eligible": true,
       "launch_position": 18,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__leaf-classification__runforest_only__seed-1",
-      "row_hash": "8adad45f917fc9438bde51fd335e4e1edaab9998909da77995de296583d211d9",
+      "row_hash": "234df499db1d2fde046a111bfb2b9f1625d444a7740726110545538dec8bdbbd",
       "seed": 1,
       "system_id": "runforest_only",
       "task_id": "leaf-classification",
@@ -399,11 +399,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -411,7 +411,7 @@
       "formal_result_eligible": true,
       "launch_position": 19,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__leaf-classification__macla_style_port__seed-1",
-      "row_hash": "6678cea74425f2d4de416d94bd4adc054aef7da539a35c701cc0856207fdb11c",
+      "row_hash": "b656958c5e14b930b1b79db000d4d9616efdc14d747dd9175a2834e36f356b9c",
       "seed": 1,
       "system_id": "macla_style_port",
       "task_id": "leaf-classification",
@@ -419,11 +419,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -431,7 +431,7 @@
       "formal_result_eligible": true,
       "launch_position": 20,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__denoising-dirty-documents__dynamic_hybrid__seed-1",
-      "row_hash": "a8067dda02a0c35f42030e92b73e3cf16c6e9143a80c606ce12dfad8eb35aa49",
+      "row_hash": "5a8a780896b1d736904aa5fcd4a17b9a5f2e8b93357342c4bc50dd6cb6eb137d",
       "seed": 1,
       "system_id": "dynamic_hybrid",
       "task_id": "denoising-dirty-documents",
@@ -439,11 +439,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -451,7 +451,7 @@
       "formal_result_eligible": true,
       "launch_position": 21,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__denoising-dirty-documents__static_hybrid__seed-1",
-      "row_hash": "ceb7bfa448f9094693d77660b030c77c9d9923cd7d236e4b81918bfe095d9d11",
+      "row_hash": "bfcd7b9778313ec408e76504caec2399031866d8687e5910187dd556d241874c",
       "seed": 1,
       "system_id": "static_hybrid",
       "task_id": "denoising-dirty-documents",
@@ -459,11 +459,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -471,7 +471,7 @@
       "formal_result_eligible": true,
       "launch_position": 22,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__denoising-dirty-documents__gome_style_port__seed-1",
-      "row_hash": "1e75f96772dada0b6ec07039682634a2d39a97960bc94f9c500fe500776a1d66",
+      "row_hash": "f139b544a828f5d1fc91531d2251113e614d15b2effb5825210b1757b4c00b10",
       "seed": 1,
       "system_id": "gome_style_port",
       "task_id": "denoising-dirty-documents",
@@ -479,11 +479,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -491,7 +491,7 @@
       "formal_result_eligible": true,
       "launch_position": 23,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__denoising-dirty-documents__sop_only__seed-1",
-      "row_hash": "e4dd06644d8112f0a41bb0248ec8c1635c4ebcea388b7b3e635a94f8a6100f13",
+      "row_hash": "3426d6eb425496a5f1d1fe15309e491703983b23fb40fa32198d0515d8d8d582",
       "seed": 1,
       "system_id": "sop_only",
       "task_id": "denoising-dirty-documents",
@@ -499,11 +499,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -511,7 +511,7 @@
       "formal_result_eligible": true,
       "launch_position": 24,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__denoising-dirty-documents__runforest_only__seed-1",
-      "row_hash": "941bd451ea578e31cd67deefa6604219c0ea48d38befc672965c00f9ea7f639d",
+      "row_hash": "e2c70cb38d1aa8dfb112e71108c0cc19982ee424044ce990dc3e026ce91d17cf",
       "seed": 1,
       "system_id": "runforest_only",
       "task_id": "denoising-dirty-documents",
@@ -519,11 +519,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -531,7 +531,7 @@
       "formal_result_eligible": true,
       "launch_position": 25,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__denoising-dirty-documents__rcr_router_style_port__seed-1",
-      "row_hash": "84154ebb2766314477129282550c70f84fcf5434943b2d0ed4c736c89e87c633",
+      "row_hash": "7a9f5d65a07fe7e14c832ad8454b579b3c370d23ecb58f4d86fa50418aac4da1",
       "seed": 1,
       "system_id": "rcr_router_style_port",
       "task_id": "denoising-dirty-documents",
@@ -539,11 +539,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -551,7 +551,7 @@
       "formal_result_eligible": true,
       "launch_position": 26,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__denoising-dirty-documents__macla_style_port__seed-1",
-      "row_hash": "36d661c8a996cc09dd7a1845f3ee92ef4bd95f91fe0befba66406aab60cf6472",
+      "row_hash": "10cba19a38c5d6e41b9cfc4b35f628a2d496a8e939ff31efc5b46fa0337426a7",
       "seed": 1,
       "system_id": "macla_style_port",
       "task_id": "denoising-dirty-documents",
@@ -559,11 +559,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -571,7 +571,7 @@
       "formal_result_eligible": true,
       "launch_position": 27,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__denoising-dirty-documents__reversed_router__seed-1",
-      "row_hash": "79c98cd08a0bc210c0412ae15ffd76140e09b8ed155f33b8811a2031538de2a8",
+      "row_hash": "37fac67a50eefa65a72f1254da0dca0018febf2ac2b690aa1ab8405ac7fb2c71",
       "seed": 1,
       "system_id": "reversed_router",
       "task_id": "denoising-dirty-documents",
@@ -579,11 +579,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -591,7 +591,7 @@
       "formal_result_eligible": true,
       "launch_position": 28,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__denoising-dirty-documents__no_memory__seed-1",
-      "row_hash": "2c427bbad5113601460b6b796d8de5a526170caa4cf288625ffb991b84110f54",
+      "row_hash": "3030fc6f489539c899c6acb5da2dbe19c05bada5533f0ee5e8545d4ca023f9e2",
       "seed": 1,
       "system_id": "no_memory",
       "task_id": "denoising-dirty-documents",
@@ -599,11 +599,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -611,7 +611,7 @@
       "formal_result_eligible": true,
       "launch_position": 29,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__denoising-dirty-documents__flat_retrieval__seed-1",
-      "row_hash": "240b6c38843ec4ca579dfe46a54e52049583d9a0930a3770b91fa890570bdcaf",
+      "row_hash": "d4423c883ef8d5064e0b6634e573ecb7df82f98abcce9fe318637780fed5ebc8",
       "seed": 1,
       "system_id": "flat_retrieval",
       "task_id": "denoising-dirty-documents",
@@ -619,11 +619,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -631,7 +631,7 @@
       "formal_result_eligible": true,
       "launch_position": 30,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__new-york-city-taxi-fare-prediction__runforest_only__seed-1",
-      "row_hash": "16c23ee189d8935492b28ef696ff3c6192a757d8ac94d55e3ba82b71f5b005dd",
+      "row_hash": "603e170dd3e90f27862978dc5169e6edfec981ab05d25ee6c2e3b2f03721fd4d",
       "seed": 1,
       "system_id": "runforest_only",
       "task_id": "new-york-city-taxi-fare-prediction",
@@ -639,11 +639,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -651,7 +651,7 @@
       "formal_result_eligible": true,
       "launch_position": 31,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__new-york-city-taxi-fare-prediction__static_hybrid__seed-1",
-      "row_hash": "6ae2cfb43f8447d26a74e96e2c30f8e146d751ccbfbd67891e652176c50d7e00",
+      "row_hash": "1100affe2100bc5fb263d6356be02a6aef1f5d5f203989ed9287da3c68975141",
       "seed": 1,
       "system_id": "static_hybrid",
       "task_id": "new-york-city-taxi-fare-prediction",
@@ -659,11 +659,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -671,7 +671,7 @@
       "formal_result_eligible": true,
       "launch_position": 32,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__new-york-city-taxi-fare-prediction__flat_retrieval__seed-1",
-      "row_hash": "f326e512583b51ae625b2da2b6222bd2e12fc4bfbdaabba86f07dcf955613a96",
+      "row_hash": "f6619671a68b97f54631b3d02a5724a8dbabae2b6c1a564c0579f5e87f06aeb1",
       "seed": 1,
       "system_id": "flat_retrieval",
       "task_id": "new-york-city-taxi-fare-prediction",
@@ -679,11 +679,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -691,7 +691,7 @@
       "formal_result_eligible": true,
       "launch_position": 33,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__new-york-city-taxi-fare-prediction__sop_only__seed-1",
-      "row_hash": "19942adc8304b972de1cd184042c6696dd19555304e8ea0de67d8bbbff07b46d",
+      "row_hash": "c71d6bd221355db798d5a6979c0a0ebe0f965ca4dbef1372f5e685fd337318ae",
       "seed": 1,
       "system_id": "sop_only",
       "task_id": "new-york-city-taxi-fare-prediction",
@@ -699,11 +699,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -711,7 +711,7 @@
       "formal_result_eligible": true,
       "launch_position": 34,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__new-york-city-taxi-fare-prediction__rcr_router_style_port__seed-1",
-      "row_hash": "91ef36b37b488690034746816fd91c0eeddde8f7810ce86db8205d2dd5eff1be",
+      "row_hash": "0d968bbef7ef0ae5137ac9288d389034e7564b5c65ad979e99b3c0bd74c54e26",
       "seed": 1,
       "system_id": "rcr_router_style_port",
       "task_id": "new-york-city-taxi-fare-prediction",
@@ -719,11 +719,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -731,7 +731,7 @@
       "formal_result_eligible": true,
       "launch_position": 35,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__new-york-city-taxi-fare-prediction__gome_style_port__seed-1",
-      "row_hash": "3be88dcc271e502663906879e68e5d50fda70d540a786fe433b5ce9c1f595419",
+      "row_hash": "a6c382caa15c195f40c0839bf6479d14c61187937169bef045f736ff16e09723",
       "seed": 1,
       "system_id": "gome_style_port",
       "task_id": "new-york-city-taxi-fare-prediction",
@@ -739,11 +739,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -751,7 +751,7 @@
       "formal_result_eligible": true,
       "launch_position": 36,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__new-york-city-taxi-fare-prediction__no_memory__seed-1",
-      "row_hash": "7c34c5005660a8e3aef30ad1afaa62bf14180736e2362cdbcaabf42dae6b6da9",
+      "row_hash": "d387e43db04499ac4e15287c684d5a6669b6ba2d2c245d663b082befb73aac7b",
       "seed": 1,
       "system_id": "no_memory",
       "task_id": "new-york-city-taxi-fare-prediction",
@@ -759,11 +759,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -771,7 +771,7 @@
       "formal_result_eligible": true,
       "launch_position": 37,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__new-york-city-taxi-fare-prediction__dynamic_hybrid__seed-1",
-      "row_hash": "e4f3872b0d712258cdb9bb7ac661538a31e35596f67dcd8a4cfe5b5c0c89927e",
+      "row_hash": "80fe50dbe1486413fdf8f39ce120af8da0a7a17b242fa99ddcad6c14653b6f9f",
       "seed": 1,
       "system_id": "dynamic_hybrid",
       "task_id": "new-york-city-taxi-fare-prediction",
@@ -779,11 +779,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -791,7 +791,7 @@
       "formal_result_eligible": true,
       "launch_position": 38,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__new-york-city-taxi-fare-prediction__macla_style_port__seed-1",
-      "row_hash": "63f01025f4cc9f56494e6adc46930a34940d8f18565fb7a36c923e051df64d5d",
+      "row_hash": "edb034d4f16ce2fe7e5f1bf4db38e33dedba04895589f6753a190c86cca3764d",
       "seed": 1,
       "system_id": "macla_style_port",
       "task_id": "new-york-city-taxi-fare-prediction",
@@ -799,11 +799,11 @@
     },
     {
       "bindings": {
-        "budget_manifest_hash": "7257ea1df6e5114a8f230f6f09e423bdf1f97e52716bde4951b86f1a23f8c3cf",
+        "budget_manifest_hash": "558b8d3d7f2d6780e6654425b7e1654828a0229c602a3d5bc6032d3e250cab88",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "1419e92ccc9df99f3af8bb924110b095d25d732cdcd89264551f2c1c2f9e0b21",
         "schemas_manifest_hash": "fefad2d91bfe2b897647dd4d7088a80cce30ba5f6f1ac52b9114c5f71216c677",
-        "source_lock_manifest_hash": "105a47152aa549b5851322e7a6325e27d49cbc2d78f11f710dced675e62d3014",
+        "source_lock_manifest_hash": "b9565662c448cb776bc2eedb7d780e45cab3e13edd89a188b0831593ed7c2568",
         "systems_manifest_hash": "169602c7f1641373ef95f44ab29bf5309be3ea7f8325a00b80bc4b5a4646a554",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
@@ -811,7 +811,7 @@
       "formal_result_eligible": true,
       "launch_position": 39,
       "logical_run_id": "e2e-pilot-agentic-three-role-v12__new-york-city-taxi-fare-prediction__reversed_router__seed-1",
-      "row_hash": "8f226be7f083cd17d5afd042421d510ea71d72a53fd570b0b9ede50e05c6b83b",
+      "row_hash": "fc98d9da57fbcc5dd59891397f36095db5b3baca02f52cdca1cba7fed9817ebe",
       "seed": 1,
       "system_id": "reversed_router",
       "task_id": "new-york-city-taxi-fare-prediction",

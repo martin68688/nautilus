@@ -1,148 +1,160 @@
 #!/usr/bin/env python3
-"""Run the three lightweight checks requested before an End2End experiment."""
+"""Print the one lightweight human-facing confirmation before End2End launch.
+
+This command reads only committed local configuration.  It does not open a
+Memory Bundle, hash data, compile candidate code, start a subprocess, call an
+LLM, contact Kubernetes, or create a run directory.
+"""
 
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
-import subprocess
 import sys
-import tempfile
+from typing import Any
 
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
+MANIFESTS = ROOT / "manifests"
+
+
+def read_object(path: Path) -> dict[str, Any]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError(f"Expected JSON object: {path}")
+    return value
+
+
+def require(condition: bool, message: str) -> None:
+    if not condition:
+        raise RuntimeError(message)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--bundle-root", type=Path, required=True)
-    parser.add_argument("--task-id", required=True)
-    parser.add_argument("--best-id", required=True)
     parser.add_argument(
-        "--config",
+        "--manifest",
         type=Path,
-        default=ROOT / "systems" / "dynamic_hybrid.yaml",
-    )
-    parser.add_argument(
-        "--task-description",
-        default="Leaf image classification with multiclass log loss.",
+        default=MANIFESTS / "pilot_manifest.json",
     )
     args = parser.parse_args()
 
+    manifest = read_object(args.manifest.resolve(strict=True))
+    systems = read_object(MANIFESTS / "systems.json")
+    tasks = read_object(MANIFESTS / "tasks.json")
+    budget = read_object(MANIFESTS / "budget.json")
+
+    rows = list(manifest.get("runs") or [])
+    system_ids = [str(row["system_id"]) for row in systems.get("systems") or []]
+    task_ids = [str(row["task_id"]) for row in tasks.get("tasks") or []]
+    seeds = sorted({int(row["seed"]) for row in rows})
+    expected = {
+        (task_id, system_id, seed)
+        for task_id in task_ids
+        for system_id in system_ids
+        for seed in seeds
+    }
+    observed = {
+        (str(row["task_id"]), str(row["system_id"]), int(row["seed"]))
+        for row in rows
+    }
+
+    require(manifest.get("kind") == "pilot", "intent confirmation expects Pilot")
+    require(len(task_ids) == 4, "Pilot must contain exactly four tasks")
+    require(len(system_ids) == 10, "Pilot must contain exactly ten systems")
+    require(seeds == [1], "Pilot seed must be exactly 1")
+    require(len(rows) == 40 and observed == expected, "Pilot must be the full 10×4×1 matrix")
+
     sys.path.insert(0, str(REPO / "mlevolve"))
     sys.path.insert(0, str(REPO))
-    from authority.memory_snapshot import MemorySnapshotLoader
-    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
-    from config import _load_cfg
+    try:
+        from config import _load_cfg
 
-    cfg = _load_cfg(args.config.resolve(), use_cli_args=False)
-    ext = cfg.external_skill_memory
-    with tempfile.TemporaryDirectory(prefix="mlevolve-intent-") as temporary:
-        snapshot = MemorySnapshotLoader(args.bundle_root.resolve()).load(
-            current_path="CURRENT.json",
-            session_overlay_path=Path(temporary) / "overlay",
-            active_protocol_ref=(
-                f"{cfg.evaluation_authority.active_protocol_id}@"
-                f"{cfg.evaluation_authority.active_protocol_version}"
-            ),
-            authority_policy_version=str(
-                cfg.evaluation_authority.policy_version
-            ),
-            verify_artifacts=False,
-        )
-        base = snapshot.base_bundle
-        graph_path = base.path / "runforest" / "graph.json"
-        index_path = base.path / "runforest" / "index.npz"
-        graph = json.loads(graph_path.read_text(encoding="utf-8"))
-        nodes = {
-            str(row["id"]): row
-            for row in graph.get("nodes") or []
-            if str(row.get("id") or "")
-        }
-        if args.best_id not in nodes:
-            raise RuntimeError(f"same-task best is absent: {args.best_id}")
+        dynamic = _load_cfg(ROOT / "systems" / "dynamic_hybrid.yaml", use_cli_args=False)
+    finally:
+        sys.path.pop(0)
+        sys.path.pop(0)
 
-        layer = StageAwareHybridMemoryLayer(
-            graph_path=str(graph_path),
-            index_path=str(index_path),
-            source_name=str(ext.source_name),
-            mode=str(ext.mode),
-            scoring_mode=str(ext.scoring_mode),
-            top_k=int(ext.top_k),
-            max_chars=int(ext.max_chars),
-            retrieval_control="dynamic_hybrid",
-            visibility_mode="off",
-            excluded_run_ids=list(ext.excluded_run_ids),
-            cfg=cfg,
-            memory_snapshot=snapshot,
-            experiment_r_enabled=True,
-            experiment_r_candidate_limit=int(ext.experiment_r_candidate_limit),
-            experiment_r_top_k=int(ext.experiment_r_top_k),
-            experiment_r_prompt_token_budget=int(ext.experiment_r_prompt_token_budget),
-            experiment_r_memory_pool_sha256=str(base.manifest_sha256),
-            # Exercise the real Agentic route while replacing only the network
-            # call with a deterministic finish action. The mandatory first
-            # same-task observation and final Prompt pin remain production code.
-            experiment_r_agentic_retrieval_enabled=True,
-            experiment_r_agentic_query_fn=lambda **_kwargs: {
-                "action": "finish",
-                "reason": "pre-run intent confirmation",
-                "selected_ids": [args.best_id],
-            },
-        )
-        prompt, refs = layer.retrieve_for_node(
-            stage="draft",
-            task_id=args.task_id,
-            task_desc=args.task_description,
-            query_parts=["start from the strongest historical same-task method"],
-            draft_role="memory_transfer",
-        )
-        pack = layer.current_navigation_pack()
-    same_task = pack["retrieval_agent"]["same_task_best_first"]
-    pin = same_task["prompt_pin"]
-    if same_task.get("best_runforest_id") != args.best_id:
-        raise RuntimeError(
-            "router best differs from requested best: "
-            f"{same_task.get('best_runforest_id')}"
-        )
-    if not (
-        pin.get("applied") is True
-        and pin.get("prompt_visible") is True
-        and args.best_id in refs
-        and args.best_id in prompt
-    ):
-        raise RuntimeError("same-task best is not visible in the final Prompt")
-
-    for path in (REPO / "mlevolve" / "run.py", ROOT / "run_assignment.py"):
-        compile(path.read_text(encoding="utf-8"), str(path), "exec")
-    child = subprocess.run(
-        [sys.executable, "-c", "print('candidate_subprocess_started')"],
-        check=True,
-        capture_output=True,
-        text=True,
+    roles = list(dynamic.agent.draft_role_policy.roles)
+    require(
+        roles == ["coldstart_baseline", "memory_transfer", "novel_exploration"],
+        "Dynamic Hybrid must use the frozen three roles",
+    )
+    require(dynamic.evaluation_authority.mode == "off", "Host authority must be off")
+    require(not dynamic.agent.protocol_preflight.enabled, "Protocol preflight must be off")
+    require(not dynamic.agent.protocol_repair.enabled, "Protocol repair must be off")
+    require(not dynamic.agent.check_data_leakage, "Leakage audit must be off")
+    require(not dynamic.adoption_verifier.enabled, "Adoption verifier must be off")
+    require(not dynamic.prospective_audit.enabled, "Prospective audit must be off")
+    require(
+        not dynamic.fixed_holdout.preflight_validate_train_view,
+        "Per-run train-view integrity scan must be off",
+    )
+    require(
+        dynamic.external_skill_memory.experiment_r_agentic_retrieval_enabled,
+        "Dynamic Hybrid Retrieval Agent must be on",
     )
 
-    report = {
-        "schema": "mlevolve_end2end_intent_confirmation_v1",
-        "status": "ready",
-        "checks": {
-            "same_task_best_exists": True,
-            "same_task_best_id": args.best_id,
-            "same_task_best_is_final_prompt_visible": True,
-            "prompt_visible_ids": list(pack["final_prompt_candidate_ids"]),
-            "draft_slots": dict(pack["stage_route"]["requested_slots"]),
-            "live_retrieval_agent_enabled_in_smoke": bool(
-                ext.experiment_r_agentic_retrieval_enabled
-            ),
-            "solver_entrypoint_compiles": True,
-            "candidate_subprocess_can_start": (
-                child.stdout.strip() == "candidate_subprocess_started"
-            ),
-        },
+    runtime = dict(budget["runtime"])
+    pilot_budget = dict(budget["pilot"])
+    require(runtime["gpu_resource_key"] == "nvidia.com/a100", "GPU request must be A100")
+    require(pilot_budget["gpu_count"] == 1, "Each run must request one GPU")
+    require(pilot_budget["parallel_search_num"] == 1, "Runs must execute sequentially per Job")
+    require(pilot_budget["cpu_count"] == 16, "Each run must request 16 CPU")
+    require(pilot_budget["memory_gib"] == 64, "Each run must request 64 GiB")
+
+    per_task_order = {
+        task_id: [
+            str(row["system_id"])
+            for row in sorted(
+                (item for item in rows if item["task_id"] == task_id),
+                key=lambda item: int(item["task_launch_position"]),
+            )
+        ]
+        for task_id in task_ids
     }
-    print(json.dumps(report, sort_keys=True, ensure_ascii=False))
+    report = {
+        "schema": "mlevolve_end2end_intent_confirmation_v2",
+        "status": "ready_for_user_confirmation",
+        "launches_training": False,
+        "experiment": {
+            "runs": len(rows),
+            "systems": system_ids,
+            "tasks": task_ids,
+            "seeds": seeds,
+            "exploratory_only": True,
+            "system_order_by_task": per_task_order,
+        },
+        "dynamic_hybrid": {
+            "roles": roles,
+            "retrieval_agent": True,
+            "same_task_best_policy": "first when eligible same-task history exists",
+            "prompt_selection": "agentic retrieval with deterministic router fallback",
+        },
+        "resources_per_run": {
+            "gpu": "1×A100",
+            "cpu": 16,
+            "memory_gib": 64,
+            "parallel_runs_per_job": 1,
+        },
+        "runtime_checks": {
+            "host_protocol": False,
+            "host_receipts": False,
+            "data_tree_hash": False,
+            "bundle_artifact_traversal": False,
+            "source_lock_gate": False,
+            "adoption_gate": False,
+            "prospective_audit": False,
+        },
+        "still_required_to_get_a_score": [
+            "candidate program can actually run",
+            "submission has the task-required columns and rows",
+            "terminal evaluator can compute the frozen metric",
+        ],
+    }
+    print(json.dumps(report, sort_keys=True, ensure_ascii=False, indent=2))
     return 0
 
 

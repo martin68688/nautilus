@@ -35,7 +35,9 @@ The current sequence is:
   domain certification, or transition-to-SOP proof. The Base contains Leaf
   seed-43/44 history; Dynamic Hybrid pins the best eligible same-task RunForest
   item into one existing Prompt slot.
-- `confirm_experiment_intent.py`: the three lightweight pre-run confirmations;
+- `confirm_experiment_intent.py`: one local, human-facing intent summary. It
+  opens no Bundle/data, starts no subprocess, calls no model or cluster API,
+  and never launches training;
 - `run_assignment.py`: finite Job PID 1, Agent subprocess, terminal evaluator
   and immutable failure measurement; hashes/receipts remain metadata only;
 - `validate_smoke_gate.py`: retained as an optional offline diagnostic and is
@@ -49,6 +51,9 @@ The current sequence is:
 ```bash
 PYTHONPATH=mlevolve /tmp/nautilus-e2e-py311/bin/python \
   experiments/end2end_memory_systems_20260804/build_manifests.py --check
+
+PYTHONPATH=mlevolve /tmp/nautilus-e2e-py311/bin/python \
+  experiments/end2end_memory_systems_20260804/confirm_experiment_intent.py
 
 PYTHONPATH=mlevolve /tmp/nautilus-e2e-py311/bin/python \
   experiments/end2end_memory_systems_20260804/run_assignment.py \

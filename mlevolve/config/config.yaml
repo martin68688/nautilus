@@ -24,6 +24,10 @@ fixed_holdout:
   evaluation_mode: terminal_only
   train_manifest_path: ""
   bypass_protocol_gates: False
+  # Integrity scan of the already-published public train view.  Formal release
+  # profiles keep this on.  Fast effectiveness experiments may disable it and
+  # rely on the frozen path plus terminal evaluator instead.
+  preflight_validate_train_view: True
   internal_metric_disposition: search_only
 
 # Resource

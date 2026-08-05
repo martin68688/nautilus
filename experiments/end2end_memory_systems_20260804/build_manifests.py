@@ -167,10 +167,17 @@ def dump_json(path: Path, payload: Mapping[str, Any]) -> None:
 
 
 def base_config() -> str:
-    return """extends: ../../../mlevolve/config/config_prevalence_audit_20260729_host_enforce.yaml
+    return """# End2End is an effectiveness experiment, not a Host-protocol or provenance
+# audit. Inherit directly from authority-off so Host gates cannot reactivate.
+extends: ../../../mlevolve/config/config_authority_off.yaml
 
 methodology_kb_path: ""
 methodology_dynamic: false
+
+fixed_holdout:
+  # The fixed split is already published. Never rescan and hash every public
+  # asset before an End2End condition.
+  preflight_validate_train_view: false
 
 agent:
   check_data_leakage: false
@@ -256,6 +263,9 @@ external_skill_memory:
 evaluation_authority:
   require_bound_bundle: false
   mode: "off"
+  enforce_operations: []
+  enforce_generation_stages: []
+  enforce_governance_stages: []
   emit_snapshot: false
   runtime_protocol_observer_enabled: false
   protocol_runtime_mode: legacy_ast
@@ -472,11 +482,10 @@ def component_manifests(
             "experiment_validation": {
                 "mode": "experiment_fast_nonblocking_v1",
                 "pre_run_confirmations": [
-                    "same_task_best_exists",
-                    "same_task_best_is_final_prompt_visible",
-                    "solver_entrypoint_and_candidate_subprocess_can_start",
+                    "human_confirms_local_experiment_intent_summary",
                 ],
                 "bundle_artifact_traversal": False,
+                "public_train_tree_hash_scan": False,
                 "host_protocol_preflight": False,
                 "host_runtime_protocol": False,
                 "receipt_admission": False,
@@ -894,7 +903,7 @@ def build() -> dict[str, Any]:
             "schema": "mlevolve_end2end_launch_packet_v1",
             "status": "generated_not_submitted",
             "launch_gate": "explicit_user_authorization_required",
-            "pre_run_confirmation": "three lightweight intent checks only",
+            "pre_run_confirmation": "one local human-facing intent confirmation only",
             "pilot_requires_passing_smoke_gate": False,
             "smoke_manifest_hash": smoke["manifest_hash"],
             "feasibility_smoke_manifest_hash": feasibility_smoke["manifest_hash"],

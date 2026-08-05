@@ -280,6 +280,7 @@ class FixedHoldoutConfig:
     evaluation_mode: str = "terminal_only"
     train_manifest_path: str = ""
     bypass_protocol_gates: bool = False
+    preflight_validate_train_view: bool = True
     internal_metric_disposition: str = "search_only"
 
 
@@ -862,7 +863,8 @@ def prep_cfg(cfg: Config):
             raise ValueError(
                 "fixed_holdout requires agent.protocol_repair.enabled=false"
             )
-        validate_train_view(train_manifest_path(cfg), Path(cfg.data_dir))
+        if cfg.fixed_holdout.preflight_validate_train_view:
+            validate_train_view(train_manifest_path(cfg), Path(cfg.data_dir))
 
     return cast(Config, cfg)
 

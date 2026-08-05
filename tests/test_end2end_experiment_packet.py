@@ -453,6 +453,7 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
         assert merged.external_skill_memory.end2end_candidate_pool_limit == 12
         assert merged.external_skill_memory.enable is True
         assert merged.external_skill_memory.verify_bundle_artifacts is False
+        assert merged.fixed_holdout.preflight_validate_train_view is False
         assert merged.agent.search.num_gpus == 1
         assert merged.agent.search.parallel_search_num == 1
         assert merged.agent.code.temp == 1.0
@@ -577,12 +578,69 @@ def test_temp05_stager_is_owned_finite_cpu_only_pod() -> None:
     assert not any(key.startswith("nvidia.com/") for key in resources["requests"])
 
 
-def test_launch_packet_records_lightweight_pre_run_confirmation() -> None:
+def test_launch_packet_records_only_human_intent_confirmation() -> None:
     packet = _read(MANIFESTS / "launch_packet.json")
     assert packet["pilot_requires_passing_smoke_gate"] is False
     assert packet["pre_run_confirmation"] == (
-        "three lightweight intent checks only"
+        "one local human-facing intent confirmation only"
     )
+
+
+def test_end2end_effective_config_has_no_runtime_validation_gates() -> None:
+    from config import _load_cfg
+
+    cfg = _load_cfg(ROOT / "systems" / "dynamic_hybrid.yaml", use_cli_args=False)
+    assert cfg.evaluation_authority.mode == "off"
+    assert cfg.evaluation_authority.enforce_operations == []
+    assert cfg.agent.protocol_preflight.enabled is False
+    assert cfg.agent.protocol_repair.enabled is False
+    assert cfg.agent.check_data_leakage is False
+    assert cfg.adoption_verifier.enabled is False
+    assert cfg.prospective_audit.enabled is False
+    assert cfg.fixed_holdout.preflight_validate_train_view is False
+
+
+def test_release_overrides_cannot_reactivate_validation_gates() -> None:
+    values = run_assignment._fixed_holdout_overrides(
+        {
+            "additional_overrides": [
+                "fixed_holdout.enabled=true",
+                "fixed_holdout.bypass_protocol_gates=true",
+                "agent.check_data_leakage=true",
+                "agent.protocol_repair.enabled=true",
+                "prospective_audit.enabled=true",
+                "evaluation_authority.mode=enforce",
+            ]
+        }
+    )
+    assert values == [
+        "fixed_holdout.enabled=true",
+        "fixed_holdout.bypass_protocol_gates=true",
+    ]
+
+
+def test_intent_confirmation_is_local_and_does_not_launch_training() -> None:
+    completed = subprocess.run(
+        [sys.executable, str(ROOT / "confirm_experiment_intent.py")],
+        cwd=REPO,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    payload = json.loads(completed.stdout)
+    assert payload["status"] == "ready_for_user_confirmation"
+    assert payload["launches_training"] is False
+    assert payload["experiment"]["runs"] == 40
+    assert payload["experiment"]["seeds"] == [1]
+    assert payload["runtime_checks"] == {
+        "host_protocol": False,
+        "host_receipts": False,
+        "data_tree_hash": False,
+        "bundle_artifact_traversal": False,
+        "source_lock_gate": False,
+        "adoption_gate": False,
+        "prospective_audit": False,
+    }
 
 
 def test_runner_local_dry_run_makes_no_external_or_agent_calls(tmp_path) -> None:
@@ -962,11 +1020,10 @@ def test_budget_couples_gpu_search_and_cpu_controls() -> None:
     assert budget["experiment_validation"] == {
         "mode": "experiment_fast_nonblocking_v1",
         "pre_run_confirmations": [
-            "same_task_best_exists",
-            "same_task_best_is_final_prompt_visible",
-            "solver_entrypoint_and_candidate_subprocess_can_start",
+            "human_confirms_local_experiment_intent_summary",
         ],
         "bundle_artifact_traversal": False,
+        "public_train_tree_hash_scan": False,
         "host_protocol_preflight": False,
         "host_runtime_protocol": False,
         "receipt_admission": False,
