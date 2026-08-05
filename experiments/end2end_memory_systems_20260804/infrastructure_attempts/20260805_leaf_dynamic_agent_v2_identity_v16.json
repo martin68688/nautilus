@@ -1,0 +1,20 @@
+{
+  "schema": "mlevolve_end2end_infrastructure_attempt_v1",
+  "logical_run_id": "e2e-smoke-leaf-dynamic-v12__leaf-classification__dynamic_hybrid__seed-1",
+  "requested_attempt": 2,
+  "job_name": "mlevolve-e2e-leaf-dynamic-smoke-v16",
+  "pod_name": "mlevolve-e2e-leaf-dynamic-smoke-v16-0-x5pxh",
+  "created_at_utc": "2026-08-05T12:14:24Z",
+  "container_started_at_utc": "2026-08-05T12:14:35Z",
+  "container_finished_at_utc": "2026-08-05T12:14:36Z",
+  "exit_code": 1,
+  "node_name": "node-2-3.sdsc.optiputer.net",
+  "requested_gpu_resource": "nvidia.com/a100",
+  "candidate_training_started": false,
+  "measurement_created": false,
+  "method_failure": false,
+  "failure_type": "logical_run_identity_conflict",
+  "exception": "ValueError: Explicit retry is allowed only after an infrastructure failure",
+  "root_cause": "Agentic final-selection v2 was initially submitted as attempt-002 of an older terminal-scored Dynamic logical run.",
+  "disposition": "retain_v16_job_and_logs_then_launch_v2_under_a_fresh_logical_run_id"
+}

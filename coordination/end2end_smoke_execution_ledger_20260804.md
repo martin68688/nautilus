@@ -469,3 +469,61 @@ overwriting this record.
 - The formal Pilot remained blocked. Replacement release v3 ports the exact
   prerequisite predicate from the read-only reference branch and adds a real
   import/classification regression test.
+
+## 2026-08-05 Leaf full-system Smoke completion and Dynamic Agent v2
+
+- The resumed Leaf control Job `mlevolve-e2e-leaf-controls-smoke-v15`
+  terminated with eight successful indexes and one retained Agent failure.
+  `gome_style_port` remained unscored; all other control conditions produced a
+  terminal log-loss measurement. Earlier infrastructure attempts remain under
+  their original attempt directories on the PVC.
+- Retrieval Agent v2 is source version
+  `experiment_r_agentic_final_selection_v2`. It adds an exact final-selection
+  contract, usable inspect observations, a mandatory final decision step,
+  explicit fallback metadata, and direct Agent ownership of the Dynamic
+  selected IDs. The deterministic 4+2 router no longer silently chooses the
+  IDs after an Agent non-decision.
+- Checkpoint commits were `47a6755c` (Agent final selection), `64524ca1`
+  (v2 Smoke staging), `9e08a9c6` (scoped workload labels), and `fde8b676`
+  (fresh Dynamic v2 logical identity). The PVC runtime snapshot
+  `/workspace/nautilus-exp-end2end-agent-v14` matched all 237 source-lock file
+  hashes before launch.
+- Job `mlevolve-e2e-leaf-dynamic-smoke-v16` is retained as a pre-training
+  identity failure. It attempted to attach the new algorithm to attempt 2 of
+  an older terminal-scored logical run and was rejected in one second with
+  `ValueError: Explicit retry is allowed only after an infrastructure
+  failure`. No candidate training or measurement occurred.
+- Replacement Job `mlevolve-e2e-leaf-dynamic-smoke-v17` used the fresh logical
+  run `e2e-smoke-leaf-dynamic-agent-v2__leaf-classification__dynamic_hybrid__seed-1`.
+  It completed on one `NVIDIA A100-SXM4-80GB`, 16 CPUs and 64 GiB memory with
+  zero restarts.
+- Both memory-on roles made real final decisions. `memory_transfer` finished
+  in one Agent call; `novel_exploration` inspected two known candidates and
+  finished on call three. Both selected exactly four SOP and two RunForest
+  IDs, with `selection_complete=true`, `fallback_used=false`, and
+  `deterministic_quota_selection_used=false`.
+- The mandatory same-task clean-best invariant transparently replaced
+  RunForest ID `9d9f690c...` with `0d9b3a3a...` in the memory-transfer slot.
+  This replacement and the original Agent proposal are both retained in the
+  routing trace.
+- Candidate outcomes: coldstart internal log loss `0.693`; memory-transfer
+  internal log loss `0.09166647865848002` and selected; novel-exploration
+  retained buggy because every reported training loss was NaN despite a
+  generated submission and finite validation predictions.
+- Dynamic v2 terminal log loss was `0.11480336659470919`, TTFV
+  `358.895870013` seconds, and allocated GPU time `0.12555508805194446`
+  hours. Measurement hash:
+  `87ed595227d468d9b510aac5779b146f176cd3f4968f2d86ab447d675ccb3eee`.
+- The completed ten-system Leaf Smoke has 9/10 terminal-scored conditions.
+  `flat_retrieval` ranked first (`0.09353439660745823`), `sop_only` second
+  (`0.11256344056236905`), and Dynamic v2 third (`0.11480336659470919`).
+  Every scored memory condition improved over No Memory (`0.9072923887645635`);
+  `gome_style_port` remains a completion failure rather than an imputed metric.
+- Dynamic code-level adoption was partial. The selected program implemented
+  dynamic feature-column discovery, train-only scaling, exact
+  `submission.csv`, sample-submission column order, and row-sum validation. It
+  did not reproduce the clean-best SigLIP2 image plus branch-fusion core, so
+  Prompt injection must not be reported as full method adoption.
+- These are three-step, temperature-1, Seed-1 exploratory Smoke results. They
+  do not establish statistical significance. The formal 40-run Pilot remains
+  generated but not submitted pending explicit user authorization.

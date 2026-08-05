@@ -1,0 +1,104 @@
+{
+  "schema": "mlevolve_end2end_smoke_attempt_summary_v1",
+  "release_id": "end2end-agentic-three-role-v12",
+  "algorithm_version": "experiment_r_agentic_final_selection_v2",
+  "logical_run_id": "e2e-smoke-leaf-dynamic-agent-v2__leaf-classification__dynamic_hybrid__seed-1",
+  "attempt": 0,
+  "task_id": "leaf-classification",
+  "system_id": "dynamic_hybrid",
+  "seed": 1,
+  "formal_result_eligible": false,
+  "status": "scored_terminal_result",
+  "completed": true,
+  "failure_class": "none",
+  "candidate_set_frozen": true,
+  "terminal_metric": "log_loss",
+  "terminal_score": 0.11480336659470919,
+  "time_to_first_valid_seconds": 358.895870013,
+  "agent_wall_seconds": 451.998316987,
+  "allocated_gpu_hours": 0.12555508805194446,
+  "hardware": {
+    "requested_gpu_resource": "nvidia.com/a100",
+    "observed_gpu_product": "NVIDIA A100-SXM4-80GB",
+    "node_name": "node-2-3.sdsc.optiputer.net"
+  },
+  "retrieval": {
+    "decision_route": "dynamic_hybrid_agent_final_selection",
+    "deterministic_quota_selection_used": false,
+    "fallback_used": false,
+    "same_task_best_first_enforced": true,
+    "memory_transfer": {
+      "agent_calls": 1,
+      "selection_complete": true,
+      "selected_count": 6,
+      "source_counts": {
+        "sop": 4,
+        "runforest": 2
+      },
+      "decision_authority": "retrieval_agent_plus_mandatory_same_task_pin",
+      "same_task_pin_inserted_id": "run::20260717_122321_leaf-classification::node::0d9b3a3a07a64b5d91952b4889c760ff",
+      "same_task_pin_replaced_id": "run::20260717_122321_leaf-classification::node::9d9f690c7c4a42da8d3bc61374735aae"
+    },
+    "novel_exploration": {
+      "agent_calls": 3,
+      "inspect_candidate_calls": 2,
+      "selection_complete": true,
+      "selected_count": 6,
+      "source_counts": {
+        "sop": 4,
+        "runforest": 2
+      },
+      "decision_authority": "retrieval_agent"
+    }
+  },
+  "candidates": [
+    {
+      "node_id": "959330a5647943f19f2ca673b920c9fa",
+      "role": "coldstart_baseline",
+      "candidate_subprocess_started": true,
+      "valid": true,
+      "internal_log_loss": 0.693,
+      "selected_for_terminal": false
+    },
+    {
+      "node_id": "3993197d5023496c97b28b2512e3381c",
+      "role": "memory_transfer",
+      "candidate_subprocess_started": true,
+      "valid": true,
+      "internal_log_loss": 0.09166647865848002,
+      "selected_for_terminal": true
+    },
+    {
+      "node_id": "1b457b1b85ba41abbaf09ecc4a82b10c",
+      "role": "novel_exploration",
+      "candidate_subprocess_started": true,
+      "valid": null,
+      "is_buggy": true,
+      "internal_log_loss": null,
+      "submission_created": true,
+      "failure": "training loss was NaN in every epoch; candidate retained as buggy despite finite validation predictions",
+      "selected_for_terminal": false
+    }
+  ],
+  "observed_adoption": {
+    "strong_code_level": [
+      "dynamic margin/shape/texture column discovery",
+      "fit StandardScaler on the training split only",
+      "write exactly ./submission/submission.csv",
+      "copy sample_submission column order and validate row probability sums"
+    ],
+    "partial": [
+      "same-task RunForest column-name and submission repair was adopted, but its SigLIP2 multimodal core was not reproduced"
+    ],
+    "not_activated": [
+      "the image-pipeline device NameError SOP was inapplicable because the selected program did not use image feature extraction",
+      "the clean-best SigLIP2 image plus branch-fusion architecture was not implemented"
+    ],
+    "automatic_verifier_status": "off; code-level assessment is descriptive"
+  },
+  "manifest_hash": "c0579d8d421af9ec5cdbcfa80910791dfce891c29d573c73eab7933bcf2a5e26",
+  "measurement_hash": "87ed595227d468d9b510aac5779b146f176cd3f4968f2d86ab447d675ccb3eee",
+  "terminal_report_sha256": "ead8b1e00cd3f5a63ecb1d3fae3c9a2ca0bc9bcc4ff3fb574411e947c10028b7",
+  "pvc_attempt_root": "/workspace/experiment-end2end-memory-agent-v12/runs/e2e-smoke-leaf-dynamic-agent-v2__leaf-classification__dynamic_hybrid__seed-1/attempt-000",
+  "disposition": "agent_final_selection_online_smoke_passed; retain_as_exploratory_seed_1_evidence"
+}

@@ -1,0 +1,108 @@
+{
+  "schema": "mlevolve_end2end_full_system_smoke_summary_v1",
+  "task_id": "leaf-classification",
+  "seed": 1,
+  "exploratory_only": true,
+  "metric": "log_loss",
+  "direction": "minimize",
+  "condition_count": 10,
+  "terminal_scored_count": 9,
+  "completion_rate": 0.9,
+  "no_memory_terminal_score": 0.9072923887645635,
+  "metric_negative_transfer_count_among_scored_memory_systems": 0,
+  "unscored_memory_system_failures": [
+    "gome_style_port"
+  ],
+  "terminal_rank": [
+    {
+      "system_id": "flat_retrieval",
+      "terminal_score": 0.09353439660745823,
+      "improvement_vs_no_memory": 0.8137579921571053,
+      "time_to_first_valid_seconds": 396.37320153,
+      "measurement_hash": "3afd6f08711b282bb424e0cf52f1b80cb0c27e53c2ca1c62924c53493399671c"
+    },
+    {
+      "system_id": "sop_only",
+      "terminal_score": 0.11256344056236905,
+      "improvement_vs_no_memory": 0.7947289482021944,
+      "time_to_first_valid_seconds": 548.160607781,
+      "measurement_hash": "616ba2fe2775ec1b841210d45e45ee6cf0362c492957c0378af2080eab322fa0"
+    },
+    {
+      "system_id": "dynamic_hybrid",
+      "terminal_score": 0.11480336659470919,
+      "improvement_vs_no_memory": 0.7924890221698544,
+      "time_to_first_valid_seconds": 358.895870013,
+      "measurement_hash": "87ed595227d468d9b510aac5779b146f176cd3f4968f2d86ab447d675ccb3eee"
+    },
+    {
+      "system_id": "runforest_only",
+      "terminal_score": 0.12170922402330216,
+      "improvement_vs_no_memory": 0.7855831647412613,
+      "time_to_first_valid_seconds": 401.837925938,
+      "measurement_hash": "9cdb31a89fb5409dd21fc465436e12f39ed14b2bcc7a17a34becad9de2f2a5f4"
+    },
+    {
+      "system_id": "static_hybrid",
+      "terminal_score": 0.1367357528299331,
+      "improvement_vs_no_memory": 0.7705566359346304,
+      "time_to_first_valid_seconds": 419.698031668,
+      "measurement_hash": "0ee7417867a5c0a07adea25dc97be3edc987b5fc3f52119701d3324a499d6e04"
+    },
+    {
+      "system_id": "reversed_router",
+      "terminal_score": 0.152642955800297,
+      "improvement_vs_no_memory": 0.7546494329642666,
+      "time_to_first_valid_seconds": 437.339472377,
+      "measurement_hash": "b6fb77d42ca06dd9044b8e884eaaafe3a027fb50f31ce35a9d94674bc7fac57c"
+    },
+    {
+      "system_id": "rcr_router_style_port",
+      "terminal_score": 0.17419492398274758,
+      "improvement_vs_no_memory": 0.7330974647818159,
+      "time_to_first_valid_seconds": 447.140496498,
+      "measurement_hash": "df0779822dd4be2dc9a344f70624a25e60d530e36889e415bb2167a81d552058"
+    },
+    {
+      "system_id": "macla_style_port",
+      "terminal_score": 0.2465853100702423,
+      "improvement_vs_no_memory": 0.6607070786943212,
+      "time_to_first_valid_seconds": 505.129281501,
+      "measurement_hash": "2de448681c778e3af7a451acad2b0cfc466a31fc9ff2f4c67937c6d294eb0882"
+    },
+    {
+      "system_id": "no_memory",
+      "terminal_score": 0.9072923887645635,
+      "improvement_vs_no_memory": 0.0,
+      "time_to_first_valid_seconds": 547.253053411,
+      "measurement_hash": "2ab29a83bc00d34c90e3dee4ff93780e7299042bd1417f866ae8b9e051bd7f53"
+    }
+  ],
+  "unscored_conditions": [
+    {
+      "system_id": "gome_style_port",
+      "status": "retained_agent_complete",
+      "failure_class": "agent",
+      "terminal_score": null,
+      "measurement_hash": "5be9f5561e7eb3978b2aaa2f0993b2aa371ed4bbe7009659ecd9e1cbdd33afce"
+    }
+  ],
+  "allocated_gpu_hours_final_condition_attempts": 1.4998936215030558,
+  "allocated_gpu_hours_retained_control_infrastructure_attempts": 0.022942656001666666,
+  "provider_llm_cost_usd": null,
+  "provider_llm_token_usage": null,
+  "dynamic_v2_observations": {
+    "previous_dynamic_terminal_score": 0.8209226374,
+    "new_dynamic_terminal_score": 0.11480336659470919,
+    "absolute_log_loss_reduction": 0.7061192708052908,
+    "retrieval_agent_final_selection_confirmed": true,
+    "deterministic_fallback_used": false,
+    "fastest_time_to_first_valid_among_scored_conditions": true
+  },
+  "limitations": [
+    "Seed=1 does not support statistical significance claims.",
+    "Dynamic Hybrid uses three named draft roles while the control systems use their frozen non-role draft policies, so router and role-policy effects are not isolated by this Smoke.",
+    "The nine controls and Dynamic v2 have different source-lock manifests because Dynamic was repaired after its earlier Smoke; only the Dynamic code path changed materially."
+  ],
+  "formal_pilot_started": false
+}
