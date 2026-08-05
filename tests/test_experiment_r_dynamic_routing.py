@@ -642,6 +642,10 @@ def test_fast_experiment_accepts_successful_history_without_paper_grade_markers(
     assert same_task["best_runforest_id"] == "n1"
     assert same_task["prompt_pin"]["prompt_visible"] is True
     assert "n1" in refs
+    assert pack["stage_route"]["realized_slots"] == {
+        "sop": 2,
+        "runforest": 3,
+    }
 
 
 def test_dynamic_prompt_pins_same_task_best_when_retrieval_agent_declines_it(

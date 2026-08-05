@@ -59,6 +59,16 @@ FUSION_WEIGHTS = {
 RRF_K = 60
 
 
+def _fast_nonblocking(layer: Any) -> bool:
+    authority = getattr(getattr(layer, "cfg", None), "evaluation_authority", None)
+    snapshot = getattr(layer, "memory_snapshot", None)
+    return bool(
+        str(getattr(authority, "mode", "") or "").lower() == "off"
+        and snapshot is not None
+        and getattr(snapshot, "verify_artifacts", True) is False
+    )
+
+
 def _sha(payload: Any) -> str:
     encoded = json.dumps(
         payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
@@ -531,7 +541,8 @@ def _agentic_sop_search(
         allowed_sop_ids=visible_sop_ids,
     )
     rows = _refresh_experiment_r_sop_rows(layer, rows)
-    rows = [row for row in rows if row["clean_supporting_transition_ids"]]
+    if not _fast_nonblocking(layer):
+        rows = [row for row in rows if row["clean_supporting_transition_ids"]]
     for row in rows:
         row["source"] = "sop"
         row["flat_score"] = _flat_score(
@@ -1350,7 +1361,9 @@ def _candidate_pool(
     )
     all_sop_rows = _refresh_experiment_r_sop_rows(layer, all_sop_rows)
     neutral_sops = [
-        row for row in all_sop_rows if row["clean_supporting_transition_ids"]
+        row
+        for row in all_sop_rows
+        if _fast_nonblocking(layer) or row["clean_supporting_transition_ids"]
     ]
     for row in neutral_sops:
         row["flat_score"] = _flat_score(
@@ -2010,7 +2023,11 @@ def format_experiment_r_pack(layer: Any, pack: dict[str, Any]) -> str:
     stage = pack["stage_route"]["stage"]
     header = "\n".join(
         [
-            "## Experiment R: Authority-Gated Dynamic Memory",
+            (
+                "## Experiment R: Dynamic Memory"
+                if _fast_nonblocking(layer)
+                else "## Experiment R: Authority-Gated Dynamic Memory"
+            ),
             "Use only the injected items below; they are suggestions, not commands.",
             *(
                 [
