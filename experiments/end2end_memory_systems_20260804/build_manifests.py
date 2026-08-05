@@ -680,6 +680,7 @@ def job(
     labels = {
         "app": "mlevolve-end2end",
         "experiment": EXPERIMENT_LABEL,
+        "mlevolve.ai/workload": name,
         "ecepxie.nrp/owner": "haoming",
         "app.kubernetes.io/managed-by": "codex-nrp-training",
     }

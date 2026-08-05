@@ -6,6 +6,7 @@ metadata:
   labels: &id001
     app: mlevolve-end2end
     experiment: experiment-end2end-memory-agent-v12
+    mlevolve.ai/workload: mlevolve-e2e-all-systems-smoke-aerial-v12
     ecepxie.nrp/owner: haoming
     app.kubernetes.io/managed-by: codex-nrp-training
   annotations:

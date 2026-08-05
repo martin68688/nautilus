@@ -851,7 +851,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "680b424e5d55f07b52cb447a0f6ac6fb7d04d36a42638451b6c513ad6b419c4f"
+      "sha256": "344a57d8a299bab0ab95d9a2d54d32d0f85feecce622d660690a2e263169e2f7"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/confirm_experiment_intent.py",
@@ -950,8 +950,8 @@
       "sha256": "4300df74f961e7fcc34e7c38d35177e41a3423bd66f86ee1fd0ff9a89cebe7f0"
     }
   ],
-  "git_head": "47a6755c935bc6fae2892b135958ad7456f1cb7a",
+  "git_head": "64524ca1c0e04717493047d7b4d07e72a32a9ed7",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "47e9211514e3a778046f476f100b81357f426cd5ca9c4fecaf38432d12fec1f9",
+  "manifest_hash": "05ba1529fcf99cf710b1a32183da7bec875fb40aa04cd81081114827f8846581",
   "schema": "mlevolve_end2end_source_lock_v1"
 }
