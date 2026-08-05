@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mlevolve-e2e-agentic-three-role-feasibility-aerial-v12
+  name: mlevolve-e2e-leaf-dynamic-smoke-v12
   namespace: ecepxie
   labels: &id001
     app: mlevolve-end2end
@@ -41,7 +41,7 @@ spec:
         args:
         - /workspace/nautilus-exp-end2end-agent-v13/experiments/end2end_memory_systems_20260804/run_assignment.py
         - --manifest
-        - /workspace/nautilus-exp-end2end-agent-v13/experiments/end2end_memory_systems_20260804/manifests/feasibility_smoke_manifest.json
+        - /workspace/nautilus-exp-end2end-agent-v13/experiments/end2end_memory_systems_20260804/manifests/leaf_dynamic_smoke_manifest.json
         - --output-root
         - /workspace/experiment-end2end-memory-agent-v12/runs
         envFrom:

@@ -348,6 +348,7 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     pilot = _read(MANIFESTS / "pilot_manifest.json")
     smoke = _read(MANIFESTS / "smoke_manifest.json")
     feasibility = _read(MANIFESTS / "feasibility_smoke_manifest.json")
+    leaf_dynamic = _read(MANIFESTS / "leaf_dynamic_smoke_manifest.json")
     systems = pilot["system_ids"]
     tasks = pilot["task_ids"]
     assert len(systems) == 10 and len(set(systems)) == 10
@@ -358,10 +359,13 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     assert feasibility["run_count"] == 1
     assert feasibility["task_ids"] == ["aerial-cactus-identification"]
     assert feasibility["system_ids"] == ["dynamic_hybrid"]
+    assert leaf_dynamic["run_count"] == 1
+    assert leaf_dynamic["task_ids"] == ["leaf-classification"]
+    assert leaf_dynamic["system_ids"] == ["dynamic_hybrid"]
     assert smoke["formal_result_eligible"] is False
     assert pilot["formal_result_eligible"] is True
     assert smoke["release_id"] == pilot["release_id"] == (
-        "end2end-agentic-three-role-v11"
+        "end2end-agentic-three-role-v12"
     )
     assert smoke["comparison_baseline_release_id"] == (
         pilot["comparison_baseline_release_id"]
@@ -392,6 +396,18 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     jsonschema.validate(smoke, schema)
 
 
+def test_leaf_uses_direct_seed_heldout_base_with_same_task_history() -> None:
+    memory = _read(MANIFESTS / "memory_bundles.json")
+    leaf = memory["task_bundles"]["leaf-classification"]
+    assert memory["production_binding_path"] == (
+        "/workspace/experiment-end2end-memory-agent-v12/"
+        "memory-direct-v1/MEMORY_BINDING.json"
+    )
+    assert leaf["bundle_id"] == "mlevolve-be034ec-nonspooky-seed-heldout-v1"
+    assert leaf["bundle_root"] == (
+        "/workspace/experiment-end2end-memory-agent-v12/"
+        "memory-direct-v1/leaf-classification"
+    )
 def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
     from config import Config, _load_cfg
     from omegaconf import OmegaConf
@@ -461,6 +477,10 @@ def test_source_lock_covers_and_matches_runtime_files() -> None:
     assert "mlevolve/protocol_runtime/adoption_trace.py" in paths
     assert "experiments/end2end_memory_systems_20260804/run_assignment.py" in paths
     assert "experiments/end2end_memory_systems_20260804/analyze_results.py" in paths
+    assert (
+        "experiments/end2end_memory_systems_20260804/smoke_memory_spec.json"
+        in paths
+    )
     assert "experiments/end2end_memory_systems_20260804/validate_smoke_gate.py" in paths
     assert (
         "experiments/end2end_memory_systems_20260804/schemas/smoke_gate.schema.json"
@@ -475,7 +495,7 @@ def test_source_lock_covers_and_matches_runtime_files() -> None:
 def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
     packet = _read(MANIFESTS / "launch_packet.json")
     jobs = [ROOT / "jobs" / name for name in packet["jobs"]]
-    assert len(jobs) == 6
+    assert len(jobs) == 7
     for path in jobs:
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
         assert job["kind"] == "Job"
@@ -484,7 +504,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
         assert labels["experiment"] == (
-            "experiment-end2end-memory-agent-v11"
+            "experiment-end2end-memory-agent-v12"
         )
         assert job["metadata"]["annotations"]["mlevolve.ai/generated-not-submitted"] == "true"
         assert job["metadata"]["annotations"]["mlevolve.ai/gpu-contract"] == (
@@ -528,12 +548,12 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-            "/workspace/nautilus-exp-end2end-agent-v12/mlevolve"
+            "/workspace/nautilus-exp-end2end-agent-v13/mlevolve"
         )
         if path.name.startswith("pilot-"):
             assert "--smoke-gate" in container["args"]
             assert (
-                    "/workspace/experiment-end2end-memory-agent-v11/runs/SMOKE_GATE.json"
+                    "/workspace/experiment-end2end-memory-agent-v12/runs/SMOKE_GATE.json"
                 in container["args"]
             )
         else:
@@ -561,7 +581,7 @@ def test_launch_packet_records_programmatic_smoke_gate() -> None:
     assert packet["pilot_requires_passing_smoke_gate"] is True
     assert (
         packet["smoke_gate_output"]
-        == "/workspace/experiment-end2end-memory-agent-v11/runs/SMOKE_GATE.json"
+        == "/workspace/experiment-end2end-memory-agent-v12/runs/SMOKE_GATE.json"
     )
 
 

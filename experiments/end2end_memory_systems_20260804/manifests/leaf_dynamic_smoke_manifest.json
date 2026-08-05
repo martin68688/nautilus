@@ -13,7 +13,7 @@
   "formal_result_eligible": false,
   "kind": "smoke",
   "launch_order_randomization": "task-local SHA256-seeded deterministic shuffle; comparison order locked to end2end-agent-v3",
-  "manifest_hash": "7779fe118e8fda5ae81ebb9c1e108399dd214950e866cecaaf444d04ba88a842",
+  "manifest_hash": "d0af98650cf72b75a998d365fdb78c8797a698136e9d0d75a97f1bd1b4e91f4b",
   "release_id": "end2end-agentic-three-role-v12",
   "run_count": 1,
   "runs": [
@@ -30,11 +30,11 @@
       "exploratory_pilot": true,
       "formal_result_eligible": false,
       "launch_position": 0,
-      "logical_run_id": "e2e-feasibility-smoke-agentic-three-role-v12__aerial-cactus-identification__dynamic_hybrid__seed-1",
-      "row_hash": "4219746f65fb978eef7ceb1a3bf407f9e39634ac25ced0ea70376ec4f8941120",
+      "logical_run_id": "e2e-smoke-leaf-dynamic-v12__leaf-classification__dynamic_hybrid__seed-1",
+      "row_hash": "c4b2231e7359146d745a51e7f5c21d40d4b0ac2425b2af4e9f8db4181c8ad394",
       "seed": 1,
       "system_id": "dynamic_hybrid",
-      "task_id": "aerial-cactus-identification",
+      "task_id": "leaf-classification",
       "task_launch_position": 0
     }
   ],
@@ -45,6 +45,6 @@
     "dynamic_hybrid"
   ],
   "task_ids": [
-    "aerial-cactus-identification"
+    "leaf-classification"
   ]
 }

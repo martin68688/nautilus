@@ -1,0 +1,12 @@
+{
+  "schema": "mlevolve_end2end_preparation_attempt_v1",
+  "component": "leaf_formal_child_memory_publication",
+  "attempt": 1,
+  "output_root": "/workspace/experiment-end2end-memory-agent-v12/memory-v1",
+  "failed_at": "2026-08-05T08:09:07.596400Z",
+  "error_type": "ValueError",
+  "error": "Selected source method is outside the formal target domain",
+  "failure_hash": "db7e9efe6bc7417ab8a850658a18f0ec8c150bdb654c4b84e1ad41e18ba9e9f4",
+  "disposition": "retained_and_replaced_by_direct_experimental_seed_heldout_binding",
+  "training_started": false
+}

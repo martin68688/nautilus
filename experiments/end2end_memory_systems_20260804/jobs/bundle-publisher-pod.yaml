@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: end2end-bundle-publisher-v2
+  name: end2end-leaf-bundle-publisher-v3
   namespace: ecepxie
   labels:
     ecepxie.nrp/owner: haoming
     app.kubernetes.io/managed-by: codex-nrp-training
-    experiment: experiment-end2end-memory-agent-v2
+    experiment: experiment-end2end-memory-agent-v12
     component: bundle-publisher
 spec:
   restartPolicy: Never

@@ -1198,6 +1198,89 @@ def _agentic_candidate_pool(
     }
 
 
+def _pin_same_task_best_for_dynamic(
+    layer: Any,
+    *,
+    pool: dict[str, Any],
+    task_id: str,
+    visible_sop_ids: set[str] | None,
+) -> dict[str, Any]:
+    """Reserve one Dynamic-Hybrid RunForest slot for clean target-task best.
+
+    The Retrieval Agent still decides what else to prioritize, but it cannot
+    accidentally hide the best eligible target-task execution after observing
+    it.  The pin changes only Dynamic Hybrid and preserves its frozen source
+    quota: one existing RunForest slot is occupied, never added.
+    """
+
+    if (
+        str(getattr(layer, "retrieval_control", "")) != "dynamic_hybrid"
+        or not bool(
+            getattr(layer, "experiment_r_agentic_retrieval_enabled", False)
+        )
+    ):
+        return pool
+    rows = _same_task_best_rows(
+        layer,
+        task_id=task_id,
+        visible_sop_ids=visible_sop_ids,
+        limit=int(layer.experiment_r_candidate_limit),
+    )
+    best = next((row for row in rows if row["source"] == "runforest"), None)
+    if best is None:
+        return pool
+
+    candidate_id = str(best["id"])
+    limit = int(layer.experiment_r_candidate_limit)
+    for key in ("raw_runforest_candidates", "runforest_candidates"):
+        remainder = [
+            copy.deepcopy(row)
+            for row in pool.get(key) or []
+            if str(row.get("id") or "") != candidate_id
+        ]
+        pinned = copy.deepcopy(best)
+        pinned["source"] = "runforest"
+        pinned["same_task_best_prompt_pin"] = True
+        pool[key] = [pinned, *remainder][:limit]
+        for rank, row in enumerate(pool[key], 1):
+            row["source_rank"] = rank
+            row.setdefault("same_task_best_prompt_pin", False)
+
+    identity = pool["pool_identity"]
+    identity["runforest_ids"] = [
+        row["id"] for row in pool["raw_runforest_candidates"]
+    ]
+    identity["same_task_best_prompt_pin_id"] = candidate_id
+    pool["candidate_pool_hash"] = _sha(identity)
+    pool["pool_counts"]["raw_runforest"] = len(
+        pool["raw_runforest_candidates"]
+    )
+    pool["pool_counts"]["ranked_runforest"] = len(
+        pool["runforest_candidates"]
+    )
+    pool["ranking_contract"] = (
+        f"{pool.get('ranking_contract', 'live_stage_ranking_v1')}"
+        "+same_task_best_prompt_pin_v1"
+    )
+    retrieval = pool.setdefault("retrieval_agent", {})
+    same_task = retrieval.setdefault("same_task_best_first", {})
+    same_task.setdefault("enforced", True)
+    same_task.setdefault("independent_of_draft_role_policy", True)
+    same_task.setdefault("target_task_id", task_id)
+    same_task.setdefault("eligible_history_found", True)
+    same_task.setdefault("best_runforest_id", candidate_id)
+    same_task.setdefault("ranking_contract", "same_task_best_history_v2")
+    same_task["prompt_pin"] = {
+        "required": True,
+        "candidate_id": candidate_id,
+        "source": "runforest",
+        "quota_preserving": True,
+        "applied": False,
+        "prompt_visible": False,
+    }
+    return pool
+
+
 def _candidate_pool(
     layer: Any,
     *,
@@ -1235,13 +1318,19 @@ def _candidate_pool(
     agentic_error = ""
     if bool(getattr(layer, "experiment_r_agentic_retrieval_enabled", False)):
         try:
+            pool = _agentic_candidate_pool(
+                layer,
+                stage=stage,
+                task_id=task_id,
+                task_desc=task_desc,
+                query_text=query_text,
+                visible_sop_ids=visible_sop_ids,
+            )
             return (
-                _agentic_candidate_pool(
+                _pin_same_task_best_for_dynamic(
                     layer,
-                    stage=stage,
+                    pool=pool,
                     task_id=task_id,
-                    task_desc=task_desc,
-                    query_text=query_text,
                     visible_sop_ids=visible_sop_ids,
                 ),
                 visibility_pack,
@@ -1439,8 +1528,7 @@ def _candidate_pool(
             row["candidate_id"] for row in pre_gate_raw_candidates
         ],
     }
-    return (
-        {
+    pool = {
             "schema": "experiment_r_candidate_pool_v1",
             "candidate_limit_per_source": layer.experiment_r_candidate_limit,
             "raw_sop_candidates": raw_sops,
@@ -1477,7 +1565,14 @@ def _candidate_pool(
                 "fallback_reason": agentic_error,
                 "agent_calls": 0,
             },
-        },
+        }
+    return (
+        _pin_same_task_best_for_dynamic(
+            layer,
+            pool=pool,
+            task_id=task_id,
+            visible_sop_ids=visible_sop_ids,
+        ),
         visibility_pack,
     )
 
@@ -1662,6 +1757,18 @@ def build_experiment_r_pack(
             f"Experiment R Authority/eligibility escape: {sorted(unsafe)}"
         )
     selected_ids = [row["id"] for row in selected]
+    prompt_pin = (
+        (pool.get("retrieval_agent") or {})
+        .get("same_task_best_first", {})
+        .get("prompt_pin", {})
+    )
+    if prompt_pin.get("required"):
+        prompt_pin["applied"] = prompt_pin.get("candidate_id") in selected_ids
+        if not prompt_pin["applied"]:
+            raise RuntimeError(
+                "Dynamic same-task best did not occupy its frozen RunForest slot"
+            )
+        route["same_task_best_prompt_pin"] = copy.deepcopy(prompt_pin)
     pre_gate_raw_candidates = copy.deepcopy(pool["pre_gate_raw_candidates"])
     observed_ids = {row["candidate_id"] for row in pre_gate_raw_candidates}
     for item in selected:
@@ -1942,6 +2049,18 @@ def format_experiment_r_pack(layer: Any, pack: dict[str, Any]) -> str:
     visible_ids = [
         row["id"] for row in pack["selected_items"] if _prompt_marker_visible(text, row)
     ]
+    prompt_pin = (
+        (pack.get("retrieval_agent") or {})
+        .get("same_task_best_first", {})
+        .get("prompt_pin", {})
+    )
+    if prompt_pin.get("required"):
+        prompt_pin["prompt_visible"] = prompt_pin.get("candidate_id") in visible_ids
+        pack["stage_route"]["same_task_best_prompt_pin"] = copy.deepcopy(prompt_pin)
+        if not prompt_pin["prompt_visible"]:
+            raise RuntimeError(
+                "Dynamic same-task best was selected but not visible in the final Prompt"
+            )
     pack["prompt_text"] = text
     pack["prompt_token_count"] = token_count
     pack["prompt_truncated"] = truncated

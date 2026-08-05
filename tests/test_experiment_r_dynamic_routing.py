@@ -568,6 +568,14 @@ def test_agentic_router_searches_same_task_best_first_without_role_policy(tmp_pa
         "best_runforest_id": "n1",
         "best_sop_id": "s1",
         "ranking_contract": "same_task_best_history_v2",
+        "prompt_pin": {
+            "required": True,
+            "candidate_id": "n1",
+            "source": "runforest",
+            "quota_preserving": True,
+            "applied": True,
+            "prompt_visible": True,
+        },
     }
     assert agent["agent_selected_ids"] == ["n1", "s1"]
     assert pack["candidate_pool"]["pool_identity"][
@@ -602,6 +610,49 @@ def test_same_task_best_history_respects_minimize_metric_direction(tmp_path):
     assert [row["id"] for row in first_rows[:2]] == ["n1", "n0"]
 
 
+def test_dynamic_prompt_pins_same_task_best_when_retrieval_agent_declines_it(
+    tmp_path,
+):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer.experiment_r_agentic_max_steps = 1
+    layer._experiment_r_agentic_query_fn = lambda **_kwargs: {
+        "action": "finish",
+        "reason": "prefer two other observed executions",
+        "selected_ids": ["t1", "n0"],
+    }
+
+    _text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="task",
+        task_desc="text classification",
+        query_parts=["build a reliable model"],
+        draft_role=None,
+    )
+    pack = layer.current_navigation_pack()
+    pin = pack["retrieval_agent"]["same_task_best_first"]["prompt_pin"]
+    assert pin == {
+        "required": True,
+        "candidate_id": "n1",
+        "source": "runforest",
+        "quota_preserving": True,
+        "applied": True,
+        "prompt_visible": True,
+    }
+    assert "n1" in refs
+    assert "n1" in pack["final_prompt_candidate_ids"]
+    assert pack["stage_route"]["requested_slots"] == {
+        "sop": 4,
+        "runforest": 2,
+    }
+    # The tiny fixture has only one eligible SOP, so ordinary deterministic
+    # backfill fills the shortfall with another RunForest item.
+    assert pack["stage_route"]["realized_slots"] == {
+        "sop": 1,
+        "runforest": 3,
+    }
+
+
 def test_agentic_router_invalid_id_falls_back_and_retains_failure(tmp_path):
     layer = _layer(tmp_path, "dynamic_hybrid")
     layer.experiment_r_agentic_retrieval_enabled = True
@@ -613,7 +664,10 @@ def test_agentic_router_invalid_id_falls_back_and_retains_failure(tmp_path):
     }
     _text, _refs, pack = _retrieve(layer)
     assert pack["candidate_pool_source"] == "live_retrieval_deterministic_fallback"
-    assert pack["ranking_contract"] == "agentic_invalid_deterministic_fallback_v1"
+    assert pack["ranking_contract"] == (
+        "agentic_invalid_deterministic_fallback_v1"
+        "+same_task_best_prompt_pin_v1"
+    )
     assert pack["retrieval_agent"]["fallback_used"] is True
     assert "unobserved candidate" in pack["retrieval_agent"]["fallback_reason"]
 

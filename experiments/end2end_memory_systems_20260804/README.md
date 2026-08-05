@@ -5,26 +5,34 @@ This directory is the executable, not-yet-submitted packet for the exploratory
 
 ## Launch gate
 
-The packet status is `generated_not_submitted`. No Pod or Job is created by any
-builder or validator. The required sequence after explicit authorization is:
+The packet status is `generated_not_submitted`. Builders do not launch training.
+The current pre-Pilot sequence is:
 
-1. run the 10-index Leaf Smoke Job;
-2. run `validate_smoke_gate.py` over the retained output root; it requires all
+1. run the one-index `Leaf × Dynamic Hybrid` Smoke and inspect retrieval,
+   Prompt exposure, generated code, adoption, runtime activation and outcome;
+2. only after that diagnostic is accepted, run the remaining Leaf controls;
+3. run `validate_smoke_gate.py` over the retained output root; it requires all
    10 terminal-scored outcomes, verifies every infrastructure retry and full
    routing/Prompt trace, then exclusively creates a self-hashed
    `SMOKE_GATE.json`;
-3. only then submit the four task-specific 10-index Pilot Jobs;
-4. create explicit higher-attempt retries only for retained infrastructure
+4. only after separate explicit authorization submit the four task-specific
+   10-index Pilot Jobs;
+5. create explicit higher-attempt retries only for retained infrastructure
    failures; never delete or overwrite attempt 0;
-5. run terminal analysis before mechanism analysis.
+6. run terminal analysis before mechanism analysis.
 
 ## Frozen files
 
 - `systems/`: one common config plus exactly 10 one-axis system overlays;
 - `manifests/`: system, task, budget, source, Bundle, evaluator, Smoke and Pilot
   locks with canonical SHA-256 self-hashes;
-- `jobs/`: one unsubmitted Smoke Indexed Job and four unsubmitted Pilot Indexed
+- `jobs/`: Aerial/Leaf diagnostic Smoke Jobs and four unsubmitted Pilot Indexed
   Jobs;
+- `prepare_direct_leaf_memory.py`: copies the already reviewed seed-heldout
+  Base directly for Leaf. It deliberately performs no formal child publication,
+  domain certification, or transition-to-SOP proof. The Base contains Leaf
+  seed-43/44 history; Dynamic Hybrid pins the best eligible same-task RunForest
+  item into one existing Prompt slot.
 - `run_assignment.py`: finite Job PID 1, Agent subprocess, candidate freeze,
   terminal evaluator, immutable failure measurement, and a fail-closed Pilot
   dependency on the exact `SMOKE_GATE.json`;
