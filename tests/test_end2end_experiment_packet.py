@@ -361,7 +361,7 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     assert smoke["formal_result_eligible"] is False
     assert pilot["formal_result_eligible"] is True
     assert smoke["release_id"] == pilot["release_id"] == (
-        "end2end-agentic-three-role-v10"
+        "end2end-agentic-three-role-v11"
     )
     assert smoke["comparison_baseline_release_id"] == (
         pilot["comparison_baseline_release_id"]
@@ -408,6 +408,15 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
         cfg.goal = "config validation"
         cfg.desc_file = None
         merged = OmegaConf.merge(OmegaConf.structured(Config), cfg)
+        assert merged.evaluation_authority.protocol_runtime_mode == (
+            "host_sdk_shadow"
+        )
+        assert merged.agent.protocol_preflight.agent_semantic_review_enabled is True
+        assert merged.agent.protocol_preflight.agent_semantic_max_repair_attempts == 3
+        assert merged.agent.protocol_preflight.agent_semantic_max_review_attempts == 6
+        assert merged.agent.protocol_preflight.agent_controls_protocol_preflight is True
+        assert merged.agent.protocol_preflight.install_host_candidate_entrypoint is False
+        assert merged.agent.protocol_preflight.candidate_process_isolation is True
         if row["system_id"] == "dynamic_hybrid":
             assert merged.external_skill_memory.end2end_memory_system == ""
             assert merged.external_skill_memory.retrieval_control == "dynamic_hybrid"
@@ -416,24 +425,12 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
             assert merged.external_skill_memory.experiment_r_memory_transfer_static_gate is True
             assert merged.external_skill_memory.experiment_r_memory_transfer_runtime_gate is True
             assert merged.agent.draft_role_policy.enabled is True
-            assert merged.evaluation_authority.protocol_runtime_mode == (
-                "host_sdk_shadow"
-            )
-            assert merged.agent.protocol_preflight.agent_semantic_review_enabled is True
-            assert merged.agent.protocol_preflight.agent_semantic_max_repair_attempts == 3
-            assert merged.agent.protocol_preflight.agent_semantic_max_review_attempts == 6
-            assert merged.agent.protocol_preflight.agent_controls_protocol_preflight is True
-            assert merged.agent.protocol_preflight.install_host_candidate_entrypoint is False
-            assert merged.agent.protocol_preflight.candidate_process_isolation is True
             assert list(merged.agent.draft_role_policy.roles) == [
                 "coldstart_baseline", "memory_transfer", "novel_exploration"
             ]
         else:
             assert merged.external_skill_memory.end2end_memory_system == row["system_id"]
             assert merged.agent.draft_role_policy.enabled is False
-            assert merged.evaluation_authority.protocol_runtime_mode == (
-                "host_sdk_enforce"
-            )
         assert merged.external_skill_memory.top_k == 6
         assert merged.external_skill_memory.end2end_prompt_token_budget == 1536
         assert merged.external_skill_memory.end2end_candidate_pool_limit == 12
@@ -487,7 +484,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
         assert labels["experiment"] == (
-            "experiment-end2end-memory-agent-v10"
+            "experiment-end2end-memory-agent-v11"
         )
         assert job["metadata"]["annotations"]["mlevolve.ai/generated-not-submitted"] == "true"
         assert job["metadata"]["annotations"]["mlevolve.ai/gpu-contract"] == (
@@ -531,12 +528,12 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-            "/workspace/nautilus-exp-end2end-agent-v11/mlevolve"
+            "/workspace/nautilus-exp-end2end-agent-v12/mlevolve"
         )
         if path.name.startswith("pilot-"):
             assert "--smoke-gate" in container["args"]
             assert (
-                    "/workspace/experiment-end2end-memory-agent-v10/runs/SMOKE_GATE.json"
+                    "/workspace/experiment-end2end-memory-agent-v11/runs/SMOKE_GATE.json"
                 in container["args"]
             )
         else:
@@ -564,7 +561,7 @@ def test_launch_packet_records_programmatic_smoke_gate() -> None:
     assert packet["pilot_requires_passing_smoke_gate"] is True
     assert (
         packet["smoke_gate_output"]
-        == "/workspace/experiment-end2end-memory-agent-v10/runs/SMOKE_GATE.json"
+        == "/workspace/experiment-end2end-memory-agent-v11/runs/SMOKE_GATE.json"
     )
 
 
@@ -933,7 +930,18 @@ def test_budget_couples_gpu_search_and_cpu_controls() -> None:
         "runtime_probe": "line_range_executed",
     }
     assert budget["agent_semantic_protocol_review"] == {
-        "enabled_for_systems": ["dynamic_hybrid"],
+        "enabled_for_systems": [
+            "no_memory",
+            "flat_retrieval",
+            "sop_only",
+            "runforest_only",
+            "static_hybrid",
+            "dynamic_hybrid",
+            "reversed_router",
+            "gome_style_port",
+            "macla_style_port",
+            "rcr_router_style_port",
+        ],
         "host_receipt_admission_authority": False,
         "max_repair_attempts": 3,
         "max_review_attempts": 6,
