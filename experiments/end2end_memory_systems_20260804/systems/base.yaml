@@ -18,6 +18,15 @@ agent:
     roles: []
   protocol_repair:
     enabled: false
+  protocol_preflight:
+    agent_semantic_review_enabled: true
+    agent_semantic_max_repair_attempts: 3
+    agent_semantic_max_review_attempts: 6
+    agent_semantic_temperature: 0.0
+    agent_semantic_max_tokens: 4096
+    agent_controls_protocol_preflight: true
+    install_host_candidate_entrypoint: false
+    candidate_process_isolation: true
 
 adoption_tracking:
   enable: true
@@ -73,6 +82,8 @@ external_skill_memory:
 
 evaluation_authority:
   require_bound_bundle: true
+  mode: enforce
+  protocol_runtime_mode: host_sdk_shadow
 
 run_identity:
   schema: mlevolve_run_identity_v1

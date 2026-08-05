@@ -14,7 +14,16 @@
     "actual_entrypoint_required": true,
     "agent_controls_protocol_preflight": true,
     "enabled_for_systems": [
-      "dynamic_hybrid"
+      "no_memory",
+      "flat_retrieval",
+      "sop_only",
+      "runforest_only",
+      "static_hybrid",
+      "dynamic_hybrid",
+      "reversed_router",
+      "gome_style_port",
+      "macla_style_port",
+      "rcr_router_style_port"
     ],
     "host_dry_run_executed": false,
     "host_receipt_admission_authority": false,
@@ -33,7 +42,7 @@
     "preserve_all_attempts": true,
     "score_imputation": false
   },
-  "manifest_hash": "5f599eb7075a15e6022c2f6c0deb926d06e53865f0736ac929571370883d5096",
+  "manifest_hash": "7892b2853371bb48960a0eeb5d14ea6e23cac3c98c19da9c6d024890567ac2b7",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,

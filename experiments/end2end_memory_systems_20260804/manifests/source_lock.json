@@ -851,7 +851,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "f36eff387525c18b9681a27fce7c7db6c2f2cc29b2111c08d59961b6fccfa2bd"
+      "sha256": "906519310ce3b7b0e9fa55e2fcfe289254177d5265e2abdbb99c1ae42e741909"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/publish_smoke_memory_bundle.py",
@@ -867,11 +867,11 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/base.yaml",
-      "sha256": "cb274c102b02ee8d55a35d432bd2856f621db4e6c43c4269f9c85fe619b12cee"
+      "sha256": "7bccf3b6ba3b51ef6a62de0769efe4c9e6d7c6971bc1e06917f8eb916cbc4af4"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/dynamic_hybrid.yaml",
-      "sha256": "47fb73026c123b1e69bd3b4aeaa659efa05e8a345e51c640cb6394677e882a5c"
+      "sha256": "786f2f84fe46b60f92a914dcc4c2b2cdbc5fab0da8c85a7a17b0eae541e04458"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/flat_retrieval.yaml",
@@ -915,7 +915,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/execution_manifest.schema.json",
-      "sha256": "906c993a2281a3502c7321bf6c83c0c0cb6e2a662e837e549f511a7274fb49d1"
+      "sha256": "8bcb4e0e1c92a9a9e3c57ecbfb5f1bbe42b938a6bcf6781a7a0f44c88efccfe3"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/smoke_gate.schema.json",
@@ -938,8 +938,8 @@
       "sha256": "4300df74f961e7fcc34e7c38d35177e41a3423bd66f86ee1fd0ff9a89cebe7f0"
     }
   ],
-  "git_head": "b58204bff8824f613e9920a129994a59b2176526",
+  "git_head": "37a27f2148ecb5053d7203ed071bab82f6ec1f42",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "3d6dd050566407e1512ad48bdf1e0a41c9f692305c2144aa01ad66af195725a4",
+  "manifest_hash": "98717a60e8246f538e18873341d87fb8f3bf4d2212e9a07a96826c94e0296d86",
   "schema": "mlevolve_end2end_source_lock_v1"
 }

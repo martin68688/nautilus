@@ -1,14 +1,14 @@
 {
   "component_manifest_hashes": {
-    "budget": "5f599eb7075a15e6022c2f6c0deb926d06e53865f0736ac929571370883d5096",
+    "budget": "7892b2853371bb48960a0eeb5d14ea6e23cac3c98c19da9c6d024890567ac2b7",
     "evaluators": "3f9c90fad77df56bc9d0f5801a6de0d8c4a0a0fdab5ec1254681c170312b9f6a",
-    "memory_bundles": "f5e3045da9acad5a7d06635e0acd4ded4b0a5cb25563c395b9a64a3dfe8a4f03",
-    "schemas": "2c2701960ea4afd3c0cf6c1f3e5dde6674c336ba71a3d5663cd8752da9c20cfd",
-    "source_lock": "3d6dd050566407e1512ad48bdf1e0a41c9f692305c2144aa01ad66af195725a4",
-    "systems": "2f13ec484cf399b155e555bc2cab3ff6c438b850b8ae5995fed6e20602c4c627",
+    "memory_bundles": "78cc8f599f2c88d26a47da97fcc12124c9f5de658626c64025fb19766376252c",
+    "schemas": "6b648ca704e46cf923d32e8da7e7da976491038f613998343f779f13309e80f8",
+    "source_lock": "98717a60e8246f538e18873341d87fb8f3bf4d2212e9a07a96826c94e0296d86",
+    "systems": "8069feb478c6ad98c5f7d2f519a7aabc7c35fdf1e8f4bc34b90c428ae9f79e61",
     "tasks": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
   },
-  "feasibility_smoke_manifest_hash": "47badeb801dc9b5462ffbccc1f8a6d687d88478636cdb2b15e8dd7968f629847",
+  "feasibility_smoke_manifest_hash": "e9ba347bf974a8180718532a389c95788ad10e8dd7dd860dee77c3ad0d0fd0c5",
   "job_count": 6,
   "jobs": [
     "pilot-aerial-indexed-job.yaml",
@@ -19,12 +19,12 @@
     "smoke-aerial-dynamic-hybrid-job.yaml"
   ],
   "launch_gate": "explicit_user_authorization_required",
-  "packet_hash": "d45ab797cc0e02efc0ef0b280fc13527ee67641557ccb7d8ff869aab344d6a40",
-  "pilot_manifest_hash": "718498d395d7f932c3d955a748d98b20d93bac7f68a1d548e24ce2b6aed9fcc0",
+  "packet_hash": "855fb6d53d139d318c62782f01e059301e05e4618fb07a82fca4239c95b1ee69",
+  "pilot_manifest_hash": "c79cac6de382f7b7355b51e6a298ad6fda5a4c1fc7486b749940a27ec268e612",
   "pilot_requires_passing_smoke_gate": true,
   "schema": "mlevolve_end2end_launch_packet_v1",
-  "smoke_gate_output": "/workspace/experiment-end2end-memory-agent-v10/runs/SMOKE_GATE.json",
-  "smoke_manifest_hash": "65bfe80590ca0c26ce647c7047aecbb76cf95d28c315150f2ba8f121e333152d",
+  "smoke_gate_output": "/workspace/experiment-end2end-memory-agent-v11/runs/SMOKE_GATE.json",
+  "smoke_manifest_hash": "c368f1c968e2c23747ab67153c3eaa62b5f0a97550f731318a274c22953d717a",
   "status": "generated_not_submitted",
   "workload_objects_created": 0
 }
