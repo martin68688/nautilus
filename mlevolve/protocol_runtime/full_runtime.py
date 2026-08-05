@@ -15,7 +15,11 @@ from .collector import HostCollectorIdentity, HostCollectorSidecar
 from .collector_client import CollectorClient
 from .data_views import verify_data_view_manifest
 from .events import canonical_json
-from .session import ProtocolSession, activate_session
+from .session import (
+    SHADOW_OBSERVATION_SCHEMA,
+    ProtocolSession,
+    activate_session,
+)
 from .views import DataViewHandle, ProtocolSplit, build_view_handles
 
 
@@ -156,6 +160,40 @@ class FullRuntimeEvidenceController:
             executed_path=executed_path,
             run_hash=run_hash,
         )
+        shadow_path = self.bootstrap_path.with_name(
+            f"{self.bootstrap_path.stem}.shadow_observations.json"
+        )
+        shadow_observations: list[dict[str, Any]] = []
+        shadow_observation_error: dict[str, str] = {}
+        if shadow_path.is_file() and not shadow_path.is_symlink():
+            try:
+                shadow_payload = json.loads(
+                    shadow_path.read_text(encoding="utf-8")
+                )
+                if shadow_payload.get("schema") != SHADOW_OBSERVATION_SCHEMA:
+                    raise ValueError(
+                        "Full-runtime shadow observation schema mismatch"
+                    )
+                if shadow_payload.get("runtime_mode") != "host_sdk_shadow":
+                    raise ValueError(
+                        "Full-runtime shadow observation mode mismatch"
+                    )
+                raw_observations = shadow_payload.get("observations") or []
+                if not isinstance(raw_observations, list) or not all(
+                    isinstance(item, dict) for item in raw_observations
+                ):
+                    raise ValueError(
+                        "Full-runtime shadow observations must be objects"
+                    )
+                shadow_observations = list(map(dict, raw_observations))
+            except Exception as error:
+                # This sidecar is diagnostic only.  A malformed or unwritable
+                # observation must not turn a completed shadow Candidate into
+                # a runtime failure; the Host records the diagnostics failure.
+                shadow_observation_error = {
+                    "error_type": type(error).__name__,
+                    "error": str(error),
+                }
         self.report = {
             "schema": FULL_RUNTIME_EVIDENCE_SCHEMA,
             "status": str(collector_report["status"]),
@@ -167,6 +205,8 @@ class FullRuntimeEvidenceController:
             "collector_root": str(self.sidecar.output_dir),
             "collector_report_hash": str(collector_report["report_hash"]),
             "missing_events": list(collector_report.get("missing_events") or []),
+            "shadow_observations": shadow_observations,
+            "shadow_observation_error": shadow_observation_error,
             "evidence_hash": "",
         }
         self.report["evidence_hash"] = _hash_payload(self.report, "evidence_hash")
@@ -178,7 +218,11 @@ class FullRuntimeEvidenceController:
             self.sidecar = None
 
 
-def activate_full_runtime_from_bootstrap(path: str | Path) -> ProtocolSession:
+def activate_full_runtime_from_bootstrap(
+    path: str | Path,
+    *,
+    runtime_mode: str = "host_sdk_enforce",
+) -> ProtocolSession:
     """Candidate-side bootstrap invoked by Host-injected pre-code."""
 
     requested = Path(path)
@@ -222,6 +266,14 @@ def activate_full_runtime_from_bootstrap(path: str | Path) -> ProtocolSession:
         contract,
         split,
         CollectorClient(**client_payload),
+        runtime_mode=runtime_mode,
+        shadow_observation_path=(
+            requested.with_name(
+                f"{requested.stem}.shadow_observations.json"
+            )
+            if str(runtime_mode).lower() == "host_sdk_shadow"
+            else None
+        ),
     )
     context = activate_session(session)
     context.__enter__()

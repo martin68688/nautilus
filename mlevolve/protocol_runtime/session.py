@@ -5,6 +5,8 @@ from __future__ import annotations
 from contextlib import contextmanager
 import contextvars
 import hashlib
+import json
+import os
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
@@ -19,6 +21,7 @@ from .views import DataViewHandle, ProtocolSplit
 _CURRENT_SESSION: contextvars.ContextVar["ProtocolSession | None"] = (
     contextvars.ContextVar("mlevolve_protocol_session", default=None)
 )
+SHADOW_OBSERVATION_SCHEMA = "mlevolve_protocol_session_shadow_observations_v1"
 
 
 def _file_sha256(path: Path) -> str:
@@ -56,17 +59,36 @@ class ProtocolSession:
         contract: ProtocolExecutionContract,
         split: ProtocolSplit,
         collector_client: CollectorClient,
+        *,
+        runtime_mode: str = "host_sdk_enforce",
+        shadow_observation_path: str | Path | None = None,
     ):
+        mode = str(runtime_mode or "host_sdk_enforce").lower()
+        if mode not in {"host_sdk_shadow", "host_sdk_enforce"}:
+            raise ValueError(f"Unsupported ProtocolSession runtime mode: {mode}")
         self.contract = contract
         self._split = split
         self._client = collector_client
+        self.runtime_mode = mode
+        self._shadow_observation_path = (
+            Path(shadow_observation_path).resolve()
+            if shadow_observation_path is not None
+            else None
+        )
+        self._shadow_observations: list[dict[str, Any]] = []
         self._split_observed = False
         self._fit_observed = False
         self._prediction_observed = False
         self._evaluator_observed = False
         self._selection_frozen = False
 
-    def _validate_view(self, view: DataViewHandle, expected_role: str) -> None:
+    def _validate_view(
+        self,
+        view: DataViewHandle,
+        expected_role: str,
+        *,
+        operation: str,
+    ) -> None:
         expected = {
             "train": self._split.train,
             "internal_validation": self._split.validation,
@@ -74,18 +96,131 @@ class ProtocolSession:
         }.get(expected_role)
         if expected is None:
             raise InvalidViewHandle(f"Host did not issue a {expected_role} view")
-        if view is not expected:
+        issued = tuple(
+            item
+            for item in (
+                self._split.train,
+                self._split.validation,
+                self._split.inference,
+            )
+            if item is not None
+        )
+        if not any(view is item for item in issued):
             raise InvalidViewHandle("View handle was not issued to this ProtocolSession")
-        if view.role != expected_role or view.contract_hash != self.contract.contract_hash:
+        if view.contract_hash != self.contract.contract_hash:
             raise InvalidViewHandle("View handle role or Contract binding mismatch")
+        if view is not expected or view.role != expected_role:
+            message = (
+                f"{operation} expected the {expected_role} DataViewHandle but "
+                f"received the Host-issued {view.role} handle"
+            )
+            if not self._shadow:
+                raise InvalidViewHandle(message)
+            self._record_shadow_observation(
+                "host_issued_view_role_mismatch",
+                message,
+                operation=operation,
+            )
 
-    def _ensure_mutable_selection(self) -> None:
+    @property
+    def _shadow(self) -> bool:
+        return self.runtime_mode == "host_sdk_shadow"
+
+    def _record_shadow_observation(
+        self,
+        code: str,
+        message: str,
+        *,
+        operation: str,
+    ) -> None:
+        observation = {
+            "sequence": len(self._shadow_observations),
+            "code": str(code),
+            "message": str(message),
+            "operation": str(operation),
+        }
+        self._shadow_observations.append(observation)
+        path = self._shadow_observation_path
+        if path is None:
+            return
+        payload = {
+            "schema": SHADOW_OBSERVATION_SCHEMA,
+            "runtime_mode": self.runtime_mode,
+            "observations": list(self._shadow_observations),
+        }
+        temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            temporary.write_text(
+                json.dumps(payload, sort_keys=True, ensure_ascii=False, indent=2)
+                + "\n",
+                encoding="utf-8",
+            )
+            os.replace(temporary, path)
+        except Exception as error:
+            # Observation persistence is intentionally not an admission gate in
+            # shadow mode.  Keep the failure attached to the in-memory trace so
+            # callers can still diagnose it without killing Candidate work.
+            observation["persistence_error"] = (
+                f"{type(error).__name__}: {error}"
+            )
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+    def _shadow_or_raise(
+        self,
+        code: str,
+        message: str,
+        *,
+        operation: str,
+    ) -> None:
+        if not self._shadow:
+            raise ProtocolStateError(message)
+        self._record_shadow_observation(
+            code,
+            message,
+            operation=operation,
+        )
+
+    def _emit(
+        self,
+        kind: str,
+        *,
+        capabilities: tuple[str, ...],
+        component: str,
+        payload: dict[str, Any] | None = None,
+    ) -> bool:
+        try:
+            self._client.emit(
+                kind,
+                capabilities=capabilities,
+                component=component,
+                payload=payload,
+            )
+        except Exception as error:
+            if not self._shadow:
+                raise
+            self._record_shadow_observation(
+                "collector_event_rejected",
+                f"{kind}: {type(error).__name__}: {error}",
+                operation=kind,
+            )
+            return False
+        return True
+
+    def _ensure_mutable_selection(self, operation: str) -> None:
         if self._selection_frozen:
-            raise ProtocolStateError("Selection is frozen; training/search cannot continue")
+            self._shadow_or_raise(
+                "operation_after_selection_freeze",
+                "Selection is frozen; training/search cannot continue",
+                operation=operation,
+            )
 
     def get_split(self) -> ProtocolSplit:
         if not self._split_observed:
-            self._client.emit(
+            self._emit(
                 "split_lineage",
                 capabilities=(
                     self._split.train._capability,
@@ -98,16 +233,20 @@ class ProtocolSession:
 
     @contextmanager
     def fit_scope(self, *, component: str, data_view: DataViewHandle):
-        self._ensure_mutable_selection()
+        self._ensure_mutable_selection("fit_scope")
         self.get_split()
-        self._validate_view(data_view, "train")
+        self._validate_view(
+            data_view,
+            "train",
+            operation="fit_scope",
+        )
         records = data_view.records()
         try:
             yield records
         except Exception:
             raise
         else:
-            self._client.emit(
+            self._emit(
                 "fit_scope",
                 capabilities=(data_view._capability,),
                 component=component,
@@ -118,8 +257,16 @@ class ProtocolSession:
     @contextmanager
     def prediction_scope(self, *, component: str, data_view: DataViewHandle):
         if not self._fit_observed:
-            raise ProtocolStateError("Prediction requires a completed fit scope")
-        self._validate_view(data_view, "internal_validation")
+            self._shadow_or_raise(
+                "prediction_before_fit_scope",
+                "Prediction requires a completed fit scope",
+                operation="prediction_scope",
+            )
+        self._validate_view(
+            data_view,
+            "internal_validation",
+            operation="prediction_scope",
+        )
         final_inference = self._selection_frozen
         records = data_view.records()
         try:
@@ -132,8 +279,8 @@ class ProtocolSession:
             # selection freeze; emitting another event would violate the
             # collector's append-only terminal state.  Evaluation and fitting
             # remain prohibited after freeze, so this cannot alter selection.
-            if not final_inference:
-                self._client.emit(
+            if not final_inference and not self._prediction_observed:
+                self._emit(
                     "prediction_scope",
                     capabilities=(data_view._capability,),
                     component=component,
@@ -145,12 +292,22 @@ class ProtocolSession:
         """Expose immutable unlabeled test rows after model selection freezes."""
 
         if not self._fit_observed:
-            raise ProtocolStateError("Inference requires a completed fit scope")
-        if not self._selection_frozen:
-            raise ProtocolStateError(
-                "Submission inference requires selection freeze"
+            self._shadow_or_raise(
+                "inference_before_fit_scope",
+                "Inference requires a completed fit scope",
+                operation="inference_scope",
             )
-        self._validate_view(data_view, "inference")
+        if not self._selection_frozen:
+            self._shadow_or_raise(
+                "inference_before_selection_freeze",
+                "Submission inference requires selection freeze",
+                operation="inference_scope",
+            )
+        self._validate_view(
+            data_view,
+            "inference",
+            operation="inference_scope",
+        )
         records = data_view.records()
         yield records
 
@@ -210,10 +367,32 @@ class ProtocolSession:
         *,
         label_key: str,
     ) -> Any:
-        self._ensure_mutable_selection()
+        self._ensure_mutable_selection("evaluate_internal")
+        self._validate_view(
+            data_view,
+            "internal_validation",
+            operation="evaluate_internal",
+        )
         if not self._prediction_observed:
-            raise ProtocolStateError("Internal evaluation requires prediction evidence")
-        self._validate_view(data_view, "internal_validation")
+            if self._shadow:
+                self._record_shadow_observation(
+                    "evaluate_before_prediction_scope_exit",
+                    "Internal evaluation was called before prediction evidence was sealed",
+                    operation="evaluate_internal",
+                )
+                self._emit(
+                    "prediction_scope",
+                    capabilities=(data_view._capability,),
+                    component="protocol_session.shadow_recovery",
+                    payload={
+                        "shadow_recovery": "evaluate_before_prediction_scope_exit"
+                    },
+                )
+                self._prediction_observed = True
+            else:
+                raise ProtocolStateError(
+                    "Internal evaluation requires prediction evidence"
+                )
         records = data_view.records()
         labels = [
             row[label_key]
@@ -303,7 +482,7 @@ class ProtocolSession:
             raise ProtocolStateError(
                 f"No Host-owned internal evaluator adapter for {metric_name!r}"
             )
-        self._client.emit(
+        self._emit(
             "evaluator",
             capabilities=(data_view._capability,),
             component="protocol_session.evaluate_internal",
@@ -319,10 +498,18 @@ class ProtocolSession:
         based_on: DataViewHandle,
         artifact_hash: str | None = None,
     ) -> str:
-        self._ensure_mutable_selection()
+        self._ensure_mutable_selection("freeze_selection")
         if not self._evaluator_observed:
-            raise ProtocolStateError("Selection freeze requires internal evaluation")
-        self._validate_view(based_on, "internal_validation")
+            self._shadow_or_raise(
+                "selection_freeze_before_internal_evaluation",
+                "Selection freeze requires internal evaluation",
+                operation="freeze_selection",
+            )
+        self._validate_view(
+            based_on,
+            "internal_validation",
+            operation="freeze_selection",
+        )
         if artifact_hash is None:
             digest = _artifact_hash(artifact)
         else:
@@ -339,11 +526,19 @@ class ProtocolSession:
                 # trusted selection hash.
                 candidate_path = Path(requested)
                 if not candidate_path.is_file() or candidate_path.is_symlink():
-                    raise ProtocolStateError(
-                        "Selection artifact_hash must be SHA-256 or a regular checkpoint path"
+                    if not self._shadow:
+                        raise ProtocolStateError(
+                            "Selection artifact_hash must be SHA-256 or a regular checkpoint path"
+                        )
+                    self._record_shadow_observation(
+                        "unverifiable_selection_artifact_hash",
+                        "Selection artifact_hash was neither SHA-256 nor a regular checkpoint path",
+                        operation="freeze_selection",
                     )
-                digest = _file_sha256(candidate_path)
-        self._client.emit(
+                    digest = _artifact_hash(artifact)
+                else:
+                    digest = _file_sha256(candidate_path)
+        self._emit(
             "selection_freeze",
             capabilities=(based_on._capability,),
             component="protocol_session.freeze_selection",
@@ -355,6 +550,10 @@ class ProtocolSession:
     @property
     def selection_frozen(self) -> bool:
         return self._selection_frozen
+
+    @property
+    def shadow_observations(self) -> tuple[dict[str, Any], ...]:
+        return tuple(dict(row) for row in self._shadow_observations)
 
 
 def current_session() -> ProtocolSession:
@@ -373,4 +572,9 @@ def activate_session(session: ProtocolSession):
         _CURRENT_SESSION.reset(token)
 
 
-__all__ = ["ProtocolSession", "activate_session", "current_session"]
+__all__ = [
+    "SHADOW_OBSERVATION_SCHEMA",
+    "ProtocolSession",
+    "activate_session",
+    "current_session",
+]

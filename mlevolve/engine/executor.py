@@ -499,121 +499,169 @@ class Interpreter:
             source_code_sha256 = hashlib.sha256(code.encode("utf-8")).hexdigest()
             preflight_report = None
             if bool(getattr(self.protocol_preflight_config, "enabled", False)):
-                try:
-                    report_root = Path(self.protocol_preflight_config.report_root).resolve()
-                    if self._preflight_runner is None:
-                        preflight_report = validate_preflight_admission(
-                            code,
-                            report_root=report_root,
-                            expected_contract_hash=str(
-                                self.protocol_preflight_config.expected_contract_hash
-                            ),
-                        )
-                    else:
-                        report_path = admission_report_path(
-                            report_root, source_code_sha256
-                        )
-                        with self._preflight_lock:
-                            if report_path.is_file() and not report_path.is_symlink():
-                                preflight_report = json.loads(
-                                    report_path.read_text(encoding="utf-8")
-                                )
-                            else:
-                                candidate_root = (
-                                    report_root / "candidates" / source_code_sha256
-                                )
-                                preflight_report = self._preflight_runner.run_source(
-                                    source=code,
-                                    contract=self._protocol_contract,
-                                    identity=self._collector_identity,
-                                    data_view_manifest_path=(
-                                        self.protocol_preflight_config.data_view_manifest_path
-                                    ),
-                                    output_root=candidate_root,
-                                    image_digest=self.protocol_preflight_config.image_digest,
-                                    sdk_hash=self.protocol_preflight_config.sdk_hash,
-                                    timeout_seconds=min(60, effective_timeout),
-                                    candidate_uid=(
-                                        int(self.protocol_preflight_config.candidate_uid)
-                                        if _candidate_uid_isolation_enabled(self.cfg)
-                                        and os.geteuid() == 0
-                                        else None
-                                    ),
-                                )
-                    if self.protocol_runtime_mode != "host_sdk_shadow":
-                        preflight_report = validate_preflight_admission(
-                            code,
-                            report_root=report_root,
-                            expected_contract_hash=str(
-                                self.protocol_preflight_config.expected_contract_hash
-                            ),
-                        )
-                except Exception as error:
-                    if self.protocol_runtime_mode != "host_sdk_shadow":
-                        rejection_report = dict(
-                            getattr(error, "report", None)
-                            or preflight_report
-                            or {}
-                        )
-                        rejection_report.setdefault("status", "rejected")
-                        rejection_report.setdefault(
-                            "code_sha256", source_code_sha256
-                        )
-                        rejection_report["admission_disposition"] = "rejected"
-                        rejection_report["admission_error"] = str(error)
-                        rejection_details = {
-                            "status": rejection_report.get("status"),
-                            "violations": list(
-                                rejection_report.get("violations") or []
-                            ),
-                            "missing_coverage": list(
-                                rejection_report.get("missing_coverage") or []
-                            ),
-                            "missing_full_runtime_coverage": list(
-                                rejection_report.get(
-                                    "missing_full_runtime_coverage"
-                                )
-                                or []
-                            ),
-                            "missing_receipts": list(
-                                rejection_report.get("missing_receipts") or []
-                            ),
-                        }
-                        return ExecutionResult(
-                            term_out=[
-                                "Protocol Preflight rejected full execution before "
-                                f"subprocess launch: {error}\n",
-                                "Protocol Preflight report: "
-                                + json.dumps(rejection_details, sort_keys=True)
-                                + "\n",
-                            ],
-                            exec_time=time.time() - start_time,
-                            exc_type="ProtocolPreflightError",
-                            exc_info={
-                                "message": str(error),
-                                "code_sha256": source_code_sha256,
-                                "candidate_subprocess_started": False,
-                                "preflight_report": rejection_report,
-                                **rejection_details,
-                            },
-                            exc_stack=[],
-                            protocol_observation={
-                                "protocol_preflight": rejection_report
-                            },
-                        )
+                agent_controls_preflight = bool(
+                    self.protocol_runtime_mode == "host_sdk_shadow"
+                    and getattr(
+                        self.protocol_preflight_config,
+                        "agent_controls_protocol_preflight",
+                        False,
+                    )
+                )
+                if agent_controls_preflight:
+                    # Dynamic Hybrid delegates semantic protocol review and
+                    # narrow repair to the Agent.  Do not execute the Candidate
+                    # a second time inside the legacy Host Preflight: the full
+                    # subprocess below is the only training launch.  Host SDK
+                    # lifecycle events remain attached as observations.
                     preflight_report = {
-                        "status": "shadow_error",
+                        "schema": (
+                            "mlevolve_agent_controlled_protocol_preflight_"
+                            "observation_v1"
+                        ),
+                        "status": "agent_controlled",
                         "code_sha256": source_code_sha256,
-                        "reason": str(error),
                         "enforcement_mode": "shadow",
+                        "admission_disposition": "agent_review_then_execute",
+                        "host_dry_run_executed": False,
+                        "candidate_subprocess_started": False,
                     }
-                    logger.warning("Host Preflight shadow error: %s", error)
                 else:
+                    try:
+                        report_root = Path(
+                            self.protocol_preflight_config.report_root
+                        ).resolve()
+                        if self._preflight_runner is None:
+                            preflight_report = validate_preflight_admission(
+                                code,
+                                report_root=report_root,
+                                expected_contract_hash=str(
+                                    self.protocol_preflight_config.expected_contract_hash
+                                ),
+                            )
+                        else:
+                            report_path = admission_report_path(
+                                report_root, source_code_sha256
+                            )
+                            with self._preflight_lock:
+                                if (
+                                    report_path.is_file()
+                                    and not report_path.is_symlink()
+                                ):
+                                    preflight_report = json.loads(
+                                        report_path.read_text(encoding="utf-8")
+                                    )
+                                else:
+                                    candidate_root = (
+                                        report_root
+                                        / "candidates"
+                                        / source_code_sha256
+                                    )
+                                    preflight_report = (
+                                        self._preflight_runner.run_source(
+                                            source=code,
+                                            contract=self._protocol_contract,
+                                            identity=self._collector_identity,
+                                            data_view_manifest_path=(
+                                                self.protocol_preflight_config.data_view_manifest_path
+                                            ),
+                                            output_root=candidate_root,
+                                            image_digest=self.protocol_preflight_config.image_digest,
+                                            sdk_hash=self.protocol_preflight_config.sdk_hash,
+                                            timeout_seconds=min(
+                                                60, effective_timeout
+                                            ),
+                                            candidate_uid=(
+                                                int(
+                                                    self.protocol_preflight_config.candidate_uid
+                                                )
+                                                if _candidate_uid_isolation_enabled(
+                                                    self.cfg
+                                                )
+                                                and os.geteuid() == 0
+                                                else None
+                                            ),
+                                        )
+                                    )
+                        if self.protocol_runtime_mode != "host_sdk_shadow":
+                            preflight_report = validate_preflight_admission(
+                                code,
+                                report_root=report_root,
+                                expected_contract_hash=str(
+                                    self.protocol_preflight_config.expected_contract_hash
+                                ),
+                            )
+                    except Exception as error:
+                        if self.protocol_runtime_mode != "host_sdk_shadow":
+                            rejection_report = dict(
+                                getattr(error, "report", None)
+                                or preflight_report
+                                or {}
+                            )
+                            rejection_report.setdefault("status", "rejected")
+                            rejection_report.setdefault(
+                                "code_sha256", source_code_sha256
+                            )
+                            rejection_report["admission_disposition"] = "rejected"
+                            rejection_report["admission_error"] = str(error)
+                            rejection_details = {
+                                "status": rejection_report.get("status"),
+                                "violations": list(
+                                    rejection_report.get("violations") or []
+                                ),
+                                "missing_coverage": list(
+                                    rejection_report.get("missing_coverage") or []
+                                ),
+                                "missing_full_runtime_coverage": list(
+                                    rejection_report.get(
+                                        "missing_full_runtime_coverage"
+                                    )
+                                    or []
+                                ),
+                                "missing_receipts": list(
+                                    rejection_report.get("missing_receipts") or []
+                                ),
+                            }
+                            return ExecutionResult(
+                                term_out=[
+                                    "Protocol Preflight rejected full execution before "
+                                    f"subprocess launch: {error}\n",
+                                    "Protocol Preflight report: "
+                                    + json.dumps(rejection_details, sort_keys=True)
+                                    + "\n",
+                                ],
+                                exec_time=time.time() - start_time,
+                                exc_type="ProtocolPreflightError",
+                                exc_info={
+                                    "message": str(error),
+                                    "code_sha256": source_code_sha256,
+                                    "candidate_subprocess_started": False,
+                                    "preflight_report": rejection_report,
+                                    **rejection_details,
+                                },
+                                exc_stack=[],
+                                protocol_observation={
+                                    "protocol_preflight": rejection_report
+                                },
+                            )
+                        preflight_report = {
+                            "status": "shadow_error",
+                            "code_sha256": source_code_sha256,
+                            "reason": str(error),
+                            "enforcement_mode": "shadow",
+                        }
+                        logger.warning("Host Preflight shadow error: %s", error)
+                    else:
+                        logger.info(
+                            "Protocol Preflight %s observation: status=%s report=%s",
+                            self.protocol_runtime_mode,
+                            preflight_report.get("status"),
+                            preflight_report.get("report_hash"),
+                        )
+                if agent_controls_preflight:
                     logger.info(
-                        "Protocol Preflight %s observation: status=%s report=%s",
-                        self.protocol_runtime_mode,
-                        preflight_report.get("status"),
-                        preflight_report.get("report_hash"),
+                        "Agent-controlled protocol review selected; Host dry-run "
+                        "Preflight skipped for candidate %s",
+                        id,
                     )
 
             # Preflight consumes this candidate's wall-clock allowance. Recheck
@@ -745,7 +793,9 @@ class Interpreter:
                         "from protocol_runtime.full_runtime import "
                         "activate_full_runtime_from_bootstrap as "
                         "__mlevolve_activate_full_runtime\n"
-                        f"__mlevolve_activate_full_runtime({str(bootstrap_path)!r})\n"
+                        "__mlevolve_activate_full_runtime("
+                        f"{str(bootstrap_path)!r}, "
+                        f"runtime_mode={self.protocol_runtime_mode!r})\n"
                     )
                 except Exception as error:
                     if full_runtime_controller is not None:
@@ -1086,7 +1136,9 @@ class Interpreter:
                 attached_preflight = dict(preflight_report)
                 if self.protocol_runtime_mode == "host_sdk_shadow":
                     attached_preflight["enforcement_mode"] = "shadow"
-                    attached_preflight["admission_disposition"] = "observe_only"
+                    attached_preflight.setdefault(
+                        "admission_disposition", "agent_review_then_execute"
+                    )
                 protocol_observation["protocol_preflight"] = attached_preflight
             if full_runtime_evidence is not None:
                 if protocol_observation is None:

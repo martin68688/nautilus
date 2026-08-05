@@ -9,6 +9,7 @@ into a Host receipt-based admission veto.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import os
@@ -68,6 +69,101 @@ def _sha256(source: str) -> str:
     return hashlib.sha256(source.encode("utf-8")).hexdigest()
 
 
+def _host_sdk_static_observations(source: str) -> list[dict[str, Any]]:
+    """Surface narrow SDK misuse facts to the repair Agent without gating execution."""
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return []
+
+    split_names = {"views", "split"}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        value = node.value
+        if not (
+            isinstance(value, ast.Call)
+            and isinstance(value.func, ast.Attribute)
+            and value.func.attr == "get_split"
+        ):
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        split_names.update(
+            target.id for target in targets if isinstance(target, ast.Name)
+        )
+
+    def is_handle(node: ast.AST) -> bool:
+        return (
+            isinstance(node, ast.Attribute)
+            and node.attr in {"train", "validation", "inference"}
+            and isinstance(node.value, ast.Name)
+            and node.value.id in split_names
+        )
+
+    observations: list[dict[str, Any]] = []
+    seen: set[tuple[str, int]] = set()
+
+    def add(code: str, node: ast.AST, message: str) -> None:
+        key = (code, int(getattr(node, "lineno", 0) or 0))
+        if key in seen:
+            return
+        seen.add(key)
+        observations.append(
+            {"code": code, "line": key[1], "message": message}
+        )
+
+    for node in ast.walk(tree):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id in {"iter", "len", "list", "set", "tuple"}
+            and any(is_handle(arg) for arg in node.args)
+        ):
+            add(
+                "data_view_handle_direct_use",
+                node,
+                "DataViewHandle is a capability token and cannot be iterated, sized, or materialized directly; consume the rows yielded by the matching session scope.",
+            )
+        elif isinstance(node, ast.For) and is_handle(node.iter):
+            add(
+                "data_view_handle_direct_use",
+                node,
+                "A DataViewHandle cannot be used as a for-loop iterable; iterate only the rows yielded by fit_scope, prediction_scope, or inference_scope.",
+            )
+        elif isinstance(node, ast.comprehension) and is_handle(node.iter):
+            add(
+                "data_view_handle_direct_use",
+                node,
+                "A DataViewHandle cannot be used as a comprehension iterable; iterate only scope-yielded rows.",
+            )
+
+        if not isinstance(node, (ast.With, ast.AsyncWith)):
+            continue
+        prediction_context = any(
+            isinstance(item.context_expr, ast.Call)
+            and isinstance(item.context_expr.func, ast.Attribute)
+            and item.context_expr.func.attr == "prediction_scope"
+            for item in node.items
+        )
+        if not prediction_context:
+            continue
+        for statement in node.body:
+            for child in ast.walk(statement):
+                if (
+                    isinstance(child, ast.Call)
+                    and isinstance(child.func, ast.Attribute)
+                    and child.func.attr == "evaluate_internal"
+                ):
+                    add(
+                        "evaluate_inside_prediction_scope",
+                        child,
+                        "Exit prediction_scope before calling session.evaluate_internal so the Host can seal prediction evidence first.",
+                    )
+
+    return observations
+
+
 def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
@@ -80,6 +176,7 @@ def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
 
 def _prompt(agent: Any, source: str, repair_attempt: int) -> dict[str, Any]:
     contract = get_host_protocol_contract_from_agent(agent)
+    static_observations = _host_sdk_static_observations(source)
     return {
         "Role": (
             "You are the semantic protocol reviewer immediately before GPU execution. "
@@ -91,10 +188,13 @@ def _prompt(agent: Any, source: str, repair_attempt: int) -> dict[str, Any]:
             contract, sort_keys=True, ensure_ascii=False, indent=2
         ),
         "Repair attempt already used": str(repair_attempt),
+        "Host SDK static observations": static_observations,
         "Required proof": [
             "Identify the actual __main__ or top-level executable path.",
             "The actual fit must consume train_rows yielded by session.fit_scope on views.train; it must not reopen ./input/train.csv or rediscover/resplit the public training set.",
             "Internal-validation predictions must be produced from rows yielded by session.prediction_scope on views.validation, in Host row order.",
+            "views.train, views.validation, and views.inference are DataViewHandle capability tokens, not iterables; never call list/len/iter on them or loop over them directly.",
+            "Exit prediction_scope before session.evaluate_internal; evaluation requires prediction evidence sealed when that context exits.",
             "The reported score must come from session.evaluate_internal on that same validation view and prediction array.",
             "session.freeze_selection must happen after evaluation/model choice and before final inference.",
             "Final submission inference must consume views.inference after selection freeze.",
@@ -105,6 +205,7 @@ def _prompt(agent: Any, source: str, repair_attempt: int) -> dict[str, Any]:
             "Change only data-view plumbing, evaluation/freeze ordering, entrypoint structure, or import-time side effects required by the protocol.",
             "If status=revise, return exact raw <<<<<<< SEARCH / ======= / >>>>>>> REPLACE blocks. Never return the full program and never use markdown fences.",
             "Use status=clean only with positive data-flow evidence. Use uncertain when the path cannot be proven and no safe narrow patch can be written.",
+            "If Host SDK static observations is non-empty, status=clean is invalid: return status=revise with a narrow patch that clears every observation.",
         ],
         "Actual complete candidate source": wrap_code(source),
     }
@@ -134,13 +235,24 @@ def run(agent: Any, node: Any) -> tuple[str, dict[str, Any]]:
     max_repairs = max(
         0, int(getattr(settings, "agent_semantic_max_repair_attempts", 2))
     )
+    max_reviews = max(
+        max_repairs + 1,
+        int(
+            getattr(
+                settings,
+                "agent_semantic_max_review_attempts",
+                max_repairs + 3,
+            )
+        ),
+    )
     preservation = leakage_audit.build_repair_preservation_contract(source)
     attempts: list[dict[str, Any]] = []
     repairs_applied = 0
     final_status = "uncertain"
     final_reason = "review did not return a conclusive result"
 
-    for review_index in range(max_repairs + 1):
+    for review_index in range(max_reviews):
+        static_observations = _host_sdk_static_observations(source)
         try:
             compile(source, f"<agent-protocol-review:{node.id}>", "exec")
         except SyntaxError as error:
@@ -203,6 +315,7 @@ def run(agent: Any, node: Any) -> tuple[str, dict[str, Any]]:
             "findings": list(map(str, response.get("findings") or [])),
             "patch_supplied": bool(patch.strip()),
             "patch_applied": False,
+            "host_sdk_static_observations": static_observations,
         }
         attempts.append(record)
         final_status = status
@@ -213,7 +326,19 @@ def run(agent: Any, node: Any) -> tuple[str, dict[str, Any]]:
                 record["consistency_error"] = "clean review supplied a patch"
                 final_status = "uncertain"
                 final_reason = record["consistency_error"]
+            elif static_observations:
+                record["consistency_error"] = (
+                    "clean review contradicted Host SDK static observations"
+                )
+                final_status = "uncertain"
+                final_reason = record["consistency_error"]
+                if review_index + 1 < max_reviews:
+                    record["review_retried"] = True
+                    continue
             break
+        if status == "uncertain" and review_index + 1 < max_reviews:
+            record["review_retried"] = True
+            continue
         if status != "revise" or not patch.strip():
             break
         if repairs_applied >= max_repairs:
@@ -263,6 +388,7 @@ def run(agent: Any, node: Any) -> tuple[str, dict[str, Any]]:
         "final_code_sha256": _sha256(source),
         "code_changed": initial_hash != _sha256(source),
         "repair_budget": max_repairs,
+        "review_budget": max_reviews,
         "repairs_applied": repairs_applied,
         "final_status": final_status,
         "final_reason": final_reason,
@@ -279,5 +405,6 @@ def run(agent: Any, node: Any) -> tuple[str, dict[str, Any]]:
 __all__ = [
     "AGENT_PROTOCOL_REVIEW_SCHEMA",
     "AGENT_PROTOCOL_REVIEW_SPEC",
+    "_host_sdk_static_observations",
     "run",
 ]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 import shutil
 
@@ -28,7 +29,12 @@ from protocol_runtime.collector import (
 )
 from protocol_runtime.collector_bridge import bridge_signed_journal_to_receipts
 from protocol_runtime.data_views import materialize_data_views
-from protocol_runtime.errors import CollectorRejected, CollectorUnavailable, ProtocolStateError
+from protocol_runtime.errors import (
+    CollectorRejected,
+    CollectorUnavailable,
+    InvalidViewHandle,
+    ProtocolStateError,
+)
 from protocol_runtime.session import ProtocolSession, activate_session, current_session
 from protocol_runtime.views import build_view_handles
 
@@ -123,6 +129,11 @@ def _seal_and_bridge(contract, sidecar):
         sidecar.output_dir, contract=contract
     )
     return verified, receipts
+
+
+class _RejectingCollectorClient:
+    def emit(self, *_args, **_kwargs):
+        raise CollectorRejected("synthetic Collector ordering rejection")
 
 
 def _authority_allows(contract, receipts, task: str) -> None:
@@ -221,6 +232,158 @@ def test_boosting_managed_reference_has_complete_trusted_evidence(tmp_path: Path
         )
         _verified, receipts = _seal_and_bridge(contract, sidecar)
         _authority_allows(contract, receipts, "taxi")
+    finally:
+        sidecar.stop()
+
+
+def test_shadow_evaluates_inside_prediction_scope_and_seals_complete_evidence(
+    tmp_path: Path,
+) -> None:
+    contract, sidecar, split, _session = _setup(
+        tmp_path, "random-classification@1", "cactus", "image", _cactus()
+    )
+    shadow_path = tmp_path / "shadow-observations.json"
+    session = ProtocolSession(
+        contract,
+        split,
+        sidecar.client(),
+        runtime_mode="host_sdk_shadow",
+        shadow_observation_path=shadow_path,
+    )
+    try:
+        views = session.get_split()
+        with session.fit_scope(component="model", data_view=views.train):
+            pass
+        with session.prediction_scope(
+            component="model", data_view=views.validation
+        ) as validation_rows:
+            predictions = [float(row["label"]) for row in validation_rows]
+            score = session.evaluate_internal(
+                views.validation,
+                predictions,
+                label_key="label",
+            )
+        assert score == pytest.approx(1.0)
+        session.freeze_selection(
+            "model", based_on=views.validation, artifact_hash="6" * 64
+        )
+        report = sidecar.seal(
+            exit_status=0,
+            executed_path="candidate.py",
+            run_hash=RUN_HASH,
+        )
+        assert report["status"] == "pass"
+        verified = verify_collector_artifacts(
+            sidecar.output_dir,
+            expected_public_key_ed25519=contract.collector_spec[
+                "public_key_ed25519"
+            ],
+        )
+        assert [event["kind"] for event in verified["events"]] == [
+            "split_lineage",
+            "fit_scope",
+            "prediction_scope",
+            "evaluator",
+            "selection_freeze",
+        ]
+        payload = json.loads(shadow_path.read_text(encoding="utf-8"))
+        assert payload["runtime_mode"] == "host_sdk_shadow"
+        assert [row["code"] for row in payload["observations"]] == [
+            "evaluate_before_prediction_scope_exit"
+        ]
+    finally:
+        sidecar.stop()
+
+
+def test_enforce_still_rejects_evaluation_inside_prediction_scope(
+    tmp_path: Path,
+) -> None:
+    _contract, sidecar, split, session = _setup(
+        tmp_path, "random-classification@1", "cactus", "image", _cactus()
+    )
+    try:
+        views = session.get_split()
+        with session.fit_scope(component="model", data_view=views.train):
+            pass
+        with session.prediction_scope(
+            component="model", data_view=views.validation
+        ) as validation_rows:
+            predictions = [float(row["label"]) for row in validation_rows]
+            with pytest.raises(
+                ProtocolStateError, match="prediction evidence"
+            ):
+                session.evaluate_internal(
+                    views.validation,
+                    predictions,
+                    label_key="label",
+                )
+    finally:
+        sidecar.stop()
+
+
+def test_shadow_observes_collector_rejections_and_host_issued_role_misuse(
+    tmp_path: Path,
+) -> None:
+    contract, sidecar, split, _session = _setup(
+        tmp_path, "random-classification@1", "cactus", "image", _cactus()
+    )
+    session = ProtocolSession(
+        contract,
+        split,
+        _RejectingCollectorClient(),
+        runtime_mode="host_sdk_shadow",
+    )
+    try:
+        views = session.get_split()
+        # The validation handle is genuine and immutable, but semantically
+        # wrong for fitting.  Shadow mode records this and lets Candidate code
+        # proceed; the Collector rejection is also observation-only.
+        with session.fit_scope(component="model", data_view=views.validation):
+            pass
+        with session.prediction_scope(
+            component="model", data_view=views.validation
+        ) as validation_rows:
+            predictions = [float(row["label"]) for row in validation_rows]
+        assert session.evaluate_internal(
+            views.validation, predictions, label_key="label"
+        ) == pytest.approx(1.0)
+        session.freeze_selection(
+            "model", based_on=views.validation, artifact_hash="7" * 64
+        )
+        codes = [row["code"] for row in session.shadow_observations]
+        assert "host_issued_view_role_mismatch" in codes
+        assert codes.count("collector_event_rejected") == 5
+
+        # A copied/forged handle is not the Host-issued capability object and
+        # remains a hard isolation failure even in shadow mode.
+        with pytest.raises(InvalidViewHandle, match="not issued"):
+            with session.fit_scope(
+                component="forged", data_view=replace(views.train)
+            ):
+                pass
+    finally:
+        sidecar.stop()
+
+
+def test_enforce_still_rejects_host_issued_wrong_role_and_collector_failure(
+    tmp_path: Path,
+) -> None:
+    contract, sidecar, split, _session = _setup(
+        tmp_path, "random-classification@1", "cactus", "image", _cactus()
+    )
+    try:
+        wrong_role = ProtocolSession(contract, split, sidecar.client())
+        with pytest.raises(InvalidViewHandle, match="expected the train"):
+            with wrong_role.fit_scope(
+                component="model", data_view=split.validation
+            ):
+                pass
+
+        rejected = ProtocolSession(
+            contract, split, _RejectingCollectorClient()
+        )
+        with pytest.raises(CollectorRejected, match="synthetic"):
+            rejected.get_split()
     finally:
         sidecar.stop()
 

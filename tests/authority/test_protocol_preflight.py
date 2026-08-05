@@ -1165,8 +1165,16 @@ def test_executor_blocks_full_run_without_matching_preflight_report(
 
 def test_host_shadow_records_missing_preflight_but_does_not_block_execution(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from engine.executor import Interpreter
+
+    monkeypatch.setattr(
+        "engine.executor.validate_preflight_admission",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("Host dry-run/admission must not run in shadow mode")
+        ),
+    )
 
     cfg = SimpleNamespace(
         agent=SimpleNamespace(
@@ -1175,6 +1183,7 @@ def test_host_shadow_records_missing_preflight_but_does_not_block_execution(
                 enabled=True,
                 report_root=str(tmp_path / "reports"),
                 expected_contract_hash="a" * 64,
+                agent_controls_protocol_preflight=True,
             ),
         ),
         evaluation_authority=SimpleNamespace(
@@ -1190,9 +1199,10 @@ def test_host_shadow_records_missing_preflight_but_does_not_block_execution(
     )
     assert result.exc_type is None
     assert "shadow candidate executed" in "".join(result.term_out)
-    assert result.protocol_observation["protocol_preflight"]["status"] == (
-        "shadow_error"
+    observation = result.protocol_observation["protocol_preflight"]
+    assert observation["status"] == "agent_controlled"
+    assert observation["enforcement_mode"] == "shadow"
+    assert observation["admission_disposition"] == (
+        "agent_review_then_execute"
     )
-    assert result.protocol_observation["protocol_preflight"][
-        "enforcement_mode"
-    ] == "shadow"
+    assert observation["host_dry_run_executed"] is False

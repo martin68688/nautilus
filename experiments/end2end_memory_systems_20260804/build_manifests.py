@@ -16,7 +16,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v8")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v9")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
 MANIFESTS = ROOT / "manifests"
 SYSTEM_DIR = ROOT / "systems"
@@ -25,11 +25,11 @@ SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-agentic-three-role-v7"
+RELEASE_ID = "end2end-agentic-three-role-v8"
 BASELINE_RELEASE_ID = "end2end-agent-v3"
 RANDOMIZATION_RELEASE_ID = BASELINE_RELEASE_ID
-OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v7/runs"
-EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v7"
+OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v8/runs"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v8"
 SOLVER_TEMPERATURE = 1.0
 SYSTEMS = (
     ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
@@ -91,34 +91,6 @@ MEMORY = {
         "protocol_ref": "chronological-regression@1#bfc61957b422df5cf09dcb37cffe06aae2ccd2b11db4fee0721b90a2bc6dbf04",
     },
 }
-HOST = {
-    "aerial-cactus-identification": {
-        "binding_file_sha256": "f350b3081d44fd730679f1d14a4b2a500db818ae0d9aaeb4bec96cf203b63f80",
-        "binding_hash": "bc4467b9577d3f280b669bc8df9cabe76c5bd094e04d590b0b28090d32f1e4e1",
-        "contract_hash": "3313f15076012774921d2bf4de7ebeafc2845e5a452f7ba87701a08382d45df4",
-        "data_view_manifest_hash": "a8cc51d255986f1e21c34aa7c13aaad21e6e17eec8506e22e7e0e9cede38caeb",
-    },
-    "leaf-classification": {
-        "binding_file_sha256": "fb93cd0f55cbc6822726b61a7275f138d1ef3a6518ef8579a845d1cc99055957",
-        "binding_hash": "bbe0a89db4a7f9ece9031c0aafb76ef5fcc65708b405dba3100cac1be9070e6f",
-        "contract_hash": "84c1e5764b64abede9be3e841f2a37d3043c5f1bf18e6190e957a41c84dc4a09",
-        "data_view_manifest_hash": "6073c8cd004c84aa048945eeeed408592bebf87581a5c6720b52e3f920daad5d",
-    },
-    "denoising-dirty-documents": {
-        "binding_file_sha256": "914730c3d9499d0c8a1c19d1d4ad832055f12f695af272784647c1270896966e",
-        "binding_hash": "f6838699efd07a70f85e00cd6c1b115a3803e355fc99da7c8d28a2cdd133d50a",
-        "contract_hash": "0e1cbf9f1fda429434375c5a6b68cc4fafd873a140884438a226688c362bbc6e",
-        "data_view_manifest_hash": "74e20f50b39534b415f7878f172e29f2d91e467a1daf70d00b683c79ed02e3d9",
-    },
-    "new-york-city-taxi-fare-prediction": {
-        "binding_file_sha256": "955e0489e38b0fd3b8850cd68df686884ee538e5748e453c43049bd9e50dc1b5",
-        "binding_hash": "23558307a297fd74d1cde12f0cb8e23e68280dbd5091f466f711e77a8345f4f8",
-        "contract_hash": "aee52a4dbc04be10244003ae593f3c0276be3c75eca63331b864ae2f25eb3d1b",
-        "data_view_manifest_hash": "3611c0b87c21a5995990a8b7b4604a7b790daf491bc95411d0a768e0382da6a7",
-    },
-}
-
-
 def canonical_bytes(value: object) -> bytes:
     return json.dumps(
         value, sort_keys=True, ensure_ascii=False, separators=(",", ":")
@@ -133,6 +105,52 @@ def payload_hash(payload: Mapping[str, Any], field: str) -> str:
 
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def hash_runtime_sdk_tree() -> str:
+    sdk_root = REPO / "mlevolve" / "protocol_runtime"
+    rows = []
+    for path in sorted(sdk_root.rglob("*.py")):
+        if (
+            "__pycache__" in path.parts
+            or path.name.startswith("._")
+            or path.is_symlink()
+            or not path.is_file()
+        ):
+            continue
+        rows.append(
+            f"{path.relative_to(sdk_root).as_posix()}\0{sha256_file(path)}"
+        )
+    if not rows:
+        raise ValueError("Host runtime SDK contains no Python sources")
+    return hashlib.sha256("\n".join(rows).encode("utf-8")).hexdigest()
+
+
+def refresh_host_bindings(
+    sdk_hash: str,
+) -> dict[str, dict[str, str]]:
+    """Rebind frozen task launchers to the exact local Host SDK tree."""
+
+    host: dict[str, dict[str, str]] = {}
+    for task_id, _display, _metric, _direction in TASKS:
+        path = HOST_BINDINGS_DIR / task_id / "HOST_PROTOCOL_BINDING.json"
+        if path.is_symlink() or not path.is_file():
+            raise ValueError(f"Missing regular Host binding for {task_id}")
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if payload.get("task_id") != task_id:
+            raise ValueError(f"Host binding task mismatch for {task_id}")
+        payload["sdk_hash"] = sdk_hash
+        payload["binding_hash"] = payload_hash(payload, "binding_hash")
+        dump_json(path, payload)
+        host[task_id] = {
+            "binding_file_sha256": sha256_file(path),
+            "binding_hash": str(payload["binding_hash"]),
+            "contract_hash": str(payload["contract_hash"]),
+            "data_view_manifest_hash": str(
+                payload["data_view_manifest_hash"]
+            ),
+        }
+    return host
 
 
 def finalize(payload: dict[str, Any], field: str = "manifest_hash") -> dict[str, Any]:
@@ -252,9 +270,11 @@ agent:
       - novel_exploration
   protocol_preflight:
     agent_semantic_review_enabled: true
-    agent_semantic_max_repair_attempts: 2
+    agent_semantic_max_repair_attempts: 3
+    agent_semantic_max_review_attempts: 6
     agent_semantic_temperature: 0.0
     agent_semantic_max_tokens: 4096
+    agent_controls_protocol_preflight: true
     install_host_candidate_entrypoint: false
     candidate_process_isolation: true
 
@@ -337,7 +357,11 @@ def source_lock() -> dict[str, Any]:
     )
 
 
-def component_manifests() -> dict[str, dict[str, Any]]:
+def component_manifests(
+    *,
+    host_runtime_sdk_hash: str,
+    host_task_bindings: Mapping[str, Mapping[str, str]],
+) -> dict[str, dict[str, Any]]:
     systems = []
     for label, system_id, kind, description in SYSTEMS:
         config = SYSTEM_DIR / f"{system_id}.yaml"
@@ -438,12 +462,16 @@ def component_manifests() -> dict[str, dict[str, Any]]:
             "agent_semantic_protocol_review": {
                 "enabled_for_systems": ["dynamic_hybrid"],
                 "host_receipt_admission_authority": False,
-                "max_repair_attempts": 2,
+                "max_repair_attempts": 3,
+                "max_review_attempts": 6,
                 "temperature": 0.0,
                 "max_tokens_per_call": 4096,
                 "unresolved_disposition": "observe_then_execute",
                 "actual_entrypoint_required": True,
                 "method_preservation_required": True,
+                "agent_controls_protocol_preflight": True,
+                "host_dry_run_executed": False,
+                "host_runtime_semantic_disposition": "observe_only",
             },
             "pilot": {
                 "agent_steps": 80,
@@ -495,10 +523,10 @@ def component_manifests() -> dict[str, dict[str, Any]]:
                 "/workspace/experiment-r-dev-r1/host-protocol-formal-r2/bindings; "
                 "only sdk_hash and binding_hash are rebound in immutable End2End copies"
             ),
-            "host_runtime_sdk_hash": "b0abd7c1dcc8dbd86b033406215f5cd82b0af0a996c85746aa0b3d36997ed31d",
+            "host_runtime_sdk_hash": host_runtime_sdk_hash,
             "host_collector_public_key_ed25519": "qb++TPUVPeBugazDY22lXrAEOSFEaxK7uo72cWWXs0w=",
             "host_collector_public_key_sha256": "34a0b39b04a60dc781e9c5699a6771653613b7b582a096dd45f68155cb76f853",
-            "host_task_bindings": HOST,
+            "host_task_bindings": dict(host_task_bindings),
             "manifest_hash": "",
         }
     )
@@ -575,7 +603,7 @@ def execution_manifest(
         task_ids = [task_id for task_id, _display, _metric, _direction in TASKS]
         system_ids = None
         formal = True
-        prefix = "e2e-pilot-agentic-three-role-v7"
+        prefix = "e2e-pilot-agentic-three-role-v8"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -784,8 +812,13 @@ def job(
 
 
 def build() -> dict[str, Any]:
+    sdk_hash = hash_runtime_sdk_tree()
+    host_task_bindings = refresh_host_bindings(sdk_hash)
     write_system_configs()
-    components = component_manifests()
+    components = component_manifests(
+        host_runtime_sdk_hash=sdk_hash,
+        host_task_bindings=host_task_bindings,
+    )
     for key, payload in components.items():
         dump_json(MANIFESTS / f"{key}.json", payload)
     smoke = execution_manifest(kind="smoke", components=components)
@@ -793,7 +826,7 @@ def build() -> dict[str, Any]:
         kind="smoke",
         components=components,
         system_ids_override=["dynamic_hybrid"],
-        prefix_override="e2e-feasibility-smoke-agentic-three-role-v7",
+        prefix_override="e2e-feasibility-smoke-agentic-three-role-v8",
     )
     pilot = execution_manifest(kind="pilot", components=components)
     dump_json(MANIFESTS / "smoke_manifest.json", smoke)
@@ -801,7 +834,7 @@ def build() -> dict[str, Any]:
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
     smoke_job = job(
-        name="mlevolve-e2e-all-systems-smoke-aerial-v7",
+        name="mlevolve-e2e-all-systems-smoke-aerial-v8",
         manifest_name="smoke_manifest.json",
         completions=10,
         task_id=None,
@@ -813,7 +846,7 @@ def build() -> dict[str, Any]:
         yaml.safe_dump(smoke_job, sort_keys=False), encoding="utf-8"
     )
     feasibility_job = job(
-        name="mlevolve-e2e-agentic-three-role-feasibility-aerial-v7",
+        name="mlevolve-e2e-agentic-three-role-feasibility-aerial-v8",
         manifest_name="feasibility_smoke_manifest.json",
         completions=1,
         task_id=None,
@@ -826,7 +859,7 @@ def build() -> dict[str, Any]:
     )
     for task_id, display, _metric, _direction in TASKS:
         pilot_job = job(
-            name=f"mlevolve-e2e-agentic-pilot-{display.lower()}-v7",
+            name=f"mlevolve-e2e-agentic-pilot-{display.lower()}-v8",
             manifest_name="pilot_manifest.json",
             completions=10,
             task_id=task_id,

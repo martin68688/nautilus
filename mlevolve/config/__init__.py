@@ -183,8 +183,10 @@ class ProtocolPreflightConfig:
     # semantic decision maker.
     agent_semantic_review_enabled: bool = False
     agent_semantic_max_repair_attempts: int = 2
+    agent_semantic_max_review_attempts: int = 5
     agent_semantic_temperature: float = 0.0
     agent_semantic_max_tokens: int = 4096
+    agent_controls_protocol_preflight: bool = False
     install_host_candidate_entrypoint: bool = True
     candidate_process_isolation: bool = False
     

@@ -1,0 +1,71 @@
+{
+  "schema": "mlevolve_end2end_smoke_attempt_summary_v1",
+  "release_id": "end2end-agentic-three-role-v7",
+  "logical_run_id": "e2e-feasibility-smoke-agentic-three-role-v7__aerial-cactus-identification__dynamic_hybrid__seed-1",
+  "attempt": 0,
+  "task_id": "aerial-cactus-identification",
+  "system_id": "dynamic_hybrid",
+  "seed": 1,
+  "formal_result_eligible": false,
+  "status": "retained_agent_complete",
+  "completed": false,
+  "failure_class": "agent",
+  "candidate_set_frozen": false,
+  "terminal_score": null,
+  "time_to_first_valid_seconds": null,
+  "agent_wall_seconds": 2763.954351337,
+  "allocated_gpu_hours": 0.7677650975936111,
+  "hardware": {
+    "requested_gpu_resource": "nvidia.com/a100",
+    "observed_gpu_product": "NVIDIA A100-PCIE-40GB",
+    "node_name": "ren-gp-argo-01.madren.org"
+  },
+  "retrieval": {
+    "memory_transfer_agent_calls": 4,
+    "novel_exploration_agent_calls": 4,
+    "same_task_best_first_enforced": true,
+    "same_task_history_found": true,
+    "fallback_used": false,
+    "draft_route": {
+      "sop": 4,
+      "runforest": 2
+    }
+  },
+  "candidates": [
+    {
+      "node_id": "9f10b527af6446689b7140437083465e",
+      "role": "coldstart_baseline",
+      "candidate_subprocess_started": true,
+      "host_shadow_preflight_status": "pass",
+      "exception_type": "TypeError",
+      "exception_message": "'DataViewHandle' object is not iterable",
+      "submission_created": false
+    },
+    {
+      "node_id": "b10c7a49da5d4c01a99161972fab0563",
+      "role": "memory_transfer",
+      "candidate_subprocess_started": true,
+      "host_shadow_preflight_status": "pass",
+      "exception_type": "ProtocolStateError",
+      "exception_message": "Internal evaluation requires prediction evidence",
+      "best_internal_auc_observed_before_failure": 0.9747,
+      "memory_contracts_adopted": 2,
+      "memory_contracts_rejected": 4,
+      "submission_created": false
+    },
+    {
+      "node_id": "7ff9dfe9a21841a98acc60eb781d9f34",
+      "role": "novel_exploration",
+      "candidate_subprocess_started": true,
+      "host_shadow_preflight_status": "pass",
+      "exception_type": "TypeError",
+      "exception_message": "default_collate cannot collate PIL.Image.Image",
+      "agent_semantic_repairs_applied": 2,
+      "agent_semantic_final_status": "repair_exhausted",
+      "submission_created": false
+    }
+  ],
+  "pvc_attempt_root": "/workspace/experiment-end2end-memory-agent-v7/runs/e2e-feasibility-smoke-agentic-three-role-v7__aerial-cactus-identification__dynamic_hybrid__seed-1/attempt-000",
+  "measurement_hash": "9c13e3faef0b617dc345993f60832402a0753a33a57ba3b30813d80b10db0936",
+  "disposition": "preserve_agent_failure_then_strengthen_agent_semantic_review_and_rerun_new_release"
+}

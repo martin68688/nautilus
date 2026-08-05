@@ -153,6 +153,156 @@ def test_agent_semantic_review_unavailable_is_observed_not_blocked(
     assert report["execution_disposition"] == "observe_then_execute"
 
 
+def test_static_observations_detect_host_sdk_handle_and_evidence_misuse():
+    observations = agent_protocol_review_agent._host_sdk_static_observations(
+        """
+def main():
+    session = current_session()
+    views = session.get_split()
+    rows = list(views.validation)
+    with session.prediction_scope(component="model", data_view=views.validation) as prediction_rows:
+        predictions = [0.5 for _ in prediction_rows]
+        session.evaluate_internal(views.validation, predictions, label_key="label")
+"""
+    )
+    assert {row["code"] for row in observations} == {
+        "data_view_handle_direct_use",
+        "evaluate_inside_prediction_scope",
+    }
+
+
+def test_agent_semantic_review_retries_false_clean_static_finding(
+    tmp_path, monkeypatch
+):
+    responses = iter(
+        [
+            {
+                "status": "clean",
+                "reason": "incorrectly claimed clean",
+                "actual_entrypoint": "main",
+                "findings": [],
+                "revised_code": "",
+            },
+            {
+                "status": "revise",
+                "reason": "consume validation rows through prediction_scope",
+                "actual_entrypoint": "main",
+                "findings": ["DataViewHandle is not iterable"],
+                "revised_code": (
+                    "<<<<<<< SEARCH\n"
+                    "    rows = list(views.validation)\n"
+                    "=======\n"
+                    "    with session.prediction_scope(component=\"model\", data_view=views.validation) as rows:\n"
+                    "        rows = list(rows)\n"
+                    ">>>>>>> REPLACE"
+                ),
+            },
+            {
+                "status": "clean",
+                "reason": "scope-yielded rows are used",
+                "actual_entrypoint": "main",
+                "findings": [],
+                "revised_code": "",
+            },
+        ]
+    )
+    monkeypatch.setattr(
+        agent_protocol_review_agent,
+        "query",
+        lambda **kwargs: next(responses),
+    )
+    monkeypatch.setattr(
+        agent_protocol_review_agent,
+        "get_host_protocol_contract_from_agent",
+        lambda _agent: {},
+    )
+    settings = SimpleNamespace(
+        agent_semantic_review_enabled=True,
+        agent_semantic_max_repair_attempts=2,
+        agent_semantic_max_review_attempts=5,
+        agent_semantic_temperature=0.0,
+        agent_semantic_max_tokens=4096,
+    )
+    agent = SimpleNamespace(
+        task_desc="task",
+        acfg=SimpleNamespace(
+            protocol_preflight=settings,
+            feedback=SimpleNamespace(model="reviewer"),
+        ),
+        cfg=SimpleNamespace(log_dir=tmp_path),
+    )
+    node = SimpleNamespace(
+        id="node-static",
+        code=(
+            "def main():\n"
+            "    session = current_session()\n"
+            "    views = session.get_split()\n"
+            "    rows = list(views.validation)\n"
+            "    return rows\n"
+        ),
+    )
+    source, report = agent_protocol_review_agent.run(agent, node)
+    assert "list(views.validation)" not in source
+    assert report["final_status"] == "clean"
+    assert report["repairs_applied"] == 1
+    assert report["attempts"][0]["review_retried"] is True
+    assert len(report["attempts"]) == 3
+
+
+def test_agent_semantic_review_retries_uncertain_before_execution(
+    tmp_path, monkeypatch
+):
+    responses = iter(
+        [
+            {
+                "status": "uncertain",
+                "reason": "",
+                "actual_entrypoint": "",
+                "findings": [],
+                "revised_code": "",
+            },
+            {
+                "status": "clean",
+                "reason": "second review proved the path",
+                "actual_entrypoint": "main",
+                "findings": [],
+                "revised_code": "",
+            },
+        ]
+    )
+    monkeypatch.setattr(
+        agent_protocol_review_agent,
+        "query",
+        lambda **kwargs: next(responses),
+    )
+    monkeypatch.setattr(
+        agent_protocol_review_agent,
+        "get_host_protocol_contract_from_agent",
+        lambda _agent: {},
+    )
+    agent = SimpleNamespace(
+        task_desc="task",
+        acfg=SimpleNamespace(
+            protocol_preflight=SimpleNamespace(
+                agent_semantic_review_enabled=True,
+                agent_semantic_max_repair_attempts=2,
+                agent_semantic_max_review_attempts=4,
+                agent_semantic_temperature=0.0,
+                agent_semantic_max_tokens=4096,
+            ),
+            feedback=SimpleNamespace(model="reviewer"),
+        ),
+        cfg=SimpleNamespace(log_dir=tmp_path),
+    )
+    source, report = agent_protocol_review_agent.run(
+        agent, SimpleNamespace(id="node-uncertain", code="def main():\n    return 1\n")
+    )
+    assert source == "def main():\n    return 1\n"
+    assert report["final_status"] == "clean"
+    assert report["attempts"][0]["review_retried"] is True
+    assert len(report["attempts"]) == 2
+
+
 def test_real_retrieval_agent_prompt_compiles_structured_observations(
     monkeypatch,
 ):

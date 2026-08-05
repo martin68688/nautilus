@@ -250,6 +250,105 @@ def test_full_training_session_mints_score_bound_trusted_receipts(tmp_path: Path
     }
 
 
+def test_shadow_full_runtime_records_order_observations_without_denial(
+    tmp_path: Path,
+) -> None:
+    identity = HostCollectorIdentity.generate()
+    contract = compile_protocol_execution_contract(
+        REGISTRY.resolve("deterministic-random-regression@1"),
+        task_id="new-york-city-taxi-fare-prediction",
+        task_family="tabular",
+        train_view_ref="view://taxi/train",
+        validation_view_ref="view://taxi/internal-validation",
+        terminal_view_ref="evaluator-only://taxi/terminal",
+        execution_budget={
+            "max_epochs": 1,
+            "max_folds": 1,
+            "max_models": 1,
+            "timeout_seconds": 60,
+        },
+        collector_spec=identity.collector_spec(),
+    )
+    _manifest, manifest_path = materialize_data_views(
+        [
+            {
+                "sample_id": f"row-{index}",
+                "fare": float(index + 1),
+                "x": float(index),
+            }
+            for index in range(12)
+        ],
+        tmp_path / "views",
+        contract,
+        inference_records=[{"sample_id": "test-row", "x": 99.0}],
+        inference_view_ref="view://taxi/inference",
+        split_id="shadow-runtime-test",
+    )
+    source = "def main():\n    pass\n"
+    controller = FullRuntimeEvidenceController(
+        contract=contract,
+        identity=identity,
+        data_view_manifest_path=manifest_path,
+        output_root=tmp_path / "runtime",
+        bootstrap_path=tmp_path / "working" / "bootstrap.json",
+        run_id="shadow-runtime-test-run",
+        node_id="node-shadow",
+        code_sha256=hashlib.sha256(source.encode()).hexdigest(),
+    ).start()
+    try:
+        session = activate_full_runtime_from_bootstrap(
+            controller.bootstrap_path,
+            runtime_mode="host_sdk_shadow",
+        )
+        views = session.get_split()
+
+        # Missing fit/freeze receipts are semantic observations.  The real
+        # inference rows remain usable and Candidate execution continues.
+        with session.inference_scope(
+            component="early_submission", data_view=views.inference
+        ) as inference_rows:
+            assert [row["sample_id"] for row in inference_rows] == [
+                "test-row"
+            ]
+
+        with session.fit_scope(
+            component="mean_regressor", data_view=views.train
+        ) as train_rows:
+            fitted = sum(row["fare"] for row in train_rows) / len(train_rows)
+        with session.prediction_scope(
+            component="mean_regressor", data_view=views.validation
+        ) as validation_rows:
+            predictions = [fitted for _ in validation_rows]
+            score = session.evaluate_internal(
+                views.validation,
+                predictions,
+                label_key="fare",
+            )
+        assert isinstance(score, float)
+        session.freeze_selection(
+            "mean-regressor",
+            based_on=views.validation,
+            artifact_hash="8" * 64,
+        )
+        evidence = controller.seal(
+            exit_status=0,
+            executed_path="candidate.py",
+            run_hash="c" * 64,
+        )
+    finally:
+        deactivate_full_runtime()
+        controller.stop()
+
+    assert evidence["status"] == "pass"
+    assert evidence["missing_events"] == []
+    assert evidence["shadow_observation_error"] == {}
+    assert [row["code"] for row in evidence["shadow_observations"]] == [
+        "inference_before_fit_scope",
+        "inference_before_selection_freeze",
+        "evaluate_before_prediction_scope_exit",
+    ]
+
+
 @pytest.mark.skipif(os.geteuid() != 0, reason="enforce UID isolation requires root")
 def test_executor_runs_full_training_under_host_session_and_seals_evidence():
     from engine.executor import Interpreter
