@@ -106,6 +106,7 @@ def test_mechanism_aggregation_keeps_stage_system_and_activation_counts() -> Non
         "runtime_activated": 2,
         "adopted": 1,
         "partially_adopted": 1,
+        "plan_covered": 6,
         "by_stage": {
             "debug": {
                 **MECHANISM._empty_counts(),
@@ -114,6 +115,7 @@ def test_mechanism_aggregation_keeps_stage_system_and_activation_counts() -> Non
                 "prompt_visible": 6,
                 "suppressed": 6,
                 "runtime_activated": 2,
+                "plan_covered": 6,
             }
         },
     }
@@ -123,3 +125,14 @@ def test_mechanism_aggregation_keeps_stage_system_and_activation_counts() -> Non
     assert aggregate["totals"]["runtime_activation_rate"] == 2 / 6
     assert aggregate["by_system"]["dynamic_hybrid"]["runs"] == 1
     assert aggregate["by_stage"]["debug"]["runtime_activated"] == 2
+
+
+def test_missing_runtime_probe_is_unobserved_not_zero_activation() -> None:
+    counts = MECHANISM._empty_counts()
+    counts["prompt_visible"] = 6
+    counts["raw_candidates"] = 12
+    rates = MECHANISM._rates(counts)
+    assert rates["adoption_observable"] is False
+    assert rates["static_adoption_rate"] is None
+    assert rates["runtime_activation_rate"] is None
+    assert rates["prompt_visible_without_adoption_plan"] == 6

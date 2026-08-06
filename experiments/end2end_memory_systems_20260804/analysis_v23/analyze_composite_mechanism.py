@@ -53,22 +53,29 @@ def _empty_counts() -> dict[str, int]:
     return {key: 0 for key in COUNTERS}
 
 
-def _rates(counts: Mapping[str, int]) -> dict[str, float | None]:
+def _rates(counts: Mapping[str, int]) -> dict[str, Any]:
     visible = int(counts["prompt_visible"])
     raw = int(counts["raw_candidates"])
     replay = int(counts["exact_replay_selected"])
+    covered = int(counts["plan_covered"])
     return {
         "suppression_rate": counts["suppressed"] / raw if raw else None,
-        "static_adoption_rate": counts["static_adopted"] / visible if visible else None,
-        "runtime_activation_rate": counts["runtime_activated"] / visible if visible else None,
+        "static_adoption_rate": (
+            counts["static_adopted"] / covered if covered else None
+        ),
+        "runtime_activation_rate": (
+            counts["runtime_activated"] / covered if covered else None
+        ),
         "agent_adoption_rate": (
-            (counts["adopted"] + counts["partially_adopted"]) / visible
-            if visible
+            (counts["adopted"] + counts["partially_adopted"]) / covered
+            if covered
             else None
         ),
         "exact_replay_execution_rate": (
             counts["exact_replay_executed"] / replay if replay else None
         ),
+        "adoption_observable": covered > 0,
+        "prompt_visible_without_adoption_plan": max(0, visible - covered),
     }
 
 
@@ -123,6 +130,8 @@ def build_report(
     ]
     mechanism = base_analysis.mechanism_summary(outcomes, manifests=manifests)
     rows = list(mechanism["runs"])
+    for row in rows:
+        row.update(_rates(row))
     report = {
         **mechanism,
         "schema": "mlevolve_end2end_composite_mechanism_summary_v1",
@@ -142,10 +151,29 @@ def build_report(
             "runs_with_runtime_activation": sum(
                 int(row.get("runtime_activated") or 0) > 0 for row in rows
             ),
+            "runs_with_adoption_observation_plan": sum(
+                int(row.get("plan_covered") or 0) > 0 for row in rows
+            ),
+            "runs_with_prompt_exposure_but_unobserved_adoption": sum(
+                int(row.get("prompt_visible") or 0) > 0
+                and int(row.get("plan_covered") or 0) == 0
+                for row in rows
+            ),
         },
         "aggregate": aggregate_runs(rows),
         "summary_hash": "",
     }
+    report["definitions"].update(
+        {
+            "adoption_observability": (
+                "static adoption and runtime activation rates use only "
+                "Prompt-visible items covered by an adoption observation plan"
+            ),
+            "missing_probe_disposition": (
+                "unobserved; never interpreted as zero activation"
+            ),
+        }
+    )
     report["summary_hash"] = terminal.payload_hash(report, "summary_hash")
     return report
 
