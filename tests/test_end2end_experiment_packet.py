@@ -9,6 +9,7 @@ import sys
 
 import yaml
 import jsonschema
+import pytest
 
 from protocol_runtime.collector import HostCollectorIdentity
 
@@ -404,7 +405,7 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     assert smoke["release_id"] == "end2end-agentic-three-role-v12"
     assert leaf_dynamic["release_id"] == "end2end-agentic-three-role-v12"
     assert leaf_controls["release_id"] == "end2end-agentic-three-role-v12"
-    assert pilot["release_id"] == "end2end-agentic-three-role-v13"
+    assert pilot["release_id"] == "end2end-agentic-three-role-v22"
     assert smoke["comparison_baseline_release_id"] == (
         pilot["comparison_baseline_release_id"]
     )
@@ -631,11 +632,18 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
             assert merged.external_skill_memory.retrieval_control == "layered_strategy"
             assert merged.external_skill_memory.enable_agentic is True
             assert merged.external_skill_memory.experiment_r_enabled is False
+            assert (
+                merged.external_skill_memory.experiment_r_l3_agent_match_enabled
+                is False
+            )
             assert merged.external_skill_memory.recipe_sop_file_sha256 == (
-                "197afca50c11cbceb3d9e34c12084371897551b217c9a5e7a21107236f882691"
+                "e6db95649c20a642738d6ee35df1aa11ff15287e3613221becb393e28d2a9398"
             )
             assert merged.external_skill_memory.recipe_sop_bundle_sha256 == (
-                "8c3ef43693508c4d38567f4ef304f8d6edc0fc37609d886328b62300c30860aa"
+                "8cce9dd7ee70897e23e5f1dfda08d056cf6ae77ad63e758bd2bbd05376e88749"
+            )
+            assert merged.external_skill_memory.recipe_implementation_path.endswith(
+                "recipe_distillation_v3/implementation_capsules.json"
             )
             assert merged.agent.draft_role_policy.replay_targets_path.endswith(
                 "paper-skills/eval_skill_memory/clean_replay_targets.json"
@@ -644,8 +652,35 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
             assert merged.external_skill_memory.experiment_r_memory_transfer_runtime_gate is False
             assert merged.agent.draft_role_policy.enabled is True
             assert list(merged.agent.draft_role_policy.roles) == [
-                "coldstart_baseline", "memory_transfer", "novel_exploration"
+                "coldstart_baseline", "memory_reproduction", "novel_exploration"
             ]
+            assert dict(merged.external_skill_memory.stage_quotas.draft) == {
+                "sop_candidates": 5,
+                "sop_gateways": 3,
+                "tree_candidates": 1,
+            }
+            assert dict(merged.external_skill_memory.stage_quotas.improve) == {
+                "sop_candidates": 3,
+                "sop_gateways": 2,
+                "tree_candidates": 3,
+            }
+            assert dict(merged.external_skill_memory.stage_quotas.debug) == {
+                "sop_candidates": 1,
+                "sop_gateways": 1,
+                "tree_candidates": 5,
+            }
+            assert dict(merged.external_skill_memory.rrf_weights.draft) == {
+                "sop": pytest.approx(5 / 6),
+                "tree": pytest.approx(1 / 6),
+            }
+            assert dict(merged.external_skill_memory.rrf_weights.improve) == {
+                "sop": pytest.approx(0.5),
+                "tree": pytest.approx(0.5),
+            }
+            assert dict(merged.external_skill_memory.rrf_weights.debug) == {
+                "sop": pytest.approx(1 / 6),
+                "tree": pytest.approx(5 / 6),
+            }
         else:
             assert merged.external_skill_memory.end2end_memory_system == row["system_id"]
             assert merged.agent.draft_role_policy.enabled is False
@@ -678,6 +713,7 @@ def test_source_lock_covers_and_matches_runtime_files() -> None:
     assert "mlevolve/agents/adoption_verifier_agent.py" in paths
     assert "mlevolve/authority/adoption_verification.py" in paths
     assert "mlevolve/protocol_runtime/adoption_trace.py" in paths
+    assert "paper-skills/eval_skill_memory/clean_replay_targets.json" in paths
     assert "experiments/end2end_memory_systems_20260804/run_assignment.py" in paths
     assert "experiments/end2end_memory_systems_20260804/analyze_results.py" in paths
     assert (
@@ -714,7 +750,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
         assert labels["experiment"] == (
-            "experiment-end2end-memory-agent-v13"
+            "experiment-end2end-memory-agent-v22"
         )
         assert job["metadata"]["annotations"]["mlevolve.ai/generated-not-submitted"] == "true"
         assert job["metadata"]["annotations"]["mlevolve.ai/gpu-contract"] == (
@@ -759,12 +795,12 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-                "/workspace/nautilus-exp-end2end-agent-v17/mlevolve"
+                "/workspace/nautilus-exp-end2end-agent-v22/mlevolve"
         )
         assert "--smoke-gate" not in container["args"]
         if path.name == "pilot-all-40-indexed-job.yaml":
             assert job["metadata"]["name"] == (
-                "mlevolve-e2e-agentic-pilot-all-40-v13"
+                "mlevolve-e2e-agentic-pilot-all-40-v22"
             )
             assert container["args"][-1] == "--resume"
         if path.name == "smoke-leaf-dynamic-hybrid-job.yaml":
@@ -854,8 +890,22 @@ def test_intent_confirmation_is_local_and_does_not_launch_training() -> None:
     assert payload["experiment"]["seeds"] == [1]
     assert payload["memory_bundle"]["same_task_history_enabled"] is True
     assert all(payload["memory_bundle"]["same_task_best_node_by_task"].values())
+    assert payload["dynamic_hybrid"]["roles"] == [
+        "coldstart_baseline",
+        "memory_reproduction",
+        "novel_exploration",
+    ]
+    leaf_replay = payload["dynamic_hybrid"]["exact_replay_target_by_task"][
+        "leaf-classification"
+    ]
+    assert leaf_replay["historical_metric"] == pytest.approx(
+        0.08612996973006647
+    )
+    assert leaf_replay["metric_status"] == (
+        "sealed_fixed_holdout_terminal_score"
+    )
     assert payload["formal_job"] == {
-        "name": "mlevolve-e2e-agentic-pilot-all-40-v13",
+        "name": "mlevolve-e2e-agentic-pilot-all-40-v22",
         "completions": 40,
         "parallelism": 1,
         "condition_level_resume": True,

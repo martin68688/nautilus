@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import collections
 import copy
+import difflib
 import hashlib
 import hmac
 import json
@@ -472,6 +473,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         recipe_evidence_path: str | None = None,
         recipe_evidence_file_sha256: str | None = None,
         recipe_evidence_manifest_sha256: str | None = None,
+        recipe_implementation_path: str | None = None,
         **kwargs: Any,
     ) -> None:
         self._trace_local = threading.local()
@@ -684,6 +686,13 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else ""
         ).strip()
+        self.recipe_implementation_path = str(
+            recipe_implementation_path
+            if recipe_implementation_path is not None
+            else getattr(ext_cfg, "recipe_implementation_path", "")
+            if ext_cfg is not None
+            else ""
+        ).strip()
         if end2end_memory_system is None and ext_cfg is not None:
             end2end_memory_system = getattr(
                 ext_cfg, "end2end_memory_system", ""
@@ -774,6 +783,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         self.recipe_evidence_receipt: dict[str, Any] = {}
         if self.recipe_evidence_path:
             self._load_recipe_evidence_overlay()
+        self.recipe_implementation_receipt: dict[str, Any] = {}
+        if self.recipe_implementation_path:
+            self._load_recipe_implementation_capsules()
         self._recipe_sop_ids: list[str] = []
         self.recipe_sop_receipt: dict[str, Any] = {}
         if self.recipe_sop_path:
@@ -1934,6 +1946,182 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             ),
         }
 
+    @staticmethod
+    def _implementation_unified_diff(
+        before_code: str,
+        after_code: str,
+        parent_id: str,
+        child_id: str,
+    ) -> str:
+        """Return the canonical minimal-context diff stored in a capsule."""
+
+        return "".join(
+            difflib.unified_diff(
+                str(before_code).splitlines(keepends=True),
+                str(after_code).splitlines(keepends=True),
+                fromfile=f"before/{parent_id}",
+                tofile=f"after/{child_id}",
+                n=3,
+            )
+        )
+
+    def _load_recipe_implementation_capsules(self) -> None:
+        """Bind full code and exact repair diffs to frozen RunForest hashes.
+
+        Recipe evidence deliberately keeps the retrieval graph compact.  This
+        separate capsule restores executable detail only after a
+        strategy or repair has been selected, so code never changes ranking.
+        """
+
+        if self.retrieval_control != "layered_strategy":
+            raise ValueError(
+                "Recipe implementation capsules are only valid for layered_strategy"
+            )
+        path = self._resolve_config_path(self.recipe_implementation_path)
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if payload.get("schema") != "mlevolve_recipe_implementation_capsules_v1":
+            raise ValueError("Unsupported Recipe implementation capsule schema")
+
+        node_rows = payload.get("nodes")
+        transition_rows = payload.get("transitions")
+        if not isinstance(node_rows, list) or not isinstance(transition_rows, list):
+            raise ValueError("Recipe implementation capsule inventory is malformed")
+        nodes_by_id: dict[str, Mapping[str, Any]] = {}
+        for row in node_rows:
+            if not isinstance(row, Mapping):
+                raise ValueError("Recipe implementation node is not an object")
+            node_id = str(row.get("node_id") or "")
+            if not node_id or node_id in nodes_by_id:
+                raise ValueError(
+                    f"Duplicate or missing implementation node id: {node_id}"
+                )
+            nodes_by_id[node_id] = row
+        transitions_by_id: dict[str, Mapping[str, Any]] = {}
+        for row in transition_rows:
+            if not isinstance(row, Mapping):
+                raise ValueError("Recipe implementation transition is not an object")
+            transition_id = str(row.get("transition_id") or "")
+            if not transition_id or transition_id in transitions_by_id:
+                raise ValueError(
+                    "Duplicate or missing implementation transition id: "
+                    f"{transition_id}"
+                )
+            transitions_by_id[transition_id] = row
+
+        required_node_ids = {
+            node_id
+            for node_id in self._recipe_evidence_ids
+            if len(str(self.nodes.get(node_id, {}).get("code_sha256") or "")) == 64
+        }
+        required_transition_ids: set[str] = set()
+        for transition_id, repair in self._recipe_repair_evidence_by_transition.items():
+            parent_id = str(repair.get("failure_node_id") or "")
+            child_id = str(repair.get("successful_node_id") or "")
+            if len(str(repair.get("failure_node_code_sha256") or "")) == 64:
+                required_node_ids.add(parent_id)
+            if len(str(repair.get("successful_node_code_sha256") or "")) == 64:
+                required_node_ids.add(child_id)
+            if parent_id in required_node_ids and child_id in required_node_ids:
+                required_transition_ids.add(str(transition_id))
+        declared_required_nodes = {
+            str(value) for value in payload.get("required_node_ids") or []
+        }
+        declared_required_transitions = {
+            str(value) for value in payload.get("required_transition_ids") or []
+        }
+        if declared_required_nodes != required_node_ids:
+            raise ValueError("Recipe implementation required-node coverage mismatch")
+        if not set(nodes_by_id).issubset(required_node_ids):
+            raise ValueError("Recipe implementation node inventory has unknown nodes")
+        if declared_required_transitions != required_transition_ids:
+            raise ValueError(
+                "Recipe implementation required-transition coverage mismatch"
+            )
+        if not set(transitions_by_id).issubset(required_transition_ids):
+            raise ValueError(
+                "Recipe implementation transition inventory has unknown transitions"
+            )
+
+        for node_id, row in nodes_by_id.items():
+            node = self.nodes.get(node_id)
+            if not isinstance(node, dict) or node.get("type") != "RunNode":
+                raise ValueError(
+                    f"Recipe implementation references a missing RunNode: {node_id}"
+                )
+            code = row.get("code")
+            if not isinstance(code, str) or not code.strip():
+                raise ValueError(
+                    f"Recipe implementation has no source code: {node_id}"
+                )
+            code_sha = hashlib.sha256(code.encode("utf-8")).hexdigest()
+            if not hmac.compare_digest(
+                code_sha, str(row.get("code_sha256") or "")
+            ) or not hmac.compare_digest(
+                code_sha, str(node.get("code_sha256") or "")
+            ):
+                raise ValueError(
+                    f"Recipe implementation code hash mismatch: {node_id}"
+                )
+            if not str(row.get("source_journal") or ""):
+                raise ValueError(
+                    f"Recipe implementation source provenance is incomplete: {node_id}"
+                )
+            node["implementation_capsule"] = {
+                "schema": "mlevolve_run_node_implementation_capsule_v1",
+                "node_id": node_id,
+                "code": code,
+                "code_sha256": code_sha,
+                "source_journal": str(row.get("source_journal")),
+                "source_raw_node_id": str(row.get("source_raw_node_id") or ""),
+            }
+
+        for transition_id, row in transitions_by_id.items():
+            transition = self.nodes.get(transition_id)
+            if not isinstance(transition, dict) or transition.get("type") != "Transition":
+                raise ValueError(
+                    "Recipe implementation references a missing Transition: "
+                    f"{transition_id}"
+                )
+            parent_id = str(row.get("parent_node_id") or "")
+            child_id = str(row.get("child_node_id") or "")
+            if (
+                parent_id != str(transition.get("parent_node_id") or "")
+                or child_id != str(transition.get("child_node_id") or "")
+            ):
+                raise ValueError(
+                    f"Recipe implementation transition binding mismatch: {transition_id}"
+                )
+            before = str(nodes_by_id[parent_id]["code"])
+            after = str(nodes_by_id[child_id]["code"])
+            expected_diff = self._implementation_unified_diff(
+                before, after, parent_id, child_id
+            )
+            transition["implementation_repair_capsule"] = {
+                "schema": "mlevolve_repair_implementation_capsule_v1",
+                "transition_id": transition_id,
+                "parent_node_id": parent_id,
+                "child_node_id": child_id,
+                "before_code": before,
+                "after_code": after,
+                "before_code_sha256": str(nodes_by_id[parent_id]["code_sha256"]),
+                "after_code_sha256": str(nodes_by_id[child_id]["code_sha256"]),
+                "unified_diff": expected_diff,
+            }
+
+        self.recipe_implementation_receipt = {
+            "schema": "layered_recipe_implementation_receipt_v1",
+            "path": str(path),
+            "node_count": len(nodes_by_id),
+            "transition_count": len(transitions_by_id),
+            "required_node_count": len(required_node_ids),
+            "required_transition_count": len(required_transition_ids),
+            "missing_node_ids": sorted(required_node_ids - set(nodes_by_id)),
+            "missing_transition_ids": sorted(
+                required_transition_ids - set(transitions_by_id)
+            ),
+            "complete_recipe_coverage": set(nodes_by_id) == required_node_ids,
+        }
+
     def _model_family_from_text(self, value: str) -> str:
         text = str(value or "").lower()
         if "modernbert" in text:
@@ -2215,6 +2403,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     "audit_status": audit.get("status"),
                     "rank_eligible": audit.get("rank_eligible"),
                     "code_sha256": node.get("code_sha256"),
+                    "implementation_available": bool(
+                        node.get("implementation_capsule")
+                    ),
                     "eligibility_reason": "direct_strict_clean_recipe_source",
                 }
             )
@@ -2254,6 +2445,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     "audit_status": (child.get("leakage_audit") or {}).get("status"),
                     "rank_eligible": (child.get("leakage_audit") or {}).get("rank_eligible"),
                     "code_sha256": child.get("code_sha256"),
+                    "implementation_available": bool(
+                        child.get("implementation_capsule")
+                    ),
                     "eligibility_reason": reason,
                 }
             )
@@ -2682,8 +2876,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             "validation_plan": "Use the task's clean validation protocol.",
             "model_components": [selected.get("method_family") or ""],
         }
-        return "\n".join(
-            [
+        lines = [
                 "## Frozen Novel Strategy Contract",
                 "The strategy was selected from three distinct L1 method families with clean Tree evidence.",
                 f"Task profile: {json.dumps(pack['task_profile'], ensure_ascii=False)}",
@@ -2700,6 +2893,39 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 f"terminal={evidence.get('terminal_evidence')} audit={evidence.get('audit_status')} "
                 f"code_sha256={evidence.get('code_sha256')}",
                 "Do not replace this method family with an excluded baseline/replay family.",
+            ]
+        implementation = self._format_node_implementation(
+            str(evidence.get("node_id") or ""),
+            heading="Exact Same-Task RunForest Implementation",
+        )
+        if implementation:
+            lines.extend(
+                [
+                    "",
+                    "Start from this measured implementation. Preserve its data, fold, "
+                    "training, and inference mechanics unless the selected SOP explicitly "
+                    "requires a named change.",
+                    implementation,
+                ]
+            )
+        return "\n".join(lines)
+
+    def _format_node_implementation(self, node_id: str, *, heading: str) -> str:
+        node = self.nodes.get(str(node_id), {})
+        capsule = node.get("implementation_capsule")
+        if not isinstance(capsule, Mapping):
+            return ""
+        code = str(capsule.get("code") or "")
+        if not code.strip():
+            return ""
+        return "\n".join(
+            [
+                f"### {heading}",
+                f"RunForest node: {node_id}",
+                f"Code identity: {capsule.get('code_sha256')}",
+                "<implementation_code>",
+                code,
+                "</implementation_code>",
             ]
         )
 
@@ -3475,10 +3701,17 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         parent_failure = str(parent.get("analysis") or parent.get("terminal_excerpt") or "").strip()
         code_change = str(child.get("plan") or child.get("code_summary") or transition.get("text") or "").strip()
         child_result = str(child.get("analysis") or child.get("terminal_excerpt") or "").strip()
+        repair = transition.get("implementation_repair_capsule")
+        repair = repair if isinstance(repair, Mapping) else {}
         return {
             "parent_failure": parent_failure,
             "code_change": code_change,
             "child_result": child_result,
+            "before_code": str(repair.get("before_code") or ""),
+            "after_code": str(repair.get("after_code") or ""),
+            "before_code_sha256": str(repair.get("before_code_sha256") or ""),
+            "after_code_sha256": str(repair.get("after_code_sha256") or ""),
+            "unified_diff": str(repair.get("unified_diff") or ""),
         }
 
     @staticmethod
@@ -4852,6 +5085,16 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             else:
                 rejected_execution.append({"candidate_id": item["id"], "reason": reason})
         fused = clean_fused
+        prompt_execution_limit = self.top_k
+        if self.retrieval_control == "layered_strategy" and stage == "debug":
+            # Debug has one separately rendered L3 gateway.  Keep the
+            # execution half of the Prompt to the configured RunForest quota
+            # so a gateway expansion cannot silently turn a frozen 1:5 design
+            # into one L3 card plus six (or more) repair transitions.
+            prompt_execution_limit = min(
+                self.top_k, quotas["tree_candidates"]
+            )
+            fused = fused[:prompt_execution_limit]
         selected_sop_ids = {item["id"] for item in selected}
         for item in sop_candidates:
             trace.append(
@@ -4890,7 +5133,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     "selection_state": "selected",
                 }
             )
-        for item in fused[: self.top_k]:
+        for item in fused[:prompt_execution_limit]:
             provenance = execution_provenance.get(item["id"], {})
             trace.append(
                 {
@@ -4915,7 +5158,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 }
                 for clause in visibility_pack.warning_clauses
             ]
-        final_prompt_candidate_ids = {item["id"] for item in fused[: self.top_k]}
+        final_prompt_candidate_ids = {
+            item["id"] for item in fused[:prompt_execution_limit]
+        }
         for item in pre_gate_raw_candidates:
             item["final_prompt_visible"] = item["candidate_id"] in final_prompt_candidate_ids
         trace.append(
@@ -4950,6 +5195,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 "tree_confidence": tree_confidence,
                 "fallback_reason": tree_fallback_reason,
             },
+            "target_task_id": task_id,
             "direct_sop_candidates": sop_candidates,
             "selected_sop_gateways": selected,
             "gateway_transitions": gateway_transitions,
@@ -4964,6 +5210,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             "visibility_warnings": visibility_warnings,
             "navigation_trace": trace,
             "fused_execution_candidates": fused,
+            "prompt_execution_limit": prompt_execution_limit,
             "pre_gate_raw_candidates": pre_gate_raw_candidates,
             "final_prompt_candidate_ids": sorted(final_prompt_candidate_ids),
             "execution_candidate_provenance": execution_provenance,
@@ -5066,7 +5313,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 )
         if pack["sop_transition_matches"] or pack["tree_only_candidates"]:
             lines += ["", "### Execution Candidates"]
-            for item in pack["fused_execution_candidates"][: self.top_k]:
+            prompt_execution_limit = int(
+                pack.get("prompt_execution_limit", self.top_k)
+            )
+            for item in pack["fused_execution_candidates"][
+                :prompt_execution_limit
+            ]:
                 node = self.nodes.get(item["id"], {})
                 lines.append(
                     f"- [{item['candidate_class']}] {item['id']} "
@@ -5082,6 +5334,27 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     lines.append(f"  Parent failure: {str(evidence.get('parent_failure') or '')[:700]}")
                     lines.append(f"  Proven code change: {str(evidence.get('code_change') or '')[:700]}")
                     lines.append(f"  Successful child result: {str(evidence.get('child_result') or '')[:700]}")
+                    unified_diff = str(evidence.get("unified_diff") or "")
+                    repaired_code = str(evidence.get("after_code") or "")
+                    if unified_diff:
+                        lines.extend(
+                            [
+                                "  Exact historical code identities: "
+                                f"before={evidence.get('before_code_sha256')} "
+                                f"after={evidence.get('after_code_sha256')}",
+                                "  <historical_repair_diff>",
+                                unified_diff,
+                                "  </historical_repair_diff>",
+                            ]
+                        )
+                    if repaired_code:
+                        lines.extend(
+                            [
+                                "  <successful_repaired_code>",
+                                repaired_code,
+                                "  </successful_repaired_code>",
+                            ]
+                        )
                     proven_sops = [row["sop_id"] for row in detail.get("causal_attachments", [])]
                     lines.append(f"  Causally supported SOPs only: {', '.join(proven_sops) or 'none'}")
                 elif detail and node.get("type") == "Transition":
@@ -5092,6 +5365,23 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     lines.append(
                         f"  Successful child result: {str(evidence.get('child_result') or '')[:700]}"
                     )
+                elif (
+                    node.get("type") == "RunNode"
+                    and canonical_task_id(node.get("task"))
+                    == canonical_task_id(pack.get("target_task_id"))
+                    and self._is_terminal_strategy_evidence(item["id"], node)
+                ):
+                    implementation = self._format_node_implementation(
+                        item["id"], heading="Exact Same-Task Terminal Implementation"
+                    )
+                    if implementation:
+                        lines.extend(
+                            [
+                                "  Reproduce this measured implementation before "
+                                "making optional improvements.",
+                                implementation,
+                            ]
+                        )
         if pack["sop_only_candidates"]:
             lines += ["", "### SOP-Only Method References (unverified here)"]
             for candidate in pack["sop_only_candidates"][:4]:
@@ -5148,6 +5438,18 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         feedback = " | ".join(value for value in feedback_parts if value)
         if feedback and feedback not in plan:
             plan = f"{plan}\nStructured execution feedback: {feedback}".strip()
+        unified_diff = str(evidence.get("unified_diff") or "")
+        repaired_code = str(evidence.get("after_code") or "")
+        if unified_diff:
+            plan = (
+                f"{plan}\n<historical_repair_diff>\n{unified_diff}"
+                "\n</historical_repair_diff>"
+            ).strip()
+        if repaired_code:
+            plan = (
+                f"{plan}\n<successful_repaired_code>\n{repaired_code}"
+                "\n</successful_repaired_code>"
+            ).strip()
         return plan, feedback or "verified successful execution"
 
     def _end2end_common_pool(

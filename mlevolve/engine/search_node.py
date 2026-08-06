@@ -162,7 +162,13 @@ class SearchNode(DataClassJsonMixin):
 
     @property
     def term_out(self) -> str:
-        return trim_long_string("".join(self._term_out))
+        return trim_long_string(self.full_term_out)
+
+    @property
+    def full_term_out(self) -> str:
+        """Unabridged executor output for machine parsing and objective receipts."""
+
+        return "".join(self._term_out or [])
 
     @property
     def is_leaf(self) -> bool:

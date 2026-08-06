@@ -33,9 +33,9 @@ STAGES = ("draft", "improve", "debug")
 SLOT_POLICY = {
     "static_hybrid": {stage: {"sop": 3, "runforest": 3} for stage in STAGES},
     "dynamic_hybrid": {
-        "draft": {"sop": 4, "runforest": 2},
+        "draft": {"sop": 5, "runforest": 1},
         "improve": {"sop": 3, "runforest": 3},
-        "debug": {"sop": 2, "runforest": 4},
+        "debug": {"sop": 1, "runforest": 5},
     },
     "reversed_router": {
         "draft": {"sop": 2, "runforest": 4},
@@ -3032,6 +3032,26 @@ def _runforest_lines(layer: Any, row: dict[str, Any], stage: str) -> list[str]:
                 f"  Successful child result: {str(evidence.get('child_result') or '')[:700]}",
             ]
         )
+        unified_diff = str(evidence.get("unified_diff") or "")
+        repaired_code = str(evidence.get("after_code") or "")
+        if unified_diff:
+            lines.extend(
+                [
+                    f"  Exact code identities: before={evidence.get('before_code_sha256')} "
+                    f"after={evidence.get('after_code_sha256')}",
+                    "  <historical_repair_diff>",
+                    unified_diff,
+                    "  </historical_repair_diff>",
+                ]
+            )
+        if repaired_code:
+            lines.extend(
+                [
+                    "  <successful_repaired_code>",
+                    repaired_code,
+                    "  </successful_repaired_code>",
+                ]
+            )
     else:
         summary = str(
             node.get("plan")

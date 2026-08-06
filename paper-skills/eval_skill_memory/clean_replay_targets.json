@@ -23,16 +23,19 @@
     },
     {
       "task_id": "leaf-classification",
-      "run_id": "20260701_155016_leaf-classification",
-      "original_node_id": "97c95ee1e7bb4cfaa2327fa74f30dcbb",
-      "sop_ids": ["sop::sg_0040", "sop::sg_0042"],
-      "historical_metric": 0.013948359557098382,
-      "method_family": "vision_tabular_fusion",
-      "code_sha256": "2c812d04e05ebb9f2292cf72ab4468392b4efb7ec719c5eb213fe6fe8a4dd439",
+      "source_kind": "recipe_implementation_capsule",
+      "run_id": "e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1::attempt-20260806_leaf_layered_recipe_v27_attempt_000",
+      "original_node_id": "d2fccc688085447c9ad84356deac9194",
+      "graph_node_id": "postsmoke::e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1::d2fccc688085447c9ad84356deac9194",
+      "sop_ids": ["recipe::leaf-classification::003"],
+      "historical_metric": 0.08612996973006647,
+      "maximize": false,
+      "method_family": "siglip2_multibranch_self_attention_fusion",
+      "code_sha256": "79e202f8e3ce146a8b867461fe9d77100073fa93f86d4fb8dc794e2164002c89",
       "audit_status": "verified_clean",
-      "metric_status": "historical_selected_validation_score",
+      "metric_status": "sealed_fixed_holdout_terminal_score",
       "known_issue_codes": [],
-      "selection_basis": "Best clean rank-eligible historical Leaf node after deterministic leakage re-audit."
+      "selection_basis": "Best clean Leaf implementation with a sealed fixed-holdout terminal score; exact code is frozen in the Recipe v3 implementation capsule."
     },
     {
       "task_id": "aerial-cactus-identification",

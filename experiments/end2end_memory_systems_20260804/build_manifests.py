@@ -16,7 +16,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v17")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v22")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
 MANIFESTS = ROOT / "manifests"
 SYSTEM_DIR = ROOT / "systems"
@@ -25,11 +25,11 @@ SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-agentic-three-role-v13"
+RELEASE_ID = "end2end-agentic-three-role-v22"
 BASELINE_RELEASE_ID = "end2end-agent-v3"
 RANDOMIZATION_RELEASE_ID = BASELINE_RELEASE_ID
-OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v13/runs"
-EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v13"
+OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v22/runs"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v22"
 SOLVER_TEMPERATURE = 1.0
 SYSTEMS = (
     ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
@@ -37,7 +37,7 @@ SYSTEMS = (
     ("S2", "sop_only", "internal", "SOP Top-6"),
     ("S3", "runforest_only", "internal", "RunForest Top-6"),
     ("S4", "static_hybrid", "internal", "3 SOP / 3 RunForest"),
-    ("S5", "dynamic_hybrid", "internal", "Draft 4/2, Improve 3/3, Debug 2/4"),
+    ("S5", "dynamic_hybrid", "internal", "Draft 5/1, Improve 3/3, Debug 1/5"),
     ("S6", "reversed_router", "internal", "Draft 2/4, Improve 3/3, Debug 4/2"),
     ("C1", "gome_style_port", "competitor_style_port", "Verified Success Memory cards"),
     ("C2", "macla_style_port", "competitor_style_port", "Beta reliability utility"),
@@ -306,18 +306,19 @@ agent:
     replay_targets_path: ../paper-skills/eval_skill_memory/clean_replay_targets.json
     roles:
       - coldstart_baseline
-      - memory_transfer
+      - memory_reproduction
       - novel_exploration
 external_skill_memory:
   end2end_memory_system: ""
   retrieval_control: layered_strategy
   enable_agentic: true
-  recipe_sop_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v2/recipe_sops.json
-  recipe_sop_file_sha256: 197afca50c11cbceb3d9e34c12084371897551b217c9a5e7a21107236f882691
-  recipe_sop_bundle_sha256: 8c3ef43693508c4d38567f4ef304f8d6edc0fc37609d886328b62300c30860aa
-  recipe_evidence_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v2/evidence_manifest.json
-  recipe_evidence_file_sha256: 46f1313d1918954a42daade64ffc05aae3fc6f057b301111859b7da63efab9f3
-  recipe_evidence_manifest_sha256: d06a1198ebafd1d0b6bae9cae3c0c439a11fd4ff13855b913dc980a155830da7
+  recipe_sop_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v3/recipe_sops.json
+  recipe_sop_file_sha256: e6db95649c20a642738d6ee35df1aa11ff15287e3613221becb393e28d2a9398
+  recipe_sop_bundle_sha256: 8cce9dd7ee70897e23e5f1dfda08d056cf6ae77ad63e758bd2bbd05376e88749
+  recipe_evidence_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v3/evidence_manifest.json
+  recipe_evidence_file_sha256: fcb084206cdaa31cfd052c1bce290871b8c075a6376ee698b5c4119636adda04
+  recipe_evidence_manifest_sha256: 25f6729ece9b1ead76b0d8501aa6aa4026cb163e3eaa7eb05c755b1d72f6160f
+  recipe_implementation_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v3/implementation_capsules.json
   experiment_r_enabled: false
   experiment_r_candidate_limit: 12
   experiment_r_top_k: 6
@@ -329,12 +330,35 @@ external_skill_memory:
   experiment_r_agentic_max_observed: 48
   experiment_r_agentic_temperature: 0.0
   experiment_r_agentic_max_tokens: 1200
-  experiment_r_l3_agent_match_enabled: true
+  experiment_r_l3_agent_match_enabled: false
   experiment_r_l3_agent_match_max_attempts: 2
   experiment_r_l3_agent_match_min_confidence: 0.50
   experiment_r_l3_agent_match_max_tokens: 1800
   experiment_r_memory_transfer_static_gate: false
   experiment_r_memory_transfer_runtime_gate: false
+  stage_quotas:
+    draft:
+      sop_candidates: 5
+      sop_gateways: 3
+      tree_candidates: 1
+    improve:
+      sop_candidates: 3
+      sop_gateways: 2
+      tree_candidates: 3
+    debug:
+      sop_candidates: 1
+      sop_gateways: 1
+      tree_candidates: 5
+  rrf_weights:
+    draft:
+      sop: 0.8333333333333334
+      tree: 0.16666666666666666
+    improve:
+      sop: 0.5
+      tree: 0.5
+    debug:
+      sop: 0.16666666666666666
+      tree: 0.8333333333333334
 
 run_identity:
   memory_system: dynamic_hybrid
@@ -378,8 +402,13 @@ def source_lock() -> dict[str, Any]:
         + sorted(SCHEMA_DIR.glob("*.json"))
         + sorted(HOST_BINDINGS_DIR.rglob("*.json"))
         + [
-            ROOT / "recipe_distillation_v2" / "recipe_sops.json",
-            ROOT / "recipe_distillation_v2" / "evidence_manifest.json",
+            ROOT / "recipe_distillation_v3" / "recipe_sops.json",
+            ROOT / "recipe_distillation_v3" / "evidence_manifest.json",
+            ROOT / "recipe_distillation_v3" / "implementation_capsules.json",
+            REPO
+            / "paper-skills"
+            / "eval_skill_memory"
+            / "clean_replay_targets.json",
         ]
     ):
         relative = path.relative_to(REPO)
@@ -491,16 +520,18 @@ def component_manifests(
                 "visibility_token_budget": 4096,
             },
             "l3_agent_matching": {
-                "enabled_for_systems": ["dynamic_hybrid"],
+                "specialized_root_cause_agent_enabled_for_systems": [],
+                "manual_router_enabled_for_systems": ["dynamic_hybrid"],
                 "decision_stage": "debug",
-                "temperature": 0.0,
-                "max_attempts_per_task_scope": 2,
-                "max_tokens_per_call": 1800,
-                "min_confidence": 0.50,
+                "gateway_selector_agent_enabled": True,
+                "gateway_selector_temperature": 0.0,
+                "failure_signature_min_match": 0.50,
                 "task_scope_order": ["exact_task", "same_task_type"],
                 "cross_task_type_allowed": False,
-                "manual_synonym_table_used": False,
-                "failure_fallback": "abstain_without_manual_matcher",
+                "manual_synonym_table_used": True,
+                "agent_input_scope": "hard_gated_clean_candidates_only",
+                "agent_cannot_restore_rejected_candidates": True,
+                "failure_fallback": "deterministic_manual_router_order",
             },
             "adoption_verifier": {
                 "enabled": False,
@@ -678,7 +709,7 @@ def execution_manifest(
         task_ids = [task_id for task_id, _display, _metric, _direction in TASKS]
         system_ids = None
         formal = True
-        prefix = "e2e-pilot-agentic-three-role-v13"
+        prefix = "e2e-pilot-agentic-three-role-v22"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -929,7 +960,7 @@ def build() -> dict[str, Any]:
     for stale in JOB_DIR.glob("pilot-*-indexed-job.yaml"):
         stale.unlink()
     pilot_job = job(
-        name="mlevolve-e2e-agentic-pilot-all-40-v13",
+        name="mlevolve-e2e-agentic-pilot-all-40-v22",
         manifest_name="pilot_manifest.json",
         completions=40,
         task_id=None,
@@ -942,7 +973,7 @@ def build() -> dict[str, Any]:
         yaml.safe_dump(pilot_job, sort_keys=False), encoding="utf-8"
     )
     leaf_recipe_job = job(
-        name="mlevolve-e2e-leaf-layered-recipe-smoke-v27",
+        name="mlevolve-e2e-leaf-layered-recipe-smoke-v28",
         manifest_name="leaf_recipe_dynamic_smoke_manifest.json",
         completions=1,
         task_id=None,

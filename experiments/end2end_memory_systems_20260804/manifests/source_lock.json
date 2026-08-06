@@ -99,11 +99,11 @@
     },
     {
       "path": "mlevolve/agents/memory/end2end_memory_system.py",
-      "sha256": "c1f3595308e812adeff68c27845f38c3dafa654defbe735d05b742f0610c686e"
+      "sha256": "b30e9d0f4b64072cab4e16f164d9138e527e9f22916e833406b7c623df81608b"
     },
     {
       "path": "mlevolve/agents/memory/experiment_r_router.py",
-      "sha256": "398c3530755c0f03d9f2c1bada4d08a933301163f83cb08078a724d53b110e0e"
+      "sha256": "5d2d42cb450f7989394afa7554c8b02abc984138dde0be6294e2a6cdb1ed5c0d"
     },
     {
       "path": "mlevolve/agents/memory/external_skill_memory.py",
@@ -131,7 +131,7 @@
     },
     {
       "path": "mlevolve/agents/memory/run_forest_replay.py",
-      "sha256": "c145270a9f06f3acea2b2f6096b17f969d53f81983b78e86b80eb16dccc06a82"
+      "sha256": "de4e98992e25886e54e6ee63cfae50f7368a8d1c6f4abfffa98b4c6b147173b8"
     },
     {
       "path": "mlevolve/agents/memory/sop_visibility_gateway.py",
@@ -139,7 +139,7 @@
     },
     {
       "path": "mlevolve/agents/memory/stage_aware_hybrid_memory.py",
-      "sha256": "961eaf83f5a0715ffc4aa93abeea09dfe8b4e014c17bdc61b870e823cba5e5f5"
+      "sha256": "c6841703e237ca9f1570947281c81c9934d63e3b5c77d75b3d4857a645d680cf"
     },
     {
       "path": "mlevolve/agents/planner/__init__.py",
@@ -186,8 +186,12 @@
       "sha256": "37b07db3c94daf26cb3d371eea8c0d9f10fe88e5bb3e8fcb77e075735b157b73"
     },
     {
+      "path": "mlevolve/agents/result_log_facts.py",
+      "sha256": "8e2a57b30c1422a08d82a9ba068e6c918cac243ae4f732582b6cde87d5b9cddb"
+    },
+    {
       "path": "mlevolve/agents/result_parse_agent.py",
-      "sha256": "62dd1ac3e870a73475720e9a9bb1e30bdc0ba972eeb3f96e428d040f17c85d07"
+      "sha256": "da612610b4cbd899702b1208a7ebaff316fa2502cf8fb4e92ac0db7ac57b4e2e"
     },
     {
       "path": "mlevolve/agents/triggers.py",
@@ -383,7 +387,7 @@
     },
     {
       "path": "mlevolve/config/__init__.py",
-      "sha256": "35986d641aac6d7b4a0781afc1e81dee6a351d55c2df59e425c14124f7c3f324"
+      "sha256": "4fba3d21af685ebeb3ae8e532d5a5de828c0740437860c8cfbd8c735e538b9df"
     },
     {
       "path": "mlevolve/config/config.yaml",
@@ -547,7 +551,7 @@
     },
     {
       "path": "mlevolve/engine/search_node.py",
-      "sha256": "e2a78be38f8600ed5270c1b2e036c7fb8ec5fb69329d2d16497ee953ab26cc64"
+      "sha256": "832ad9d0554d3c78263bc55d96492a86b79d2c3ca6ac4326a2d7e7add47649af"
     },
     {
       "path": "mlevolve/engine/solution_manager.py",
@@ -855,11 +859,19 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "16bc0f3ae8a74fd224b898109b9874be07ddeda469805f4715d9a751d275783e"
+      "sha256": "25cdd901549d11aee246623b8a428067a61811691004dfab7f9470199de4e53a"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/build_recipe_implementation_capsules.py",
+      "sha256": "7a3759708bece0e674b60d51bd60d8258b72ab6786dd2d12ecf82d0c041c63ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/build_recipe_release_v3.py",
+      "sha256": "652e6c95a45224c02972f3bf4ed2aee469044647313e921422b9fa4c167382ff"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/confirm_experiment_intent.py",
-      "sha256": "b5c756ee35b118722e5cf75a62f179499279e017b01634e770a16bdab0af04f4"
+      "sha256": "0f6d5a8a058a0f4c7c734aced7c6cbf074f0e088e008928a88685f06e804508c"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/prepare_direct_fourtask_memory.py",
@@ -899,7 +911,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/dynamic_hybrid.yaml",
-      "sha256": "ba39fbf47c3108eb43a8ee8454d8c81dd4d8063899ca4a4dd40111dd389f1add"
+      "sha256": "1f4dc5820d953aeb642111af845afedfcf0d09cd0ed3c7f92a2916655ffe52e6"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/flat_retrieval.yaml",
@@ -943,7 +955,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/execution_manifest.schema.json",
-      "sha256": "a88807e3ec7cf742750c18ec255a5989e748410e25ba6e7b554bd30a3313c8c1"
+      "sha256": "f5f5f55416bc8596dfbf29e4b905844df2afe56909ae59361f185045a314760e"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/schemas/smoke_gate.schema.json",
@@ -966,16 +978,24 @@
       "sha256": "4300df74f961e7fcc34e7c38d35177e41a3423bd66f86ee1fd0ff9a89cebe7f0"
     },
     {
-      "path": "experiments/end2end_memory_systems_20260804/recipe_distillation_v2/recipe_sops.json",
-      "sha256": "197afca50c11cbceb3d9e34c12084371897551b217c9a5e7a21107236f882691"
+      "path": "experiments/end2end_memory_systems_20260804/recipe_distillation_v3/recipe_sops.json",
+      "sha256": "e6db95649c20a642738d6ee35df1aa11ff15287e3613221becb393e28d2a9398"
     },
     {
-      "path": "experiments/end2end_memory_systems_20260804/recipe_distillation_v2/evidence_manifest.json",
-      "sha256": "46f1313d1918954a42daade64ffc05aae3fc6f057b301111859b7da63efab9f3"
+      "path": "experiments/end2end_memory_systems_20260804/recipe_distillation_v3/evidence_manifest.json",
+      "sha256": "fcb084206cdaa31cfd052c1bce290871b8c075a6376ee698b5c4119636adda04"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/recipe_distillation_v3/implementation_capsules.json",
+      "sha256": "78de79f57b0b33c4daed232f530a13c5b9fed0bfe3cd2a4e5cc14f6bc53172ef"
+    },
+    {
+      "path": "paper-skills/eval_skill_memory/clean_replay_targets.json",
+      "sha256": "8bf82e25668e8aaa1d4963cf81d47f2cded2c297b0f21467ab5c41e3243d82c9"
     }
   ],
-  "git_head": "5c21dafe5e46c1aa05b54d9e7c4f26df5f2f9102",
+  "git_head": "dd5e095a9b26acddcece8f87efd9cbb01b64df5c",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "adbcbe908524ee13469e8e54d81954083de2607fae59b81285feff356876ece0",
+  "manifest_hash": "2bfc644c26799405b593b1330f5ba3b36e9596f476914cd3d0f59d32cce13283",
   "schema": "mlevolve_end2end_source_lock_v1"
 }

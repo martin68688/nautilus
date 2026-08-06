@@ -15,6 +15,12 @@ from utils.metric import MetricValue, WorstMetricValue
 from utils.response import wrap_code
 from engine.validation import call_validate, _validate_submission_with_retry, validate_submission_content_quality
 from agents import data_leakage_agent, leakage_audit, protocol_repair
+from agents.result_log_facts import (
+    extract_high_confidence_metric as _extract_high_confidence_metric,
+    result_parser_conflict as _result_parser_conflict,
+    result_parser_facts as _result_parser_facts,
+    result_parser_output_view as _result_parser_output_view,
+)
 from agents.triggers import should_check_data_leakage
 from fixed_holdout.mode import bypass_protocol_gates, enabled, train_manifest_path
 from fixed_holdout.validation import validate_submission as validate_fixed_submission
@@ -1069,31 +1075,113 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                     task_id=str(getattr(agent.cfg, "exp_id", "") or ""),
                 )
 
-            introduction = _build_introduction(agent)
+            has_csv_submission = _check_submission_file(agent, node)
+            parser_view = _result_parser_output_view(node)
+            parser_facts = _result_parser_facts(
+                node, has_csv_submission, parser_view
+            )
+            introduction = (
+                _build_introduction(agent)
+                + "\n\nObjective executor facts are supplied separately. Treat a normal "
+                "process exit and an existing submission as authoritative facts. Do not "
+                "claim timeout, interruption, or missing completion merely because the "
+                "displayed log was compacted."
+            )
             prompt = {
                 "Introduction": introduction,
                 "Implementation": wrap_code(node.code),
-                "Execution output": wrap_code(node.term_out, lang=""),
+                "Objective executor facts": json.dumps(
+                    parser_facts, ensure_ascii=False, sort_keys=True
+                ),
+                "Execution output": wrap_code(parser_view, lang=""),
             }
 
-            response = cast(
-                dict,
-                query(
-                    system_message=prompt,
-                    user_message=None,
-                    func_spec=get_review_func_spec(getattr(agent.acfg, "use_global_memory", False)),
-                    model=agent.acfg.feedback.model,
-                    temperature=agent.acfg.feedback.temp,
-                    cfg=agent.cfg
-                ),
-            )
+            def query_result_review(extra_instruction: str = "") -> dict:
+                review_prompt = dict(prompt)
+                if extra_instruction:
+                    review_prompt["Reconciliation required"] = extra_instruction
+                return cast(
+                    dict,
+                    query(
+                        system_message=review_prompt,
+                        user_message=None,
+                        func_spec=get_review_func_spec(
+                            getattr(agent.acfg, "use_global_memory", False)
+                        ),
+                        model=agent.acfg.feedback.model,
+                        temperature=agent.acfg.feedback.temp,
+                        cfg=agent.cfg,
+                    ),
+                )
 
-            # Gemini structured output may omit required fields; fill defaults
-            response.setdefault("is_bug", True)
-            response.setdefault("summary", "No summary returned by model.")
-            response.setdefault("metric", None)
-            response.setdefault("lower_is_better",
-                                not agent.metric_maximize if agent.metric_maximize is not None else False)
+            def normalize_response(value: dict) -> dict:
+                value.setdefault("is_bug", True)
+                value.setdefault("summary", "No summary returned by model.")
+                value.setdefault("metric", None)
+                value.setdefault(
+                    "lower_is_better",
+                    not agent.metric_maximize
+                    if agent.metric_maximize is not None
+                    else False,
+                )
+                for bool_field in ("is_bug", "lower_is_better"):
+                    raw_value = value.get(bool_field)
+                    if isinstance(raw_value, str):
+                        value[bool_field] = raw_value.strip().lower() not in (
+                            "false",
+                            "0",
+                            "no",
+                            "",
+                        )
+                return value
+
+            response = normalize_response(query_result_review())
+            initial_conflict = _result_parser_conflict(response, parser_facts)
+            parser_calls = 1
+            if initial_conflict:
+                parser_calls += 1
+                response = normalize_response(
+                    query_result_review(
+                        "The previous review conflicted with objective executor facts: "
+                        f"{initial_conflict}. Re-read the salient full-log lines and return "
+                        "the actual completed result."
+                    )
+                )
+
+            remaining_conflict = _result_parser_conflict(response, parser_facts)
+            fallback_metric_used = False
+            false_failure_overridden = False
+            if (
+                response.get("metric") is None
+                and parser_facts.get("high_confidence_self_reported_metric")
+                is not None
+                and parser_facts.get("process_exited_normally")
+                and parser_facts.get("submission_file_exists")
+            ):
+                response["metric"] = parser_facts[
+                    "high_confidence_self_reported_metric"
+                ]
+                fallback_metric_used = True
+            remaining_conflict = _result_parser_conflict(response, parser_facts)
+            if remaining_conflict == "agent_failure_claim_conflicts_with_clean_process_exit":
+                response["is_bug"] = False
+                false_failure_overridden = True
+                remaining_conflict = _result_parser_conflict(
+                    response, parser_facts
+                )
+            observation = getattr(node, "protocol_observation", None)
+            if not isinstance(observation, dict):
+                observation = {}
+                node.protocol_observation = observation
+            observation["result_parser_reconciliation"] = {
+                "schema": "mlevolve_result_parser_reconciliation_v1",
+                "facts": parser_facts,
+                "agent_calls": parser_calls,
+                "initial_conflict": initial_conflict,
+                "remaining_conflict": remaining_conflict,
+                "fallback_metric_used": fallback_metric_used,
+                "false_failure_overridden": false_failure_overridden,
+            }
 
             if signed_metric is not None:
                 llm_metric = response.get("metric")
@@ -1138,13 +1226,6 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                     response["metric"] = float(metric_val)
                 except (TypeError, ValueError):
                     response["metric"] = None
-
-            for bool_field in ("is_bug", "lower_is_better"):
-                v = response.get(bool_field)
-                if isinstance(v, str):
-                    response[bool_field] = v.strip().lower() not in ("false", "0", "no", "")
-
-            has_csv_submission = _check_submission_file(agent, node)
 
             node.analysis = response["summary"]
             _save_code_summary(agent, node, response)

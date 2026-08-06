@@ -53,23 +53,25 @@
     "score_imputation": false
   },
   "l3_agent_matching": {
+    "agent_cannot_restore_rejected_candidates": true,
+    "agent_input_scope": "hard_gated_clean_candidates_only",
     "cross_task_type_allowed": false,
     "decision_stage": "debug",
-    "enabled_for_systems": [
+    "failure_fallback": "deterministic_manual_router_order",
+    "failure_signature_min_match": 0.5,
+    "gateway_selector_agent_enabled": true,
+    "gateway_selector_temperature": 0.0,
+    "manual_router_enabled_for_systems": [
       "dynamic_hybrid"
     ],
-    "failure_fallback": "abstain_without_manual_matcher",
-    "manual_synonym_table_used": false,
-    "max_attempts_per_task_scope": 2,
-    "max_tokens_per_call": 1800,
-    "min_confidence": 0.5,
+    "manual_synonym_table_used": true,
+    "specialized_root_cause_agent_enabled_for_systems": [],
     "task_scope_order": [
       "exact_task",
       "same_task_type"
-    ],
-    "temperature": 0.0
+    ]
   },
-  "manifest_hash": "df5d1acad1e19c2f2e7437537c370324aca2f952d9a9c74e48dc7c5eb13c5140",
+  "manifest_hash": "7402d8d5dc85591a1f9462138cf1406ea48296afd758ea39fe335a19d49b2db3",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,

@@ -102,6 +102,17 @@ def test_non_spooky_exact_replay_targets_bind_to_clean_graph_and_frozen_source_m
     assert "mlsp-2013-birds" not in targets
     for task_id in expected:
         target = targets[task_id]
+        if target.get("source_kind") == "recipe_implementation_capsule":
+            # Post-freeze terminal evidence is intentionally carried by the
+            # frozen Recipe overlay rather than mutating the base RunForest.
+            # Its full graph/code/hash binding is exercised by the layered
+            # memory tests that load that overlay.
+            assert task_id == "leaf-classification"
+            assert target["graph_node_id"].startswith("postsmoke::")
+            assert target["metric_status"] == "sealed_fixed_holdout_terminal_score"
+            assert target["maximize"] is False
+            assert len(target["code_sha256"]) == 64
+            continue
         run_id = target["run_id"]
         node_id = f"run::{run_id}::node::{target['original_node_id']}"
         node = nodes[node_id]

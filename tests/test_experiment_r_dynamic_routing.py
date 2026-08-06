@@ -483,8 +483,8 @@ def test_dynamic_and_reversed_router_change_only_source_allocation(tmp_path):
     pool_hashes = {pack["candidate_pool_hash"] for pack in observed.values()}
     assert len(pool_hashes) == 1
     assert observed["dynamic_hybrid"]["stage_route"]["requested_slots"] == {
-        "sop": 4,
-        "runforest": 2,
+        "sop": 5,
+        "runforest": 1,
     }
     assert observed["static_hybrid"]["stage_route"]["requested_slots"] == {
         "sop": 3,
@@ -507,8 +507,8 @@ def test_debug_dynamic_falls_back_when_causal_transition_confidence_is_low(tmp_p
         pack["stage_route"]["fallback_reason"] == "insufficient_causal_tree_confidence"
     )
     assert pack["stage_route"]["requested_slots"] == {
-        "sop": 2,
-        "runforest": 4,
+        "sop": 1,
+        "runforest": 5,
     }
 
 
@@ -826,8 +826,8 @@ def test_dynamic_prompt_pins_same_task_best_when_retrieval_agent_declines_it(
         }
     ]
     assert pack["stage_route"]["requested_slots"] == {
-        "sop": 4,
-        "runforest": 2,
+        "sop": 5,
+        "runforest": 1,
     }
     # The tiny fixture has only one eligible SOP. The Agent chooses the full
     # realizable three-item set, then the mandatory best-history invariant

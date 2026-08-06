@@ -398,6 +398,11 @@ class ExternalSkillMemoryConfig:
     recipe_evidence_path: str = ""
     recipe_evidence_file_sha256: str = ""
     recipe_evidence_manifest_sha256: str = ""
+    # Frozen executable evidence referenced by Recipe SOPs.  The RunForest
+    # graph intentionally stores only code hashes; this separate capsule binds
+    # full source and repair diffs back to those hashes without changing
+    # retrieval/scoring text.
+    recipe_implementation_path: str = ""
     visibility_token_budget: int = 4096
     stage_quotas: dict = field(default_factory=dict)
     rrf_weights: dict = field(default_factory=dict)

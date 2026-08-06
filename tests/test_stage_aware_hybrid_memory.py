@@ -19,10 +19,11 @@ RECIPE_BUNDLE = (
     REPO
     / "experiments"
     / "end2end_memory_systems_20260804"
-    / "recipe_distillation_v2"
+    / "recipe_distillation_v3"
     / "recipe_sops.json"
 )
 RECIPE_EVIDENCE = RECIPE_BUNDLE.parent / "evidence_manifest.json"
+RECIPE_IMPLEMENTATIONS = RECIPE_BUNDLE.parent / "implementation_capsules.json"
 DYNAMIC_CONFIG = (
     REPO
     / "experiments"
@@ -30,10 +31,10 @@ DYNAMIC_CONFIG = (
     / "systems"
     / "dynamic_hybrid.yaml"
 )
-RECIPE_FILE_SHA256 = "197afca50c11cbceb3d9e34c12084371897551b217c9a5e7a21107236f882691"
-RECIPE_BUNDLE_SHA256 = "8c3ef43693508c4d38567f4ef304f8d6edc0fc37609d886328b62300c30860aa"
-RECIPE_EVIDENCE_FILE_SHA256 = "46f1313d1918954a42daade64ffc05aae3fc6f057b301111859b7da63efab9f3"
-RECIPE_EVIDENCE_MANIFEST_SHA256 = "d06a1198ebafd1d0b6bae9cae3c0c439a11fd4ff13855b913dc980a155830da7"
+RECIPE_FILE_SHA256 = "e6db95649c20a642738d6ee35df1aa11ff15287e3613221becb393e28d2a9398"
+RECIPE_BUNDLE_SHA256 = "8cce9dd7ee70897e23e5f1dfda08d056cf6ae77ad63e758bd2bbd05376e88749"
+RECIPE_EVIDENCE_FILE_SHA256 = "fcb084206cdaa31cfd052c1bce290871b8c075a6376ee698b5c4119636adda04"
+RECIPE_EVIDENCE_MANIFEST_SHA256 = "25f6729ece9b1ead76b0d8501aa6aa4026cb163e3eaa7eb05c755b1d72f6160f"
 
 
 def _clean_audit():
@@ -905,7 +906,7 @@ def test_recipe_overlay_loads_frozen_three_layer_nodes_and_dynamic_uses_layered_
     assert memory.retrieval_control == "layered_strategy"
     assert memory.enable_agentic is True
     assert memory.experiment_r_enabled is False
-    assert memory.experiment_r_l3_agent_match_enabled is True
+    assert memory.experiment_r_l3_agent_match_enabled is False
     assert memory.experiment_r_l3_agent_match_max_attempts == 2
     assert memory.experiment_r_l3_agent_match_min_confidence == pytest.approx(0.50)
     assert memory.experiment_r_l3_agent_match_max_tokens == 1800
@@ -919,7 +920,7 @@ def test_recipe_overlay_loads_frozen_three_layer_nodes_and_dynamic_uses_layered_
         "path": str(RECIPE_BUNDLE),
         "file_sha256": RECIPE_FILE_SHA256,
         "bundle_sha256": RECIPE_BUNDLE_SHA256,
-        "bundle_version": "recipe-sop-v2-20260806",
+        "bundle_version": "recipe-sop-v3-20260806",
         "node_count": 89,
         "l1_count": 28,
         "l2_count": 26,
@@ -930,7 +931,7 @@ def test_recipe_overlay_loads_frozen_three_layer_nodes_and_dynamic_uses_layered_
     assert layer.recipe_evidence_receipt["schema"] == "layered_recipe_evidence_overlay_receipt_v1"
     assert layer.recipe_evidence_receipt["file_sha256"] == RECIPE_EVIDENCE_FILE_SHA256
     assert layer.recipe_evidence_receipt["manifest_sha256"] == RECIPE_EVIDENCE_MANIFEST_SHA256
-    assert layer.recipe_evidence_receipt["selected_node_count"] == 151
+    assert layer.recipe_evidence_receipt["selected_node_count"] == 152
     assert layer.recipe_evidence_receipt["selected_repair_transition_count"] == 81
     assert layer.recipe_evidence_receipt["materialized_node_count"] > 0
     assert layer.recipe_evidence_receipt["terminal_node_count"] >= 4
@@ -940,6 +941,16 @@ def test_recipe_overlay_loads_frozen_three_layer_nodes_and_dynamic_uses_layered_
     )
     assert layer.nodes[terminal_id]["metric"] == pytest.approx(0.09353439660745823)
     assert layer.nodes[terminal_id]["metric_provenance"] == "sealed_fixed_holdout_terminal_score"
+    assert layer.recipe_implementation_receipt["node_count"] == 83
+    assert layer.recipe_implementation_receipt["transition_count"] == 24
+    assert layer.recipe_implementation_receipt["required_node_count"] == 290
+    assert layer.recipe_implementation_receipt["missing_node_ids"]
+    assert layer.recipe_implementation_receipt["complete_recipe_coverage"] is False
+    best_id = (
+        "postsmoke::e2e-smoke-leaf-layered-recipe-v4__leaf-classification__"
+        "dynamic_hybrid__seed-1::d2fccc688085447c9ad84356deac9194"
+    )
+    assert len(layer.nodes[best_id]["implementation_capsule"]["code"]) == 21762
 
 
 def test_l3_debug_retrieval_prefers_exact_task_then_same_task_type_and_blocks_cross_type():
@@ -1030,6 +1041,69 @@ def test_l3_classifier_dimension_failure_does_not_match_batch_schema_repair():
         "model_forward/convolutional_feature_classifier_dimension_mismatch",
         query,
     ) == 1.0
+
+
+def test_dynamic_manual_l3_router_hard_gates_before_gateway_agent():
+    from agents.memory.stage_aware_hybrid_memory import (
+        L3_FAILURE_TOKEN_EQUIVALENCE_GROUPS,
+    )
+
+    layer = _real_recipe_layer()
+    assert layer.experiment_r_l3_agent_match_enabled is False
+    layer.agentic_enabled = True
+    assert any(
+        {"classifier", "classification", "head"} <= group
+        for group in L3_FAILURE_TOKEN_EQUIVALENCE_GROUPS
+    )
+    observed = []
+
+    def selector(**kwargs):
+        eligible = kwargs["eligible"]
+        observed.extend(row["id"] for row in eligible)
+        assert eligible
+        assert all(
+            layer.nodes[row["id"]].get("task_id")
+            == "aerial-cactus-identification"
+            for row in eligible
+        )
+        selected = next(
+            row
+            for row in eligible
+            if row["id"] == "repair::aerial-cactus-identification::005"
+        )
+        return {
+            "gateway_ids": [selected["id"]],
+            "reasons": {selected["id"]: "same classifier dimension failure"},
+            "goal": "inject the exact-task clean repair",
+        }
+
+    layer._injected_gateway_selector = selector
+    text, refs = layer.retrieve_for_node(
+        stage="debug",
+        task_id="aerial-cactus-identification",
+        task_desc="Vision binary image classification",
+        query_parts=[
+            "RuntimeError: the convolutional backbone returns a spatial feature "
+            "map [32, 768, 8, 8], while the classification head expects a "
+            "flattened vector [*, 768]."
+        ],
+    )
+    pack = layer.current_navigation_pack()
+    assert observed
+    assert pack["l3_agent_match"] == {}
+    assert pack["gateway_selection"]["mode"] == "llm_validated"
+    assert pack["selected_sop_gateways"][0]["id"] == (
+        "repair::aerial-cactus-identification::005"
+    )
+    assert pack["stage_route"]["quotas"]["sop_gateways"] == 1
+    assert pack["stage_route"]["quotas"]["tree_candidates"] == 5
+    assert pack["prompt_execution_limit"] == 5
+    assert len(pack["fused_execution_candidates"]) <= 5
+    assert set(pack["final_prompt_candidate_ids"]) == {
+        row["id"] for row in pack["fused_execution_candidates"]
+    }
+    assert "repair::aerial-cactus-identification::005" in refs
+    assert "repair::aerial-cactus-identification::005" in text
 
 
 def test_dynamic_l3_agent_sees_all_exact_task_cards_and_selects_by_root_cause():
@@ -1419,6 +1493,95 @@ def test_recipe_layered_leaf_draft_is_task_local_and_prompt_contains_complete_l1
     assert pack["selected_strategy"]["best_tree_evidence"]["evidence_kind"] == "direct_clean_run_node"
 
 
+def test_dynamic_replay_uses_sealed_leaf_terminal_capsule_and_novel_excludes_its_family():
+    from agents.memory.run_forest_replay import load_exact_replay
+
+    layer = _real_recipe_layer()
+    agent = SimpleNamespace(
+        cfg=layer.cfg,
+        acfg=layer.cfg.agent,
+        external_skill_memory=layer,
+        evaluation_authority=None,
+    )
+    replay = load_exact_replay(agent)
+    assert replay["replay_source"]["source_kind"] == "recipe_implementation_capsule"
+    assert replay["replay_source"]["historical_metric"] == pytest.approx(
+        0.08612996973006647
+    )
+    assert replay["replay_source"]["graph_node_id"].startswith(
+        "postsmoke::e2e-smoke-leaf-layered-recipe-v4"
+    )
+    assert replay["replay_source"]["sop_ids"] == [
+        "recipe::leaf-classification::003"
+    ]
+    assert replay["replay_source"]["code_sha256"] == (
+        "79e202f8e3ce146a8b867461fe9d77100073fa93f86d4fb8dc794e2164002c89"
+    )
+    assert "SigLIP" in replay["code"]
+    assert "MultiheadAttention" in replay["code"]
+
+    profile = layer._build_task_profile(
+        task_id="leaf-classification",
+        task_desc="Leaf multimodal classification evaluated by multiclass log loss.",
+        context={
+            "baseline_model": "DINOv3",
+            "data_preview": "Train shape: (990, 194)",
+            "ram_gb": 64,
+        },
+    )
+    assert "siglip2_multibranch_self_attention_fusion" in profile[
+        "excluded_method_families"
+    ]
+    routes = layer._rank_strategy_routes(
+        query_text="try a method different from exact replay",
+        task_profile=profile,
+    )
+    assert len(routes) >= 3
+    assert all(
+        row["method_family"] != "siglip2_multibranch_self_attention_fusion"
+        for row in routes
+    )
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ("hash_mismatch", "manifest hash"),
+        ("missing_capsule", "no frozen implementation capsule"),
+        ("graph_node_mismatch", "capsule node mismatch"),
+        ("metric_mismatch", "metric does not match target manifest"),
+    ],
+)
+def test_recipe_capsule_replay_fails_closed_on_binding_mismatch(
+    mutation, message
+):
+    from agents.memory.run_forest_replay import load_exact_replay
+
+    layer = _real_recipe_layer()
+    node_id = (
+        "postsmoke::e2e-smoke-leaf-layered-recipe-v4__leaf-classification__"
+        "dynamic_hybrid__seed-1::d2fccc688085447c9ad84356deac9194"
+    )
+    node = layer.nodes[node_id]
+    if mutation == "hash_mismatch":
+        node["implementation_capsule"]["code"] += "\n# changed after freeze\n"
+    elif mutation == "missing_capsule":
+        node.pop("implementation_capsule")
+    elif mutation == "graph_node_mismatch":
+        node["implementation_capsule"]["node_id"] = "postsmoke::wrong-node"
+    elif mutation == "metric_mismatch":
+        node["metric"] = float(node["metric"]) + 0.01
+
+    agent = SimpleNamespace(
+        cfg=layer.cfg,
+        acfg=layer.cfg.agent,
+        external_skill_memory=layer,
+        evaluation_authority=None,
+    )
+    with pytest.raises(ValueError, match=message):
+        load_exact_replay(agent)
+
+
 def test_recipe_layered_leaf_pins_best_clean_terminal_result_before_internal_metrics():
     layer = _real_recipe_layer()
     _inject_frozen_recipe_evidence(layer, "leaf-classification")
@@ -1441,14 +1604,16 @@ def test_recipe_layered_leaf_pins_best_clean_terminal_result_before_internal_met
     assert pack["strategy_routes"][0]["same_task_terminal_best"] is True
     assert selected["sop_id"] == "recipe::leaf-classification::003"
     assert evidence["node_id"].startswith(
-        "postsmoke::e2e-smoke-leaf-controls-v14__leaf-classification__flat_retrieval"
+        "postsmoke::e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid"
     )
-    assert evidence["metric"] == pytest.approx(0.09353439660745823)
+    assert evidence["metric"] == pytest.approx(0.08612996973006647)
     assert evidence["metric_direction"] == "minimize"
     assert evidence["metric_provenance"] == "sealed_fixed_holdout_terminal_score"
     assert evidence["terminal_evidence"] is True
     assert evidence["node_id"] in refs
     assert "terminal=True" in text
+    assert "Exact Same-Task RunForest Implementation" in text
+    assert "class LeafMultimodalClassifier" in text
 
 
 def test_recipe_layered_agent_cannot_bypass_compute_feasible_terminal_best_route():

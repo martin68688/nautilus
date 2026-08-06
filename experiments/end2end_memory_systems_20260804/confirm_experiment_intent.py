@@ -48,6 +48,12 @@ def main() -> int:
     tasks = read_object(MANIFESTS / "tasks.json")
     budget = read_object(MANIFESTS / "budget.json")
     memory = read_object(MANIFESTS / "memory_bundles.json")
+    replay_targets = read_object(
+        REPO
+        / "paper-skills"
+        / "eval_skill_memory"
+        / "clean_replay_targets.json"
+    )
 
     rows = list(manifest.get("runs") or [])
     all_system_ids = [str(row["system_id"]) for row in systems.get("systems") or []]
@@ -115,7 +121,7 @@ def main() -> int:
 
     roles = list(dynamic.agent.draft_role_policy.roles)
     require(
-        roles == ["coldstart_baseline", "memory_transfer", "novel_exploration"],
+        roles == ["coldstart_baseline", "memory_reproduction", "novel_exploration"],
         "Dynamic Hybrid must use the frozen three roles",
     )
     require(dynamic.evaluation_authority.mode == "off", "Host authority must be off")
@@ -131,6 +137,19 @@ def main() -> int:
     require(
         dynamic.external_skill_memory.experiment_r_agentic_retrieval_enabled,
         "Dynamic Hybrid Retrieval Agent must be on",
+    )
+    replay_by_task = {
+        str(row.get("task_id") or ""): row
+        for row in replay_targets.get("targets") or []
+    }
+    require(
+        all(
+            task_id in replay_by_task
+            and replay_by_task[task_id].get("audit_status") == "verified_clean"
+            and str(replay_by_task[task_id].get("code_sha256") or "")
+            for task_id in task_ids
+        ),
+        "Every Pilot task must freeze one clean exact Replay implementation",
     )
 
     runtime = dict(budget["runtime"])
@@ -169,10 +188,36 @@ def main() -> int:
             "included_in_this_manifest": "dynamic_hybrid" in system_ids,
             "roles": roles,
             "retrieval_agent": True,
-            "same_task_best_policy": "first when eligible same-task history exists",
+            "same_task_best_policy": (
+                "memory_reproduction loads the task-specific frozen exact target; "
+                "Leaf is bound to the best sealed terminal implementation"
+            ),
+            "exact_replay_target_by_task": {
+                task_id: {
+                    "graph_node_id": replay_by_task[task_id].get(
+                        "graph_node_id"
+                    ),
+                    "run_id": replay_by_task[task_id].get("run_id"),
+                    "original_node_id": replay_by_task[task_id].get(
+                        "original_node_id"
+                    ),
+                    "historical_metric": replay_by_task[task_id].get(
+                        "historical_metric"
+                    ),
+                    "metric_status": replay_by_task[task_id].get(
+                        "metric_status"
+                    ),
+                    "method_family": replay_by_task[task_id].get(
+                        "method_family"
+                    ),
+                    "code_sha256": replay_by_task[task_id].get("code_sha256"),
+                }
+                for task_id in task_ids
+            },
             "prompt_selection": (
-                "Retrieval Agent final Top-6; any invalid-Agent fallback is explicit "
-                "and retained"
+                "memory_reproduction loads the frozen exact implementation; "
+                "novel_exploration uses Retrieval Agent selection; any invalid-Agent "
+                "fallback is explicit and retained"
             ),
         },
         "memory_bundle": {
@@ -194,7 +239,7 @@ def main() -> int:
         },
         "formal_job": (
             {
-                "name": "mlevolve-e2e-agentic-pilot-all-40-v13",
+                "name": "mlevolve-e2e-agentic-pilot-all-40-v22",
                 "completions": 40,
                 "parallelism": 1,
                 "condition_level_resume": True,

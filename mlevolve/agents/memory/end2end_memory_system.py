@@ -316,9 +316,9 @@ class DynamicHybridSystem(_BaseMemorySystem):
     system_id = "dynamic_hybrid"
     prompt_label = "Dynamic Hybrid"
     QUOTAS = {
-        "draft": {"sop": 4, "runforest": 2},
+        "draft": {"sop": 5, "runforest": 1},
         "improve": {"sop": 3, "runforest": 3},
-        "debug": {"sop": 2, "runforest": 4},
+        "debug": {"sop": 1, "runforest": 5},
     }
 
     def _choose(self, candidates, context):

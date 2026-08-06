@@ -136,39 +136,99 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
     if len(matches) != 1:
         raise ValueError(f"Expected exactly one replay target for {task_id}; found {len(matches)}")
     target = matches[0]
+    source_kind = str(target.get("source_kind") or "runforest_journal")
+    if source_kind not in {"runforest_journal", "recipe_implementation_capsule"}:
+        raise ValueError(f"Unsupported replay source_kind: {source_kind}")
     run_id = str(target.get("run_id") or "")
     original_node_id = str(target.get("original_node_id") or "")
     run_short = _short_run_id(run_id)
-    source_runs = {str(value) for value in (meta.get("source_runs") or [])}
-    source_run_shorts = {_short_run_id(value) for value in source_runs}
-    if run_id not in source_runs and run_short not in source_run_shorts:
-        raise ValueError(f"Replay run {run_short} is not present in the clean graph source set")
     if any(run_short.startswith(str(prefix)) for prefix in meta.get("blocked_run_prefixes") or []):
         raise ValueError(f"Replay run {run_short} matches a blocked run prefix")
 
-    graph_node_id = f"run::{run_id}::node::{original_node_id}"
+    if source_kind == "runforest_journal":
+        source_runs = {str(value) for value in (meta.get("source_runs") or [])}
+        source_run_shorts = {_short_run_id(value) for value in source_runs}
+        if run_id not in source_runs and run_short not in source_run_shorts:
+            raise ValueError(
+                f"Replay run {run_short} is not present in the clean graph source set"
+            )
+        graph_node_id = f"run::{run_id}::node::{original_node_id}"
+    else:
+        graph_node_id = str(target.get("graph_node_id") or "")
+        if not graph_node_id:
+            raise ValueError(
+                "recipe_implementation_capsule replay requires graph_node_id"
+            )
     graph_node = layer.nodes.get(graph_node_id)
     if not graph_node or graph_node.get("type") != "RunNode":
         raise ValueError(f"Replay RunNode is missing from graph: {graph_node_id}")
     if str(graph_node.get("task")) != task_id or graph_node.get("is_buggy") is True or graph_node.get("is_valid") is False:
         raise ValueError("Replay RunNode does not satisfy task/validity requirements")
 
-    run_record = layer.nodes.get(f"run::{run_id}")
-    if not run_record:
-        raise ValueError(f"Replay Run record is missing from graph: {run_id}")
-    repo_root = Path(__file__).resolve().parents[3]
-    allowed_root = (repo_root / "mlevolve" / "runs").resolve()
-    journal_path = (repo_root / str(run_record.get("journal_path") or "")).resolve()
-    if not journal_path.is_relative_to(allowed_root):
-        raise ValueError(f"Replay journal escapes clean runs directory: {journal_path}")
-    if not journal_path.exists():
-        raise FileNotFoundError(f"Replay journal not found: {journal_path}")
+    if source_kind == "runforest_journal":
+        run_record = layer.nodes.get(f"run::{run_id}")
+        if not run_record:
+            raise ValueError(f"Replay Run record is missing from graph: {run_id}")
+        repo_root = Path(__file__).resolve().parents[3]
+        allowed_root = (repo_root / "mlevolve" / "runs").resolve()
+        journal_path = (repo_root / str(run_record.get("journal_path") or "")).resolve()
+        if not journal_path.is_relative_to(allowed_root):
+            raise ValueError(f"Replay journal escapes clean runs directory: {journal_path}")
+        if not journal_path.exists():
+            raise FileNotFoundError(f"Replay journal not found: {journal_path}")
 
-    journal = json.loads(journal_path.read_text(encoding="utf-8"))
-    raw_nodes = [node for node in journal.get("nodes", []) if str(node.get("id")) == original_node_id]
-    if len(raw_nodes) != 1:
-        raise ValueError(f"Expected one source node {original_node_id}; found {len(raw_nodes)}")
-    raw_node = raw_nodes[0]
+        journal = json.loads(journal_path.read_text(encoding="utf-8"))
+        raw_nodes = [
+            node
+            for node in journal.get("nodes", [])
+            if str(node.get("id")) == original_node_id
+        ]
+        if len(raw_nodes) != 1:
+            raise ValueError(
+                f"Expected one source node {original_node_id}; found {len(raw_nodes)}"
+            )
+        raw_node = raw_nodes[0]
+        journal_reference = str(
+            Path("mlevolve/runs") / journal_path.relative_to(allowed_root)
+        )
+    else:
+        capsule = graph_node.get("implementation_capsule")
+        if not isinstance(capsule, dict):
+            raise ValueError(
+                "Recipe replay source has no frozen implementation capsule: "
+                f"{graph_node_id}"
+            )
+        if str(capsule.get("node_id") or "") != graph_node_id:
+            raise ValueError("Recipe replay implementation capsule node mismatch")
+        capsule_raw_node_id = str(capsule.get("source_raw_node_id") or "")
+        if capsule_raw_node_id and capsule_raw_node_id != original_node_id:
+            raise ValueError("Recipe replay implementation capsule raw-node mismatch")
+        source_journal = str(capsule.get("source_journal") or "")
+        if not source_journal:
+            raise ValueError("Recipe replay implementation capsule has no source journal")
+        portable_marker = "experiments/"
+        marker_index = source_journal.find(portable_marker)
+        journal_reference = (
+            source_journal[marker_index:]
+            if marker_index >= 0
+            else source_journal
+        )
+        metric_direction = str(graph_node.get("metric_direction") or "")
+        raw_node = {
+            "id": original_node_id,
+            "code": capsule.get("code"),
+            "plan": graph_node.get("plan"),
+            "metric": {
+                "value": graph_node.get("metric"),
+                "maximize": bool(
+                    target.get("maximize")
+                    if "maximize" in target
+                    else metric_direction == "maximize"
+                ),
+            },
+            "is_buggy": graph_node.get("is_buggy"),
+            "is_valid": graph_node.get("is_valid"),
+        }
     code = raw_node.get("code")
     if not isinstance(code, str) or not code.strip():
         raise ValueError("Replay source node has no executable code")
@@ -248,11 +308,12 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
     )
     replay_source = {
         "selection_mode": "audited_target_manifest_v2",
+        "source_kind": source_kind,
         "task_id": task_id,
         "run_id": run_id,
         "original_node_id": original_node_id,
         "graph_node_id": graph_node_id,
-        "journal_path": str(Path("mlevolve/runs") / journal_path.relative_to(allowed_root)),
+        "journal_path": journal_reference,
         "historical_metric": metric,
         "maximize": maximize,
         "code_sha256": code_sha256,

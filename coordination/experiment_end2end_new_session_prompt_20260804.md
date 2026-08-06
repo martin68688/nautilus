@@ -26,7 +26,7 @@
 3. SOP-only；
 4. RunForest-only；
 5. Static Hybrid 3/3；
-6. Dynamic Hybrid：Draft 4/2、Improve 3/3、Debug 2/4；
+6. Dynamic Hybrid：Draft 5/1、Improve 3/3、Debug 1/5；
 7. Reversed Router：Draft 2/4、Improve 3/3、Debug 4/2；
 8. GOME-style；
 9. MACLA-style；

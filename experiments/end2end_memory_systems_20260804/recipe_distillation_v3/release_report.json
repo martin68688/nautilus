@@ -1,0 +1,11 @@
+{
+  "attached_node_id": "postsmoke::e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1::d2fccc688085447c9ad84356deac9194",
+  "attached_sop_id": "recipe::leaf-classification::003",
+  "code_sha256": "79e202f8e3ce146a8b867461fe9d77100073fa93f86d4fb8dc794e2164002c89",
+  "internal_metric": 0.05326,
+  "reason": "attach retained clean terminal implementation to its already-selected Recipe",
+  "release": "recipe-sop-v3-20260806",
+  "schema": "mlevolve_recipe_release_attachment_report_v1",
+  "teacher_called": false,
+  "terminal_metric": 0.08612996973006647
+}
