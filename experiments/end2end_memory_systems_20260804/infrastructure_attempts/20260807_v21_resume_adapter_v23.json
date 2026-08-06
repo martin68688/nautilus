@@ -1,0 +1,25 @@
+{
+  "schema": "mlevolve_resume_adapter_publication_record_v1",
+  "published_root": "/workspace/nautilus-exp-end2end-agent-v21-resume-v23",
+  "base_root": "/workspace/nautilus-exp-end2end-agent-v21",
+  "base_git_head": "dd5e095a9b26acddcece8f87efd9cbb01b64df5c",
+  "adapter_git_head": "b1217a7eac97b024949b667c87c6c2e96066b188",
+  "release_id": "end2end-agentic-three-role-v21-resume-v23",
+  "pilot_manifest_hash": "adb5770a0e707b908fb8789a6ce1b16f21d6a032e85a11b69dded1be50b721e6",
+  "source_lock_manifest_hash": "1aaaf441ad336d0da95a3f2dae3b471334744d1e249df432d6a910b90ea5a91e",
+  "resume_adapter_receipt_hash": "94f564bd0a101538e7f5ccced69c009fc932888e18101a6974055aa83718e6f8",
+  "overlaid_paths": [
+    "mlevolve/run.py",
+    "mlevolve/engine/agent_search.py",
+    "mlevolve/engine/search_resume.py",
+    "mlevolve/utils/serialize.py",
+    "experiments/end2end_memory_systems_20260804/run_assignment.py"
+  ],
+  "algorithm_and_memory_config_unchanged": true,
+  "dynamic_role_preserved": "memory_transfer",
+  "flat_completed_steps": 49,
+  "dynamic_completed_steps": 38,
+  "dynamic_unrestorable_legacy_active_candidate_id": "4cd580b48ca548c8ad5c80f6c5bee1af",
+  "legacy_active_candidate_disposition": "restart from completed parent boundary",
+  "source_lock_verified": true
+}
