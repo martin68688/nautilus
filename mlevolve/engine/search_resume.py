@@ -8,6 +8,7 @@ import logging
 import os
 import shutil
 import copy
+import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
@@ -205,6 +206,9 @@ def _load_active_candidates(
         node = SearchNode.from_dict(dict(payload.get("node") or {}))
         if node.id != candidate_id:
             raise ValueError(f"Active candidate node ID mismatch: {candidate_id}")
+        # Active-candidate checkpoints are decoded directly rather than via
+        # utils.serialize.loads_json, so rebuild their process-local lock here.
+        node.child_count_lock = threading.Lock()
         node.code = code
         node.parent = id2node[parent_id]
         node.__post_init__()
@@ -374,6 +378,9 @@ def restore_agent_search_state(agent) -> None:
             )
         if node is not agent.virtual_root and node.parent is None:
             raise ValueError(f"Resume Journal node has no parent: {node.id}")
+        # Be defensive even when the Journal came from an older loader: locks
+        # are runtime primitives and must never be trusted from JSON.
+        node.child_count_lock = threading.Lock()
         node.expected_child_count = len(node.children)
         node.lock = False
 

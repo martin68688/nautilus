@@ -1,5 +1,6 @@
 import copy
 import json
+import threading
 from pathlib import Path
 from typing import Type, TypeVar
 
@@ -65,6 +66,13 @@ def loads_json(s: str, cls: Type[G]) -> G:
     obj = cls.from_dict(obj_dict)
 
     if isinstance(obj, Journal):
+        # ``dataclasses_json`` reconstructs fields from the JSON payload and
+        # therefore does not invoke SearchNode.__setstate__.  The serializer
+        # deliberately writes process-local locks as null, so every loaded
+        # node must receive a fresh lock before the Journal can be used by the
+        # concurrent search workers.
+        for node in obj.nodes:
+            node.child_count_lock = threading.Lock()
         id2nodes = {n.id: n for n in obj.nodes}
         if len(id2nodes) != len(obj.nodes):
             raise ValueError("Journal contains duplicate node IDs")

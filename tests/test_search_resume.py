@@ -108,6 +108,12 @@ def test_journal_roundtrip_restores_parents_children_and_local_best(tmp_path) ->
     assert restored[2].parent is restored[1]
     assert restored[2] in restored[1].children
     assert restored[2].local_best_node is restored[1]
+    assert restored[0].child_count_lock is not None
+    assert restored[0].child_count_lock is not restored[1].child_count_lock
+    before = restored[0].expected_child_count
+    restored[0].add_expected_child_count()
+    restored[0].sub_expected_child_count()
+    assert restored[0].expected_child_count == before
 
 
 def test_load_and_restore_search_resume_checkpoint(tmp_path) -> None:
@@ -178,6 +184,7 @@ def test_active_candidate_source_is_archived_and_restored(tmp_path) -> None:
     assert restored.parent is checkpoint.journal[2]
     assert restored.local_best_node is checkpoint.journal[2]
     assert restored.pending_execution is True
+    assert restored.child_count_lock is not None
 
 
 def test_missing_old_active_candidate_is_reported_without_blocking_resume(
@@ -203,6 +210,8 @@ def test_agent_rebuilds_branch_and_best_state_from_completed_nodes(
     monkeypatch,
 ) -> None:
     journal = _journal()
+    for node in journal.nodes:
+        node.child_count_lock = None
     root = journal[0]
     root.expected_child_count = 99
     root.lock = True
@@ -239,6 +248,10 @@ def test_agent_rebuilds_branch_and_best_state_from_completed_nodes(
     assert agent._draft_generation_count == 1
     assert root.expected_child_count == 1
     assert root.lock is False
+    assert all(node.child_count_lock is not None for node in journal.nodes)
+    root.add_expected_child_count()
+    root.sub_expected_child_count()
+    assert root.expected_child_count == 1
 
     active = SearchNode(
         code="print('pending')",
