@@ -1,0 +1,71 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-e2e-leaf-rcr-pilot-v23
+  namespace: ecepxie
+  labels: &labels
+    app: mlevolve-end2end
+    experiment: experiment-end2end-memory-agent-v21-resume-v23
+    task: leaf-classification
+    system: rcr-router-style
+    mlevolve.ai/workload: mlevolve-e2e-leaf-rcr-pilot-v23
+    ecepxie.nrp/owner: haoming
+    app.kubernetes.io/managed-by: codex-nrp-training
+  annotations:
+    mlevolve.ai/gpu-contract: nvidia.com/a100=1
+    mlevolve.ai/preserve-failed-attempt: "true"
+    mlevolve.ai/resume-adapter-receipt: 94f564bd0a101538e7f5ccced69c009fc932888e18101a6974055aa83718e6f8
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 25200
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 120
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+      containers:
+      - name: end2end-runner
+        image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+        imagePullPolicy: IfNotPresent
+        command: ["/usr/local/bin/python", "-u"]
+        args:
+        - /workspace/nautilus-exp-end2end-agent-v21-resume-v23/experiments/end2end_memory_systems_20260804/run_assignment.py
+        - --manifest
+        - /workspace/nautilus-exp-end2end-agent-v21-resume-v23/experiments/end2end_memory_systems_20260804/manifests_resume_v23/pilot_manifest.json
+        - --index
+        - "17"
+        - --output-root
+        - /workspace/experiment-end2end-memory-agent-v21/runs
+        - --resume
+        envFrom:
+        - secretRef: {name: prevalence-audit-deepseek-r1}
+        env:
+        - {name: PYTHONUNBUFFERED, value: "1"}
+        - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+        - {name: PYTHONPATH, value: /workspace/nautilus-exp-end2end-agent-v21-resume-v23/mlevolve:/workspace/nautilus-exp-end2end-agent-v21-resume-v23}
+        - name: KUBERNETES_JOB_NAME
+          valueFrom: {fieldRef: {fieldPath: "metadata.labels['batch.kubernetes.io/job-name']"}}
+        - name: KUBERNETES_JOB_UID
+          valueFrom: {fieldRef: {fieldPath: "metadata.labels['batch.kubernetes.io/controller-uid']"}}
+        - name: KUBERNETES_POD_NAME
+          valueFrom: {fieldRef: {fieldPath: metadata.name}}
+        - name: KUBERNETES_POD_UID
+          valueFrom: {fieldRef: {fieldPath: metadata.uid}}
+        - name: KUBERNETES_NODE_NAME
+          valueFrom: {fieldRef: {fieldPath: spec.nodeName}}
+        resources:
+          requests: {cpu: "16", memory: 64Gi, ephemeral-storage: 64Gi, nvidia.com/a100: "1"}
+          limits: {cpu: "16", memory: 64Gi, ephemeral-storage: 64Gi, nvidia.com/a100: "1"}
+        volumeMounts:
+        - {name: workspace, mountPath: /workspace}
+        - {name: shm, mountPath: /dev/shm}
+      volumes:
+      - name: workspace
+        persistentVolumeClaim: {claimName: haoming-storage}
+      - name: shm
+        emptyDir: {medium: Memory, sizeLimit: 16Gi}
+
