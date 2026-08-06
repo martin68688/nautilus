@@ -607,6 +607,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     task = tasks[row["task_id"]]
     system = systems[row["system_id"]]
     budget_key = "smoke" if manifest["kind"] == "smoke" else "pilot"
+    if args.budget_profile == "debug_smoke":
+        if row.get("formal_result_eligible") is not False:
+            raise ValueError("debug_smoke budget is restricted to exploratory rows")
+        budget_key = "debug_smoke"
     budget = dict(components["budget"][budget_key])
     if args.dry_run:
         return {
@@ -862,6 +866,12 @@ def main() -> int:
         default="/workspace/experiment-end2end-memory-agent-v8/runs",
     )
     parser.add_argument("--smoke-gate", type=Path, default=None)
+    parser.add_argument(
+        "--budget-profile",
+        choices=("auto", "debug_smoke"),
+        default="auto",
+        help="use the 8-step exploratory Debug profile; formal rows are rejected",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     if args.index is None:

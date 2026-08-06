@@ -1,0 +1,27 @@
+{
+  "schema": "mlevolve_end2end_retained_scored_attempt_v1",
+  "logical_run_id": "e2e-smoke-leaf-layered-recipe-v2__leaf-classification__dynamic_hybrid__seed-1",
+  "attempt": 1,
+  "job_name": "mlevolve-e2e-leaf-layered-recipe-smoke-v25",
+  "job_uid": "0d874bb1-7586-40a8-98cf-0e249ec6fa8a",
+  "pod_name": "mlevolve-e2e-leaf-layered-recipe-smoke-v25-0-8s25g",
+  "pod_uid": "f4de9753-9922-4fab-8841-7c28f201aca5",
+  "node_name": "gpengine-uark.areon.net",
+  "observed_gpu": "NVIDIA A100-SXM4-80GB",
+  "status": "scored_terminal_result_retained",
+  "terminal_score": 0.4276632717408118,
+  "selected_candidate_id": "3e9bc4f0946b4f1599b4939d3b531540",
+  "selected_recipe_id": "recipe::leaf-classification::005",
+  "selected_method_family": "foldwise_lightgbm_logistic_weighted_blend",
+  "candidate_failures": [
+    {
+      "draft_role": "coldstart_baseline",
+      "node_id": "c327fe16cb644d8ab3534f75defa7beb",
+      "exception_type": "FileNotFoundError"
+    }
+  ],
+  "measurement_file_sha256": "3577ec0dc17cdb1e359b4cf969ea651ffc5c116378ffb844d851e2b4977b60c4",
+  "terminal_report_file_sha256": "cd1b5dfa0b067372d2617dafb8c2ecc35002c8865a93a8f14e559b8b447c3cda",
+  "replacement_reason": "The router ranked historical relative improvement above sealed same-task absolute terminal quality; the run is preserved as an algorithmic failure observation.",
+  "replacement_workload": "job/mlevolve-e2e-leaf-layered-recipe-smoke-v26"
+}

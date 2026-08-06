@@ -1,0 +1,60 @@
+{
+  "candidate_inventory": [
+    {
+      "node_id": "32a69493d7974cd69f05f8c35e9aa998",
+      "submission": "submission_32a69493d7974cd69f05f8c35e9aa998.csv",
+      "submission_sha256": "d3c32dffef6d5d836a9b00b25628f27b539c19d764ab650be8367243fb95b8a7"
+    }
+  ],
+  "candidate_set_frozen_before_scoring": true,
+  "candidate_set_hash": "bba761f8ad77fa985fe8fbdc50fe67d98c7404822eb6c21c9434284114643daa",
+  "evaluation_request_hash": "d5fafa7f7590870c8b972feb04d09837720d70d1afdd8414c9f27fb9d77e5209",
+  "evaluation_request_sha256": "fbdcfd6a57ae49e1a7aba442b2ebe79fa0e0e4faba1fa80076f13c74469131f8",
+  "evaluator_manifest_sha256": "41ed7c3cdba61dd81d03a3486804de5576ccda7163cbf42a10e1c64b889d994e",
+  "journal_sha256": "94cd9ed98fe9cb70c15f4b524c955eece6eb4e9998d97c8f5f0c0d852377ef09",
+  "maximize": false,
+  "metric": "multiclass_log_loss",
+  "oracle_best_node_id": "32a69493d7974cd69f05f8c35e9aa998",
+  "oracle_best_score": 0.11256344056236905,
+  "oracle_best_submission_sha256": "d3c32dffef6d5d836a9b00b25628f27b539c19d764ab650be8367243fb95b8a7",
+  "oracle_selection_is_host_only": true,
+  "report_hash": "f215a736bf9c1fb64fa7496c7010658bdb7a9b9c247a4819c783e30213edd530",
+  "report_schema": "fixed_holdout_terminal_score_report_v3",
+  "results": [
+    {
+      "draft_role": "general_draft",
+      "internal_metric": 0.1011090363368964,
+      "internal_metric_disposition": "search_only",
+      "node_id": "32a69493d7974cd69f05f8c35e9aa998",
+      "score": 0.11256344056236905,
+      "stage": "draft",
+      "status": "scored",
+      "submission": "submission_32a69493d7974cd69f05f8c35e9aa998.csv",
+      "submission_sha256": "d3c32dffef6d5d836a9b00b25628f27b539c19d764ab650be8367243fb95b8a7"
+    }
+  ],
+  "schema": "mlevolve_fixed_holdout_v1",
+  "scores_were_visible_during_search": false,
+  "selected_node_id": "32a69493d7974cd69f05f8c35e9aa998",
+  "selected_score": 0.11256344056236905,
+  "selected_submission": "submission_32a69493d7974cd69f05f8c35e9aa998.csv",
+  "selected_submission_sha256": "d3c32dffef6d5d836a9b00b25628f27b539c19d764ab650be8367243fb95b8a7",
+  "selection_basis": {
+    "draft_role": "general_draft",
+    "formal_rank_claim_authorized": false,
+    "metric_disposition": "search_only",
+    "metric_maximize": false,
+    "metric_value": 0.1011090363368964,
+    "source_score_inherited": false,
+    "stage": "draft",
+    "terminal_metric_observed": false,
+    "type": "solver_internal_search_metric"
+  },
+  "selection_frozen_before_terminal_evaluation": true,
+  "selection_policy": "terminal_only",
+  "split_id": "leaf-classification-73e8353188dc-c33202487f61",
+  "system_selection_used_terminal_labels": false,
+  "task_id": "leaf-classification",
+  "terminal_score_sealed": true,
+  "train_manifest_sha256": "be01f8c4cc1665442909bea1393ee323a490e2ac7e0cb06578b2e04fbbf2276d"
+}

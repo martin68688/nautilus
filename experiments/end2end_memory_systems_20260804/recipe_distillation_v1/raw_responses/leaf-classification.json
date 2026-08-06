@@ -1,0 +1,199 @@
+{
+  "recipes": [
+    {
+      "method_family": "frozen_resnet_tabular_concat_mlp",
+      "pipeline": {
+        "data_validation": "Verify one-to-one alignment between tabular rows and leaf images, confirm that margin, shape, and texture groups are numeric, check labels and class count, and handle non-finite engineered statistics before scaling.",
+        "ensemble_calibration": "No ensemble or separate calibration is evidenced. Convert logits to softmax probabilities and preserve the complete class ordering.",
+        "failure_boundaries": "Do not fit scaling or PCA using validation or test rows. This family depends on accessible, correctly aligned images and pretrained ResNet weights; it is unsuitable when image extraction is unavailable. Monitor the train-validation loss gap because the high-capacity MLP can overfit the small multiclass dataset.",
+        "feature_representation": "For each tabular group, retain the descriptors and add per-sample statistics such as mean, standard deviation, skewness, and kurtosis plus DCT coefficients. Extract frozen pretrained ResNet-18 image embeddings, concatenate them with the tabular representation, fit StandardScaler on training data only, and fit PCA to retain 95% variance.",
+        "final_refit_inference": "A full-data refit is not evidenced. Use the best holdout-selected checkpoint, apply the training-fitted scaler and PCA to test features, extract images with the same frozen ResNet-18 preprocessing, and emit normalized softmax probabilities.",
+        "model_stack": "Train an MLP with hidden widths 1024, 512, and 256, using BatchNorm, ReLU, and dropout before the multiclass output layer.",
+        "oof_protocol": "OOF not evidenced / single holdout.",
+        "split_validation": "Create the validation partition before fitting StandardScaler or PCA and monitor multiclass log loss. The evidence supports validation-based early stopping but does not establish a multi-fold protocol.",
+        "training_protocol": "Optimize with AdamW and select the checkpoint with minimum validation log loss using early stopping. Keep the ResNet-18 extractor frozen."
+      },
+      "source_node_ids": [
+        "run::20260717_060628_leaf-classification::node::c9368a59b9324c31afc4813545813045"
+      ],
+      "title": "Frozen ResNet-18 embeddings plus engineered tabular features and a regularized MLP",
+      "when_to_use": "Use when leaf images and margin, shape, and texture descriptors are all available, pretrained ResNet-18 inference is affordable, and a strong single-model pipeline is preferred over end-to-end vision fine-tuning."
+    },
+    {
+      "method_family": "dinov2_bidirectional_cross_attention_fusion",
+      "pipeline": {
+        "data_validation": "Verify image-to-row alignment, the presence and numeric type of all margin, shape, and texture descriptors, finite engineered interactions and statistics, and consistent label encoding across training and inference.",
+        "ensemble_calibration": "No ensemble or post-hoc calibration is evidenced. Average the two mixed-label losses during MixUp training and use softmax probabilities from the selected checkpoint at inference.",
+        "failure_boundaries": "Avoid fitting engineered-feature transforms before the split. The architecture is vulnerable to overfitting on the small dataset and requires careful early stopping. Do not concatenate redundant projected features if the fused tensor already contains both modalities; keep classifier dimensions consistent with the actual fusion output.",
+        "feature_representation": "Build tabular inputs from raw group features, summary statistics, pairwise interactions, and PCA components fitted on training data only. Standardize the tabular representation. Preprocess images with the DINOv2-compatible transform and extract 1024-dimensional ViT-L/14 embeddings.",
+        "final_refit_inference": "A full-data refit is not evidenced. Retain the best validation checkpoint, transform test tabular data with training-fitted preprocessing, extract DINOv2 embeddings with identical image transforms, and predict normalized class probabilities.",
+        "model_stack": "Project tabular and image features through separate MLPs, fuse the projected modalities with bidirectional multi-head cross-attention, and classify the fused representation with a regularized multiclass head.",
+        "oof_protocol": "OOF not evidenced / single holdout.",
+        "split_validation": "Use a stratified train-validation split before fitting tabular scaling or PCA. Select checkpoints by multiclass validation log loss rather than training accuracy.",
+        "training_protocol": "Use mixed precision and AdamW with label smoothing and feature-level MixUp. Train in two phases: first use higher dropout and a low learning rate with cosine warmup, then fine-tune with layer-dependent learning-rate multipliers. Apply early stopping on validation log loss."
+      },
+      "source_node_ids": [
+        "run::20260724_134059_same-task-memory-bcc1c73b-leaf-classification::node::ff1716d2a021453cb6944172b4f758eb"
+      ],
+      "title": "DINOv2 image embeddings with bidirectional cross-attention and two-phase MixUp training",
+      "when_to_use": "Use when high-quality pretrained DINOv2 embeddings can be extracted and there is enough accelerator memory for 1024-dimensional image features, modality projectors, and multi-head cross-attention."
+    },
+    {
+      "method_family": "siglip2_multibranch_self_attention_fusion",
+      "pipeline": {
+        "data_validation": "Detect the actual margin, shape, and texture column naming pattern, verify that each expected group is complete, align every tabular identifier to an image, confirm class labels, and enforce the target class order used for probability output.",
+        "ensemble_calibration": "The supported ensemble is the arithmetic mean of probabilities from the same model family across folds. No separate post-hoc calibration is evidenced. Renormalize probabilities and retain the encoded class order.",
+        "failure_boundaries": "Do not assume a fixed underscore convention for feature columns. Missing or misaligned images invalidate multimodal training. Attention fusion can overfit this small dataset, so retain regularization and early stopping. Never fit scaling or PCA globally before cross-validation.",
+        "feature_representation": "Keep the three 64-dimensional tabular groups separate. Extract frozen 1152-dimensional SigLIP2 image embeddings; either project the full embeddings or reduce them with training-fold PCA when memory or overfitting requires compression. Standardize tabular and image inputs with fold-fitted transforms.",
+        "final_refit_inference": "Use the fold ensemble for final inference; a separate full-data refit is not evidenced. Reuse each fold's scaler, optional PCA, SigLIP2 preprocessing, and checkpoint for its test prediction before averaging probabilities.",
+        "model_stack": "Encode margin, shape, and texture with separate MLP branches, project the SigLIP2 vector into a fourth embedding, treat the four embeddings as modality tokens, fuse them with multi-head self-attention and mean pooling, and pass the result to a dropout-regularized classifier head.",
+        "oof_protocol": "Run all stratified folds, place each fold's held-out probabilities into its corresponding OOF rows, and compute log loss once from the complete OOF matrix. Average fold-model test probabilities.",
+        "split_validation": "Use stratified folds when running the corroborated cross-validation form. Within every fold, fit StandardScaler and any dimensionality reduction only on that fold's training rows, and evaluate multiclass log loss on its held-out rows.",
+        "training_protocol": "Train each fold with AdamW, label-smoothed cross-entropy, cosine annealing, mixed precision, and early stopping on held-out log loss. Keep SigLIP2 frozen when using pre-extracted embeddings."
+      },
+      "source_node_ids": [
+        "run::20260717_122321_leaf-classification::node::c9844f0af1ca46a08359370f1a3f913d",
+        "postsmoke::e2e-smoke-leaf-controls-v14__leaf-classification__flat_retrieval__seed-1::abb66aed49824ec490ab833abbb5e05b",
+        "postsmoke::e2e-smoke-leaf-controls-v14__leaf-classification__rcr_router_style_port__seed-1::23b2ddd224eb44189149de48b9756676"
+      ],
+      "title": "SigLIP2 multimodal token fusion with separate leaf-feature encoders",
+      "when_to_use": "Use when images are available and frozen SigLIP2 extraction is feasible, while preserving separate inductive biases for margin, shape, texture, and image modalities."
+    },
+    {
+      "method_family": "tabular_residual_se_multibranch_mlp",
+      "pipeline": {
+        "data_validation": "Confirm the three 64-feature groups, encode species labels consistently, inspect missing and non-finite values, and guard ratio and interaction features against zero denominators or extreme values.",
+        "ensemble_calibration": "No ensemble or independent calibration is evidenced. Use the best neural checkpoint alone and obtain probabilities with softmax.",
+        "failure_boundaries": "Complex statistics and cross-features can inflate dimensionality or introduce unstable values; remove or sanitize invalid interactions. Do not fit PCA or scaling before splitting. Residual depth, SE modules, MixUp, and smoothing together can underfit if regularization is too aggressive, while removing them can cause rapid overfitting.",
+        "feature_representation": "For each feature group, combine PCA retaining 95% variance with statistics including mean, standard deviation, skewness, kurtosis, percentiles, and range. Add evidenced cross-group ratios and product interactions, then fit RobustScaler using training rows only.",
+        "final_refit_inference": "A full-data refit is not evidenced. Apply the split-fitted feature pipeline to test rows and use the best early-stopped checkpoint for inference, preserving the label encoder's class order.",
+        "model_stack": "Process margin, shape, and texture through three separate branches containing three residual blocks each. Apply squeeze-excitation recalibration to branch representations, fuse the branches, and classify with a regularized multiclass head.",
+        "oof_protocol": "OOF not evidenced / single holdout.",
+        "split_validation": "Create a stratified train-validation split before fitting PCA or RobustScaler. Monitor multiclass validation log loss with early stopping patience of 10.",
+        "training_protocol": "Use MixUp, progressively annealed label smoothing, AdamW, cosine annealing, gradient clipping, mixed precision, and early stopping based on validation log loss."
+      },
+      "source_node_ids": [
+        "run::20260717_040522_full-leaf-classification::node::b46bc2946c0c4a8d83139e47bfa48986"
+      ],
+      "title": "Residual squeeze-excitation network over engineered margin, shape, and texture branches",
+      "when_to_use": "Use when the 192 structured descriptors are reliable but image embeddings are unavailable or too expensive, and richer per-group interactions are needed than a flat MLP can provide."
+    },
+    {
+      "method_family": "foldwise_lightgbm_logistic_weighted_blend",
+      "pipeline": {
+        "data_validation": "Verify complete margin, shape, and texture groups, finite numeric values, valid binary leaf images, and stable extraction of contour descriptors such as Hu moments, circularity, and aspect ratio. Confirm that every class is represented in the stratification design.",
+        "ensemble_calibration": "Blend probabilities using fixed weights of 0.6 for LightGBM and 0.4 for logistic regression. Do not train a stacking meta-learner on the small OOF sample; normalize the weighted probabilities if necessary.",
+        "failure_boundaries": "Global preprocessing before folds causes leakage. Excessive ratio, difference, and cross features can overfit, and a learned stacking layer is poorly supported for this sample size. The recipe also depends on consistently segmented images for reliable contour descriptors.",
+        "feature_representation": "For each tabular group, standardize and retain 32 PCA components, then add mean, standard deviation, maximum, minimum, median, and sum plus cross-products between feature types. Append image-derived shape descriptors and scale the combined representation within each fold.",
+        "final_refit_inference": "Use the five fold-specific preprocessing pipelines and model pairs for inference, blend each pair 0.6/0.4, and average across folds. A separate full-data refit is not evidenced.",
+        "model_stack": "Train a regularized multiclass LightGBM model with up to 1000 estimators and fold-level early stopping, alongside OneVsRest logistic regression with C equal to 0.5.",
+        "oof_protocol": "Generate held-out probabilities from both models for every one of the five folds, blend them per row, and calculate multiclass log loss from the complete blended OOF matrix. Average fold-specific blended test predictions.",
+        "split_validation": "Use 5-fold stratified cross-validation. In each fold, fit StandardScaler, 32-component PCA transformations, statistical-feature processing, and final scaling only on the fold's training rows.",
+        "training_protocol": "Use LightGBM L1/L2 regularization, including the evidenced L1 penalty and minimum child-sample control, with early stopping patience of 100. Fit logistic regression on the same fold-specific representation."
+      },
+      "source_node_ids": [
+        "run::20260726_021857_leaf-classification-host-shadow-r7::node::ea59a096abb34921b92d267846c36906"
+      ],
+      "title": "Leakage-safe LightGBM and logistic-regression probability blend",
+      "when_to_use": "Use when compute is primarily CPU-oriented, structured descriptors and binary-image shape measurements are available, and a lower-variance classical ensemble is preferred to a high-capacity neural fusion model."
+    },
+    {
+      "method_family": "tabular_feature_group_transformer",
+      "pipeline": {
+        "data_validation": "Verify that margin, shape, and texture each contain 64 numeric features, inspect missing and non-finite values, encode labels consistently, and ensure stratified folds retain feasible class coverage.",
+        "ensemble_calibration": "Use equal-weight probability averaging across fold checkpoints. No heterogeneous ensemble or post-hoc calibration is evidenced.",
+        "failure_boundaries": "Never standardize before fold assignment. With only three semantic feature tokens and a small dataset, a deeper or wider Transformer can overfit; retain the compact two-layer design, noise augmentation, label smoothing, and early stopping.",
+        "feature_representation": "Standardize each fold's numeric inputs using training rows only. Embed each 64-dimensional feature group with its own linear projection, prepend a learned CLS token, and treat the resulting group embeddings as Transformer tokens. Apply Gaussian noise augmentation only during training.",
+        "final_refit_inference": "Use the eight fold models and their fold-specific standardizers for final inference. A separate all-data refit is not evidenced; preserve class order and normalize the averaged probabilities.",
+        "model_stack": "Pass the CLS token and three group tokens through a two-layer Transformer encoder, then classify from the encoded CLS representation with a linear multiclass head.",
+        "oof_protocol": "Train all eight folds, store each held-out fold's probabilities in a complete OOF matrix, score that matrix with multiclass log loss, and average the eight test-probability matrices.",
+        "split_validation": "Use 8-fold stratified cross-validation. Fit standardization independently inside each fold and monitor held-out multiclass log loss with early stopping.",
+        "training_protocol": "Train with AdamW, label smoothing, warmup followed by cosine annealing, Gaussian feature noise, and early stopping on fold validation log loss."
+      },
+      "source_node_ids": [
+        "run::20260726_021857_leaf-classification-host-shadow-r7::node::c2983b89eb174286a5bdf7a6eaa512a1"
+      ],
+      "title": "Feature-group Transformer with eight-fold probability averaging",
+      "when_to_use": "Use when only the structured 192-dimensional descriptors are required and the goal is to model interactions among margin, shape, and texture as a small token sequence without a vision backbone."
+    }
+  ],
+  "tactics": [
+    {
+      "instruction": "Create the holdout or fold assignment first; fit StandardScaler, RobustScaler, PCA, interaction processing, and other learned transformations only on the corresponding training rows, then transform validation and test rows without refitting.",
+      "parent_method_families": [
+        "frozen_resnet_tabular_concat_mlp",
+        "dinov2_bidirectional_cross_attention_fusion",
+        "siglip2_multibranch_self_attention_fusion",
+        "tabular_residual_se_multibranch_mlp",
+        "foldwise_lightgbm_logistic_weighted_blend",
+        "tabular_feature_group_transformer"
+      ],
+      "source_node_ids": [
+        "run::20260717_043943_full-leaf-classification::node::8790a3adbbf24ca28682c13056db3261",
+        "run::20260726_021857_leaf-classification-host-shadow-r7::node::ea59a096abb34921b92d267846c36906",
+        "run::20260726_021857_leaf-classification-host-shadow-r7::node::c2983b89eb174286a5bdf7a6eaa512a1"
+      ],
+      "tactic_kind": "validation_protocol",
+      "title": "Split-first fitting of scaling and dimensionality reduction",
+      "when_to_use": "Use whenever preprocessing estimates parameters from the data, especially with the small leaf dataset where leakage can produce unrealistically low log loss."
+    },
+    {
+      "instruction": "First train projection and classifier layers with the vision representation frozen, cosine warmup, and stronger dropout; then fine-tune permitted upper vision or fusion layers using a lower learning rate for pretrained parameters, a higher learning rate for tabular and classifier parameters, MixUp, label smoothing, mixed precision, and early stopping on log loss.",
+      "parent_method_families": [
+        "dinov2_bidirectional_cross_attention_fusion",
+        "siglip2_multibranch_self_attention_fusion"
+      ],
+      "source_node_ids": [
+        "run::20260724_134059_same-task-memory-bcc1c73b-leaf-classification::node::ff1716d2a021453cb6944172b4f758eb",
+        "run::20260701_145136_leaf-classification::node::a4d9a6ef58794f509c5b42b617187e46"
+      ],
+      "tactic_kind": "training_protocol",
+      "title": "Two-phase frozen-to-fine-tuned multimodal training",
+      "when_to_use": "Use when frozen pretrained image features plateau but full-backbone training would overfit or destabilize optimization."
+    },
+    {
+      "instruction": "Preserve the three 64-feature groups through separate normalization and learned encoders, then fuse only their latent representations through concatenation, attention, or a compact Transformer.",
+      "parent_method_families": [
+        "siglip2_multibranch_self_attention_fusion",
+        "tabular_residual_se_multibranch_mlp",
+        "tabular_feature_group_transformer"
+      ],
+      "source_node_ids": [
+        "run::20260701_180146_leaf-classification::node::cece376f126d43cb9dc1afa636ed030a",
+        "run::20260717_122321_leaf-classification::node::c9844f0af1ca46a08359370f1a3f913d",
+        "run::20260726_021857_leaf-classification-host-shadow-r7::node::c2983b89eb174286a5bdf7a6eaa512a1"
+      ],
+      "tactic_kind": "model_design",
+      "title": "Separate encoders for margin, shape, and texture",
+      "when_to_use": "Use when the feature groups have different statistical behavior and a flat projection would erase their semantic structure."
+    },
+    {
+      "instruction": "Blend fold-level LightGBM and OneVsRest logistic-regression probabilities with fixed weights of 0.6 and 0.4, respectively, then average the blended test probabilities across folds.",
+      "parent_method_families": [
+        "foldwise_lightgbm_logistic_weighted_blend"
+      ],
+      "source_node_ids": [
+        "run::20260726_021857_leaf-classification-host-shadow-r7::node::ea59a096abb34921b92d267846c36906"
+      ],
+      "tactic_kind": "ensemble",
+      "title": "Fixed probability blending instead of learned stacking",
+      "when_to_use": "Use when model errors are complementary but the OOF sample is too small to support a stable stacking meta-learner."
+    },
+    {
+      "instruction": "Apply MixUp with moderate strength, evidenced at alpha 0.2, compute the weighted loss for the paired targets, and combine it with approximately 0.1 label smoothing while selecting checkpoints by validation log loss.",
+      "parent_method_families": [
+        "dinov2_bidirectional_cross_attention_fusion",
+        "tabular_residual_se_multibranch_mlp",
+        "siglip2_multibranch_self_attention_fusion"
+      ],
+      "source_node_ids": [
+        "run::20260701_180146_leaf-classification::node::dbcbf5380b21413a836e46b00f817e03",
+        "run::20260701_145136_leaf-classification::node::a4d9a6ef58794f509c5b42b617187e46",
+        "run::20260717_040522_full-leaf-classification::node::b46bc2946c0c4a8d83139e47bfa48986"
+      ],
+      "tactic_kind": "training_protocol",
+      "title": "Moderate MixUp and label smoothing for small-class-per-sample regimes",
+      "when_to_use": "Use when training confidence rises much faster than validation quality or when near-perfect training accuracy indicates overfitting."
+    }
+  ]
+}

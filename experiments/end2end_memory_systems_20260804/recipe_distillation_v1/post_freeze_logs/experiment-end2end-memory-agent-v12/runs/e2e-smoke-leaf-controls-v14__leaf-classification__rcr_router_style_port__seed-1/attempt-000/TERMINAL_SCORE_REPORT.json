@@ -1,0 +1,92 @@
+{
+  "candidate_inventory": [
+    {
+      "node_id": "23b2ddd224eb44189149de48b9756676",
+      "submission": "submission_23b2ddd224eb44189149de48b9756676.csv",
+      "submission_sha256": "523411dc9ab525809df3eed4e51d7dfab076a03ba8ba1b7fae4a0189433e308d"
+    },
+    {
+      "node_id": "727c76ac4aa8469b96cc3af4f2302791",
+      "submission": "submission_727c76ac4aa8469b96cc3af4f2302791.csv",
+      "submission_sha256": "a2f8b180f8f8ba626399dcda776b75ee9bba07d3dd679cebbb616b53fe648cc7"
+    },
+    {
+      "node_id": "d32ed0e0d9b64d95992463f2e588bda7",
+      "submission": "submission_d32ed0e0d9b64d95992463f2e588bda7.csv",
+      "submission_sha256": "c9b0591de2ecad02a8e80c0453794f28595f7425cdeec4e8e69ca48f4b879b22"
+    }
+  ],
+  "candidate_set_frozen_before_scoring": true,
+  "candidate_set_hash": "7407d4973e8fdc04fdd7e0f3659ad1b1e6d1f3c07afc7723cf0f33181cfd456d",
+  "evaluation_request_hash": "bd380ed41a83b62dfd48ff58a8fbac940687bbb2877e7588f243b71aecf654e8",
+  "evaluation_request_sha256": "0163e95104b0922fca4e4c4c03a2ded85d35eae0a8db052ab33da7e5bede6356",
+  "evaluator_manifest_sha256": "41ed7c3cdba61dd81d03a3486804de5576ccda7163cbf42a10e1c64b889d994e",
+  "journal_sha256": "a823d1fa0d2981bb55b791752a2a682bc29ad6fc1d87cef1ebd21cfe60d13907",
+  "maximize": false,
+  "metric": "multiclass_log_loss",
+  "oracle_best_node_id": "d32ed0e0d9b64d95992463f2e588bda7",
+  "oracle_best_score": 0.12378208665696516,
+  "oracle_best_submission_sha256": "c9b0591de2ecad02a8e80c0453794f28595f7425cdeec4e8e69ca48f4b879b22",
+  "oracle_selection_is_host_only": true,
+  "report_hash": "5e87395626c9c1999aafca652b71ddba9355fb539850fd0a4f954d896ca30462",
+  "report_schema": "fixed_holdout_terminal_score_report_v3",
+  "results": [
+    {
+      "draft_role": "general_draft",
+      "internal_metric": 0.0936,
+      "internal_metric_disposition": "search_only",
+      "node_id": "23b2ddd224eb44189149de48b9756676",
+      "score": 0.17419492398274758,
+      "stage": "draft",
+      "status": "scored",
+      "submission": "submission_23b2ddd224eb44189149de48b9756676.csv",
+      "submission_sha256": "523411dc9ab525809df3eed4e51d7dfab076a03ba8ba1b7fae4a0189433e308d"
+    },
+    {
+      "draft_role": "general_draft",
+      "internal_metric": 0.10172174587745424,
+      "internal_metric_disposition": "search_only",
+      "node_id": "727c76ac4aa8469b96cc3af4f2302791",
+      "score": 0.12478653707378552,
+      "stage": "draft",
+      "status": "scored",
+      "submission": "submission_727c76ac4aa8469b96cc3af4f2302791.csv",
+      "submission_sha256": "a2f8b180f8f8ba626399dcda776b75ee9bba07d3dd679cebbb616b53fe648cc7"
+    },
+    {
+      "draft_role": "general_draft",
+      "internal_metric": 0.1286,
+      "internal_metric_disposition": "search_only",
+      "node_id": "d32ed0e0d9b64d95992463f2e588bda7",
+      "score": 0.12378208665696516,
+      "stage": "draft",
+      "status": "scored",
+      "submission": "submission_d32ed0e0d9b64d95992463f2e588bda7.csv",
+      "submission_sha256": "c9b0591de2ecad02a8e80c0453794f28595f7425cdeec4e8e69ca48f4b879b22"
+    }
+  ],
+  "schema": "mlevolve_fixed_holdout_v1",
+  "scores_were_visible_during_search": false,
+  "selected_node_id": "23b2ddd224eb44189149de48b9756676",
+  "selected_score": 0.17419492398274758,
+  "selected_submission": "submission_23b2ddd224eb44189149de48b9756676.csv",
+  "selected_submission_sha256": "523411dc9ab525809df3eed4e51d7dfab076a03ba8ba1b7fae4a0189433e308d",
+  "selection_basis": {
+    "draft_role": "general_draft",
+    "formal_rank_claim_authorized": false,
+    "metric_disposition": "search_only",
+    "metric_maximize": false,
+    "metric_value": 0.0936,
+    "source_score_inherited": false,
+    "stage": "draft",
+    "terminal_metric_observed": false,
+    "type": "solver_internal_search_metric"
+  },
+  "selection_frozen_before_terminal_evaluation": true,
+  "selection_policy": "terminal_only",
+  "split_id": "leaf-classification-73e8353188dc-c33202487f61",
+  "system_selection_used_terminal_labels": false,
+  "task_id": "leaf-classification",
+  "terminal_score_sealed": true,
+  "train_manifest_sha256": "be01f8c4cc1665442909bea1393ee323a490e2ac7e0cb06578b2e04fbbf2276d"
+}

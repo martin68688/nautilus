@@ -1,0 +1,76 @@
+{
+  "candidate_inventory": [
+    {
+      "node_id": "7717199f05df4cee86a8828e9dadcf12",
+      "submission": "submission_7717199f05df4cee86a8828e9dadcf12.csv",
+      "submission_sha256": "bc5c346144caa768926f46183a3e7bfadc0a905a78352f40e8982b48812bbabd"
+    },
+    {
+      "node_id": "c3457e01cff84945b7335bc355cfbf1e",
+      "submission": "submission_c3457e01cff84945b7335bc355cfbf1e.csv",
+      "submission_sha256": "e371b4718aa4449f608d99c1b6d2f4f9db718a88a260eb22b0d0043906066077"
+    }
+  ],
+  "candidate_set_frozen_before_scoring": true,
+  "candidate_set_hash": "0ff0f5742575180e49c9e70bc236d45319725d6a0da2bfcdf74917be1e8e0b08",
+  "evaluation_request_hash": "a75f77032437030a19d0d53c25a8fcc35ad4ea878c817f2f5cc05984bfab3ce4",
+  "evaluation_request_sha256": "c5be7f4630a5a9a7d99a492f06062f9752c438db7b1b17aaff4588fee4fef6ba",
+  "evaluator_manifest_sha256": "41ed7c3cdba61dd81d03a3486804de5576ccda7163cbf42a10e1c64b889d994e",
+  "journal_sha256": "89f071643733428abe0d8726c2ff22da2fe9d7cbc3cec319e0a37e5c228383e2",
+  "maximize": false,
+  "metric": "multiclass_log_loss",
+  "oracle_best_node_id": "7717199f05df4cee86a8828e9dadcf12",
+  "oracle_best_score": 0.12170922402330216,
+  "oracle_best_submission_sha256": "bc5c346144caa768926f46183a3e7bfadc0a905a78352f40e8982b48812bbabd",
+  "oracle_selection_is_host_only": true,
+  "report_hash": "240002cb6f220c010851ffc4f44cf4c8a77c1dc271ba31e9447005c97932953f",
+  "report_schema": "fixed_holdout_terminal_score_report_v3",
+  "results": [
+    {
+      "draft_role": "general_draft",
+      "internal_metric": 0.0866,
+      "internal_metric_disposition": "search_only",
+      "node_id": "7717199f05df4cee86a8828e9dadcf12",
+      "score": 0.12170922402330216,
+      "stage": "draft",
+      "status": "scored",
+      "submission": "submission_7717199f05df4cee86a8828e9dadcf12.csv",
+      "submission_sha256": "bc5c346144caa768926f46183a3e7bfadc0a905a78352f40e8982b48812bbabd"
+    },
+    {
+      "draft_role": "general_draft",
+      "internal_metric": 0.661741926808264,
+      "internal_metric_disposition": "search_only",
+      "node_id": "c3457e01cff84945b7335bc355cfbf1e",
+      "score": 0.8490342175379334,
+      "stage": "draft",
+      "status": "scored",
+      "submission": "submission_c3457e01cff84945b7335bc355cfbf1e.csv",
+      "submission_sha256": "e371b4718aa4449f608d99c1b6d2f4f9db718a88a260eb22b0d0043906066077"
+    }
+  ],
+  "schema": "mlevolve_fixed_holdout_v1",
+  "scores_were_visible_during_search": false,
+  "selected_node_id": "7717199f05df4cee86a8828e9dadcf12",
+  "selected_score": 0.12170922402330216,
+  "selected_submission": "submission_7717199f05df4cee86a8828e9dadcf12.csv",
+  "selected_submission_sha256": "bc5c346144caa768926f46183a3e7bfadc0a905a78352f40e8982b48812bbabd",
+  "selection_basis": {
+    "draft_role": "general_draft",
+    "formal_rank_claim_authorized": false,
+    "metric_disposition": "search_only",
+    "metric_maximize": false,
+    "metric_value": 0.0866,
+    "source_score_inherited": false,
+    "stage": "draft",
+    "terminal_metric_observed": false,
+    "type": "solver_internal_search_metric"
+  },
+  "selection_frozen_before_terminal_evaluation": true,
+  "selection_policy": "terminal_only",
+  "split_id": "leaf-classification-73e8353188dc-c33202487f61",
+  "system_selection_used_terminal_labels": false,
+  "task_id": "leaf-classification",
+  "terminal_score_sealed": true,
+  "train_manifest_sha256": "be01f8c4cc1665442909bea1393ee323a490e2ac7e0cb06578b2e04fbbf2276d"
+}

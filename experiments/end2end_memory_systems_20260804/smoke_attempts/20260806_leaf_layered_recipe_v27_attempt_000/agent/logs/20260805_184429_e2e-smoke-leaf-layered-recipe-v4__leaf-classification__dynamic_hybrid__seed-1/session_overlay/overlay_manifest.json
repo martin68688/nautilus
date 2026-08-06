@@ -1,0 +1,10 @@
+{
+  "created_at": "2026-08-05T18:44:42.735253Z",
+  "event_count": 0,
+  "events_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "last_event_hash": "",
+  "manifest_sha256": "2960584abe79f7430b4a218760ab19e4871475e16c90f0596f69550d4fe18805",
+  "overlay_id": "overlay::925e985dc56f45d349df02e7",
+  "schema": "session_overlay_manifest_v1",
+  "updated_at": "2026-08-05T18:44:42.735276Z"
+}

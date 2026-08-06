@@ -1,0 +1,17 @@
+{
+  "schema": "mlevolve_end2end_infrastructure_attempt_v1",
+  "logical_run_id": "e2e-smoke-leaf-layered-recipe-v2__leaf-classification__dynamic_hybrid__seed-1",
+  "workload": "job/mlevolve-e2e-leaf-layered-recipe-smoke-v24",
+  "job_uid": "bba363ec-c44c-4568-b75e-2345bb56de7c",
+  "created_at_utc": "2026-08-05T17:43:46Z",
+  "node_name": "tu.gp-engine.greatplains.net",
+  "gpu_requested": "nvidia.com/a100=1",
+  "phase": "Failed",
+  "failure_class": "infrastructure_orphaned_attempt_collision",
+  "candidate_training_started": false,
+  "exception": "ValueError: Refusing to replace immutable attempt .../attempt-000",
+  "cause": "A prior Pending Job crossed the deletion boundary, created attempt-000, and was terminated before durable finalization.",
+  "preserved_before_retry": true,
+  "retry_workload": "job/mlevolve-e2e-leaf-layered-recipe-smoke-v25",
+  "retry_mode": "--resume"
+}

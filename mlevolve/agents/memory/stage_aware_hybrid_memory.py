@@ -198,6 +198,68 @@ TASK_PROFILES = {
     "new-york-city-taxi-fare-prediction": ("tabular", "tabular_regression"),
 }
 
+TASK_TYPES = {
+    "spooky-author-identification": "nlp",
+    "random-acts-of-pizza": "nlp",
+    "aerial-cactus-identification": "vision",
+    "denoising-dirty-documents": "vision",
+    "leaf-classification": "multimodal",
+    "mlsp-2013-birds": "audio",
+    "nomad2018-predict-transparent-conductors": "tabular",
+    "new-york-city-taxi-fare-prediction": "tabular",
+}
+
+L3_DYNAMIC_CONFIDENCE_WEIGHTS = {
+    "task_match": 0.40,
+    "failure_signature_match": 0.30,
+    "runtime_stage_match": 0.12,
+    "method_family_match": 0.08,
+    "clean_transition_quality": 0.08,
+    "successful_repair_frequency": 0.02,
+}
+L3_FAILURE_SIGNATURE_MIN_MATCH = 0.50
+L3_SPECIFIC_SIGNATURE_MIN_OVERLAP = 1.0 / 3.0
+
+# Small deterministic concept groups bridge routine paraphrases before the
+# LLM gateway selector sees the already task-gated candidates.  They do not
+# create candidates, relax the 0.50 failure gate, or permit cross-task-type
+# retrieval; they only normalize semantically equivalent runtime vocabulary.
+L3_FAILURE_TOKEN_EQUIVALENCE_GROUPS = (
+    {"mixup", "cutmix", "augmentation", "augmented"},
+    {
+        "scalar",
+        "vector",
+        "reduce",
+        "reduction",
+        "aggregate",
+        "aggregated",
+        "mean",
+        "perexample",
+        "persample",
+    },
+    {"backward", "backpropagate", "backpropagation", "autograd", "gradient"},
+    {"classifier", "classification", "head"},
+    {"dimension", "width", "rank", "shape", "spatial", "vector"},
+    {"convolutional", "cnn", "backbone"},
+)
+L3_GENERIC_SIGNATURE_TERMS = frozenset(
+    {
+        "api",
+        "contract",
+        "error",
+        "exception",
+        "failure",
+        "feature",
+        "invalid",
+        "mismatch",
+        "model",
+        "runtime",
+        "shape",
+        "training",
+        "unsupported",
+    }
+)
+
 
 def canonical_task_id(task_id: str) -> str:
     """Treat orchestration-only ``full-`` run names as the same benchmark."""
@@ -234,6 +296,35 @@ FAMILY_CODE_SIGNATURES = {
     "vision_tabular_fusion": [("vit", "siglip", "dinov2", "visiontransformer"), ("tabular",), ("fusion", "gate", "concat")],
     "heterogeneous_multimodal_ensemble": [("xgbclassifier", "xgboost"), ("logisticregression",), ("mlp", "sequential", "linear")],
     "gradient_boosted_trees": [("lightgbm", "lgbm", "xgbclassifier", "xgboost")],
+    # Recipe-first families distilled for the End2End layered router.
+    "efficientnet_b0_focal_finetune": [("efficientnet",), ("focal",)],
+    "efficientnet_b2_cutmix_differential_lr": [("efficientnet",), ("cutmix",)],
+    "convnext_tiny_cutmix_tta": [("convnext",), ("cutmix",), ("tta", "flip")],
+    "resnet18_staged_mixup_tta": [("resnet18", "resnet"), ("mixup",)],
+    "siglip2_frozen_fivefold_mlp": [("siglip",), ("stratifiedkfold", "kfold"), ("mlp", "sequential", "linear")],
+    "compact_cnn_mixup": [("conv2d", "cnn"), ("mixup",)],
+    "frozen_resnet_tabular_concat_mlp": [("resnet18", "resnet"), ("tabular", "margin"), ("mlp", "sequential", "linear")],
+    "dinov2_bidirectional_cross_attention_fusion": [("dinov2", "dino"), ("multiheadattention", "crossattention", "attention"), ("tabular", "margin")],
+    "siglip2_multibranch_self_attention_fusion": [("siglip2", "siglip"), ("multiheadattention", "selfattention", "attention"), ("tabular", "margin")],
+    "tabular_residual_se_multibranch_mlp": [("residual", "resblock"), ("squeezeexcitation", "seblock"), ("margin",), ("shape",), ("texture",)],
+    "foldwise_lightgbm_logistic_weighted_blend": [("lightgbm", "lgbm"), ("logisticregression",), ("stratifiedkfold", "kfold")],
+    "tabular_feature_group_transformer": [("transformerencoder", "multiheadattention", "transformer"), ("margin",), ("shape",), ("texture",)],
+    "patch_unet_charbonnier_gaussian_blend": [("unet",), ("charbonnier",), ("gaussian",)],
+    "handcrafted_feature_unet_masked_mse": [("unet",), ("masked", "mask"), ("mse",)],
+    "lightweight_residual_stochastic_encoder_decoder": [("encoder", "conv2d"), ("residual", "resblock")],
+    "nafnet_overlapping_patch_denoiser": [("nafnet",), ("patch",)],
+    "se_attention_unet_augmented_patches": [("unet",), ("attention", "seblock", "squeezeexcitation")],
+    "temporal_rich_feature_lightgbm": [("lightgbm", "lgbm"), ("datetime", "hour", "weekday")],
+    "fare_stratified_lightgbm": [("lightgbm", "lgbm"), ("stratifiedkfold", "kfold")],
+    "cluster_zone_lightgbm": [("lightgbm", "lgbm"), ("kmeans", "cluster")],
+    "dual_target_lightgbm_blend": [("lightgbm", "lgbm"), ("blend", "average", "mean")],
+    "hash_split_regularized_mlp": [("mlp", "sequential", "linear"), ("hash", "md5", "sha256")],
+    "geo_nn_xgboost_hybrid": [("xgb", "xgboost"), ("nearestneighbors", "knn")],
+    "frozen_transformer_embedding_xgboost": [("automodel", "transformer", "bert"), ("xgb", "xgboost")],
+    "deberta_large_ema_holdout": [("deberta",), ("ema", "exponentialmovingaverage")],
+    "deberta_base_mean_pool_cv": [("deberta",), ("mean",), ("stratifiedkfold", "kfold")],
+    "modernbert_large_raw_text_cv": [("modernbert",), ("stratifiedkfold", "kfold")],
+    "roberta_stylometric_lightgbm_hybrid": [("roberta",), ("stylometric", "feature"), ("lightgbm", "lgbm")],
 }
 
 
@@ -374,6 +465,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         experiment_r_debug_confidence_threshold: float | None = None,
         experiment_r_agentic_retrieval_enabled: bool | None = None,
         experiment_r_agentic_query_fn: Callable[..., dict[str, Any]] | None = None,
+        recipe_sop_path: str | None = None,
+        recipe_sop_file_sha256: str | None = None,
+        recipe_sop_bundle_sha256: str | None = None,
+        recipe_evidence_path: str | None = None,
+        recipe_evidence_file_sha256: str | None = None,
+        recipe_evidence_manifest_sha256: str | None = None,
         **kwargs: Any,
     ) -> None:
         self._trace_local = threading.local()
@@ -516,6 +613,48 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 raise ValueError("Agentic retrieval per-step Top-K must be in [1, 12]")
             if self.experiment_r_agentic_max_observed < self.experiment_r_top_k:
                 raise ValueError("Agentic retrieval observation budget is too small")
+        self.recipe_sop_path = str(
+            recipe_sop_path
+            if recipe_sop_path is not None
+            else getattr(ext_cfg, "recipe_sop_path", "")
+            if ext_cfg is not None
+            else ""
+        ).strip()
+        self.recipe_sop_file_sha256 = str(
+            recipe_sop_file_sha256
+            if recipe_sop_file_sha256 is not None
+            else getattr(ext_cfg, "recipe_sop_file_sha256", "")
+            if ext_cfg is not None
+            else ""
+        ).strip()
+        self.recipe_sop_bundle_sha256 = str(
+            recipe_sop_bundle_sha256
+            if recipe_sop_bundle_sha256 is not None
+            else getattr(ext_cfg, "recipe_sop_bundle_sha256", "")
+            if ext_cfg is not None
+            else ""
+        ).strip()
+        self.recipe_evidence_path = str(
+            recipe_evidence_path
+            if recipe_evidence_path is not None
+            else getattr(ext_cfg, "recipe_evidence_path", "")
+            if ext_cfg is not None
+            else ""
+        ).strip()
+        self.recipe_evidence_file_sha256 = str(
+            recipe_evidence_file_sha256
+            if recipe_evidence_file_sha256 is not None
+            else getattr(ext_cfg, "recipe_evidence_file_sha256", "")
+            if ext_cfg is not None
+            else ""
+        ).strip()
+        self.recipe_evidence_manifest_sha256 = str(
+            recipe_evidence_manifest_sha256
+            if recipe_evidence_manifest_sha256 is not None
+            else getattr(ext_cfg, "recipe_evidence_manifest_sha256", "")
+            if ext_cfg is not None
+            else ""
+        ).strip()
         if end2end_memory_system is None and ext_cfg is not None:
             end2end_memory_system = getattr(
                 ext_cfg, "end2end_memory_system", ""
@@ -600,6 +739,15 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     "MemorySnapshot Base Bundle does not match the loaded RunForest graph"
                 )
             self._load_session_overlay_clauses()
+        self._legacy_sop_ids = list(self._sops)
+        self._recipe_evidence_ids: list[str] = []
+        self.recipe_evidence_receipt: dict[str, Any] = {}
+        if self.recipe_evidence_path:
+            self._load_recipe_evidence_overlay()
+        self._recipe_sop_ids: list[str] = []
+        self.recipe_sop_receipt: dict[str, Any] = {}
+        if self.recipe_sop_path:
+            self._load_recipe_sop_overlay()
         self.visibility_mode = str(visibility_mode or "shadow").lower()
         self.visibility_authority_engine = visibility_authority_engine
         self.visibility_active_protocol = self._coerce_protocol_ref(
@@ -1046,7 +1194,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             raise ValueError("Layered strategy retrieval requires runforest_sop_taxonomy_v1")
         if float(meta.get("sop_taxonomy_coverage") or 0.0) != 1.0:
             raise ValueError("Layered strategy retrieval requires 100% SOP taxonomy coverage")
-        if int(meta.get("sop_taxonomy_sop_count") or 0) != len(self._sops):
+        taxonomy_sop_ids = self._legacy_sop_ids if self._recipe_sop_ids else self._sops
+        if int(meta.get("sop_taxonomy_sop_count") or 0) != len(taxonomy_sop_ids):
             raise ValueError("Layered strategy taxonomy count does not match graph SOP count")
         required = {
             "abstraction_level",
@@ -1090,7 +1239,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             raise ValueError(f"Layered strategy SOP metadata is invalid for {invalid[:5]}")
         l1_ids = [
             sop_id
-            for sop_id in self._sops
+            for sop_id in taxonomy_sop_ids
             if self.nodes[sop_id].get("abstraction_level") == "L1_strategy"
         ]
         reviewed_l1_count = meta.get("sop_taxonomy_reviewed_l1_count")
@@ -1098,6 +1247,19 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             raise ValueError("Layered strategy taxonomy has incomplete manual L1 review metadata")
         if any(self.nodes[sop_id].get("manual_reviewed") is not True for sop_id in l1_ids):
             raise ValueError("Layered strategy taxonomy contains an unreviewed L1 SOP")
+        recipe_l1_ids = [
+            sop_id
+            for sop_id in self._recipe_sop_ids
+            if self.nodes[sop_id].get("abstraction_level") == "L1_strategy"
+        ]
+        if self._recipe_sop_ids:
+            if self.recipe_sop_receipt.get("node_count") != len(self._recipe_sop_ids):
+                raise ValueError("Recipe SOP overlay receipt count mismatch")
+            if not recipe_l1_ids or any(
+                self.nodes[sop_id].get("manual_reviewed") is not True
+                for sop_id in recipe_l1_ids
+            ):
+                raise ValueError("Recipe SOP overlay has incomplete L1 review metadata")
 
     def _resolve_config_path(self, value: str) -> Path:
         path = Path(str(value or ""))
@@ -1109,6 +1271,418 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if candidate.exists():
                 return candidate.resolve()
         return candidates[-1].resolve()
+
+    @staticmethod
+    def _recipe_payload_hash(payload: Mapping[str, Any]) -> str:
+        canonical = json.dumps(
+            {
+                key: value
+                for key, value in payload.items()
+                if key != "bundle_sha256"
+            },
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return hashlib.sha256(canonical).hexdigest()
+
+    @staticmethod
+    def _recipe_compute_profile(node: Mapping[str, Any]) -> str:
+        family = str(node.get("method_family") or "").lower()
+        if any(token in family for token in ("lightgbm", "xgboost", "logistic")) and not any(
+            token in family for token in ("transformer", "resnet", "siglip", "dino")
+        ):
+            return "cpu_light"
+        if any(token in family for token in ("large", "siglip", "dino", "nafnet", "unet")):
+            return "single_gpu_large"
+        return "single_gpu_standard"
+
+    @staticmethod
+    def _format_recipe_action(node: Mapping[str, Any]) -> str:
+        level = str(node.get("abstraction_level") or "")
+        if level == "L2_tactic":
+            return str(node.get("instruction") or "").strip()
+        if level == "L3_repair":
+            signature = (
+                node.get("failure_signature")
+                if isinstance(node.get("failure_signature"), Mapping)
+                else {}
+            )
+            repair = (
+                node.get("repair_action")
+                if isinstance(node.get("repair_action"), Mapping)
+                else {}
+            )
+            steps = [str(value) for value in (repair.get("steps") or []) if str(value)]
+            return "\n".join(
+                [
+                    "Evidence-bound L3 Debug repair:",
+                    f"Failure signature: {signature.get('id', '')}",
+                    f"Failure pattern: {signature.get('pattern', '')}",
+                    f"Root cause: {signature.get('root_cause', '')}",
+                    f"Runtime stage: {node.get('runtime_stage', '')}",
+                    f"Repair: {repair.get('summary', '')}",
+                    *(f"- {value}" for value in steps),
+                    f"Evidence admission: {node.get('evidence_status', 'accepted_clean_repair')} "
+                    f"({node.get('successful_repair_count', 1)} clean repair success; "
+                    "count does not create an evidence tier).",
+                ]
+            ).strip()
+        pipeline = node.get("pipeline") if isinstance(node.get("pipeline"), Mapping) else {}
+        labels = (
+            ("data_validation", "Data validation"),
+            ("split_validation", "Split and validation"),
+            ("feature_representation", "Feature representation"),
+            ("model_stack", "Model stack"),
+            ("training_protocol", "Training protocol"),
+            ("oof_protocol", "OOF protocol"),
+            ("ensemble_calibration", "Ensemble and calibration"),
+            ("final_refit_inference", "Final refit and inference"),
+            ("failure_boundaries", "Failure boundaries"),
+        )
+        lines = ["Complete end-to-end recipe:"]
+        for key, label in labels:
+            value = str(pipeline.get(key) or "").strip()
+            if value:
+                lines.append(f"{label}: {value}")
+        return "\n".join(lines)
+
+    def _normalize_recipe_sop(self, source: Mapping[str, Any]) -> dict[str, Any]:
+        node = copy.deepcopy(dict(source))
+        node_id = str(node.get("id") or "")
+        raw_level = str(node.get("abstraction_level") or "")
+        if not node_id or node.get("type") != "SOP":
+            raise ValueError("Recipe SOP entries require stable IDs and type=SOP")
+        if raw_level not in {"L1_recipe", "L2_tactic", "L3_repair"}:
+            raise ValueError(f"Unsupported Recipe SOP abstraction level for {node_id}")
+        task_id = canonical_task_id(str(node.get("task_id") or ""))
+        if task_id not in TASK_PROFILES:
+            raise ValueError(f"Recipe SOP has unknown task_id: {node_id}")
+        family = str(node.get("method_family") or "")
+        parents = [str(value) for value in (node.get("parent_method_families") or [])]
+        if raw_level == "L1_recipe" and not family:
+            raise ValueError(f"Recipe L1 has no method_family: {node_id}")
+        if raw_level == "L2_tactic" and not parents:
+            raise ValueError(f"Recipe L2 has no parent_method_families: {node_id}")
+        if raw_level == "L3_repair":
+            signature = node.get("failure_signature")
+            repair = node.get("repair_action")
+            transitions = [
+                str(value) for value in (node.get("supporting_transition_ids") or [])
+            ]
+            if (
+                not isinstance(signature, Mapping)
+                or not str(signature.get("id") or "")
+                or not isinstance(repair, Mapping)
+                or not list(repair.get("steps") or [])
+                or not transitions
+                or not str(node.get("task_type") or "")
+                or not str(node.get("runtime_stage") or "")
+            ):
+                raise ValueError(f"Recipe L3 has incomplete repair evidence: {node_id}")
+            for transition_id in transitions:
+                transition = self.nodes.get(transition_id)
+                if transition is None:
+                    # The frozen overlay spans several task graphs.  A
+                    # task-local Base Bundle legitimately lacks transitions
+                    # from other tasks; those L3 cards remain inert because
+                    # no authorized edge can be materialized locally.
+                    continue
+                if (
+                    not isinstance(transition, Mapping)
+                    or transition.get("type") != "Transition"
+                    or transition.get("outcome") != "debug_fixed"
+                    or transition.get("parent_buggy") is not True
+                    or transition.get("child_buggy") is not False
+                ):
+                    raise ValueError(
+                        f"Recipe L3 references an invalid repair transition: {transition_id}"
+                    )
+            node["available_supporting_transition_ids"] = [
+                transition_id
+                for transition_id in transitions
+                if self.nodes.get(transition_id, {}).get("type") == "Transition"
+            ]
+        original_kind = str(node.get("sop_kind") or "")
+        normalized_kind = {
+            "model_strategy_recipe": "model_strategy",
+            "model_design": "architecture",
+            "ensemble": "training_protocol",
+            "debug_fix": "debug_fix",
+        }.get(original_kind, original_kind)
+        task_domain = str(node.get("task_domain") or "")
+        task_family = TASK_PROFILES[task_id][1]
+        action = self._format_recipe_action(node)
+        if not action:
+            raise ValueError(f"Recipe SOP has no prompt-visible method text: {node_id}")
+        node.update(
+            {
+                "task": task_id,
+                "task_id": task_id,
+                "recipe_task_id": task_id,
+                "recipe_abstraction_level": raw_level,
+                "abstraction_level": (
+                    {
+                        "L1_recipe": "L1_strategy",
+                        "L2_tactic": "L2_tactic",
+                        "L3_repair": "L3_repair",
+                    }[raw_level]
+                ),
+                "recipe_sop_kind": original_kind,
+                "sop_kind": normalized_kind,
+                "method_family": family or "general",
+                "parent_method_families": parents,
+                "task_families": list(
+                    dict.fromkeys(
+                        value
+                        for value in (task_family, task_domain)
+                        if value
+                    )
+                ),
+                "task_type": str(node.get("task_type") or ""),
+                "action": action,
+                "text": action,
+                "applies_when": [str(node.get("when_to_use") or "")],
+                "prevents": [
+                    (
+                        str((node.get("failure_signature") or {}).get("pattern") or "")
+                        if raw_level == "L3_repair"
+                        else str((node.get("pipeline") or {}).get("failure_boundaries") or "")
+                    )
+                ]
+                if raw_level == "L3_repair" or isinstance(node.get("pipeline"), Mapping)
+                else [],
+                "compute_profile": self._recipe_compute_profile(node),
+                "manual_reviewed": True,
+                "recipe_overlay": True,
+                "source_bundle_sha256": self.recipe_sop_bundle_sha256,
+            }
+        )
+        return node
+
+    def _load_recipe_sop_overlay(self) -> None:
+        if self.retrieval_control != "layered_strategy":
+            raise ValueError("Recipe SOP overlay is only valid for layered_strategy")
+        if self.experiment_r_enabled:
+            raise ValueError("Recipe layered_strategy cannot be short-circuited by Experiment R")
+        if len(self.recipe_sop_file_sha256) != 64 or len(self.recipe_sop_bundle_sha256) != 64:
+            raise ValueError("Recipe SOP overlay requires frozen file and bundle SHA-256 pins")
+        path = self._resolve_config_path(self.recipe_sop_path)
+        raw = path.read_bytes()
+        observed_file_sha = hashlib.sha256(raw).hexdigest()
+        if not hmac.compare_digest(observed_file_sha, self.recipe_sop_file_sha256):
+            raise ValueError("Recipe SOP file SHA-256 mismatch")
+        payload = json.loads(raw.decode("utf-8"))
+        declared_bundle_sha = str(payload.get("bundle_sha256") or "")
+        observed_bundle_sha = self._recipe_payload_hash(payload)
+        if not hmac.compare_digest(declared_bundle_sha, observed_bundle_sha):
+            raise ValueError("Recipe SOP canonical payload hash mismatch")
+        if not hmac.compare_digest(observed_bundle_sha, self.recipe_sop_bundle_sha256):
+            raise ValueError("Recipe SOP bundle SHA-256 does not match the frozen pin")
+        sources = payload.get("nodes")
+        if not isinstance(sources, list) or not sources:
+            raise ValueError("Recipe SOP bundle contains no nodes")
+        recipe_ids: list[str] = []
+        for source in sources:
+            if not isinstance(source, Mapping):
+                raise ValueError("Recipe SOP bundle contains a non-object entry")
+            node = self._normalize_recipe_sop(source)
+            node_id = str(node["id"])
+            if node_id in self.nodes:
+                raise ValueError(f"Recipe SOP ID collides with RunForest graph: {node_id}")
+            self.nodes[node_id] = node
+            self._node_tokens[node_id] = _tokenize(self._node_text(node))
+            recipe_ids.append(node_id)
+            if node.get("abstraction_level") == "L3_repair":
+                existing_edges = {
+                    (str(edge.get("src") or ""), str(edge.get("dst") or ""))
+                    for edge in self.graph.get("edges", [])
+                }
+                for transition_id in node.get("available_supporting_transition_ids") or []:
+                    if (str(transition_id), node_id) in existing_edges:
+                        continue
+                    self.graph.setdefault("edges", []).append(
+                        {
+                            "src": str(transition_id),
+                            "dst": node_id,
+                            "kind": "authorized_distills_to",
+                            "authority_outcome": "allow",
+                            "quality": "evidence_turn_match",
+                            "score": 1.0,
+                            "provenance": "frozen_l3_repair_distillation_v2",
+                        }
+                    )
+        self._recipe_sop_ids = sorted(recipe_ids)
+        self._sops = sorted(set(self._legacy_sop_ids) | set(self._recipe_sop_ids))
+        self.recipe_sop_receipt = {
+            "schema": "layered_recipe_sop_overlay_receipt_v1",
+            "path": str(path),
+            "file_sha256": observed_file_sha,
+            "bundle_sha256": observed_bundle_sha,
+            "bundle_version": payload.get("bundle_version"),
+            "node_count": len(self._recipe_sop_ids),
+            "l1_count": sum(
+                self.nodes[node_id]["abstraction_level"] == "L1_strategy"
+                for node_id in self._recipe_sop_ids
+            ),
+            "l2_count": sum(
+                self.nodes[node_id]["abstraction_level"] == "L2_tactic"
+                for node_id in self._recipe_sop_ids
+            ),
+            "l3_count": sum(
+                self.nodes[node_id]["abstraction_level"] == "L3_repair"
+                for node_id in self._recipe_sop_ids
+            ),
+        }
+
+    def _load_recipe_evidence_overlay(self) -> None:
+        if self.retrieval_control != "layered_strategy":
+            raise ValueError("Recipe evidence overlay is only valid for layered_strategy")
+        if len(self.recipe_evidence_file_sha256) != 64 or len(
+            self.recipe_evidence_manifest_sha256
+        ) != 64:
+            raise ValueError("Recipe evidence overlay requires frozen file and manifest hashes")
+        path = self._resolve_config_path(self.recipe_evidence_path)
+        raw = path.read_bytes()
+        observed_file_sha = hashlib.sha256(raw).hexdigest()
+        if not hmac.compare_digest(observed_file_sha, self.recipe_evidence_file_sha256):
+            raise ValueError("Recipe evidence file SHA-256 mismatch")
+        payload = json.loads(raw.decode("utf-8"))
+        if payload.get("schema") != "mlevolve_recipe_distillation_evidence_v1":
+            raise ValueError("Unsupported Recipe evidence schema")
+        observed_manifest_sha = hashlib.sha256(
+            json.dumps(
+                {
+                    key: value
+                    for key, value in payload.items()
+                    if key != "manifest_sha256"
+                },
+                sort_keys=True,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        declared_manifest_sha = str(payload.get("manifest_sha256") or "")
+        if not hmac.compare_digest(declared_manifest_sha, observed_manifest_sha):
+            raise ValueError("Recipe evidence canonical manifest hash mismatch")
+        if not hmac.compare_digest(
+            observed_manifest_sha,
+            self.recipe_evidence_manifest_sha256,
+        ):
+            raise ValueError("Recipe evidence manifest SHA-256 does not match frozen pin")
+
+        selected = payload.get("selected_evidence")
+        if not isinstance(selected, Mapping) or not selected:
+            raise ValueError("Recipe evidence manifest has no selected evidence")
+        selected_count = 0
+        materialized_count = 0
+        existing_count = 0
+        evidence_ids: list[str] = []
+        for selected_task, records in selected.items():
+            task_id = canonical_task_id(str(selected_task or ""))
+            if task_id not in TASK_PROFILES or not isinstance(records, list):
+                raise ValueError(f"Invalid Recipe evidence task group: {selected_task}")
+            for record in records:
+                if not isinstance(record, Mapping):
+                    raise ValueError("Recipe evidence contains a non-object record")
+                selected_count += 1
+                node_id = str(record.get("node_id") or "")
+                metric = record.get("metric")
+                if (
+                    not node_id
+                    or canonical_task_id(record.get("task_id")) != task_id
+                    or not isinstance(metric, (int, float))
+                    or isinstance(metric, bool)
+                    or not math.isfinite(float(metric))
+                    or record.get("audit_status") != "clean"
+                    or record.get("memory_disposition") != "positive_eligible"
+                    or record.get("paper_grade_eligible") is not True
+                    or record.get("rank_eligible") is not True
+                    or len(str(record.get("code_sha256") or "")) != 64
+                ):
+                    raise ValueError(f"Recipe evidence is not strict-clean eligible: {node_id}")
+                evidence_ids.append(node_id)
+                existing = self.nodes.get(node_id)
+                if existing is not None:
+                    existing_metric = existing.get("metric")
+                    existing_audit = (
+                        existing.get("leakage_audit")
+                        if isinstance(existing.get("leakage_audit"), Mapping)
+                        else {}
+                    )
+                    if (
+                        existing.get("type") != "RunNode"
+                        or canonical_task_id(existing.get("task")) != task_id
+                        or not isinstance(existing_metric, (int, float))
+                        or abs(float(existing_metric) - float(metric)) > 1e-12
+                        or str(existing.get("code_sha256") or "")
+                        != str(record.get("code_sha256") or "")
+                        or existing_audit.get("status") != "clean"
+                    ):
+                        raise ValueError(
+                            f"Recipe evidence conflicts with base RunForest node: {node_id}"
+                        )
+                    existing_count += 1
+                    continue
+                source_cohort = str(record.get("source_cohort") or "")
+                terminal_evidence = bool(
+                    node_id.startswith("postsmoke::")
+                    or source_cohort == "post_freeze_leaf_smoke_20260805"
+                )
+                node = {
+                    "id": node_id,
+                    "type": "RunNode",
+                    "task": task_id,
+                    "run_id": str(record.get("run_id") or ""),
+                    "run_short_id": str(record.get("run_id") or ""),
+                    "stage": str(record.get("stage") or "draft"),
+                    "step": record.get("step"),
+                    "metric": float(metric),
+                    "metric_direction": str(record.get("metric_direction") or "unknown"),
+                    "metric_provenance": (
+                        "sealed_fixed_holdout_terminal_score"
+                        if terminal_evidence
+                        else "distilled_historical_search_metric"
+                    ),
+                    "metric_improvement": record.get("metric_improvement"),
+                    "is_buggy": False,
+                    "is_valid": True,
+                    "plan": str(record.get("plan") or ""),
+                    "code_summary": str(record.get("code_summary") or ""),
+                    "code_sha256": str(record.get("code_sha256") or ""),
+                    "source_cohort": source_cohort,
+                    "quarantined": False,
+                    "protocol_biased": False,
+                    "leakage_audit": {
+                        "status": "clean",
+                        "memory_disposition": "positive_eligible",
+                        "paper_grade_eligible": True,
+                        "rank_eligible": True,
+                    },
+                    "recipe_evidence_overlay": True,
+                    "source_manifest_sha256": observed_manifest_sha,
+                }
+                self.nodes[node_id] = node
+                self._node_tokens[node_id] = _tokenize(self._node_text(node))
+                materialized_count += 1
+        if selected_count != sum(
+            int(value) for value in (payload.get("selected_counts_by_task") or {}).values()
+        ):
+            raise ValueError("Recipe evidence selected-count receipt mismatch")
+        self._recipe_evidence_ids = sorted(set(evidence_ids))
+        self.recipe_evidence_receipt = {
+            "schema": "layered_recipe_evidence_overlay_receipt_v1",
+            "path": str(path),
+            "file_sha256": observed_file_sha,
+            "manifest_sha256": observed_manifest_sha,
+            "selected_node_count": selected_count,
+            "materialized_node_count": materialized_count,
+            "existing_node_count": existing_count,
+            "terminal_node_count": sum(
+                self._is_terminal_strategy_evidence(node_id, self.nodes[node_id])
+                for node_id in self._recipe_evidence_ids
+            ),
+        }
 
     def _model_family_from_text(self, value: str) -> str:
         text = str(value or "").lower()
@@ -1157,8 +1731,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if self.cfg is None:
             raise ValueError("Layered strategy retrieval requires cfg for replay-family exclusion")
         policy = getattr(self.cfg.agent, "draft_role_policy", None)
-        manifest_path = self._resolve_config_path(getattr(policy, "replay_targets_path", ""))
-        if not manifest_path.exists():
+        raw_path = str(getattr(policy, "replay_targets_path", "") or "").strip()
+        if not raw_path:
+            return ""
+        manifest_path = self._resolve_config_path(raw_path)
+        if not manifest_path.is_file():
             raise FileNotFoundError(f"Replay target manifest not found: {manifest_path}")
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         canonical_task = canonical_task_id(task_id)
@@ -1299,8 +1876,98 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             return candidate_family == "boosted_tree_family"
         return False
 
-    def _strategy_supports(self, sop_id: str, task_id: str) -> list[dict[str, Any]]:
+    @staticmethod
+    def _is_terminal_strategy_evidence(
+        node_id: str,
+        node: Mapping[str, Any],
+    ) -> bool:
+        """Whether a support carries a sealed, label-isolated terminal score."""
+        provenance = str(node.get("metric_provenance") or "")
+        source_cohort = str(node.get("source_cohort") or "")
+        return bool(
+            provenance == "sealed_fixed_holdout_terminal_score"
+            or str(node_id).startswith("postsmoke::")
+            or source_cohort == "post_freeze_leaf_smoke_20260805"
+        )
+
+    def _strategy_supports(
+        self,
+        sop_id: str,
+        task_id: str,
+        *,
+        metric_direction: str = "unknown",
+    ) -> list[dict[str, Any]]:
         rows = []
+        sop = self.nodes.get(sop_id, {})
+        for node_id in dict.fromkeys(
+            str(value)
+            for value in (
+                sop.get("clean_supporting_node_ids")
+                or sop.get("source_node_ids")
+                or []
+            )
+            if value
+        ):
+            node = self.nodes.get(node_id, {})
+            audit = node.get("leakage_audit") if isinstance(node.get("leakage_audit"), dict) else {}
+            metric = node.get("metric")
+            run_id = str(node.get("run_short_id") or node.get("run_id") or "")
+            strict_clean = bool(
+                node.get("type") == "RunNode"
+                and canonical_task_id(node.get("task")) == canonical_task_id(task_id)
+                and node.get("is_buggy") is False
+                and node.get("is_valid") is True
+                and isinstance(metric, (int, float))
+                and not isinstance(metric, bool)
+                and math.isfinite(float(metric))
+                and audit.get("status") == "clean"
+                and audit.get("memory_disposition") == "positive_eligible"
+                and audit.get("paper_grade_eligible") is True
+                and audit.get("rank_eligible") is True
+                and node.get("quarantined") is not True
+                and node.get("protocol_biased") is not True
+                and run_id not in self.excluded_run_ids
+                and not any(run_id.startswith(prefix) for prefix in self._blocked_run_prefixes)
+            )
+            if not strict_clean:
+                continue
+            improvement = node.get("metric_improvement")
+            terminal_evidence = self._is_terminal_strategy_evidence(node_id, node)
+            rows.append(
+                {
+                    "transition_id": "",
+                    "evidence_kind": "direct_clean_run_node",
+                    "run_id": node.get("run_id"),
+                    "run_short_id": node.get("run_short_id"),
+                    "node_id": node_id,
+                    "stage_pair": node.get("stage"),
+                    "outcome": "clean_successful_run_node",
+                    "metric": metric,
+                    "metric_direction": str(
+                        node.get("metric_direction") or metric_direction or "unknown"
+                    ),
+                    "metric_provenance": (
+                        str(node.get("metric_provenance") or "")
+                        or (
+                            "sealed_fixed_holdout_terminal_score"
+                            if terminal_evidence
+                            else "historical_search_metric"
+                        )
+                    ),
+                    "terminal_evidence": terminal_evidence,
+                    "metric_improvement": (
+                        float(improvement)
+                        if isinstance(improvement, (int, float))
+                        and not isinstance(improvement, bool)
+                        and math.isfinite(float(improvement))
+                        else 0.0
+                    ),
+                    "audit_status": audit.get("status"),
+                    "rank_eligible": audit.get("rank_eligible"),
+                    "code_sha256": node.get("code_sha256"),
+                    "eligibility_reason": "direct_strict_clean_recipe_source",
+                }
+            )
         for transition_id in self._active_transitions_for_sop(sop_id):
             transition = self.nodes[transition_id]
             if canonical_task_id(transition.get("task")) != canonical_task_id(task_id):
@@ -1311,6 +1978,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             child_id = str(transition.get("child_node_id") or "")
             child = self.nodes.get(child_id, {})
             improvement = transition.get("metric_improvement")
+            terminal_evidence = self._is_terminal_strategy_evidence(child_id, child)
             rows.append(
                 {
                     "transition_id": transition_id,
@@ -1320,6 +1988,18 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     "stage_pair": transition.get("stage_pair"),
                     "outcome": transition.get("outcome"),
                     "metric": child.get("metric"),
+                    "metric_direction": str(
+                        child.get("metric_direction") or metric_direction or "unknown"
+                    ),
+                    "metric_provenance": (
+                        str(child.get("metric_provenance") or "")
+                        or (
+                            "sealed_fixed_holdout_terminal_score"
+                            if terminal_evidence
+                            else "historical_search_metric"
+                        )
+                    ),
+                    "terminal_evidence": terminal_evidence,
                     "metric_improvement": float(improvement) if isinstance(improvement, (int, float)) else 0.0,
                     "audit_status": (child.get("leakage_audit") or {}).get("status"),
                     "rank_eligible": (child.get("leakage_audit") or {}).get("rank_eligible"),
@@ -1327,13 +2007,20 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     "eligibility_reason": reason,
                 }
             )
-        return sorted(
-            rows,
-            key=lambda item: (
+        def support_key(item: Mapping[str, Any]) -> tuple[Any, ...]:
+            direction = str(item.get("metric_direction") or metric_direction or "unknown")
+            metric = float(item.get("metric") or 0.0)
+            direction_aware_metric = -metric if direction == "maximize" else metric
+            if direction not in {"minimize", "maximize"}:
+                direction_aware_metric = 0.0
+            return (
+                0 if item.get("terminal_evidence") is True else 1,
+                direction_aware_metric,
                 -float(item.get("metric_improvement") or 0.0),
                 str(item.get("node_id")),
-            ),
-        )
+            )
+
+        return sorted(rows, key=support_key)
 
     def _rank_strategy_routes(
         self,
@@ -1347,13 +2034,19 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         gpu_count = int(task_profile["resource_budget"].get("gpu_count") or 0)
         rows: list[dict[str, Any]] = []
         visibility_ids = self._effective_visibility_sop_ids()
-        for sop_id in self._sops:
+        strategy_sop_ids = self._recipe_sop_ids or self._sops
+        for sop_id in strategy_sop_ids:
             if visibility_ids is not None and sop_id not in visibility_ids:
                 continue
             node = self.nodes[sop_id]
             if node.get("abstraction_level") != "L1_strategy" or node.get("sop_kind") != "model_strategy":
                 continue
             if "draft" not in (node.get("decision_stages") or []):
+                continue
+            recipe_task = str(node.get("recipe_task_id") or "")
+            if recipe_task and canonical_task_id(recipe_task) != canonical_task_id(
+                task_profile["task_id"]
+            ):
                 continue
             family = str(node.get("method_family") or "")
             if not family or family in excluded:
@@ -1362,7 +2055,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             task_fit = 1.0 if task_family in task_families else 0.5 if "general" in task_families else 0.0
             if task_fit == 0.0:
                 continue
-            supports = self._strategy_supports(sop_id, str(task_profile["task_id"]))
+            supports = self._strategy_supports(
+                sop_id,
+                str(task_profile["task_id"]),
+                metric_direction=str(task_profile.get("metric_direction") or "unknown"),
+            )
             if not supports:
                 continue
             visible_text = self._visible_sop_prompt(sop_id)
@@ -1425,7 +2122,37 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 STRATEGY_SCORE_WEIGHTS[key] * float(row["score_components"][key])
                 for key in STRATEGY_SCORE_WEIGHTS
             )
+        terminal_rows = [
+            row
+            for row in rows
+            if row["best_tree_evidence"].get("terminal_evidence") is True
+        ]
+        terminal_best_sop_id = ""
+        if terminal_rows:
+            reverse = str(task_profile.get("metric_direction") or "") == "maximize"
+            terminal_best = sorted(
+                terminal_rows,
+                key=lambda item: (
+                    -float(item["best_tree_evidence"]["metric"])
+                    if reverse
+                    else float(item["best_tree_evidence"]["metric"]),
+                    str(item["sop_id"]),
+                ),
+            )[0]
+            terminal_best_sop_id = str(terminal_best["sop_id"])
+        for row in rows:
+            is_terminal_best = bool(
+                terminal_best_sop_id and row["sop_id"] == terminal_best_sop_id
+            )
+            row["same_task_terminal_best"] = is_terminal_best
+            row["selection_priority"] = (
+                "mandatory_same_task_terminal_best"
+                if is_terminal_best
+                else "agent_comparison_candidate"
+            )
         rows.sort(key=lambda item: (-float(item["score"]), str(item["sop_id"])))
+        if terminal_best_sop_id:
+            rows.sort(key=lambda item: 0 if item["same_task_terminal_best"] else 1)
         distinct = []
         seen_families: set[str] = set()
         for row in rows:
@@ -1488,18 +2215,37 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 for key in (
                     "sop_id",
                     "method_family",
+                    "title",
+                    "action",
                     "hypothesis",
                     "model_components",
                     "compute_profile",
                     "score",
+                    "same_task_terminal_best",
+                    "selection_priority",
                 )
+            }
+            | {
+                "best_clean_evidence": {
+                    key: route.get("best_tree_evidence", {}).get(key)
+                    for key in (
+                        "node_id",
+                        "metric",
+                        "metric_direction",
+                        "metric_provenance",
+                        "terminal_evidence",
+                    )
+                }
             }
             for route in routes
         ]
         return query(
             system_message=(
                 "Select exactly one supplied strategy. Do not invent a method family or SOP id. "
-                "Prefer a task-appropriate, compute-feasible hypothesis that differs from excluded families."
+                "Prefer a task-appropriate, compute-feasible hypothesis that differs from excluded families. "
+                "If one route is marked mandatory_same_task_terminal_best and its compute fit is positive, "
+                "you must select it: a sealed same-task terminal result outranks speculative reasoning "
+                "from historical internal validation scores."
             ),
             user_message=json.dumps(
                 {"task_profile": task_profile, "routes": compact_routes},
@@ -1520,6 +2266,15 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         routes: list[dict[str, Any]],
     ) -> tuple[dict[str, Any], dict[str, Any]]:
         valid = {str(route["sop_id"]): route for route in routes}
+        mandatory_terminal = next(
+            (
+                route
+                for route in routes
+                if route.get("same_task_terminal_best") is True
+                and float(route.get("score_components", {}).get("compute_fit") or 0.0) > 0.0
+            ),
+            None,
+        )
         calls = 0
         last_error = ""
         if self.agentic_enabled:
@@ -1531,6 +2286,14 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     route = valid.get(sop_id)
                     if route is None:
                         raise ValueError(f"unknown strategy_sop_id {sop_id}")
+                    if (
+                        mandatory_terminal is not None
+                        and route["sop_id"] != mandatory_terminal["sop_id"]
+                    ):
+                        raise ValueError(
+                            "selector bypassed mandatory same-task terminal-best route "
+                            f"{mandatory_terminal['sop_id']}"
+                        )
                     if str(result.get("method_family") or "") != route["method_family"]:
                         raise ValueError("selector method_family does not match supplied route")
                     selected = copy.deepcopy(route)
@@ -1610,7 +2373,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     "candidate_class": "strategy_route",
                     "gateway_sop_id": route["sop_id"],
                     "candidate_id": route["sop_id"],
-                    "supporting_transition_ids": [route["best_tree_evidence"]["transition_id"]],
+                    "supporting_transition_ids": [
+                        route["best_tree_evidence"]["transition_id"]
+                    ]
+                    if route["best_tree_evidence"].get("transition_id")
+                    else [],
                     "selection_reason": (
                         selected["decision"]["reason"] if is_selected else "Rejected after three-route strategy comparison."
                     ),
@@ -1626,7 +2393,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 "candidate_class": "clean_strategy_evidence",
                 "gateway_sop_id": selected["sop_id"],
                 "candidate_id": evidence["node_id"],
-                "supporting_transition_ids": [evidence["transition_id"]],
+                "supporting_transition_ids": [evidence["transition_id"]]
+                if evidence.get("transition_id")
+                else [],
                 "selection_reason": "Best clean successful task-local Tree evidence for the selected method family.",
                 "selection_state": "injected",
                 "method_family": selected["method_family"],
@@ -1641,6 +2410,14 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             "strategy_routes": routes,
             "selected_strategy": selected,
             "strategy_selection": selection,
+            "mandatory_same_task_terminal_strategy": next(
+                (
+                    route["sop_id"]
+                    for route in routes
+                    if route.get("same_task_terminal_best") is True
+                ),
+                None,
+            ),
             "excluded_method_families": task_profile["excluded_method_families"],
             "l2_tactics": [],
             "navigation_trace": trace,
@@ -1666,9 +2443,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 f"Hypothesis: {decision.get('hypothesis', '')}",
                 f"Validation plan: {decision.get('validation_plan', '')}",
                 f"Model components: {', '.join(decision.get('model_components') or [])}",
-                f"Clean Tree evidence: run={evidence.get('run_id')} node={evidence.get('node_id')} "
-                f"transition={evidence.get('transition_id')} metric={evidence.get('metric')} "
-                f"audit={evidence.get('audit_status')} code_sha256={evidence.get('code_sha256')}",
+                f"Clean RunForest evidence: run={evidence.get('run_id')} node={evidence.get('node_id')} "
+                f"kind={evidence.get('evidence_kind', 'supporting_transition')} "
+                f"transition={evidence.get('transition_id') or 'direct'} metric={evidence.get('metric')} "
+                f"direction={evidence.get('metric_direction')} provenance={evidence.get('metric_provenance')} "
+                f"terminal={evidence.get('terminal_evidence')} audit={evidence.get('audit_status')} "
+                f"code_sha256={evidence.get('code_sha256')}",
                 "Do not replace this method family with an excluded baseline/replay family.",
             ]
         )
@@ -1697,7 +2477,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         task_family = str(task_profile.get("task_family") or TASK_PROFILES.get(task_id, ("", "general"))[1])
         rows = []
         visibility_ids = self._effective_visibility_sop_ids()
-        for sop_id in self._sops:
+        tactic_sop_ids = self._recipe_sop_ids or self._sops
+        for sop_id in tactic_sop_ids:
             if visibility_ids is not None and sop_id not in visibility_ids:
                 continue
             node = self.nodes[sop_id]
@@ -1707,8 +2488,17 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 continue
             if node.get("sop_kind") not in {"architecture", "feature", "training_protocol", "validation_protocol"}:
                 continue
+            recipe_task = str(node.get("recipe_task_id") or "")
+            if recipe_task and canonical_task_id(recipe_task) != canonical_task_id(task_id):
+                continue
             node_family = str(node.get("method_family") or "general")
-            if not self._family_compatible(family, node_family):
+            parent_families = {
+                str(value) for value in (node.get("parent_method_families") or [])
+            }
+            if parent_families:
+                if family not in parent_families:
+                    continue
+            elif not self._family_compatible(family, node_family):
                 continue
             families = {str(value) for value in (node.get("task_families") or [])}
             if task_family not in families and "general" not in families:
@@ -1760,14 +2550,22 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         refs = []
         for tactic in selected_tactics:
             evidence = tactic["best_tree_evidence"]
-            refs.extend([tactic["sop_id"], evidence["transition_id"], evidence["node_id"]])
+            refs.extend(
+                [
+                    tactic["sop_id"],
+                    *([evidence["transition_id"]] if evidence.get("transition_id") else []),
+                    evidence["node_id"],
+                ]
+            )
             trace.append(
                 {
                     "retrieval_channel": "l2_model_design",
                     "candidate_class": "family_compatible_tactic",
                     "gateway_sop_id": tactic["sop_id"],
                     "candidate_id": tactic["sop_id"],
-                    "supporting_transition_ids": [evidence["transition_id"]],
+                    "supporting_transition_ids": [evidence["transition_id"]]
+                    if evidence.get("transition_id")
+                    else [],
                     "selection_reason": f"L2 {tactic['sop_kind']} compatible with {family}.",
                     "selection_state": "injected",
                     "method_family": family,
@@ -1922,6 +2720,13 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         return (1.0 if compatible else 0.0), compatible
 
     def _sop_task_fit(self, node: dict[str, Any], task_family: str) -> float:
+        if node.get("abstraction_level") == "L3_repair" and node.get("task_type"):
+            declared = {str(value) for value in (node.get("task_families") or [])}
+            if task_family in declared:
+                return 1.0
+            query_type = self._task_type_for_family(task_family)
+            node_type = str(node.get("task_type") or "")
+            return 0.70 if query_type != "general" and query_type == node_type else 0.0
         if self.domain_scope_required:
             return 1.0 if self._sop_task_compatible(node, task_family) else 0.0
         declared = {str(value) for value in (node.get("task_families") or [])}
@@ -1941,6 +2746,17 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         return 0.35 * best
 
     def _sop_task_compatible(self, node: dict[str, Any], task_family: str) -> bool:
+        if node.get("abstraction_level") == "L3_repair" and node.get("task_type"):
+            declared = {str(value) for value in (node.get("task_families") or [])}
+            if task_family in declared:
+                return True
+            query_type = self._task_type_for_family(task_family)
+            node_type = str(node.get("task_type") or "")
+            return bool(
+                query_type != "general"
+                and node_type
+                and query_type == node_type
+            )
         if self.domain_scope_required:
             scopes = {
                 normalize_transfer_scope(value)
@@ -2319,6 +3135,38 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             signatures.add(f"exception:{exception_name}")
         return signatures
 
+    @staticmethod
+    def _semantic_failure_tokens(text: str) -> set[str]:
+        normalized = re.sub(r"[^a-z0-9]+", " ", str(text or "").lower())
+        tokens = _tokenize(normalized)
+        compact = normalized.replace(" ", "")
+        if "perexample" in compact:
+            tokens.add("perexample")
+        if "persample" in compact:
+            tokens.add("persample")
+        for group in L3_FAILURE_TOKEN_EQUIVALENCE_GROUPS:
+            if tokens & group:
+                tokens.update(group)
+        return tokens
+
+    def _specific_failure_signature_overlap(
+        self,
+        signature_ids: str,
+        query_text: str,
+    ) -> float:
+        signature_tokens = _tokenize(
+            re.sub(r"[/_-]+", " ", str(signature_ids or ""))
+        ) - L3_GENERIC_SIGNATURE_TERMS
+        if not signature_tokens:
+            return 0.0
+        query_tokens = self._semantic_failure_tokens(
+            re.sub(r"[/_-]+", " ", str(query_text or ""))
+        )
+        return min(
+            1.0,
+            len(signature_tokens & query_tokens) / min(3, len(signature_tokens)),
+        )
+
     def _task_families_compatible(self, left: str, right: str) -> bool:
         if left == right:
             return True
@@ -2326,6 +3174,21 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             {"image_classification", "image_binary_classification"},
         ]
         return any(left in group and right in group for group in related)
+
+    @staticmethod
+    def _task_type_for_family(task_family: str) -> str:
+        value = str(task_family or "").lower()
+        if value.startswith("text_") or "text_classification" in value:
+            return "nlp"
+        if value.startswith("image_") or value == "image_classification":
+            return "vision"
+        if value.startswith("tabular_"):
+            return "tabular"
+        if value.startswith("audio_"):
+            return "audio"
+        if value.startswith("multimodal_"):
+            return "multimodal"
+        return "general"
 
     def _debug_transition_task_fit(
         self,
@@ -2338,17 +3201,10 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         task_id = canonical_task_id(task_id)
         if source_task and source_task == task_id:
             return 1.0
-        source_family = self._task_family_for_query(source_task, source_task.replace("-", " "))
-        if self._task_families_compatible(task_family, source_family):
-            return 0.90
-        attached_families = {
-            str(value)
-            for sop_id in self._active_sops_for_transition(str(transition.get("id") or ""))
-            for value in (self.nodes.get(str(sop_id), {}).get("task_families") or [])
-            if str(value) != "general"
-        }
-        if any(self._task_families_compatible(task_family, value) for value in attached_families):
-            return 0.75
+        query_type = TASK_TYPES.get(task_id) or self._task_type_for_family(task_family)
+        source_type = TASK_TYPES.get(source_task)
+        if source_type and query_type and source_type == query_type:
+            return 0.70
         return 0.0
 
     def _task_score(self, node: dict[str, Any], task_id: str, task_desc: str) -> float:
@@ -2374,6 +3230,53 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             "code_change": code_change,
             "child_result": child_result,
         }
+
+    @staticmethod
+    def _debug_runtime_stage_match(query_text: str, runtime_stage: str) -> float:
+        text = str(query_text or "").lower()
+        stage = str(runtime_stage or "")
+        markers = {
+            "data_loading": ("dataloader", "dataset", "collate", "batch"),
+            "preprocessing": ("scaler", "pca", "vectorizer", "transform"),
+            "split_validation": ("split", "fold", "leakage", "validation"),
+            "feature_extraction": ("embedding", "feature", "backbone"),
+            "model_forward": ("forward", "shape", "dimension", "tensor"),
+            "training": ("backward", "optimizer", "epoch", "loss"),
+            "training_metric": ("train auc", "training auc", "mixed label", "metric"),
+            "validation": ("validation", "roc_auc", "log loss", "evaluate"),
+            "oof": ("oof", "out of fold", "cross validation"),
+            "inference": ("inference", "predict", "test prediction"),
+            "submission": ("submission", "sample_submission"),
+        }
+        if not stage:
+            return 0.70
+        values = markers.get(stage, (stage.replace("_", " "),))
+        return 1.0 if any(value in text for value in values) else 0.70
+
+    def _debug_method_family_match(self, query_text: str, method_family: str) -> float:
+        family = str(method_family or "general")
+        if family == "general":
+            return 0.80
+        tokens = _tokenize(family.replace("_", " "))
+        overlap = self._token_overlap(tokens, _tokenize(query_text)) if tokens else 0.0
+        return 1.0 if overlap >= 0.50 else 0.60
+
+    def _l3_failure_card_text(self, sop_id: str) -> str:
+        node = self.nodes.get(str(sop_id), {})
+        signature = (
+            node.get("failure_signature")
+            if isinstance(node.get("failure_signature"), Mapping)
+            else {}
+        )
+        return " ".join(
+            str(value or "")
+            for value in (
+                signature.get("id"),
+                signature.get("pattern"),
+                signature.get("root_cause"),
+                node.get("title"),
+            )
+        )
 
     def _causal_attachment_rows(
         self,
@@ -2429,8 +3332,6 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         allowed_transition_ids: set[str] | None = None,
     ) -> list[dict[str, Any]]:
         query_signature = self._failure_signature(query_text)
-        if not query_signature:
-            return []
         task_family = self._task_family_for_query(task_id, task_desc)
         coords = self._coords()
         eligible_transition_ids = [
@@ -2455,18 +3356,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 task_id=task_id,
                 task_family=task_family,
             )
-            if task_fit < 0.75:
+            if task_fit < 0.70:
                 continue
             failure_text = self._debug_parent_failure_text(transition)
-            candidate_signature = self._failure_signature(failure_text)
-            if query_signature:
-                overlap = len(query_signature & candidate_signature)
-                failure_match = overlap / len(query_signature | candidate_signature) if overlap else 0.0
-                if failure_match == 0.0:
-                    continue
-            else:
-                failure_match = 0.0
-            semantic = self._bounded_token_similarity(query_text, failure_text)
             attachments = self._causal_attachment_rows(
                 transition,
                 stage="debug",
@@ -2475,34 +3367,122 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             )
             if not attachments:
                 continue
+            l3_attachments = [
+                item
+                for item in attachments
+                if self.nodes.get(str(item["sop_id"]), {}).get("abstraction_level")
+                == "L3_repair"
+            ]
+            if not l3_attachments:
+                continue
+            card_text = " ".join(
+                self._l3_failure_card_text(item["sop_id"])
+                for item in l3_attachments
+            )
+            signature_ids = " ".join(
+                str(
+                    (
+                        self.nodes.get(str(item["sop_id"]), {}).get(
+                            "failure_signature"
+                        )
+                        or {}
+                    ).get("id")
+                    or ""
+                )
+                for item in l3_attachments
+            )
+            has_explicit_l3_signature = bool(signature_ids.strip())
+            specific_signature_overlap = self._specific_failure_signature_overlap(
+                signature_ids,
+                query_text,
+            )
+            candidate_signature = self._failure_signature(
+                f"{failure_text} {card_text}"
+            )
+            overlap = len(query_signature & candidate_signature)
+            structural_match = (
+                overlap / len(query_signature | candidate_signature)
+                if overlap
+                else 0.0
+            )
+            card_semantic = self._bounded_token_similarity(query_text, card_text)
+            parent_semantic = self._bounded_token_similarity(query_text, failure_text)
+            if (
+                has_explicit_l3_signature
+                and specific_signature_overlap
+                < L3_SPECIFIC_SIGNATURE_MIN_OVERLAP
+                and card_semantic < 0.50
+            ):
+                continue
+            if has_explicit_l3_signature:
+                failure_match = max(
+                    structural_match
+                    if specific_signature_overlap > 0.0
+                    else 0.0,
+                    min(1.0, specific_signature_overlap),
+                    min(0.90, 1.6 * card_semantic),
+                    min(0.75, 1.25 * parent_semantic)
+                    if specific_signature_overlap > 0.0
+                    else 0.0,
+                )
+            else:
+                # Preserve the legacy RunForest L3 path for old bundles.  New
+                # evidence-bound L3 cards always take the stricter branch
+                # above because they carry a frozen signature ID.
+                failure_match = max(
+                    structural_match,
+                    min(0.90, 1.6 * card_semantic),
+                    min(0.75, 1.25 * parent_semantic),
+                )
+            if failure_match < L3_FAILURE_SIGNATURE_MIN_MATCH:
+                continue
+            semantic = max(card_semantic, parent_semantic)
             attachment_quality = max(item["quality_score"] for item in attachments)
-            geometry = 0.0
-            if anchor is not None and transition_id in coords:
-                geometry = 1.0 / (1.0 + self._distance(anchor, coords[transition_id]))
-            score = (
-                0.40 * failure_match
-                + 0.20 * semantic
-                + 0.20 * task_fit
-                + 0.10 * attachment_quality
-                + 0.10 * geometry
+            primary_l3 = max(
+                l3_attachments,
+                key=lambda item: float(item.get("quality_score") or 0.0),
             )
-            confidence = (
-                0.55 * failure_match + 0.20 * task_fit + 0.15 * attachment_quality + 0.10 * semantic
-                if query_signature
-                else 0.40 * semantic + 0.35 * task_fit + 0.25 * attachment_quality
+            l3_node = self.nodes[str(primary_l3["sop_id"])]
+            runtime_match = self._debug_runtime_stage_match(
+                query_text, str(l3_node.get("runtime_stage") or "")
             )
+            method_match = self._debug_method_family_match(
+                query_text, str(l3_node.get("method_family") or "general")
+            )
+            success_count = max(1, int(l3_node.get("successful_repair_count") or 1))
+            success_frequency = min(1.0, math.log1p(success_count) / math.log(5.0))
+            confidence_components = {
+                "task_match": task_fit,
+                "failure_signature_match": failure_match,
+                "runtime_stage_match": runtime_match,
+                "method_family_match": method_match,
+                "clean_transition_quality": min(1.0, attachment_quality),
+                "successful_repair_frequency": success_frequency,
+            }
+            confidence = sum(
+                L3_DYNAMIC_CONFIDENCE_WEIGHTS[key] * value
+                for key, value in confidence_components.items()
+            )
+            score = confidence
+            source_task = canonical_task_id(transition.get("task"))
+            task_scope = "exact_task" if source_task == canonical_task_id(task_id) else "same_task_type"
             rows.append(
                 {
                     "id": transition_id,
                     "score": score,
                     "confidence": min(1.0, confidence),
                     "score_components": {
+                        **confidence_components,
                         "failure_signature": failure_match,
-                        "semantic": semantic,
                         "task": task_fit,
                         "causal_attachment": attachment_quality,
-                        "geometry": geometry,
+                        "semantic_diagnostic": semantic,
+                        "specific_signature_overlap": specific_signature_overlap,
                     },
+                    "dynamic_confidence_weights": dict(
+                        L3_DYNAMIC_CONFIDENCE_WEIGHTS
+                    ),
+                    "task_scope": task_scope,
                     "query_failure_signature": sorted(query_signature),
                     "candidate_failure_signature": sorted(candidate_signature),
                     "causal_attachments": attachments,
@@ -2520,6 +3500,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     "transition_evidence": self._debug_transition_evidence(transition),
                 }
             )
+        exact_task_rows = [row for row in rows if row["task_scope"] == "exact_task"]
+        if exact_task_rows:
+            rows = exact_task_rows
         rows.sort(key=lambda item: (-float(item["score"]), str(item["id"])))
         return rows[:limit]
 
@@ -2552,6 +3535,133 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         configured_tree = float(self.rrf_weights["debug"]["tree"])
         tree_weight = min(configured_tree, DEBUG_TREE_MAX_WEIGHT, DEBUG_TREE_MAX_WEIGHT * confidence)
         return {"sop": 1.0 - tree_weight, "tree": tree_weight}, confidence, None
+
+    def _rank_positive_transition_rows(
+        self,
+        *,
+        stage: str,
+        query_text: str,
+        task_id: str,
+        task_desc: str,
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        """Rank complete clean positive transitions for layered Improve.
+
+        L1/L2 Recipe slots describe a method before execution.  Once a method
+        exists, Improve should consume a concrete parent-to-child change, not
+        another detached SOP summary.  The transition remains the injected
+        candidate so its parent, child, metric delta, and exact action are all
+        recoverable from the RunForest trace.
+        """
+
+        task_id = canonical_task_id(task_id)
+        query_tokens = _tokenize(query_text)
+        candidates: list[str] = []
+        for transition_id in self._transitions:
+            transition = self.nodes[transition_id]
+            if str(transition.get("outcome") or "") != "metric_improved":
+                continue
+            if not self._positive_transition(transition_id)[0]:
+                continue
+            candidates.append(transition_id)
+        coords = self._coords()
+        anchor = self._query_anchor(query_text, candidates)
+        improvements = sorted(
+            float(self.nodes[transition_id].get("metric_improvement"))
+            for transition_id in candidates
+            if isinstance(self.nodes[transition_id].get("metric_improvement"), (int, float))
+            and not isinstance(self.nodes[transition_id].get("metric_improvement"), bool)
+            and math.isfinite(float(self.nodes[transition_id].get("metric_improvement")))
+            and float(self.nodes[transition_id].get("metric_improvement")) > 0
+        )
+        rows: list[dict[str, Any]] = []
+        for transition_id in candidates:
+            transition = self.nodes[transition_id]
+            child = self.nodes.get(str(transition.get("child_node_id") or ""), {})
+            source_task = canonical_task_id(
+                transition.get("task") or child.get("task") or ""
+            )
+            task_fit = 1.0 if source_task == task_id else self._task_score(
+                child, task_id, task_desc
+            )
+            if task_fit <= 0.0:
+                continue
+            action_text = " ".join(
+                str(value or "")
+                for value in (
+                    transition.get("text"),
+                    child.get("plan"),
+                    child.get("code_summary"),
+                    child.get("analysis"),
+                )
+            )
+            lexical = min(
+                1.0,
+                self._token_overlap(query_tokens, _tokenize(action_text)),
+            )
+            improvement = transition.get("metric_improvement")
+            improvement_quality = 0.0
+            if (
+                improvements
+                and isinstance(improvement, (int, float))
+                and not isinstance(improvement, bool)
+                and math.isfinite(float(improvement))
+            ):
+                improvement_quality = sum(
+                    value <= float(improvement) for value in improvements
+                ) / len(improvements)
+            geometry = 0.0
+            if anchor is not None and transition_id in coords:
+                geometry = 1.0 / (1.0 + self._distance(anchor, coords[transition_id]))
+            stage_pair = str(transition.get("stage_pair") or "")
+            stage_fit = 1.0 if any(
+                token in stage_pair for token in (stage, "improve", "evolution")
+            ) else 0.5
+            score = (
+                0.35 * task_fit
+                + 0.25 * lexical
+                + 0.20 * improvement_quality
+                + 0.10 * stage_fit
+                + 0.10 * geometry
+            )
+            child_audit = child.get("leakage_audit") if isinstance(child.get("leakage_audit"), dict) else {}
+            rows.append(
+                {
+                    "id": transition_id,
+                    "score": score,
+                    "score_components": {
+                        "task": task_fit,
+                        "lexical": lexical,
+                        "task_local_improvement_percentile": improvement_quality,
+                        "stage": stage_fit,
+                        "geometry": geometry,
+                    },
+                    "stage": stage_pair,
+                    "task": source_task,
+                    "metric": child.get("metric"),
+                    "metric_improvement": improvement,
+                    "audit_status": child_audit.get("status"),
+                    "rank_eligible": child_audit.get("rank_eligible") is True,
+                    "eligibility_reason": "clean_positive_improvement_transition",
+                    "parent_node_id": transition.get("parent_node_id"),
+                    "child_node_id": transition.get("child_node_id"),
+                    "transition_evidence": {
+                        "proven_action": str(
+                            child.get("plan")
+                            or child.get("code_summary")
+                            or transition.get("text")
+                            or ""
+                        ),
+                        "child_result": str(
+                            child.get("analysis")
+                            or child.get("terminal_excerpt")
+                            or ""
+                        ),
+                    },
+                }
+            )
+        rows.sort(key=lambda item: (-float(item["score"]), str(item["id"])))
+        return rows[:limit]
 
     def _rank_tree_rows(
         self,
@@ -2709,6 +3819,19 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 if allowed_sop_ids is None
                 else set(allowed_sop_ids) & visibility_ids
             )
+        if stage == "debug" and self.retrieval_control == "layered_strategy":
+            frozen_l3_ids = {
+                sop_id
+                for sop_id in self._recipe_sop_ids
+                if self.nodes.get(sop_id, {}).get("abstraction_level")
+                == "L3_repair"
+            }
+            if frozen_l3_ids:
+                allowed_sop_ids = (
+                    frozen_l3_ids
+                    if allowed_sop_ids is None
+                    else set(allowed_sop_ids) & frozen_l3_ids
+                )
         sop_rows = self._rank_sops(
             query_text,
             stage,
@@ -3049,23 +4172,89 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             )
         allowed_levels = None
         method_family = None
+        layered_debug_sop_ids: set[str] | None = None
+        precomputed_debug_rows: list[dict[str, Any]] | None = None
+        precomputed_debug_weights: dict[str, float] | None = None
+        precomputed_debug_confidence: float | None = None
+        precomputed_debug_fallback_reason: str | None = None
         if self.retrieval_control == "layered_strategy":
             allowed_levels = {"L3_repair"} if stage == "debug" else {"L2_tactic"}
             selected = (strategy_context or {}).get("selected_strategy") or (strategy_context or {})
-            method_family = str(selected.get("method_family") or "") or None
-        ranked_sops = self._rank_sops(
-            query_text,
-            stage,
-            len(self._sops),
-            allowed_levels=allowed_levels,
-            method_family=method_family,
-            task_id=task_id,
-            task_desc=task_desc,
-            allowed_sop_ids=visibility_ids,
-        )
-        selected, selection_meta = self._select_gateways(
-            ranked_sops, stage=stage, query_text=query_text, limit=quotas["sop_gateways"]
-        )
+            method_family = (
+                str(selected.get("method_family") or "") or None
+                if stage != "debug"
+                else None
+            )
+            if stage == "debug":
+                frozen_l3_ids = {
+                    sop_id
+                    for sop_id in self._recipe_sop_ids
+                    if self.nodes.get(sop_id, {}).get("abstraction_level")
+                    == "L3_repair"
+                }
+                if frozen_l3_ids:
+                    layered_debug_sop_ids = (
+                        frozen_l3_ids
+                        if visibility_ids is None
+                        else frozen_l3_ids & set(visibility_ids)
+                    )
+                    # A lexical SOP rank is not itself evidence that a repair
+                    # matches the current failure.  For the frozen layered L3
+                    # bundle, admit SOPs to Prompt assembly only after an
+                    # exact/same-type clean repair Transition has passed the
+                    # failure-signature gate and causally projected that SOP.
+                    precomputed_debug_rows = self._rank_debug_transition_rows(
+                        query_text=query_text,
+                        task_id=task_id,
+                        task_desc=task_desc,
+                        limit=quotas["tree_candidates"],
+                        allowed_sop_ids=layered_debug_sop_ids,
+                    )
+                    (
+                        precomputed_debug_weights,
+                        precomputed_debug_confidence,
+                        precomputed_debug_fallback_reason,
+                    ) = self._debug_dynamic_weights(precomputed_debug_rows)
+                    if precomputed_debug_fallback_reason:
+                        precomputed_debug_rows = []
+                    projected_l3_ids, _projection = (
+                        self._project_debug_transitions_to_sops(
+                            precomputed_debug_rows
+                        )
+                    )
+                    layered_debug_sop_ids &= set(projected_l3_ids)
+        if self.retrieval_control == "layered_strategy" and stage != "debug":
+            # Draft/Model Design already consumed Recipe L1/L2.  Improve and
+            # Evolution receive complete positive transitions directly, so a
+            # second generic SOP gateway cannot displace the proven change.
+            ranked_sops = []
+            selected = []
+            selection_meta = {
+                "mode": "layered_transition_only",
+                "llm_tool_calls": 0,
+                "goal": "retrieve complete positive RunForest transitions",
+                "clean_eligible_count": 0,
+                "eligible_count": 0,
+                "stage_task_gate_rejected_count": 0,
+            }
+        else:
+            ranked_sops = self._rank_sops(
+                query_text,
+                stage,
+                len(self._sops),
+                allowed_levels=allowed_levels,
+                method_family=method_family,
+                task_id=task_id,
+                task_desc=task_desc,
+                allowed_sop_ids=(
+                    layered_debug_sop_ids
+                    if layered_debug_sop_ids is not None
+                    else visibility_ids
+                ),
+            )
+            selected, selection_meta = self._select_gateways(
+                ranked_sops, stage=stage, query_text=query_text, limit=quotas["sop_gateways"]
+            )
         sop_candidates = list(ranked_sops[: quotas["sop_candidates"]])
         candidate_ids = {item["id"] for item in sop_candidates}
         sop_candidates.extend(item for item in selected if item["id"] not in candidate_ids)
@@ -3080,16 +4269,42 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         tree_fallback_reason = None
         tree_confidence = None
         if stage == "debug":
-            tree_rows = self._rank_debug_transition_rows(
+            if precomputed_debug_rows is not None:
+                tree_rows = precomputed_debug_rows
+                weights = precomputed_debug_weights or {
+                    "sop": 1.0,
+                    "tree": 0.0,
+                }
+                tree_confidence = precomputed_debug_confidence
+                tree_fallback_reason = precomputed_debug_fallback_reason
+            else:
+                tree_rows = self._rank_debug_transition_rows(
+                    query_text=query_text,
+                    task_id=task_id,
+                    task_desc=task_desc,
+                    limit=quotas["tree_candidates"],
+                    allowed_sop_ids=(
+                        layered_debug_sop_ids
+                        if layered_debug_sop_ids is not None
+                        else visibility_ids
+                    ),
+                )
+                weights, tree_confidence, tree_fallback_reason = self._debug_dynamic_weights(tree_rows)
+                if tree_fallback_reason and self.retrieval_control in {"stage_hybrid", "layered_strategy"}:
+                    tree_rows = []
+        elif self.retrieval_control == "layered_strategy" and stage in {
+            "improve",
+            "evolution",
+            "fusion",
+        }:
+            tree_rows = self._rank_positive_transition_rows(
+                stage=stage,
                 query_text=query_text,
                 task_id=task_id,
                 task_desc=task_desc,
                 limit=quotas["tree_candidates"],
-                allowed_sop_ids=visibility_ids,
             )
-            weights, tree_confidence, tree_fallback_reason = self._debug_dynamic_weights(tree_rows)
-            if tree_fallback_reason and self.retrieval_control in {"stage_hybrid", "layered_strategy"}:
-                tree_rows = []
+            weights = self.rrf_weights[stage]
         else:
             tree_rows = self._rank_tree_rows(
                 stage=stage,
@@ -3440,6 +4655,14 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     lines.append(f"  Successful child result: {str(evidence.get('child_result') or '')[:700]}")
                     proven_sops = [row["sop_id"] for row in detail.get("causal_attachments", [])]
                     lines.append(f"  Causally supported SOPs only: {', '.join(proven_sops) or 'none'}")
+                elif detail and node.get("type") == "Transition":
+                    evidence = detail.get("transition_evidence") or {}
+                    lines.append(
+                        f"  Proven improvement action: {str(evidence.get('proven_action') or '')[:1200]}"
+                    )
+                    lines.append(
+                        f"  Successful child result: {str(evidence.get('child_result') or '')[:700]}"
+                    )
         if pack["sop_only_candidates"]:
             lines += ["", "### SOP-Only Method References (unverified here)"]
             for candidate in pack["sop_only_candidates"][:4]:
@@ -3635,6 +4858,13 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if not self.stage_enabled(stage):
             return "", []
         query_text = "\n".join([task_desc or "", *(query_parts or [])])
+        if STAGE_ALIASES.get(stage, stage) == "debug" and query_parts:
+            # Task identity/type are scored through their dedicated hard gate.
+            # Feeding the generic benchmark description into failure matching
+            # can create false exact-task hits (for example, merely mentioning
+            # ROC-AUC can look like an AUC-label failure).  Debug semantics must
+            # therefore come from the observed runtime/error context itself.
+            query_text = "\n".join(str(value) for value in query_parts if value)
         candidates, visibility_pack = self._end2end_common_pool(
             stage=stage,
             task_id=task_id,
@@ -3825,6 +5055,10 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 query_parts=query_parts,
             )
         query_text = "\n".join([task_desc or "", *(query_parts or [])])
+        if STAGE_ALIASES.get(stage, stage) == "debug" and query_parts:
+            # Task identity/type are already handled by the hard task gate;
+            # only observed runtime/error context belongs in signature match.
+            query_text = "\n".join(str(value) for value in query_parts if value)
         if self.retrieval_control == "no_memory":
             if self.experiment_r_enabled:
                 from agents.memory.experiment_r_router import build_no_memory_pack
@@ -3913,7 +5147,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             selected = pack.get("selected_strategy") or {}
             if selected:
                 evidence = selected["best_tree_evidence"]
-                refs = [selected["sop_id"], evidence["transition_id"], evidence["node_id"]]
+                refs = [
+                    selected["sop_id"],
+                    *([evidence["transition_id"]] if evidence.get("transition_id") else []),
+                    evidence["node_id"],
+                ]
                 text = self._format_selected_strategy(pack)
             else:
                 refs = [item["id"] for item in pack["fused_execution_candidates"][: self.top_k]]
@@ -3941,6 +5179,21 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         self._trace_local.pack = pack
         if self.prospective_audit_logger is not None:
             self.prospective_audit_logger.record_run_candidates(pack, self.nodes)
+        if (
+            self.retrieval_control == "layered_strategy"
+            and STAGE_ALIASES.get(stage, stage) == "debug"
+            and not pack.get("selected_sop_gateways")
+            and not pack.get("fused_execution_candidates")
+            and not pack.get("sop_only_candidates")
+        ):
+            pack["memory_abstention"] = {
+                "status": "abstain",
+                "reason": (
+                    pack.get("stage_route", {}).get("fallback_reason")
+                    or "no_failure_signature_matched_clean_l3_repair"
+                ),
+            }
+            return "", []
         text = self._format_hybrid_pack(pack)
         if pack.get("schema") == "experiment_r_memory_pack_v1":
             refs = list(pack.get("final_prompt_candidate_ids") or [])

@@ -16,7 +16,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v15")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v17")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
 MANIFESTS = ROOT / "manifests"
 SYSTEM_DIR = ROOT / "systems"
@@ -303,14 +303,22 @@ agent:
     num_drafts: 3
   draft_role_policy:
     enabled: true
+    replay_targets_path: ../paper-skills/eval_skill_memory/clean_replay_targets.json
     roles:
       - coldstart_baseline
       - memory_transfer
       - novel_exploration
 external_skill_memory:
   end2end_memory_system: ""
-  retrieval_control: dynamic_hybrid
-  experiment_r_enabled: true
+  retrieval_control: layered_strategy
+  enable_agentic: true
+  recipe_sop_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v2/recipe_sops.json
+  recipe_sop_file_sha256: 197afca50c11cbceb3d9e34c12084371897551b217c9a5e7a21107236f882691
+  recipe_sop_bundle_sha256: 8c3ef43693508c4d38567f4ef304f8d6edc0fc37609d886328b62300c30860aa
+  recipe_evidence_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v2/evidence_manifest.json
+  recipe_evidence_file_sha256: 46f1313d1918954a42daade64ffc05aae3fc6f057b301111859b7da63efab9f3
+  recipe_evidence_manifest_sha256: d06a1198ebafd1d0b6bae9cae3c0c439a11fd4ff13855b913dc980a155830da7
+  experiment_r_enabled: false
   experiment_r_candidate_limit: 12
   experiment_r_top_k: 6
   experiment_r_prompt_token_budget: 1536
@@ -365,6 +373,10 @@ def source_lock() -> dict[str, Any]:
         + sorted(SYSTEM_DIR.glob("*.yaml"))
         + sorted(SCHEMA_DIR.glob("*.json"))
         + sorted(HOST_BINDINGS_DIR.rglob("*.json"))
+        + [
+            ROOT / "recipe_distillation_v2" / "recipe_sops.json",
+            ROOT / "recipe_distillation_v2" / "evidence_manifest.json",
+        ]
     ):
         relative = path.relative_to(REPO)
         files.append({"path": relative.as_posix(), "sha256": sha256_file(path)})
@@ -520,6 +532,18 @@ def component_manifests(
                 "agent_time_limit_seconds": 3600,
                 "execution_timeout_seconds": 900,
                 "finalize_reserve_seconds": 120,
+                "initial_drafts": 3,
+                "max_replacement_drafts": 0,
+                "parallel_search_num": 1,
+                "gpu_count": 1,
+                "cpu_count": 16,
+                "memory_gib": 64,
+            },
+            "debug_smoke": {
+                "agent_steps": 8,
+                "agent_time_limit_seconds": 5400,
+                "execution_timeout_seconds": 1200,
+                "finalize_reserve_seconds": 180,
                 "initial_drafts": 3,
                 "max_replacement_drafts": 0,
                 "parallel_search_num": 1,
@@ -861,6 +885,28 @@ def build() -> dict[str, Any]:
     leaf_controls_smoke = json.loads(
         (MANIFESTS / "leaf_controls_smoke_manifest.json").read_text()
     )
+    leaf_recipe_dynamic_smoke = execution_manifest(
+        kind="smoke",
+        components=components,
+        system_ids_override=["dynamic_hybrid"],
+        task_ids_override=["leaf-classification"],
+        prefix_override="e2e-smoke-leaf-layered-recipe-v4",
+    )
+    dump_json(
+        MANIFESTS / "leaf_recipe_dynamic_smoke_manifest.json",
+        leaf_recipe_dynamic_smoke,
+    )
+    l3_debug_dynamic_smoke = execution_manifest(
+        kind="smoke",
+        components=components,
+        system_ids_override=["dynamic_hybrid"],
+        task_ids_override=["aerial-cactus-identification"],
+        prefix_override="e2e-smoke-l3-debug-v1",
+    )
+    dump_json(
+        MANIFESTS / "l3_debug_dynamic_smoke_manifest.json",
+        l3_debug_dynamic_smoke,
+    )
     pilot = execution_manifest(kind="pilot", components=components)
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
@@ -879,6 +925,19 @@ def build() -> dict[str, Any]:
     (JOB_DIR / "pilot-all-40-indexed-job.yaml").write_text(
         yaml.safe_dump(pilot_job, sort_keys=False), encoding="utf-8"
     )
+    leaf_recipe_job = job(
+        name="mlevolve-e2e-leaf-layered-recipe-smoke-v27",
+        manifest_name="leaf_recipe_dynamic_smoke_manifest.json",
+        completions=1,
+        task_id=None,
+        active_deadline=5400,
+        parallelism=1,
+        components=components,
+        resume=True,
+    )
+    (JOB_DIR / "smoke-leaf-layered-recipe-job.yaml").write_text(
+        yaml.safe_dump(leaf_recipe_job, sort_keys=False), encoding="utf-8"
+    )
     generated_jobs = ["pilot-all-40-indexed-job.yaml"]
     packet = finalize(
         {
@@ -891,6 +950,12 @@ def build() -> dict[str, Any]:
             "feasibility_smoke_manifest_hash": feasibility_smoke["manifest_hash"],
             "leaf_dynamic_smoke_manifest_hash": leaf_dynamic_smoke["manifest_hash"],
             "leaf_controls_smoke_manifest_hash": leaf_controls_smoke["manifest_hash"],
+            "leaf_recipe_dynamic_smoke_manifest_hash": leaf_recipe_dynamic_smoke[
+                "manifest_hash"
+            ],
+            "l3_debug_dynamic_smoke_manifest_hash": l3_debug_dynamic_smoke[
+                "manifest_hash"
+            ],
             "pilot_manifest_hash": pilot["manifest_hash"],
             "component_manifest_hashes": {
                 key: value["manifest_hash"] for key, value in components.items()

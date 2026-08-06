@@ -6,14 +6,22 @@ agent:
     num_drafts: 3
   draft_role_policy:
     enabled: true
+    replay_targets_path: ../paper-skills/eval_skill_memory/clean_replay_targets.json
     roles:
       - coldstart_baseline
       - memory_transfer
       - novel_exploration
 external_skill_memory:
   end2end_memory_system: ""
-  retrieval_control: dynamic_hybrid
-  experiment_r_enabled: true
+  retrieval_control: layered_strategy
+  enable_agentic: true
+  recipe_sop_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v2/recipe_sops.json
+  recipe_sop_file_sha256: 197afca50c11cbceb3d9e34c12084371897551b217c9a5e7a21107236f882691
+  recipe_sop_bundle_sha256: 8c3ef43693508c4d38567f4ef304f8d6edc0fc37609d886328b62300c30860aa
+  recipe_evidence_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v2/evidence_manifest.json
+  recipe_evidence_file_sha256: 46f1313d1918954a42daade64ffc05aae3fc6f057b301111859b7da63efab9f3
+  recipe_evidence_manifest_sha256: d06a1198ebafd1d0b6bae9cae3c0c439a11fd4ff13855b913dc980a155830da7
+  experiment_r_enabled: false
   experiment_r_candidate_limit: 12
   experiment_r_top_k: 6
   experiment_r_prompt_token_budget: 1536

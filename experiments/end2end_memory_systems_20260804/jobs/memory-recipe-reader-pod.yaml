@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-e2e-memory-recipe-reader-v2
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    experiment: experiment-end2end-memory-recipe-distillation-v1
+    ecepxie.nrp/owner: haoming
+    app.kubernetes.io/managed-by: codex-nrp-training
+spec:
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 30
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: NotIn
+            values:
+            - hcc-nrp-shor-c5909.unl.edu
+  containers:
+  - name: reader
+    image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+    imagePullPolicy: IfNotPresent
+    command:
+    - /usr/local/bin/python
+    - -c
+    - import time; time.sleep(3600)
+    resources:
+      requests:
+        cpu: "1"
+        memory: 4Gi
+      limits:
+        cpu: "1"
+        memory: 4Gi
+    volumeMounts:
+    - name: workspace
+      mountPath: /workspace
+      readOnly: true
+  volumes:
+  - name: workspace
+    persistentVolumeClaim:
+      claimName: haoming-storage

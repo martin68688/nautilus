@@ -15,6 +15,25 @@ INDEX = REPO / "paper-skills" / "hyper_memory" / "run_forest_index.npz"
 HYBRID_CONFIG = REPO / "mlevolve" / "config" / "config_run_forest_stage_hybrid.yaml"
 TAXONOMY = REPO / "paper-skills" / "hyper_memory" / "sop_taxonomy.json"
 RESEARCH_NOTE = REPO / "coordination" / "stage_aware_sop_gateway_runforest_research_note.md"
+RECIPE_BUNDLE = (
+    REPO
+    / "experiments"
+    / "end2end_memory_systems_20260804"
+    / "recipe_distillation_v2"
+    / "recipe_sops.json"
+)
+RECIPE_EVIDENCE = RECIPE_BUNDLE.parent / "evidence_manifest.json"
+DYNAMIC_CONFIG = (
+    REPO
+    / "experiments"
+    / "end2end_memory_systems_20260804"
+    / "systems"
+    / "dynamic_hybrid.yaml"
+)
+RECIPE_FILE_SHA256 = "197afca50c11cbceb3d9e34c12084371897551b217c9a5e7a21107236f882691"
+RECIPE_BUNDLE_SHA256 = "8c3ef43693508c4d38567f4ef304f8d6edc0fc37609d886328b62300c30860aa"
+RECIPE_EVIDENCE_FILE_SHA256 = "46f1313d1918954a42daade64ffc05aae3fc6f057b301111859b7da63efab9f3"
+RECIPE_EVIDENCE_MANIFEST_SHA256 = "d06a1198ebafd1d0b6bae9cae3c0c439a11fd4ff13855b913dc980a155830da7"
 
 
 def _clean_audit():
@@ -810,6 +829,413 @@ def _real_layered():
         max_chars=0,
         cfg=cfg,
     )
+
+
+def _real_recipe_layer():
+    from config import _load_cfg
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    cfg = _load_cfg(DYNAMIC_CONFIG, use_cli_args=False)
+    cfg.exp_id = "leaf-classification"
+    cfg.agent.search.num_gpus = 1
+    return StageAwareHybridMemoryLayer(
+        graph_path=str(GRAPH),
+        index_path=str(INDEX),
+        source_name="run_forest_stage_hybrid_memory",
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        enable_agentic=False,
+        top_k=6,
+        max_chars=0,
+        cfg=cfg,
+    )
+
+
+def _inject_frozen_recipe_evidence(layer, *task_ids):
+    evidence = json.loads(RECIPE_EVIDENCE.read_text(encoding="utf-8"))
+    for task_id in task_ids:
+        for row in evidence["selected_evidence"][task_id]:
+            node_id = row["node_id"]
+            if node_id in layer.nodes:
+                continue
+            node = {
+                "id": node_id,
+                "type": "RunNode",
+                "task": task_id,
+                "run_id": row["run_id"],
+                "run_short_id": row["run_id"],
+                "stage": row["stage"],
+                "metric": row["metric"],
+                "metric_direction": row.get("metric_direction"),
+                "metric_provenance": row.get("metric_provenance"),
+                "metric_improvement": row.get("metric_improvement"),
+                "is_buggy": False,
+                "is_valid": True,
+                "plan": row.get("plan"),
+                "code_summary": row.get("code_summary"),
+                "code_sha256": row.get("code_sha256"),
+                "source_cohort": row.get("source_cohort"),
+                "leakage_audit": {
+                    "status": row["audit_status"],
+                    "memory_disposition": row["memory_disposition"],
+                    "paper_grade_eligible": row["paper_grade_eligible"],
+                    "rank_eligible": row["rank_eligible"],
+                },
+            }
+            layer.nodes[node_id] = node
+            layer._node_tokens[node_id] = layer._node_tokens.get(node_id, set())
+
+
+def test_recipe_overlay_loads_frozen_three_layer_nodes_and_dynamic_uses_layered_router():
+    import hashlib
+    from config import _load_cfg
+
+    cfg = _load_cfg(DYNAMIC_CONFIG, use_cli_args=False)
+    memory = cfg.external_skill_memory
+    assert hashlib.sha256(RECIPE_BUNDLE.read_bytes()).hexdigest() == RECIPE_FILE_SHA256
+    assert memory.retrieval_control == "layered_strategy"
+    assert memory.enable_agentic is True
+    assert memory.experiment_r_enabled is False
+    assert memory.recipe_sop_file_sha256 == RECIPE_FILE_SHA256
+    assert memory.recipe_sop_bundle_sha256 == RECIPE_BUNDLE_SHA256
+    assert memory.recipe_evidence_file_sha256 == RECIPE_EVIDENCE_FILE_SHA256
+    assert memory.recipe_evidence_manifest_sha256 == RECIPE_EVIDENCE_MANIFEST_SHA256
+    layer = _real_recipe_layer()
+    assert layer.recipe_sop_receipt == {
+        "schema": "layered_recipe_sop_overlay_receipt_v1",
+        "path": str(RECIPE_BUNDLE),
+        "file_sha256": RECIPE_FILE_SHA256,
+        "bundle_sha256": RECIPE_BUNDLE_SHA256,
+        "bundle_version": "recipe-sop-v2-20260806",
+        "node_count": 89,
+        "l1_count": 28,
+        "l2_count": 26,
+        "l3_count": 35,
+    }
+    assert len(layer._recipe_sop_ids) == 89
+    assert len(layer._legacy_sop_ids) == 281
+    assert layer.recipe_evidence_receipt["schema"] == "layered_recipe_evidence_overlay_receipt_v1"
+    assert layer.recipe_evidence_receipt["file_sha256"] == RECIPE_EVIDENCE_FILE_SHA256
+    assert layer.recipe_evidence_receipt["manifest_sha256"] == RECIPE_EVIDENCE_MANIFEST_SHA256
+    assert layer.recipe_evidence_receipt["selected_node_count"] == 151
+    assert layer.recipe_evidence_receipt["materialized_node_count"] > 0
+    assert layer.recipe_evidence_receipt["terminal_node_count"] >= 4
+    terminal_id = (
+        "postsmoke::e2e-smoke-leaf-controls-v14__leaf-classification__"
+        "flat_retrieval__seed-1::abb66aed49824ec490ab833abbb5e05b"
+    )
+    assert layer.nodes[terminal_id]["metric"] == pytest.approx(0.09353439660745823)
+    assert layer.nodes[terminal_id]["metric_provenance"] == "sealed_fixed_holdout_terminal_score"
+
+
+def test_l3_debug_retrieval_prefers_exact_task_then_same_task_type_and_blocks_cross_type():
+    from agents.memory.stage_aware_hybrid_memory import (
+        L3_DYNAMIC_CONFIDENCE_WEIGHTS,
+    )
+
+    layer = _real_recipe_layer()
+    query = (
+        "TypeError during model initialization: "
+        "ModernBertForSequenceClassification received unexpected keyword argument "
+        "hidden_dropout_prob. Configure dropout through the checkpoint config."
+    )
+    exact = layer._rank_debug_transition_rows(
+        query_text=query,
+        task_id="spooky-author-identification",
+        task_desc="NLP multiclass author classification",
+        limit=8,
+    )
+    assert exact
+    assert all(row["task_scope"] == "exact_task" for row in exact)
+    assert all(row["score_components"]["task_match"] == 1.0 for row in exact)
+    assert any(
+        attachment["sop_id"] == "repair::spooky-author-identification::001"
+        for row in exact
+        for attachment in row["causal_attachments"]
+    )
+    assert exact[0]["dynamic_confidence_weights"] == L3_DYNAMIC_CONFIDENCE_WEIGHTS
+    assert L3_DYNAMIC_CONFIDENCE_WEIGHTS["successful_repair_frequency"] == 0.02
+
+    same_type = layer._rank_debug_transition_rows(
+        query_text=query,
+        task_id="random-acts-of-pizza",
+        task_desc="NLP binary text classification",
+        limit=8,
+    )
+    assert same_type
+    assert all(row["task_scope"] == "same_task_type" for row in same_type)
+    assert all(row["score_components"]["task_match"] == 0.70 for row in same_type)
+
+    cross_type = layer._rank_debug_transition_rows(
+        query_text=query,
+        task_id="aerial-cactus-identification",
+        task_desc="Vision binary image classification",
+        limit=8,
+    )
+    assert cross_type == []
+
+
+def test_l3_failure_matching_handles_semantic_paraphrase_without_generic_false_positive():
+    layer = _real_recipe_layer()
+    query = (
+        "The augmented-label objective is a vector over the batch, so autograd "
+        "refuses to backpropagate. Aggregate the per-example criterion before "
+        "calling backward."
+    )
+    rows = layer._rank_debug_transition_rows(
+        query_text=query,
+        task_id="leaf-classification",
+        task_desc="Leaf multimodal classification evaluated by log loss.",
+        limit=8,
+    )
+    assert rows
+    assert {
+        attachment["sop_id"]
+        for row in rows
+        for attachment in row["causal_attachments"]
+        if attachment["sop_id"].startswith("repair::")
+    } == {"repair::leaf-classification::002"}
+    assert all(
+        row["score_components"]["failure_signature_match"] >= 0.50
+        for row in rows
+    )
+
+
+def test_l3_classifier_dimension_failure_does_not_match_batch_schema_repair():
+    layer = _real_recipe_layer()
+    query = (
+        "RuntimeError in the first batch: the backbone outputs a spatial feature "
+        "map [32, 768, 8, 8], but the classification head expects a one-dimensional "
+        "feature vector [*, 768], causing a layer_norm shape mismatch."
+    )
+    assert layer._specific_failure_signature_overlap(
+        "feature_extraction/labeled_unlabeled_batch_schema_mismatch",
+        query,
+    ) < 0.50
+    assert layer._specific_failure_signature_overlap(
+        "model_forward/convolutional_feature_classifier_dimension_mismatch",
+        query,
+    ) == 1.0
+
+
+def test_layered_debug_prompt_requires_a_causal_l3_match_and_abstains_on_infrastructure():
+    layer = _real_recipe_layer()
+    exact_query = (
+        "TypeError during model initialization: ModernBertForSequenceClassification "
+        "received unexpected keyword argument hidden_dropout_prob. Configure "
+        "dropout through the checkpoint config."
+    )
+    text, refs = layer.retrieve_for_node(
+        stage="debug",
+        task_id="spooky-author-identification",
+        task_desc="NLP multiclass author classification",
+        query_parts=[exact_query],
+    )
+    pack = layer.current_navigation_pack()
+    assert "repair::spooky-author-identification::001" in text
+    assert "repair::spooky-author-identification::001" in refs
+    assert {
+        row["task_scope"] for row in pack["tree_candidate_details"]
+    } == {"exact_task"}
+
+    text, refs = layer.retrieve_for_node(
+        stage="debug",
+        task_id="spooky-author-identification",
+        task_desc="NLP multiclass author classification",
+        query_parts=[
+            "Permission denied in a node cache; a temporary file is missing, "
+            "the Pod is Pending, and the API timed out."
+        ],
+    )
+    pack = layer.current_navigation_pack()
+    assert text == ""
+    assert refs == []
+    assert pack["selected_sop_gateways"] == []
+    assert pack["fused_execution_candidates"] == []
+    assert pack["memory_abstention"]["status"] == "abstain"
+
+
+def test_layered_router_without_replay_manifest_has_no_replay_exclusion(tmp_path):
+    layer = _real_recipe_layer()
+    layer.cfg.agent.draft_role_policy.replay_targets_path = ""
+    assert layer._replay_family("leaf-classification") == ""
+
+
+def test_recipe_layered_leaf_draft_is_task_local_and_prompt_contains_complete_l1_recipe():
+    layer = _real_recipe_layer()
+    _inject_frozen_recipe_evidence(
+        layer,
+        "leaf-classification",
+        "spooky-author-identification",
+    )
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="leaf-classification",
+        task_desc="Leaf multimodal classification evaluated by multiclass log loss.",
+        query_parts=["Use one A100 and leakage-safe validation."],
+        draft_role="novel_exploration",
+        context={
+            "excluded_method_families": [],
+            "data_preview": "Train shape: (990, 194)",
+            "ram_gb": 64,
+        },
+    )
+    pack = layer.current_navigation_pack()
+    assert pack["schema"] == "layered_strategy_memory_pack_v1"
+    assert len(pack["strategy_routes"]) == 3
+    assert all(
+        row["sop_id"].startswith("recipe::leaf-classification::")
+        for row in pack["strategy_candidates"]
+    )
+    assert not any("spooky-author-identification" in row["sop_id"] for row in pack["strategy_candidates"])
+    assert "Complete end-to-end recipe:" in text
+    assert "Data validation:" in text
+    assert "Model stack:" in text
+    assert "OOF protocol:" in text
+    assert pack["selected_strategy"]["sop_id"] in refs
+    assert pack["selected_strategy"]["best_tree_evidence"]["node_id"] in refs
+    assert pack["selected_strategy"]["best_tree_evidence"]["evidence_kind"] == "direct_clean_run_node"
+
+
+def test_recipe_layered_leaf_pins_best_clean_terminal_result_before_internal_metrics():
+    layer = _real_recipe_layer()
+    _inject_frozen_recipe_evidence(layer, "leaf-classification")
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="leaf-classification",
+        task_desc="Leaf multimodal classification evaluated by multiclass log loss.",
+        query_parts=["Use one A100 and prefer the best clean same-task terminal result."],
+        draft_role="novel_exploration",
+        context={
+            "excluded_method_families": [],
+            "data_preview": "Train shape: (990, 194)",
+            "ram_gb": 64,
+        },
+    )
+    pack = layer.current_navigation_pack()
+    selected = pack["selected_strategy"]
+    evidence = selected["best_tree_evidence"]
+    assert pack["mandatory_same_task_terminal_strategy"] == "recipe::leaf-classification::003"
+    assert pack["strategy_routes"][0]["same_task_terminal_best"] is True
+    assert selected["sop_id"] == "recipe::leaf-classification::003"
+    assert evidence["node_id"].startswith(
+        "postsmoke::e2e-smoke-leaf-controls-v14__leaf-classification__flat_retrieval"
+    )
+    assert evidence["metric"] == pytest.approx(0.09353439660745823)
+    assert evidence["metric_direction"] == "minimize"
+    assert evidence["metric_provenance"] == "sealed_fixed_holdout_terminal_score"
+    assert evidence["terminal_evidence"] is True
+    assert evidence["node_id"] in refs
+    assert "terminal=True" in text
+
+
+def test_recipe_layered_agent_cannot_bypass_compute_feasible_terminal_best_route():
+    layer = _real_recipe_layer()
+    _inject_frozen_recipe_evidence(layer, "leaf-classification")
+    layer.agentic_enabled = True
+
+    def choose_non_terminal(*, task_profile, routes):
+        del task_profile
+        rejected = next(route for route in routes if not route["same_task_terminal_best"])
+        return {
+            "strategy_sop_id": rejected["sop_id"],
+            "method_family": rejected["method_family"],
+            "hypothesis": "Ignore the measured terminal result.",
+            "validation_plan": "Run cross-validation.",
+            "model_components": [rejected["method_family"]],
+            "reason": "Theoretical preference only.",
+        }
+
+    layer._injected_strategy_selector = choose_non_terminal
+    layer.retrieve_for_node(
+        stage="draft",
+        task_id="leaf-classification",
+        task_desc="Leaf multimodal classification evaluated by multiclass log loss.",
+        query_parts=["Use one A100."],
+        draft_role="novel_exploration",
+        context={
+            "excluded_method_families": [],
+            "data_preview": "Train shape: (990, 194)",
+            "ram_gb": 64,
+        },
+    )
+    pack = layer.current_navigation_pack()
+    assert pack["selected_strategy"]["sop_id"] == "recipe::leaf-classification::003"
+    assert pack["strategy_selection"]["mode"] == "deterministic_fallback"
+    assert pack["strategy_selection"]["llm_tool_calls"] == 2
+    assert "bypassed mandatory same-task terminal-best" in pack["strategy_selection"]["last_error"]
+
+
+def test_recipe_layered_model_design_only_expands_same_task_same_family_l2():
+    layer = _real_recipe_layer()
+    _inject_frozen_recipe_evidence(layer, "leaf-classification")
+    layer.retrieve_for_node(
+        stage="draft",
+        task_id="leaf-classification",
+        task_desc="Leaf multimodal classification evaluated by multiclass log loss.",
+        query_parts=["Use one A100."],
+        draft_role="novel_exploration",
+        context={"excluded_method_families": []},
+    )
+    strategy = layer.current_navigation_pack()
+    text, refs, l2 = layer.retrieve_model_design_tactics(
+        task_id="leaf-classification",
+        task_desc="Leaf multimodal classification evaluated by multiclass log loss.",
+        strategy_context=strategy,
+    )
+    family = l2["method_family"]
+    assert l2["selected_tactics"]
+    for tactic in l2["selected_tactics"]:
+        node = layer.nodes[tactic["sop_id"]]
+        assert tactic["sop_id"].startswith("tactic::leaf-classification::")
+        assert family in node["parent_method_families"]
+        assert tactic["sop_id"] in refs
+        assert tactic["best_tree_evidence"]["node_id"] in refs
+    assert "L2 Model-Design Tactics" in text
+    assert "tactic::spooky-author-identification" not in text
+
+
+def test_recipe_layered_improve_injects_positive_transitions_not_generic_sops():
+    layer = _real_recipe_layer()
+    text, refs = layer.retrieve_for_node(
+        stage="improve",
+        task_id="leaf-classification",
+        task_desc="Leaf multiclass log loss improvement.",
+        query_parts=["Improve validation log loss with a proven change."],
+        strategy_context={
+            "selected_strategy": {
+                "method_family": "siglip2_multibranch_self_attention_fusion"
+            }
+        },
+    )
+    pack = layer.current_navigation_pack()
+    assert pack["gateway_selection"]["mode"] == "layered_transition_only"
+    assert pack["selected_sop_gateways"] == []
+    assert pack["fused_execution_candidates"]
+    for row in pack["fused_execution_candidates"]:
+        node = layer.nodes[row["id"]]
+        assert node["type"] == "Transition"
+        assert node["outcome"] == "metric_improved"
+        assert row["id"] in refs
+    assert "Proven improvement action:" in text
+
+
+@pytest.mark.parametrize(
+    "family",
+    [
+        "frozen_resnet_tabular_concat_mlp",
+        "dinov2_bidirectional_cross_attention_fusion",
+        "siglip2_multibranch_self_attention_fusion",
+        "tabular_residual_se_multibranch_mlp",
+        "foldwise_lightgbm_logistic_weighted_blend",
+        "tabular_feature_group_transformer",
+    ],
+)
+def test_leaf_recipe_families_have_runtime_code_alignment_signatures(family):
+    from agents.memory.stage_aware_hybrid_memory import FAMILY_CODE_SIGNATURES
+
+    assert family in FAMILY_CODE_SIGNATURES
+    assert FAMILY_CODE_SIGNATURES[family]
 
 
 def test_taxonomy_is_complete_and_known_levels_are_pinned():

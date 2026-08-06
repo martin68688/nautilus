@@ -1,0 +1,59 @@
+{
+  "abstraction_counts": {
+    "L1_recipe": 28,
+    "L2_tactic": 26,
+    "L3_repair": 0
+  },
+  "abstraction_ratios": {
+    "L1_recipe": 0.5185185185185185,
+    "L2_tactic": 0.48148148148148145,
+    "L3_repair": 0.0
+  },
+  "bundle_sha256": "9fd353d670541b543426cec2922fbd0d5dd09d16efdb24288f48ff348bc19078",
+  "bundle_version": "recipe-sop-v1-20260805",
+  "complete_recipe_count": 28,
+  "complete_recipe_ratio": 0.5185185185185185,
+  "evidence_manifest_sha256": "6e90a92e267ca9fe90f356fbb64ecfbc7f6c71dbee410638e92fcb0bd088e308",
+  "node_count": 54,
+  "post_freeze_cited_evidence_count": 2,
+  "post_freeze_cited_evidence_ids": [
+    "postsmoke::e2e-smoke-leaf-controls-v14__leaf-classification__flat_retrieval__seed-1::abb66aed49824ec490ab833abbb5e05b",
+    "postsmoke::e2e-smoke-leaf-controls-v14__leaf-classification__rcr_router_style_port__seed-1::23b2ddd224eb44189149de48b9756676"
+  ],
+  "post_freeze_selected_evidence_count": 4,
+  "quality_gates": {
+    "all_l1_sections_complete": true,
+    "all_source_ids_admitted": true,
+    "l1_recipe_ratio_at_least_0_40": true,
+    "no_l3_or_repair_trivia_in_sop": true,
+    "post_freeze_incremental_evidence_cited": true,
+    "task_isolation_preserved": true
+  },
+  "rejected_output_count": 0,
+  "rejected_outputs": [],
+  "repair_trivia_in_sop_count": 0,
+  "report_sha256": "5eb45df477f3c75cf4fa3b7e0d65e61286fe4ce031e3903c3f14612f92bc517b",
+  "schema": "mlevolve_recipe_sop_distillation_report_v1",
+  "task_counts": {
+    "aerial-cactus-identification": {
+      "L1_recipe": 6,
+      "L2_tactic": 5
+    },
+    "denoising-dirty-documents": {
+      "L1_recipe": 5,
+      "L2_tactic": 5
+    },
+    "leaf-classification": {
+      "L1_recipe": 6,
+      "L2_tactic": 5
+    },
+    "new-york-city-taxi-fare-prediction": {
+      "L1_recipe": 6,
+      "L2_tactic": 6
+    },
+    "spooky-author-identification": {
+      "L1_recipe": 5,
+      "L2_tactic": 5
+    }
+  }
+}

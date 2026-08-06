@@ -1,0 +1,114 @@
+{
+  "schema": "mlevolve_end2end_layered_recipe_smoke_summary_v1",
+  "created_at_utc": "2026-08-05T19:14:12Z",
+  "task_id": "leaf-classification",
+  "system_id": "dynamic_hybrid",
+  "seed": 1,
+  "exploratory_only": true,
+  "formal_pilot_started": false,
+  "recipe_bundle": {
+    "bundle_version": "recipe-sop-v1-20260805",
+    "bundle_sha256": "9fd353d670541b543426cec2922fbd0d5dd09d16efdb24288f48ff348bc19078",
+    "node_count": 54,
+    "l1_recipe_count": 28,
+    "l2_tactic_count": 26,
+    "l3_repair_count": 0,
+    "complete_recipe_ratio": 0.5185185185185185,
+    "evidence_file_sha256": "71dda01b8b7609718d554fbd06aaba109fc3f0b823c9d24c3ccf765dc829e25c",
+    "evidence_manifest_sha256": "6e90a92e267ca9fe90f356fbb64ecfbc7f6c71dbee410638e92fcb0bd088e308",
+    "selected_evidence_count": 151,
+    "admitted_evidence_count": 353
+  },
+  "frozen_bindings": {
+    "smoke_manifest_hash": "25b8a85346874637499090fc3a13fb7b2c0b54ec8a913fb9f9e52f94507a1f7b",
+    "systems_manifest_hash": "f8d403703d2f706d37c66832abc6d239806956074834f5bcc6294c317e670a13",
+    "source_lock_manifest_hash": "12c9c87ac6ba1b692270b8888933b719014f51586ebe4bc5a62ed63c9e33d914",
+    "budget_manifest_hash": "5615feabbe85282c98b94d5a8ac6f9b1dbe3be1e63e044457264b738d34922c2",
+    "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
+    "memory_bundles_manifest_hash": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6"
+  },
+  "result": {
+    "logical_run_id": "e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1",
+    "job_name": "mlevolve-e2e-leaf-layered-recipe-smoke-v27",
+    "pod_name": "mlevolve-e2e-leaf-layered-recipe-smoke-v27-0-qpw4n",
+    "gpu": "NVIDIA A100-SXM4-80GB",
+    "completed": true,
+    "terminal_metric": "multiclass_log_loss",
+    "terminal_score": 0.08612996973006647,
+    "internal_oof_log_loss": 0.05326,
+    "time_to_first_valid_seconds": 823.30319878,
+    "agent_wall_seconds": 826.541055655,
+    "allocated_gpu_hours": 0.22959473768194447,
+    "selected_candidate_id": "d2fccc688085447c9ad84356deac9194",
+    "candidate_set_hash": "69842a13ce7a3d40cd0fff2c8430b3a5d4629a584c86472a9b9659f7343ef052",
+    "measurement_hash": "98a2a6099d269d129c8309e2145c9001dde54633e96ed43563a644337e2ebe68"
+  },
+  "comparison": {
+    "flat_retrieval_terminal_score": 0.09353439660745823,
+    "absolute_reduction_vs_flat": 0.007404426877391762,
+    "relative_reduction_vs_flat": 0.07916260911444581,
+    "previous_dynamic_terminal_score": 0.11480336659470919,
+    "absolute_reduction_vs_previous_dynamic": 0.028673396864642722,
+    "relative_reduction_vs_previous_dynamic": 0.24976094094756415
+  },
+  "routing": {
+    "retrieval_control": "layered_strategy",
+    "l1_route_count": 3,
+    "retrieval_agent_tool_calls": 1,
+    "selector_mode": "llm_validated",
+    "selector_mode_derivation": "The verbose log contains one valid select_novel_strategy_route function response and no LayeredStrategy selector warning; the frozen implementation returns llm_validated after that valid response.",
+    "deterministic_fallback_used": false,
+    "mandatory_same_task_terminal_best_enforced": true,
+    "selected_recipe_id": "recipe::leaf-classification::003",
+    "selected_method_family": "siglip2_multibranch_self_attention_fusion",
+    "selected_recipe_title": "SigLIP2 multimodal token fusion with separate leaf-feature encoders",
+    "direct_terminal_evidence_id": "postsmoke::e2e-smoke-leaf-controls-v14__leaf-classification__flat_retrieval__seed-1::abb66aed49824ec490ab833abbb5e05b",
+    "direct_terminal_evidence_score": 0.09353439660745823,
+    "rejected_recipe_ids": [
+      "recipe::leaf-classification::005",
+      "recipe::leaf-classification::006"
+    ],
+    "injected_l2_tactic_ids": [
+      "tactic::leaf-classification::001",
+      "tactic::leaf-classification::002",
+      "tactic::leaf-classification::003",
+      "tactic::leaf-classification::005"
+    ]
+  },
+  "adoption": {
+    "coarse_strategy_alignment": "verified",
+    "l1_recipe": "substantially_complete",
+    "implemented_components": [
+      "frozen SigLIP2 1152-dimensional image features",
+      "separate margin, shape, texture, and image branches",
+      "four-token MultiheadAttention fusion",
+      "five-fold StratifiedKFold with fold-local StandardScaler",
+      "AdamW, cosine scheduling, AMP, label smoothing, and early stopping",
+      "complete OOF prediction matrix and fold-averaged test probabilities"
+    ],
+    "l2_tactic_assessment": {
+      "tactic::leaf-classification::001": "complete",
+      "tactic::leaf-classification::002": "partial: frozen training protocol adopted; no second-stage fine-tuning",
+      "tactic::leaf-classification::003": "complete",
+      "tactic::leaf-classification::005": "partial: label smoothing adopted; MixUp omitted"
+    },
+    "logging_limitation": "Injection events remain pending_analysis in the generic adoption_log; the stronger evidence is the persisted selected_strategy, verified strategy_alignment, and direct code inspection."
+  },
+  "candidate_failures_retained": [
+    {
+      "draft_role": "coldstart_baseline",
+      "node_id": "0428eb7388804ff68e654b5ec34a0881",
+      "exception": "RuntimeError: permission denied for the DINOv3 torch.hub cache"
+    },
+    {
+      "draft_role": "memory_transfer",
+      "node_id": "0233ab5044384cf79fb72d5e521b4d26",
+      "exception": "AttributeError: 'float' object has no attribute 'shape'"
+    }
+  ],
+  "limitations": [
+    "Seed=1 is exploratory and does not support statistical-significance claims.",
+    "This Smoke validates the repaired Dynamic path on Leaf only; it is not the formal 40-run Pilot.",
+    "The selected candidate was Novel Exploration; the other two draft-role failures are retained and were not hidden by replacement drafts."
+  ]
+}

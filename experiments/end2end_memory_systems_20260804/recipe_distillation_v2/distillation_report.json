@@ -1,0 +1,68 @@
+{
+  "abstraction_counts": {
+    "L1_recipe": 28,
+    "L2_tactic": 26,
+    "L3_repair": 35
+  },
+  "abstraction_ratios": {
+    "L1_recipe": 0.3146067415730337,
+    "L2_tactic": 0.29213483146067415,
+    "L3_repair": 0.39325842696629215
+  },
+  "accepted_clean_repair_l3_count": 35,
+  "bundle_sha256": "8c3ef43693508c4d38567f4ef304f8d6edc0fc37609d886328b62300c30860aa",
+  "bundle_version": "recipe-sop-v2-20260806",
+  "complete_recipe_count": 28,
+  "complete_recipe_ratio": 0.5185185185185185,
+  "evidence_manifest_sha256": "d06a1198ebafd1d0b6bae9cae3c0c439a11fd4ff13855b913dc980a155830da7",
+  "l3_evidence_tiering_enabled": false,
+  "node_count": 89,
+  "post_freeze_cited_evidence_count": 2,
+  "post_freeze_cited_evidence_ids": [
+    "postsmoke::e2e-smoke-leaf-controls-v14__leaf-classification__flat_retrieval__seed-1::abb66aed49824ec490ab833abbb5e05b",
+    "postsmoke::e2e-smoke-leaf-controls-v14__leaf-classification__rcr_router_style_port__seed-1::23b2ddd224eb44189149de48b9756676"
+  ],
+  "post_freeze_selected_evidence_count": 4,
+  "quality_gates": {
+    "all_l1_sections_complete": true,
+    "all_l3_exclude_infrastructure_and_one_off_code_failures": true,
+    "all_l3_have_complete_evidence_bindings": true,
+    "all_source_ids_admitted": true,
+    "l1_recipe_ratio_at_least_0_40": true,
+    "no_repair_trivia_in_l1_l2": true,
+    "post_freeze_incremental_evidence_cited": true,
+    "task_isolation_preserved": true
+  },
+  "rejected_output_count": 0,
+  "rejected_outputs": [],
+  "repair_trivia_in_l1_l2_count": 0,
+  "report_sha256": "635307f629d341e2d7734ba826d106dcf8882a4d654c9eb4aa26f445a3f476d5",
+  "schema": "mlevolve_recipe_sop_distillation_report_v1",
+  "task_counts": {
+    "aerial-cactus-identification": {
+      "L1_recipe": 6,
+      "L2_tactic": 5,
+      "L3_repair": 6
+    },
+    "denoising-dirty-documents": {
+      "L1_recipe": 5,
+      "L2_tactic": 5,
+      "L3_repair": 6
+    },
+    "leaf-classification": {
+      "L1_recipe": 6,
+      "L2_tactic": 5,
+      "L3_repair": 8
+    },
+    "new-york-city-taxi-fare-prediction": {
+      "L1_recipe": 6,
+      "L2_tactic": 6,
+      "L3_repair": 6
+    },
+    "spooky-author-identification": {
+      "L1_recipe": 5,
+      "L2_tactic": 5,
+      "L3_repair": 9
+    }
+  }
+}

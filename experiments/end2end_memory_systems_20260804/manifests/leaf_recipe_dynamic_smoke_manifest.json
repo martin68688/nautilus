@@ -1,0 +1,50 @@
+{
+  "bindings": {
+    "budget_manifest_hash": "3dfea6ffb36c6b1925a890302a9aabdf6578c42e54a20357f7e3a5ddf39b2962",
+    "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
+    "memory_bundles_manifest_hash": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
+    "schemas_manifest_hash": "bc3a3b6aad773f0d5f67c531c505f2999a23656c947b81472aab952258526a38",
+    "source_lock_manifest_hash": "1092f10c9509cca480dc1c8c3792ee5f32ccf2168759ee83780b58980b4d2ca9",
+    "systems_manifest_hash": "7625d2f43efb4a83a725c033bd98ad8539ae998b24961933fdf928507cd5761a",
+    "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+  },
+  "comparison_baseline_release_id": "end2end-agent-v3",
+  "exploratory_pilot": true,
+  "formal_result_eligible": false,
+  "kind": "smoke",
+  "launch_order_randomization": "task-local SHA256-seeded deterministic shuffle; comparison order locked to end2end-agent-v3",
+  "manifest_hash": "f4547edb292deaf6146a6f7b46627f11e809322940d7c9871a70abe43d0a3f5c",
+  "release_id": "end2end-agentic-three-role-v13",
+  "run_count": 1,
+  "runs": [
+    {
+      "bindings": {
+        "budget_manifest_hash": "3dfea6ffb36c6b1925a890302a9aabdf6578c42e54a20357f7e3a5ddf39b2962",
+        "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
+        "memory_bundles_manifest_hash": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
+        "schemas_manifest_hash": "bc3a3b6aad773f0d5f67c531c505f2999a23656c947b81472aab952258526a38",
+        "source_lock_manifest_hash": "1092f10c9509cca480dc1c8c3792ee5f32ccf2168759ee83780b58980b4d2ca9",
+        "systems_manifest_hash": "7625d2f43efb4a83a725c033bd98ad8539ae998b24961933fdf928507cd5761a",
+        "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 0,
+      "logical_run_id": "e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1",
+      "row_hash": "904e1e129fb8440336caba02cc4b77d65d91c06c9ba232b71035121336ccc82b",
+      "seed": 1,
+      "system_id": "dynamic_hybrid",
+      "task_id": "leaf-classification",
+      "task_launch_position": 0
+    }
+  ],
+  "schema": "mlevolve_end2end_execution_manifest_v1",
+  "seed": 1,
+  "statistical_significance_claim_allowed": false,
+  "system_ids": [
+    "dynamic_hybrid"
+  ],
+  "task_ids": [
+    "leaf-classification"
+  ]
+}

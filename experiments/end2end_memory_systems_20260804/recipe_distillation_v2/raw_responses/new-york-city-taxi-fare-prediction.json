@@ -1,0 +1,216 @@
+{
+  "recipes": [
+    {
+      "method_family": "temporal_rich_feature_lightgbm",
+      "pipeline": {
+        "data_validation": "Parse pickup timestamps; drop training rows with missing coordinates; restrict pickup and dropoff coordinates to plausible NYC bounds; remove invalid fare targets and implausible passenger counts; verify engineered numeric features are finite.",
+        "ensemble_calibration": "No ensemble or separate calibration is evidenced. Use the single best-iteration LightGBM prediction.",
+        "failure_boundaries": "Do not fit scalers or other learned transforms on validation or inference data. Do not treat implausible training coordinates, fares, or passenger counts as valid observations. Ensure temporal and spatial feature definitions are identical between training and inference.",
+        "feature_representation": "Extract year, month, day, hour, day of week, and weekend indicators. Add haversine and Manhattan distances, bearing, distances to airports, grid-cell or location indicators, a Manhattan indicator, and interactions such as hour-by-distance, weekend-by-distance, and Manhattan-ride flags. Standardize numeric features using statistics fitted on the training partition only.",
+        "final_refit_inference": "A full-data refit is not evidenced. Apply the same fitted feature transforms to every inference row and predict with the validation-selected LightGBM iteration.",
+        "model_stack": "Train one regularized LightGBM regressor with an RMSE regression objective, approximately 2000 boosting rounds available, and L1/L2 regularization such as reg_alpha=5 and reg_lambda=10.",
+        "oof_protocol": "Not evidenced; this is a single temporal holdout and does not produce OOF predictions.",
+        "split_validation": "Sort by pickup time and reserve the latest 5% as a temporal validation set; evaluate with RMSE and use the split only for model selection and early stopping.",
+        "training_protocol": "Fit on the temporal training partition with validation RMSE monitoring and early stopping after 100 rounds without improvement; retain the iteration with the lowest validation RMSE."
+      },
+      "source_node_ids": [
+        "run::20260726_022228_new-york-city-taxi-fare-prediction-host-shadow-r7::node::eeb6e2364829449ba6e1ce6c1600fc3d"
+      ],
+      "title": "Large-scale temporally validated LightGBM with rich spatial interactions",
+      "when_to_use": "Use when tens of millions of training rows are available, CPU and memory resources can support large-scale gradient boosting, and validation should reflect temporal drift."
+    },
+    {
+      "method_family": "fare_stratified_lightgbm",
+      "pipeline": {
+        "data_validation": "Remove rows with missing coordinates, restrict coordinates to plausible NYC bounds, and reject invalid fare targets and passenger counts before constructing target strata.",
+        "ensemble_calibration": "No ensemble or probability-style calibration is evidenced.",
+        "failure_boundaries": "Fare bins are validation-design artifacts and must not be model inputs. Fit any learned preprocessing only on the training partition. This random stratified design does not test chronological generalization and should not be interpreted as a temporal backtest.",
+        "feature_representation": "Extract calendar and clock features including hour, day, month, rush-hour and night flags, plus cyclical hour sine/cosine terms. Add haversine distance, Manhattan distance, bearing, airport and Manhattan-center distances, log-transformed distance, coordinate interactions, and NYC location flags.",
+        "final_refit_inference": "A full-data refit after early stopping is not evidenced. Transform inference data with the same deterministic feature functions and generate fares with the best validation iteration.",
+        "model_stack": "Train a single tuned LightGBM regression model on the raw fare target with up to 2000 boosting rounds.",
+        "oof_protocol": "Not evidenced; this design uses one fare-stratified 80/20 holdout rather than full cross-validation.",
+        "split_validation": "Bin fare_amount and create an 80/20 train-validation split stratified by those fare bins. Report RMSE on the untouched validation partition and use it for early stopping.",
+        "training_protocol": "Monitor validation RMSE and stop after 50 rounds without improvement; retain the best-scoring iteration."
+      },
+      "source_node_ids": [
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::node::ceccd342e6854f4e84145bbf128602f7",
+        "run::20260724_134451_same-task-memory-bcc1c73b-new-york-city-taxi-fare-prediction::node::630805cec8d04ca78b02f53b9be36524"
+      ],
+      "title": "Fare-stratified LightGBM with cyclical time and landmark features",
+      "when_to_use": "Use when a representative random holdout is acceptable and the heavy-tailed fare distribution makes ordinary random splitting prone to uneven target coverage."
+    },
+    {
+      "method_family": "cluster_zone_lightgbm",
+      "pipeline": {
+        "data_validation": "Filter invalid training coordinates, fares, and passenger counts; validate timestamps; and ensure all distance and cluster inputs are finite before fitting the model.",
+        "ensemble_calibration": "No ensemble or post-hoc calibration is evidenced.",
+        "failure_boundaries": "Do not scale integer zone IDs as continuous numeric features when they are modeled categorically. Coarse or unstable clusters can erase local fare structure, while excessive cluster counts can create sparse zone pairs. Cluster fitting must not use fare targets.",
+        "feature_representation": "Create hour, weekday, holiday, rush-hour, and cyclical time features; haversine and Manhattan distances; airport and city-center distances; and pickup/dropoff zone IDs from MiniBatchKMeans with approximately 100 geographic clusters. Add a pickup-zone/dropoff-zone pair interaction.",
+        "final_refit_inference": "A full-data refit is not evidenced. Reuse the fitted zone model and deterministic feature pipeline, then infer with the best early-stopped LightGBM iteration.",
+        "model_stack": "Train a single LightGBM regressor with RMSE objective, max_depth around 8, num_leaves around 64, and as many as 5000 boosting rounds.",
+        "oof_protocol": "Not evidenced; this is a single chronological 80/20 holdout.",
+        "split_validation": "Sort by pickup time and use the first 80% for training and the latest 20% for validation. Select the model by validation RMSE.",
+        "training_protocol": "Fit clustering from training locations rather than validation targets, transform validation and inference coordinates with the fitted clusterer, and train LightGBM with validation-based early stopping."
+      },
+      "source_node_ids": [
+        "run::20260716_173558_new-york-city-taxi-fare-prediction::node::eadbe2bc58284f98b204810bb82c28d5",
+        "run::20260716_173558_new-york-city-taxi-fare-prediction::node::896f942ce32946658c08a46c7591acac"
+      ],
+      "title": "Zone-pair LightGBM with fine-grained NYC location clusters",
+      "when_to_use": "Use when pickup and dropoff coordinates are plentiful enough to learn stable geographic zones and additional clustering cost is acceptable."
+    },
+    {
+      "method_family": "dual_target_lightgbm_blend",
+      "pipeline": {
+        "data_validation": "Restrict coordinates to plausible NYC bounds, keep positive fares below the evidenced upper bound, and retain only reasonable passenger counts. Confirm that fares are positive before applying log1p.",
+        "ensemble_calibration": "Average raw-scale predictions from the two models and clip the final fare prediction to the evidenced range of 1 to 100. Validate the blend against each component before adopting it.",
+        "failure_boundaries": "Never average a log-scale prediction directly with a dollar-scale prediction. The observed blend did not improve the referenced baseline, so retain it only if the shared holdout confirms a lower RMSE. Clipping bounds can bias unusually expensive rides.",
+        "feature_representation": "Use common temporal features, rush-hour flags, cyclical encodings, haversine and Manhattan distances, bearing, airport and Manhattan distances, and related spatial interactions for both component models.",
+        "final_refit_inference": "A full-data refit is not evidenced. Apply both best-iteration models to the identically engineered inference matrix, invert the log-target prediction, average on the fare scale, and clip.",
+        "model_stack": "Train two LightGBM regressors: one directly on fare_amount and one on log1p(fare_amount). Convert log-model predictions back with expm1 and average them with raw-target predictions.",
+        "oof_protocol": "Not evidenced; blending weights are assessed on a single shared holdout, not on OOF predictions.",
+        "split_validation": "Use the established validation partition from the base LightGBM pipeline and evaluate each component and the blend by RMSE on exactly the same rows. The evidence does not establish cross-validation.",
+        "training_protocol": "Train both models independently with early stopping on the same validation split and retain each model's best iteration."
+      },
+      "source_node_ids": [
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::node::73c5c75f72bf48a9bf52383f0d8fdae2"
+      ],
+      "title": "Raw-target and log-target LightGBM blend for skewed fares",
+      "when_to_use": "Use when fares are strongly right-skewed and resources permit training two complementary boosting models on the same engineered table."
+    },
+    {
+      "method_family": "hash_split_regularized_mlp",
+      "pipeline": {
+        "data_validation": "While reading training data in chunks, remove invalid coordinates, fare outliers, and implausible passenger counts. Parse timestamps and verify that engineered continuous features contain no unresolved missing or infinite values.",
+        "ensemble_calibration": "No ensemble or separate calibration is evidenced. Use the best validation checkpoint from the selected loss configuration.",
+        "failure_boundaries": "Fit normalization only on the training partition. Run validation and inference in batches to control memory use. Huber loss is not automatically superior here—the evidenced Huber variant had worse RMSE—so select the loss by held-out RMSE rather than robustness claims alone.",
+        "feature_representation": "Use standardized continuous inputs derived from year, month, day, hour, day of week, weekend, haversine distance, bearing, and distances to JFK, LGA, and EWR.",
+        "final_refit_inference": "A full-data neural-network refit is not evidenced. Reuse training-partition normalization statistics and the best checkpoint for batched inference.",
+        "model_stack": "Use a three-hidden-layer MLP with widths 256, 256, and 128, BatchNorm, ReLU activations, and dropout, followed by a scalar fare output.",
+        "oof_protocol": "Not evidenced; the deterministic hash assignment provides one holdout and no OOF prediction matrix.",
+        "split_validation": "Assign rows deterministically to a 90/10 train-validation split using a stable key hash. Keep the hash rule fixed across chunks and evaluate the held-out partition with RMSE.",
+        "training_protocol": "Train with AdamW and either MSE loss or Huber loss, monitor validation RMSE, apply gradient clipping for the Huber variant, and stop after two validation checks without improvement. Preserve the parameters from the lowest validation RMSE."
+      },
+      "source_node_ids": [
+        "run::20260717_232425_new-york-city-taxi-fare-prediction::node::be398003254d47c693c60909402c1110",
+        "run::20260717_232425_new-york-city-taxi-fare-prediction::node::c4ce8b46d0034fe5972a1b4c7d3770f8"
+      ],
+      "title": "Deterministic-split regularized MLP for chunked taxi training",
+      "when_to_use": "Use when training data must be processed in chunks, GPU or efficient neural-network compute is available, and a deterministic row-stable holdout is preferred."
+    },
+    {
+      "method_family": "geo_nn_xgboost_hybrid",
+      "pipeline": {
+        "data_validation": "Filter invalid training coordinates, fare values, distances, and passenger counts; parse temporal fields; and check that continuous and grid-derived features are finite.",
+        "ensemble_calibration": "Use the evidenced fixed weighted average of 0.3 neural-network prediction and 0.7 XGBoost prediction, then clip fares to the evidenced range of 1 to 500. Compare the blend with both components on the holdout.",
+        "failure_boundaries": "Do not process a very large validation or inference matrix in one neural forward pass. Grid IDs must use the same mapping at inference. The fixed blend is justified only when it beats both components on the common temporal holdout.",
+        "feature_representation": "Create hour, day, weekday, rush-hour, haversine distance, Manhattan distance, bearing, distances to JFK, LGA, and Manhattan, and coordinate grid-cell encodings. Fit RobustScaler on training continuous features only; feed grid cells through learned geographic embeddings in the neural component.",
+        "final_refit_inference": "A full-data refit is not evidenced. Apply the training-fitted scaler and grid mapping, predict in batches with the best neural checkpoint, predict with the best XGBoost iteration, blend, and clip.",
+        "model_stack": "Train a GeoAwareNN with geographic embeddings, batch normalization, dropout, Huber loss, AdamW, and learning-rate scheduling. Train a tuned XGBoost regressor with early stopping on the same feature domain. Blend predictions with weights 0.3 for the neural network and 0.7 for XGBoost.",
+        "oof_protocol": "Not evidenced; this is a single temporal holdout and the blend is not based on OOF predictions.",
+        "split_validation": "Sort observations chronologically and reserve the latest 20% for validation. Use the same validation rows to evaluate the neural network, XGBoost model, and final weighted blend by RMSE.",
+        "training_protocol": "Train both components against the shared temporal holdout; batch neural training and validation; retain the best neural checkpoint and best XGBoost iteration before blending."
+      },
+      "source_node_ids": [
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::node::4e47e8c8f67a4e8e9dfdddcef0ae67f3"
+      ],
+      "title": "Geo-aware neural network and XGBoost weighted hybrid",
+      "when_to_use": "Use when both neural and tree-model training resources are available and complementary geographic embeddings and boosted-tree interactions justify the added complexity."
+    }
+  ],
+  "tactics": [
+    {
+      "instruction": "Create the validation split before fitting StandardScaler, RobustScaler, clustering, imputation statistics, or target-derived group statistics. Fit each transform on training rows and only transform validation and inference rows.",
+      "parent_method_families": [
+        "temporal_rich_feature_lightgbm",
+        "fare_stratified_lightgbm",
+        "cluster_zone_lightgbm",
+        "hash_split_regularized_mlp",
+        "geo_nn_xgboost_hybrid"
+      ],
+      "source_node_ids": [
+        "run::20260702_150457_new-york-city-taxi-fare-prediction::node::04d493555be34b19b10ff4e22894371f",
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::node::ff702352b6d14bc8a6fd0c89a25a3d76",
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::node::574eec44884e49c9a2454f55c55560dd"
+      ],
+      "tactic_kind": "validation_protocol",
+      "title": "Fit learned preprocessing strictly inside the training partition",
+      "when_to_use": "Use whenever the representation contains learned preprocessing rather than purely deterministic row-wise features."
+    },
+    {
+      "instruction": "Keep pickup zone, dropoff zone, season, and similar IDs as integer categorical features; exclude them from numeric scaling and pass their categorical identities consistently to LightGBM.",
+      "parent_method_families": [
+        "cluster_zone_lightgbm"
+      ],
+      "source_node_ids": [
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::node::68d1440e757c44b984154d29db75900f",
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::node::6bf96a76cade40a6a9ccd3286b847792"
+      ],
+      "tactic_kind": "feature",
+      "title": "Preserve categorical identity for geographic zones",
+      "when_to_use": "Use when KMeans or grid assignments are intended as nominal location categories rather than ordered continuous measurements."
+    },
+    {
+      "instruction": "Represent each trip with haversine and Manhattan distance, direction or bearing, coordinate deltas where available, and distances to JFK, LGA, EWR, or Manhattan; combine these with hour, weekday, weekend, and rush-hour context.",
+      "parent_method_families": [
+        "temporal_rich_feature_lightgbm",
+        "fare_stratified_lightgbm",
+        "cluster_zone_lightgbm",
+        "dual_target_lightgbm_blend",
+        "hash_split_regularized_mlp",
+        "geo_nn_xgboost_hybrid"
+      ],
+      "source_node_ids": [
+        "run::20260726_022228_new-york-city-taxi-fare-prediction-host-shadow-r7::node::eeb6e2364829449ba6e1ce6c1600fc3d",
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::node::ceccd342e6854f4e84145bbf128602f7",
+        "run::20260717_232425_new-york-city-taxi-fare-prediction::node::be398003254d47c693c60909402c1110"
+      ],
+      "tactic_kind": "feature",
+      "title": "Combine continuous trip geometry with landmark context",
+      "when_to_use": "Use for NYC fare models that need both route length and location-specific surcharge or traffic context."
+    },
+    {
+      "instruction": "Set a generous boosting-round ceiling, monitor validation RMSE, stop after roughly 50 to 100 non-improving rounds, and use the best iteration for validation and inference.",
+      "parent_method_families": [
+        "temporal_rich_feature_lightgbm",
+        "fare_stratified_lightgbm",
+        "cluster_zone_lightgbm",
+        "dual_target_lightgbm_blend",
+        "geo_nn_xgboost_hybrid"
+      ],
+      "source_node_ids": [
+        "run::20260726_022228_new-york-city-taxi-fare-prediction-host-shadow-r7::node::eeb6e2364829449ba6e1ce6c1600fc3d",
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::node::ceccd342e6854f4e84145bbf128602f7",
+        "run::20260716_173558_new-york-city-taxi-fare-prediction::node::eadbe2bc58284f98b204810bb82c28d5"
+      ],
+      "tactic_kind": "training_protocol",
+      "title": "Use early stopping as the boosting-capacity selector",
+      "when_to_use": "Use when the optimal number of trees is unknown and a clean holdout is available."
+    },
+    {
+      "instruction": "Train one model on fare_amount and another on log1p(fare_amount); apply expm1 to the second model's predictions before averaging, and accept the blend only if shared-holdout RMSE improves.",
+      "parent_method_families": [
+        "dual_target_lightgbm_blend"
+      ],
+      "source_node_ids": [
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::node::73c5c75f72bf48a9bf52383f0d8fdae2"
+      ],
+      "tactic_kind": "ensemble",
+      "title": "Blend raw-target and log-target regressors only on the fare scale",
+      "when_to_use": "Use when fare skew suggests complementary error behavior between absolute-error-scale and relative-error-scale models."
+    },
+    {
+      "instruction": "Evaluate validation and inference rows through bounded-size batches, accumulate squared errors across batches for RMSE, and avoid materializing a full multi-million-row neural forward pass.",
+      "parent_method_families": [
+        "hash_split_regularized_mlp",
+        "geo_nn_xgboost_hybrid"
+      ],
+      "source_node_ids": [
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::node::4e47e8c8f67a4e8e9dfdddcef0ae67f3"
+      ],
+      "tactic_kind": "training_protocol",
+      "title": "Batch neural validation and inference",
+      "when_to_use": "Use when the validation or inference matrix is too large for available accelerator or host memory."
+    }
+  ]
+}

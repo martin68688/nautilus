@@ -1,0 +1,163 @@
+{
+  "recipes": [
+    {
+      "method_family": "frozen_transformer_embedding_xgboost",
+      "pipeline": {
+        "data_validation": "Load labeled training text and unlabeled test text, verify that every training row has text and one of the three author labels, and preserve a fixed mapping between the three labels and probability columns.",
+        "ensemble_calibration": "The three transformer representations are fused by feature concatenation rather than probability averaging. Additional probability ensembling or post-hoc calibration is not evidenced.",
+        "failure_boundaries": "This recipe does not fine-tune the language models, so performance is bounded by frozen CLS representations. Keep tokenizer/model pairings consistent, maintain identical feature concatenation order between training and inference, and do not describe the feature concatenation as an OOF ensemble.",
+        "feature_representation": "Tokenize each text to a maximum length of 256 with DeBERTa-v3-base, RoBERTa-base, and DistilBERT-base-uncased; extract each frozen model's CLS embedding and concatenate the three vectors into a 2304-dimensional representation.",
+        "final_refit_inference": "After selecting the boosting configuration from cross-validation, retrain one XGBoost model on all labeled embeddings and predict three-class probabilities for test embeddings.",
+        "model_stack": "Train an XGBoost multiclass classifier with objective multi:softprob and three output classes on the concatenated frozen embeddings.",
+        "oof_protocol": "Use the held-out portion of each of the five stratified folds for fold-level log-loss evaluation; a consolidated stored OOF prediction matrix is not evidenced.",
+        "split_validation": "Use stratified 5-fold cross-validation so every fold preserves the three-author class distribution; monitor multiclass log loss and use early stopping within each fold.",
+        "training_protocol": "Keep all transformer parameters frozen, precompute embeddings, and train each fold's XGBoost model with validation-based early stopping under multiclass log loss."
+      },
+      "source_node_ids": [
+        "run::20260509_042918_spooky-author-identification::node::8c5286bb1da2400486bafdd5878e30f9"
+      ],
+      "title": "Frozen Multi-Transformer Embeddings with Five-Fold XGBoost",
+      "when_to_use": "Use when several pretrained transformer backbones are available for batched feature extraction but end-to-end fine-tuning is undesirable or too costly; requires enough memory or storage for 2304-dimensional dense features and CPU/GPU resources for XGBoost."
+    },
+    {
+      "method_family": "deberta_large_ema_holdout",
+      "pipeline": {
+        "data_validation": "Load raw texts, encode the three author labels consistently, verify that train and validation indices do not overlap, and retain the same label-to-probability-column mapping for inference.",
+        "ensemble_calibration": "Use EMA parameter averaging as the sole averaging policy. A multi-model ensemble and separate probability calibration are not evidenced.",
+        "failure_boundaries": "The single holdout can have higher variance than full cross-validation. Full-backbone large-model training is memory intensive, and the evidence supports raw-text fine-tuning rather than handcrafted-feature fusion or pseudo-labeling.",
+        "feature_representation": "Apply minimal preprocessing and tokenize raw text directly with the DeBERTa tokenizer; do not append handcrafted stylistic features.",
+        "final_refit_inference": "Restore or apply the EMA-averaged parameters and generate normalized three-class probabilities for the test texts. An additional refit on all labeled rows is not evidenced.",
+        "model_stack": "Use HuggingFace AutoModelForSequenceClassification with a DeBERTa-v3-large backbone, three output classes, and all backbone layers unfrozen.",
+        "oof_protocol": "Not evidenced / single holdout. Report validation log loss only on the fixed stratified 10% validation partition; do not claim OOF estimates.",
+        "split_validation": "Create a stratified 90/10 train-validation split and select checkpoints by validation multiclass log loss with early stopping patience of 3.",
+        "training_protocol": "Optimize with AdamW and OneCycleLR, use mixed-precision training, clip gradients, and maintain an exponential moving average of model parameters throughout fine-tuning."
+      },
+      "source_node_ids": [
+        "run::20260516_104127_spooky-author-identification::node::57b0bc86c9af4272af7902eefe0345bb"
+      ],
+      "title": "End-to-End DeBERTa-v3-Large Fine-Tuning with EMA Inference",
+      "when_to_use": "Use when a GPU can support full DeBERTa-v3-large fine-tuning and the goal is a strong raw-text model without handcrafted features; suitable when a single stratified holdout is acceptable."
+    },
+    {
+      "method_family": "deberta_base_mean_pool_cv",
+      "pipeline": {
+        "data_validation": "Load raw training and test text, encode the three author labels, verify that each stratified fold contains all classes, and keep the author-to-class index mapping fixed through inference.",
+        "ensemble_calibration": "Average the five fold models' test probability vectors. No additional calibration is evidenced.",
+        "failure_boundaries": "Processing only the first nominal fold is not this recipe; all five folds are required for its ensemble policy. Token masking must be respected during mean pooling, and fold-specific early stopping must not use test predictions.",
+        "feature_representation": "Tokenize raw text with the DeBERTa-v3 tokenizer to a maximum length of 384 and mean-pool the final hidden states using the valid-token mask.",
+        "final_refit_inference": "Retain the best checkpoint from each fold, infer on the test set with every checkpoint, average probabilities across all five folds, and preserve normalized three-class rows. A separate all-data refit is not evidenced.",
+        "model_stack": "Fine-tune DeBERTa-v3-base with a single linear three-class classifier on the mean-pooled representation.",
+        "oof_protocol": "Generate validation probabilities from the model that did not train on each fold's rows and combine the five held-out partitions for cross-validated log-loss assessment; do not train a separate stacker unless new evidence supports it.",
+        "split_validation": "Run all five folds of StratifiedKFold. Evaluate each held-out fold with multiclass log loss and use early stopping with patience of 4.",
+        "training_protocol": "Use cross-entropy with label smoothing, AdamW, linear warmup followed by ReduceLROnPlateau, mixed precision, gradient clipping, and validation-based early stopping."
+      },
+      "source_node_ids": [
+        "run::20260516_125444_spooky-author-identification::node::36c4b8ae7bf34da0a928772dfeb530a8"
+      ],
+      "title": "Five-Fold Mean-Pooled DeBERTa-v3-Base Probability Ensemble",
+      "when_to_use": "Use when robust cross-validated inference is preferred and compute permits five DeBERTa-v3-base fine-tuning runs; the base backbone and simple head offer a balance between capacity and implementation complexity."
+    },
+    {
+      "method_family": "modernbert_large_raw_text_cv",
+      "pipeline": {
+        "data_validation": "Load passages and labels, encode EAP, HPL, and MWS consistently, verify that each row has usable text, and preserve the class order used by the probability outputs.",
+        "ensemble_calibration": "Average test probabilities across the three fold models. No separate calibration stage is evidenced.",
+        "failure_boundaries": "Do not add mixup, TF-IDF fusion, or SWA to this recipe because they are outside the supporting execution. Large-backbone training can still overfit or exceed memory limits, so early stopping and the stated accumulation strategy are material parts of the method.",
+        "feature_representation": "Tokenize raw text directly with ModernBERT to a maximum length of 256; apply no additional feature engineering.",
+        "final_refit_inference": "Use the best checkpoint from each fold for test inference, average the three probability vectors row-wise, and keep outputs as normalized three-class probabilities. No separate all-data refit is evidenced.",
+        "model_stack": "Fine-tune ModernBERT-large with a three-class sequence-classification head.",
+        "oof_protocol": "Use each fold model to predict its held-out partition for cross-validated log-loss evaluation; the evidence supports fold validation and test averaging but does not evidence a downstream OOF stacker.",
+        "split_validation": "Use 3-fold stratified cross-validation and monitor multiclass log loss independently on each held-out fold with early stopping.",
+        "training_protocol": "Train with label-smoothed cross-entropy, AdamW, cosine learning-rate decay with warmup, gradient accumulation, mixed precision, gradient clipping, and early stopping."
+      },
+      "source_node_ids": [
+        "run::20260510_162636_spooky-author-identification::node::5a5021271c264c628c2e1258663ace82"
+      ],
+      "title": "Three-Fold Raw-Text ModernBERT-Large Ensemble",
+      "when_to_use": "Use when long-context ModernBERT-large fine-tuning is available and a three-model cross-validation ensemble is affordable, while avoiding handcrafted feature pipelines."
+    },
+    {
+      "method_family": "roberta_stylometric_lightgbm_hybrid",
+      "pipeline": {
+        "data_validation": "Load labeled and unlabeled text, encode the three authors consistently, verify that handcrafted feature extraction returns finite values for every row, and maintain identical feature definitions and class order at inference.",
+        "ensemble_calibration": "Average the RoBERTa probability output and the LightGBM one-vs-rest output. No learned blend weights or separate calibration model are evidenced.",
+        "failure_boundaries": "Because cross-fitted embeddings are not evidenced, this should not be represented as leakage-safe OOF stacking. Feature extraction must be identical between training and test data, and the one-vs-rest outputs must be placed in the fixed author order before averaging.",
+        "feature_representation": "Extract stylometric statistics including punctuation ratios, lexical diversity, readability measures, and POS/suffix approximations; also construct character and word TF-IDF n-grams plus punctuation-sequence features, and obtain RoBERTa-base contextual embeddings.",
+        "final_refit_inference": "Use the selected RoBERTa checkpoint to produce test probabilities and embeddings, apply the trained LightGBM models to the matching contextual-plus-handcrafted test representation, and average the two probability outputs. A separate all-data refit of both stages is not evidenced.",
+        "model_stack": "Fine-tune RoBERTa-base with a simple MLP classification head, then train one-vs-rest LightGBM classifiers on the concatenation of RoBERTa embeddings and handcrafted features.",
+        "oof_protocol": "Not evidenced / single holdout. The LightGBM stage is validated on the stratified holdout; cross-fitted transformer embeddings and a full OOF stacking matrix are not evidenced.",
+        "split_validation": "Create a stratified train-validation split and evaluate both the transformer and hybrid predictions with multiclass log loss; use early stopping with patience of 7 for RoBERTa training.",
+        "training_protocol": "Train RoBERTa with label-smoothed cross-entropy, AdamW, cosine learning-rate scheduling, gradient accumulation, mixed precision, and validation-based early stopping; train the LightGBM meta-classifier after extracting transformer embeddings."
+      },
+      "source_node_ids": [
+        "run::20260516_125444_spooky-author-identification::node::0a642f0bc27d4b8fb800955f589fb8a8"
+      ],
+      "title": "RoBERTa Embedding and Stylometric LightGBM Hybrid",
+      "when_to_use": "Use when contextual transformer signals and explicit author-style statistics are both desired and a two-stage neural-plus-tree pipeline is operationally acceptable; suitable for a single stratified holdout experiment."
+    }
+  ],
+  "tactics": [
+    {
+      "instruction": "Tokenize each passage to length 256 with DeBERTa-v3-base, RoBERTa-base, and DistilBERT-base-uncased, extract their frozen CLS vectors in a fixed order, and concatenate them into a 2304-dimensional feature vector for a downstream multiclass booster.",
+      "parent_method_families": [
+        "frozen_transformer_embedding_xgboost"
+      ],
+      "source_node_ids": [
+        "run::20260509_042918_spooky-author-identification::node::8c5286bb1da2400486bafdd5878e30f9"
+      ],
+      "tactic_kind": "feature",
+      "title": "Concatenate Frozen CLS Embeddings from Complementary Backbones",
+      "when_to_use": "Use when end-to-end fine-tuning is unavailable but several pretrained backbones can be run once for deterministic feature extraction."
+    },
+    {
+      "instruction": "Maintain an exponential moving average of all fine-tuned model parameters during training and apply the averaged parameters for validation checkpoint selection and final probability inference.",
+      "parent_method_families": [
+        "deberta_large_ema_holdout"
+      ],
+      "source_node_ids": [
+        "run::20260516_104127_spooky-author-identification::node::57b0bc86c9af4272af7902eefe0345bb"
+      ],
+      "tactic_kind": "training_protocol",
+      "title": "EMA-Averaged Transformer Parameters for Inference",
+      "when_to_use": "Use during fully unfrozen transformer fine-tuning when parameter averaging is affordable and validation log loss is sensitive to noisy late updates."
+    },
+    {
+      "instruction": "Mean-pool final-layer token representations over valid, non-padding positions and feed the resulting vector directly to a single linear three-class classifier; pair it with label-smoothed cross-entropy.",
+      "parent_method_families": [
+        "deberta_base_mean_pool_cv"
+      ],
+      "source_node_ids": [
+        "run::20260516_125444_spooky-author-identification::node::36c4b8ae7bf34da0a928772dfeb530a8"
+      ],
+      "tactic_kind": "model_design",
+      "title": "Masked Mean Pooling with a Simple DeBERTa Head",
+      "when_to_use": "Use when a stable, low-complexity alternative to custom attention pooling or deep classification heads is preferred."
+    },
+    {
+      "instruction": "Select the best checkpoint independently within every stratified fold, predict the test texts with each selected checkpoint, and take the row-wise arithmetic mean of the fold probability vectors.",
+      "parent_method_families": [
+        "deberta_base_mean_pool_cv",
+        "modernbert_large_raw_text_cv"
+      ],
+      "source_node_ids": [
+        "run::20260516_125444_spooky-author-identification::node::36c4b8ae7bf34da0a928772dfeb530a8",
+        "run::20260510_162636_spooky-author-identification::node::5a5021271c264c628c2e1258663ace82"
+      ],
+      "tactic_kind": "ensemble",
+      "title": "Fold-Checkpoint Probability Averaging",
+      "when_to_use": "Use only when every advertised fold has actually been trained and the compute budget supports repeated inference."
+    },
+    {
+      "instruction": "Concatenate RoBERTa contextual embeddings with punctuation, lexical-diversity, readability, POS/suffix, TF-IDF n-gram, and punctuation-sequence features; train one-vs-rest LightGBM models on the fused vectors and average their probabilities with the RoBERTa classifier probabilities.",
+      "parent_method_families": [
+        "roberta_stylometric_lightgbm_hybrid"
+      ],
+      "source_node_ids": [
+        "run::20260516_125444_spooky-author-identification::node::0a642f0bc27d4b8fb800955f589fb8a8"
+      ],
+      "tactic_kind": "model_design",
+      "title": "Contextual-Embedding and Stylometric Tree Fusion",
+      "when_to_use": "Use when explicit author-style features may add complementary information and the extra feature extraction and second-stage model are acceptable."
+    }
+  ]
+}

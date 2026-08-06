@@ -1,0 +1,16 @@
+{
+  "schema": "mlevolve_end2end_infrastructure_attempt_v1",
+  "attempt": 1,
+  "workload": "pod/mlevolve-e2e-memory-recipe-reader-v1",
+  "experiment": "experiment-end2end-memory-recipe-distillation-v1",
+  "purpose": "read-only PVC extraction of post-freeze Smoke journals",
+  "gpu_requested": false,
+  "node_name": "hcc-nrp-shor-c5909.unl.edu",
+  "phase": "Failed",
+  "failure_class": "infrastructure_container_runtime",
+  "container_exit_code": 255,
+  "container_reason": "Unknown",
+  "pod_ready_to_start_containers": false,
+  "data_or_distillation_failure": false,
+  "preserved_before_retry": true
+}

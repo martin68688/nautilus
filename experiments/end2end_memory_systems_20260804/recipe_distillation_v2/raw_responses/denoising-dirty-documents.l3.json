@@ -1,0 +1,137 @@
+{
+  "repairs": [
+    {
+      "failure_pattern": "Full-image validation or inference fails because a reconstructed image has dimensions derived from another sample and cannot be compared with or cropped to the current document.",
+      "method_family": "overlapping_patch_reconstruction",
+      "repair_steps": [
+        "Record the native height and width of every image when loading it.",
+        "Create reconstruction and overlap-weight accumulators separately for each image using that image's dimensions.",
+        "Place or blend patches only within the current image's coordinate bounds.",
+        "Crop any padded reconstruction back to the recorded native dimensions before computing RMSE or generating predictions.",
+        "Assert that each reconstructed prediction and its clean target have identical shapes before metric computation."
+      ],
+      "root_cause": "The patch pipeline assumes every document shares a single global height and width, although document images in this task can have different native dimensions.",
+      "runtime_stage": [
+        "data_loading",
+        "inference",
+        "validation"
+      ],
+      "signature_id": "image_restoration/reconstruction/global_dimension_assumption",
+      "source_transition_ids": [
+        "run::20260701_145201_denoising-dirty-documents::transition::dc247c92b3::33d66a80b6"
+      ],
+      "title": "Provisional: reconstruct each document at its native dimensions",
+      "when_to_use": "Use when dataset inspection finds multiple image dimensions or when full-image reconstruction produces prediction-target shape mismatches."
+    },
+    {
+      "failure_pattern": "A U-Net forward pass fails at a decoder skip concatenation because the upsampled decoder feature and encoder feature have different spatial heights or widths.",
+      "method_family": "unet_shape_alignment",
+      "repair_steps": [
+        "Determine the network's total downsampling factor from the number and stride of encoder stages.",
+        "Pad input images or patches so both spatial dimensions are divisible by that factor.",
+        "At every decoder stage, resize or symmetrically pad or crop the decoder feature to the exact spatial shape of the corresponding encoder feature before concatenation.",
+        "After the output layer, crop the prediction back to the original unpadded dimensions.",
+        "Run a forward-shape test on representative odd-sized and task-sized inputs before training."
+      ],
+      "root_cause": "Input padding and decoder upsampling do not preserve the same spatial lattice through all encoder and decoder levels, so corresponding skip tensors are not spatially aligned.",
+      "runtime_stage": [
+        "model_forward",
+        "training",
+        "inference"
+      ],
+      "signature_id": "image_restoration/unet/spatial_skip_misalignment",
+      "source_transition_ids": [
+        "run::20260716_040229_denoising-dirty-documents::transition::318e6e02bd::726e346a19"
+      ],
+      "title": "Provisional: align U-Net decoder features with skip tensors before concatenation",
+      "when_to_use": "Use when a U-Net or similar encoder-decoder reports unequal spatial sizes at torch.cat or when document dimensions are not naturally divisible by the complete downsampling factor."
+    },
+    {
+      "failure_pattern": "A decoder or output convolution receives a tensor whose channel count differs from the layer's declared in_channels after upsampling and skip fusion.",
+      "method_family": "unet_channel_bookkeeping",
+      "repair_steps": [
+        "Write down the channel width emitted by every encoder, upsampling, concatenation, and decoder block.",
+        "For each concatenation, configure the following convolution for the sum of the participating channel widths.",
+        "Configure the output head from the actual width emitted by the final decoder block rather than from an earlier concatenated width.",
+        "Add assertions for expected channels at skip-fusion boundaries.",
+        "Execute a representative dummy forward pass before starting the training loop."
+      ],
+      "root_cause": "The architecture's channel bookkeeping does not match the forward path; a block is configured for a pre-concatenation or earlier-stage width even though the preceding decoder block emits a different number of channels.",
+      "runtime_stage": [
+        "model_forward",
+        "training",
+        "inference"
+      ],
+      "signature_id": "image_restoration/unet/decoder_channel_contract_mismatch",
+      "source_transition_ids": [
+        "run::20260725_053032_denoising-dirty-documents-deepseek-v4-full-r2::transition::df557f8915::92c40271e8"
+      ],
+      "title": "Provisional: derive U-Net convolution inputs from actual concatenated channel counts",
+      "when_to_use": "Use when Conv2d reports an expected-versus-actual channel mismatch in a U-Net decoder or output head."
+    },
+    {
+      "failure_pattern": "NAFNet construction fails before training because the runtime does not provide the requested two-dimensional LayerNorm module.",
+      "method_family": "nafnet_normalization_compatibility",
+      "repair_steps": [
+        "Check normalization-layer availability in the target runtime before constructing the model.",
+        "Replace the unavailable two-dimensional LayerNorm with an available channel-wise normalization implementation compatible with NCHW tensors, such as InstanceNorm2d or an explicit permutation-based LayerNorm wrapper.",
+        "Preserve the block's input and output channel count when substituting normalization.",
+        "Instantiate the complete NAFNet and run a dummy forward pass before patch training begins."
+      ],
+      "root_cause": "The model depends on a normalization class that is unavailable in the installed PyTorch API, so encoder blocks cannot be instantiated.",
+      "runtime_stage": [
+        "model_forward",
+        "training",
+        "inference"
+      ],
+      "signature_id": "image_restoration/nafnet/unavailable_layernorm2d",
+      "source_transition_ids": [
+        "run::20260716_162643_denoising-dirty-documents::transition::906f7481a8::891126e55b"
+      ],
+      "title": "Provisional: use an available channel-wise normalization implementation in NAFNet blocks",
+      "when_to_use": "Use when a NAFNet-style denoiser fails during model construction because LayerNorm2d or an equivalent NCHW normalization class is unavailable."
+    },
+    {
+      "failure_pattern": "Overlapping-patch inference fails while adding a predicted patch into a full-image accumulator because one tensor is on CUDA and the other is on CPU.",
+      "method_family": "overlapping_patch_reconstruction",
+      "repair_steps": [
+        "Choose one device for reconstruction accumulation before entering the inference loop.",
+        "If accumulating on CPU, detach and transfer each predicted patch to CPU before blending it into CPU prediction and weight accumulators.",
+        "If accumulating on GPU, allocate both prediction and weight accumulators on the model's device and transfer the completed reconstruction to CPU only after blending.",
+        "Ensure coordinate masks, blending weights, and count tensors use the same device as the accumulator.",
+        "Assert device equality immediately before each patch accumulation operation."
+      ],
+      "root_cause": "Predicted patches are transferred between devices independently of the reconstruction and overlap-count tensors, violating the single-device requirement for tensor arithmetic.",
+      "runtime_stage": [
+        "inference",
+        "validation"
+      ],
+      "signature_id": "image_restoration/patch_reconstruction/device_mismatch",
+      "source_transition_ids": [
+        "run::20260726_022207_denoising-dirty-documents-host-shadow-r7::transition::2da5f81cfe::044b288d6e"
+      ],
+      "title": "Provisional: keep patch predictions and reconstruction accumulators on one device",
+      "when_to_use": "Use when test or validation reconstruction blends model outputs into full-image tensors and runtime errors report tensors on different devices."
+    },
+    {
+      "failure_pattern": "Training initialization fails when constructing a linear warmup scheduler because its multiplicative start factor is zero or outside the scheduler's accepted interval.",
+      "method_family": "warmup_cosine_scheduling",
+      "repair_steps": [
+        "Set the warmup start factor to a small positive value within the scheduler's valid interval, such as 0.001 or 0.01.",
+        "Set the end factor to a valid value, normally 1.0, and use a positive warmup iteration count.",
+        "Construct the warmup scheduler before training and inspect its first and final warmup learning rates.",
+        "When chaining warmup with cosine decay, align scheduler milestones with the intended number of warmup epochs."
+      ],
+      "root_cause": "LinearLR represents learning rates as positive factors of the optimizer's base rate and requires the starting factor to be greater than zero and no greater than one.",
+      "runtime_stage": [
+        "training"
+      ],
+      "signature_id": "image_restoration/training/invalid_linear_warmup_factor",
+      "source_transition_ids": [
+        "run::20260726_022207_denoising-dirty-documents-host-shadow-r7::transition::5554c4ae21::7d305e0dbd"
+      ],
+      "title": "Provisional: configure linear learning-rate warmup with a valid positive start factor",
+      "when_to_use": "Use when an image-denoising training pipeline uses LinearLR warmup and scheduler construction rejects start_factor=0 or another out-of-range factor."
+    }
+  ]
+}

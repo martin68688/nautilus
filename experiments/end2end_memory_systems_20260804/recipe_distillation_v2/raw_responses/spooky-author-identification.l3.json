@@ -1,0 +1,208 @@
+{
+  "repairs": [
+    {
+      "failure_pattern": "A pretrained transformer sequence-classification model raises TypeError during initialization because dropout-related settings are passed directly to from_pretrained even though the selected architecture accepts them only through its configuration.",
+      "method_family": "transformer_fine_tuning",
+      "repair_steps": [
+        "Load the checkpoint configuration with AutoConfig.from_pretrained or the architecture-specific config class.",
+        "Set the dropout fields actually exposed by that configuration, such as classifier_dropout, hidden_dropout_prob, attention_probs_dropout_prob, dropout, or attention_dropout.",
+        "Instantiate the sequence-classification model with from_pretrained using the modified config and num_labels, without forwarding dropout fields as standalone constructor keywords.",
+        "Inspect or validate the selected configuration fields before starting cross-validation or full training."
+      ],
+      "root_cause": "Dropout parameter names and constructor signatures vary across ModernBERT, DistilBERT, and RoBERTa implementations; configuration fields were incorrectly treated as universal model constructor arguments.",
+      "runtime_stage": [
+        "model_forward",
+        "training"
+      ],
+      "signature_id": "transformer_initialization/dropout_passed_as_unsupported_constructor_kwargs",
+      "source_transition_ids": [
+        "run::20260509_042918_spooky-author-identification::transition::a628fa5fd1::bfd0f74b74",
+        "run::20260509_154039_spooky-author-identification::transition::d56c8158a6::8ff0eb72ec",
+        "run::20260509_185008_spooky-author-identification::transition::5e4b09cb1a::e192851708",
+        "run::20260510_025317_spooky-author-identification::transition::98f27ee4ce::948d98ed63"
+      ],
+      "title": "Confirmed: configure transformer dropout through the checkpoint configuration",
+      "when_to_use": "Use when ModernBERT, DistilBERT, RoBERTa, or another Hugging Face sequence classifier fails before training with an unexpected dropout-related keyword argument."
+    },
+    {
+      "failure_pattern": "A text classifier combining SBERT, TF-IDF, pooled transformer, or projected representations fails on its first forward pass because a linear, branch, or recurrent layer expects a hardcoded width different from the actual feature width.",
+      "method_family": "multimodal_feature_fusion",
+      "repair_steps": [
+        "After fitting each feature extractor, read its actual output width from the resulting matrix or vectorizer vocabulary.",
+        "Pass semantic_dim, tfidf_dim, projection_dim, and other source dimensions explicitly into the model constructor.",
+        "Define each source projection with its source width, for example Linear(tfidf_dim, projection_dim), rather than deriving it from an unrelated hidden size.",
+        "Set downstream branch or recurrent input widths to the exact post-operation width: sum widths after concatenation and use the projected width after projection.",
+        "Add assertions before training that batch feature widths match their projection layers and that the fused tensor width matches every downstream branch."
+      ],
+      "root_cause": "Feature dimensions were duplicated as constants in the model definition instead of being propagated from fitted vectorizers and encoder outputs; projection or concatenation changed the representation width without updating downstream layers.",
+      "runtime_stage": [
+        "feature_extraction",
+        "model_forward",
+        "training"
+      ],
+      "signature_id": "multimodal_fusion/static_dimension_contract_disagrees_with_extracted_features",
+      "source_transition_ids": [
+        "run::20260509_154039_spooky-author-identification::transition::2cb7a0531d::4b897e6069",
+        "run::20260509_154039_spooky-author-identification::transition::7a8a5ab7ab::7233f02d11",
+        "run::20260509_154039_spooky-author-identification::transition::c6109af290::eaf80bdeeb",
+        "run::20260509_154039_spooky-author-identification::transition::c667f0da3c::c748fcbb6c",
+        "run::20260510_095558_spooky-author-identification::transition::f2d52bb677::c8c7f90814"
+      ],
+      "title": "Confirmed: derive every fusion-layer dimension from extracted feature tensors",
+      "when_to_use": "Use when this author-classification pipeline combines variable-width TF-IDF or stylometric features with fixed-width sentence or transformer embeddings and reports a matrix-multiplication or recurrent input_size mismatch."
+    },
+    {
+      "failure_pattern": "Validation cross-entropy remains finite, but manually computed multiclass log loss becomes NaN after the classifier emits probabilities equal to zero or one.",
+      "method_family": "probability_metric_stabilization",
+      "repair_steps": [
+        "Collect validation logits in evaluation mode and convert them to probabilities with a numerically stable softmax.",
+        "Clip probabilities to a fixed epsilon interval before any logarithm, for example [1e-15, 1 - 1e-15].",
+        "Renormalize every probability row after clipping so each row sums to one.",
+        "Compute multiclass log loss with a standard metric implementation and an explicit complete class-label ordering.",
+        "Reject non-finite metric values before checkpoint selection so NaN cannot be treated as an improvement."
+      ],
+      "root_cause": "The metric takes logarithms before enforcing a finite probability range, so exact zero probabilities produce negative infinity and subsequent aggregation produces NaN.",
+      "runtime_stage": [
+        "training_metric",
+        "validation"
+      ],
+      "signature_id": "multiclass_log_loss/unclipped_zero_or_one_probabilities_produce_nan",
+      "source_transition_ids": [
+        "run::20260510_025317_spooky-author-identification::transition::421774716b::1ef79aecb7",
+        "run::20260510_025317_spooky-author-identification::transition::a1f265ff9a::c0df89ebfb"
+      ],
+      "title": "Confirmed: clip and renormalize class probabilities before multiclass log loss",
+      "when_to_use": "Use when validation predictions for EAP, HPL, and MWS are finite but manual log-loss evaluation becomes NaN as transformer training grows highly confident."
+    },
+    {
+      "failure_pattern": "Validation fails when a one-dimensional vector of integer class IDs is multiplied directly by the logarithm of an N-by-C probability matrix.",
+      "method_family": "multiclass_metric_computation",
+      "repair_steps": [
+        "Keep validation targets as integer class indices and pass them with the N-by-C probability matrix to a multiclass log-loss implementation with explicit labels.",
+        "If a manual formula is required, convert class indices to an N-by-C one-hot matrix using the same class ordering as the model outputs.",
+        "Assert that the probability matrix has one column for each of EAP, HPL, and MWS and that target IDs are within that ordering.",
+        "Perform validation metric computation once per epoch from the complete accumulated targets and predictions."
+      ],
+      "root_cause": "The manual metric formula assumes one-hot targets, but the validation loader supplies class indices, producing incompatible target and probability shapes.",
+      "runtime_stage": [
+        "training_metric",
+        "validation"
+      ],
+      "signature_id": "multiclass_log_loss/class_index_vector_broadcast_against_probability_matrix",
+      "source_transition_ids": [
+        "run::20260510_025317_spooky-author-identification::transition::95eb3fc7ae::72d7f18660"
+      ],
+      "title": "Provisional: compute multiclass log loss from class indices with a compatible metric",
+      "when_to_use": "Use when author labels have shape N, predicted probabilities have shape N-by-3, and validation crashes with a broadcasting error during log-loss calculation."
+    },
+    {
+      "failure_pattern": "Training reports a strong best validation log loss, but evaluation after reloading the supposed best model is substantially worse on the same validation split.",
+      "method_family": "best_checkpoint_management",
+      "repair_steps": [
+        "Capture the best checkpoint as a deep CPU clone of every state_dict tensor or save it immediately to a checkpoint file.",
+        "Store the associated epoch, validation indices, label ordering, tokenizer settings, and best metric alongside the weights.",
+        "Reload the saved state with strict key checking into the same model configuration.",
+        "Call model.eval and run the identical validation inference function used during epoch scoring, including the same softmax, clipping, and class ordering.",
+        "Verify immediately after reload that the recomputed score matches the recorded best score within numerical tolerance before generating test predictions."
+      ],
+      "root_cause": "The retained best state or final evaluation path is not guaranteed to be an immutable, exact reproduction of the state and inference procedure used when the best score was recorded.",
+      "runtime_stage": [
+        "training",
+        "validation",
+        "inference"
+      ],
+      "signature_id": "checkpoint_selection/best_epoch_state_mutates_or_final_evaluation_diverges",
+      "source_transition_ids": [
+        "run::20260510_025317_spooky-author-identification::transition::20f7d46926::dfc14b2515"
+      ],
+      "title": "Provisional: preserve and reload an immutable best-checkpoint state",
+      "when_to_use": "Use when early stopping identifies a best author-classification epoch but the final score on the unchanged validation split degrades sharply after checkpoint restoration."
+    },
+    {
+      "failure_pattern": "Loading a DeBERTa-v3 checkpoint through a DeBERTa-v1 model class produces an architecture warning followed by embedding or parameter size mismatches.",
+      "method_family": "transformer_fine_tuning",
+      "repair_steps": [
+        "Load the checkpoint with AutoConfig and inspect its declared model_type.",
+        "Use AutoModel or AutoModelForSequenceClassification so the library selects the checkpoint-compatible DeBERTa implementation.",
+        "Build any custom classification head from the hidden size reported by the loaded configuration.",
+        "Perform a small tokenized forward-pass smoke test before beginning stratified cross-validation."
+      ],
+      "root_cause": "The checkpoint declares a DeBERTa-v2/v3-compatible architecture, but the code forces construction through the incompatible DebertaModel class.",
+      "runtime_stage": [
+        "model_forward",
+        "training"
+      ],
+      "signature_id": "transformer_loading/checkpoint_architecture_and_model_class_mismatch",
+      "source_transition_ids": [
+        "run::20260510_162636_spooky-author-identification::transition::6b0712b59c::737524c5b1"
+      ],
+      "title": "Provisional: match the model loader class to the checkpoint architecture",
+      "when_to_use": "Use when microsoft/deberta-v3-base or another DeBERTa-v3 checkpoint warns that a deberta-v2 model is being instantiated as deberta and then reports parameter-size mismatches."
+    },
+    {
+      "failure_pattern": "The first mixed-precision forward pass fails because attention scores in float16 are masked with a large negative constant such as -1e9 that cannot be represented by the tensor dtype.",
+      "method_family": "mixed_precision_attention",
+      "repair_steps": [
+        "Determine the attention score tensor dtype inside the pooling forward pass.",
+        "Replace the fixed -1e9 sentinel with a representable dtype-aware value such as torch.finfo(scores.dtype).min, or compute masking and softmax in float32.",
+        "Apply the padding mask before softmax and ensure each sample retains at least one unmasked token.",
+        "Run a mixed-precision forward and backward smoke test containing padded sequences before full training."
+      ],
+      "root_cause": "A mask sentinel chosen for float32 was applied directly to half-precision attention scores, exceeding float16's finite range.",
+      "runtime_stage": [
+        "model_forward",
+        "training"
+      ],
+      "signature_id": "mixed_precision_attention/negative_mask_sentinel_overflows_float16",
+      "source_transition_ids": [
+        "run::20260510_095558_spooky-author-identification::transition::fa1437d8a7::dd39b9f52f"
+      ],
+      "title": "Provisional: use dtype-safe attention mask sentinels under mixed precision",
+      "when_to_use": "Use when custom attention pooling for the author classifier runs under AMP and masked_fill raises an at::Half overflow error."
+    },
+    {
+      "failure_pattern": "Transformer fine-tuning fails during the first epoch with an attempt to backward through a graph a second time while gradient checkpointing and mixed-precision scaling are enabled.",
+      "method_family": "transformer_fine_tuning",
+      "repair_steps": [
+        "Disable model gradient checkpointing for this training pipeline.",
+        "Use a smaller per-device microbatch and gradient accumulation to retain the desired effective batch size.",
+        "Ensure each optimizer update is driven by one scaled backward call per microbatch and that no loss tensor from a prior step is retained.",
+        "Run a short forward-backward optimizer-step test before starting the full training schedule."
+      ],
+      "root_cause": "The selected gradient-checkpointing path is incompatible with the loss and AMP backward behavior in this training implementation, causing checkpointed intermediates to be reused after release.",
+      "runtime_stage": [
+        "model_forward",
+        "training"
+      ],
+      "signature_id": "transformer_training/checkpointed_graph_reused_during_amp_backward",
+      "source_transition_ids": [
+        "run::20260509_154039_spooky-author-identification::transition::b33059817e::bdbeb94859"
+      ],
+      "title": "Provisional: disable incompatible gradient checkpointing and reduce microbatch size",
+      "when_to_use": "Use when DeBERTa fine-tuning for this task raises a repeated-backward or freed-tensor error only after gradient checkpointing is enabled with AMP."
+    },
+    {
+      "failure_pattern": "Cross-validation fails on the first fold because XGBoost rejects gpu_hist and reports that only approx, auto, exact, and hist are valid tree methods.",
+      "method_family": "gradient_boosted_embedding_classifier",
+      "repair_steps": [
+        "Inspect the installed XGBoost version and its supported tree-method and device parameters before cross-validation.",
+        "Use tree_method='hist' for the supported CPU path in this embedding classifier.",
+        "Remove incompatible GPU-specific tree-method parameters rather than mixing them with the CPU configuration.",
+        "Run a small first-fold training smoke test and confirm early-stopping metadata is available before launching all folds.",
+        "Use the resulting best boosting-round count consistently when retraining on the full author-classification data."
+      ],
+      "root_cause": "The training configuration assumes the legacy gpu_hist method is available, but the installed XGBoost build exposes a different set of tree methods.",
+      "runtime_stage": [
+        "training",
+        "validation",
+        "oof"
+      ],
+      "signature_id": "xgboost_training/unsupported_gpu_hist_tree_method",
+      "source_transition_ids": [
+        "run::20260509_042918_spooky-author-identification::transition::4ffedd6abb::6c8908620e"
+      ],
+      "title": "Provisional: select an XGBoost tree method supported by the installed build",
+      "when_to_use": "Use when XGBoost training over frozen transformer embeddings rejects gpu_hist before producing a fold metric."
+    }
+  ]
+}

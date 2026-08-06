@@ -1,0 +1,8 @@
+{
+  "condition_started_at_ns": 1785930864475883421,
+  "event_hash": "03a5dcc721f685b45a4d8273088e41a1a41db40b7db0abf40eb15003924f5318",
+  "event_time_ns": 1785931266313809359,
+  "node_id": "7717199f05df4cee86a8828e9dadcf12",
+  "schema": "mlevolve_first_protocol_valid_candidate_v1",
+  "validation": "label_free_fixed_holdout_submission"
+}

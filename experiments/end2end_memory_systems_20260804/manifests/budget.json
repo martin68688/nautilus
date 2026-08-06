@@ -16,6 +16,18 @@
     "method_preservation_required": false,
     "unresolved_disposition": "not_applicable"
   },
+  "debug_smoke": {
+    "agent_steps": 8,
+    "agent_time_limit_seconds": 5400,
+    "cpu_count": 16,
+    "execution_timeout_seconds": 1200,
+    "finalize_reserve_seconds": 180,
+    "gpu_count": 1,
+    "initial_drafts": 3,
+    "max_replacement_drafts": 0,
+    "memory_gib": 64,
+    "parallel_search_num": 1
+  },
   "experiment_validation": {
     "bundle_artifact_traversal": false,
     "host_protocol_preflight": false,
@@ -40,7 +52,7 @@
     "resume_semantics": "rerun only the interrupted frozen condition from a new immutable attempt; arbitrary generated training code may not expose epoch checkpoints",
     "score_imputation": false
   },
-  "manifest_hash": "5615feabbe85282c98b94d5a8ac6f9b1dbe3be1e63e044457264b738d34922c2",
+  "manifest_hash": "3dfea6ffb36c6b1925a890302a9aabdf6578c42e54a20357f7e3a5ddf39b2962",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,

@@ -1,0 +1,43 @@
+{
+  "attempt": 0,
+  "budget": {
+    "agent_steps": 3,
+    "agent_time_limit_seconds": 3600,
+    "cpu_count": 16,
+    "execution_timeout_seconds": 900,
+    "finalize_reserve_seconds": 120,
+    "gpu_count": 1,
+    "initial_drafts": 3,
+    "max_replacement_drafts": 0,
+    "memory_gib": 64,
+    "parallel_search_num": 1
+  },
+  "command_sha256": "182cbe43ea58aaafed12d0896067acc435fa415c63466b3459e039fca9297885",
+  "formal_result_eligible": false,
+  "hardware": {
+    "gpu_product_constraint": null,
+    "gpu_query_error": "",
+    "node_name": "gp-engine.hpc.okstate.edu",
+    "observed_gpu_products": [
+      "NVIDIA A100-SXM4-80GB"
+    ],
+    "requested_gpu_resource": "nvidia.com/a100"
+  },
+  "kubernetes": {
+    "completion_index": "0",
+    "job_name": "mlevolve-e2e-leaf-layered-recipe-smoke-v27",
+    "job_uid": "0ee1d126-449b-4515-b4d7-5859e73c0cae",
+    "node_name": "gp-engine.hpc.okstate.edu",
+    "pod_name": "mlevolve-e2e-leaf-layered-recipe-smoke-v27-0-qpw4n",
+    "pod_uid": "9f6c424f-8b57-4316-96b4-371c76879674"
+  },
+  "logical_run_id": "e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1",
+  "manifest_hash": "25b8a85346874637499090fc3a13fb7b2c0b54ec8a913fb9f9e52f94507a1f7b",
+  "receipt_hash": "645d2b86a980adfcd8ff500b6bd2fd7ad8d9897f62574948b124412605a81d16",
+  "schema": "mlevolve_end2end_launch_receipt_v1",
+  "seed": 1,
+  "started_at_ns": 1785955433390354255,
+  "system_id": "dynamic_hybrid",
+  "task_id": "leaf-classification",
+  "validation_mode": "experiment_fast_nonblocking_v1"
+}

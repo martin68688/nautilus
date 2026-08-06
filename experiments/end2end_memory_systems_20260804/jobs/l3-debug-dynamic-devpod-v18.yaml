@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-e2e-l3-debug-dev-v18
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    experiment: experiment-end2end-l3-debug-v18
+    mlevolve.ai/workload: mlevolve-e2e-l3-debug-dev-v18
+    ecepxie.nrp/owner: haoming
+    app.kubernetes.io/managed-by: codex-nrp-training
+  annotations:
+    mlevolve.ai/purpose: dynamic-hybrid-l3-debug-smoke-only
+    mlevolve.ai/formal-pilot: "false"
+    mlevolve.ai/gpu-contract: nvidia.com/a100=1
+spec:
+  restartPolicy: Never
+  activeDeadlineSeconds: 10800
+  terminationGracePeriodSeconds: 120
+  tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+  containers:
+  - name: debug-runner
+    image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+    imagePullPolicy: IfNotPresent
+    command:
+    - /usr/local/bin/python
+    - -u
+    - -c
+    - import time; print('L3 Debug Dev Pod ready', flush=True); time.sleep(10800)
+    envFrom:
+    - secretRef:
+        name: prevalence-audit-deepseek-r1
+    env:
+    - name: PYTHONUNBUFFERED
+      value: "1"
+    - name: PYTHONDONTWRITEBYTECODE
+      value: "1"
+    - name: TOKENIZERS_PARALLELISM
+      value: "false"
+    - name: MLEVOLVE_CONTAINER_IMAGE_REFERENCE
+      value: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+    - name: MLEVOLVE_SOLVER_BINDING_ID
+      value: deepseek-production-solver
+    - name: MLEVOLVE_SOLVER_MODEL_REVISION
+      value: sha256:6c72890187efc83ef04ac6527c8f22f823708d99c83b7f7b3393dfe27fe4efc6
+    resources:
+      requests:
+        cpu: "16"
+        memory: 32Gi
+        ephemeral-storage: 64Gi
+        nvidia.com/a100: "1"
+      limits:
+        cpu: "16"
+        memory: 32Gi
+        ephemeral-storage: 64Gi
+        nvidia.com/a100: "1"
+    volumeMounts:
+    - name: workspace
+      mountPath: /workspace
+    - name: shm
+      mountPath: /dev/shm
+  volumes:
+  - name: workspace
+    persistentVolumeClaim:
+      claimName: haoming-storage
+  - name: shm
+    emptyDir:
+      medium: Memory
+      sizeLimit: 8Gi

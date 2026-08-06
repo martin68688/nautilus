@@ -1,0 +1,145 @@
+{
+  "repairs": [
+    {
+      "failure_pattern": "LightGBM training fails because categorical features are identified by column names while the supplied training matrix is a NumPy array without column metadata.",
+      "method_family": "lightgbm_categorical_features",
+      "repair_steps": [
+        "Determine whether the matrix passed to LightGBM preserves pandas column names.",
+        "If training from a NumPy array, map each categorical feature to its stable integer column index.",
+        "Pass those indices through the categorical_feature argument of lgb.Dataset instead of placing feature names in model parameters.",
+        "Alternatively, preserve the pandas DataFrame and use the LightGBM-supported name-based categorical feature syntax consistently.",
+        "Verify that categorical references resolve against the final post-transformation feature order before training."
+      ],
+      "root_cause": "Converting a pandas feature frame to a NumPy array removes column names, so LightGBM cannot resolve name-based categorical_feature entries against the training matrix.",
+      "runtime_stage": [
+        "preprocessing",
+        "training"
+      ],
+      "signature_id": "lightgbm/categorical_feature/reference_representation_mismatch",
+      "source_transition_ids": [
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::transition::2f0bfd7aaa::6bf96a76ca"
+      ],
+      "title": "Provisional: Align LightGBM categorical references with the training matrix representation",
+      "when_to_use": "Use when LightGBM reports that categorical_feature is not a number or cannot resolve categorical feature names, and the model input was converted to a NumPy array."
+    },
+    {
+      "failure_pattern": "Validation features contain fare aggregates computed from the full labeled dataset before the train-validation split.",
+      "method_family": "target_group_aggregation",
+      "repair_steps": [
+        "Create the train-validation split before computing any fare-derived location statistics.",
+        "Fit the location aggregation table using only the training partition.",
+        "Join the frozen training-derived aggregates onto validation and test rows without recomputing them.",
+        "For training rows, use out-of-fold aggregates or leave-one-out logic when self-inclusion would materially leak the row target.",
+        "Define fallback values from training-partition statistics for unseen or sparse locations."
+      ],
+      "root_cause": "Location-level mean, standard deviation, or count features derived from fare_amount include validation targets, allowing validation observations to influence their own predictors and producing an optimistically biased score.",
+      "runtime_stage": [
+        "feature_extraction",
+        "split_validation",
+        "validation"
+      ],
+      "signature_id": "target_encoding/location_group_statistics/full_dataset_leakage",
+      "source_transition_ids": [
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::transition::4b5d0ddd7a::574eec4488"
+      ],
+      "title": "Provisional: Fit target-derived location aggregates only from the training partition",
+      "when_to_use": "Use when features aggregate fare_amount or another target by rounded coordinates, geographic cells, routes, or location clusters and validation is performed on a held-out partition."
+    },
+    {
+      "failure_pattern": "A numeric scaler is fitted on validation observations, either by concatenating train and validation data or by scaling the complete dataset before fold selection.",
+      "method_family": "fold_local_preprocessing",
+      "repair_steps": [
+        "Create the temporal holdout or cross-validation fold indices before fitting the scaler.",
+        "Fit StandardScaler or the selected transformer only on numeric columns from the active training partition.",
+        "Use the fitted transformer without refitting to transform validation and test numeric columns.",
+        "Repeat scaler fitting independently for every cross-validation fold.",
+        "Keep categorical identifiers unscaled when the downstream model treats them as categorical features."
+      ],
+      "root_cause": "The fitted means and variances incorporate the held-out distribution, violating validation isolation and biasing preprocessing toward data that should remain unseen.",
+      "runtime_stage": [
+        "preprocessing",
+        "split_validation",
+        "validation"
+      ],
+      "signature_id": "preprocessing/scaler/validation_distribution_leakage",
+      "source_transition_ids": [
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::transition::725936f17d::ff702352b6",
+        "run::20260702_150457_new-york-city-taxi-fare-prediction::transition::bfeb10ccb1::04d493555b"
+      ],
+      "title": "Confirmed: Fit numeric scaling independently within each training partition",
+      "when_to_use": "Use when validation or fold rows contribute to fit, fit_transform, or preprocessing statistics used by the corresponding training partition."
+    },
+    {
+      "failure_pattern": "Validation error grows rapidly during XGBoost training on log-transformed fares, and inverse transformation with expm1 produces infinity values that break metric computation.",
+      "method_family": "log_target_gradient_boosting",
+      "repair_steps": [
+        "Replace the unstable objective with reg:squarederror for log-fare regression.",
+        "Monitor validation RMSE and enable early stopping so training terminates when held-out performance stops improving.",
+        "Use the best validated boosting iteration for validation and test inference.",
+        "Check predictions for finiteness and clip log-scale outputs to a fare-appropriate finite range before applying expm1.",
+        "After inverse transformation, verify that all predictions are finite before calculating RMSE or passing predictions to a residual model."
+      ],
+      "root_cause": "An unstable regression objective and unconstrained boosting produce extreme log-scale predictions; exponentiating those predictions overflows floating-point range.",
+      "runtime_stage": [
+        "training",
+        "inference",
+        "validation",
+        "training_metric"
+      ],
+      "signature_id": "xgboost/log_target/divergent_predictions_expm1_overflow",
+      "source_transition_ids": [
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::transition::e13758a357::bc8a833dc8"
+      ],
+      "title": "Provisional: Stabilize log-fare boosting before inverse transformation",
+      "when_to_use": "Use when XGBoost log-target training shows rapidly increasing validation RMSE or when expm1 of model outputs yields infinity or non-finite fare predictions."
+    },
+    {
+      "failure_pattern": "Training succeeds, but validation crashes with CUDA out-of-memory when the complete multi-million-row validation matrix is passed through the neural network in one forward call.",
+      "method_family": "batched_neural_evaluation",
+      "repair_steps": [
+        "Wrap validation features in a DataLoader or equivalent bounded batch iterator.",
+        "Run validation under evaluation mode and a no-gradient or inference context.",
+        "Move one validation batch at a time to the GPU and release batch-local tensors after accumulating metric statistics.",
+        "Accumulate squared-error sums and observation counts incrementally instead of retaining all validation outputs on the GPU.",
+        "Reduce the validation batch size if peak memory remains above the device limit."
+      ],
+      "root_cause": "A full-partition validation forward pass materializes activations and outputs for millions of taxi rows simultaneously, exceeding GPU memory even though training itself uses manageable mini-batches.",
+      "runtime_stage": [
+        "model_forward",
+        "validation",
+        "training_metric"
+      ],
+      "signature_id": "neural_network/validation/full_partition_forward_oom",
+      "source_transition_ids": [
+        "run::20260701_180038_new-york-city-taxi-fare-prediction::transition::fa1427142d::4e47e8c8f6"
+      ],
+      "title": "Provisional: Stream neural-network validation through bounded batches",
+      "when_to_use": "Use when a neural model trains in mini-batches but evaluates the entire large validation partition in one GPU forward pass and fails during validation with CUDA memory exhaustion."
+    },
+    {
+      "failure_pattern": "Submission validation reports fewer predictions than test rows because coordinate, passenger-count, or other plausibility filters were applied to the test set.",
+      "method_family": "submission_row_preservation",
+      "repair_steps": [
+        "Apply target and outlier row filtering only to labeled training data.",
+        "Retain the original test row count and row order throughout feature engineering and inference.",
+        "Convert invalid test inputs into missing or bounded feature values instead of dropping their rows.",
+        "Impute non-finite engineered test features using values learned from training data or stable feature-specific defaults.",
+        "Build the submission against the original test index or key and assert that its row count and ordering exactly match the original test file."
+      ],
+      "root_cause": "Training-oriented outlier removal was reused for test preprocessing, deleting required test observations and breaking the one-prediction-per-input-row submission contract.",
+      "runtime_stage": [
+        "preprocessing",
+        "feature_extraction",
+        "inference",
+        "submission"
+      ],
+      "signature_id": "submission/test_filtering/prediction_row_count_mismatch",
+      "source_transition_ids": [
+        "run::20260716_173558_new-york-city-taxi-fare-prediction::transition::e264561181::259424bfaa",
+        "run::20260717_192119_new-york-city-taxi-fare-prediction::transition::bca12e16cb::223289087a"
+      ],
+      "title": "Confirmed: Preserve every test row while handling invalid feature values",
+      "when_to_use": "Use when cleaned test data has fewer rows than the original 9,914-row NYC taxi test set or submission validation reports inconsistent sample counts."
+    }
+  ]
+}

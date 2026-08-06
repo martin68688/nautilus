@@ -386,6 +386,18 @@ class ExternalSkillMemoryConfig:
     strategy_candidate_limit: int = 12
     strategy_route_count: int = 3
     l2_tactic_limit: int = 4
+    # Optional Recipe-first SOP overlay for the layered Dynamic Router.  The
+    # file and its canonical payload are pinned independently so a changed
+    # distillation cannot silently enter an already-frozen experiment.
+    recipe_sop_path: str = ""
+    recipe_sop_file_sha256: str = ""
+    recipe_sop_bundle_sha256: str = ""
+    # Frozen clean RunNode metadata referenced by Recipe SOPs.  This overlay
+    # carries post-freeze terminal evidence that is intentionally absent from
+    # the immutable base RunForest graph.
+    recipe_evidence_path: str = ""
+    recipe_evidence_file_sha256: str = ""
+    recipe_evidence_manifest_sha256: str = ""
     visibility_token_budget: int = 4096
     stage_quotas: dict = field(default_factory=dict)
     rrf_weights: dict = field(default_factory=dict)

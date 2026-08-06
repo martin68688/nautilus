@@ -1,0 +1,140 @@
+{
+  "repairs": [
+    {
+      "failure_pattern": "Binary ROC-AUC computation fails with \"continuous format is not supported\" after MixUp or CutMix produces fractional training targets.",
+      "method_family": "mixed_sample_augmentation",
+      "repair_steps": [
+        "Retain the original binary labels before applying MixUp or CutMix.",
+        "Use the mixed soft labels only when computing the training loss.",
+        "Compute training ROC-AUC against original binary labels, or omit training AUC for mixed batches.",
+        "Continue computing validation ROC-AUC on an augmentation-free loader with untouched binary labels."
+      ],
+      "root_cause": "MixUp and CutMix create soft labels for loss computation, but binary ROC-AUC requires ground-truth targets from the discrete classes.",
+      "runtime_stage": [
+        "training",
+        "training_metric",
+        "validation"
+      ],
+      "signature_id": "training_metric/soft_augmentation_targets_passed_to_binary_auc",
+      "source_transition_ids": [
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::c1bbe5827b::658b045653",
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::fe385e1f0e::12a2f00d1a"
+      ],
+      "title": "Confirmed: Preserve binary targets separately from MixUp/CutMix loss targets",
+      "when_to_use": "Use when a binary image classifier applies label-mixing augmentation and metric evaluation receives fractional targets or raises a continuous-target error."
+    },
+    {
+      "failure_pattern": "Binary classifier initialization fails because BCEWithLogitsLoss rejects a label_smoothing keyword.",
+      "method_family": "binary_cross_entropy",
+      "repair_steps": [
+        "Initialize BCEWithLogitsLoss only with arguments supported by the installed runtime, preserving any required class weighting such as pos_weight.",
+        "If smoothing is necessary, transform binary targets before loss evaluation using y_smooth = y * (1 - epsilon) + 0.5 * epsilon.",
+        "Keep original unsmoothed binary targets for ROC-AUC and other classification metrics.",
+        "Otherwise remove label smoothing and use ordinary BCEWithLogitsLoss."
+      ],
+      "root_cause": "The binary BCE-with-logits loss API in the installed PyTorch version does not implement the label_smoothing option used by the pipeline.",
+      "runtime_stage": [
+        "training",
+        "training_metric"
+      ],
+      "signature_id": "training/binary_bce_label_smoothing_api_mismatch",
+      "source_transition_ids": [
+        "run::20260701_145250_aerial-cactus-identification::transition::9766d280e7::6a1999ac54",
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::5c2de8f80b::c36f0feac0"
+      ],
+      "title": "Confirmed: Implement binary label smoothing outside BCEWithLogitsLoss",
+      "when_to_use": "Use when training a binary image classifier and BCEWithLogitsLoss raises an unexpected-keyword TypeError for label_smoothing."
+    },
+    {
+      "failure_pattern": "A shared feature-extraction routine fails on test data by unpacking the wrong number of batch fields or treating image identifiers as tensor labels.",
+      "method_family": "frozen_feature_extraction",
+      "repair_steps": [
+        "Define explicit dataset contracts for labeled batches such as (images, labels, ids) and unlabeled batches such as (images, ids).",
+        "Pass an explicit labeled or unlabeled mode to the extraction routine, or branch on a validated batch schema.",
+        "Convert labels to arrays only for labeled batches and collect identifiers as strings for both schemas.",
+        "Return a consistent result structure with features, optional labels, and ordered identifiers.",
+        "Assert that extracted feature rows, optional label rows, and identifier counts agree before caching or inference."
+      ],
+      "root_cause": "Training and validation datasets emit image-label-ID batches while the unlabeled test dataset emits image-ID batches, but the extraction routine assumes one fixed schema.",
+      "runtime_stage": [
+        "data_loading",
+        "feature_extraction",
+        "inference"
+      ],
+      "signature_id": "feature_extraction/labeled_unlabeled_batch_schema_mismatch",
+      "source_transition_ids": [
+        "run::20260701_145250_aerial-cactus-identification::transition::a622c3bf4e::42927f1368",
+        "run::20260725_051618_aerial-cactus-identification-deepseek-v4-full-r1::transition::1ede4b3f72::e1866a0b73"
+      ],
+      "title": "Confirmed: Normalize labeled and unlabeled DataLoader batch schemas during feature extraction",
+      "when_to_use": "Use when one frozen vision feature extractor serves train, validation, and unlabeled test loaders whose dataset outputs have different tuple structures."
+    },
+    {
+      "failure_pattern": "Cross-validation ensemble inference completes, but submission creation fails because the number or order of test identifiers does not match the averaged test predictions.",
+      "method_family": "cross_validation_ensemble",
+      "repair_steps": [
+        "Use a deterministic test loader with shuffling disabled.",
+        "During one complete inference pass, append every batch's identifiers to a flat ordered list alongside its prediction vector.",
+        "For later folds, reuse the established identifier order and verify that each fold emits the same ordered identifiers.",
+        "Average fold predictions only after asserting identical prediction shapes across folds.",
+        "Before creating the submission, assert that identifier count equals prediction count and equals the test dataset size."
+      ],
+      "root_cause": "Test identifiers are incompletely accumulated, overwritten between batches or folds, or collected independently from the prediction order.",
+      "runtime_stage": [
+        "data_loading",
+        "inference",
+        "submission"
+      ],
+      "signature_id": "submission/test_identifier_prediction_alignment_mismatch",
+      "source_transition_ids": [
+        "run::20260701_145250_aerial-cactus-identification::transition::42209b8822::825381aa30"
+      ],
+      "title": "Provisional: Build submission identifiers from the same ordered inference stream as predictions",
+      "when_to_use": "Use when producing an ensemble submission and test IDs are gathered inside batch or fold loops, especially after a length mismatch at DataFrame construction."
+    },
+    {
+      "failure_pattern": "A custom CNN reaches its classifier but fails matrix multiplication because flattened convolutional features do not match the first linear layer's declared input width.",
+      "method_family": "custom_convolutional_network",
+      "repair_steps": [
+        "Run a representative image tensor through the convolutional feature stack before training and inspect the resulting shape.",
+        "Set the first linear layer's input width to the product of the actual non-batch feature dimensions.",
+        "Prefer adaptive pooling to a fixed spatial size when input resolution or convolutional geometry may vary.",
+        "Add a model smoke test that performs one forward pass and asserts an output shape of one logit per image."
+      ],
+      "root_cause": "The classifier input dimension was calculated from an incorrect channel count or spatial resolution after pooling.",
+      "runtime_stage": [
+        "model_forward",
+        "training",
+        "inference"
+      ],
+      "signature_id": "model_forward/convolutional_feature_classifier_dimension_mismatch",
+      "source_transition_ids": [
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::cc5f402ea0::d143842457"
+      ],
+      "title": "Provisional: Derive CNN classifier input width from the actual feature tensor",
+      "when_to_use": "Use when a from-scratch CNN for fixed-size cactus images reports incompatible matrix shapes at the convolutional-to-linear boundary."
+    },
+    {
+      "failure_pattern": "Training and checkpoint saving succeed, but loading the best checkpoint for test inference raises a weights-only unpickling error under newer PyTorch behavior.",
+      "method_family": "model_checkpointing",
+      "repair_steps": [
+        "Save the model state_dict and primitive metadata instead of serializing the complete model object.",
+        "Recreate the model architecture in code before loading the checkpoint.",
+        "Load the state dictionary with the runtime's explicit weights-only mode and then call model.load_state_dict.",
+        "Use unrestricted deserialization only for a trusted legacy checkpoint that cannot be converted, and specify that behavior explicitly.",
+        "Perform a checkpoint reload smoke test immediately after saving, before the full training run proceeds to final inference."
+      ],
+      "root_cause": "The pipeline saves a general Python checkpoint object while loading it through a runtime whose torch.load defaults to restricted weights-only deserialization.",
+      "runtime_stage": [
+        "training",
+        "inference"
+      ],
+      "signature_id": "inference/pytorch_checkpoint_weights_only_contract_mismatch",
+      "source_transition_ids": [
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::284993d54c::e8a086eea5"
+      ],
+      "title": "Provisional: Save and reload model state dictionaries with an explicit checkpoint contract",
+      "when_to_use": "Use when a best-model checkpoint saved during binary image training cannot be reloaded because of PyTorch weights-only deserialization behavior."
+    }
+  ]
+}

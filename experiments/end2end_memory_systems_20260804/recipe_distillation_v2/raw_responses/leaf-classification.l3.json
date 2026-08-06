@@ -1,0 +1,179 @@
+{
+  "repairs": [
+    {
+      "failure_pattern": "A multimodal forward pass concatenates or selects projected tabular, image, gated, or cross-attended tensors whose total width differs from the first classifier linear layer, causing a matrix-multiplication shape mismatch.",
+      "method_family": "multimodal_fusion_dimension_contract",
+      "repair_steps": [
+        "Write down the output width of every tabular projection, image projection, attention output, and fused representation.",
+        "Choose one explicit final representation and remove redundant modality tensors that are already encoded in it.",
+        "Set the classifier's first linear layer input width from the chosen representation's computed dimension rather than a stale constant.",
+        "Run a representative batch through the forward pass and assert that final_features.shape[-1] equals classifier[0].in_features before training."
+      ],
+      "root_cause": "The fusion representation was changed without updating the classifier contract, or modality projections already represented inside a fused tensor were concatenated again.",
+      "runtime_stage": [
+        "model_forward",
+        "training",
+        "inference"
+      ],
+      "signature_id": "multimodal_fusion/classifier_input_dimension_mismatch",
+      "source_transition_ids": [
+        "run::20260701_155016_leaf-classification::transition::1d12491bc9::793ac909a6",
+        "run::20260701_155016_leaf-classification::transition::8de808f1ea::97c95ee1e7"
+      ],
+      "title": "Confirmed: derive multimodal classifier input width from the actual fusion output",
+      "when_to_use": "Use when multimodal model_forward fails with incompatible mat1 and mat2 dimensions and the observed final feature width differs from the classifier's declared input width."
+    },
+    {
+      "failure_pattern": "The backward pass fails with 'grad can be implicitly created only for scalar outputs' after MixUp or CutMix combines unreduced per-sample classification losses.",
+      "method_family": "augmented_loss_reduction",
+      "repair_steps": [
+        "Compute the loss for each augmented target using the same per-sample reduction.",
+        "Combine the two loss tensors with the MixUp or CutMix coefficient.",
+        "Apply an explicit mean reduction to the combined loss before backward.",
+        "Assert that loss.ndim is zero in the training loop, including augmented and non-augmented branches."
+      ],
+      "root_cause": "The augmentation criterion preserves the batch dimension because its component loss uses no reduction, and the weighted combination is passed directly to backward.",
+      "runtime_stage": [
+        "training",
+        "training_metric"
+      ],
+      "signature_id": "training_loss/non_scalar_mixup_objective",
+      "source_transition_ids": [
+        "run::20260701_180146_leaf-classification::transition::2e74cd987b::d9e0880cbd",
+        "run::20260701_180146_leaf-classification::transition::86b9a812f8::1fc4193957"
+      ],
+      "title": "Confirmed: reduce augmented per-sample losses to a scalar before backpropagation",
+      "when_to_use": "Use when MixUp or CutMix training reaches the backward pass with a vector-valued loss and raises the scalar-output gradient error."
+    },
+    {
+      "failure_pattern": "SMOTE fails inside a stratified training fold because its requested nearest-neighbor count, including the sample itself, exceeds the number of examples in at least one class.",
+      "method_family": "adaptive_minority_resampling",
+      "repair_steps": [
+        "Count samples per class after creating the training fold and before applying SMOTE.",
+        "Set k_neighbors no larger than the minimum supported value, specifically at most min_class_count minus one.",
+        "Skip SMOTE or use a non-neighbor-based resampling method if any training-fold class has fewer than two samples.",
+        "Fit and apply resampling only to the training fold; leave validation and test distributions unchanged."
+      ],
+      "root_cause": "A fixed k_neighbors value was selected from the full-dataset expectation even though the 99-class training fold contains classes with fewer than k_neighbors plus one samples.",
+      "runtime_stage": [
+        "preprocessing",
+        "training"
+      ],
+      "signature_id": "class_resampling/smote_neighbors_exceed_minority_count",
+      "source_transition_ids": [
+        "run::20260701_180146_leaf-classification::transition::3ffe486019::27c71d1fb6"
+      ],
+      "title": "Provisional: configure SMOTE neighbors from the smallest training-fold class",
+      "when_to_use": "Use when SMOTE reports that n_neighbors is greater than n_samples_fit for a minority class in a leaf-classification training fold."
+    },
+    {
+      "failure_pattern": "Loading a validated model checkpoint into the full-data retraining model fails because the checkpoint contains spectral-normalization parameters such as original weights and power-iteration vectors while the destination model exposes ordinary weight keys.",
+      "method_family": "parametrized_checkpoint_compatibility",
+      "repair_steps": [
+        "Create validation and full-data model instances through the same model factory.",
+        "Apply spectral normalization to the same modules in both instances before saving or loading state.",
+        "Verify that source and destination state-dictionary key sets match before calling load_state_dict.",
+        "Load strictly after the schemas match, then proceed with full-data retraining or inference."
+      ],
+      "root_cause": "Spectral normalization changes the module parameterization and state-dictionary schema, but the destination model was constructed without applying the same parameterizations before loading.",
+      "runtime_stage": [
+        "training",
+        "inference"
+      ],
+      "signature_id": "checkpoint_loading/spectral_norm_parameter_schema_mismatch",
+      "source_transition_ids": [
+        "run::20260701_155016_leaf-classification::transition::4e48274802::87c2ed4df5"
+      ],
+      "title": "Provisional: recreate spectral-normalization parametrizations before checkpoint loading",
+      "when_to_use": "Use when a spectrally normalized transformer or classifier checkpoint has normalization-specific keys that are missing from a newly constructed destination model."
+    },
+    {
+      "failure_pattern": "Multi-scale image feature extraction indexes an intermediate activation as batch-by-token-by-channel, but a forward hook captured a two-dimensional pooled tensor or an incompatible tuple element.",
+      "method_family": "vision_intermediate_feature_extraction",
+      "repair_steps": [
+        "Inspect the documented output contract of each selected SigLIP2 transformer layer.",
+        "In the hook, unwrap tuple or structured outputs to the actual hidden-state tensor.",
+        "Check the captured tensor rank before removing a class token or pooling across tokens.",
+        "Pool only three-dimensional token tensors; handle already pooled two-dimensional embeddings directly or select a layer that exposes token states.",
+        "Run one image batch through every selected hook and verify the resulting feature widths before extracting the complete dataset."
+      ],
+      "root_cause": "The hook assumes every selected vision-transformer layer returns token-level hidden states in the same structure, without normalizing tuple outputs or checking tensor rank.",
+      "runtime_stage": [
+        "feature_extraction",
+        "model_forward"
+      ],
+      "signature_id": "image_feature_hooks/intermediate_activation_rank_mismatch",
+      "source_transition_ids": [
+        "run::20260701_155016_leaf-classification::transition::bf627b8c59::2f92c8ed5a"
+      ],
+      "title": "Provisional: validate transformer-hook output rank before token pooling",
+      "when_to_use": "Use when SigLIP2 multi-layer feature extraction raises an indexing error at token slicing because a captured activation has only two dimensions."
+    },
+    {
+      "failure_pattern": "Mixed-precision training crashes at scaler.scale(loss).backward after constructing a CUDA GradScaler through a deprecated namespace with an argument interpreted under the legacy constructor contract.",
+      "method_family": "pytorch_mixed_precision",
+      "repair_steps": [
+        "Use the device-aware torch.amp GradScaler API consistently with the CUDA device type.",
+        "Use the matching torch.amp autocast context in the same training loop.",
+        "Enable scaling only when the active device is CUDA, and use ordinary precision behavior otherwise.",
+        "Execute one complete optimizer step, including scale, backward, step, and update, before starting the full training schedule."
+      ],
+      "root_cause": "The training loop mixes the modern device-aware AMP calling convention with the deprecated CUDA-specific GradScaler API.",
+      "runtime_stage": [
+        "training"
+      ],
+      "signature_id": "mixed_precision/grad_scaler_api_contract_mismatch",
+      "source_transition_ids": [
+        "run::20260701_145136_leaf-classification::transition::9c85ea28b0::980127ccd6"
+      ],
+      "title": "Provisional: keep mixed-precision scaler and autocast APIs internally consistent",
+      "when_to_use": "Use when Phase 1 CUDA training emits an AMP deprecation warning and then fails because the GradScaler constructor received a device string through the legacy API."
+    },
+    {
+      "failure_pattern": "XGBClassifier training aborts because fit receives early_stopping_rounds as an unsupported keyword before any validation metric is produced.",
+      "method_family": "xgboost_early_stopping_compatibility",
+      "repair_steps": [
+        "Inspect the installed XGBClassifier interface before constructing the cross-validation training call.",
+        "Move early-stopping configuration to the estimator constructor or supported callback mechanism for that interface, while retaining a validation eval_set.",
+        "If early stopping is unnecessary for the final full-data fit, omit it there because no independent validation set is available.",
+        "Run one fold and verify that evaluation metrics are recorded and fit completes before launching all folds."
+      ],
+      "root_cause": "The pipeline uses an early-stopping calling convention from a different XGBoost estimator version than the installed runtime.",
+      "runtime_stage": [
+        "training",
+        "validation",
+        "oof"
+      ],
+      "signature_id": "gradient_boosting/early_stopping_interface_mismatch",
+      "source_transition_ids": [
+        "run::20260701_155016_leaf-classification::transition::00289652a0::1bfa55b7b3"
+      ],
+      "title": "Provisional: configure XGBoost early stopping through the installed estimator interface",
+      "when_to_use": "Use when multimodal features have been extracted successfully but XGBClassifier.fit rejects early_stopping_rounds as an unexpected keyword."
+    },
+    {
+      "failure_pattern": "One mutable imputer is repeatedly fitted on margin, shape, and texture training groups, after which validation or test groups are transformed using only the state from the last fitted group.",
+      "method_family": "split_safe_group_preprocessing",
+      "repair_steps": [
+        "Create a separate imputer for each of the margin, shape, and texture feature groups.",
+        "Fit each imputer only on its corresponding training split or training fold.",
+        "Transform the corresponding validation and test group with that same group's fitted imputer.",
+        "Apply the same per-group ownership rule to scalers, PCA models, and other stateful transformations.",
+        "Assert that every transformed group preserves its expected column count and is produced by the transformer fitted for that group."
+      ],
+      "root_cause": "Reusing a single fitted transformer across semantically distinct feature groups overwrites its learned statistics and applies texture-derived preprocessing state to margin and shape inputs.",
+      "runtime_stage": [
+        "preprocessing",
+        "split_validation",
+        "validation",
+        "inference"
+      ],
+      "signature_id": "preprocessing/group_transformer_state_contamination",
+      "source_transition_ids": [
+        "run::20260701_180146_leaf-classification::transition::d9d06ae6f5::36813b216b"
+      ],
+      "title": "Provisional: isolate fitted preprocessing state by feature group and split",
+      "when_to_use": "Use when grouped leaf features are preprocessed separately but one transformer instance is refitted across groups before validation or test transformation."
+    }
+  ]
+}

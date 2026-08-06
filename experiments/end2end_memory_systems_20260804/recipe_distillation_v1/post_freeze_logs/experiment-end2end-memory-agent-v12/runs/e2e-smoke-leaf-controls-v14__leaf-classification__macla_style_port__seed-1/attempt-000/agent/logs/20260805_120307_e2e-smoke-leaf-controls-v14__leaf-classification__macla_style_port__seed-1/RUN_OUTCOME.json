@@ -1,0 +1,15 @@
+{
+  "active_candidate_ids": [],
+  "certified_solution_available": true,
+  "completed_steps": 3,
+  "completion_ratio": 1.0,
+  "interrupted": false,
+  "journal_checkpoint_ref": "/workspace/experiment-end2end-memory-agent-v12/runs/e2e-smoke-leaf-controls-v14__leaf-classification__macla_style_port__seed-1/attempt-000/agent/logs/20260805_120307_e2e-smoke-leaf-controls-v14__leaf-classification__macla_style_port__seed-1/journal.json",
+  "kubernetes_success_eligible": true,
+  "outcome_hash": "9f9cac14cc852483db5e52cf7112d5802ab25ca2a5fe336fb7f8de2d77e4143a",
+  "reason": "step_target_reached",
+  "schema": "mlevolve_run_outcome_v1",
+  "search_exhausted": false,
+  "status": "complete",
+  "total_steps": 3
+}

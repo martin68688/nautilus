@@ -139,7 +139,7 @@
     },
     {
       "path": "mlevolve/agents/memory/stage_aware_hybrid_memory.py",
-      "sha256": "cf4db3132e1fefc9ad7e24a181ab1eab5672e866122310c64e4f53a9cbf5ea51"
+      "sha256": "07ccd53b3f9fd8ffefcb97d50ef3367bcfa7240f47ed48223a52a8ae7e735dc7"
     },
     {
       "path": "mlevolve/agents/planner/__init__.py",
@@ -383,7 +383,7 @@
     },
     {
       "path": "mlevolve/config/__init__.py",
-      "sha256": "9260052da3612523b667cda1739a2b726a042e77bc431cce120f5c701b54dce7"
+      "sha256": "faa8d22da70d6fec5ec3f43ee65cc33e6712b0ae2707b6201a9e6efd5650690e"
     },
     {
       "path": "mlevolve/config/config.yaml",
@@ -850,8 +850,12 @@
       "sha256": "8ce5e9be20f9f016f2cf82c162ff0b403bec3de25ddd3e5f2fd63ded01198dc5"
     },
     {
+      "path": "experiments/end2end_memory_systems_20260804/build_incremental_recipe_evidence.py",
+      "sha256": "5939b97830e2513faf339fbfacdfd95905b4a9da3dc34e7ae4a0dee53280de70"
+    },
+    {
       "path": "experiments/end2end_memory_systems_20260804/build_manifests.py",
-      "sha256": "67312762b26f69c29b813282d2805b98801fe9ddc045590ce826f29cc32b3f7e"
+      "sha256": "815afc912f241532a65ac5b1de6f7d306bbacf608fda32c05878f38aade454cc"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/confirm_experiment_intent.py",
@@ -871,7 +875,11 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/run_assignment.py",
-      "sha256": "257e5a0a5da0ca2a9ffdf9e84a76f3f5a2a6e67eafff4c9e2c585383ae5c9f5e"
+      "sha256": "a5c4adb6fd316de1da34ab3569171fae3e3f7bfb3318814cee1f346352c74495"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/run_l3_debug_router_smoke.py",
+      "sha256": "16d9e7ba64d86391906da52f35a6377308d315e29c143a955865591e6da6727b"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/validate_smoke_gate.py",
@@ -887,7 +895,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/dynamic_hybrid.yaml",
-      "sha256": "47d862c86827694f7b2bca089c4c73e1502a0fc0ac080b43ad68fa3bd525d8b2"
+      "sha256": "5167f2ec4f7e60559f7f6edd8b73a8d093cd44e01c84e7b36863159fa6a9fab0"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/systems/flat_retrieval.yaml",
@@ -952,10 +960,18 @@
     {
       "path": "experiments/end2end_memory_systems_20260804/host_bindings/new-york-city-taxi-fare-prediction/HOST_PROTOCOL_BINDING.json",
       "sha256": "4300df74f961e7fcc34e7c38d35177e41a3423bd66f86ee1fd0ff9a89cebe7f0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/recipe_distillation_v2/recipe_sops.json",
+      "sha256": "197afca50c11cbceb3d9e34c12084371897551b217c9a5e7a21107236f882691"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/recipe_distillation_v2/evidence_manifest.json",
+      "sha256": "46f1313d1918954a42daade64ffc05aae3fc6f057b301111859b7da63efab9f3"
     }
   ],
-  "git_head": "335770a29dce68ab7f3a0181541ba7e3a5d29257",
+  "git_head": "dd9c07568ef40a5c26d278da461e183d5e99ddfa",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "19d7d6d65eb6b0e62af984b703bca36c7ceee5430c3c1d24eb4344cdb4a12e49",
+  "manifest_hash": "1092f10c9509cca480dc1c8c3792ee5f32ccf2168759ee83780b58980b4d2ca9",
   "schema": "mlevolve_end2end_source_lock_v1"
 }

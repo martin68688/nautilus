@@ -1,0 +1,185 @@
+{
+  "recipes": [
+    {
+      "method_family": "patch_unet_charbonnier_gaussian_blend",
+      "pipeline": {
+        "data_validation": "Match noisy and clean images by image identity; load both as grayscale, normalize to [0,1], verify each pair has identical dimensions, and retain each image's actual height and width rather than assuming a common canvas size.",
+        "ensemble_calibration": "No multi-model ensemble or calibration is evidenced. Within each image, combine overlapping patch predictions with a Gaussian weight map.",
+        "failure_boundaries": "Do not split after patch extraction, evaluate only isolated patches, or allocate reconstruction buffers from one assumed image size. Patch overlap and weighted blending are required to limit seams, and encoder-decoder channel and spatial dimensions must remain compatible at every skip connection.",
+        "feature_representation": "Extract overlapping 256x256 grayscale patches with stride 192 from each partition independently. Preserve patch coordinates and original dimensions for reconstruction.",
+        "final_refit_inference": "A full-data refit is not evidenced. Retain the checkpoint with the lowest full-image holdout RMSE, run overlapping-patch inference on every test image, Gaussian-blend the patches at their recorded coordinates, crop to the image's actual dimensions, and clip predictions to [0,1].",
+        "model_stack": "Use a four-level U-Net with 64 base channels, convolutional encoder and decoder blocks, skip connections, transposed-convolution upsampling, and a single-channel bounded output.",
+        "oof_protocol": "Not evidenced / single 80/20 image-level holdout; do not present holdout predictions as OOF predictions.",
+        "split_validation": "Split paired images 80/20 at the image level before extracting patches so that patches from one document cannot occur in both partitions. Select checkpoints by RMSE after reconstructing complete validation images.",
+        "training_protocol": "Optimize a combined Charbonnier and L1 reconstruction loss with AdamW, warmup followed by cosine learning-rate decay, mixed-precision training, and early stopping with patience 10."
+      },
+      "source_node_ids": [
+        "run::20260725_053032_denoising-dirty-documents-deepseek-v4-full-r2::node::92c40271e8874f249f2a951d595e7452",
+        "run::20260701_145201_denoising-dirty-documents::node::33d66a80b6a2490ea54289928fbf4c35"
+      ],
+      "title": "Four-Level Patch U-Net with Charbonnier-L1 Training and Gaussian Reconstruction",
+      "when_to_use": "Use as a strong general-purpose baseline when grayscale documents have varying dimensions, GPU memory favors patch training, and preserving full image resolution is important."
+    },
+    {
+      "method_family": "handcrafted_feature_unet_masked_mse",
+      "pipeline": {
+        "data_validation": "Load paired grayscale images, normalize the raw intensity using global statistics computed only from noisy training images, verify noisy-clean dimension agreement, and record masks identifying original pixels when padding is introduced.",
+        "ensemble_calibration": "No model ensemble or post-hoc calibration is evidenced. Clip the single model's output to [0,1].",
+        "failure_boundaries": "Do not recompute normalization statistics from validation or test images, feed raw three-channel tensors to a model trained for seven channels, include padding in the objective or RMSE, or apply geometric augmentation to inputs without applying the identical transform to targets and valid masks.",
+        "feature_representation": "Construct seven channels from the noisy image: normalized intensity, median-filter response, Gaussian-blur response, Laplacian, Sobel magnitude, local standard deviation, and CLAHE. Pad or patch consistently while retaining a valid-pixel mask.",
+        "final_refit_inference": "A full-data refit is not evidenced. Use the best holdout checkpoint, reproduce the seven feature channels with the training-set normalization statistics, predict padded or patched test images, discard padded regions, restore original dimensions, and clip to [0,1].",
+        "model_stack": "Train a four-level U-Net taking seven input channels and producing one denoised channel, using convolution-batch-normalization-activation blocks, max-pooling, transposed-convolution decoding, and skip connections.",
+        "oof_protocol": "Not evidenced / single 80/20 image-level holdout. No fold-wise models or complete OOF prediction set are supported.",
+        "split_validation": "Create an 80/20 image-level train-validation split before patching or augmentation. Compute validation RMSE only over original, unpadded pixels.",
+        "training_protocol": "Use masked MSE so padded pixels contribute no gradient, AdamW, cosine annealing, mixed precision with gradient scaling, and early stopping with patience 10 based on valid-region validation RMSE."
+      },
+      "source_node_ids": [
+        "run::20260716_101256_denoising-dirty-documents::node::694d8ba546a34d05a408df988e4474a9",
+        "run::20260716_101256_denoising-dirty-documents::node::b39689a402e54a6894c8e28ff682acc1",
+        "run::20260716_101256_denoising-dirty-documents::node::5f80d92b7ba040b4a02f97514cb715f5"
+      ],
+      "title": "Seven-Channel Feature U-Net with Valid-Region MSE",
+      "when_to_use": "Use when document corruption can be exposed by local edges, smoothing filters, contrast enhancement, and texture statistics, and the extra preprocessing and storage for multichannel features are affordable."
+    },
+    {
+      "method_family": "lightweight_residual_stochastic_encoder_decoder",
+      "pipeline": {
+        "data_validation": "Pair noisy and clean grayscale images, normalize intensities to [0,1], verify dimensions per pair, and use reflection padding where patches extend beyond an image boundary.",
+        "ensemble_calibration": "No model ensemble or calibration is evidenced. Gaussian-weight overlapping predictions within each image during reconstruction.",
+        "failure_boundaries": "Avoid using patch-level validation as the sole selection signal because it does not expose full-image seams. The compact model can underfit complex corruption, while unnecessarily increasing decoder depth or adding unstable frequency-domain objectives can degrade training.",
+        "feature_representation": "Extract overlapping 256x64 patches with stride 64. Stack grayscale into three channels for the evidenced implementation and apply the corresponding fixed channel normalization consistently.",
+        "final_refit_inference": "A refit on all paired images is not evidenced. Apply the lowest-RMSE holdout checkpoint to overlapping test patches, reconstruct with Gaussian weights, remove reflection padding, restore each original image extent, and clip to [0,1].",
+        "model_stack": "Use a compact encoder-decoder beginning with a learnable 3x3 stochastic filtering convolution, followed by residual encoder stages with 32, 64, and 128 channels, stride-2 downsampling, bilinear decoder upsampling, skip connections, and a sigmoid output.",
+        "oof_protocol": "Not evidenced / single 80/20 image-level holdout; there is no supported cross-validation or OOF aggregation.",
+        "split_validation": "Split images 80/20 before patch extraction. During model selection, reconstruct each held-out image and compute per-image full-resolution RMSE rather than relying only on patch RMSE.",
+        "training_protocol": "Train with Charbonnier loss, AdamW, cosine annealing with warm restarts, mixed precision, and early stopping with patience 15."
+      },
+      "source_node_ids": [
+        "run::20260726_022207_denoising-dirty-documents-host-shadow-r7::node::a7c9a07858d54cb99746415c95e114c4",
+        "run::20260726_022207_denoising-dirty-documents-host-shadow-r7::node::a30e0e42b2bc45ceb934a0b13aac6ecd"
+      ],
+      "title": "Lightweight Residual Encoder-Decoder with Stochastic Front-End",
+      "when_to_use": "Use when the dataset is small enough that a large U-Net risks overfitting, but a compact model with local filtering, residual feature extraction, and patch overlap fits available compute."
+    },
+    {
+      "method_family": "nafnet_overlapping_patch_denoiser",
+      "pipeline": {
+        "data_validation": "Load aligned noisy-clean grayscale pairs in [0,1], verify matching dimensions, retain image identifiers and patch coordinates, and ensure every pixel is covered by at least one extracted patch.",
+        "ensemble_calibration": "No multi-checkpoint ensemble or calibration is evidenced. Average overlapping patch outputs with spatial weights during image reconstruction.",
+        "failure_boundaries": "Do not infer with non-overlapping tiles when boundary artifacts matter. Aggressive augmentation or structurally complex losses can introduce numerical instability; gradient clipping and a stable pixel loss are important. Patch extraction must preserve enough overlap to reconstruct every pixel.",
+        "feature_representation": "Use single-channel overlapping patches, evidenced at 256x64 with stride 64 or 256x256 with stride 64-128. Apply paired horizontal flips and small rotations only to training input-target patches.",
+        "final_refit_inference": "A full-data refit is not evidenced. Load the checkpoint with minimum reconstructed-image validation RMSE, infer all overlapping test patches, weighted-average them into the original image geometry, and clamp the final pixels to [0,1].",
+        "model_stack": "Use NAFNet with width 32, encoder and decoder stages built from nonlinear-activation-free blocks, instance normalization, SimpleGate operations, simplified channel attention, skip connections, and a deep middle stage.",
+        "oof_protocol": "Not evidenced / single held-out image set. No fold count, OOF prediction matrix, or fold ensemble is supported.",
+        "split_validation": "Reserve complete images for validation before generating patches. The exact split ratio is not evidenced; select the checkpoint using RMSE from weighted reconstruction of the held-out full images.",
+        "training_protocol": "Optimize MSE with AdamW, mixed precision, gradient clipping, and early stopping with patience 5. Dense overlap increases the effective training sample count and weighted reconstruction is used for validation."
+      },
+      "source_node_ids": [
+        "run::20260716_162643_denoising-dirty-documents::node::338acb779fe24a9d879d6fa73ac56368",
+        "run::20260716_162643_denoising-dirty-documents::node::891126e55b514c2db024a5f5c250265c",
+        "run::20260716_162643_denoising-dirty-documents::node::599eb1a0b37c452cb6c6b66b467d2c10"
+      ],
+      "title": "NAFNet Patch Denoiser with Weighted Full-Image Validation",
+      "when_to_use": "Use when a restoration-specific architecture is preferred over a conventional U-Net and compute supports a width-32 encoder-decoder with multiple activation-free middle blocks."
+    },
+    {
+      "method_family": "se_attention_unet_augmented_patches",
+      "pipeline": {
+        "data_validation": "Load paired grayscale images in [0,1], confirm that noisy and clean dimensions agree, and preserve original dimensions plus patch coordinates for full-image reconstruction.",
+        "ensemble_calibration": "No model ensemble or calibration is evidenced. Use weighted overlap averaging as the only aggregation mechanism.",
+        "failure_boundaries": "Attention adds capacity and is not a substitute for leakage-safe splitting or adequate patch diversity. Do not augment validation data, split patches from the same image across partitions, or evaluate RMSE on padded or uncovered regions.",
+        "feature_representation": "Use raw grayscale patches and apply paired horizontal flips, random 90-degree rotations, and brightness-contrast adjustments to training samples only.",
+        "final_refit_inference": "No full-data refit is evidenced. Run the best holdout checkpoint over overlapping test patches, weighted-average outputs into each full image, restore exact original dimensions, and clip values to [0,1].",
+        "model_stack": "Use a U-Net with double-convolution encoder-decoder blocks, max-pooling, bilinear upsampling, skip connections, and squeeze-and-excitation blocks at each stage to recalibrate channels.",
+        "oof_protocol": "Not evidenced / single image-level holdout; no robust OOF or cross-validation procedure is supported.",
+        "split_validation": "Perform an image-level train-validation split before extracting 128x128 patches with stride 64. Reconstruct held-out images by weighted averaging and minimize full-image RMSE.",
+        "training_protocol": "Train with MSE, AdamW, mixed precision, and early stopping with patience 5. Keep validation transformations deterministic and retain the checkpoint with the lowest reconstructed-image RMSE."
+      },
+      "source_node_ids": [
+        "run::20260716_040229_denoising-dirty-documents::node::dd727e0bdfe74434a6c294fb8b8a16fd",
+        "run::20260716_040229_denoising-dirty-documents::node::ce127ad8ce08461ea619a8191845a187"
+      ],
+      "title": "SE-Attention U-Net with Dense Patch Augmentation",
+      "when_to_use": "Use when a standard U-Net is stable but needs stronger channel selection for separating text structure from document noise, and enough overlapping patches can be generated to regularize the added attention capacity."
+    }
+  ],
+  "tactics": [
+    {
+      "instruction": "Assign complete noisy-clean image pairs to training or validation first, then extract patches independently. Select models using RMSE after reconstructing complete validation images rather than treating correlated patches as independent validation examples.",
+      "parent_method_families": [
+        "patch_unet_charbonnier_gaussian_blend",
+        "handcrafted_feature_unet_masked_mse",
+        "lightweight_residual_stochastic_encoder_decoder",
+        "nafnet_overlapping_patch_denoiser",
+        "se_attention_unet_augmented_patches"
+      ],
+      "source_node_ids": [
+        "run::20260725_053032_denoising-dirty-documents-deepseek-v4-full-r2::node::92c40271e8874f249f2a951d595e7452",
+        "run::20260701_145201_denoising-dirty-documents::node::33d66a80b6a2490ea54289928fbf4c35",
+        "run::20260726_022207_denoising-dirty-documents-host-shadow-r7::node::a30e0e42b2bc45ceb934a0b13aac6ecd"
+      ],
+      "tactic_kind": "validation_protocol",
+      "title": "Split Documents Before Patch Generation",
+      "when_to_use": "Use for every patch-based denoising pipeline, especially when neighboring patches overlap heavily."
+    },
+    {
+      "instruction": "Infer overlapping patches, multiply each prediction by a Gaussian spatial weight that downweights patch borders, accumulate weighted predictions and weights at their original coordinates, and divide the two accumulators pixelwise.",
+      "parent_method_families": [
+        "patch_unet_charbonnier_gaussian_blend",
+        "lightweight_residual_stochastic_encoder_decoder",
+        "nafnet_overlapping_patch_denoiser"
+      ],
+      "source_node_ids": [
+        "run::20260725_053032_denoising-dirty-documents-deepseek-v4-full-r2::node::92c40271e8874f249f2a951d595e7452",
+        "run::20260726_022207_denoising-dirty-documents-host-shadow-r7::node::a7c9a07858d54cb99746415c95e114c4",
+        "run::20260726_022207_denoising-dirty-documents-host-shadow-r7::node::a30e0e42b2bc45ceb934a0b13aac6ecd"
+      ],
+      "tactic_kind": "ensemble",
+      "title": "Gaussian-Weighted Overlap Reconstruction",
+      "when_to_use": "Use when tiled inference produces seams or patch-border errors and stride is smaller than patch size."
+    },
+    {
+      "instruction": "Carry a valid-pixel mask through preprocessing and augmentation; multiply squared error by that mask and normalize by the valid-pixel count. Apply the same exclusion when computing validation RMSE and crop predictions to original dimensions.",
+      "parent_method_families": [
+        "handcrafted_feature_unet_masked_mse"
+      ],
+      "source_node_ids": [
+        "run::20260716_101256_denoising-dirty-documents::node::5f80d92b7ba040b4a02f97514cb715f5",
+        "run::20260716_101256_denoising-dirty-documents::node::b39689a402e54a6894c8e28ff682acc1"
+      ],
+      "tactic_kind": "training_protocol",
+      "title": "Mask Padding Out of Loss and RMSE",
+      "when_to_use": "Use whenever variable-sized images are padded to a shared canvas or model-compatible multiple."
+    },
+    {
+      "instruction": "Apply the same random flip, rotation, and translation to each noisy patch, clean target, engineered feature stack, and validity mask. Keep validation deterministic; use denser patch overlap when the number of source images is small.",
+      "parent_method_families": [
+        "nafnet_overlapping_patch_denoiser",
+        "se_attention_unet_augmented_patches",
+        "handcrafted_feature_unet_masked_mse"
+      ],
+      "source_node_ids": [
+        "run::20260716_162643_denoising-dirty-documents::node::338acb779fe24a9d879d6fa73ac56368",
+        "run::20260716_040229_denoising-dirty-documents::node::dd727e0bdfe74434a6c294fb8b8a16fd",
+        "run::20260716_101256_denoising-dirty-documents::node::f6733c9e04134ae08479d765d697e514"
+      ],
+      "tactic_kind": "training_protocol",
+      "title": "Paired Geometric Augmentation for Scarce Documents",
+      "when_to_use": "Use when training loss improves while held-out full-image RMSE plateaus, indicating limited effective sample diversity."
+    },
+    {
+      "instruction": "Recalibrate intermediate channels with squeeze-and-excitation blocks in U-Net stages or simplified channel attention inside NAF blocks, while retaining encoder-decoder skip connections for spatial detail.",
+      "parent_method_families": [
+        "se_attention_unet_augmented_patches",
+        "nafnet_overlapping_patch_denoiser"
+      ],
+      "source_node_ids": [
+        "run::20260716_040229_denoising-dirty-documents::node::dd727e0bdfe74434a6c294fb8b8a16fd",
+        "run::20260716_162643_denoising-dirty-documents::node::338acb779fe24a9d879d6fa73ac56368"
+      ],
+      "tactic_kind": "model_design",
+      "title": "Channel Attention at Restoration Stages",
+      "when_to_use": "Use when the baseline has adequate spatial capacity but struggles to distinguish text strokes and useful local structure from corruption."
+    }
+  ]
+}

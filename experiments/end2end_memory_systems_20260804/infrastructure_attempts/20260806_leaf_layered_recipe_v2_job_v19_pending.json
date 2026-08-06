@@ -1,0 +1,18 @@
+{
+  "schema": "mlevolve_end2end_infrastructure_attempt_v1",
+  "logical_run_id": "e2e-smoke-leaf-layered-recipe-v2__leaf-classification__dynamic_hybrid__seed-1",
+  "workload": "job/mlevolve-e2e-leaf-layered-recipe-smoke-v19",
+  "job_uid": "d2441c78-6c7c-430e-9b6a-05045aa118ac",
+  "created_at_utc": "2026-08-05T17:18:04Z",
+  "gpu_requested": "nvidia.com/a100=1",
+  "cpu_requested": 16,
+  "memory_requested_gib": 64,
+  "phase": "Pending",
+  "failure_class": "infrastructure_unschedulable_timeout",
+  "pending_seconds_before_delete": 203,
+  "scheduler_reason": "Unschedulable",
+  "scheduler_summary": "Insufficient nvidia.com/a100, CPU, and memory capacity; no preemption path",
+  "candidate_training_started": false,
+  "preserved_before_retry": true,
+  "retry_workload": "job/mlevolve-e2e-leaf-layered-recipe-smoke-v20"
+}

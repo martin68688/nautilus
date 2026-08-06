@@ -1,0 +1,60 @@
+{
+  "candidate_inventory": [
+    {
+      "node_id": "6a523014629a4a748839f4fcfbf0b741",
+      "submission": "submission_6a523014629a4a748839f4fcfbf0b741.csv",
+      "submission_sha256": "595d4303b1bb373efe7c2276e314ae1a6c7147322e1213356a7eaf0c0ccff129"
+    }
+  ],
+  "candidate_set_frozen_before_scoring": true,
+  "candidate_set_hash": "e193a09ac8ac9dfc08a697848379233d6c37b3c3d5d1e82d76bd4ac3fec27430",
+  "evaluation_request_hash": "f240dd7c2e7889af9d3d92454e8f5e5a885a0992f9bcb1f2fa31ae46629304d5",
+  "evaluation_request_sha256": "133b355c9fc080dca1d04dfa16527862f16945c121741eda6811aee1aa91ae53",
+  "evaluator_manifest_sha256": "41ed7c3cdba61dd81d03a3486804de5576ccda7163cbf42a10e1c64b889d994e",
+  "journal_sha256": "c09cdd2cb5c42c85a4b36a9cb69adc8b288e0dcf816a81e12ed993e4ca057787",
+  "maximize": false,
+  "metric": "multiclass_log_loss",
+  "oracle_best_node_id": "6a523014629a4a748839f4fcfbf0b741",
+  "oracle_best_score": 0.8209226374360673,
+  "oracle_best_submission_sha256": "595d4303b1bb373efe7c2276e314ae1a6c7147322e1213356a7eaf0c0ccff129",
+  "oracle_selection_is_host_only": true,
+  "report_hash": "94f690c1690e443d2d6062cc3f3943a405c144f309e357e7739f2464b4bade92",
+  "report_schema": "fixed_holdout_terminal_score_report_v3",
+  "results": [
+    {
+      "draft_role": "novel_exploration",
+      "internal_metric": 0.6458743867412752,
+      "internal_metric_disposition": "search_only",
+      "node_id": "6a523014629a4a748839f4fcfbf0b741",
+      "score": 0.8209226374360673,
+      "stage": "draft",
+      "status": "scored",
+      "submission": "submission_6a523014629a4a748839f4fcfbf0b741.csv",
+      "submission_sha256": "595d4303b1bb373efe7c2276e314ae1a6c7147322e1213356a7eaf0c0ccff129"
+    }
+  ],
+  "schema": "mlevolve_fixed_holdout_v1",
+  "scores_were_visible_during_search": false,
+  "selected_node_id": "6a523014629a4a748839f4fcfbf0b741",
+  "selected_score": 0.8209226374360673,
+  "selected_submission": "submission_6a523014629a4a748839f4fcfbf0b741.csv",
+  "selected_submission_sha256": "595d4303b1bb373efe7c2276e314ae1a6c7147322e1213356a7eaf0c0ccff129",
+  "selection_basis": {
+    "draft_role": "novel_exploration",
+    "formal_rank_claim_authorized": false,
+    "metric_disposition": "search_only",
+    "metric_maximize": false,
+    "metric_value": 0.6458743867412752,
+    "source_score_inherited": false,
+    "stage": "draft",
+    "terminal_metric_observed": false,
+    "type": "solver_internal_search_metric"
+  },
+  "selection_frozen_before_terminal_evaluation": true,
+  "selection_policy": "terminal_only",
+  "split_id": "leaf-classification-73e8353188dc-c33202487f61",
+  "system_selection_used_terminal_labels": false,
+  "task_id": "leaf-classification",
+  "terminal_score_sealed": true,
+  "train_manifest_sha256": "be01f8c4cc1665442909bea1393ee323a490e2ac7e0cb06578b2e04fbbf2276d"
+}

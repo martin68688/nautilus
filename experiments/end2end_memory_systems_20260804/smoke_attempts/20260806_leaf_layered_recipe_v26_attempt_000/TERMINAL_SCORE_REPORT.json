@@ -1,0 +1,60 @@
+{
+  "candidate_inventory": [
+    {
+      "node_id": "f2aac879d2e9419f84af94b66a7f8d19",
+      "submission": "submission_f2aac879d2e9419f84af94b66a7f8d19.csv",
+      "submission_sha256": "ed3223a6ad6be3157d6813cdc231a810669179b61cb5e0a1bdfd2bd24224364c"
+    }
+  ],
+  "candidate_set_frozen_before_scoring": true,
+  "candidate_set_hash": "8295a77c69d26217df6e08dca2cde2af0b424bbe02f5fa6789e661030c11a7b7",
+  "evaluation_request_hash": "ed32ca5881b7ae12fb5b709df3bbc0fc2fe95a9bca39180fb5ad034b0c41999e",
+  "evaluation_request_sha256": "cfa84c0a3f2e7bbf9b08f75a995ca79c2a9e96578e7280449163552234f767c7",
+  "evaluator_manifest_sha256": "41ed7c3cdba61dd81d03a3486804de5576ccda7163cbf42a10e1c64b889d994e",
+  "journal_sha256": "661e009a7347255b34e056f5a92001dbe114bf54c3d7e2457f6ca7acaf202243",
+  "maximize": false,
+  "metric": "multiclass_log_loss",
+  "oracle_best_node_id": "f2aac879d2e9419f84af94b66a7f8d19",
+  "oracle_best_score": 0.14771864342527358,
+  "oracle_best_submission_sha256": "ed3223a6ad6be3157d6813cdc231a810669179b61cb5e0a1bdfd2bd24224364c",
+  "oracle_selection_is_host_only": true,
+  "report_hash": "07dd92ece62fa5ef38947f00cbc4028f294d92641bc84dd39eca4a59d9a53e64",
+  "report_schema": "fixed_holdout_terminal_score_report_v3",
+  "results": [
+    {
+      "draft_role": "memory_transfer",
+      "internal_metric": 0.10005427366096227,
+      "internal_metric_disposition": "search_only",
+      "node_id": "f2aac879d2e9419f84af94b66a7f8d19",
+      "score": 0.14771864342527358,
+      "stage": "draft",
+      "status": "scored",
+      "submission": "submission_f2aac879d2e9419f84af94b66a7f8d19.csv",
+      "submission_sha256": "ed3223a6ad6be3157d6813cdc231a810669179b61cb5e0a1bdfd2bd24224364c"
+    }
+  ],
+  "schema": "mlevolve_fixed_holdout_v1",
+  "scores_were_visible_during_search": false,
+  "selected_node_id": "f2aac879d2e9419f84af94b66a7f8d19",
+  "selected_score": 0.14771864342527358,
+  "selected_submission": "submission_f2aac879d2e9419f84af94b66a7f8d19.csv",
+  "selected_submission_sha256": "ed3223a6ad6be3157d6813cdc231a810669179b61cb5e0a1bdfd2bd24224364c",
+  "selection_basis": {
+    "draft_role": "memory_transfer",
+    "formal_rank_claim_authorized": false,
+    "metric_disposition": "search_only",
+    "metric_maximize": false,
+    "metric_value": 0.10005427366096227,
+    "source_score_inherited": false,
+    "stage": "draft",
+    "terminal_metric_observed": false,
+    "type": "solver_internal_search_metric"
+  },
+  "selection_frozen_before_terminal_evaluation": true,
+  "selection_policy": "terminal_only",
+  "split_id": "leaf-classification-73e8353188dc-c33202487f61",
+  "system_selection_used_terminal_labels": false,
+  "task_id": "leaf-classification",
+  "terminal_score_sealed": true,
+  "train_manifest_sha256": "be01f8c4cc1665442909bea1393ee323a490e2ac7e0cb06578b2e04fbbf2276d"
+}

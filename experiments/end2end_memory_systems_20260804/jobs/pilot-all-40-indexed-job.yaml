@@ -40,9 +40,9 @@ spec:
         - /usr/local/bin/python
         - -u
         args:
-        - /workspace/nautilus-exp-end2end-agent-v15/experiments/end2end_memory_systems_20260804/run_assignment.py
+        - /workspace/nautilus-exp-end2end-agent-v17/experiments/end2end_memory_systems_20260804/run_assignment.py
         - --manifest
-        - /workspace/nautilus-exp-end2end-agent-v15/experiments/end2end_memory_systems_20260804/manifests/pilot_manifest.json
+        - /workspace/nautilus-exp-end2end-agent-v17/experiments/end2end_memory_systems_20260804/manifests/pilot_manifest.json
         - --output-root
         - /workspace/experiment-end2end-memory-agent-v13/runs
         - --resume
@@ -79,7 +79,7 @@ spec:
         - name: PYTHONDONTWRITEBYTECODE
           value: '1'
         - name: PYTHONPATH
-          value: /workspace/nautilus-exp-end2end-agent-v15/mlevolve
+          value: /workspace/nautilus-exp-end2end-agent-v17/mlevolve
         - name: MLEVOLVE_CONTAINER_IMAGE_REFERENCE
           value: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
         - name: MLEVOLVE_SOLVER_BINDING_ID

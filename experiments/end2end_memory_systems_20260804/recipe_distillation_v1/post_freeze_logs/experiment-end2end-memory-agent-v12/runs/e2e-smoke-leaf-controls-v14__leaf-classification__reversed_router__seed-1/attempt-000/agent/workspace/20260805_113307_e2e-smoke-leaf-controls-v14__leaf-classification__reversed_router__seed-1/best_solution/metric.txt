@@ -1,0 +1,7 @@
+Metric: 0.12008413533107565
+Maximize: False
+Branch ID: 1
+Stage: draft (initial solution)
+From Top-K: False
+Execution Time(s): 97.20
+Created Time: 2026-08-05T11:34:59

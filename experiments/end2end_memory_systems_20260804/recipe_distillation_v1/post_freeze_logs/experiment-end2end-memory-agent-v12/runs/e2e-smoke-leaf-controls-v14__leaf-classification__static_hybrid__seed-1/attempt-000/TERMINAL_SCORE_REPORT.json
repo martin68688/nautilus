@@ -1,0 +1,60 @@
+{
+  "candidate_inventory": [
+    {
+      "node_id": "58e5dc55fb8f4a678a315d8a1081b51b",
+      "submission": "submission_58e5dc55fb8f4a678a315d8a1081b51b.csv",
+      "submission_sha256": "ba80136118ad4d91879512c85fe1a0d42d471923876fec67da398046bf5dc65d"
+    }
+  ],
+  "candidate_set_frozen_before_scoring": true,
+  "candidate_set_hash": "6e75baf99fa8fd36b3c9211d5884ef96af9458923663b1b61d366fcde7f209c0",
+  "evaluation_request_hash": "6dc626281c1d68ae5b0839b14091184dd75e9d56ce132ae1f4e237689abbd679",
+  "evaluation_request_sha256": "470202743255ed77d5a06757321ec5008c47e7add46b34e1c372585a7daae8a6",
+  "evaluator_manifest_sha256": "41ed7c3cdba61dd81d03a3486804de5576ccda7163cbf42a10e1c64b889d994e",
+  "journal_sha256": "181b313546368e023bc7fb4b0b40831728a1a4b19890be66eccdfd7d8622a4b0",
+  "maximize": false,
+  "metric": "multiclass_log_loss",
+  "oracle_best_node_id": "58e5dc55fb8f4a678a315d8a1081b51b",
+  "oracle_best_score": 0.1367357528299331,
+  "oracle_best_submission_sha256": "ba80136118ad4d91879512c85fe1a0d42d471923876fec67da398046bf5dc65d",
+  "oracle_selection_is_host_only": true,
+  "report_hash": "8593e0d2c48cb466fc4eddb48cc14c05c8c68897db2400c8f393b61d40d4b538",
+  "report_schema": "fixed_holdout_terminal_score_report_v3",
+  "results": [
+    {
+      "draft_role": "general_draft",
+      "internal_metric": 0.0957575625136453,
+      "internal_metric_disposition": "search_only",
+      "node_id": "58e5dc55fb8f4a678a315d8a1081b51b",
+      "score": 0.1367357528299331,
+      "stage": "draft",
+      "status": "scored",
+      "submission": "submission_58e5dc55fb8f4a678a315d8a1081b51b.csv",
+      "submission_sha256": "ba80136118ad4d91879512c85fe1a0d42d471923876fec67da398046bf5dc65d"
+    }
+  ],
+  "schema": "mlevolve_fixed_holdout_v1",
+  "scores_were_visible_during_search": false,
+  "selected_node_id": "58e5dc55fb8f4a678a315d8a1081b51b",
+  "selected_score": 0.1367357528299331,
+  "selected_submission": "submission_58e5dc55fb8f4a678a315d8a1081b51b.csv",
+  "selected_submission_sha256": "ba80136118ad4d91879512c85fe1a0d42d471923876fec67da398046bf5dc65d",
+  "selection_basis": {
+    "draft_role": "general_draft",
+    "formal_rank_claim_authorized": false,
+    "metric_disposition": "search_only",
+    "metric_maximize": false,
+    "metric_value": 0.0957575625136453,
+    "source_score_inherited": false,
+    "stage": "draft",
+    "terminal_metric_observed": false,
+    "type": "solver_internal_search_metric"
+  },
+  "selection_frozen_before_terminal_evaluation": true,
+  "selection_policy": "terminal_only",
+  "split_id": "leaf-classification-73e8353188dc-c33202487f61",
+  "system_selection_used_terminal_labels": false,
+  "task_id": "leaf-classification",
+  "terminal_score_sealed": true,
+  "train_manifest_sha256": "be01f8c4cc1665442909bea1393ee323a490e2ac7e0cb06578b2e04fbbf2276d"
+}

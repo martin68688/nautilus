@@ -628,9 +628,18 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
         assert merged.agent.protocol_preflight.candidate_process_isolation is True
         if row["system_id"] == "dynamic_hybrid":
             assert merged.external_skill_memory.end2end_memory_system == ""
-            assert merged.external_skill_memory.retrieval_control == "dynamic_hybrid"
-            assert merged.external_skill_memory.experiment_r_enabled is True
-            assert merged.external_skill_memory.experiment_r_agentic_retrieval_enabled is True
+            assert merged.external_skill_memory.retrieval_control == "layered_strategy"
+            assert merged.external_skill_memory.enable_agentic is True
+            assert merged.external_skill_memory.experiment_r_enabled is False
+            assert merged.external_skill_memory.recipe_sop_file_sha256 == (
+                "197afca50c11cbceb3d9e34c12084371897551b217c9a5e7a21107236f882691"
+            )
+            assert merged.external_skill_memory.recipe_sop_bundle_sha256 == (
+                "8c3ef43693508c4d38567f4ef304f8d6edc0fc37609d886328b62300c30860aa"
+            )
+            assert merged.agent.draft_role_policy.replay_targets_path.endswith(
+                "paper-skills/eval_skill_memory/clean_replay_targets.json"
+            )
             assert merged.external_skill_memory.experiment_r_memory_transfer_static_gate is False
             assert merged.external_skill_memory.experiment_r_memory_transfer_runtime_gate is False
             assert merged.agent.draft_role_policy.enabled is True
@@ -750,7 +759,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-            "/workspace/nautilus-exp-end2end-agent-v15/mlevolve"
+                "/workspace/nautilus-exp-end2end-agent-v17/mlevolve"
         )
         assert "--smoke-gate" not in container["args"]
         if path.name == "pilot-all-40-indexed-job.yaml":
@@ -1290,11 +1299,13 @@ def test_budget_couples_gpu_search_and_cpu_controls() -> None:
     assert budget["runtime"]["gpu_type"] == "NVIDIA A100 family"
     assert budget["runtime"]["gpu_resource_key"] == "nvidia.com/a100"
     assert budget["runtime"]["gpu_product_constraint"] is None
-    for phase in ("smoke", "pilot"):
+    for phase in ("smoke", "debug_smoke", "pilot"):
         row = budget[phase]
         assert row["gpu_count"] == row["parallel_search_num"] == 1
         assert row["cpu_count"] == 16
         assert row["memory_gib"] == 64
+    assert budget["debug_smoke"]["agent_steps"] == 8
+    assert budget["debug_smoke"]["initial_drafts"] == 3
     assert budget["shared_memory"] == {
         "raw_candidate_max": 24,
         "raw_candidates_per_source": 12,

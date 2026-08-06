@@ -1,0 +1,41 @@
+{
+  "schema": "mlevolve_recipe_sop_comparison_v1",
+  "previous": {
+    "artifact": "/Users/haoming/Downloads/nautilus/experiments/fourtask_graph_v2_replay_20260727/graph-inputs/run_forest_graph_fourtask_v2.json",
+    "artifact_sha256": "74ce8cd66d4b2b78399ad9a8f703029f33e22a78d2a5e721474dda5065d402fc",
+    "node_count": 80,
+    "abstraction_counts": {
+      "L1_strategy": 8,
+      "L2_tactic": 21,
+      "L3_repair": 51
+    },
+    "abstraction_ratios": {
+      "L1_strategy": 0.1,
+      "L2_tactic": 0.2625,
+      "L3_repair": 0.6375
+    }
+  },
+  "recipe_first": {
+    "artifact": "recipe_sops.json",
+    "artifact_file_sha256": "0a0ab23d96487a8a53c38bc941a4a62716871033cfa42889fc4e9b688f22b3ef",
+    "bundle_payload_sha256": "9fd353d670541b543426cec2922fbd0d5dd09d16efdb24288f48ff348bc19078",
+    "node_count": 54,
+    "abstraction_counts": {
+      "L1_recipe": 28,
+      "L2_tactic": 26,
+      "L3_repair": 0
+    },
+    "abstraction_ratios": {
+      "L1_recipe": 0.5185185185185185,
+      "L2_tactic": 0.48148148148148145,
+      "L3_repair": 0.0
+    }
+  },
+  "change": {
+    "complete_methodology_share_absolute_delta": 0.4185185185185185,
+    "complete_methodology_share_multiplier": 5.185185185185185,
+    "repair_trivia_share_absolute_delta": -0.6375,
+    "repair_knowledge_deleted": false,
+    "repair_knowledge_destination": "RunForest failure-to-clean-repair Transition channel"
+  }
+}

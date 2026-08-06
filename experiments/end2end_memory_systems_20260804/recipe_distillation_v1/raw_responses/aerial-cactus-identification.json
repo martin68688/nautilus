@@ -1,0 +1,193 @@
+{
+  "recipes": [
+    {
+      "method_family": "efficientnet_b0_focal_finetune",
+      "pipeline": {
+        "data_validation": "Load image identifiers and binary labels from metadata, verify that labeled images can be decoded as RGB, and inspect the class distribution before constructing the stratified split; the evidenced data had roughly 75% positive examples.",
+        "ensemble_calibration": "No model ensemble or probability calibration is evidenced. Use sigmoid probabilities from the validation-selected checkpoint.",
+        "failure_boundaries": "Do not apply stochastic training augmentation to validation or test data. Near-perfect holdout AUC can conceal shortcut learning or overconfidence, so inspect class-conditional prediction distributions and do not infer robustness from training loss alone.",
+        "feature_representation": "Resize images to 256x256, normalize with ImageNet statistics, and apply random horizontal flips, rotations, and color jitter during training; use deterministic resize and normalization for validation and test images.",
+        "final_refit_inference": "An all-data refit is not evidenced. Reload the checkpoint with the best validation AUC and run deterministic preprocessing and batched sigmoid inference on every test image.",
+        "model_stack": "Fine-tune an ImageNet-pretrained EfficientNet-B0 end to end with adaptive pooling, dropout, and a single-logit binary classification head.",
+        "oof_protocol": "Not evidenced / single holdout. Retain probabilities from the fixed 15% validation partition for model selection and diagnostic AUC only.",
+        "split_validation": "Create one stratified 85/15 train-validation split. Apply stochastic augmentation only to the training partition and evaluate untouched validation images with ROC-AUC.",
+        "training_protocol": "Optimize focal loss with gamma 2.0 and alpha 0.75 using AdamW, cosine annealing, automatic mixed precision, and early stopping with patience 5 based on validation ROC-AUC."
+      },
+      "source_node_ids": [
+        "run::20260701_145250_aerial-cactus-identification::node::205c70349a4846719a6762d7988ea43e",
+        "run::20260701_145250_aerial-cactus-identification::node::8677c6917b7945c2a0a1f7207258d78b"
+      ],
+      "title": "End-to-End EfficientNet-B0 with Focal Loss and Strong Augmentation",
+      "when_to_use": "Use as a strong, compute-efficient pretrained baseline when the training set is moderately imbalanced and one GPU can support 256x256 end-to-end fine-tuning."
+    },
+    {
+      "method_family": "efficientnet_b2_cutmix_differential_lr",
+      "pipeline": {
+        "data_validation": "Load identifiers and binary targets from the labeled metadata, verify image decoding, and check positive and negative counts before splitting so stratification preserves the observed imbalance.",
+        "ensemble_calibration": "No cross-model ensemble or explicit calibration is evidenced. CutMix is a training regularizer, not an inference ensemble.",
+        "failure_boundaries": "Mixed CutMix targets are valid for loss computation but must not replace binary labels in ROC-AUC evaluation. If holdout AUC reaches 1.0 within a few epochs or prediction probabilities collapse toward one class, treat this as a shortcut-learning warning rather than evidence for longer training.",
+        "feature_representation": "Resize to 256x256 and normalize with ImageNet statistics. For training, apply random flips, rotations or affine transforms, color jitter, random erasing, and batch-level CutMix.",
+        "final_refit_inference": "An all-data refit is not evidenced. Restore the best holdout checkpoint and infer once per deterministically transformed test image, converting logits to probabilities with sigmoid.",
+        "model_stack": "Fine-tune all layers of an ImageNet-pretrained EfficientNet-B2. Feed its 1408-dimensional representation to a 256-unit nonlinear head with dropout and one output logit.",
+        "oof_protocol": "Not evidenced / single holdout. Compute ROC-AUC only from unmixed binary validation labels and their predicted probabilities.",
+        "split_validation": "Use one stratified 80/20 train-validation split. Keep validation preprocessing deterministic and select the checkpoint by validation ROC-AUC with patience-5 early stopping.",
+        "training_protocol": "Use AdamW with differential learning rates of 5e-5 for the backbone and 1e-3 for the head, label-smoothed BCE, mixed precision, gradient clipping, linear warmup followed by cosine annealing, and at most 30 epochs."
+      },
+      "source_node_ids": [
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::node::174641cc37314f94812b47501b8c77aa",
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::node::4d79e8b8efbb43a99a00b39e5ff9dae3"
+      ],
+      "title": "EfficientNet-B2 Fine-Tuning with Differential Learning Rates and CutMix",
+      "when_to_use": "Use when EfficientNet-B0 has saturated and additional capacity is affordable, while strong regularization is needed to control rapid overfitting on the small, easy image task."
+    },
+    {
+      "method_family": "convnext_tiny_cutmix_tta",
+      "pipeline": {
+        "data_validation": "Read image identifiers and binary labels, verify that both classes are represented and images decode correctly, then preserve class proportions in the validation partition.",
+        "ensemble_calibration": "At inference, average probabilities from the original image, horizontal flip, vertical flip, and combined horizontal-vertical flip. No explicit probability calibration or multi-model ensemble is evidenced.",
+        "failure_boundaries": "The higher-capacity backbone can memorize this near-separable task despite augmentation. Stop on AUC rather than training loss, and ensure geometric TTA is applied consistently before averaging probabilities.",
+        "feature_representation": "Resize images to 256x256 and normalize with ImageNet statistics. Apply random 90-degree rotation, horizontal and vertical flips, and color jitter to training images; additionally apply batch-level CutMix.",
+        "final_refit_inference": "An all-data refit is not evidenced. Reload the validation-selected checkpoint, generate the four deterministic TTA views for each test image, apply sigmoid, and average the four probabilities.",
+        "model_stack": "Fine-tune an ImageNet-pretrained ConvNeXt-Tiny with a classifier composed of LayerNorm, a 768-to-256 linear projection, GELU, dropout, and a final single-logit layer.",
+        "oof_protocol": "Not evidenced / single holdout. Use the fixed validation partition for ROC-AUC checkpoint selection; no full out-of-fold prediction set is supported.",
+        "split_validation": "Use a stratified 85/15 train-validation split. Monitor validation ROC-AUC, retain the best checkpoint, and stop after 10 epochs without improvement.",
+        "training_protocol": "Train with label-smoothed BCE, AdamW, a 5% linear learning-rate warmup followed by cosine annealing, mixed precision, and gradient accumulation when needed to reach an effective batch size of 128."
+      },
+      "source_node_ids": [
+        "run::20260725_051618_aerial-cactus-identification-deepseek-v4-full-r1::node::c7d2cb4075a04925a4cae8a98add9119",
+        "run::20260725_051618_aerial-cactus-identification-deepseek-v4-full-r1::node::f6a65862a0f542a4ad0bb49041a4b764"
+      ],
+      "title": "ConvNeXt-Tiny with CutMix, Warmup-Cosine Training, and Four-View TTA",
+      "when_to_use": "Use when more model capacity than EfficientNet-B0 is desired and memory permits 256x256 ConvNeXt training, especially when regularization and inference-time flip invariance are important."
+    },
+    {
+      "method_family": "resnet18_staged_mixup_tta",
+      "pipeline": {
+        "data_validation": "Load labeled image identifiers, verify binary targets and decodable RGB images, and inspect class counts before creating a stratified partition.",
+        "ensemble_calibration": "Average probabilities from the original and horizontally flipped image at validation or test inference. No multi-seed ensemble or explicit calibration is evidenced.",
+        "failure_boundaries": "The 64x64 representation may discard fine spatial detail, so this design should not be assumed equivalent to higher-resolution backbones. Keep mixed targets confined to training loss and use original binary labels for validation AUC.",
+        "feature_representation": "Resize to 64x64, normalize using ImageNet statistics, and augment training images with horizontal flips, rotation, affine transformations, color jitter, and MixUp.",
+        "final_refit_inference": "An all-data refit is not evidenced. Restore the best validation checkpoint, predict the original and horizontal-flip test views, apply sigmoid, and average the two probabilities.",
+        "model_stack": "Replace the classifier of an ImageNet-pretrained ResNet-18 with a single-logit binary head and fine-tune the pretrained representation in two stages.",
+        "oof_protocol": "Not evidenced / single holdout. Select the model from one stratified validation partition; do not describe its validation predictions as full OOF predictions.",
+        "split_validation": "Create one stratified train-validation split. Evaluate deterministic validation images with ROC-AUC and use patience-5 early stopping to select the best checkpoint.",
+        "training_protocol": "Freeze the backbone for the first five epochs, then unfreeze it at a reduced learning rate. Use label-smoothed BCE with smoothing 0.05, AdamW, cosine annealing, mixed precision, MixUp, and early stopping."
+      },
+      "source_node_ids": [
+        "run::20260716_040229_aerial-cactus-identification::node::6b9b5bc4e288485ba89fb03563c14c3f"
+      ],
+      "title": "Staged ResNet-18 Fine-Tuning with MixUp and Flip TTA",
+      "when_to_use": "Use as a smaller pretrained alternative when compute is constrained, 64x64 inputs are acceptable, and staged unfreezing is preferred over immediate end-to-end fine-tuning."
+    },
+    {
+      "method_family": "siglip2_frozen_fivefold_mlp",
+      "pipeline": {
+        "data_validation": "Load image identifiers and binary labels, verify image decoding and class support, and assign each labeled example to exactly one stratified fold before feature extraction.",
+        "ensemble_calibration": "For each fold model, average original and horizontal-flip probabilities, then average those probabilities across all five fold models. No separate probability calibration is evidenced.",
+        "failure_boundaries": "The method depends on access to the exact pretrained encoder and enough resources for repeated embedding extraction. Fold assignments must be created before classifier training, and no validation-fold embedding-label pair may enter that fold's classifier fit.",
+        "feature_representation": "Keep the pretrained SigLIP2 vision encoder frozen and extract 1152-dimensional image embeddings. Use horizontal flips and rotations for training views and original plus horizontal-flip views for inference.",
+        "final_refit_inference": "No single all-data refit is evidenced or required by the fold ensemble. Retain the five fold-specific classifiers and average their TTA probabilities for final test inference.",
+        "model_stack": "Train a residual multilayer classifier over frozen embeddings with hidden widths 512, 256, and 128, using batch normalization, GELU activations, dropout, residual connections, and one output logit.",
+        "oof_protocol": "Five-fold validation is evidenced. Each sample is validated by the model that excluded its fold, but persistence or aggregation of a complete OOF probability vector is not explicitly evidenced; report fold metrics without inventing an OOF aggregate.",
+        "split_validation": "Run stratified five-fold cross-validation so each fold is used once for validation and the other four folds for classifier training. Track fold ROC-AUC and early-stop each classifier independently.",
+        "training_protocol": "For each fold, optimize label-smoothed BCE with AdamW and cosine annealing, use mixed precision where supported, and retain the epoch with the best fold validation ROC-AUC."
+      },
+      "source_node_ids": [
+        "run::20260725_051618_aerial-cactus-identification-deepseek-v4-full-r1::node::2aeb7137971d42c691fbeb86c9293b31"
+      ],
+      "title": "Frozen SigLIP2 Features with Five-Fold Residual-MLP Ensembling",
+      "when_to_use": "Use when a large pretrained vision encoder is available but repeated end-to-end fine-tuning is too expensive; sufficient storage and compute are required to extract augmented embeddings and train five classifier heads."
+    },
+    {
+      "method_family": "compact_cnn_mixup",
+      "pipeline": {
+        "data_validation": "Load image identifiers and binary labels, verify that images decode successfully and both target classes are present, and inspect class counts before stratification.",
+        "ensemble_calibration": "No TTA, model ensemble, SWA, or explicit probability calibration is evidenced. Convert the selected model's logits directly to sigmoid probabilities.",
+        "failure_boundaries": "Low resolution and training from scratch limit representation capacity and may miss subtle morphology. MixUp targets are for loss computation only; ROC-AUC must be calculated against untouched binary validation labels.",
+        "feature_representation": "Resize images to 32x32, normalize with ImageNet statistics, and apply random horizontal flip, rotation, color jitter, and MixUp during training.",
+        "final_refit_inference": "An all-data refit is not evidenced. Reload the best holdout checkpoint and run deterministic resize, normalization, and sigmoid inference on test images.",
+        "model_stack": "Train a four-layer convolutional network with channel widths 32, 64, 128, and 128, batch normalization, ReLU, max pooling, adaptive global pooling, and a dropout-regularized fully connected binary head.",
+        "oof_protocol": "Not evidenced / single holdout. Use only the fixed 20% validation partition for model selection and performance estimation.",
+        "split_validation": "Create one stratified 80/20 train-validation split. Keep validation transforms deterministic and select the best epoch using validation ROC-AUC with patience-5 early stopping.",
+        "training_protocol": "Use BCEWithLogitsLoss, AdamW, cosine annealing, automatic mixed precision, MixUp, and early stopping based on validation ROC-AUC."
+      },
+      "source_node_ids": [
+        "run::20260716_040229_aerial-cactus-identification::node::ba7d0ed4e7724e689b5af44c908282f0",
+        "run::20260716_040229_aerial-cactus-identification::node::d6949a4cc92143df898e3d3e58e43fe0"
+      ],
+      "title": "Compact Four-Block CNN with MixUp for Low-Resolution Training",
+      "when_to_use": "Use when pretrained backbones are unavailable or GPU resources are very limited and a lightweight model trained on 32x32 images is required."
+    }
+  ],
+  "tactics": [
+    {
+      "instruction": "Create separate AdamW parameter groups, using 5e-5 for pretrained backbone parameters and 1e-3 for the newly initialized classifier head; combine this with warmup and cosine decay.",
+      "parent_method_families": [
+        "efficientnet_b2_cutmix_differential_lr"
+      ],
+      "source_node_ids": [
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::node::4d79e8b8efbb43a99a00b39e5ff9dae3",
+        "run::20260701_145250_aerial-cactus-identification::node::1292d75b76324df89bdc160220248507"
+      ],
+      "tactic_kind": "training_protocol",
+      "title": "Differential Backbone and Head Learning Rates",
+      "when_to_use": "Use during end-to-end transfer learning when the pretrained representation should adapt conservatively while the binary head must learn quickly."
+    },
+    {
+      "instruction": "Use interpolated labels only to compute the training loss. Preserve untouched binary labels for ROC-AUC tracking, and always calculate validation AUC on an unmixed validation loader.",
+      "parent_method_families": [
+        "efficientnet_b2_cutmix_differential_lr",
+        "convnext_tiny_cutmix_tta",
+        "resnet18_staged_mixup_tta",
+        "compact_cnn_mixup"
+      ],
+      "source_node_ids": [
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::node::658b045653f042588dc68520eed77f87",
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::node::12a2f00d1a464c0aa036678db96684a9"
+      ],
+      "tactic_kind": "validation_protocol",
+      "title": "CutMix and MixUp Target Separation for AUC Evaluation",
+      "when_to_use": "Use whenever CutMix or MixUp produces continuous targets in a binary classification pipeline evaluated by ROC-AUC."
+    },
+    {
+      "instruction": "Train the replacement classifier while the pretrained backbone is frozen for five epochs, then unfreeze the backbone and continue with a reduced backbone learning rate.",
+      "parent_method_families": [
+        "resnet18_staged_mixup_tta"
+      ],
+      "source_node_ids": [
+        "run::20260716_040229_aerial-cactus-identification::node::6b9b5bc4e288485ba89fb03563c14c3f"
+      ],
+      "tactic_kind": "training_protocol",
+      "title": "Staged Backbone Unfreezing",
+      "when_to_use": "Use when immediate end-to-end fine-tuning is unstable or when the newly initialized head needs to settle before pretrained features are adapted."
+    },
+    {
+      "instruction": "Generate probabilities for deterministic flip variants and average probabilities rather than class decisions. Use original plus horizontal flip for the two-view design, or original, horizontal, vertical, and both flips for the four-view design.",
+      "parent_method_families": [
+        "convnext_tiny_cutmix_tta",
+        "resnet18_staged_mixup_tta",
+        "siglip2_frozen_fivefold_mlp"
+      ],
+      "source_node_ids": [
+        "run::20260725_051618_aerial-cactus-identification-deepseek-v4-full-r1::node::c7d2cb4075a04925a4cae8a98add9119",
+        "run::20260716_040229_aerial-cactus-identification::node::6b9b5bc4e288485ba89fb03563c14c3f",
+        "run::20260725_051618_aerial-cactus-identification-deepseek-v4-full-r1::node::2aeb7137971d42c691fbeb86c9293b31"
+      ],
+      "tactic_kind": "ensemble",
+      "title": "Deterministic Flip Test-Time Augmentation",
+      "when_to_use": "Use when cactus presence should be invariant to image orientation and the extra inference cost is acceptable."
+    },
+    {
+      "instruction": "Train one classifier per stratified fold, retain each fold's independently selected checkpoint, produce TTA-averaged probabilities from every classifier, and take the arithmetic mean across the five fold models.",
+      "parent_method_families": [
+        "siglip2_frozen_fivefold_mlp"
+      ],
+      "source_node_ids": [
+        "run::20260725_051618_aerial-cactus-identification-deepseek-v4-full-r1::node::2aeb7137971d42c691fbeb86c9293b31"
+      ],
+      "tactic_kind": "ensemble",
+      "title": "Fold-Model Probability Averaging",
+      "when_to_use": "Use when five-fold training is computationally practical and lower-variance test predictions are more valuable than maintaining a single final model."
+    }
+  ]
+}

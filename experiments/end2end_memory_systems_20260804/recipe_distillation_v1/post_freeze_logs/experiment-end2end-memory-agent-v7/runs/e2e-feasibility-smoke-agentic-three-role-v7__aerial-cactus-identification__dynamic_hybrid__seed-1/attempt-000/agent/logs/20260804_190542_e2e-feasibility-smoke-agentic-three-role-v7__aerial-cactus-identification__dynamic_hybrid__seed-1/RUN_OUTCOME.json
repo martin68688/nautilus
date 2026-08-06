@@ -1,0 +1,15 @@
+{
+  "active_candidate_ids": [],
+  "certified_solution_available": false,
+  "completed_steps": 3,
+  "completion_ratio": 1.0,
+  "interrupted": false,
+  "journal_checkpoint_ref": "/workspace/experiment-end2end-memory-agent-v7/runs/e2e-feasibility-smoke-agentic-three-role-v7__aerial-cactus-identification__dynamic_hybrid__seed-1/attempt-000/agent/logs/20260804_190542_e2e-feasibility-smoke-agentic-three-role-v7__aerial-cactus-identification__dynamic_hybrid__seed-1/journal.json",
+  "kubernetes_success_eligible": true,
+  "outcome_hash": "7cf7352147edc403784d702b98908ec97b2e4388f97fe160143db327eaed35eb",
+  "reason": "step_target_reached",
+  "schema": "mlevolve_run_outcome_v1",
+  "search_exhausted": false,
+  "status": "complete",
+  "total_steps": 3
+}

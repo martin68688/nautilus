@@ -1,0 +1,32 @@
+{
+  "schema": "mlevolve_end2end_retained_scored_attempt_v1",
+  "logical_run_id": "e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1",
+  "attempt": 0,
+  "job_name": "mlevolve-e2e-leaf-layered-recipe-smoke-v27",
+  "job_uid": "0ee1d126-449b-4515-b4d7-5859e73c0cae",
+  "pod_name": "mlevolve-e2e-leaf-layered-recipe-smoke-v27-0-qpw4n",
+  "pod_uid": "9f6c424f-8b57-4316-96b4-371c76879674",
+  "node_name": "gp-engine.hpc.okstate.edu",
+  "observed_gpu": "NVIDIA A100-SXM4-80GB",
+  "status": "scored_terminal_result_success",
+  "terminal_score": 0.08612996973006647,
+  "selected_candidate_id": "d2fccc688085447c9ad84356deac9194",
+  "selected_draft_role": "novel_exploration",
+  "selected_recipe_id": "recipe::leaf-classification::003",
+  "selected_method_family": "siglip2_multibranch_self_attention_fusion",
+  "candidate_failures": [
+    {
+      "draft_role": "coldstart_baseline",
+      "node_id": "0428eb7388804ff68e654b5ec34a0881",
+      "exception": "RuntimeError: permission denied for the DINOv3 torch.hub cache"
+    },
+    {
+      "draft_role": "memory_transfer",
+      "node_id": "0233ab5044384cf79fb72d5e521b4d26",
+      "exception": "AttributeError: 'float' object has no attribute 'shape'"
+    }
+  ],
+  "measurement_file_sha256": "32bc5db1d7eb087dea39b42b8820d384deed84d19b5d4e28a420bcbfe3fb5158",
+  "terminal_report_file_sha256": "7d9e2b60fa92201fd29b4885ed662a3b1517447f88291d7419878be9529c3c32",
+  "formal_pilot_started": false
+}

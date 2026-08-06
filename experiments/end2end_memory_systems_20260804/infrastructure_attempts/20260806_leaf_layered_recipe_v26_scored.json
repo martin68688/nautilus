@@ -1,0 +1,32 @@
+{
+  "schema": "mlevolve_end2end_retained_scored_attempt_v1",
+  "logical_run_id": "e2e-smoke-leaf-layered-recipe-v3__leaf-classification__dynamic_hybrid__seed-1",
+  "attempt": 0,
+  "job_name": "mlevolve-e2e-leaf-layered-recipe-smoke-v26",
+  "job_uid": "f9c549b7-947a-4f99-895d-977c77a81e5d",
+  "pod_name": "mlevolve-e2e-leaf-layered-recipe-smoke-v26-0-qxjdn",
+  "pod_uid": "10d7a22a-b1b4-4a28-90b3-9d495587ef7c",
+  "node_name": "hcc-gpengine-shor-c5303.unl.edu",
+  "observed_gpu": "NVIDIA A100-SXM4-80GB",
+  "status": "scored_terminal_result_retained",
+  "terminal_score": 0.14771864342527358,
+  "selected_candidate_id": "f2aac879d2e9419f84af94b66a7f8d19",
+  "selected_draft_role": "memory_transfer",
+  "candidate_failures": [
+    {
+      "draft_role": "coldstart_baseline",
+      "node_id": "656369a0ef0948d8ad2963a5dbd4a538",
+      "exception_type": "FileNotFoundError"
+    },
+    {
+      "draft_role": "novel_exploration",
+      "node_id": "0874d528c4644e0586a220893f48b847",
+      "selected_recipe_id": "recipe::leaf-classification::004",
+      "exception": "RuntimeError: indices should be either on CPU or on the same device as the indexed tensor"
+    }
+  ],
+  "measurement_file_sha256": "79a2370b36c4b97ca4c2d27eb252e3a075d725fd8f3373194a02b1a1d0ff3bf4",
+  "terminal_report_file_sha256": "379aa8e811c7042ee132f7a3297dd95d1ce5d57fdb781b165c688042ff13ea9f",
+  "replacement_reason": "The post-Smoke evidence nodes cited by the distilled SOPs were not materialized in the production graph, so the same-task terminal-best route was not visible online.",
+  "replacement_workload": "job/mlevolve-e2e-leaf-layered-recipe-smoke-v27"
+}
