@@ -11,7 +11,7 @@
     },
     {
       "path": "mlevolve/agents/adoption.py",
-      "sha256": "8cc0ea009d52c48e32b9fe4d14e069034d07ed6821dafb4506948ea5e2d857b3"
+      "sha256": "6b0813b95c06405f4f9587ddcba8818bebc8c7cc250f824e89d4b345f4c51e80"
     },
     {
       "path": "mlevolve/agents/adoption_verifier_agent.py",
@@ -994,8 +994,8 @@
       "sha256": "8bf82e25668e8aaa1d4963cf81d47f2cded2c297b0f21467ab5c41e3243d82c9"
     }
   ],
-  "git_head": "dd5e095a9b26acddcece8f87efd9cbb01b64df5c",
+  "git_head": "be2479c1d1c4db93e5e0a9e26e7dcf73d990ba5b",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "2bfc644c26799405b593b1330f5ba3b36e9596f476914cd3d0f59d32cce13283",
+  "manifest_hash": "04731196344decc99cbd921eee7364c3718488c718afa975571972805873963d",
   "schema": "mlevolve_end2end_source_lock_v1"
 }

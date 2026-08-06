@@ -698,6 +698,15 @@ def test_hybrid_trace_is_thread_local_and_logged_on_node(tmp_path):
     agent = SimpleNamespace(adoption_tracking_enabled=True, external_skill_memory=layer)
     log_adoption(node, agent, layer.source_name, refs, "draft")
     assert node.memory_navigation_trace
+    assert node.memory_routing_trace["schema"] == (
+        "mlevolve_memory_routing_trace_v1"
+    )
+    assert node.memory_routing_trace["system_id"] == "dynamic_hybrid"
+    assert node.memory_routing_trace["raw_pool_observed"] is True
+    assert node.memory_routing_trace["final_prompt_candidate_ids"] == list(
+        dict.fromkeys(refs)
+    )
+    assert node.memory_routing_trace["observational_only"] is True
     assert node.adoption_log
     assert all(record["adoption_outcome"] == "pending_analysis" for record in node.adoption_log)
     required = {"retrieval_channel", "candidate_class", "gateway_sop_id", "supporting_transition_ids", "selection_reason", "selection_state"}
@@ -1044,6 +1053,7 @@ def test_l3_classifier_dimension_failure_does_not_match_batch_schema_repair():
 
 
 def test_dynamic_manual_l3_router_hard_gates_before_gateway_agent():
+    from agents.adoption import log_adoption
     from agents.memory.stage_aware_hybrid_memory import (
         L3_FAILURE_TOKEN_EQUIVALENCE_GROUPS,
     )
@@ -1104,6 +1114,21 @@ def test_dynamic_manual_l3_router_hard_gates_before_gateway_agent():
     }
     assert "repair::aerial-cactus-identification::005" in refs
     assert "repair::aerial-cactus-identification::005" in text
+
+    node = SimpleNamespace(adoption_log=[], memory_navigation_trace=[])
+    agent = SimpleNamespace(
+        adoption_tracking_enabled=True,
+        evaluation_authority=None,
+        external_skill_memory=layer,
+    )
+    log_adoption(node, agent, layer.source_name, refs, "debug")
+    route = node.memory_routing_trace
+    assert route["memory_pack_schema"] == "stage_hybrid_memory_pack_v1"
+    assert route["stage_route"]["quotas"]["sop_gateways"] == 1
+    assert route["stage_route"]["quotas"]["tree_candidates"] == 5
+    assert route["final_prompt_candidate_ids"] == list(dict.fromkeys(refs))
+    assert route["raw_candidates"]
+    assert route["navigation_trace"]
 
 
 def test_dynamic_l3_agent_sees_all_exact_task_cards_and_selects_by_root_cause():
@@ -1458,6 +1483,8 @@ def test_layered_router_without_replay_manifest_has_no_replay_exclusion(tmp_path
 
 
 def test_recipe_layered_leaf_draft_is_task_local_and_prompt_contains_complete_l1_recipe():
+    from agents.adoption import log_adoption
+
     layer = _real_recipe_layer()
     _inject_frozen_recipe_evidence(
         layer,
@@ -1491,6 +1518,24 @@ def test_recipe_layered_leaf_draft_is_task_local_and_prompt_contains_complete_l1
     assert pack["selected_strategy"]["sop_id"] in refs
     assert pack["selected_strategy"]["best_tree_evidence"]["node_id"] in refs
     assert pack["selected_strategy"]["best_tree_evidence"]["evidence_kind"] == "direct_clean_run_node"
+
+    node = SimpleNamespace(adoption_log=[], memory_navigation_trace=[])
+    agent = SimpleNamespace(
+        adoption_tracking_enabled=True,
+        evaluation_authority=None,
+        external_skill_memory=layer,
+    )
+    log_adoption(node, agent, layer.source_name, refs, "draft")
+    route = node.memory_routing_trace
+    assert route["memory_pack_schema"] == "layered_strategy_memory_pack_v1"
+    assert route["stage_route"]["stage"] == "draft"
+    assert route["final_prompt_candidate_ids"] == list(dict.fromkeys(refs))
+    assert len(route["raw_candidates"]) >= 3
+    assert len(route["suppressed_candidates"]) >= 2
+    assert {row["candidate_id"] for row in route["final_prompt_candidates"]} == set(
+        refs
+    )
+    assert route["prompt_token_count_available"] is False
 
 
 def test_dynamic_replay_uses_sealed_leaf_terminal_capsule_and_novel_excludes_its_family():

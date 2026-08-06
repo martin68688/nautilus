@@ -12,12 +12,164 @@ LLM prompt (memory ids never appear in any prompt text).
 import time
 import logging
 import copy
+import hashlib
+import json
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from engine.search_node import SearchNode
 
 logger = logging.getLogger("MLEvolve")
+
+
+def _routing_candidate_id(row):
+    if not isinstance(row, dict):
+        return ""
+    for key in ("candidate_id", "id", "sop_id", "node_id", "transition_id"):
+        value = str(row.get(key) or "")
+        if value:
+            return value
+    return ""
+
+
+def _serialize_layered_routing_trace(pack, ref_ids):
+    """Normalize a layered Dynamic pack into the shared routing trace schema.
+
+    Layered retrieval predates the ten-system adapter and has richer,
+    stage-specific pack shapes.  Persist the exact Prompt-visible refs passed
+    to ``log_adoption`` and derive suppression only from candidates the router
+    actually observed.  This is observational bookkeeping; it never changes
+    retrieval or the already-sent Prompt.
+    """
+
+    visible_ids = list(dict.fromkeys(str(value) for value in ref_ids if value))
+    visible_set = set(visible_ids)
+    raw_rows = []
+    seen_raw = set()
+    for key in (
+        "pre_gate_raw_candidates",
+        "strategy_candidates",
+        "direct_sop_candidates",
+        "tree_candidate_details",
+        "selected_tactics",
+    ):
+        for row in pack.get(key) or []:
+            if not isinstance(row, dict):
+                continue
+            candidate_id = _routing_candidate_id(row)
+            if not candidate_id or candidate_id in seen_raw:
+                continue
+            normalized = copy.deepcopy(row)
+            normalized["candidate_id"] = candidate_id
+            normalized["candidate_source"] = key
+            normalized["final_prompt_visible"] = candidate_id in visible_set
+            raw_rows.append(normalized)
+            seen_raw.add(candidate_id)
+
+    navigation = [
+        copy.deepcopy(row)
+        for row in pack.get("navigation_trace") or []
+        if isinstance(row, dict)
+    ]
+    for row in navigation:
+        candidate_id = _routing_candidate_id(row)
+        if not candidate_id or candidate_id in seen_raw:
+            continue
+        raw_rows.append(
+            {
+                "candidate_id": candidate_id,
+                "candidate_source": "navigation_trace",
+                "selection_state": str(row.get("selection_state") or ""),
+                "retrieval_channel": str(row.get("retrieval_channel") or ""),
+                "final_prompt_visible": candidate_id in visible_set,
+            }
+        )
+        seen_raw.add(candidate_id)
+
+    details = {}
+    for row in raw_rows:
+        details[str(row["candidate_id"])] = row
+    final_candidates = []
+    for candidate_id in visible_ids:
+        detail = copy.deepcopy(details.get(candidate_id) or {})
+        detail["candidate_id"] = candidate_id
+        detail["final_prompt_visible"] = True
+        final_candidates.append(detail)
+
+    suppressed = {}
+    for row in raw_rows:
+        candidate_id = str(row["candidate_id"])
+        if candidate_id not in visible_set:
+            suppressed[candidate_id] = {
+                "candidate_id": candidate_id,
+                "reason": str(
+                    row.get("gate_reason")
+                    or row.get("selection_state")
+                    or "not_selected_for_prompt"
+                ),
+                "candidate_source": str(row.get("candidate_source") or ""),
+            }
+    for row in (pack.get("execution_safety_gate") or {}).get("rejected") or []:
+        candidate_id = _routing_candidate_id(row)
+        if candidate_id and candidate_id not in visible_set:
+            suppressed[candidate_id] = {
+                "candidate_id": candidate_id,
+                "reason": str(row.get("reason") or "execution_safety_gate"),
+                "candidate_source": "execution_safety_gate",
+            }
+
+    raw_hash = hashlib.sha256(
+        json.dumps(
+            raw_rows,
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            default=str,
+        ).encode("utf-8")
+    ).hexdigest()
+    task_profile = pack.get("task_profile") or {}
+    return {
+        "schema": "mlevolve_memory_routing_trace_v1",
+        "memory_pack_schema": str(pack.get("schema") or ""),
+        "algorithm_version": str(pack.get("algorithm_version") or ""),
+        "system_id": "dynamic_hybrid",
+        "stage_route": copy.deepcopy(pack.get("stage_route") or {}),
+        "target_task_id": str(
+            pack.get("target_task_id") or task_profile.get("task_id") or ""
+        ),
+        "candidate_pool_hash": raw_hash,
+        "candidate_pool_source": "layered_strategy_observed_candidates",
+        "raw_pool_observed": True,
+        "raw_candidates": raw_rows,
+        "selected_candidates": final_candidates,
+        "suppressed_candidates": list(suppressed.values()),
+        "final_prompt_candidate_ids": visible_ids,
+        "final_prompt_candidates": final_candidates,
+        "selected_sop_gateway_ids": [
+            _routing_candidate_id(row)
+            for row in pack.get("selected_sop_gateways") or []
+            if _routing_candidate_id(row)
+        ],
+        "strategy_selection": copy.deepcopy(pack.get("strategy_selection") or {}),
+        "gateway_selection": copy.deepcopy(pack.get("gateway_selection") or {}),
+        "l3_agent_match": copy.deepcopy(pack.get("l3_agent_match") or {}),
+        "navigation_trace": navigation,
+        "visible_clause_ids": list(pack.get("visible_clause_ids") or []),
+        "prompt_token_count": int(pack.get("prompt_token_count") or 0),
+        "prompt_token_count_available": "prompt_token_count" in pack,
+        "prompt_truncated": bool(pack.get("prompt_truncated")),
+        "visibility_safety_gate": copy.deepcopy(
+            pack.get("visibility_safety_gate") or {}
+        ),
+        "unauthorized_prompt_exposure": int(
+            pack.get("unauthorized_prompt_exposure") or 0
+        ),
+        "memory_snapshot_bound_but_not_exposed": bool(
+            pack.get("memory_snapshot_bound_but_not_exposed")
+        ),
+        "memory_bundle": copy.deepcopy(pack.get("memory_bundle") or {}),
+        "observational_only": True,
+    }
 
 
 def _hybrid_trace_for_ref(pack, ref_id):
@@ -212,6 +364,14 @@ def log_adoption(
                     ),
                     "memory_bundle": copy.deepcopy(pack.get("memory_bundle") or {}),
                 }
+            elif pack.get("schema") in {
+                "layered_strategy_memory_pack_v1",
+                "stage_hybrid_memory_pack_v1",
+                "layered_model_design_tactics_v1",
+            }:
+                node.memory_routing_trace = _serialize_layered_routing_trace(
+                    pack, ref_ids
+                )
     if not ref_ids:
         return
     visibility_pack = (
@@ -232,13 +392,22 @@ def log_adoption(
         pack.get("schema") in {
             "mlevolve_end2end_memory_pack_v1",
             "experiment_r_memory_pack_v1",
+            "layered_strategy_memory_pack_v1",
+            "stage_hybrid_memory_pack_v1",
+            "layered_model_design_tactics_v1",
         }
         and callable(candidate_exposure_recorder)
     ):
         try:
             candidate_exposure_recorder(
                 node=node,
-                candidates=pack.get("final_prompt_candidates") or [],
+                candidates=(
+                    pack.get("final_prompt_candidates")
+                    or (getattr(node, "memory_routing_trace", None) or {}).get(
+                        "final_prompt_candidates"
+                    )
+                    or []
+                ),
                 request_id=str(
                     getattr(visibility_pack, "request_id", "") or ""
                 ),
