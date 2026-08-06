@@ -1058,6 +1058,52 @@ def test_resume_starts_missing_and_retries_only_infrastructure(tmp_path) -> None
     assert attempt == 0
     assert observed == retained
 
+
+def test_explicit_resume_source_preserves_unscored_adapter_failure(tmp_path) -> None:
+    logical_run_id = "leaf-resume-adapter-recovery"
+    source_root = tmp_path / logical_run_id / "attempt-000"
+    source_root.mkdir(parents=True)
+    (source_root / "MEASUREMENT.json").write_text(
+        json.dumps({"failure_class": "infrastructure", "completed": False}),
+        encoding="utf-8",
+    )
+    adapter_root = tmp_path / logical_run_id / "attempt-001"
+    adapter_root.mkdir()
+    (adapter_root / "MEASUREMENT.json").write_text(
+        json.dumps(
+            {
+                "failure_class": "agent",
+                "completed": False,
+                "terminal_score": None,
+                "search_resume": {
+                    "enabled": True,
+                    "source_attempt": 0,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert run_assignment.resolve_resume_attempt(
+        tmp_path,
+        logical_run_id,
+        source_attempt=0,
+    ) == (2, None)
+
+    adapter_measurement = json.loads(
+        (adapter_root / "MEASUREMENT.json").read_text(encoding="utf-8")
+    )
+    adapter_measurement["terminal_score"] = 0.1
+    (adapter_root / "MEASUREMENT.json").write_text(
+        json.dumps(adapter_measurement), encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="unscored adapter attempts"):
+        run_assignment.resolve_resume_attempt(
+            tmp_path,
+            logical_run_id,
+            source_attempt=0,
+        )
+
     orphan_id = "hard-interrupted"
     orphan_root = tmp_path / orphan_id / "attempt-000"
     orphan_root.mkdir(parents=True)

@@ -462,7 +462,10 @@ def _write_exclusive(path: Path, payload: dict[str, Any], hash_field: str) -> No
 
 
 def resolve_resume_attempt(
-    output_root: Path, logical_run_id: str
+    output_root: Path,
+    logical_run_id: str,
+    *,
+    source_attempt: int | None = None,
 ) -> tuple[int, dict[str, Any] | None]:
     """Resume a missing run or a retained infrastructure failure.
 
@@ -482,7 +485,45 @@ def resolve_resume_attempt(
             if path.is_dir():
                 attempts.append((attempt, path))
     if not attempts:
+        if source_attempt is not None:
+            raise ValueError("Explicit resume source does not exist")
         return 0, None
+    attempts.sort(key=lambda item: item[0])
+    if source_attempt is not None:
+        source_paths = [path for attempt, path in attempts if attempt == source_attempt]
+        if not source_paths:
+            raise ValueError(
+                f"Explicit resume source attempt-{source_attempt:03d} does not exist"
+            )
+        source_measurement_path = source_paths[0] / "MEASUREMENT.json"
+        if not source_measurement_path.is_file():
+            raise ValueError("Explicit resume source has no retained MEASUREMENT")
+        source_measurement = read_object(source_measurement_path)
+        if source_measurement.get("failure_class") != "infrastructure":
+            raise ValueError(
+                "Explicit resume source must be a retained infrastructure failure"
+            )
+        for later_attempt, later_path in attempts:
+            if later_attempt <= source_attempt:
+                continue
+            later_measurement_path = later_path / "MEASUREMENT.json"
+            if not later_measurement_path.is_file():
+                raise ValueError(
+                    "An intermediate resume attempt has no retained MEASUREMENT"
+                )
+            later_measurement = read_object(later_measurement_path)
+            search_resume = dict(later_measurement.get("search_resume") or {})
+            if (
+                search_resume.get("enabled") is not True
+                or int(search_resume.get("source_attempt", -1)) != source_attempt
+                or later_measurement.get("completed") is True
+                or later_measurement.get("terminal_score") is not None
+            ):
+                raise ValueError(
+                    "Explicit resume source may bypass only preserved, unscored "
+                    "adapter attempts derived from that source"
+                )
+        return attempts[-1][0] + 1, None
     attempt, path = max(attempts)
     measurement_path = path / "MEASUREMENT.json"
     if not measurement_path.is_file():
@@ -697,7 +738,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     output_root = Path(args.output_root).resolve()
     if args.resume:
         args.attempt, retained = resolve_resume_attempt(
-            output_root, str(row["logical_run_id"])
+            output_root,
+            str(row["logical_run_id"]),
+            source_attempt=args.resume_source_attempt,
         )
         if retained is not None:
             return retained
@@ -728,8 +771,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError(f"Refusing to replace immutable attempt: {condition_root}")
     prior_measurement: dict[str, Any] | None = None
     search_resume: dict[str, Any] | None = None
+    retry_source_attempt: int | None = None
     if args.attempt > 0:
-        previous = output_root / row["logical_run_id"] / f"attempt-{args.attempt - 1:03d}" / "MEASUREMENT.json"
+        retry_source_attempt = (
+            int(args.resume_source_attempt)
+            if args.resume_source_attempt is not None
+            else args.attempt - 1
+        )
+        previous = (
+            output_root
+            / row["logical_run_id"]
+            / f"attempt-{retry_source_attempt:03d}"
+            / "MEASUREMENT.json"
+        )
         if not previous.is_file():
             if not args.resume:
                 raise ValueError(
@@ -984,7 +1038,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "logical_run_id": row["logical_run_id"],
         "attempt": args.attempt,
         "retry_of": (
-            f"attempt-{args.attempt - 1:03d}" if args.attempt > 0 else None
+            f"attempt-{retry_source_attempt:03d}"
+            if retry_source_attempt is not None
+            else None
         ),
         "manifest_hash": manifest["manifest_hash"],
         "task_id": row["task_id"],
@@ -1066,6 +1122,15 @@ def main() -> int:
         help="start missing conditions and retry only retained infrastructure failures",
     )
     parser.add_argument(
+        "--resume-source-attempt",
+        type=int,
+        default=None,
+        help=(
+            "resume an explicitly retained infrastructure attempt while preserving "
+            "intermediate unscored adapter failures"
+        ),
+    )
+    parser.add_argument(
         "--output-root",
         default="/workspace/experiment-end2end-memory-agent-v8/runs",
     )
@@ -1087,6 +1152,11 @@ def main() -> int:
         parser.error("--attempt must be non-negative")
     if args.resume and args.attempt != 0:
         parser.error("--resume and an explicit nonzero --attempt are mutually exclusive")
+    if args.resume_source_attempt is not None:
+        if not args.resume:
+            parser.error("--resume-source-attempt requires --resume")
+        if args.resume_source_attempt < 0:
+            parser.error("--resume-source-attempt must be non-negative")
     result = run(args)
     print(json.dumps(result, sort_keys=True, ensure_ascii=False))
     return 0 if args.dry_run or result.get("completed") else 1
