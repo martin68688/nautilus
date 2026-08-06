@@ -225,6 +225,9 @@ def build_summary(
                 ),
                 "llm_token_usage": outcome.get("llm_token_usage"),
                 "llm_cost_usd": outcome.get("llm_cost_usd"),
+                "selected_candidate_id": outcome.get("selected_candidate_id"),
+                "journal_path": outcome.get("journal_path"),
+                "terminal_report_sha256": outcome.get("terminal_report_sha256"),
                 "measurement_path": outcome.get("_measurement_path"),
             }
         )

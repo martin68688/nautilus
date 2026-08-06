@@ -18,6 +18,14 @@ MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
 SPEC.loader.exec_module(MODULE)
 
+MECHANISM_SCRIPT = SCRIPT.with_name("analyze_composite_mechanism.py")
+MECHANISM_SPEC = importlib.util.spec_from_file_location(
+    "composite_mechanism", MECHANISM_SCRIPT
+)
+MECHANISM = importlib.util.module_from_spec(MECHANISM_SPEC)
+assert MECHANISM_SPEC.loader is not None
+MECHANISM_SPEC.loader.exec_module(MECHANISM)
+
 
 def _write_measurement(root: Path, cell: dict, score: float, *, cumulative: float) -> None:
     attempt = root / cell["logical_run_id"] / "attempt-001"
@@ -82,3 +90,36 @@ def test_composite_plan_is_40_cells_and_uses_cumulative_resume_metrics(tmp_path)
     assert first["agent_wall_seconds"] == 110.0
     assert first["allocated_gpu_hours"] == 2.5
     assert summary["summary_hash"] == MODULE.payload_hash(summary, "summary_hash")
+
+
+def test_mechanism_aggregation_keeps_stage_system_and_activation_counts() -> None:
+    row = {
+        "logical_run_id": "run-1",
+        "task_id": "leaf-classification",
+        "system_id": "dynamic_hybrid",
+        **MECHANISM._empty_counts(),
+        "routing_routes": 2,
+        "raw_candidates": 12,
+        "prompt_visible": 6,
+        "suppressed": 6,
+        "static_adopted": 3,
+        "runtime_activated": 2,
+        "adopted": 1,
+        "partially_adopted": 1,
+        "by_stage": {
+            "debug": {
+                **MECHANISM._empty_counts(),
+                "routing_routes": 2,
+                "raw_candidates": 12,
+                "prompt_visible": 6,
+                "suppressed": 6,
+                "runtime_activated": 2,
+            }
+        },
+    }
+    aggregate = MECHANISM.aggregate_runs([row])
+    assert aggregate["totals"]["suppression_rate"] == 0.5
+    assert aggregate["totals"]["static_adoption_rate"] == 0.5
+    assert aggregate["totals"]["runtime_activation_rate"] == 2 / 6
+    assert aggregate["by_system"]["dynamic_hybrid"]["runs"] == 1
+    assert aggregate["by_stage"]["debug"]["runtime_activated"] == 2
