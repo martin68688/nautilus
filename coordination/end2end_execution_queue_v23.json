@@ -1,0 +1,82 @@
+{
+  "schema": "mlevolve_end2end_execution_queue_v1",
+  "updated_at": "2026-08-06T19:40:34Z",
+  "namespace": "ecepxie",
+  "gpu_resource": "nvidia.com/a100",
+  "max_total_gpu_parallelism": 4,
+  "monitor_interval_minutes": 30,
+  "active_at_last_observation": [
+    "mlevolve-e2e-leaf-nomem-pilot-v21",
+    "mlevolve-e2e-leaf-reversed-pilot-v21",
+    "mlevolve-e2e-leaf-sop-pilot-v22",
+    "mlevolve-e2e-leaf-dynamic-pilot-v22"
+  ],
+  "leaf_pending_priority": [
+    {
+      "workload": "mlevolve-e2e-leaf-flat-resume-v23",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-flat-resume-v23.yaml",
+      "kind": "infrastructure_resume",
+      "completed_steps_before_resume": 49
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-dynamic-resume-v23",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-dynamic-resume-v23.yaml",
+      "kind": "v21_dynamic_diagnostic_infrastructure_resume",
+      "completed_steps_before_resume": 38
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-gome-pilot-v23",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-gome-v23.yaml",
+      "kind": "fresh_condition"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-static-pilot-v23",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-static-v23.yaml",
+      "kind": "fresh_condition"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-rcr-pilot-v23",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-rcr-v23.yaml",
+      "kind": "fresh_condition"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-runforest-pilot-v23",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-runforest-v23.yaml",
+      "kind": "fresh_condition"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-macla-pilot-v23",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-macla-v23.yaml",
+      "kind": "fresh_condition"
+    }
+  ],
+  "task_jobs_after_leaf": [
+    {
+      "workload": "mlevolve-e2e-aerial-pilot-v23",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/aerial-pilot-all-systems-v23.yaml",
+      "completions": 10,
+      "parallelism": 4
+    },
+    {
+      "workload": "mlevolve-e2e-denoising-pilot-v23",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/denoising-pilot-all-systems-v23.yaml",
+      "completions": 10,
+      "parallelism": 4
+    },
+    {
+      "workload": "mlevolve-e2e-taxi-pilot-v23",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/taxi-pilot-all-systems-v23.yaml",
+      "completions": 10,
+      "parallelism": 4
+    }
+  ],
+  "submission_rules": {
+    "never_stop_active_pending_or_running": true,
+    "normal_creating_or_pending_is_not_deleted": true,
+    "exact_workload_preflight_required": true,
+    "submit_task_indexed_job_only_when_no_other_gpu_workload_is_active": true,
+    "preserve_all_attempts_and_infrastructure_failures": true,
+    "only_infrastructure_failure_may_retry": true,
+    "seed_1_is_exploratory_only": true
+  }
+}
