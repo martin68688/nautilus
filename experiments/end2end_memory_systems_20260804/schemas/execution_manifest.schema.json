@@ -23,7 +23,8 @@
       "enum": [
         "end2end-agentic-three-role-v12",
         "end2end-agentic-three-role-v13",
-        "end2end-agentic-three-role-v22"
+        "end2end-agentic-three-role-v22",
+        "end2end-agentic-three-role-v23"
       ]
     },
     "comparison_baseline_release_id": {"const": "end2end-agent-v3"},
