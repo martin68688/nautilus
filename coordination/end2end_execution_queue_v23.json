@@ -1,33 +1,50 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-06T19:40:34Z",
+  "updated_at": "2026-08-06T22:11:31Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
   "monitor_interval_minutes": 30,
   "active_at_last_observation": [
-    "mlevolve-e2e-leaf-nomem-pilot-v21",
-    "mlevolve-e2e-leaf-reversed-pilot-v21",
     "mlevolve-e2e-leaf-sop-pilot-v22",
-    "mlevolve-e2e-leaf-dynamic-pilot-v22"
+    "mlevolve-e2e-leaf-dynamic-pilot-v22",
+    "mlevolve-e2e-leaf-flat-resume-v23",
+    "mlevolve-e2e-leaf-gome-pilot-v23"
   ],
-  "leaf_pending_priority": [
+  "retained_terminal_at_last_observation": [
     {
-      "workload": "mlevolve-e2e-leaf-flat-resume-v23",
-      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-flat-resume-v23.yaml",
-      "kind": "infrastructure_resume",
-      "completed_steps_before_resume": 49
+      "workload": "mlevolve-e2e-leaf-nomem-pilot-v21",
+      "failure_class": "agent",
+      "status": "retained_agent_partial"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-reversed-pilot-v21",
+      "failure_class": "agent",
+      "status": "retained_agent_partial"
     },
     {
       "workload": "mlevolve-e2e-leaf-dynamic-resume-v23",
-      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-dynamic-resume-v23.yaml",
-      "kind": "v21_dynamic_diagnostic_infrastructure_resume",
-      "completed_steps_before_resume": 38
+      "failure_class": "agent",
+      "status": "retained_adapter_failure",
+      "preserve_for_v24_recovery": true
+    }
+  ],
+  "leaf_pending_priority": [
+    {
+      "workload": "mlevolve-e2e-leaf-flat-resume-v24",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-flat-resume-v24.yaml",
+      "kind": "infrastructure_resume_after_preserved_adapter_failure",
+      "source_attempt": 0,
+      "next_attempt": 2,
+      "completed_steps_before_resume": 49
     },
     {
-      "workload": "mlevolve-e2e-leaf-gome-pilot-v23",
-      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-gome-v23.yaml",
-      "kind": "fresh_condition"
+      "workload": "mlevolve-e2e-leaf-dynamic-resume-v24",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-dynamic-resume-v24.yaml",
+      "kind": "v21_dynamic_diagnostic_infrastructure_resume_after_preserved_adapter_failure",
+      "source_attempt": 0,
+      "next_attempt": 2,
+      "completed_steps_before_resume": 38
     },
     {
       "workload": "mlevolve-e2e-leaf-static-pilot-v23",
@@ -77,6 +94,8 @@
     "submit_task_indexed_job_only_when_no_other_gpu_workload_is_active": true,
     "preserve_all_attempts_and_infrastructure_failures": true,
     "only_infrastructure_failure_may_retry": true,
+    "adapter_recovery_must_bind_original_infrastructure_attempt": true,
+    "adapter_recovery_must_preserve_intermediate_attempts": true,
     "seed_1_is_exploratory_only": true
   }
 }

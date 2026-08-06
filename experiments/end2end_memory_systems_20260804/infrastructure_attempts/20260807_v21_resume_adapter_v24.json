@@ -1,0 +1,48 @@
+{
+  "schema": "mlevolve_resume_adapter_publication_record_v1",
+  "published_root": "/workspace/nautilus-exp-end2end-agent-v21-resume-v24",
+  "base_root": "/workspace/nautilus-exp-end2end-agent-v21",
+  "parent_adapter_root": "/workspace/nautilus-exp-end2end-agent-v21-resume-v23",
+  "base_git_head": "dd5e095a9b26acddcece8f87efd9cbb01b64df5c",
+  "adapter_git_head": "f217284ca503f88ba17264bcdaf0521f3bdb4217",
+  "release_id": "end2end-agentic-three-role-v21-resume-v24",
+  "pilot_manifest_hash": "8869949aad26ee2a4342a9479580ec652dbc670871a79a90fc7644a9415c6219",
+  "source_lock_manifest_hash": "c965651c5f857b9097d12c639e0baac82deaabc85f5429b34559166683703468",
+  "resume_adapter_receipt_hash": "d61eb8d8d8f75416a8b2572fd9e05c85e128ca3debdeb4994dd376702bc20123",
+  "parent_adapter_receipt_hash": "94f564bd0a101538e7f5ccced69c009fc932888e18101a6974055aa83718e6f8",
+  "overlaid_paths": [
+    "mlevolve/run.py",
+    "mlevolve/engine/agent_search.py",
+    "mlevolve/engine/search_resume.py",
+    "mlevolve/utils/serialize.py",
+    "experiments/end2end_memory_systems_20260804/run_assignment.py"
+  ],
+  "overlay_sha256": {
+    "mlevolve/run.py": "1a879856a67c907a900d69dfd40a4985213d7a0a1d46ade2412e32180e7713f2",
+    "mlevolve/engine/agent_search.py": "cf56b2bb5a154b7a976939e6fcbf4a286fcebfb88d042cd0ec29c8a94cc1be07",
+    "mlevolve/engine/search_resume.py": "9dad34d0a8cae6c704ad97b8a9e23f3d10e1f45723eb692cad80a0c33f1d9018",
+    "mlevolve/utils/serialize.py": "ce3ac89dbce3b8617ca188cad146ce2a11a5e2a4f639b57cb1a59f758f32e1db",
+    "experiments/end2end_memory_systems_20260804/run_assignment.py": "0fe9ce4e887791fbfd8a52be01f521b4eea4d262a849f18fe16fed59a8efdd86"
+  },
+  "algorithm_and_memory_config_unchanged": true,
+  "dynamic_role_preserved": "memory_transfer",
+  "resume_runtime_fix": "rehydrate a distinct process-local child_count_lock for every Journal and archived active candidate node",
+  "explicit_source_policy": "only a retained infrastructure attempt may be selected; every intervening attempt must be preserved, unscored, and derived from the same source",
+  "dynamic_source_attempt": 0,
+  "dynamic_failed_adapter_attempt": 1,
+  "dynamic_failed_adapter_measurement_hash": "30dfa7eccdba030ae295dfbcc7740230a15fdd1398a2bb3e481ca018ba6654f8",
+  "dynamic_next_attempt": 2,
+  "flat_source_attempt": 0,
+  "flat_next_attempt": 2,
+  "real_journal_validation": {
+    "logical_run_id": "e2e-pilot-agentic-three-role-v21__leaf-classification__dynamic_hybrid__seed-1",
+    "journal_nodes": 39,
+    "locks_rehydrated": true,
+    "expected_child_count_roundtrip": true,
+    "resolved_resume_plan": [2, null]
+  },
+  "source_lock_verified_files": 248,
+  "manifest_dry_run_agent_calls": 0,
+  "manifest_dry_run_filesystem_written": false,
+  "source_lock_verified": true
+}
