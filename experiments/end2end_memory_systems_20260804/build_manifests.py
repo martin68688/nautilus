@@ -329,6 +329,10 @@ external_skill_memory:
   experiment_r_agentic_max_observed: 48
   experiment_r_agentic_temperature: 0.0
   experiment_r_agentic_max_tokens: 1200
+  experiment_r_l3_agent_match_enabled: true
+  experiment_r_l3_agent_match_max_attempts: 2
+  experiment_r_l3_agent_match_min_confidence: 0.50
+  experiment_r_l3_agent_match_max_tokens: 1800
   experiment_r_memory_transfer_static_gate: false
   experiment_r_memory_transfer_runtime_gate: false
 
@@ -485,6 +489,18 @@ def component_manifests(
                 "prompt_token_budget": 1536,
                 "token_counter": "whitespace_split_v1",
                 "visibility_token_budget": 4096,
+            },
+            "l3_agent_matching": {
+                "enabled_for_systems": ["dynamic_hybrid"],
+                "decision_stage": "debug",
+                "temperature": 0.0,
+                "max_attempts_per_task_scope": 2,
+                "max_tokens_per_call": 1800,
+                "min_confidence": 0.50,
+                "task_scope_order": ["exact_task", "same_task_type"],
+                "cross_task_type_allowed": False,
+                "manual_synonym_table_used": False,
+                "failure_fallback": "abstain_without_manual_matcher",
             },
             "adoption_verifier": {
                 "enabled": False,

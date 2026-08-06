@@ -1,0 +1,43 @@
+{
+  "attempt": 0,
+  "budget": {
+    "agent_steps": 8,
+    "agent_time_limit_seconds": 5400,
+    "cpu_count": 16,
+    "execution_timeout_seconds": 1200,
+    "finalize_reserve_seconds": 180,
+    "gpu_count": 1,
+    "initial_drafts": 3,
+    "max_replacement_drafts": 0,
+    "memory_gib": 64,
+    "parallel_search_num": 1
+  },
+  "command_sha256": "6e6230a9645dea5bde5fa447d4a69b25bb3cb410e986edabcb15930c722cb989",
+  "formal_result_eligible": false,
+  "hardware": {
+    "gpu_product_constraint": null,
+    "gpu_query_error": "",
+    "node_name": "node-1-3.sdsc.optiputer.net",
+    "observed_gpu_products": [
+      "NVIDIA A100-SXM4-80GB"
+    ],
+    "requested_gpu_resource": "nvidia.com/a100"
+  },
+  "kubernetes": {
+    "completion_index": "",
+    "job_name": "",
+    "job_uid": "",
+    "node_name": "node-1-3.sdsc.optiputer.net",
+    "pod_name": "mlevolve-e2e-l3-debug-dev-v18",
+    "pod_uid": ""
+  },
+  "logical_run_id": "e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1",
+  "manifest_hash": "952a69a9a7cab709c95ce97a79936c16b57372f2c880540695f60bd887a259b5",
+  "receipt_hash": "a2aef87b0c0ceee46812d3da6d4f079a13a7a82f4ab732253fa9c70a394bc389",
+  "schema": "mlevolve_end2end_launch_receipt_v1",
+  "seed": 1,
+  "started_at_ns": 1786004446648781846,
+  "system_id": "dynamic_hybrid",
+  "task_id": "leaf-classification",
+  "validation_mode": "experiment_fast_nonblocking_v1"
+}

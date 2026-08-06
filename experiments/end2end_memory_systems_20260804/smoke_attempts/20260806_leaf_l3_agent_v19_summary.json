@@ -1,0 +1,106 @@
+{
+  "schema": "mlevolve_end2end_leaf_l3_agent_smoke_summary_v1",
+  "created_at_utc": "2026-08-06T08:37:00Z",
+  "task_id": "leaf-classification",
+  "system_id": "dynamic_hybrid",
+  "seed": 1,
+  "exploratory_only": true,
+  "formal_pilot_started": false,
+  "source_snapshot": "/workspace/nautilus-exp-end2end-agent-v19",
+  "output_root": "/workspace/experiment-end2end-memory-agent-v15-l3-agent",
+  "controlled_l3_harness": {
+    "status": "passed",
+    "checks_passed": 11,
+    "checks_total": 11,
+    "report_sha256": "769fe5a569dd84c5957b9987bffe2ffc053acc8d9399329e832a82c8f674e49f",
+    "exact_task_selection": {
+      "selected_sop_id": "repair::aerial-cactus-identification::005",
+      "confidence": 0.95
+    },
+    "nearby_different_root_cause": "abstain",
+    "same_task_type_fallback": {
+      "selected_sop_id": "repair::denoising-dirty-documents::002",
+      "confidence": 0.9
+    },
+    "cross_task_type": "abstain",
+    "infrastructure": "abstain",
+    "manual_synonym_table_used": false
+  },
+  "result": {
+    "logical_run_id": "e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1",
+    "completed": true,
+    "completed_steps": 8,
+    "total_steps": 8,
+    "terminal_metric": "multiclass_log_loss",
+    "selected_terminal_score": 1.6839258744918866,
+    "selected_candidate_id": "816d6028dc7f4438b4200bbcd4a16bc0",
+    "selected_internal_oof_log_loss": 1.4951471825842102,
+    "time_to_first_valid_seconds": 904.493790355,
+    "agent_wall_seconds": 957.482976094,
+    "allocated_gpu_hours": 0.2659674933594445,
+    "measurement_hash": "350ad9bb0db177ed2f180452917706bd45a2128411b7c0e2d0987a96a0f5e512",
+    "terminal_report_hash": "fc9b41099caa0f78e28d1f95f932deb2fcf67da46fb23f31a1bb6e663234b52d"
+  },
+  "hidden_candidate_audit": {
+    "oracle_best_candidate_id": "5af5e09aeb904c9c9fe6197bdbd71a8f",
+    "oracle_best_terminal_score": 0.12274186640250363,
+    "oracle_best_was_selected": false,
+    "selection_used_terminal_labels": false,
+    "root_cause": "The draft produced a valid submission but the result-parse Agent saw truncated output without the final metric, classified the node as buggy, and excluded it from internal selection. The subsequent timeout-oriented Debug reduced model capacity and training and was selected by its visible internal metric despite much worse sealed holdout performance."
+  },
+  "routing": {
+    "selected_l1_recipe_id": "recipe::leaf-classification::003",
+    "selected_method_family": "siglip2_multibranch_self_attention_fusion",
+    "same_task_terminal_best_evidence_id": "postsmoke::e2e-smoke-leaf-controls-v14__leaf-classification__flat_retrieval__seed-1::abb66aed49824ec490ab833abbb5e05b",
+    "same_task_terminal_best_evidence_score": 0.09353439660745823,
+    "injected_l2_tactic_ids": [
+      "tactic::leaf-classification::001",
+      "tactic::leaf-classification::002",
+      "tactic::leaf-classification::003",
+      "tactic::leaf-classification::005"
+    ],
+    "online_l3_agent_calls": 6,
+    "online_l3_selected_count": 0,
+    "online_l3_decisions": [
+      "DINOv3 missing local checkpoint: exact-task abstain, same-type abstain",
+      "misreported training timeout: exact-task abstain, same-type abstain",
+      "OOF indexing IndexError: exact-task abstain, same-type abstain"
+    ]
+  },
+  "adoption": {
+    "draft_strategy_alignment": "verified",
+    "implemented_components": [
+      "frozen SigLIP2 image embeddings",
+      "separate margin, shape, texture and image branches",
+      "multi-head attention fusion",
+      "five-fold stratified cross-validation",
+      "fold-local StandardScaler instances",
+      "complete OOF probability matrix",
+      "fold-averaged test probabilities"
+    ],
+    "draft_terminal_score": 0.12274186640250363,
+    "debug_changes": [
+      "token width 256 to 192",
+      "attention layers 2 to 1",
+      "epochs 60 to 25",
+      "patience 15 to 5",
+      "batch size 16 to 32",
+      "cosine schedule to OneCycleLR"
+    ],
+    "debug_terminal_score": 1.6839258744918866
+  },
+  "comparison": {
+    "previous_layered_dynamic_score": 0.08612996973006647,
+    "flat_retrieval_score": 0.09353439660745823,
+    "no_memory_score": 0.9072923887645635,
+    "selected_minus_previous_layered_dynamic": 1.5977959047618201,
+    "oracle_draft_minus_previous_layered_dynamic": 0.03661189667243716,
+    "oracle_draft_minus_flat_retrieval": 0.0292074697950454
+  },
+  "limitations": [
+    "Seed 1 and solver temperature 1 are exploratory and do not support significance claims.",
+    "No L3 card was injected in this online Leaf run because every observed failure was judged causally unmatched.",
+    "The generic journal did not persist the full L3 decision object; the complete prompts and structured Agent responses remain in MLEvolve.verbose.log.",
+    "The selected terminal result is dominated by a result-parser false negative and must not be interpreted as evidence that the L3 semantic matcher caused negative transfer."
+  ]
+}

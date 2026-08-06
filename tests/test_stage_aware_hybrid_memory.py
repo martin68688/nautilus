@@ -818,7 +818,7 @@ def _real_layered():
     cfg = _load_cfg(HYBRID_CONFIG, use_cli_args=False)
     cfg.exp_id = "spooky-author-identification"
     cfg.agent.search.num_gpus = 7
-    return StageAwareHybridMemoryLayer(
+    layer = StageAwareHybridMemoryLayer(
         graph_path=str(GRAPH),
         index_path=str(INDEX),
         source_name="run_forest_stage_hybrid_memory",
@@ -829,6 +829,11 @@ def _real_layered():
         max_chars=0,
         cfg=cfg,
     )
+    # Most legacy-focused tests below exercise the frozen deterministic
+    # comparator directly. Agent-path tests opt in explicitly with an injected
+    # selector so the test suite never reaches an external model.
+    layer.experiment_r_l3_agent_match_enabled = False
+    return layer
 
 
 def _real_recipe_layer():
@@ -838,7 +843,7 @@ def _real_recipe_layer():
     cfg = _load_cfg(DYNAMIC_CONFIG, use_cli_args=False)
     cfg.exp_id = "leaf-classification"
     cfg.agent.search.num_gpus = 1
-    return StageAwareHybridMemoryLayer(
+    layer = StageAwareHybridMemoryLayer(
         graph_path=str(GRAPH),
         index_path=str(INDEX),
         source_name="run_forest_stage_hybrid_memory",
@@ -849,6 +854,10 @@ def _real_recipe_layer():
         max_chars=0,
         cfg=cfg,
     )
+    # Agent-path tests opt in explicitly with an injected selector so the test
+    # suite never reaches an external model.
+    layer.experiment_r_l3_agent_match_enabled = False
+    return layer
 
 
 def _inject_frozen_recipe_evidence(layer, *task_ids):
@@ -896,6 +905,10 @@ def test_recipe_overlay_loads_frozen_three_layer_nodes_and_dynamic_uses_layered_
     assert memory.retrieval_control == "layered_strategy"
     assert memory.enable_agentic is True
     assert memory.experiment_r_enabled is False
+    assert memory.experiment_r_l3_agent_match_enabled is True
+    assert memory.experiment_r_l3_agent_match_max_attempts == 2
+    assert memory.experiment_r_l3_agent_match_min_confidence == pytest.approx(0.50)
+    assert memory.experiment_r_l3_agent_match_max_tokens == 1800
     assert memory.recipe_sop_file_sha256 == RECIPE_FILE_SHA256
     assert memory.recipe_sop_bundle_sha256 == RECIPE_BUNDLE_SHA256
     assert memory.recipe_evidence_file_sha256 == RECIPE_EVIDENCE_FILE_SHA256
@@ -918,6 +931,7 @@ def test_recipe_overlay_loads_frozen_three_layer_nodes_and_dynamic_uses_layered_
     assert layer.recipe_evidence_receipt["file_sha256"] == RECIPE_EVIDENCE_FILE_SHA256
     assert layer.recipe_evidence_receipt["manifest_sha256"] == RECIPE_EVIDENCE_MANIFEST_SHA256
     assert layer.recipe_evidence_receipt["selected_node_count"] == 151
+    assert layer.recipe_evidence_receipt["selected_repair_transition_count"] == 81
     assert layer.recipe_evidence_receipt["materialized_node_count"] > 0
     assert layer.recipe_evidence_receipt["terminal_node_count"] >= 4
     terminal_id = (
@@ -1016,6 +1030,314 @@ def test_l3_classifier_dimension_failure_does_not_match_batch_schema_repair():
         "model_forward/convolutional_feature_classifier_dimension_mismatch",
         query,
     ) == 1.0
+
+
+def test_dynamic_l3_agent_sees_all_exact_task_cards_and_selects_by_root_cause():
+    from agents.memory.experiment_r_router import _agentic_l3_debug_match
+
+    layer = _real_recipe_layer()
+    calls = []
+
+    def query_fn(**kwargs):
+        calls.append(kwargs)
+        prompt = kwargs["system_message"]
+        candidates = json.loads(prompt["authorized_l3_candidates"])
+        assert prompt["manual_synonym_table_used"] == "false"
+        # Literal extraction keeps the observed wording; it does not silently
+        # expand ``classification`` into the maintained synonym ``classifier``.
+        assert prompt["literal_failure_anchors"].find("classification") >= 0
+        assert {row["task_scope"] for row in candidates} == {"exact_task"}
+        assert {row["source_task_id"] for row in candidates} == {
+            "aerial-cactus-identification"
+        }
+        assessments = []
+        for row in candidates:
+            selected = row["sop_id"] == "repair::aerial-cactus-identification::005"
+            assessments.append(
+                {
+                    "sop_id": row["sop_id"],
+                    "keyword_correspondence": 0.96 if selected else 0.15,
+                    "root_cause_equivalence": 0.99 if selected else 0.10,
+                    "runtime_stage_match": 1.0 if selected else 0.40,
+                    "contradiction": not selected,
+                    "confidence": 0.97 if selected else 0.12,
+                    "reason": "classifier input width" if selected else "different root cause",
+                }
+            )
+        selected = next(
+            row
+            for row in candidates
+            if row["sop_id"] == "repair::aerial-cactus-identification::005"
+        )
+        return {
+            "decision": "select",
+            "selected_sop_id": selected["sop_id"],
+            "selected_transition_id": selected["transition_id"],
+            "final_confidence": 0.97,
+            "reason": "same convolutional-to-classifier dimension contract",
+            "assessments": assessments,
+        }
+
+    layer._experiment_r_agentic_query_fn = query_fn
+    layer.experiment_r_l3_agent_match_enabled = True
+    result = _agentic_l3_debug_match(
+        layer,
+        task_id="aerial-cactus-identification",
+        task_desc="Vision binary image classification",
+        query_text=(
+            "RuntimeError: a convolutional backbone returns [32, 768, 8, 8] "
+            "but the classification head passes it directly into LayerNorm "
+            "which expects [*, 768]."
+        ),
+        visible_sop_ids=None,
+    )
+    assert len(calls) == 1
+    assert result["decision"] == "select"
+    assert result["selected_sop_id"] == "repair::aerial-cactus-identification::005"
+    assert result["selected_task_scope"] == "exact_task"
+    assert result["manual_synonym_table_used"] is False
+    assert result["literal_anchor_extractor"]["extractor"] == (
+        "literal_regex_no_synonym_expansion_v1"
+    )
+
+
+def test_dynamic_l3_agent_abstention_is_only_condition_for_same_type_fallback():
+    from agents.memory.experiment_r_router import _agentic_l3_debug_match
+
+    layer = _real_recipe_layer()
+    scopes = []
+
+    def query_fn(**kwargs):
+        prompt = kwargs["system_message"]
+        scope = prompt["task_scope_already_enforced_by_host"]
+        scopes.append(scope)
+        candidates = json.loads(prompt["authorized_l3_candidates"])
+        assessments = [
+            {
+                "sop_id": row["sop_id"],
+                "keyword_correspondence": 0.10,
+                "root_cause_equivalence": 0.10,
+                "runtime_stage_match": 0.50,
+                "contradiction": True,
+                "confidence": 0.10,
+                "reason": "different failure",
+            }
+            for row in candidates
+        ]
+        return {
+            "decision": "abstain",
+            "selected_sop_id": "",
+            "selected_transition_id": "",
+            "final_confidence": 0.10,
+            "reason": "none share the same root cause",
+            "assessments": assessments,
+        }
+
+    layer._experiment_r_agentic_query_fn = query_fn
+    layer.experiment_r_l3_agent_match_enabled = True
+    result = _agentic_l3_debug_match(
+        layer,
+        task_id="aerial-cactus-identification",
+        task_desc="Vision binary image classification",
+        query_text="RuntimeError: a genuinely unseen library failure",
+        visible_sop_ids=None,
+    )
+    assert scopes == ["exact_task", "same_task_type"]
+    assert result["decision"] == "abstain"
+    assert result["selected_sop_id"] == ""
+    assert result["agent_calls"] == 2
+
+
+def test_dynamic_l3_agent_failure_abstains_without_manual_router_fallback():
+    from agents.memory.experiment_r_router import _agentic_l3_debug_match
+
+    layer = _real_recipe_layer()
+    layer._experiment_r_agentic_query_fn = lambda **_kwargs: {
+        "decision": "select",
+        "selected_sop_id": "invented-repair",
+        "selected_transition_id": "invented-transition",
+        "final_confidence": 1.0,
+        "reason": "invalid",
+        "assessments": [],
+    }
+    layer.experiment_r_l3_agent_match_enabled = True
+    layer.experiment_r_l3_agent_match_max_attempts = 2
+    result = _agentic_l3_debug_match(
+        layer,
+        task_id="aerial-cactus-identification",
+        task_desc="Vision binary image classification",
+        query_text="RuntimeError: unknown failure",
+        visible_sop_ids=None,
+    )
+    assert result["decision"] == "agent_failure_abstain"
+    assert result["selected_sop_id"] == ""
+    assert result["manual_synonym_table_used"] is False
+    assert result["agent_calls"] == 2
+    assert len(result["trace"][0]["attempts"]) == 2
+
+
+def test_layered_dynamic_debug_uses_agent_match_before_prompt_injection():
+    layer = _real_recipe_layer()
+    calls = []
+
+    def query_fn(**kwargs):
+        calls.append(kwargs["func_spec"].name)
+        candidates = json.loads(
+            kwargs["system_message"]["authorized_l3_candidates"]
+        )
+        selected = next(
+            row
+            for row in candidates
+            if row["sop_id"] == "repair::aerial-cactus-identification::005"
+        )
+        return {
+            "decision": "select",
+            "selected_sop_id": selected["sop_id"],
+            "selected_transition_id": selected["transition_id"],
+            "final_confidence": 0.97,
+            "reason": "same convolutional classifier dimension contract",
+            "assessments": [
+                {
+                    "sop_id": row["sop_id"],
+                    "keyword_correspondence": 0.96 if row is selected else 0.10,
+                    "root_cause_equivalence": 0.99 if row is selected else 0.10,
+                    "runtime_stage_match": 1.0 if row is selected else 0.40,
+                    "contradiction": row is not selected,
+                    "confidence": 0.97 if row is selected else 0.10,
+                    "reason": "same root cause" if row is selected else "different",
+                }
+                for row in candidates
+            ],
+        }
+
+    layer._experiment_r_agentic_query_fn = query_fn
+    layer.experiment_r_l3_agent_match_enabled = True
+    text, refs = layer.retrieve_for_node(
+        stage="debug",
+        task_id="aerial-cactus-identification",
+        task_desc="Vision binary image classification",
+        query_parts=[
+            "RuntimeError: ConvNeXt returns [32, 768, 8, 8] and the "
+            "classification head passes it to LayerNorm([768]) without pooling."
+        ],
+    )
+    pack = layer.current_navigation_pack()
+    assert calls == ["choose_l3_debug_repair_by_root_cause"]
+    assert pack["algorithm_version"] == "stage_hybrid_l3_agent_root_cause_v1"
+    assert pack["selected_sop_gateways"][0]["id"] == (
+        "repair::aerial-cactus-identification::005"
+    )
+    assert "repair::aerial-cactus-identification::005" in refs
+    assert "repair::aerial-cactus-identification::005" in text
+    assert pack["gateway_selection"]["manual_synonym_table_used"] is False
+    assert pack["l3_agent_match"]["manual_synonym_table_used"] is False
+    assert pack["tree_candidate_details"][0]["ranking_backend"] == (
+        "agent_keyword_and_root_cause_semantic_match_v1"
+    )
+    assert (
+        "failure_signature_match"
+        not in pack["tree_candidate_details"][0]["score_components"]
+    )
+
+
+def test_dynamic_experiment_r_prompt_is_pinned_to_agent_selected_l3():
+    layer = _real_recipe_layer()
+
+    def query_fn(**kwargs):
+        spec_name = kwargs["func_spec"].name
+        prompt = kwargs["system_message"]
+        if spec_name == "choose_l3_debug_repair_by_root_cause":
+            candidates = json.loads(prompt["authorized_l3_candidates"])
+            selected = next(
+                row
+                for row in candidates
+                if row["sop_id"] == "repair::aerial-cactus-identification::005"
+            )
+            return {
+                "decision": "select",
+                "selected_sop_id": selected["sop_id"],
+                "selected_transition_id": selected["transition_id"],
+                "final_confidence": 0.97,
+                "reason": "same classifier dimension root cause",
+                "assessments": [
+                    {
+                        "sop_id": row["sop_id"],
+                        "keyword_correspondence": (
+                            0.95 if row is selected else 0.10
+                        ),
+                        "root_cause_equivalence": (
+                            0.99 if row is selected else 0.10
+                        ),
+                        "runtime_stage_match": 1.0 if row is selected else 0.40,
+                        "contradiction": row is not selected,
+                        "confidence": 0.97 if row is selected else 0.10,
+                        "reason": "selected" if row is selected else "different",
+                    }
+                    for row in candidates
+                ],
+            }
+        known = json.loads(prompt["known_candidates"])
+        contract = json.loads(prompt["final_selection_contract"])
+        by_source = {
+            source: [row["id"] for row in known if row["source"] == source]
+            for source in ("sop", "runforest")
+        }
+        selected_ids = ["repair::aerial-cactus-identification::005"]
+        for source in ("sop", "runforest"):
+            required = int(contract["minimum_source_counts"][source])
+            current = sum(
+                node_id in set(by_source[source]) for node_id in selected_ids
+            )
+            selected_ids.extend(
+                node_id
+                for node_id in by_source[source]
+                if node_id not in selected_ids
+            )
+            # Keep only as many newly appended source IDs as its minimum.
+            keep = required - current
+            if keep < 0:
+                keep = 0
+            source_selected = [
+                node_id for node_id in selected_ids if node_id in by_source[source]
+            ]
+            for node_id in source_selected[required:]:
+                if node_id != "repair::aerial-cactus-identification::005":
+                    selected_ids.remove(node_id)
+        for row in known:
+            if len(selected_ids) >= int(contract["exact_selection_count"]):
+                break
+            if row["id"] not in selected_ids:
+                selected_ids.append(row["id"])
+        return {
+            "action": "finish",
+            "reason": "selected root-cause repair and clean supporting memory",
+            "selected_ids": selected_ids,
+        }
+
+    layer.experiment_r_enabled = True
+    layer.retrieval_control = "dynamic_hybrid"
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer.experiment_r_l3_agent_match_enabled = True
+    layer.experiment_r_memory_pool_sha256 = "a" * 64
+    layer._experiment_r_agentic_query_fn = query_fn
+    text, refs = layer.retrieve_for_node(
+        stage="debug",
+        task_id="aerial-cactus-identification",
+        task_desc="Vision binary image classification",
+        query_parts=[
+            "RuntimeError: backbone output [32, 768, 8, 8] was passed into "
+            "LayerNorm([768]) before spatial pooling."
+        ],
+    )
+    pack = layer.current_navigation_pack()
+    assert "repair::aerial-cactus-identification::005" in refs
+    assert "repair::aerial-cactus-identification::005" in text
+    assert pack["l3_agent_match"]["decision"] == "select"
+    assert pack["l3_agent_match"]["manual_synonym_table_used"] is False
+    assert pack["stage_route"]["l3_agent_prompt_pin"]["prompt_visible"] is True
+    assert pack["candidate_pool"]["ranking_contract"].endswith(
+        "+l3_agent_root_cause_match_v1+same_task_best_prompt_pin_v1"
+    )
 
 
 def test_layered_debug_prompt_requires_a_causal_l3_match_and_abstains_on_infrastructure():

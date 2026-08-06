@@ -52,7 +52,24 @@
     "resume_semantics": "rerun only the interrupted frozen condition from a new immutable attempt; arbitrary generated training code may not expose epoch checkpoints",
     "score_imputation": false
   },
-  "manifest_hash": "3dfea6ffb36c6b1925a890302a9aabdf6578c42e54a20357f7e3a5ddf39b2962",
+  "l3_agent_matching": {
+    "cross_task_type_allowed": false,
+    "decision_stage": "debug",
+    "enabled_for_systems": [
+      "dynamic_hybrid"
+    ],
+    "failure_fallback": "abstain_without_manual_matcher",
+    "manual_synonym_table_used": false,
+    "max_attempts_per_task_scope": 2,
+    "max_tokens_per_call": 1800,
+    "min_confidence": 0.5,
+    "task_scope_order": [
+      "exact_task",
+      "same_task_type"
+    ],
+    "temperature": 0.0
+  },
+  "manifest_hash": "df5d1acad1e19c2f2e7437537c370324aca2f952d9a9c74e48dc7c5eb13c5140",
   "pilot": {
     "agent_steps": 80,
     "agent_time_limit_seconds": 21600,

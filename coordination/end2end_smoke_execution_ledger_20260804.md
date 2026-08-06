@@ -527,3 +527,51 @@ overwriting this record.
 - These are three-step, temperature-1, Seed-1 exploratory Smoke results. They
   do not establish statistical significance. The formal 40-run Pilot remains
   generated but not submitted pending explicit user authorization.
+
+## 2026-08-06 Leaf Dynamic L3-Agent v19 online Smoke
+
+- The deterministic/manual-router checkpoint is commit `5c21dafe` and branch
+  `codex/checkpoint-l3-deterministic-router-20260806`. The replacement Dynamic
+  Debug path uses task/evidence hard gates, literal traceback anchors and an
+  LLM root-cause matcher. It never calls the maintained synonym table and
+  abstains after repeated invalid Agent output rather than falling back to the
+  old matcher.
+- A live five-case controlled harness passed 11/11 checks. Exact Aerial
+  classifier-width mismatch selected `repair::aerial-cactus-identification::005`
+  at confidence 0.95; a LayerNorm-before-pooling mismatch abstained; a U-Net
+  skip mismatch selected same-type
+  `repair::denoising-dirty-documents::002` at confidence 0.90; cross-task-type
+  and infrastructure cases both abstained.
+- The Leaf-only online run used source snapshot
+  `/workspace/nautilus-exp-end2end-agent-v19`, output root
+  `/workspace/experiment-end2end-memory-agent-v15-l3-agent`, one
+  `NVIDIA A100-SXM4-80GB`, 16 CPUs, seed 1, three draft roles and eight steps.
+  The formal 40-run Pilot was not started.
+- The L1 Agent selected the same-task recipe
+  `recipe::leaf-classification::003` with the sealed flat-retrieval evidence
+  score 0.09353439660745823. L2 injected tactics 001, 002, 003 and 005. The
+  generated program visibly adopted SigLIP2 embeddings, separate leaf-feature
+  branches, attention fusion, five-fold OOF, fold-local scalers and
+  fold-averaged test probabilities.
+- All six live L3 calls abstained: exact-task and same-type passes for the
+  missing DINOv3 checkpoint, a misreported training timeout and an OOF indexing
+  error. No L3 card entered a Debug Prompt, so this run does not measure the
+  effect of adopting L3-005 or any other L3 repair.
+- Search completed 8/8. The selected Debug node had internal OOF log loss
+  1.4951471825842102, terminal log loss 1.6839258744918866, TTFV
+  904.493790355 seconds, wall time 957.482976094 seconds and allocated GPU time
+  0.2659674933594445 hours. Measurement hash:
+  `350ad9bb0db177ed2f180452917706bd45a2128411b7c0e2d0987a96a0f5e512`.
+- The sealed terminal evaluator exposed a framework failure: the original
+  novel draft had already written a valid submission scoring
+  0.12274186640250363, but the result-parse Agent saw truncated output without
+  the final metric and marked it buggy. Debug then reduced token width from 256
+  to 192, attention layers from two to one, epochs from 60 to 25 and patience
+  from 15 to five. That degraded candidate was selected by its visible internal
+  score and scored 1.6839258744918866 on the hidden holdout.
+- Therefore the poor selected score is attributable to a false-negative
+  result parser and downstream selection, not to an incorrect L3 injection.
+  The unselected original memory-guided draft was still worse than the prior
+  layered Dynamic result 0.08612996973006647 and flat retrieval
+  0.09353439660745823, but remained far better than No Memory
+  0.9072923887645635. Seed 1 and temperature 1 remain exploratory only.

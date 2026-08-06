@@ -148,6 +148,7 @@ def main() -> int:
     # MLEvolve smoke keeps agentic gateway selection enabled through the same
     # dynamic_hybrid config after these hard assertions pass.
     cfg.external_skill_memory.enable_agentic = False
+    cfg.external_skill_memory.experiment_r_l3_agent_match_enabled = False
     layer = StageAwareHybridMemoryLayer(
         graph_path=str(graph),
         index_path=str(index),

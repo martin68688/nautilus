@@ -1,0 +1,2394 @@
+{
+  "cases": {
+    "cross_task_type_block": {
+      "agent_calls": 1,
+      "algorithm_version": "stage_hybrid_l3_agent_root_cause_v1",
+      "decision": "abstain",
+      "final_confidence": 0.0,
+      "gateway_selection": {
+        "clean_eligible_count": 0,
+        "eligible_count": 0,
+        "goal": "",
+        "llm_tool_calls": 1,
+        "manual_synonym_table_used": false,
+        "mode": "l3_agent_root_cause_match",
+        "selected_sop_id": "",
+        "stage_task_gate_rejected_count": 0
+      },
+      "literal_anchor_extractor": {
+        "exception_names": [
+          "RuntimeError"
+        ],
+        "extractor": "literal_regex_no_synonym_expansion_v1",
+        "literal_tokens": [
+          "and",
+          "concatenation",
+          "decoder",
+          "different",
+          "encoder",
+          "fails.",
+          "from",
+          "has",
+          "height",
+          "its",
+          "runtimeerror",
+          "skip",
+          "tensor",
+          "u-net",
+          "upsample",
+          "width"
+        ],
+        "quoted_identifiers": [],
+        "tensor_shapes": []
+      },
+      "manual_synonym_table_used": false,
+      "memory_abstention": {
+        "reason": "l3_agent_abstained_no_manual_fallback",
+        "status": "abstain"
+      },
+      "name": "cross_task_type_block",
+      "prompt": "",
+      "prompt_refs": [],
+      "query": "RuntimeError: a U-Net decoder upsample has height and width different from its encoder skip tensor and concatenation fails.",
+      "selected_sop_gateways": [],
+      "selected_sop_id": "",
+      "selected_task_scope": "",
+      "selected_transition_id": "",
+      "stage_route": {
+        "configured_rrf": {
+          "sop": 0.25,
+          "tree": 0.75
+        },
+        "control": "layered_strategy",
+        "fallback_reason": "l3_agent_abstained_no_manual_fallback",
+        "quotas": {
+          "sop_candidates": 2,
+          "sop_gateways": 1,
+          "tree_candidates": 8
+        },
+        "route": "tree_first",
+        "rrf": {
+          "sop": 1.0,
+          "tree": 0.0
+        },
+        "stage": "debug",
+        "tree_confidence": 0.0
+      },
+      "task_id": "spooky-author-identification",
+      "trace": [
+        {
+          "attempts": [
+            {
+              "attempt": 1,
+              "prompt_input_sha256": "41d67357df5611dd9e955618248bff6dc0e8076f53ae0e852475e52680cfe073",
+              "raw_action": {
+                "assessments": [
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns transformer dropout config TypeError; observed failure is U-Net decoder upsample spatial mismatch. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::spooky-author-identification::001"
+                  },
+                  {
+                    "confidence": 0.08,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.15,
+                    "reason": "Candidate concerns feature-width mismatch in fusion layers; observed failure is U-Net spatial height/width mismatch in decoder skip concatenation. Different architecture and mechanism.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::spooky-author-identification::002"
+                  },
+                  {
+                    "confidence": 0.03,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.05,
+                    "reason": "Candidate concerns NaN log loss from probability saturation; unrelated to U-Net decoder concatenation failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::spooky-author-identification::003"
+                  },
+                  {
+                    "confidence": 0.03,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.05,
+                    "reason": "Candidate concerns shape mismatch in log-loss metric computation; unrelated to U-Net decoder upsample failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::spooky-author-identification::004"
+                  },
+                  {
+                    "confidence": 0.03,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.05,
+                    "reason": "Candidate concerns best-checkpoint reload degradation; unrelated to U-Net decoder concatenation failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::spooky-author-identification::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns DeBERTa model loader class mismatch; unrelated to U-Net decoder upsample spatial mismatch.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::spooky-author-identification::006"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns float16 attention mask overflow; unrelated to U-Net decoder upsample concatenation failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::spooky-author-identification::007"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns gradient checkpointing backward-through-graph error; unrelated to U-Net decoder upsample failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::spooky-author-identification::008"
+                  },
+                  {
+                    "confidence": 0.03,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.05,
+                    "reason": "Candidate concerns XGBoost gpu_hist tree method rejection; unrelated to U-Net decoder concatenation failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::spooky-author-identification::009"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed runtime failure is a U-Net decoder upsample height/width mismatch causing concatenation failure. None of the authorized L3 candidates describe a U-Net architecture, decoder upsample, or encoder-skip concatenation. All candidates concern transformer fine-tuning (ModernBERT/DeBERTa dropout, checkpoint loading), multimodal feature fusion width mismatches, log-loss metric computation, XGBoost tree methods, or mixed-precision attention masking. The U-Net decoder/skip-concatenation failure is a fundamentally different architecture and causal mechanism (spatial dimension mismatch in an encoder-decoder segmentation-style network) with no root-cause equivalence to any candidate. Abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              },
+              "status": "valid",
+              "validated_decision": {
+                "assessments": [
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns transformer dropout config TypeError; observed failure is U-Net decoder upsample spatial mismatch. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::spooky-author-identification::001"
+                  },
+                  {
+                    "confidence": 0.08,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.15,
+                    "reason": "Candidate concerns feature-width mismatch in fusion layers; observed failure is U-Net spatial height/width mismatch in decoder skip concatenation. Different architecture and mechanism.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::spooky-author-identification::002"
+                  },
+                  {
+                    "confidence": 0.03,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.05,
+                    "reason": "Candidate concerns NaN log loss from probability saturation; unrelated to U-Net decoder concatenation failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::spooky-author-identification::003"
+                  },
+                  {
+                    "confidence": 0.03,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.05,
+                    "reason": "Candidate concerns shape mismatch in log-loss metric computation; unrelated to U-Net decoder upsample failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::spooky-author-identification::004"
+                  },
+                  {
+                    "confidence": 0.03,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.05,
+                    "reason": "Candidate concerns best-checkpoint reload degradation; unrelated to U-Net decoder concatenation failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::spooky-author-identification::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns DeBERTa model loader class mismatch; unrelated to U-Net decoder upsample spatial mismatch.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::spooky-author-identification::006"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns float16 attention mask overflow; unrelated to U-Net decoder upsample concatenation failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::spooky-author-identification::007"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns gradient checkpointing backward-through-graph error; unrelated to U-Net decoder upsample failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::spooky-author-identification::008"
+                  },
+                  {
+                    "confidence": 0.03,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.05,
+                    "reason": "Candidate concerns XGBoost gpu_hist tree method rejection; unrelated to U-Net decoder concatenation failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::spooky-author-identification::009"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed runtime failure is a U-Net decoder upsample height/width mismatch causing concatenation failure. None of the authorized L3 candidates describe a U-Net architecture, decoder upsample, or encoder-skip concatenation. All candidates concern transformer fine-tuning (ModernBERT/DeBERTa dropout, checkpoint loading), multimodal feature fusion width mismatches, log-loss metric computation, XGBoost tree methods, or mixed-precision attention masking. The U-Net decoder/skip-concatenation failure is a fundamentally different architecture and causal mechanism (spatial dimension mismatch in an encoder-decoder segmentation-style network) with no root-cause equivalence to any candidate. Abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              }
+            }
+          ],
+          "candidate_count": 9,
+          "candidate_ids": [
+            "repair::spooky-author-identification::001",
+            "repair::spooky-author-identification::002",
+            "repair::spooky-author-identification::003",
+            "repair::spooky-author-identification::004",
+            "repair::spooky-author-identification::005",
+            "repair::spooky-author-identification::006",
+            "repair::spooky-author-identification::007",
+            "repair::spooky-author-identification::008",
+            "repair::spooky-author-identification::009"
+          ],
+          "candidate_set_sha256": "c2e1ffba9efa769ab4848044df7d0c7b93a54059f26b4eb3186e187a75779d03",
+          "decision": "abstain",
+          "task_scope": "exact_task",
+          "validated_decision": {
+            "assessments": [
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate concerns transformer dropout config TypeError; observed failure is U-Net decoder upsample spatial mismatch. No causal overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::spooky-author-identification::001"
+              },
+              {
+                "confidence": 0.08,
+                "contradiction": true,
+                "keyword_correspondence": 0.15,
+                "reason": "Candidate concerns feature-width mismatch in fusion layers; observed failure is U-Net spatial height/width mismatch in decoder skip concatenation. Different architecture and mechanism.",
+                "root_cause_equivalence": 0.1,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::spooky-author-identification::002"
+              },
+              {
+                "confidence": 0.03,
+                "contradiction": true,
+                "keyword_correspondence": 0.05,
+                "reason": "Candidate concerns NaN log loss from probability saturation; unrelated to U-Net decoder concatenation failure.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::spooky-author-identification::003"
+              },
+              {
+                "confidence": 0.03,
+                "contradiction": true,
+                "keyword_correspondence": 0.05,
+                "reason": "Candidate concerns shape mismatch in log-loss metric computation; unrelated to U-Net decoder upsample failure.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::spooky-author-identification::004"
+              },
+              {
+                "confidence": 0.03,
+                "contradiction": true,
+                "keyword_correspondence": 0.05,
+                "reason": "Candidate concerns best-checkpoint reload degradation; unrelated to U-Net decoder concatenation failure.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::spooky-author-identification::005"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate concerns DeBERTa model loader class mismatch; unrelated to U-Net decoder upsample spatial mismatch.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::spooky-author-identification::006"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate concerns float16 attention mask overflow; unrelated to U-Net decoder upsample concatenation failure.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::spooky-author-identification::007"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate concerns gradient checkpointing backward-through-graph error; unrelated to U-Net decoder upsample failure.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::spooky-author-identification::008"
+              },
+              {
+                "confidence": 0.03,
+                "contradiction": true,
+                "keyword_correspondence": 0.05,
+                "reason": "Candidate concerns XGBoost gpu_hist tree method rejection; unrelated to U-Net decoder concatenation failure.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::spooky-author-identification::009"
+              }
+            ],
+            "decision": "abstain",
+            "final_confidence": 0.0,
+            "reason": "The observed runtime failure is a U-Net decoder upsample height/width mismatch causing concatenation failure. None of the authorized L3 candidates describe a U-Net architecture, decoder upsample, or encoder-skip concatenation. All candidates concern transformer fine-tuning (ModernBERT/DeBERTa dropout, checkpoint loading), multimodal feature fusion width mismatches, log-loss metric computation, XGBoost tree methods, or mixed-precision attention masking. The U-Net decoder/skip-concatenation failure is a fundamentally different architecture and causal mechanism (spatial dimension mismatch in an encoder-decoder segmentation-style network) with no root-cause equivalence to any candidate. Abstain.",
+            "selected_sop_id": "",
+            "selected_transition_id": ""
+          }
+        },
+        {
+          "attempts": [],
+          "candidate_count": 0,
+          "candidate_ids": [],
+          "candidate_set_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+          "decision": "no_candidates",
+          "task_scope": "same_task_type"
+        }
+      ],
+      "trace_sha256": "1069aaf5377a7d1d0c1c3b595e4482f48bf07e00efbdf67c19bb41033d52f296",
+      "tree_candidate_details": []
+    },
+    "exact_task": {
+      "agent_calls": 1,
+      "algorithm_version": "stage_hybrid_l3_agent_root_cause_v1",
+      "decision": "select",
+      "final_confidence": 0.95,
+      "gateway_selection": {
+        "clean_eligible_count": 1,
+        "eligible_count": 1,
+        "goal": "The observed failure is a RuntimeError at the convolutional-to-linear boundary of a custom CNN: flattened features have shape [64, 1024] while the classifier's first Linear layer expects 2048 input features ([2048, 512] weight). This exactly matches candidate 005's failure signature: \"A custom CNN reaches its classifier but fails matrix multiplication because flattened convolutional features do not match the first linear layer's declared input width,\" with root cause \"The classifier input dimension was calculated from an incorrect channel count or spatial resolution after pooling.\" The historical failure in 005 even reports the identical shapes (64x1024 flattened features vs 2048x512 first linear layer). Keyword correspondence is high (custom CNN, classifier, first Linear layer, flattened features, matrix multiplication, shape mismatch). Runtime stage (model_forward) matches. No contradiction. This is the clear causal match.",
+        "llm_tool_calls": 1,
+        "manual_synonym_table_used": false,
+        "mode": "l3_agent_root_cause_match",
+        "selected_sop_id": "repair::aerial-cactus-identification::005",
+        "stage_task_gate_rejected_count": 0
+      },
+      "literal_anchor_extractor": {
+        "exception_names": [
+          "RuntimeError"
+        ],
+        "extractor": "literal_regex_no_synonym_expansion_v1",
+        "literal_tokens": [
+          "after",
+          "classifier",
+          "cnn",
+          "custom",
+          "fails.",
+          "features",
+          "first",
+          "flattening",
+          "has",
+          "layer",
+          "linear",
+          "mat1",
+          "matrix",
+          "multiplication",
+          "runtimeerror",
+          "shape",
+          "the",
+          "weight",
+          "while"
+        ],
+        "quoted_identifiers": [],
+        "tensor_shapes": [
+          "[2048, 512]",
+          "[64, 1024]"
+        ]
+      },
+      "manual_synonym_table_used": false,
+      "memory_abstention": {},
+      "name": "exact_task",
+      "prompt": "## Stage-Aware Hybrid Run-Forest Memory\nCandidates are suggestions. Verified execution evidence and risk warnings are separate.\nNever present an SOP-only reference as a proven successful recipe.\nStage route: {\"stage\": \"debug\", \"route\": \"tree_first\", \"control\": \"layered_strategy\", \"quotas\": {\"sop_candidates\": 2, \"sop_gateways\": 1, \"tree_candidates\": 8}, \"rrf\": {\"sop\": 0.43000000000000005, \"tree\": 0.57}, \"configured_rrf\": {\"sop\": 0.25, \"tree\": 0.75}, \"tree_confidence\": 0.95, \"fallback_reason\": null}\n\n### Selected SOP Gateways (clean supporting execution required)\n- repair::aerial-cactus-identification::005: Derive CNN classifier input width from the actual feature tensor\n  Action: Evidence-bound L3 Debug repair:\nFailure signature: model_forward/convolutional_feature_classifier_dimension_mismatch\nFailure pattern: A custom CNN reaches its classifier but fails matrix multiplication because flattened convolutional features do not match the first linear layer's declared input width.\nRoot cause: The classifier input dimension was calculated from an incorrect channel count or spatial resolution after pooling.\nRuntime stage: model_forward\nRepair: Run a representative image tensor through the convolutional feature stack before training and inspect the resulting shape.\n- Run a representative image tensor through the convolutional feature stack before training and inspect the resulting shape.\n- Set the first linear layer's input width to the product of the actual non-batch feature dimensions.\n- Prefer adaptive pooling to a fixed spatial size when input resolution or convolutional geometry may vary.\n- Add a model smoke test that performs one forward pass and asserts an output shape of one logit per image.\nEvidence admission: accepted_clean_repair (1 clean repair success; count does not create an evidence tier).\n  When: Use when a from-scratch CNN for fixed-size cactus images reports incompatible matrix shapes at the convolutional-to-linear boundary.\n  Supporting transitions: run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::cc5f402ea0::d143842457\n\n### Execution Candidates\n- [sop_transition_matches] run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::cc5f402ea0::d143842457 stage=debug->debug outcome=debug_fixed metric_improvement=None\n  Parent failure: The execution failed with a RuntimeError due to a shape mismatch between the flattened features (64x1024) and the first linear layer (expected 2048x512). The `view` operation in the forward method reshapes features to `batch_size x (128*4*4) = 1024`, but the classifier's first linear layer expects 2048 input features. This indicates a dimension mismatch in the model architecture's feature flattening step.\n  Proven code change: The bug is a dimension mismatch: after the four convolutional blocks, the output spatial size is 2x2 with 256 channels, so the flattened feature size should be `256 * 2 * 2 = 1024`. However, the classifier's first linear layer expects 2048 input features (`128 * 4 * 4`). I need to correct the classifier's first layer input dimension from 2048 to 1024 to match the actual feature size.\n  Successful child result: The training script executed successfully on GPU, achieving a perfect validation AUC of 1.0000 after 20 epochs of training. The model (a custom CNN trained from scratch) was trained on 12,048 samples and validated on 2,127 samples for the aerial cactus identification task. The only warnings were deprecation notices about torch.cuda.amp.autocast syntax, which are non-critical.\n  Causally supported SOPs only: repair::aerial-cactus-identification::005\n- [sop_transition_matches] run::20260726_030806_aerial-cactus-identification-host-shadow-r7::node::d143842457d840558845ece02cf5b4fc stage=debug outcome=None metric_improvement=None\n\n### Verified Evidence Refs\n- evidence::7b741a10c8e3: debug->debug outcome=debug_fixed parent_metric=None child_metric=1.0 parent_error=Using device: cuda Train samples: 12048 Validation samples: 2127 Test samples: 3325 Train class distribution: has_cactus 1 9033 0 3015 Name: count, dtype: int64 Validation class distribution: has_cactus 1 1595 0 532 Name: count, dtype: int64 Model architecture: Simple CNN (trained from scratch) Total trainable parame",
+      "prompt_refs": [
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::cc5f402ea0::d143842457",
+        "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::node::d143842457d840558845ece02cf5b4fc",
+        "repair::aerial-cactus-identification::005",
+        "evidence::7b741a10c8e3"
+      ],
+      "query": "RuntimeError: after flattening the custom CNN features, mat1 has shape [64, 1024], while the classifier's first Linear layer has a [2048, 512] weight, so matrix multiplication fails.",
+      "selected_sop_gateways": [
+        "repair::aerial-cactus-identification::005"
+      ],
+      "selected_sop_id": "repair::aerial-cactus-identification::005",
+      "selected_task_scope": "exact_task",
+      "selected_transition_id": "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::cc5f402ea0::d143842457",
+      "stage_route": {
+        "configured_rrf": {
+          "sop": 0.25,
+          "tree": 0.75
+        },
+        "control": "layered_strategy",
+        "fallback_reason": null,
+        "quotas": {
+          "sop_candidates": 2,
+          "sop_gateways": 1,
+          "tree_candidates": 8
+        },
+        "route": "tree_first",
+        "rrf": {
+          "sop": 0.43000000000000005,
+          "tree": 0.57
+        },
+        "stage": "debug",
+        "tree_confidence": 0.95
+      },
+      "task_id": "aerial-cactus-identification",
+      "trace": [
+        {
+          "attempts": [
+            {
+              "attempt": 1,
+              "prompt_input_sha256": "ab4177dae284983a967a2eeab4fec969efcab46b19ca90f6b1f57f4b5ec3ddd9",
+              "raw_action": {
+                "assessments": [
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate 001 concerns MixUp/CutMix producing fractional targets for ROC-AUC. The observed failure is a matrix shape mismatch in a custom CNN classifier, unrelated to label mixing or metric computation.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::001"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate 002 concerns BCEWithLogitsLoss rejecting label_smoothing keyword. The observed failure is a Linear layer input dimension mismatch, unrelated.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::002"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate 003 concerns DataLoader batch schema mismatch during feature extraction. The observed failure is a classifier width mismatch in a custom CNN forward pass, unrelated.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::003"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate 004 concerns test identifier/prediction length mismatch during submission creation. The observed failure is a model forward-pass shape mismatch, unrelated.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::004"
+                  },
+                  {
+                    "confidence": 0.95,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.95,
+                    "reason": "Exact match. Observed failure: flattened custom CNN features [64,1024] vs first Linear layer weight [2048,512]. Candidate 005's signature and historical failure describe the identical shape mismatch (64x1024 vs 2048x512) at the convolutional-to-linear boundary, root cause being incorrect classifier input width calculation.",
+                    "root_cause_equivalence": 0.98,
+                    "runtime_stage_match": 1.0,
+                    "sop_id": "repair::aerial-cactus-identification::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate 006 concerns torch.load weights-only unpickling error. The observed failure is a forward-pass matrix shape mismatch, unrelated.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::006"
+                  }
+                ],
+                "decision": "select",
+                "final_confidence": 0.95,
+                "reason": "The observed failure is a RuntimeError at the convolutional-to-linear boundary of a custom CNN: flattened features have shape [64, 1024] while the classifier's first Linear layer expects 2048 input features ([2048, 512] weight). This exactly matches candidate 005's failure signature: \"A custom CNN reaches its classifier but fails matrix multiplication because flattened convolutional features do not match the first linear layer's declared input width,\" with root cause \"The classifier input dimension was calculated from an incorrect channel count or spatial resolution after pooling.\" The historical failure in 005 even reports the identical shapes (64x1024 flattened features vs 2048x512 first linear layer). Keyword correspondence is high (custom CNN, classifier, first Linear layer, flattened features, matrix multiplication, shape mismatch). Runtime stage (model_forward) matches. No contradiction. This is the clear causal match.",
+                "selected_sop_id": "repair::aerial-cactus-identification::005",
+                "selected_transition_id": "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::cc5f402ea0::d143842457"
+              },
+              "status": "valid",
+              "validated_decision": {
+                "assessments": [
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate 001 concerns MixUp/CutMix producing fractional targets for ROC-AUC. The observed failure is a matrix shape mismatch in a custom CNN classifier, unrelated to label mixing or metric computation.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::001"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate 002 concerns BCEWithLogitsLoss rejecting label_smoothing keyword. The observed failure is a Linear layer input dimension mismatch, unrelated.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::002"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate 003 concerns DataLoader batch schema mismatch during feature extraction. The observed failure is a classifier width mismatch in a custom CNN forward pass, unrelated.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::003"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate 004 concerns test identifier/prediction length mismatch during submission creation. The observed failure is a model forward-pass shape mismatch, unrelated.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::004"
+                  },
+                  {
+                    "confidence": 0.95,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.95,
+                    "reason": "Exact match. Observed failure: flattened custom CNN features [64,1024] vs first Linear layer weight [2048,512]. Candidate 005's signature and historical failure describe the identical shape mismatch (64x1024 vs 2048x512) at the convolutional-to-linear boundary, root cause being incorrect classifier input width calculation.",
+                    "root_cause_equivalence": 0.98,
+                    "runtime_stage_match": 1.0,
+                    "sop_id": "repair::aerial-cactus-identification::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate 006 concerns torch.load weights-only unpickling error. The observed failure is a forward-pass matrix shape mismatch, unrelated.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::006"
+                  }
+                ],
+                "decision": "select",
+                "final_confidence": 0.95,
+                "reason": "The observed failure is a RuntimeError at the convolutional-to-linear boundary of a custom CNN: flattened features have shape [64, 1024] while the classifier's first Linear layer expects 2048 input features ([2048, 512] weight). This exactly matches candidate 005's failure signature: \"A custom CNN reaches its classifier but fails matrix multiplication because flattened convolutional features do not match the first linear layer's declared input width,\" with root cause \"The classifier input dimension was calculated from an incorrect channel count or spatial resolution after pooling.\" The historical failure in 005 even reports the identical shapes (64x1024 flattened features vs 2048x512 first linear layer). Keyword correspondence is high (custom CNN, classifier, first Linear layer, flattened features, matrix multiplication, shape mismatch). Runtime stage (model_forward) matches. No contradiction. This is the clear causal match.",
+                "selected_sop_id": "repair::aerial-cactus-identification::005",
+                "selected_transition_id": "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::cc5f402ea0::d143842457"
+              }
+            }
+          ],
+          "candidate_count": 6,
+          "candidate_ids": [
+            "repair::aerial-cactus-identification::001",
+            "repair::aerial-cactus-identification::002",
+            "repair::aerial-cactus-identification::003",
+            "repair::aerial-cactus-identification::004",
+            "repair::aerial-cactus-identification::005",
+            "repair::aerial-cactus-identification::006"
+          ],
+          "candidate_set_sha256": "ee0973fea96e26d420741f5c3dea9960d90942a3ab9cf7537aec85d7ec77a5bc",
+          "decision": "select",
+          "task_scope": "exact_task",
+          "validated_decision": {
+            "assessments": [
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate 001 concerns MixUp/CutMix producing fractional targets for ROC-AUC. The observed failure is a matrix shape mismatch in a custom CNN classifier, unrelated to label mixing or metric computation.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.3,
+                "sop_id": "repair::aerial-cactus-identification::001"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate 002 concerns BCEWithLogitsLoss rejecting label_smoothing keyword. The observed failure is a Linear layer input dimension mismatch, unrelated.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.3,
+                "sop_id": "repair::aerial-cactus-identification::002"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate 003 concerns DataLoader batch schema mismatch during feature extraction. The observed failure is a classifier width mismatch in a custom CNN forward pass, unrelated.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.2,
+                "sop_id": "repair::aerial-cactus-identification::003"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate 004 concerns test identifier/prediction length mismatch during submission creation. The observed failure is a model forward-pass shape mismatch, unrelated.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.2,
+                "sop_id": "repair::aerial-cactus-identification::004"
+              },
+              {
+                "confidence": 0.95,
+                "contradiction": false,
+                "keyword_correspondence": 0.95,
+                "reason": "Exact match. Observed failure: flattened custom CNN features [64,1024] vs first Linear layer weight [2048,512]. Candidate 005's signature and historical failure describe the identical shape mismatch (64x1024 vs 2048x512) at the convolutional-to-linear boundary, root cause being incorrect classifier input width calculation.",
+                "root_cause_equivalence": 0.98,
+                "runtime_stage_match": 1.0,
+                "sop_id": "repair::aerial-cactus-identification::005"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate 006 concerns torch.load weights-only unpickling error. The observed failure is a forward-pass matrix shape mismatch, unrelated.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.3,
+                "sop_id": "repair::aerial-cactus-identification::006"
+              }
+            ],
+            "decision": "select",
+            "final_confidence": 0.95,
+            "reason": "The observed failure is a RuntimeError at the convolutional-to-linear boundary of a custom CNN: flattened features have shape [64, 1024] while the classifier's first Linear layer expects 2048 input features ([2048, 512] weight). This exactly matches candidate 005's failure signature: \"A custom CNN reaches its classifier but fails matrix multiplication because flattened convolutional features do not match the first linear layer's declared input width,\" with root cause \"The classifier input dimension was calculated from an incorrect channel count or spatial resolution after pooling.\" The historical failure in 005 even reports the identical shapes (64x1024 flattened features vs 2048x512 first linear layer). Keyword correspondence is high (custom CNN, classifier, first Linear layer, flattened features, matrix multiplication, shape mismatch). Runtime stage (model_forward) matches. No contradiction. This is the clear causal match.",
+            "selected_sop_id": "repair::aerial-cactus-identification::005",
+            "selected_transition_id": "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::cc5f402ea0::d143842457"
+          }
+        }
+      ],
+      "trace_sha256": "7bc495724231b21b6863617f56eba0aa19d912d338d21a8b74c594144b581b74",
+      "tree_candidate_details": [
+        {
+          "audit_status": "clean",
+          "candidate_failure_signature": [
+            "model_forward/convolutional_feature_classifier_dimension_mismatch"
+          ],
+          "causal_attachments": [
+            {
+              "quality": "evidence_turn_match",
+              "quality_score": 1.0,
+              "sop_id": "repair::aerial-cactus-identification::005"
+            }
+          ],
+          "child_node_id": "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::node::d143842457d840558845ece02cf5b4fc",
+          "confidence": 0.95,
+          "dynamic_confidence_weights": {
+            "agent_keyword_and_root_cause_semantic_match": 1.0
+          },
+          "eligibility_reason": "clean_l3_agent_root_cause_match",
+          "id": "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::transition::cc5f402ea0::d143842457",
+          "manual_synonym_table_used": false,
+          "metric": 1.0,
+          "metric_improvement": null,
+          "parent_node_id": "run::20260726_030806_aerial-cactus-identification-host-shadow-r7::node::cc5f402ea04f43d0a4ca1092d9262baf",
+          "query_failure_signature": [],
+          "rank_eligible": true,
+          "ranking_backend": "agent_keyword_and_root_cause_semantic_match_v1",
+          "score": 0.95,
+          "score_components": {
+            "agent_confidence": 0.95,
+            "keyword_correspondence": 0.95,
+            "manual_synonym_table_used": false,
+            "root_cause_equivalence": 0.98,
+            "runtime_stage_match": 1.0,
+            "task_match": 1.0
+          },
+          "stage": "debug->debug",
+          "task": "aerial-cactus-identification",
+          "task_scope": "exact_task",
+          "transition_evidence": {
+            "child_result": "The training script executed successfully on GPU, achieving a perfect validation AUC of 1.0000 after 20 epochs of training. The model (a custom CNN trained from scratch) was trained on 12,048 samples and validated on 2,127 samples for the aerial cactus identification task. The only warnings were deprecation notices about torch.cuda.amp.autocast syntax, which are non-critical.",
+            "code_change": "The bug is a dimension mismatch: after the four convolutional blocks, the output spatial size is 2x2 with 256 channels, so the flattened feature size should be `256 * 2 * 2 = 1024`. However, the classifier's first linear layer expects 2048 input features (`128 * 4 * 4`). I need to correct the classifier's first layer input dimension from 2048 to 1024 to match the actual feature size.",
+            "parent_failure": "The execution failed with a RuntimeError due to a shape mismatch between the flattened features (64x1024) and the first linear layer (expected 2048x512). The `view` operation in the forward method reshapes features to `batch_size x (128*4*4) = 1024`, but the classifier's first linear layer expects 2048 input features. This indicates a dimension mismatch in the model architecture's feature flattening step."
+          }
+        }
+      ]
+    },
+    "infrastructure_abstention": {
+      "agent_calls": 2,
+      "algorithm_version": "stage_hybrid_l3_agent_root_cause_v1",
+      "decision": "abstain",
+      "final_confidence": 0.0,
+      "gateway_selection": {
+        "clean_eligible_count": 0,
+        "eligible_count": 0,
+        "goal": "",
+        "llm_tool_calls": 2,
+        "manual_synonym_table_used": false,
+        "mode": "l3_agent_root_cause_match",
+        "selected_sop_id": "",
+        "stage_task_gate_rejected_count": 0
+      },
+      "literal_anchor_extractor": {
+        "exception_names": [],
+        "extractor": "literal_regex_no_synonym_expansion_v1",
+        "literal_tokens": [
+          "and",
+          "api",
+          "before",
+          "cache",
+          "denied",
+          "execution.",
+          "model",
+          "node",
+          "out",
+          "pending",
+          "permission",
+          "pod",
+          "remained",
+          "temporary",
+          "the",
+          "timed"
+        ],
+        "quoted_identifiers": [],
+        "tensor_shapes": []
+      },
+      "manual_synonym_table_used": false,
+      "memory_abstention": {
+        "reason": "l3_agent_abstained_no_manual_fallback",
+        "status": "abstain"
+      },
+      "name": "infrastructure_abstention",
+      "prompt": "",
+      "prompt_refs": [],
+      "query": "Permission denied in a temporary node cache; the Pod remained Pending and the model API timed out before execution.",
+      "selected_sop_gateways": [],
+      "selected_sop_id": "",
+      "selected_task_scope": "",
+      "selected_transition_id": "",
+      "stage_route": {
+        "configured_rrf": {
+          "sop": 0.25,
+          "tree": 0.75
+        },
+        "control": "layered_strategy",
+        "fallback_reason": "l3_agent_abstained_no_manual_fallback",
+        "quotas": {
+          "sop_candidates": 2,
+          "sop_gateways": 1,
+          "tree_candidates": 8
+        },
+        "route": "tree_first",
+        "rrf": {
+          "sop": 1.0,
+          "tree": 0.0
+        },
+        "stage": "debug",
+        "tree_confidence": 0.0
+      },
+      "task_id": "leaf-classification",
+      "trace": [
+        {
+          "attempts": [
+            {
+              "attempt": 1,
+              "prompt_input_sha256": "ab254dc5ff2d2cf7a21ebc0eb31dc959f222afbcbefe2c7d9ae46ca551da842c",
+              "raw_action": {
+                "assessments": [
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns classifier width mismatch in model_forward; observed failure is a Pod scheduling/permission/cache timeout before execution. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::001"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns scalar-output backward loss reduction; observed failure is infrastructure scheduling before execution. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::002"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns SMOTE k_neighbors; observed failure is node cache permission denial. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::003"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns spectral-norm checkpoint key mismatch; observed failure is infrastructure timeout before execution. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::004"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns transformer-hook output rank; observed failure is Pod Pending/cache permission. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::005"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns mixed-precision GradScaler API; observed failure is infrastructure scheduling. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::006"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns XGBoost early_stopping_rounds keyword; observed failure is node cache permission denial. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::007"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns imputer reuse across feature groups; observed failure is infrastructure timeout before execution. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::008"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed runtime failure is purely infrastructure-related: \"Permission denied in a temporary node cache; the Pod remained Pending and the model API timed out before execution.\" None of the authorized L3 candidates describe a scheduling, permission, cache, or timeout failure. All candidates concern model forward shape mismatches, loss reduction, SMOTE, checkpoint loading, feature extraction, mixed precision, XGBoost API, or preprocessing leakage. The literal anchors (permission denied, node cache, Pod Pending, API timeout) have no causal correspondence to any candidate's root cause, and the failure occurred before execution even began. No candidate reaches the confidence threshold; abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              },
+              "status": "valid",
+              "validated_decision": {
+                "assessments": [
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns classifier width mismatch in model_forward; observed failure is a Pod scheduling/permission/cache timeout before execution. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::001"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns scalar-output backward loss reduction; observed failure is infrastructure scheduling before execution. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::002"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns SMOTE k_neighbors; observed failure is node cache permission denial. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::003"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns spectral-norm checkpoint key mismatch; observed failure is infrastructure timeout before execution. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::004"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns transformer-hook output rank; observed failure is Pod Pending/cache permission. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::005"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns mixed-precision GradScaler API; observed failure is infrastructure scheduling. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::006"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns XGBoost early_stopping_rounds keyword; observed failure is node cache permission denial. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::007"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "Candidate concerns imputer reuse across feature groups; observed failure is infrastructure timeout before execution. No overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::leaf-classification::008"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed runtime failure is purely infrastructure-related: \"Permission denied in a temporary node cache; the Pod remained Pending and the model API timed out before execution.\" None of the authorized L3 candidates describe a scheduling, permission, cache, or timeout failure. All candidates concern model forward shape mismatches, loss reduction, SMOTE, checkpoint loading, feature extraction, mixed precision, XGBoost API, or preprocessing leakage. The literal anchors (permission denied, node cache, Pod Pending, API timeout) have no causal correspondence to any candidate's root cause, and the failure occurred before execution even began. No candidate reaches the confidence threshold; abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              }
+            }
+          ],
+          "candidate_count": 8,
+          "candidate_ids": [
+            "repair::leaf-classification::001",
+            "repair::leaf-classification::002",
+            "repair::leaf-classification::003",
+            "repair::leaf-classification::004",
+            "repair::leaf-classification::005",
+            "repair::leaf-classification::006",
+            "repair::leaf-classification::007",
+            "repair::leaf-classification::008"
+          ],
+          "candidate_set_sha256": "ef86342f3219a47bd975e9903b26a62387896309509f883878e53da16cb806df",
+          "decision": "abstain",
+          "task_scope": "exact_task",
+          "validated_decision": {
+            "assessments": [
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.0,
+                "reason": "Candidate concerns classifier width mismatch in model_forward; observed failure is a Pod scheduling/permission/cache timeout before execution. No causal overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::leaf-classification::001"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.0,
+                "reason": "Candidate concerns scalar-output backward loss reduction; observed failure is infrastructure scheduling before execution. No overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::leaf-classification::002"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.0,
+                "reason": "Candidate concerns SMOTE k_neighbors; observed failure is node cache permission denial. No overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::leaf-classification::003"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.0,
+                "reason": "Candidate concerns spectral-norm checkpoint key mismatch; observed failure is infrastructure timeout before execution. No overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::leaf-classification::004"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.0,
+                "reason": "Candidate concerns transformer-hook output rank; observed failure is Pod Pending/cache permission. No overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::leaf-classification::005"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.0,
+                "reason": "Candidate concerns mixed-precision GradScaler API; observed failure is infrastructure scheduling. No overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::leaf-classification::006"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.0,
+                "reason": "Candidate concerns XGBoost early_stopping_rounds keyword; observed failure is node cache permission denial. No overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::leaf-classification::007"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.0,
+                "reason": "Candidate concerns imputer reuse across feature groups; observed failure is infrastructure timeout before execution. No overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::leaf-classification::008"
+              }
+            ],
+            "decision": "abstain",
+            "final_confidence": 0.0,
+            "reason": "The observed runtime failure is purely infrastructure-related: \"Permission denied in a temporary node cache; the Pod remained Pending and the model API timed out before execution.\" None of the authorized L3 candidates describe a scheduling, permission, cache, or timeout failure. All candidates concern model forward shape mismatches, loss reduction, SMOTE, checkpoint loading, feature extraction, mixed precision, XGBoost API, or preprocessing leakage. The literal anchors (permission denied, node cache, Pod Pending, API timeout) have no causal correspondence to any candidate's root cause, and the failure occurred before execution even began. No candidate reaches the confidence threshold; abstain.",
+            "selected_sop_id": "",
+            "selected_transition_id": ""
+          }
+        },
+        {
+          "attempts": [
+            {
+              "attempt": 1,
+              "prompt_input_sha256": "93c9284d8f09165cef6f174f86e1ac5c296cdf6b693775c51953995be77509ba",
+              "raw_action": {
+                "assessments": [
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns LightGBM categorical feature name resolution; observed failure is Pod Pending due to node cache permission denial before execution. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::001"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns target-derived location aggregate data leakage; observed failure is infrastructure scheduling (Pod Pending, permission denied). No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::002"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns scaler fitting leakage across folds; observed failure is infrastructure-level Pod Pending before execution. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::003"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns XGBoost log-target divergence and expm1 overflow; observed failure is Pod Pending due to node cache permission denial. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::004"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns CUDA OOM during full validation forward pass; observed failure is Pod Pending due to node cache permission denial before execution. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns submission row count mismatch from test filtering; observed failure is infrastructure scheduling (Pod Pending, permission denied). No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::006"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed runtime failure is an infrastructure-level issue: \"Permission denied in a temporary node cache; the Pod remained Pending and the model API timed out before execution.\" This is a scheduling/infrastructure failure (Pod Pending, permission denied on node cache, API timeout before execution). None of the authorized L3 candidates address infrastructure or scheduling failures. All six candidates concern model training/preprocessing logic (LightGBM categorical features, data leakage, scaler fitting, gradient boosting divergence, CUDA OOM, submission row preservation). None match the root cause of a Pod stuck in Pending state due to node cache permission denial. The hard gate requires infrastructure_excluded=true for candidates, and the observed failure is purely infrastructure-related, so no candidate is causally equivalent. Abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              },
+              "status": "valid",
+              "validated_decision": {
+                "assessments": [
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns LightGBM categorical feature name resolution; observed failure is Pod Pending due to node cache permission denial before execution. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::001"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns target-derived location aggregate data leakage; observed failure is infrastructure scheduling (Pod Pending, permission denied). No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::002"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns scaler fitting leakage across folds; observed failure is infrastructure-level Pod Pending before execution. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::003"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns XGBoost log-target divergence and expm1 overflow; observed failure is Pod Pending due to node cache permission denial. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::004"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns CUDA OOM during full validation forward pass; observed failure is Pod Pending due to node cache permission denial before execution. No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Candidate concerns submission row count mismatch from test filtering; observed failure is infrastructure scheduling (Pod Pending, permission denied). No causal overlap.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::new-york-city-taxi-fare-prediction::006"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed runtime failure is an infrastructure-level issue: \"Permission denied in a temporary node cache; the Pod remained Pending and the model API timed out before execution.\" This is a scheduling/infrastructure failure (Pod Pending, permission denied on node cache, API timeout before execution). None of the authorized L3 candidates address infrastructure or scheduling failures. All six candidates concern model training/preprocessing logic (LightGBM categorical features, data leakage, scaler fitting, gradient boosting divergence, CUDA OOM, submission row preservation). None match the root cause of a Pod stuck in Pending state due to node cache permission denial. The hard gate requires infrastructure_excluded=true for candidates, and the observed failure is purely infrastructure-related, so no candidate is causally equivalent. Abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              }
+            }
+          ],
+          "candidate_count": 6,
+          "candidate_ids": [
+            "repair::new-york-city-taxi-fare-prediction::001",
+            "repair::new-york-city-taxi-fare-prediction::002",
+            "repair::new-york-city-taxi-fare-prediction::003",
+            "repair::new-york-city-taxi-fare-prediction::004",
+            "repair::new-york-city-taxi-fare-prediction::005",
+            "repair::new-york-city-taxi-fare-prediction::006"
+          ],
+          "candidate_set_sha256": "a7d3fb728c9ec66cca6135212881b38b83b2629ec9a9e0007349970434659233",
+          "decision": "abstain",
+          "task_scope": "same_task_type",
+          "validated_decision": {
+            "assessments": [
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate concerns LightGBM categorical feature name resolution; observed failure is Pod Pending due to node cache permission denial before execution. No causal overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::new-york-city-taxi-fare-prediction::001"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate concerns target-derived location aggregate data leakage; observed failure is infrastructure scheduling (Pod Pending, permission denied). No causal overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::new-york-city-taxi-fare-prediction::002"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate concerns scaler fitting leakage across folds; observed failure is infrastructure-level Pod Pending before execution. No causal overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::new-york-city-taxi-fare-prediction::003"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate concerns XGBoost log-target divergence and expm1 overflow; observed failure is Pod Pending due to node cache permission denial. No causal overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::new-york-city-taxi-fare-prediction::004"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate concerns CUDA OOM during full validation forward pass; observed failure is Pod Pending due to node cache permission denial before execution. No causal overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::new-york-city-taxi-fare-prediction::005"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Candidate concerns submission row count mismatch from test filtering; observed failure is infrastructure scheduling (Pod Pending, permission denied). No causal overlap.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::new-york-city-taxi-fare-prediction::006"
+              }
+            ],
+            "decision": "abstain",
+            "final_confidence": 0.0,
+            "reason": "The observed runtime failure is an infrastructure-level issue: \"Permission denied in a temporary node cache; the Pod remained Pending and the model API timed out before execution.\" This is a scheduling/infrastructure failure (Pod Pending, permission denied on node cache, API timeout before execution). None of the authorized L3 candidates address infrastructure or scheduling failures. All six candidates concern model training/preprocessing logic (LightGBM categorical features, data leakage, scaler fitting, gradient boosting divergence, CUDA OOM, submission row preservation). None match the root cause of a Pod stuck in Pending state due to node cache permission denial. The hard gate requires infrastructure_excluded=true for candidates, and the observed failure is purely infrastructure-related, so no candidate is causally equivalent. Abstain.",
+            "selected_sop_id": "",
+            "selected_transition_id": ""
+          }
+        }
+      ],
+      "trace_sha256": "8368f40b557d65a98012130529bf76099fb91ee2ba8948b4781daea68fa4415c",
+      "tree_candidate_details": []
+    },
+    "nearby_different_root_cause": {
+      "agent_calls": 2,
+      "algorithm_version": "stage_hybrid_l3_agent_root_cause_v1",
+      "decision": "abstain",
+      "final_confidence": 0.0,
+      "gateway_selection": {
+        "clean_eligible_count": 0,
+        "eligible_count": 0,
+        "goal": "",
+        "llm_tool_calls": 2,
+        "manual_synonym_table_used": false,
+        "mode": "l3_agent_root_cause_match",
+        "selected_sop_id": "",
+        "stage_task_gate_rejected_count": 0
+      },
+      "literal_anchor_extractor": {
+        "exception_names": [
+          "RuntimeError"
+        ],
+        "extractor": "literal_regex_no_synonym_expansion_v1",
+        "literal_tokens": [
+          "activation",
+          "before",
+          "but",
+          "classification",
+          "convnext",
+          "global",
+          "head",
+          "layernorm",
+          "pooling.",
+          "produces",
+          "receives",
+          "runtimeerror",
+          "spatial",
+          "the",
+          "torch.size"
+        ],
+        "quoted_identifiers": [],
+        "tensor_shapes": [
+          "[768])",
+          "torch.Size([32, 768, 8, 8])"
+        ]
+      },
+      "manual_synonym_table_used": false,
+      "memory_abstention": {
+        "reason": "l3_agent_abstained_no_manual_fallback",
+        "status": "abstain"
+      },
+      "name": "nearby_different_root_cause",
+      "prompt": "",
+      "prompt_refs": [],
+      "query": "RuntimeError: ConvNeXt produces a spatial activation torch.Size([32, 768, 8, 8]), but LayerNorm([768]) in the classification head receives it before global pooling.",
+      "selected_sop_gateways": [],
+      "selected_sop_id": "",
+      "selected_task_scope": "",
+      "selected_transition_id": "",
+      "stage_route": {
+        "configured_rrf": {
+          "sop": 0.25,
+          "tree": 0.75
+        },
+        "control": "layered_strategy",
+        "fallback_reason": "l3_agent_abstained_no_manual_fallback",
+        "quotas": {
+          "sop_candidates": 2,
+          "sop_gateways": 1,
+          "tree_candidates": 8
+        },
+        "route": "tree_first",
+        "rrf": {
+          "sop": 1.0,
+          "tree": 0.0
+        },
+        "stage": "debug",
+        "tree_confidence": 0.0
+      },
+      "task_id": "aerial-cactus-identification",
+      "trace": [
+        {
+          "attempts": [
+            {
+              "attempt": 1,
+              "prompt_input_sha256": "de336632937df8cdebb18500fbaf7ab2f104d50209df857c28e3604a23e4ab4a",
+              "raw_action": {
+                "assessments": [
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns MixUp/CutMix fractional labels breaking ROC-AUC; unrelated to ConvNeXt LayerNorm-before-pooling spatial activation error.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::001"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns BCEWithLogitsLoss label_smoothing TypeError; unrelated to ConvNeXt head LayerNorm ordering.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::002"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns labeled vs unlabeled batch schema unpacking; unrelated to model forward spatial activation error.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::003"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns submission ID/prediction length mismatch in CV ensemble; unrelated to ConvNeXt forward error.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::004"
+                  },
+                  {
+                    "confidence": 0.15,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.3,
+                    "reason": "Both are model-forward shape errors, but mechanism differs: custom CNN flatten-to-linear width mismatch vs ConvNeXt LayerNorm applied to spatial map before global pooling. Repair (adjust linear input width) does not fix LayerNorm ordering.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.6,
+                    "sop_id": "repair::aerial-cactus-identification::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns weights-only checkpoint unpickling; unrelated to ConvNeXt head LayerNorm spatial activation error.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::006"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed failure is a ConvNeXt architecture issue: the backbone produces a spatial activation of shape [32, 768, 8, 8], but the classification head's LayerNorm([768]) receives it before global pooling. This is a model-architecture ordering bug (LayerNorm applied to spatial feature map instead of after global average pooling). None of the six authorized candidates match this root cause. Candidate 005 is about a custom CNN flatten-to-linear width mismatch, which is a different mechanism (matrix multiplication at conv-to-linear boundary) and contradicts the ConvNeXt LayerNorm-before-pooling issue. The other candidates concern MixUp/CutMix labels, BCEWithLogitsLoss label_smoothing, batch schema unpacking, submission ID ordering, and checkpoint weights-only loading—none causally related. No candidate reaches the confidence threshold, so abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              },
+              "status": "valid",
+              "validated_decision": {
+                "assessments": [
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns MixUp/CutMix fractional labels breaking ROC-AUC; unrelated to ConvNeXt LayerNorm-before-pooling spatial activation error.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::001"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns BCEWithLogitsLoss label_smoothing TypeError; unrelated to ConvNeXt head LayerNorm ordering.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::002"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns labeled vs unlabeled batch schema unpacking; unrelated to model forward spatial activation error.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::003"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns submission ID/prediction length mismatch in CV ensemble; unrelated to ConvNeXt forward error.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::004"
+                  },
+                  {
+                    "confidence": 0.15,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.3,
+                    "reason": "Both are model-forward shape errors, but mechanism differs: custom CNN flatten-to-linear width mismatch vs ConvNeXt LayerNorm applied to spatial map before global pooling. Repair (adjust linear input width) does not fix LayerNorm ordering.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.6,
+                    "sop_id": "repair::aerial-cactus-identification::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns weights-only checkpoint unpickling; unrelated to ConvNeXt head LayerNorm spatial activation error.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::006"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed failure is a ConvNeXt architecture issue: the backbone produces a spatial activation of shape [32, 768, 8, 8], but the classification head's LayerNorm([768]) receives it before global pooling. This is a model-architecture ordering bug (LayerNorm applied to spatial feature map instead of after global average pooling). None of the six authorized candidates match this root cause. Candidate 005 is about a custom CNN flatten-to-linear width mismatch, which is a different mechanism (matrix multiplication at conv-to-linear boundary) and contradicts the ConvNeXt LayerNorm-before-pooling issue. The other candidates concern MixUp/CutMix labels, BCEWithLogitsLoss label_smoothing, batch schema unpacking, submission ID ordering, and checkpoint weights-only loading—none causally related. No candidate reaches the confidence threshold, so abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              }
+            }
+          ],
+          "candidate_count": 6,
+          "candidate_ids": [
+            "repair::aerial-cactus-identification::001",
+            "repair::aerial-cactus-identification::002",
+            "repair::aerial-cactus-identification::003",
+            "repair::aerial-cactus-identification::004",
+            "repair::aerial-cactus-identification::005",
+            "repair::aerial-cactus-identification::006"
+          ],
+          "candidate_set_sha256": "ee0973fea96e26d420741f5c3dea9960d90942a3ab9cf7537aec85d7ec77a5bc",
+          "decision": "abstain",
+          "task_scope": "exact_task",
+          "validated_decision": {
+            "assessments": [
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns MixUp/CutMix fractional labels breaking ROC-AUC; unrelated to ConvNeXt LayerNorm-before-pooling spatial activation error.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.3,
+                "sop_id": "repair::aerial-cactus-identification::001"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns BCEWithLogitsLoss label_smoothing TypeError; unrelated to ConvNeXt head LayerNorm ordering.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.3,
+                "sop_id": "repair::aerial-cactus-identification::002"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns labeled vs unlabeled batch schema unpacking; unrelated to model forward spatial activation error.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.2,
+                "sop_id": "repair::aerial-cactus-identification::003"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns submission ID/prediction length mismatch in CV ensemble; unrelated to ConvNeXt forward error.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.2,
+                "sop_id": "repair::aerial-cactus-identification::004"
+              },
+              {
+                "confidence": 0.15,
+                "contradiction": true,
+                "keyword_correspondence": 0.3,
+                "reason": "Both are model-forward shape errors, but mechanism differs: custom CNN flatten-to-linear width mismatch vs ConvNeXt LayerNorm applied to spatial map before global pooling. Repair (adjust linear input width) does not fix LayerNorm ordering.",
+                "root_cause_equivalence": 0.1,
+                "runtime_stage_match": 0.6,
+                "sop_id": "repair::aerial-cactus-identification::005"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns weights-only checkpoint unpickling; unrelated to ConvNeXt head LayerNorm spatial activation error.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.3,
+                "sop_id": "repair::aerial-cactus-identification::006"
+              }
+            ],
+            "decision": "abstain",
+            "final_confidence": 0.0,
+            "reason": "The observed failure is a ConvNeXt architecture issue: the backbone produces a spatial activation of shape [32, 768, 8, 8], but the classification head's LayerNorm([768]) receives it before global pooling. This is a model-architecture ordering bug (LayerNorm applied to spatial feature map instead of after global average pooling). None of the six authorized candidates match this root cause. Candidate 005 is about a custom CNN flatten-to-linear width mismatch, which is a different mechanism (matrix multiplication at conv-to-linear boundary) and contradicts the ConvNeXt LayerNorm-before-pooling issue. The other candidates concern MixUp/CutMix labels, BCEWithLogitsLoss label_smoothing, batch schema unpacking, submission ID ordering, and checkpoint weights-only loading—none causally related. No candidate reaches the confidence threshold, so abstain.",
+            "selected_sop_id": "",
+            "selected_transition_id": ""
+          }
+        },
+        {
+          "attempts": [
+            {
+              "attempt": 1,
+              "prompt_input_sha256": "f1bdc01bcdd335a44e45222734f69a24520d47ca7fbeac67554932148b174563",
+              "raw_action": {
+                "assessments": [
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns image dimension mismatches in reconstruction; unrelated to ConvNeXt classification head receiving spatial activations before pooling.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::001"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "U-Net skip-concat spatial alignment; unrelated to classification head LayerNorm on spatial feature map.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::002"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "U-Net channel bookkeeping mismatch; unrelated to ConvNeXt head pooling order.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::003"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.2,
+                    "reason": "LayerNorm2d availability in NAFNet; different mechanism (missing API) than ConvNeXt head receiving spatial tensor before pooling.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::004"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "CUDA/CPU device mismatch in patch accumulation; unrelated to classification head shape error.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::005"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "LinearLR warmup start factor; unrelated to ConvNeXt classification head.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::006"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed failure is a ConvNeXt classification head receiving a spatial activation tensor torch.Size([32, 768, 8, 8]) into LayerNorm([768]) before global pooling. The root cause is that the classification head applies LayerNorm to a 4D spatial feature map instead of a 2D pooled feature vector. None of the authorized L3 candidates address this: they cover image reconstruction dimension mismatches, U-Net skip-concat shape/channel mismatches, NAFNet LayerNorm2d availability, device mismatches in patch accumulation, and LinearLR warmup start factor. None involve ConvNeXt, global pooling ordering, or a classification head receiving spatial activations. Root-cause equivalence is absent for all candidates, so abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              },
+              "status": "valid",
+              "validated_decision": {
+                "assessments": [
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns image dimension mismatches in reconstruction; unrelated to ConvNeXt classification head receiving spatial activations before pooling.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::001"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "U-Net skip-concat spatial alignment; unrelated to classification head LayerNorm on spatial feature map.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::002"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "U-Net channel bookkeeping mismatch; unrelated to ConvNeXt head pooling order.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::003"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.2,
+                    "reason": "LayerNorm2d availability in NAFNet; different mechanism (missing API) than ConvNeXt head receiving spatial tensor before pooling.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::004"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "CUDA/CPU device mismatch in patch accumulation; unrelated to classification head shape error.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::005"
+                  },
+                  {
+                    "confidence": 0.0,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.0,
+                    "reason": "LinearLR warmup start factor; unrelated to ConvNeXt classification head.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.0,
+                    "sop_id": "repair::denoising-dirty-documents::006"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed failure is a ConvNeXt classification head receiving a spatial activation tensor torch.Size([32, 768, 8, 8]) into LayerNorm([768]) before global pooling. The root cause is that the classification head applies LayerNorm to a 4D spatial feature map instead of a 2D pooled feature vector. None of the authorized L3 candidates address this: they cover image reconstruction dimension mismatches, U-Net skip-concat shape/channel mismatches, NAFNet LayerNorm2d availability, device mismatches in patch accumulation, and LinearLR warmup start factor. None involve ConvNeXt, global pooling ordering, or a classification head receiving spatial activations. Root-cause equivalence is absent for all candidates, so abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              }
+            }
+          ],
+          "candidate_count": 6,
+          "candidate_ids": [
+            "repair::denoising-dirty-documents::001",
+            "repair::denoising-dirty-documents::002",
+            "repair::denoising-dirty-documents::003",
+            "repair::denoising-dirty-documents::004",
+            "repair::denoising-dirty-documents::005",
+            "repair::denoising-dirty-documents::006"
+          ],
+          "candidate_set_sha256": "db66da863343acdd0b113e9ea17ffbe555a7dcaeadcede21ccea2b32d13664ce",
+          "decision": "abstain",
+          "task_scope": "same_task_type",
+          "validated_decision": {
+            "assessments": [
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns image dimension mismatches in reconstruction; unrelated to ConvNeXt classification head receiving spatial activations before pooling.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::denoising-dirty-documents::001"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "U-Net skip-concat spatial alignment; unrelated to classification head LayerNorm on spatial feature map.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::denoising-dirty-documents::002"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "U-Net channel bookkeeping mismatch; unrelated to ConvNeXt head pooling order.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::denoising-dirty-documents::003"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.2,
+                "reason": "LayerNorm2d availability in NAFNet; different mechanism (missing API) than ConvNeXt head receiving spatial tensor before pooling.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::denoising-dirty-documents::004"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "CUDA/CPU device mismatch in patch accumulation; unrelated to classification head shape error.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::denoising-dirty-documents::005"
+              },
+              {
+                "confidence": 0.0,
+                "contradiction": false,
+                "keyword_correspondence": 0.0,
+                "reason": "LinearLR warmup start factor; unrelated to ConvNeXt classification head.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.0,
+                "sop_id": "repair::denoising-dirty-documents::006"
+              }
+            ],
+            "decision": "abstain",
+            "final_confidence": 0.0,
+            "reason": "The observed failure is a ConvNeXt classification head receiving a spatial activation tensor torch.Size([32, 768, 8, 8]) into LayerNorm([768]) before global pooling. The root cause is that the classification head applies LayerNorm to a 4D spatial feature map instead of a 2D pooled feature vector. None of the authorized L3 candidates address this: they cover image reconstruction dimension mismatches, U-Net skip-concat shape/channel mismatches, NAFNet LayerNorm2d availability, device mismatches in patch accumulation, and LinearLR warmup start factor. None involve ConvNeXt, global pooling ordering, or a classification head receiving spatial activations. Root-cause equivalence is absent for all candidates, so abstain.",
+            "selected_sop_id": "",
+            "selected_transition_id": ""
+          }
+        }
+      ],
+      "trace_sha256": "090eb524a3868e0631e62ddbb737d6c97494826210cdababbf8976d55c90f4e1",
+      "tree_candidate_details": []
+    },
+    "same_task_type_fallback": {
+      "agent_calls": 2,
+      "algorithm_version": "stage_hybrid_l3_agent_root_cause_v1",
+      "decision": "select",
+      "final_confidence": 0.9,
+      "gateway_selection": {
+        "clean_eligible_count": 1,
+        "eligible_count": 1,
+        "goal": "The observed runtime failure is a RuntimeError where a U-Net decoder upsample produces height/width different from its encoder skip tensor, causing concatenation to fail. This exactly matches candidate 002's failure signature: \"A U-Net forward pass fails at a decoder skip concatenation because the upsampled decoder feature and encoder feature have different spatial heights or widths.\" The root cause (input padding/decoder upsampling not preserving the spatial lattice through encoder/decoder levels so skip tensors are misaligned) is equivalent, and the repair (align decoder features with skip tensors before concatenation) directly addresses the failure. Runtime stage (model_forward) matches. This is the strongest match.",
+        "llm_tool_calls": 2,
+        "manual_synonym_table_used": false,
+        "mode": "l3_agent_root_cause_match",
+        "selected_sop_id": "repair::denoising-dirty-documents::002",
+        "stage_task_gate_rejected_count": 0
+      },
+      "literal_anchor_extractor": {
+        "exception_names": [
+          "RuntimeError"
+        ],
+        "extractor": "literal_regex_no_synonym_expansion_v1",
+        "literal_tokens": [
+          "align",
+          "and",
+          "concatenation",
+          "connection.",
+          "decoder",
+          "different",
+          "encoder",
+          "fails",
+          "from",
+          "has",
+          "height",
+          "its",
+          "lattice",
+          "runtimeerror",
+          "skip",
+          "tensor",
+          "the",
+          "u-net",
+          "upsample",
+          "width"
+        ],
+        "quoted_identifiers": [],
+        "tensor_shapes": []
+      },
+      "manual_synonym_table_used": false,
+      "memory_abstention": {},
+      "name": "same_task_type_fallback",
+      "prompt": "## Stage-Aware Hybrid Run-Forest Memory\nCandidates are suggestions. Verified execution evidence and risk warnings are separate.\nNever present an SOP-only reference as a proven successful recipe.\nStage route: {\"stage\": \"debug\", \"route\": \"tree_first\", \"control\": \"layered_strategy\", \"quotas\": {\"sop_candidates\": 2, \"sop_gateways\": 1, \"tree_candidates\": 8}, \"rrf\": {\"sop\": 0.45999999999999996, \"tree\": 0.54}, \"configured_rrf\": {\"sop\": 0.25, \"tree\": 0.75}, \"tree_confidence\": 0.9, \"fallback_reason\": null}\n\n### Selected SOP Gateways (clean supporting execution required)\n- repair::denoising-dirty-documents::002: align U-Net decoder features with skip tensors before concatenation\n  Action: Evidence-bound L3 Debug repair:\nFailure signature: image_restoration/unet/spatial_skip_misalignment\nFailure pattern: A U-Net forward pass fails at a decoder skip concatenation because the upsampled decoder feature and encoder feature have different spatial heights or widths.\nRoot cause: Input padding and decoder upsampling do not preserve the same spatial lattice through all encoder and decoder levels, so corresponding skip tensors are not spatially aligned.\nRuntime stage: model_forward\nRepair: Determine the network's total downsampling factor from the number and stride of encoder stages.\n- Determine the network's total downsampling factor from the number and stride of encoder stages.\n- Pad input images or patches so both spatial dimensions are divisible by that factor.\n- At every decoder stage, resize or symmetrically pad or crop the decoder feature to the exact spatial shape of the corresponding encoder feature before concatenation.\n- After the output layer, crop the prediction back to the original unpadded dimensions.\n- Run a forward-shape test on representative odd-sized and task-sized inputs before training.\nEvidence admission: accepted_clean_repair (1 clean repair success; count does not create an evidence tier).\n  When: Use when a U-Net or similar encoder-decoder reports unequal spatial sizes at torch.cat or when document dimensions are not naturally divisible by the complete downsampling factor.\n  Supporting transitions: run::20260716_040229_denoising-dirty-documents::transition::318e6e02bd::726e346a19\n\n### Execution Candidates\n- [sop_transition_matches] run::20260716_040229_denoising-dirty-documents::transition::318e6e02bd::726e346a19 stage=improve->debug outcome=debug_fixed metric_improvement=None\n  Parent failure: The code crashed during the first training epoch with a RuntimeError in the model's forward pass. The error occurred at a skip connection concatenation (torch.cat([d4, e4], dim=1)) where tensor sizes did not match: expected size 54 but got size 27 for tensor number 1. This indicates a shape mismatch in the U-Net decoder due to the padding strategy not correctly accounting for the downsampling/upsampling factor across the encoder-decoder skip connections.\n  Proven code change: Parent error: RuntimeError | Parent analysis: The code crashed during the first training epoch with a RuntimeError in the model's forward pass. The error occurred at a skip connection concatenation (torch.cat([d4, e4], dim=1)) where tensor sizes did not match: expected size 54 but got size 27 for tensor number 1. This indicates a shape mismatch in the U-Net decoder due to the padding strategy not correctly accounting for the downsampling/upsampling factor across the encoder-decoder skip connections.\n  Successful child result: The image denoising U-Net training completed successfully with early stopping at epoch 94. The best validation RMSE of 0.022972 was achieved at epoch 84, and the final validation score matched this at 0.022972. A submission file with 5,789,880 rows was generated.\n  Causally supported SOPs only: repair::denoising-dirty-documents::002\n- [sop_transition_matches] run::20260716_040229_denoising-dirty-documents::node::726e346a19af41a1bf571e7fe239e6df stage=debug outcome=None metric_improvement=None\n\n### Verified Evidence Refs\n- evidence::4c9dabe1b00d: improve->debug outcome=debug_fixed parent_metric=None child_metric=0.022972158344245295 parent_error=Loaded 115 train images. Train: 92, Val: 23 Loaded 29 test images. Data processing and feature engineering complete. Model, loss, optimizer defined. Starting training... Traceback (most recent call last): File \"/haoming/mlevolve-original-runs/be034ec/3h120/20260716_040229_denoising-dirty-documents/",
+      "prompt_refs": [
+        "run::20260716_040229_denoising-dirty-documents::transition::318e6e02bd::726e346a19",
+        "run::20260716_040229_denoising-dirty-documents::node::726e346a19af41a1bf571e7fe239e6df",
+        "repair::denoising-dirty-documents::002",
+        "evidence::4c9dabe1b00d"
+      ],
+      "query": "RuntimeError: a U-Net decoder upsample has height and width different from its encoder skip tensor, so concatenation fails; align the decoder lattice to the skip connection.",
+      "selected_sop_gateways": [
+        "repair::denoising-dirty-documents::002"
+      ],
+      "selected_sop_id": "repair::denoising-dirty-documents::002",
+      "selected_task_scope": "same_task_type",
+      "selected_transition_id": "run::20260716_040229_denoising-dirty-documents::transition::318e6e02bd::726e346a19",
+      "stage_route": {
+        "configured_rrf": {
+          "sop": 0.25,
+          "tree": 0.75
+        },
+        "control": "layered_strategy",
+        "fallback_reason": null,
+        "quotas": {
+          "sop_candidates": 2,
+          "sop_gateways": 1,
+          "tree_candidates": 8
+        },
+        "route": "tree_first",
+        "rrf": {
+          "sop": 0.45999999999999996,
+          "tree": 0.54
+        },
+        "stage": "debug",
+        "tree_confidence": 0.9
+      },
+      "task_id": "aerial-cactus-identification",
+      "trace": [
+        {
+          "attempts": [
+            {
+              "attempt": 1,
+              "prompt_input_sha256": "10b795d233a4d21ea209969b112069a79dc1a13fa4ef17b1ac9452bdef0aa2de",
+              "raw_action": {
+                "assessments": [
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns MixUp/CutMix soft labels breaking ROC-AUC; unrelated to U-Net decoder skip-connection shape mismatch.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::001"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns BCEWithLogitsLoss label_smoothing TypeError; unrelated to decoder/encoder concatenation shape mismatch.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::002"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns labeled vs unlabeled batch schema unpacking; unrelated to U-Net skip-connection tensor shape mismatch.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::003"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns submission ID/prediction length mismatch; unrelated to decoder upsample concatenation failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::004"
+                  },
+                  {
+                    "confidence": 0.1,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.2,
+                    "reason": "Both are shape mismatches but at different boundaries: CNN flattened-width vs U-Net decoder-skip concatenation. Different causal mechanism and repair.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.4,
+                    "sop_id": "repair::aerial-cactus-identification::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns PyTorch weights-only checkpoint loading; unrelated to U-Net decoder lattice alignment.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::006"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed runtime failure is a U-Net decoder upsample whose height/width differ from its encoder skip tensor, causing concatenation to fail. None of the six authorized candidates describe a U-Net encoder-decoder skip-connection shape mismatch. The candidates cover: MixUp/CutMix soft-label AUC errors, BCEWithLogitsLoss label_smoothing TypeError, labeled/unlabeled batch schema unpacking, submission ID/prediction length mismatch, CNN classifier flattened-width mismatch, and PyTorch weights-only checkpoint loading. None involve a decoder lattice alignment to skip connections. The closest (CNN classifier width mismatch) is a different causal mechanism (convolutional-to-linear boundary) and would be a contradiction, not a match. No candidate reaches the confidence threshold, so abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              },
+              "status": "valid",
+              "validated_decision": {
+                "assessments": [
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns MixUp/CutMix soft labels breaking ROC-AUC; unrelated to U-Net decoder skip-connection shape mismatch.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::001"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns BCEWithLogitsLoss label_smoothing TypeError; unrelated to decoder/encoder concatenation shape mismatch.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::002"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns labeled vs unlabeled batch schema unpacking; unrelated to U-Net skip-connection tensor shape mismatch.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::003"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns submission ID/prediction length mismatch; unrelated to decoder upsample concatenation failure.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::aerial-cactus-identification::004"
+                  },
+                  {
+                    "confidence": 0.1,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.2,
+                    "reason": "Both are shape mismatches but at different boundaries: CNN flattened-width vs U-Net decoder-skip concatenation. Different causal mechanism and repair.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.4,
+                    "sop_id": "repair::aerial-cactus-identification::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": true,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns PyTorch weights-only checkpoint loading; unrelated to U-Net decoder lattice alignment.",
+                    "root_cause_equivalence": 0.0,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::aerial-cactus-identification::006"
+                  }
+                ],
+                "decision": "abstain",
+                "final_confidence": 0.0,
+                "reason": "The observed runtime failure is a U-Net decoder upsample whose height/width differ from its encoder skip tensor, causing concatenation to fail. None of the six authorized candidates describe a U-Net encoder-decoder skip-connection shape mismatch. The candidates cover: MixUp/CutMix soft-label AUC errors, BCEWithLogitsLoss label_smoothing TypeError, labeled/unlabeled batch schema unpacking, submission ID/prediction length mismatch, CNN classifier flattened-width mismatch, and PyTorch weights-only checkpoint loading. None involve a decoder lattice alignment to skip connections. The closest (CNN classifier width mismatch) is a different causal mechanism (convolutional-to-linear boundary) and would be a contradiction, not a match. No candidate reaches the confidence threshold, so abstain.",
+                "selected_sop_id": "",
+                "selected_transition_id": ""
+              }
+            }
+          ],
+          "candidate_count": 6,
+          "candidate_ids": [
+            "repair::aerial-cactus-identification::001",
+            "repair::aerial-cactus-identification::002",
+            "repair::aerial-cactus-identification::003",
+            "repair::aerial-cactus-identification::004",
+            "repair::aerial-cactus-identification::005",
+            "repair::aerial-cactus-identification::006"
+          ],
+          "candidate_set_sha256": "ee0973fea96e26d420741f5c3dea9960d90942a3ab9cf7537aec85d7ec77a5bc",
+          "decision": "abstain",
+          "task_scope": "exact_task",
+          "validated_decision": {
+            "assessments": [
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns MixUp/CutMix soft labels breaking ROC-AUC; unrelated to U-Net decoder skip-connection shape mismatch.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.3,
+                "sop_id": "repair::aerial-cactus-identification::001"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns BCEWithLogitsLoss label_smoothing TypeError; unrelated to decoder/encoder concatenation shape mismatch.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.3,
+                "sop_id": "repair::aerial-cactus-identification::002"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns labeled vs unlabeled batch schema unpacking; unrelated to U-Net skip-connection tensor shape mismatch.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.2,
+                "sop_id": "repair::aerial-cactus-identification::003"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns submission ID/prediction length mismatch; unrelated to decoder upsample concatenation failure.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.2,
+                "sop_id": "repair::aerial-cactus-identification::004"
+              },
+              {
+                "confidence": 0.1,
+                "contradiction": true,
+                "keyword_correspondence": 0.2,
+                "reason": "Both are shape mismatches but at different boundaries: CNN flattened-width vs U-Net decoder-skip concatenation. Different causal mechanism and repair.",
+                "root_cause_equivalence": 0.1,
+                "runtime_stage_match": 0.4,
+                "sop_id": "repair::aerial-cactus-identification::005"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": true,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns PyTorch weights-only checkpoint loading; unrelated to U-Net decoder lattice alignment.",
+                "root_cause_equivalence": 0.0,
+                "runtime_stage_match": 0.3,
+                "sop_id": "repair::aerial-cactus-identification::006"
+              }
+            ],
+            "decision": "abstain",
+            "final_confidence": 0.0,
+            "reason": "The observed runtime failure is a U-Net decoder upsample whose height/width differ from its encoder skip tensor, causing concatenation to fail. None of the six authorized candidates describe a U-Net encoder-decoder skip-connection shape mismatch. The candidates cover: MixUp/CutMix soft-label AUC errors, BCEWithLogitsLoss label_smoothing TypeError, labeled/unlabeled batch schema unpacking, submission ID/prediction length mismatch, CNN classifier flattened-width mismatch, and PyTorch weights-only checkpoint loading. None involve a decoder lattice alignment to skip connections. The closest (CNN classifier width mismatch) is a different causal mechanism (convolutional-to-linear boundary) and would be a contradiction, not a match. No candidate reaches the confidence threshold, so abstain.",
+            "selected_sop_id": "",
+            "selected_transition_id": ""
+          }
+        },
+        {
+          "attempts": [
+            {
+              "attempt": 1,
+              "prompt_input_sha256": "56b2baa3e4930609e395ba12e9572df89b17f189ff24b93763f90a26c3919763",
+              "raw_action": {
+                "assessments": [
+                  {
+                    "confidence": 0.15,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.3,
+                    "reason": "This candidate concerns native image dimensions differing across documents causing reconstruction/target shape mismatches during full-image validation. The observed failure is a U-Net decoder skip concatenation spatial mismatch during forward pass, not a data-loading dimension mismatch. Different causal mechanism.",
+                    "root_cause_equivalence": 0.2,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::denoising-dirty-documents::001"
+                  },
+                  {
+                    "confidence": 0.9,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.95,
+                    "reason": "Direct match. Observed failure is a U-Net decoder upsample with height/width different from encoder skip tensor causing concatenation failure. Candidate 002's signature and root cause (spatial lattice misalignment across encoder/decoder levels) are equivalent, and repair aligns decoder features with skip tensors before concatenation. Runtime stage model_forward matches.",
+                    "root_cause_equivalence": 0.95,
+                    "runtime_stage_match": 0.95,
+                    "sop_id": "repair::denoising-dirty-documents::002"
+                  },
+                  {
+                    "confidence": 0.25,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.4,
+                    "reason": "This candidate concerns channel-count mismatch at decoder/output convolution, not spatial height/width mismatch at skip concatenation. The observed failure is about spatial dimensions, not channels. Different causal mechanism despite same model_forward stage.",
+                    "root_cause_equivalence": 0.3,
+                    "runtime_stage_match": 0.8,
+                    "sop_id": "repair::denoising-dirty-documents::003"
+                  },
+                  {
+                    "confidence": 0.1,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.2,
+                    "reason": "Concerns unavailable LayerNorm2d normalization class during NAFNet construction. Unrelated to spatial skip-concatenation mismatch.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::denoising-dirty-documents::004"
+                  },
+                  {
+                    "confidence": 0.1,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.2,
+                    "reason": "Concerns CUDA/CPU device mismatch during patch accumulation in inference. Unrelated to U-Net decoder skip spatial mismatch.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::denoising-dirty-documents::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns LinearLR warmup start_factor validation during training initialization. Unrelated to U-Net spatial skip mismatch.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::denoising-dirty-documents::006"
+                  }
+                ],
+                "decision": "select",
+                "final_confidence": 0.9,
+                "reason": "The observed runtime failure is a RuntimeError where a U-Net decoder upsample produces height/width different from its encoder skip tensor, causing concatenation to fail. This exactly matches candidate 002's failure signature: \"A U-Net forward pass fails at a decoder skip concatenation because the upsampled decoder feature and encoder feature have different spatial heights or widths.\" The root cause (input padding/decoder upsampling not preserving the spatial lattice through encoder/decoder levels so skip tensors are misaligned) is equivalent, and the repair (align decoder features with skip tensors before concatenation) directly addresses the failure. Runtime stage (model_forward) matches. This is the strongest match.",
+                "selected_sop_id": "repair::denoising-dirty-documents::002",
+                "selected_transition_id": "run::20260716_040229_denoising-dirty-documents::transition::318e6e02bd::726e346a19"
+              },
+              "status": "valid",
+              "validated_decision": {
+                "assessments": [
+                  {
+                    "confidence": 0.15,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.3,
+                    "reason": "This candidate concerns native image dimensions differing across documents causing reconstruction/target shape mismatches during full-image validation. The observed failure is a U-Net decoder skip concatenation spatial mismatch during forward pass, not a data-loading dimension mismatch. Different causal mechanism.",
+                    "root_cause_equivalence": 0.2,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::denoising-dirty-documents::001"
+                  },
+                  {
+                    "confidence": 0.9,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.95,
+                    "reason": "Direct match. Observed failure is a U-Net decoder upsample with height/width different from encoder skip tensor causing concatenation failure. Candidate 002's signature and root cause (spatial lattice misalignment across encoder/decoder levels) are equivalent, and repair aligns decoder features with skip tensors before concatenation. Runtime stage model_forward matches.",
+                    "root_cause_equivalence": 0.95,
+                    "runtime_stage_match": 0.95,
+                    "sop_id": "repair::denoising-dirty-documents::002"
+                  },
+                  {
+                    "confidence": 0.25,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.4,
+                    "reason": "This candidate concerns channel-count mismatch at decoder/output convolution, not spatial height/width mismatch at skip concatenation. The observed failure is about spatial dimensions, not channels. Different causal mechanism despite same model_forward stage.",
+                    "root_cause_equivalence": 0.3,
+                    "runtime_stage_match": 0.8,
+                    "sop_id": "repair::denoising-dirty-documents::003"
+                  },
+                  {
+                    "confidence": 0.1,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.2,
+                    "reason": "Concerns unavailable LayerNorm2d normalization class during NAFNet construction. Unrelated to spatial skip-concatenation mismatch.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.3,
+                    "sop_id": "repair::denoising-dirty-documents::004"
+                  },
+                  {
+                    "confidence": 0.1,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.2,
+                    "reason": "Concerns CUDA/CPU device mismatch during patch accumulation in inference. Unrelated to U-Net decoder skip spatial mismatch.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.2,
+                    "sop_id": "repair::denoising-dirty-documents::005"
+                  },
+                  {
+                    "confidence": 0.05,
+                    "contradiction": false,
+                    "keyword_correspondence": 0.1,
+                    "reason": "Concerns LinearLR warmup start_factor validation during training initialization. Unrelated to U-Net spatial skip mismatch.",
+                    "root_cause_equivalence": 0.1,
+                    "runtime_stage_match": 0.1,
+                    "sop_id": "repair::denoising-dirty-documents::006"
+                  }
+                ],
+                "decision": "select",
+                "final_confidence": 0.9,
+                "reason": "The observed runtime failure is a RuntimeError where a U-Net decoder upsample produces height/width different from its encoder skip tensor, causing concatenation to fail. This exactly matches candidate 002's failure signature: \"A U-Net forward pass fails at a decoder skip concatenation because the upsampled decoder feature and encoder feature have different spatial heights or widths.\" The root cause (input padding/decoder upsampling not preserving the spatial lattice through encoder/decoder levels so skip tensors are misaligned) is equivalent, and the repair (align decoder features with skip tensors before concatenation) directly addresses the failure. Runtime stage (model_forward) matches. This is the strongest match.",
+                "selected_sop_id": "repair::denoising-dirty-documents::002",
+                "selected_transition_id": "run::20260716_040229_denoising-dirty-documents::transition::318e6e02bd::726e346a19"
+              }
+            }
+          ],
+          "candidate_count": 6,
+          "candidate_ids": [
+            "repair::denoising-dirty-documents::001",
+            "repair::denoising-dirty-documents::002",
+            "repair::denoising-dirty-documents::003",
+            "repair::denoising-dirty-documents::004",
+            "repair::denoising-dirty-documents::005",
+            "repair::denoising-dirty-documents::006"
+          ],
+          "candidate_set_sha256": "db66da863343acdd0b113e9ea17ffbe555a7dcaeadcede21ccea2b32d13664ce",
+          "decision": "select",
+          "task_scope": "same_task_type",
+          "validated_decision": {
+            "assessments": [
+              {
+                "confidence": 0.15,
+                "contradiction": false,
+                "keyword_correspondence": 0.3,
+                "reason": "This candidate concerns native image dimensions differing across documents causing reconstruction/target shape mismatches during full-image validation. The observed failure is a U-Net decoder skip concatenation spatial mismatch during forward pass, not a data-loading dimension mismatch. Different causal mechanism.",
+                "root_cause_equivalence": 0.2,
+                "runtime_stage_match": 0.2,
+                "sop_id": "repair::denoising-dirty-documents::001"
+              },
+              {
+                "confidence": 0.9,
+                "contradiction": false,
+                "keyword_correspondence": 0.95,
+                "reason": "Direct match. Observed failure is a U-Net decoder upsample with height/width different from encoder skip tensor causing concatenation failure. Candidate 002's signature and root cause (spatial lattice misalignment across encoder/decoder levels) are equivalent, and repair aligns decoder features with skip tensors before concatenation. Runtime stage model_forward matches.",
+                "root_cause_equivalence": 0.95,
+                "runtime_stage_match": 0.95,
+                "sop_id": "repair::denoising-dirty-documents::002"
+              },
+              {
+                "confidence": 0.25,
+                "contradiction": false,
+                "keyword_correspondence": 0.4,
+                "reason": "This candidate concerns channel-count mismatch at decoder/output convolution, not spatial height/width mismatch at skip concatenation. The observed failure is about spatial dimensions, not channels. Different causal mechanism despite same model_forward stage.",
+                "root_cause_equivalence": 0.3,
+                "runtime_stage_match": 0.8,
+                "sop_id": "repair::denoising-dirty-documents::003"
+              },
+              {
+                "confidence": 0.1,
+                "contradiction": false,
+                "keyword_correspondence": 0.2,
+                "reason": "Concerns unavailable LayerNorm2d normalization class during NAFNet construction. Unrelated to spatial skip-concatenation mismatch.",
+                "root_cause_equivalence": 0.1,
+                "runtime_stage_match": 0.3,
+                "sop_id": "repair::denoising-dirty-documents::004"
+              },
+              {
+                "confidence": 0.1,
+                "contradiction": false,
+                "keyword_correspondence": 0.2,
+                "reason": "Concerns CUDA/CPU device mismatch during patch accumulation in inference. Unrelated to U-Net decoder skip spatial mismatch.",
+                "root_cause_equivalence": 0.1,
+                "runtime_stage_match": 0.2,
+                "sop_id": "repair::denoising-dirty-documents::005"
+              },
+              {
+                "confidence": 0.05,
+                "contradiction": false,
+                "keyword_correspondence": 0.1,
+                "reason": "Concerns LinearLR warmup start_factor validation during training initialization. Unrelated to U-Net spatial skip mismatch.",
+                "root_cause_equivalence": 0.1,
+                "runtime_stage_match": 0.1,
+                "sop_id": "repair::denoising-dirty-documents::006"
+              }
+            ],
+            "decision": "select",
+            "final_confidence": 0.9,
+            "reason": "The observed runtime failure is a RuntimeError where a U-Net decoder upsample produces height/width different from its encoder skip tensor, causing concatenation to fail. This exactly matches candidate 002's failure signature: \"A U-Net forward pass fails at a decoder skip concatenation because the upsampled decoder feature and encoder feature have different spatial heights or widths.\" The root cause (input padding/decoder upsampling not preserving the spatial lattice through encoder/decoder levels so skip tensors are misaligned) is equivalent, and the repair (align decoder features with skip tensors before concatenation) directly addresses the failure. Runtime stage (model_forward) matches. This is the strongest match.",
+            "selected_sop_id": "repair::denoising-dirty-documents::002",
+            "selected_transition_id": "run::20260716_040229_denoising-dirty-documents::transition::318e6e02bd::726e346a19"
+          }
+        }
+      ],
+      "trace_sha256": "85f1a36124afcc1dc015655456592c131c44d4b8335afce9b7d8e20a2d2a7900",
+      "tree_candidate_details": [
+        {
+          "audit_status": "clean",
+          "candidate_failure_signature": [
+            "image_restoration/unet/spatial_skip_misalignment"
+          ],
+          "causal_attachments": [
+            {
+              "quality": "evidence_turn_match",
+              "quality_score": 1.0,
+              "sop_id": "repair::denoising-dirty-documents::002"
+            }
+          ],
+          "child_node_id": "run::20260716_040229_denoising-dirty-documents::node::726e346a19af41a1bf571e7fe239e6df",
+          "confidence": 0.9,
+          "dynamic_confidence_weights": {
+            "agent_keyword_and_root_cause_semantic_match": 1.0
+          },
+          "eligibility_reason": "clean_l3_agent_root_cause_match",
+          "id": "run::20260716_040229_denoising-dirty-documents::transition::318e6e02bd::726e346a19",
+          "manual_synonym_table_used": false,
+          "metric": 0.022972158344245295,
+          "metric_improvement": null,
+          "parent_node_id": "run::20260716_040229_denoising-dirty-documents::node::318e6e02bdc54fa4a96d93e067b31317",
+          "query_failure_signature": [],
+          "rank_eligible": true,
+          "ranking_backend": "agent_keyword_and_root_cause_semantic_match_v1",
+          "score": 0.9,
+          "score_components": {
+            "agent_confidence": 0.9,
+            "keyword_correspondence": 0.95,
+            "manual_synonym_table_used": false,
+            "root_cause_equivalence": 0.95,
+            "runtime_stage_match": 0.95,
+            "task_match": 0.7
+          },
+          "stage": "improve->debug",
+          "task": "denoising-dirty-documents",
+          "task_scope": "same_task_type",
+          "transition_evidence": {
+            "child_result": "The image denoising U-Net training completed successfully with early stopping at epoch 94. The best validation RMSE of 0.022972 was achieved at epoch 84, and the final validation score matched this at 0.022972. A submission file with 5,789,880 rows was generated.",
+            "code_change": "Parent error: RuntimeError | Parent analysis: The code crashed during the first training epoch with a RuntimeError in the model's forward pass. The error occurred at a skip connection concatenation (torch.cat([d4, e4], dim=1)) where tensor sizes did not match: expected size 54 but got size 27 for tensor number 1. This indicates a shape mismatch in the U-Net decoder due to the padding strategy not correctly accounting for the downsampling/upsampling factor across the encoder-decoder skip connections.",
+            "parent_failure": "The code crashed during the first training epoch with a RuntimeError in the model's forward pass. The error occurred at a skip connection concatenation (torch.cat([d4, e4], dim=1)) where tensor sizes did not match: expected size 54 but got size 27 for tensor number 1. This indicates a shape mismatch in the U-Net decoder due to the padding strategy not correctly accounting for the downsampling/upsampling factor across the encoder-decoder skip connections."
+          }
+        }
+      ]
+    }
+  },
+  "checks": [
+    {
+      "check": "exact-task shape failure selects Aerial L3-005",
+      "passed": true
+    },
+    {
+      "check": "exact-task tier wins before fallback",
+      "passed": true
+    },
+    {
+      "check": "Agent-selected exact L3 is visible in the Debug Prompt",
+      "passed": true
+    },
+    {
+      "check": "nearby LayerNorm-before-pooling failure is not confused with L3-005",
+      "passed": true
+    },
+    {
+      "check": "same-type fallback selects Denoising skip-alignment repair",
+      "passed": true
+    },
+    {
+      "check": "same-type fallback occurs only after exact-task abstention",
+      "passed": true
+    },
+    {
+      "check": "cross_task_type_block injects no L3 repair",
+      "passed": true
+    },
+    {
+      "check": "infrastructure_abstention injects no L3 repair",
+      "passed": true
+    },
+    {
+      "check": "all Dynamic L3 decisions record manual_synonym_table_used=false",
+      "passed": true
+    },
+    {
+      "check": "all cases use literal error anchors without synonym expansion",
+      "passed": true
+    },
+    {
+      "check": "all cases traverse the Agent-controlled layered Debug path",
+      "passed": true
+    }
+  ],
+  "config_path": "/workspace/nautilus-exp-end2end-agent-v19/experiments/end2end_memory_systems_20260804/systems/dynamic_hybrid.yaml",
+  "config_sha256": "ba39fbf47c3108eb43a8ee8454d8c81dd4d8063899ca4a4dd40111dd389f1add",
+  "graph_path": "/workspace/experiment-end2end-memory-agent-v13/memory-direct-v2/aerial-cactus-identification/bundles/v2/runforest/graph.json",
+  "graph_sha256": "74ce8cd66d4b2b78399ad9a8f703029f33e22a78d2a5e721474dda5065d402fc",
+  "index_path": "/workspace/experiment-end2end-memory-agent-v13/memory-direct-v2/aerial-cactus-identification/bundles/v2/runforest/index.npz",
+  "index_sha256": "4185ad3c55fce9a5d9af85ccd2059ccb81dad8991c5e98dd6b41cd7a8cb8fced",
+  "schema": "mlevolve_l3_agent_match_smoke_v1",
+  "status": "passed"
+}

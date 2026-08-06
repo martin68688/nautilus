@@ -1,0 +1,92 @@
+{
+  "candidate_inventory": [
+    {
+      "node_id": "5af5e09aeb904c9c9fe6197bdbd71a8f",
+      "submission": "submission_5af5e09aeb904c9c9fe6197bdbd71a8f.csv",
+      "submission_sha256": "1eb7a3f95b709e3e3e03f8770e0f0188e5d812e24df4083f0601bbdb126e030a"
+    },
+    {
+      "node_id": "816d6028dc7f4438b4200bbcd4a16bc0",
+      "submission": "submission_816d6028dc7f4438b4200bbcd4a16bc0.csv",
+      "submission_sha256": "c7d85324b11b21af803173df71893ee0bc9d44ef2cfe7a243e1a32d6b9235660"
+    },
+    {
+      "node_id": "9afb27ff5ef0498ca34ed83bccbe4c9a",
+      "submission": "submission_9afb27ff5ef0498ca34ed83bccbe4c9a.csv",
+      "submission_sha256": "9e0dc0f6f46183b0a79a68240ae6d38f1c72041d281165b4038217580b3b6d8d"
+    }
+  ],
+  "candidate_set_frozen_before_scoring": true,
+  "candidate_set_hash": "ed1c74a81274a4117e9cb1982ce0d97b24bd082fcf7e86c09f9de49d1a16b0e6",
+  "evaluation_request_hash": "508a8ad5c4e090b86694a9dc19bb962747329d12f32db2d1100f74d0be61b1d0",
+  "evaluation_request_sha256": "39786bdb0b64da430981349b1961854047df0de302dec4a29f1f4d54d26b5ac5",
+  "evaluator_manifest_sha256": "41ed7c3cdba61dd81d03a3486804de5576ccda7163cbf42a10e1c64b889d994e",
+  "journal_sha256": "dc10dcb4a2e88a35d30fe1abe093e7345bec9eb618cd9894caec9a7686f84139",
+  "maximize": false,
+  "metric": "multiclass_log_loss",
+  "oracle_best_node_id": "5af5e09aeb904c9c9fe6197bdbd71a8f",
+  "oracle_best_score": 0.12274186640250363,
+  "oracle_best_submission_sha256": "1eb7a3f95b709e3e3e03f8770e0f0188e5d812e24df4083f0601bbdb126e030a",
+  "oracle_selection_is_host_only": true,
+  "report_hash": "fc9b41099caa0f78e28d1f95f932deb2fcf67da46fb23f31a1bb6e663234b52d",
+  "report_schema": "fixed_holdout_terminal_score_report_v3",
+  "results": [
+    {
+      "draft_role": "novel_exploration",
+      "internal_metric": null,
+      "internal_metric_disposition": "search_only",
+      "node_id": "5af5e09aeb904c9c9fe6197bdbd71a8f",
+      "score": 0.12274186640250363,
+      "stage": "draft",
+      "status": "scored",
+      "submission": "submission_5af5e09aeb904c9c9fe6197bdbd71a8f.csv",
+      "submission_sha256": "1eb7a3f95b709e3e3e03f8770e0f0188e5d812e24df4083f0601bbdb126e030a"
+    },
+    {
+      "draft_role": "novel_exploration",
+      "internal_metric": 1.4951471825842102,
+      "internal_metric_disposition": "search_only",
+      "node_id": "816d6028dc7f4438b4200bbcd4a16bc0",
+      "score": 1.6839258744918866,
+      "stage": "debug",
+      "status": "scored",
+      "submission": "submission_816d6028dc7f4438b4200bbcd4a16bc0.csv",
+      "submission_sha256": "c7d85324b11b21af803173df71893ee0bc9d44ef2cfe7a243e1a32d6b9235660"
+    },
+    {
+      "draft_role": "coldstart_baseline",
+      "internal_metric": null,
+      "internal_metric_disposition": "search_only",
+      "node_id": "9afb27ff5ef0498ca34ed83bccbe4c9a",
+      "score": 33.23991932380086,
+      "stage": "debug",
+      "status": "scored",
+      "submission": "submission_9afb27ff5ef0498ca34ed83bccbe4c9a.csv",
+      "submission_sha256": "9e0dc0f6f46183b0a79a68240ae6d38f1c72041d281165b4038217580b3b6d8d"
+    }
+  ],
+  "schema": "mlevolve_fixed_holdout_v1",
+  "scores_were_visible_during_search": false,
+  "selected_node_id": "816d6028dc7f4438b4200bbcd4a16bc0",
+  "selected_score": 1.6839258744918866,
+  "selected_submission": "submission_816d6028dc7f4438b4200bbcd4a16bc0.csv",
+  "selected_submission_sha256": "c7d85324b11b21af803173df71893ee0bc9d44ef2cfe7a243e1a32d6b9235660",
+  "selection_basis": {
+    "draft_role": "novel_exploration",
+    "formal_rank_claim_authorized": false,
+    "metric_disposition": "search_only",
+    "metric_maximize": false,
+    "metric_value": 1.4951471825842102,
+    "source_score_inherited": false,
+    "stage": "debug",
+    "terminal_metric_observed": false,
+    "type": "solver_internal_search_metric"
+  },
+  "selection_frozen_before_terminal_evaluation": true,
+  "selection_policy": "terminal_only",
+  "split_id": "leaf-classification-73e8353188dc-c33202487f61",
+  "system_selection_used_terminal_labels": false,
+  "task_id": "leaf-classification",
+  "terminal_score_sealed": true,
+  "train_manifest_sha256": "be01f8c4cc1665442909bea1393ee323a490e2ac7e0cb06578b2e04fbbf2276d"
+}

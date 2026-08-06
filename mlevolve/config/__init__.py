@@ -425,6 +425,14 @@ class ExternalSkillMemoryConfig:
     experiment_r_agentic_max_observed: int = 48
     experiment_r_agentic_temperature: float = 0.0
     experiment_r_agentic_max_tokens: int = 1200
+    # Dynamic Hybrid may delegate L3 failure/root-cause matching to the
+    # Retrieval Agent.  The Host keeps only objective task/evidence gates and
+    # literal traceback-anchor extraction; no maintained synonym table is
+    # consulted on this path.
+    experiment_r_l3_agent_match_enabled: bool = False
+    experiment_r_l3_agent_match_max_attempts: int = 2
+    experiment_r_l3_agent_match_min_confidence: float = 0.50
+    experiment_r_l3_agent_match_max_tokens: int = 1800
     excluded_run_ids: list[str] = field(default_factory=list)
 
 

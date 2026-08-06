@@ -1,11 +1,11 @@
 {
   "bindings": {
-    "budget_manifest_hash": "3dfea6ffb36c6b1925a890302a9aabdf6578c42e54a20357f7e3a5ddf39b2962",
+    "budget_manifest_hash": "df5d1acad1e19c2f2e7437537c370324aca2f952d9a9c74e48dc7c5eb13c5140",
     "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
     "memory_bundles_manifest_hash": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
     "schemas_manifest_hash": "bc3a3b6aad773f0d5f67c531c505f2999a23656c947b81472aab952258526a38",
-    "source_lock_manifest_hash": "1092f10c9509cca480dc1c8c3792ee5f32ccf2168759ee83780b58980b4d2ca9",
-    "systems_manifest_hash": "7625d2f43efb4a83a725c033bd98ad8539ae998b24961933fdf928507cd5761a",
+    "source_lock_manifest_hash": "adbcbe908524ee13469e8e54d81954083de2607fae59b81285feff356876ece0",
+    "systems_manifest_hash": "c8b0842e3afcff29d029bd5665d73e468804b259b93309e5f3283719d8daad7d",
     "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
   },
   "comparison_baseline_release_id": "end2end-agent-v3",
@@ -13,25 +13,25 @@
   "formal_result_eligible": false,
   "kind": "smoke",
   "launch_order_randomization": "task-local SHA256-seeded deterministic shuffle; comparison order locked to end2end-agent-v3",
-  "manifest_hash": "1184fcf0c35bfa10e208961bd9bf8ea37681265c939d4d757018aa3976594fae",
+  "manifest_hash": "1cf1bc642b657b0e9d92144d8f7979fd9cd4cb48fee85914df68bbd935eb2b65",
   "release_id": "end2end-agentic-three-role-v13",
   "run_count": 1,
   "runs": [
     {
       "bindings": {
-        "budget_manifest_hash": "3dfea6ffb36c6b1925a890302a9aabdf6578c42e54a20357f7e3a5ddf39b2962",
+        "budget_manifest_hash": "df5d1acad1e19c2f2e7437537c370324aca2f952d9a9c74e48dc7c5eb13c5140",
         "evaluators_manifest_hash": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
         "memory_bundles_manifest_hash": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
         "schemas_manifest_hash": "bc3a3b6aad773f0d5f67c531c505f2999a23656c947b81472aab952258526a38",
-        "source_lock_manifest_hash": "1092f10c9509cca480dc1c8c3792ee5f32ccf2168759ee83780b58980b4d2ca9",
-        "systems_manifest_hash": "7625d2f43efb4a83a725c033bd98ad8539ae998b24961933fdf928507cd5761a",
+        "source_lock_manifest_hash": "adbcbe908524ee13469e8e54d81954083de2607fae59b81285feff356876ece0",
+        "systems_manifest_hash": "c8b0842e3afcff29d029bd5665d73e468804b259b93309e5f3283719d8daad7d",
         "tasks_manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
       },
       "exploratory_pilot": true,
       "formal_result_eligible": false,
       "launch_position": 0,
       "logical_run_id": "e2e-smoke-l3-debug-v1__aerial-cactus-identification__dynamic_hybrid__seed-1",
-      "row_hash": "93577907eb0cbda0272b071a72baa4d9891b068dfa529fcb7e5e5c17cb3a123e",
+      "row_hash": "407fe1ed913fcaa3e6381489188ff06377373e1f6b6fb64a3ecae41ef20728f1",
       "seed": 1,
       "system_id": "dynamic_hybrid",
       "task_id": "aerial-cactus-identification",

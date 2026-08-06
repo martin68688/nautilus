@@ -465,6 +465,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         experiment_r_debug_confidence_threshold: float | None = None,
         experiment_r_agentic_retrieval_enabled: bool | None = None,
         experiment_r_agentic_query_fn: Callable[..., dict[str, Any]] | None = None,
+        experiment_r_l3_agent_match_enabled: bool | None = None,
         recipe_sop_path: str | None = None,
         recipe_sop_file_sha256: str | None = None,
         recipe_sop_bundle_sha256: str | None = None,
@@ -592,6 +593,28 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else 1200
         )
+        self.experiment_r_l3_agent_match_enabled = bool(
+            experiment_r_l3_agent_match_enabled
+            if experiment_r_l3_agent_match_enabled is not None
+            else getattr(ext_cfg, "experiment_r_l3_agent_match_enabled", False)
+            if ext_cfg is not None
+            else False
+        )
+        self.experiment_r_l3_agent_match_max_attempts = int(
+            getattr(ext_cfg, "experiment_r_l3_agent_match_max_attempts", 2)
+            if ext_cfg is not None
+            else 2
+        )
+        self.experiment_r_l3_agent_match_min_confidence = float(
+            getattr(ext_cfg, "experiment_r_l3_agent_match_min_confidence", 0.50)
+            if ext_cfg is not None
+            else 0.50
+        )
+        self.experiment_r_l3_agent_match_max_tokens = int(
+            getattr(ext_cfg, "experiment_r_l3_agent_match_max_tokens", 1800)
+            if ext_cfg is not None
+            else 1800
+        )
         self._experiment_r_agentic_query_fn = experiment_r_agentic_query_fn
         if self.experiment_r_enabled:
             from agents.memory.experiment_r_router import ONLINE_CONTROLS
@@ -613,6 +636,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 raise ValueError("Agentic retrieval per-step Top-K must be in [1, 12]")
             if self.experiment_r_agentic_max_observed < self.experiment_r_top_k:
                 raise ValueError("Agentic retrieval observation budget is too small")
+            if self.experiment_r_l3_agent_match_max_attempts not in range(1, 4):
+                raise ValueError("L3 Agent match attempts must be in [1, 3]")
+            if not 0.0 <= self.experiment_r_l3_agent_match_min_confidence <= 1.0:
+                raise ValueError("L3 Agent match confidence must be in [0, 1]")
+            if self.experiment_r_l3_agent_match_max_tokens not in range(800, 4001):
+                raise ValueError("L3 Agent match token budget must be in [800, 4000]")
         self.recipe_sop_path = str(
             recipe_sop_path
             if recipe_sop_path is not None
@@ -741,6 +770,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             self._load_session_overlay_clauses()
         self._legacy_sop_ids = list(self._sops)
         self._recipe_evidence_ids: list[str] = []
+        self._recipe_repair_evidence_by_transition: dict[str, dict[str, Any]] = {}
         self.recipe_evidence_receipt: dict[str, Any] = {}
         if self.recipe_evidence_path:
             self._load_recipe_evidence_overlay()
@@ -1669,6 +1699,221 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             int(value) for value in (payload.get("selected_counts_by_task") or {}).values()
         ):
             raise ValueError("Recipe evidence selected-count receipt mismatch")
+        selected_repairs = payload.get("selected_repair_evidence")
+        if not isinstance(selected_repairs, Mapping):
+            raise ValueError("Recipe evidence manifest has no selected repair evidence")
+        repair_map: dict[str, dict[str, Any]] = {}
+        repair_count = 0
+        for selected_task, records in selected_repairs.items():
+            task_id = canonical_task_id(str(selected_task or ""))
+            if task_id not in TASK_PROFILES or not isinstance(records, list):
+                raise ValueError(
+                    f"Invalid Recipe repair evidence task group: {selected_task}"
+                )
+            for record in records:
+                if not isinstance(record, Mapping):
+                    raise ValueError("Recipe repair evidence contains a non-object")
+                transition_id = str(record.get("transition_id") or "")
+                successful_metric = record.get("successful_metric")
+                if (
+                    not transition_id
+                    or transition_id in repair_map
+                    or canonical_task_id(record.get("task_id")) != task_id
+                    or "debug" not in str(record.get("stage_pair") or "")
+                    or not str(record.get("failure_node_id") or "")
+                    or not str(record.get("successful_node_id") or "")
+                    or not str(record.get("failure_text") or "")
+                    or not str(record.get("repair_action_text") or "")
+                    or not isinstance(successful_metric, (int, float))
+                    or isinstance(successful_metric, bool)
+                    or not math.isfinite(float(successful_metric))
+                    or record.get("audit_status") != "clean"
+                    or record.get("memory_disposition") != "positive_eligible"
+                    or record.get("paper_grade_eligible") is not True
+                    or record.get("rank_eligible") is not True
+                ):
+                    raise ValueError(
+                        f"Recipe repair evidence is not strict-clean eligible: {transition_id}"
+                    )
+                repair_map[transition_id] = dict(record)
+                repair_count += 1
+        if repair_count != sum(
+            int(value)
+            for value in (payload.get("selected_repair_counts_by_task") or {}).values()
+        ):
+            raise ValueError("Recipe repair evidence selected-count receipt mismatch")
+        materialized_repair_transition_count = 0
+        materialized_repair_node_count = 0
+        for transition_id, record in sorted(repair_map.items()):
+            task_id = canonical_task_id(record.get("task_id"))
+            run_id = str(record.get("run_id") or "")
+            parent_id = str(record["failure_node_id"])
+            child_id = str(record["successful_node_id"])
+
+            parent = self.nodes.get(parent_id)
+            if parent is None:
+                parent = {
+                    "id": parent_id,
+                    "type": "RunNode",
+                    "task": task_id,
+                    "run_id": run_id,
+                    "run_short_id": run_id,
+                    "stage": "debug",
+                    "is_buggy": True,
+                    "is_valid": False,
+                    "analysis": str(record.get("failure_text") or ""),
+                    "terminal_excerpt": str(record.get("failure_text") or "")[-4000:],
+                    "code_sha256": str(record.get("failure_node_code_sha256") or ""),
+                    "quarantined": False,
+                    "protocol_biased": False,
+                    "leakage_audit": {
+                        "status": "clean_failure_evidence",
+                        "memory_disposition": "repair_only",
+                        "paper_grade_eligible": False,
+                        "rank_eligible": False,
+                    },
+                    "recipe_repair_evidence_overlay": True,
+                    "source_manifest_sha256": observed_manifest_sha,
+                }
+                self.nodes[parent_id] = parent
+                self._node_tokens[parent_id] = _tokenize(self._node_text(parent))
+                self._run_nodes.append(parent_id)
+                self._run_nodes_by_run[run_id].append(parent_id)
+                self.graph.setdefault("nodes", []).append(parent)
+                materialized_repair_node_count += 1
+            elif (
+                parent.get("type") != "RunNode"
+                or canonical_task_id(parent.get("task")) != task_id
+            ):
+                raise ValueError(
+                    f"Recipe repair failure node conflicts with graph: {parent_id}"
+                )
+
+            child = self.nodes.get(child_id)
+            successful_metric = float(record["successful_metric"])
+            if child is None:
+                child = {
+                    "id": child_id,
+                    "type": "RunNode",
+                    "task": task_id,
+                    "run_id": run_id,
+                    "run_short_id": run_id,
+                    "stage": "debug",
+                    "parent_id": parent_id,
+                    "metric": successful_metric,
+                    "metric_direction": str(
+                        record.get("successful_metric_direction") or "unknown"
+                    ),
+                    "is_buggy": False,
+                    "is_valid": True,
+                    "plan": str(record.get("repair_action_text") or ""),
+                    "code_summary": str(record.get("repair_action_text") or ""),
+                    "analysis": str(
+                        record.get("successful_execution_summary") or ""
+                    ),
+                    "code_sha256": str(
+                        record.get("successful_node_code_sha256") or ""
+                    ),
+                    "quarantined": False,
+                    "protocol_biased": False,
+                    "leakage_audit": {
+                        "status": "clean",
+                        "memory_disposition": "positive_eligible",
+                        "paper_grade_eligible": True,
+                        "rank_eligible": True,
+                    },
+                    "recipe_repair_evidence_overlay": True,
+                    "source_manifest_sha256": observed_manifest_sha,
+                }
+                self.nodes[child_id] = child
+                self._node_tokens[child_id] = _tokenize(self._node_text(child))
+                self._run_nodes.append(child_id)
+                self._run_nodes_by_run[run_id].append(child_id)
+                self._children_by_node[parent_id].append(child_id)
+                self.graph.setdefault("nodes", []).append(child)
+                materialized_repair_node_count += 1
+            else:
+                child_metric = child.get("metric")
+                if (
+                    child.get("type") != "RunNode"
+                    or canonical_task_id(child.get("task")) != task_id
+                    or not isinstance(child_metric, (int, float))
+                    or abs(float(child_metric) - successful_metric) > 1e-12
+                ):
+                    raise ValueError(
+                        f"Recipe repair success node conflicts with graph: {child_id}"
+                    )
+                if child_id not in self._children_by_node[parent_id]:
+                    self._children_by_node[parent_id].append(child_id)
+
+            transition = self.nodes.get(transition_id)
+            if transition is None:
+                transition = {
+                    "id": transition_id,
+                    "type": "Transition",
+                    "task": task_id,
+                    "run_id": run_id,
+                    "run_short_id": run_id,
+                    "parent_node_id": parent_id,
+                    "child_node_id": child_id,
+                    "stage_pair": str(record.get("stage_pair") or "debug->debug"),
+                    "outcome": "debug_fixed",
+                    "parent_buggy": True,
+                    "child_buggy": False,
+                    "child_metric": successful_metric,
+                    "metric_improvement": None,
+                    "text": str(record.get("repair_action_text") or ""),
+                    "quarantined": False,
+                    "protocol_biased": False,
+                    "recipe_repair_evidence_overlay": True,
+                    "source_manifest_sha256": observed_manifest_sha,
+                }
+                self.nodes[transition_id] = transition
+                self._node_tokens[transition_id] = _tokenize(
+                    self._node_text(transition)
+                )
+                self._transitions.append(transition_id)
+                self._transitions_by_parent[parent_id].append(transition_id)
+                self._transitions_by_child[child_id].append(transition_id)
+                self.graph.setdefault("nodes", []).append(transition)
+                self.graph.setdefault("edges", []).extend(
+                    [
+                        {
+                            "src": parent_id,
+                            "dst": child_id,
+                            "kind": "parent_of",
+                            "provenance": "frozen_recipe_repair_evidence_v1",
+                        },
+                        {
+                            "src": parent_id,
+                            "dst": transition_id,
+                            "kind": "has_transition",
+                            "provenance": "frozen_recipe_repair_evidence_v1",
+                        },
+                        {
+                            "src": transition_id,
+                            "dst": child_id,
+                            "kind": "transition_to",
+                            "provenance": "frozen_recipe_repair_evidence_v1",
+                        },
+                    ]
+                )
+                materialized_repair_transition_count += 1
+            elif (
+                transition.get("type") != "Transition"
+                or str(transition.get("parent_node_id") or "") != parent_id
+                or str(transition.get("child_node_id") or "") != child_id
+                or transition.get("outcome") != "debug_fixed"
+            ):
+                raise ValueError(
+                    f"Recipe repair transition conflicts with graph: {transition_id}"
+                )
+
+        for values in self._run_nodes_by_run.values():
+            values.sort(key=lambda node_id: (self.nodes[node_id].get("step") or 0, node_id))
+        for values in self._children_by_node.values():
+            values.sort(key=lambda node_id: (self.nodes[node_id].get("step") or 0, node_id))
+        self._recipe_repair_evidence_by_transition = repair_map
         self._recipe_evidence_ids = sorted(set(evidence_ids))
         self.recipe_evidence_receipt = {
             "schema": "layered_recipe_evidence_overlay_receipt_v1",
@@ -1678,6 +1923,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             "selected_node_count": selected_count,
             "materialized_node_count": materialized_count,
             "existing_node_count": existing_count,
+            "selected_repair_transition_count": repair_count,
+            "materialized_repair_transition_count": (
+                materialized_repair_transition_count
+            ),
+            "materialized_repair_node_count": materialized_repair_node_count,
             "terminal_node_count": sum(
                 self._is_terminal_strategy_evidence(node_id, self.nodes[node_id])
                 for node_id in self._recipe_evidence_ids
@@ -3528,6 +3778,103 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         ordered = sorted(best, key=lambda sop_id: (-best[sop_id]["projection_score"], sop_id))
         return ordered, best
 
+    def _l3_agent_transition_rows(
+        self,
+        match: Mapping[str, Any],
+        *,
+        task_family: str,
+    ) -> list[dict[str, Any]]:
+        """Project one validated Agent root-cause decision into the Debug route."""
+
+        if str(match.get("decision") or "") != "select":
+            return []
+        sop_id = str(match.get("selected_sop_id") or "")
+        transition_id = str(match.get("selected_transition_id") or "")
+        transition = self.nodes.get(transition_id, {})
+        positive, reason = self._positive_transition(transition_id)
+        if not positive:
+            raise RuntimeError(
+                f"L3 Agent selected a non-positive transition: {transition_id}/{reason}"
+            )
+        attachments = self._causal_attachment_rows(
+            transition,
+            stage="debug",
+            task_family=task_family,
+            allowed_sop_ids={sop_id},
+        )
+        if not attachments or not any(
+            str(item.get("sop_id") or "") == sop_id for item in attachments
+        ):
+            raise RuntimeError(
+                "L3 Agent selection is not bound to its clean repair transition"
+            )
+        assessment = next(
+            (
+                row
+                for row in match.get("assessments") or []
+                if str(row.get("sop_id") or "") == sop_id
+            ),
+            {},
+        )
+        confidence = float(match.get("final_confidence") or 0.0)
+        node = self.nodes[sop_id]
+        audit = (
+            self.nodes.get(str(transition.get("child_node_id") or ""), {}).get(
+                "leakage_audit"
+            )
+            or {}
+        )
+        return [
+            {
+                "id": transition_id,
+                "score": confidence,
+                "confidence": confidence,
+                "score_components": {
+                    "keyword_correspondence": float(
+                        assessment.get("keyword_correspondence") or 0.0
+                    ),
+                    "root_cause_equivalence": float(
+                        assessment.get("root_cause_equivalence") or 0.0
+                    ),
+                    "runtime_stage_match": float(
+                        assessment.get("runtime_stage_match") or 0.0
+                    ),
+                    "agent_confidence": confidence,
+                    "task_match": (
+                        1.0
+                        if match.get("selected_task_scope") == "exact_task"
+                        else 0.70
+                    ),
+                    "manual_synonym_table_used": False,
+                },
+                "dynamic_confidence_weights": {
+                    "agent_keyword_and_root_cause_semantic_match": 1.0
+                },
+                "task_scope": str(match.get("selected_task_scope") or ""),
+                "query_failure_signature": [],
+                "candidate_failure_signature": [
+                    str((node.get("failure_signature") or {}).get("id") or "")
+                ],
+                "causal_attachments": attachments,
+                "stage": transition.get("stage_pair"),
+                "task": transition.get("task"),
+                "metric": transition.get("child_metric"),
+                "metric_improvement": transition.get("metric_improvement"),
+                "audit_status": audit.get("status"),
+                "rank_eligible": True,
+                "eligibility_reason": "clean_l3_agent_root_cause_match",
+                "parent_node_id": transition.get("parent_node_id"),
+                "child_node_id": transition.get("child_node_id"),
+                "transition_evidence": self._debug_transition_evidence(
+                    transition
+                ),
+                "ranking_backend": (
+                    "agent_keyword_and_root_cause_semantic_match_v1"
+                ),
+                "manual_synonym_table_used": False,
+            }
+        ]
+
     def _debug_dynamic_weights(self, transition_rows: list[dict[str, Any]]) -> tuple[dict[str, float], float, str | None]:
         confidence = max((float(row.get("confidence") or 0.0) for row in transition_rows), default=0.0)
         if confidence < DEBUG_TREE_CONFIDENCE_THRESHOLD:
@@ -4177,6 +4524,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         precomputed_debug_weights: dict[str, float] | None = None
         precomputed_debug_confidence: float | None = None
         precomputed_debug_fallback_reason: str | None = None
+        l3_agent_match: dict[str, Any] | None = None
         if self.retrieval_control == "layered_strategy":
             allowed_levels = {"L3_repair"} if stage == "debug" else {"L2_tactic"}
             selected = (strategy_context or {}).get("selected_strategy") or (strategy_context or {})
@@ -4198,18 +4546,38 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                         if visibility_ids is None
                         else frozen_l3_ids & set(visibility_ids)
                     )
-                    # A lexical SOP rank is not itself evidence that a repair
-                    # matches the current failure.  For the frozen layered L3
-                    # bundle, admit SOPs to Prompt assembly only after an
-                    # exact/same-type clean repair Transition has passed the
-                    # failure-signature gate and causally projected that SOP.
-                    precomputed_debug_rows = self._rank_debug_transition_rows(
-                        query_text=query_text,
-                        task_id=task_id,
-                        task_desc=task_desc,
-                        limit=quotas["tree_candidates"],
-                        allowed_sop_ids=layered_debug_sop_ids,
-                    )
+                    if self.experiment_r_l3_agent_match_enabled:
+                        from agents.memory.experiment_r_router import (
+                            _agentic_l3_debug_match,
+                        )
+
+                        l3_agent_match = _agentic_l3_debug_match(
+                            self,
+                            task_id=task_id,
+                            task_desc=task_desc,
+                            query_text=query_text,
+                            visible_sop_ids=layered_debug_sop_ids,
+                        )
+                        self._trace_local.l3_agent_match = copy.deepcopy(
+                            l3_agent_match
+                        )
+                        precomputed_debug_rows = self._l3_agent_transition_rows(
+                            l3_agent_match,
+                            task_family=self._task_family_for_query(
+                                task_id, task_desc
+                            ),
+                        )
+                    else:
+                        # Legacy controls retain the deterministic lexical
+                        # matcher. Dynamic layered_strategy opts into the Agent
+                        # path above and never consults its synonym expansion.
+                        precomputed_debug_rows = self._rank_debug_transition_rows(
+                            query_text=query_text,
+                            task_id=task_id,
+                            task_desc=task_desc,
+                            limit=quotas["tree_candidates"],
+                            allowed_sop_ids=layered_debug_sop_ids,
+                        )
                     (
                         precomputed_debug_weights,
                         precomputed_debug_confidence,
@@ -4217,6 +4585,13 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     ) = self._debug_dynamic_weights(precomputed_debug_rows)
                     if precomputed_debug_fallback_reason:
                         precomputed_debug_rows = []
+                        if l3_agent_match is not None:
+                            precomputed_debug_fallback_reason = (
+                                "l3_agent_failure_abstain_no_manual_fallback"
+                                if l3_agent_match.get("decision")
+                                == "agent_failure_abstain"
+                                else "l3_agent_abstained_no_manual_fallback"
+                            )
                     projected_l3_ids, _projection = (
                         self._project_debug_transitions_to_sops(
                             precomputed_debug_rows
@@ -4236,6 +4611,55 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 "clean_eligible_count": 0,
                 "eligible_count": 0,
                 "stage_task_gate_rejected_count": 0,
+            }
+        elif (
+            self.retrieval_control == "layered_strategy"
+            and stage == "debug"
+            and l3_agent_match is not None
+        ):
+            ranked_sops = self._rank_sops(
+                query_text,
+                stage,
+                len(self._sops),
+                allowed_levels=allowed_levels,
+                method_family=method_family,
+                task_id=task_id,
+                task_desc=task_desc,
+                allowed_sop_ids=(
+                    layered_debug_sop_ids
+                    if layered_debug_sop_ids is not None
+                    else visibility_ids
+                ),
+            )
+            selected_sop_id = str(
+                l3_agent_match.get("selected_sop_id") or ""
+            )
+            selected = [
+                copy.deepcopy(row)
+                for row in ranked_sops
+                if row["id"] == selected_sop_id
+            ][:1]
+            if selected:
+                selected[0]["score"] = float(
+                    l3_agent_match.get("final_confidence") or 0.0
+                )
+                selected[0]["selection_reason"] = (
+                    "specialized L3 Agent root-cause selection"
+                )
+                selected[0]["l3_agent_selected"] = True
+            selection_meta = {
+                "mode": "l3_agent_root_cause_match",
+                "llm_tool_calls": int(
+                    l3_agent_match.get("agent_calls") or 0
+                ),
+                "goal": str(l3_agent_match.get("reason") or ""),
+                "clean_eligible_count": len(ranked_sops),
+                "eligible_count": len(layered_debug_sop_ids or []),
+                "stage_task_gate_rejected_count": (
+                    len(frozen_l3_ids) - len(layered_debug_sop_ids or [])
+                ),
+                "manual_synonym_table_used": False,
+                "selected_sop_id": selected_sop_id,
             }
         else:
             ranked_sops = self._rank_sops(
@@ -4511,7 +4935,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         )
         return {
             "schema": PACK_SCHEMA,
-            "algorithm_version": "stage_hybrid_v2",
+            "algorithm_version": (
+                "stage_hybrid_l3_agent_root_cause_v1"
+                if l3_agent_match is not None
+                else "stage_hybrid_v2"
+            ),
             "stage_route": {
                 "stage": stage,
                 "route": STAGE_ROUTE[stage],
@@ -4548,6 +4976,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 ),
             },
             "gateway_selection": selection_meta,
+            "l3_agent_match": copy.deepcopy(l3_agent_match or {}),
             "visible_clause_ids": visibility_pack.effective_clause_ids,
             "visibility_trace": visibility_pack.visibility_trace,
             "visibility_safety_gate": {

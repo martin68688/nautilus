@@ -1,0 +1,76 @@
+{
+  "authority_writeback": {
+    "active_protocol": {
+      "canonical_hash": "cdb8439fa96b3add95788d9c1462811e5319ef73bca1cb4cc606ce07cd7a3a29",
+      "protocol_id": "mlevolve-default",
+      "version": "1"
+    },
+    "authority_ledger_event_count": 0,
+    "authority_ledger_last_event_hash": "",
+    "authority_ledger_path": "/workspace/experiment-end2end-memory-agent-v15-l3-agent/runs/e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1/attempt-000/agent/logs/20260806_082052_e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1/authority_events.jsonl",
+    "authority_mode": "off",
+    "authority_snapshot_path": "/workspace/experiment-end2end-memory-agent-v15-l3-agent/runs/e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1/attempt-000/agent/logs/20260806_082052_e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1/authority_snapshot.json",
+    "authority_snapshot_sha256": "",
+    "bundle_id": "end2end-fourtask-direct-leaf-classification-v2",
+    "bundle_manifest_sha256": "4e4a3c3dbe541dc025431d9947a35e650093f008e995f108358e9450f4336d69",
+    "collector_version": "1",
+    "descriptor_hash": "7136838b2f3f2b0daeff88496690954e8f953f6192257cdb8d8d7b7e87e858fd",
+    "policy_version": "authority_v1",
+    "protocol_registry_path": "/workspace/nautilus-exp-end2end-agent-v19/mlevolve/config/protocols",
+    "rollout_version_hash": "09e8e286f68cf3bb8e04ae82a9f2d81d97ed7f8efc0304496472c609b06f8815",
+    "run_id": "20260806_082052_e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1",
+    "schema": "fixed_holdout_authority_writeback_descriptor_v1",
+    "session_overlay_id": "overlay::af6ac0509aec259d746ebef1",
+    "session_overlay_manifest_sha256": "10b6ced936c96f0495f0c5a3dc27a5db2bbbc3f0e53cc8e3e3bece3844b17009",
+    "session_overlay_path": "/workspace/experiment-end2end-memory-agent-v15-l3-agent/runs/e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1/attempt-000/agent/logs/20260806_082052_e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1/session_overlay",
+    "status": "writeback_incomplete",
+    "task_id": "leaf-classification"
+  },
+  "candidate_inventory": [
+    {
+      "node_id": "5af5e09aeb904c9c9fe6197bdbd71a8f",
+      "submission": "submission_5af5e09aeb904c9c9fe6197bdbd71a8f.csv",
+      "submission_sha256": "1eb7a3f95b709e3e3e03f8770e0f0188e5d812e24df4083f0601bbdb126e030a"
+    },
+    {
+      "node_id": "816d6028dc7f4438b4200bbcd4a16bc0",
+      "submission": "submission_816d6028dc7f4438b4200bbcd4a16bc0.csv",
+      "submission_sha256": "c7d85324b11b21af803173df71893ee0bc9d44ef2cfe7a243e1a32d6b9235660"
+    },
+    {
+      "node_id": "9afb27ff5ef0498ca34ed83bccbe4c9a",
+      "submission": "submission_9afb27ff5ef0498ca34ed83bccbe4c9a.csv",
+      "submission_sha256": "9e0dc0f6f46183b0a79a68240ae6d38f1c72041d281165b4038217580b3b6d8d"
+    }
+  ],
+  "candidate_set_hash": "ed1c74a81274a4117e9cb1982ce0d97b24bd082fcf7e86c09f9de49d1a16b0e6",
+  "journal_path": "/workspace/experiment-end2end-memory-agent-v15-l3-agent/runs/e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1/attempt-000/agent/logs/20260806_082052_e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1/journal.json",
+  "journal_sha256": "dc10dcb4a2e88a35d30fe1abe093e7345bec9eb618cd9894caec9a7686f84139",
+  "maximize": false,
+  "metric": "multiclass_log_loss",
+  "request_hash": "508a8ad5c4e090b86694a9dc19bb962747329d12f32db2d1100f74d0be61b1d0",
+  "request_schema": "fixed_holdout_evaluation_request_v3",
+  "schema": "mlevolve_fixed_holdout_v1",
+  "scores_were_visible_during_search": false,
+  "selected_node_id": "816d6028dc7f4438b4200bbcd4a16bc0",
+  "selected_submission": "submission_816d6028dc7f4438b4200bbcd4a16bc0.csv",
+  "selected_submission_sha256": "c7d85324b11b21af803173df71893ee0bc9d44ef2cfe7a243e1a32d6b9235660",
+  "selection_basis": {
+    "draft_role": "novel_exploration",
+    "formal_rank_claim_authorized": false,
+    "metric_disposition": "search_only",
+    "metric_maximize": false,
+    "metric_value": 1.4951471825842102,
+    "source_score_inherited": false,
+    "stage": "debug",
+    "terminal_metric_observed": false,
+    "type": "solver_internal_search_metric"
+  },
+  "selection_frozen_before_terminal_evaluation": true,
+  "selection_policy": "terminal_only",
+  "split_id": "leaf-classification-73e8353188dc-c33202487f61",
+  "status": "awaiting_external_evaluator",
+  "submission_dir": "/workspace/experiment-end2end-memory-agent-v15-l3-agent/runs/e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1/attempt-000/agent/workspace/20260806_082052_e2e-smoke-leaf-layered-recipe-v4__leaf-classification__dynamic_hybrid__seed-1/submission",
+  "task_id": "leaf-classification",
+  "train_manifest_sha256": "be01f8c4cc1665442909bea1393ee323a490e2ac7e0cb06578b2e04fbbf2276d"
+}

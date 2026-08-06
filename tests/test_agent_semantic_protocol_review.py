@@ -374,6 +374,68 @@ def test_real_retrieval_agent_prompt_compiles_structured_observations(
     assert '"candidate_ids"' in captured["compiled"]
 
 
+def test_l3_agent_prompt_compiles_without_non_string_scalars(monkeypatch):
+    from agents.memory.experiment_r_router import _call_l3_match_agent
+
+    captured = {}
+
+    def fake_query(**kwargs):
+        captured["compiled"] = compile_prompt_to_md(kwargs["system_message"])
+        captured["candidates"] = json.loads(
+            kwargs["system_message"]["authorized_l3_candidates"]
+        )
+        return {
+            "decision": "abstain",
+            "selected_sop_id": "",
+            "selected_transition_id": "",
+            "final_confidence": 0.0,
+            "reason": "no match",
+            "assessments": [],
+        }
+
+    import llm
+
+    monkeypatch.setattr(llm, "query", fake_query)
+    layer = SimpleNamespace(
+        cfg=SimpleNamespace(
+            agent=SimpleNamespace(
+                feedback=SimpleNamespace(model="reviewer"),
+                code=SimpleNamespace(model="solver"),
+            )
+        ),
+        _experiment_r_agentic_query_fn=None,
+        experiment_r_l3_agent_match_min_confidence=0.50,
+        experiment_r_l3_agent_match_max_tokens=1800,
+    )
+    _call_l3_match_agent(
+        layer,
+        task_id="aerial-cactus-identification",
+        task_desc="image classification",
+        query_text="RuntimeError: tensor shape mismatch",
+        task_scope="exact_task",
+        candidates=[
+            {
+                "sop_id": "repair::aerial-cactus-identification::005",
+                "transition_id": "transition::005",
+                "failure_signature": {
+                    "id": "model_forward/internal_taxonomy_label",
+                    "pattern": "flattened features disagree with Linear width",
+                    "root_cause": "classifier width was calculated incorrectly",
+                },
+            }
+        ],
+    )
+    assert "# configured_min_confidence" in captured["compiled"]
+    assert "# manual_synonym_table_used" in captured["compiled"]
+    assert captured["candidates"][0]["sop_id"] == (
+        "repair::aerial-cactus-identification::005"
+    )
+    assert captured["candidates"][0]["failure_signature"] == {
+        "pattern": "flattened features disagree with Linear width",
+        "root_cause": "classifier width was calculated incorrectly",
+    }
+
+
 def test_shadow_host_can_retain_uid_isolation_without_enforcing_receipts():
     cfg = SimpleNamespace(
         evaluation_authority=SimpleNamespace(protocol_runtime_mode="host_sdk_shadow"),

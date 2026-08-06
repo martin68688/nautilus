@@ -32,6 +32,10 @@ external_skill_memory:
   experiment_r_agentic_max_observed: 48
   experiment_r_agentic_temperature: 0.0
   experiment_r_agentic_max_tokens: 1200
+  experiment_r_l3_agent_match_enabled: true
+  experiment_r_l3_agent_match_max_attempts: 2
+  experiment_r_l3_agent_match_min_confidence: 0.50
+  experiment_r_l3_agent_match_max_tokens: 1800
   experiment_r_memory_transfer_static_gate: false
   experiment_r_memory_transfer_runtime_gate: false
 
