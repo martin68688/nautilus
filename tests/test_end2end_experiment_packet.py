@@ -1573,3 +1573,75 @@ def test_analyzer_orders_terminal_before_noncausal_mechanism(tmp_path) -> None:
     assert dynamic_mechanism["runtime_activated"] == 1
     assert dynamic_mechanism["adopted"] == 1
     assert dynamic_mechanism["invalid_agent_evidence_routes"] == 0
+
+
+def test_analyzer_reconstructs_v21_layered_routes_without_claiming_signed_adoption(
+    tmp_path,
+) -> None:
+    sys.path.insert(0, str(ROOT))
+    try:
+        import analyze_results
+    finally:
+        sys.path.pop(0)
+
+    journal = tmp_path / "journal.json"
+    journal.write_text(
+        json.dumps(
+            {
+                "nodes": [
+                    {
+                        "id": "v21-node",
+                        "stage": "draft",
+                        "code": "print('candidate')",
+                        "is_buggy": False,
+                        "is_valid": True,
+                        "memory_routing_trace": {},
+                        "memory_navigation_trace": [
+                            {
+                                "candidate_id": "recipe::leaf::selected",
+                                "retrieval_channel": "l1_strategy",
+                                "selection_state": "selected",
+                            },
+                            {
+                                "candidate_id": "recipe::leaf::rejected",
+                                "retrieval_channel": "l1_strategy",
+                                "selection_state": "rejected",
+                            },
+                        ],
+                        "adoption_log": [
+                            {
+                                "source": "run_forest_stage_hybrid_memory",
+                                "ref_id": "recipe::leaf::selected",
+                                "adoption_mode": "prompt_injection",
+                                "adoption_outcome": "pending_analysis",
+                            }
+                        ],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    outcome = {
+        "logical_run_id": "v21-dynamic",
+        "task_id": "leaf-classification",
+        "system_id": "dynamic_hybrid",
+        "journal_path": str(journal),
+    }
+
+    mechanism = analyze_results.mechanism_summary(
+        [outcome],
+        _test_collector_public_key_ed25519=(
+            TEST_COLLECTOR_IDENTITY.public_key_ed25519
+        ),
+    )
+    row = mechanism["runs"][0]
+    assert row["routing_routes"] == 1
+    assert row["native_routing_trace_routes"] == 0
+    assert row["reconstructed_routing_trace_routes"] == 1
+    assert row["raw_candidates"] == 2
+    assert row["prompt_visible"] == 1
+    assert row["suppressed"] == 1
+    assert row["invalid_agent_evidence_routes"] == 1
+    assert row["static_adoption_rate"] == 0.0
+    assert mechanism["definitions"]["causal_attribution"] is False

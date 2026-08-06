@@ -207,6 +207,130 @@ def _journal_nodes(payload: object) -> list[dict[str, Any]]:
     return []
 
 
+def _reconstruct_layered_route(node: Mapping[str, Any]) -> dict[str, Any]:
+    """Recover v21 Dynamic routing from its retained navigation side channel.
+
+    v21 serialized the full layered navigation and per-ref adoption log but
+    omitted the normalized ``memory_routing_trace`` wrapper.  Reconstruction
+    is explicitly labelled post-hoc and is never treated as signed runtime
+    adoption evidence.
+    """
+
+    navigation = [
+        dict(row)
+        for row in node.get("memory_navigation_trace") or []
+        if isinstance(row, Mapping)
+    ]
+    adoption = [
+        dict(row)
+        for row in node.get("adoption_log") or []
+        if isinstance(row, Mapping)
+    ]
+    if not navigation and not adoption:
+        return {}
+
+    visible_ids = list(
+        dict.fromkeys(
+            str(row.get("ref_id") or "")
+            for row in adoption
+            if str(row.get("ref_id") or "")
+        )
+    )
+    raw_by_id: dict[str, dict[str, Any]] = {}
+    receipt_visible = []
+    for row in navigation:
+        for candidate in row.get("pre_gate_raw_candidates") or []:
+            if not isinstance(candidate, Mapping):
+                continue
+            candidate_id = str(candidate.get("candidate_id") or "")
+            if candidate_id:
+                raw_by_id.setdefault(candidate_id, dict(candidate))
+        receipt_visible.extend(
+            str(value)
+            for value in row.get("final_prompt_candidate_ids") or []
+            if value
+        )
+        candidate_id = str(
+            row.get("candidate_id")
+            or row.get("gateway_sop_id")
+            or ""
+        )
+        if candidate_id:
+            raw_by_id.setdefault(
+                candidate_id,
+                {
+                    "candidate_id": candidate_id,
+                    "candidate_source": "memory_navigation_trace",
+                    "retrieval_channel": str(
+                        row.get("retrieval_channel") or ""
+                    ),
+                    "selection_state": str(row.get("selection_state") or ""),
+                },
+            )
+    visible_ids = list(dict.fromkeys([*visible_ids, *receipt_visible]))
+    visible_set = set(visible_ids)
+    for candidate_id in visible_ids:
+        raw_by_id.setdefault(
+            candidate_id,
+            {
+                "candidate_id": candidate_id,
+                "candidate_source": "retained_adoption_log",
+            },
+        )
+    raw = list(raw_by_id.values())
+    for row in raw:
+        row["final_prompt_visible"] = row["candidate_id"] in visible_set
+    suppressed = [
+        {
+            "candidate_id": row["candidate_id"],
+            "reason": str(
+                row.get("gate_reason")
+                or row.get("selection_state")
+                or "not_selected_for_prompt"
+            ),
+            "candidate_source": str(row.get("candidate_source") or ""),
+        }
+        for row in raw
+        if row["candidate_id"] not in visible_set
+    ]
+    selected = [
+        {
+            **dict(raw_by_id.get(candidate_id) or {}),
+            "candidate_id": candidate_id,
+            "final_prompt_visible": True,
+        }
+        for candidate_id in visible_ids
+    ]
+    pool_hash = hashlib.sha256(canonical_bytes(raw)).hexdigest()
+    return {
+        "schema": "mlevolve_memory_routing_trace_v1",
+        "memory_pack_schema": "legacy_layered_navigation_v21",
+        "algorithm_version": "posthoc_navigation_reconstruction_v1",
+        "system_id": "dynamic_hybrid",
+        "stage_route": {
+            "stage": str(node.get("stage") or "unknown"),
+            "route": "reconstructed_from_navigation",
+            "control": "layered_strategy",
+        },
+        "target_task_id": "",
+        "candidate_pool_hash": pool_hash,
+        "candidate_pool_source": "retained_memory_navigation_trace",
+        "raw_pool_observed": True,
+        "raw_candidates": raw,
+        "selected_candidates": selected,
+        "suppressed_candidates": suppressed,
+        "final_prompt_candidate_ids": visible_ids,
+        "final_prompt_candidates": selected,
+        "navigation_trace": navigation,
+        "reconstructed_posthoc": True,
+        "reconstruction_inputs": [
+            "memory_navigation_trace",
+            "adoption_log",
+        ],
+        "causal_or_signed_adoption_evidence": False,
+    }
+
+
 def _agent_contract_counts(
     node: Mapping[str, Any], visible: list[str], *, system_id: str,
     expected_collector_public_key_ed25519: str,
@@ -300,9 +424,14 @@ def mechanism_summary(
     for outcome in outcomes:
         journal_path = Path(str(outcome.get("journal_path") or ""))
         counters = {
+            "routing_routes": 0,
+            "native_routing_trace_routes": 0,
+            "reconstructed_routing_trace_routes": 0,
             "raw_candidates": 0,
             "prompt_visible": 0,
             "suppressed": 0,
+            "exact_replay_selected": 0,
+            "exact_replay_executed": 0,
             "static_adopted": 0,
             "runtime_activated": 0,
             "adopted": 0,
@@ -318,6 +447,10 @@ def mechanism_summary(
             nodes = _journal_nodes(json.loads(journal_path.read_text(encoding="utf-8")))
             for node in nodes:
                 route = node.get("memory_routing_trace") or {}
+                reconstructed = False
+                if route.get("schema") != "mlevolve_memory_routing_trace_v1":
+                    route = _reconstruct_layered_route(node)
+                    reconstructed = bool(route)
                 if route.get("schema") != "mlevolve_memory_routing_trace_v1":
                     continue
                 stage = str((route.get("stage_route") or {}).get("stage") or node.get("stage") or "unknown")
@@ -325,6 +458,27 @@ def mechanism_summary(
                     stage,
                     {key: 0 for key in counters},
                 )
+                counters["routing_routes"] += 1
+                stage_counts["routing_routes"] += 1
+                route_kind = (
+                    "reconstructed_routing_trace_routes"
+                    if reconstructed or route.get("reconstructed_posthoc") is True
+                    else "native_routing_trace_routes"
+                )
+                counters[route_kind] += 1
+                stage_counts[route_kind] += 1
+                if route.get("direct_code_replay") is True:
+                    counters["exact_replay_selected"] += 1
+                    stage_counts["exact_replay_selected"] += 1
+                    replay_executed = bool(
+                        node.get("is_buggy") is False
+                        and node.get("is_valid") is True
+                        and str(node.get("code") or "").strip()
+                    )
+                    counters["exact_replay_executed"] += int(replay_executed)
+                    stage_counts["exact_replay_executed"] += int(
+                        replay_executed
+                    )
                 visible = [
                     str(value)
                     for value in route.get("final_prompt_candidate_ids") or []
@@ -395,6 +549,12 @@ def mechanism_summary(
                     / counters["prompt_visible"]
                     if counters["prompt_visible"] else None
                 ),
+                "exact_replay_execution_rate": (
+                    counters["exact_replay_executed"]
+                    / counters["exact_replay_selected"]
+                    if counters["exact_replay_selected"]
+                    else None
+                ),
                 "by_stage": by_stage,
             }
         )
@@ -404,6 +564,10 @@ def mechanism_summary(
         "exploratory_pilot": True,
         "definitions": {
             "routing": "serialized frozen system route over the common authorized pool",
+            "routing_trace_reconstruction": (
+                "v21 layered Dynamic routes may be reconstructed from retained "
+                "memory_navigation_trace + adoption_log and are labelled post-hoc"
+            ),
             "suppression": "raw authorized candidate not visible in the final Prompt",
             "static_adoption": "independent Agent plan disposition is implemented or partially_implemented",
             "runtime_activation": "at least one Contract-bound line_range_executed probe fired in the Host-signed trace",

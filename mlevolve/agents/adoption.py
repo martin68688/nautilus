@@ -172,6 +172,66 @@ def _serialize_layered_routing_trace(pack, ref_ids):
     }
 
 
+def _serialize_exact_replay_trace(node, ref_ids):
+    """Record direct historical-code selection without calling it Prompt use."""
+
+    source = copy.deepcopy(getattr(node, "replay_source", None) or {})
+    graph_node_id = str(source.get("graph_node_id") or "")
+    raw = [
+        {
+            "candidate_id": graph_node_id,
+            "candidate_source": "frozen_exact_replay_target",
+            "source_kind": str(source.get("source_kind") or ""),
+            "historical_metric": source.get("historical_metric"),
+            "code_sha256": str(source.get("code_sha256") or ""),
+            "selected_for_direct_execution": True,
+            "final_prompt_visible": False,
+        }
+    ] if graph_node_id else []
+    pool_hash = hashlib.sha256(
+        json.dumps(
+            raw,
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            default=str,
+        ).encode("utf-8")
+    ).hexdigest()
+    return {
+        "schema": "mlevolve_memory_routing_trace_v1",
+        "memory_pack_schema": "exact_replay_target_v1",
+        "algorithm_version": "exact_code_replay_v1",
+        "system_id": "dynamic_hybrid",
+        "stage_route": {
+            "stage": "draft",
+            "route": "exact_code_replay",
+            "control": "memory_reproduction",
+        },
+        "target_task_id": str(source.get("task_id") or ""),
+        "candidate_pool_hash": pool_hash,
+        "candidate_pool_source": "frozen_exact_replay_target",
+        "raw_pool_observed": True,
+        "raw_candidates": raw,
+        "selected_candidates": copy.deepcopy(raw),
+        "suppressed_candidates": [],
+        # The implementation is loaded as executable code, not shown to an
+        # LLM through the Prompt.  Keep these fields empty by construction.
+        "final_prompt_candidate_ids": [],
+        "final_prompt_candidates": [],
+        "direct_code_replay": True,
+        "direct_replay_source_ref_ids": list(
+            dict.fromkeys(str(value) for value in ref_ids if value)
+        ),
+        "replay_source": source,
+        "navigation_trace": [],
+        "visible_clause_ids": [],
+        "prompt_token_count": 0,
+        "prompt_token_count_available": True,
+        "prompt_truncated": False,
+        "observational_only": True,
+    }
+
+
 def _hybrid_trace_for_ref(pack, ref_id):
     matches = []
     for item in pack.get("navigation_trace", []):
@@ -372,6 +432,15 @@ def log_adoption(
                 node.memory_routing_trace = _serialize_layered_routing_trace(
                     pack, ref_ids
                 )
+        if (
+            not getattr(node, "memory_routing_trace", None)
+            and (getattr(node, "replay_source", None) or {}).get(
+                "graph_node_id"
+            )
+        ):
+            node.memory_routing_trace = _serialize_exact_replay_trace(
+                node, ref_ids
+            )
     if not ref_ids:
         return
     visibility_pack = (

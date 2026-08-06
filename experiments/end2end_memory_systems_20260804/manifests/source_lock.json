@@ -11,7 +11,7 @@
     },
     {
       "path": "mlevolve/agents/adoption.py",
-      "sha256": "6b0813b95c06405f4f9587ddcba8818bebc8c7cc250f824e89d4b345f4c51e80"
+      "sha256": "7fd07e812b8f55f540dafd364b9963c2111a529bfd4fe4563ff61ac251aff626"
     },
     {
       "path": "mlevolve/agents/adoption_verifier_agent.py",
@@ -851,7 +851,7 @@
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/analyze_results.py",
-      "sha256": "8ce5e9be20f9f016f2cf82c162ff0b403bec3de25ddd3e5f2fd63ded01198dc5"
+      "sha256": "1b67a0ba0fe5b6a38b2af21c6ea2a903ff661f80e6207b55d1c8994cea965a39"
     },
     {
       "path": "experiments/end2end_memory_systems_20260804/build_incremental_recipe_evidence.py",
@@ -994,8 +994,8 @@
       "sha256": "8bf82e25668e8aaa1d4963cf81d47f2cded2c297b0f21467ab5c41e3243d82c9"
     }
   ],
-  "git_head": "be2479c1d1c4db93e5e0a9e26e7dcf73d990ba5b",
+  "git_head": "2bcd899b03d940875a679c02877deff0387554f5",
   "git_head_is_not_sufficient_identity": true,
-  "manifest_hash": "04731196344decc99cbd921eee7364c3718488c718afa975571972805873963d",
+  "manifest_hash": "966cde9aaec8d887ee262fe78bb26c4c1f84d6a234f3393415ed752444b4cec6",
   "schema": "mlevolve_end2end_source_lock_v1"
 }

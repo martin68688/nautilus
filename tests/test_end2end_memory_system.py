@@ -291,6 +291,54 @@ def test_no_memory_routing_trace_is_serialized_before_empty_ref_return() -> None
     }
 
 
+def test_exact_replay_trace_distinguishes_direct_code_from_prompt_injection() -> None:
+    layer = SimpleNamespace(current_navigation_pack=lambda: {})
+    agent = SimpleNamespace(
+        external_skill_memory=layer,
+        evaluation_authority=None,
+        adoption_tracking_enabled=True,
+    )
+    node = SearchNode(
+        id="replay-node",
+        code="print('exact replay')",
+        plan="execute frozen source",
+        stage="draft",
+        draft_role="memory_reproduction",
+        replay_source={
+            "task_id": "leaf-classification",
+            "graph_node_id": "postsmoke::leaf-best",
+            "source_kind": "recipe_implementation_capsule",
+            "historical_metric": 0.08612996973006647,
+            "code_sha256": "a" * 64,
+        },
+    )
+    refs = ["postsmoke::leaf-best", "recipe::leaf-classification::003"]
+
+    log_adoption(
+        node,
+        agent,
+        "run_forest_stage_hybrid_memory",
+        refs,
+        "draft",
+        adoption_mode="exact_code_replay",
+    )
+
+    route = node.memory_routing_trace
+    assert route["direct_code_replay"] is True
+    assert route["stage_route"]["control"] == "memory_reproduction"
+    assert route["raw_candidates"][0]["candidate_id"] == (
+        "postsmoke::leaf-best"
+    )
+    assert route["selected_candidates"] == route["raw_candidates"]
+    assert route["final_prompt_candidate_ids"] == []
+    assert route["final_prompt_candidates"] == []
+    assert route["direct_replay_source_ref_ids"] == refs
+    assert all(
+        row["adoption_mode"] == "exact_code_replay"
+        for row in node.adoption_log
+    )
+
+
 def test_stage_layer_builds_common_pool_for_no_memory(tmp_path) -> None:
     from tests.test_stage_aware_hybrid_memory import _layer
 
