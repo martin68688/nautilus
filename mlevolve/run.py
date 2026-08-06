@@ -29,6 +29,12 @@ from engine.run_outcome import (
     classify_run_outcome,
     write_run_outcome,
 )
+from engine.search_resume import (
+    attach_resumed_active_candidates,
+    load_search_resume_checkpoint,
+    restore_search_workspace,
+    write_search_resume_receipt,
+)
 from utils.logging_config import setup_logging
 import torch
 
@@ -101,8 +107,15 @@ def _run_impl():
     cfg.run_identity.rng_state_hash = str(rng_identity["rng_state_hash"])
     cfg.run_identity.rng_state_components = dict(rng_identity)
     logger = setup_logging(cfg)
+    resume_checkpoint = load_search_resume_checkpoint(
+        total_steps=int(cfg.agent.steps),
+    )
     runtime_state = {
-        "completed": 0,
+        "completed": (
+            resume_checkpoint.completed_steps
+            if resume_checkpoint is not None
+            else 0
+        ),
         "total_steps": int(cfg.agent.steps),
         "journal": None,
         "agent": None,
@@ -124,6 +137,25 @@ def _run_impl():
 
     with Status("Preparing agent workspace (copying and extracting files) ..."):
         prep_agent_workspace(cfg)
+    if resume_checkpoint is not None:
+        restored_dirs = restore_search_workspace(
+            resume_checkpoint,
+            Path(cfg.workspace_dir),
+        )
+        receipt_path = write_search_resume_receipt(
+            Path(cfg.log_dir),
+            resume_checkpoint,
+            restored_dirs,
+        )
+        logger.warning(
+            "[resume] loading completed search checkpoint %s/%s from %s; "
+            "workspace_dirs=%s receipt=%s",
+            resume_checkpoint.completed_steps,
+            resume_checkpoint.total_steps,
+            resume_checkpoint.source_attempt_root,
+            restored_dirs,
+            receipt_path,
+        )
 
     global_step = 0
 
@@ -133,20 +165,43 @@ def _run_impl():
 
     atexit.register(cleanup)
 
-    journal = Journal()
+    journal = (
+        resume_checkpoint.journal
+        if resume_checkpoint is not None
+        else Journal()
+    )
     runtime_state["journal"] = journal
     agent = Agent(
         task_desc=task_desc,
         cfg=cfg,
         journal=journal,
     )
+    if resume_checkpoint is not None:
+        # Preserve the original wall-clock search phase.  This keeps time-based
+        # routing/fusion decisions and the total frozen budget continuous across
+        # immutable attempts instead of granting a fresh full budget.
+        agent.search_start_time = (
+            time.time() - resume_checkpoint.prior_agent_wall_seconds
+        )
+        attach_resumed_active_candidates(
+            agent, resume_checkpoint.active_candidates
+        )
     runtime_state["agent"] = agent
 
     interpreter = Interpreter(
         cfg.workspace_dir, **OmegaConf.to_container(cfg.exec), cfg=cfg  # type: ignore
     )
+    remaining_agent_wall_seconds = max(
+        0.0,
+        float(cfg.agent.time_limit)
+        - (
+            resume_checkpoint.prior_agent_wall_seconds
+            if resume_checkpoint is not None
+            else 0.0
+        ),
+    )
     interpreter.set_run_deadline(
-        run_started_monotonic + float(cfg.agent.time_limit),
+        run_started_monotonic + remaining_agent_wall_seconds,
         finalize_reserve_seconds=int(
             getattr(cfg, "finalize_reserve_seconds", 900) or 900
         ),
@@ -184,12 +239,18 @@ def _run_impl():
     logger.info(f"🎯 Initial draft count: {initial_draft_count} (will be executed sequentially for diversity)")
 
     lock = threading.Lock()
-    completed = 0
+    completed = len(journal) - 1
+    runtime_state["completed"] = completed
     search_exhausted = False
     deadline_reached = False
 
     dev_execution_role = os.environ.get("RUNFOREST_DEV_EXECUTION_ROLE", "").strip()
-    draft_indices = list(range(min(initial_draft_count, total_steps)))
+    draft_start = (
+        int(getattr(agent, "_draft_generation_count", 0))
+        if resume_checkpoint is not None
+        else 0
+    )
+    draft_indices = list(range(draft_start, min(initial_draft_count, total_steps)))
     if dev_execution_role:
         configured_roles = [
             agent.configured_draft_role(index)
@@ -210,13 +271,22 @@ def _run_impl():
         )
 
     generated_draft_nodes = []
-    pending_draft_nodes = []
+    pending_draft_nodes = list(
+        resume_checkpoint.active_candidates
+        if resume_checkpoint is not None
+        else ()
+    )
     blocked_draft_nodes = []
 
     def protocol_focus_status():
         return focused_protocol_status(agent.journal.nodes, dev_execution_role)
-    if initial_draft_count > 0 and total_steps > 0:
-        logger.info(f"📝 Phase 1: Sequential draft generation (code only, {initial_draft_count} drafts)")
+    if draft_indices:
+        logger.info(
+            "📝 Phase 1: Sequential draft generation (code only, slots %s..%s of %s)",
+            draft_indices[0] + 1,
+            draft_indices[-1] + 1,
+            initial_draft_count,
+        )
 
         def step_task_generate_only(draft_idx):
             logger.info(f"[step_task_generate_only] Generating draft from virtual root")
@@ -261,6 +331,7 @@ def _run_impl():
                     ) from e
 
         completed = len(journal) - 1
+        runtime_state["completed"] = completed
         logger.info(
             "✅ Phase 1 complete: %s drafts generated (%s executable, %s repair-queued)",
             len(generated_draft_nodes),

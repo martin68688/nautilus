@@ -66,9 +66,26 @@ def loads_json(s: str, cls: Type[G]) -> G:
 
     if isinstance(obj, Journal):
         id2nodes = {n.id: n for n in obj.nodes}
-        for child_id, parent_id in obj_dict["node2parent"].items():
+        if len(id2nodes) != len(obj.nodes):
+            raise ValueError("Journal contains duplicate node IDs")
+        node2parent = obj_dict.get("node2parent") or {}
+        for child_id, parent_id in node2parent.items():
+            if child_id not in id2nodes or parent_id not in id2nodes:
+                raise ValueError(
+                    f"Journal parent mapping references an unknown node: "
+                    f"{child_id} -> {parent_id}"
+                )
             id2nodes[child_id].parent = id2nodes[parent_id]
             id2nodes[child_id].__post_init__()
+        for node_id, local_best_id in (
+            obj_dict.get("node2best_local_node") or {}
+        ).items():
+            if node_id not in id2nodes or local_best_id not in id2nodes:
+                raise ValueError(
+                    "Journal local-best mapping references an unknown node: "
+                    f"{node_id} -> {local_best_id}"
+                )
+            id2nodes[node_id].local_best_node = id2nodes[local_best_id]
     return obj
 
 

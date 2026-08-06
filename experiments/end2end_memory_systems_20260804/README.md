@@ -23,8 +23,18 @@ The current sequence is:
 3. only after separate explicit authorization submit the one 40-index Pilot
    Job; `parallelism: 1` means the complete matrix occupies one A100 at a time;
 4. `--resume` skips completed/Agent/evaluator outcomes and creates a new
-   immutable attempt only for infrastructure interruption. A hard interruption
-   without a final measurement is first retained as infrastructure failure;
+   immutable attempt only for infrastructure interruption. When the interrupted
+   attempt has a valid `journal.json` + `RUN_OUTCOME.json`, the new process
+   restores the completed RunForest, branch/Top-K state, submissions and the
+   completed-step counter, then executes only the remaining MLEvolve steps
+   under the unused portion of the original wall-clock budget. Candidate code
+   is archived before process launch; when that archive exists, an interrupted
+   active candidate is re-executed from its candidate boundary. Older attempts
+   without a candidate archive restart from the completed parent node. A
+   hard interruption without a final measurement is first retained as
+   infrastructure failure. A candidate interrupted inside its own training
+   process restarts from that candidate boundary; arbitrary candidate programs
+   are not claimed to support epoch-level checkpoints;
 5. run terminal analysis before mechanism analysis.
 
 ## Frozen files
@@ -49,8 +59,10 @@ The current sequence is:
   and never launches training;
 - `run_assignment.py`: finite Job PID 1, Agent subprocess, terminal evaluator
   and immutable failure measurement; hashes/receipts remain metadata only.
-  Resume is condition-level: arbitrary Agent-generated training programs are
-  not claimed to support epoch-level checkpoints;
+  Resume is completed-search-step-level, with immutable attempt lineage,
+  pre-execution candidate-source archives and cumulative wall/GPU/TTFV time;
+  arbitrary Agent-generated training programs are not claimed to support
+  epoch-level checkpoints;
 - `validate_smoke_gate.py`: retained as an optional offline diagnostic and is
   not called by Smoke or Pilot Jobs;
 - `analyze_results.py`: terminal/completion/negative-transfer/TTFV/cost first,

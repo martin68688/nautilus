@@ -19,7 +19,7 @@ from validate_smoke_gate import validate_agent_adoption_evidence
 
 
 ROOT = Path(__file__).resolve().parent
-MANIFESTS = ROOT / "manifests"
+MANIFESTS = ROOT / "manifests_v23"
 
 
 def canonical_bytes(value: object) -> bytes:
@@ -411,9 +411,10 @@ def _agent_contract_counts(
 def mechanism_summary(
     outcomes: list[dict[str, Any]],
     *,
+    manifests: Path = MANIFESTS,
     _test_collector_public_key_ed25519: str | None = None,
 ) -> dict[str, Any]:
-    memory_manifest = read_object(MANIFESTS / "memory_bundles.json")
+    memory_manifest = read_object(manifests / "memory_bundles.json")
     verify(memory_manifest, "manifest_hash", "memory bundle manifest")
     collector_public_key = str(
         memory_manifest.get("host_collector_public_key_ed25519") or ""
@@ -639,7 +640,7 @@ def main() -> int:
         attempt_inventory,
         "inventory_hash",
     )
-    mechanism = mechanism_summary(outcomes)
+    mechanism = mechanism_summary(outcomes, manifests=args.manifest.parent)
     write_json(args.analysis_root / "mechanism_summary.json", mechanism, "summary_hash")
     print(
         json.dumps(

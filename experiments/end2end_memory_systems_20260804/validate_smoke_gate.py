@@ -22,7 +22,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 
 ROOT = Path(__file__).resolve().parent
-MANIFESTS = ROOT / "manifests"
+MANIFESTS = ROOT / "manifests_v23"
 ATTEMPT = re.compile(r"attempt-(\d{3})$")
 HASH = re.compile(r"[0-9a-f]{64}$")
 TRACE_SCHEMA = "mlevolve_memory_routing_trace_v1"

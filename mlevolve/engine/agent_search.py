@@ -109,13 +109,32 @@ class AgentSearch:
         self.journal = journal
         self.journal.audit_enforced = bool(self.acfg.check_data_leakage)
         self.data_preview: str | None = None
+        self.resumed_from_journal = bool(journal.nodes)
         self.current_step = 0
         self.current_node: SearchNode | None = None
         self.all_root = True
-        self.virtual_root = SearchNode(parent=None, plan="(root)", code="", metric=WorstMetricValue(),
-                                     stage="root")
+        if self.resumed_from_journal:
+            roots = [
+                node
+                for node in journal.nodes
+                if node.parent is None and node.stage == "root"
+            ]
+            if len(roots) != 1 or journal.nodes[0] is not roots[0]:
+                raise ValueError(
+                    "A resumed Journal must contain exactly one leading virtual root"
+                )
+            self.virtual_root = roots[0]
+        else:
+            self.virtual_root = SearchNode(
+                parent=None,
+                plan="(root)",
+                code="",
+                metric=WorstMetricValue(),
+                stage="root",
+            )
         self.current_node_list = []
-        self.journal.append(self.virtual_root)
+        if not self.resumed_from_journal:
+            self.journal.append(self.virtual_root)
         self.best_metric: float = None
         self.best_node: SearchNode = None
         self.search_start_time = None
@@ -406,6 +425,13 @@ class AgentSearch:
         # Bundle binding, if configured, is complete at this point. Freeze the
         # policy/protocol/collector/bundle tuple before any retrieval decision.
         self.evaluation_authority.seal_rollout_versions()
+        if self.resumed_from_journal:
+            self._restore_search_state_from_journal()
+
+    def _restore_search_state_from_journal(self) -> None:
+        from engine.search_resume import restore_agent_search_state
+
+        restore_agent_search_state(self)
 
     def _validate_draft_role_policy(self) -> None:
         policy = getattr(self.acfg, "draft_role_policy", None)
@@ -1030,6 +1056,12 @@ class AgentSearch:
                     if prospective_audit is not None:
                         prospective_audit.prepare_counterfactuals(result_node)
 
+                    # Archive the exact post-review code before any candidate
+                    # process starts so a Pod interruption cannot erase it.
+                    from engine.search_resume import archive_candidate_source
+
+                    archive_candidate_source(self, result_node)
+
                     if memory_transfer_adoption_blocked:
                         _root = self._finalize_preflight_block(
                             result_node, parent_node
@@ -1101,7 +1133,8 @@ class AgentSearch:
     ) -> Optional[SearchNode]:
         if not self.journal.nodes or self.data_preview is None:
             self.update_data_preview()
-            self.search_start_time = time.time()
+            if self.search_start_time is None:
+                self.search_start_time = time.time()
 
         claimed_repair_parent = None
         duplicate_repair_request = False

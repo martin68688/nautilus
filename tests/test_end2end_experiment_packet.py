@@ -16,7 +16,7 @@ from protocol_runtime.collector import HostCollectorIdentity
 
 REPO = Path(__file__).resolve().parents[1]
 ROOT = REPO / "experiments" / "end2end_memory_systems_20260804"
-MANIFESTS = ROOT / "manifests"
+MANIFESTS = ROOT / "manifests_v23"
 TEST_COLLECTOR_IDENTITY = HostCollectorIdentity.generate()
 
 sys.path.insert(0, str(ROOT))
@@ -405,7 +405,7 @@ def test_pilot_is_exact_cartesian_product_and_smoke_layers_are_frozen() -> None:
     assert smoke["release_id"] == "end2end-agentic-three-role-v12"
     assert leaf_dynamic["release_id"] == "end2end-agentic-three-role-v12"
     assert leaf_controls["release_id"] == "end2end-agentic-three-role-v12"
-    assert pilot["release_id"] == "end2end-agentic-three-role-v22"
+    assert pilot["release_id"] == "end2end-agentic-three-role-v23"
     assert smoke["comparison_baseline_release_id"] == (
         pilot["comparison_baseline_release_id"]
     )
@@ -740,7 +740,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
     jobs = [ROOT / "jobs" / name for name in packet["jobs"]]
     assert packet["job_count"] == len(jobs) == 1
     assert [path.name for path in jobs if path.name.startswith("pilot-")] == [
-        "pilot-all-40-indexed-job.yaml"
+        "pilot-all-40-indexed-job-v23.yaml"
     ]
     for path in jobs:
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -750,7 +750,7 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert labels["app.kubernetes.io/managed-by"] == "codex-nrp-training"
         assert labels["experiment"] == (
-            "experiment-end2end-memory-agent-v22"
+            "experiment-end2end-memory-agent-v23"
         )
         assert job["metadata"]["annotations"]["mlevolve.ai/generated-not-submitted"] == "true"
         assert job["metadata"]["annotations"]["mlevolve.ai/gpu-contract"] == (
@@ -795,12 +795,12 @@ def test_generated_jobs_are_finite_owned_indexed_workloads() -> None:
         } <= env_names
         env_values = {row["name"]: row.get("value") for row in container["env"]}
         assert env_values["PYTHONPATH"] == (
-                "/workspace/nautilus-exp-end2end-agent-v22/mlevolve"
+                "/workspace/nautilus-exp-end2end-agent-v23/mlevolve"
         )
         assert "--smoke-gate" not in container["args"]
-        if path.name == "pilot-all-40-indexed-job.yaml":
+        if path.name == "pilot-all-40-indexed-job-v23.yaml":
             assert job["metadata"]["name"] == (
-                "mlevolve-e2e-agentic-pilot-all-40-v22"
+                "mlevolve-e2e-agentic-pilot-all-40-v23"
             )
             assert container["args"][-1] == "--resume"
         if path.name == "smoke-leaf-dynamic-hybrid-job.yaml":
@@ -905,10 +905,11 @@ def test_intent_confirmation_is_local_and_does_not_launch_training() -> None:
         "sealed_fixed_holdout_terminal_score"
     )
     assert payload["formal_job"] == {
-        "name": "mlevolve-e2e-agentic-pilot-all-40-v22",
+        "name": "mlevolve-e2e-agentic-pilot-all-40-v23",
         "completions": 40,
         "parallelism": 1,
         "condition_level_resume": True,
+        "search_step_resume": True,
         "epoch_checkpoint_guaranteed": False,
     }
     assert payload["runtime_checks"] == {
@@ -1100,6 +1101,56 @@ def test_resume_starts_missing_and_retries_only_infrastructure(tmp_path) -> None
         recovered,
         _read(ROOT / "schemas" / "condition_measurement.schema.json"),
     )
+
+
+def test_search_resume_binding_uses_completed_journal_and_workspace(tmp_path) -> None:
+    attempt_root = tmp_path / "leaf-control" / "attempt-000"
+    log_root = attempt_root / "agent" / "logs" / "runtime"
+    workspace_root = attempt_root / "agent" / "workspace" / "runtime"
+    log_root.mkdir(parents=True)
+    (workspace_root / "submission").mkdir(parents=True)
+    (workspace_root / "working").mkdir()
+    journal_path = log_root / "journal.json"
+    journal_path.write_text(
+        json.dumps(
+            {
+                "nodes": [
+                    {"id": "root", "step": 0},
+                    {"id": "n1", "step": 1},
+                    {"id": "n2", "step": 2},
+                ],
+                "node2parent": {"n1": "root", "n2": "n1"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    outcome_path = log_root / "RUN_OUTCOME.json"
+    outcome_path.write_text(
+        json.dumps(
+            {
+                "status": "partial",
+                "interrupted": True,
+                "completed_steps": 2,
+                "total_steps": 5,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    binding = run_assignment.build_search_resume_binding(
+        attempt_root,
+        expected_total_steps=5,
+        prior_agent_wall_seconds=123.5,
+    )
+
+    assert binding["source_attempt"] == 0
+    assert binding["completed_steps"] == 2
+    assert binding["remaining_steps"] == 3
+    assert binding["prior_agent_wall_seconds"] == 123.5
+    assert binding["journal_sha256"] == hashlib.sha256(
+        journal_path.read_bytes()
+    ).hexdigest()
+    assert binding["workspace_root"] == str(workspace_root.resolve())
 
 
 def test_solver_forwards_sigterm_for_child_checkpoint_finalizer() -> None:

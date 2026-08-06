@@ -19,7 +19,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-MANIFESTS = ROOT / "manifests"
+MANIFESTS = ROOT / "manifests_v23"
 
 
 def read_object(path: Path) -> dict[str, Any]:
@@ -43,11 +43,13 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    manifest = read_object(args.manifest.resolve(strict=True))
-    systems = read_object(MANIFESTS / "systems.json")
-    tasks = read_object(MANIFESTS / "tasks.json")
-    budget = read_object(MANIFESTS / "budget.json")
-    memory = read_object(MANIFESTS / "memory_bundles.json")
+    manifest_path = args.manifest.resolve(strict=True)
+    manifest = read_object(manifest_path)
+    manifests = manifest_path.parent
+    systems = read_object(manifests / "systems.json")
+    tasks = read_object(manifests / "tasks.json")
+    budget = read_object(manifests / "budget.json")
+    memory = read_object(manifests / "memory_bundles.json")
     replay_targets = read_object(
         REPO
         / "paper-skills"
@@ -97,7 +99,7 @@ def main() -> int:
             "Every Pilot task must freeze a same-task clean best record",
         )
         pilot_job = yaml.safe_load(
-            (ROOT / "jobs" / "pilot-all-40-indexed-job.yaml").read_text(
+            (ROOT / "jobs" / "pilot-all-40-indexed-job-v23.yaml").read_text(
                 encoding="utf-8"
             )
         )
@@ -239,10 +241,11 @@ def main() -> int:
         },
         "formal_job": (
             {
-                "name": "mlevolve-e2e-agentic-pilot-all-40-v22",
+                "name": "mlevolve-e2e-agentic-pilot-all-40-v23",
                 "completions": 40,
                 "parallelism": 1,
                 "condition_level_resume": True,
+                "search_step_resume": True,
                 "epoch_checkpoint_guaranteed": False,
             }
             if kind == "pilot"

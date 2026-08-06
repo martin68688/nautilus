@@ -16,20 +16,21 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v22")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v23")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
-MANIFESTS = ROOT / "manifests"
-SYSTEM_DIR = ROOT / "systems"
+LEGACY_MANIFESTS = ROOT / "manifests"
+MANIFESTS = ROOT / "manifests_v23"
+SYSTEM_DIR = ROOT / "systems_v23"
 JOB_DIR = ROOT / "jobs"
 SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-agentic-three-role-v22"
+RELEASE_ID = "end2end-agentic-three-role-v23"
 BASELINE_RELEASE_ID = "end2end-agent-v3"
 RANDOMIZATION_RELEASE_ID = BASELINE_RELEASE_ID
-OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v22/runs"
-EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v22"
+OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v23/runs"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v23"
 SOLVER_TEMPERATURE = 1.0
 SYSTEMS = (
     ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
@@ -453,7 +454,7 @@ def component_manifests(
                 "system_id": system_id,
                 "kind": kind,
                 "description": description,
-                "config_path": f"systems/{system_id}.yaml",
+                "config_path": f"systems_v23/{system_id}.yaml",
                 "config_sha256": sha256_file(config),
                 "limitation": limitation,
                 "primary_reference": reference,
@@ -608,10 +609,15 @@ def component_manifests(
                 "completed_conditions_are_skipped": True,
                 "hard_interruption_orphans_finalized_as_infrastructure": True,
                 "epoch_level_checkpoint_guaranteed": False,
+                "completed_search_step_resume": True,
+                "archived_active_candidate_boundary_resume": True,
+                "cumulative_wall_gpu_and_ttfv": True,
                 "resume_semantics": (
-                    "rerun only the interrupted frozen condition from a new "
-                    "immutable attempt; arbitrary generated training code may "
-                    "not expose epoch checkpoints"
+                    "restore completed Journal nodes, branch/Top-K state, "
+                    "submissions, and archived in-flight candidate source into "
+                    "a new immutable attempt; continue under the original total "
+                    "wall budget. Candidate programs without native epoch "
+                    "checkpoints restart from their candidate boundary"
                 ),
             },
             "manifest_hash": "",
@@ -709,7 +715,7 @@ def execution_manifest(
         task_ids = [task_id for task_id, _display, _metric, _direction in TASKS]
         system_ids = None
         formal = True
-        prefix = "e2e-pilot-agentic-three-role-v22"
+        prefix = "e2e-pilot-agentic-three-role-v23"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -780,7 +786,7 @@ def job(
     }
     args = [
         str(CLUSTER_ROOT / "run_assignment.py"),
-        "--manifest", str(CLUSTER_ROOT / "manifests" / manifest_name),
+        "--manifest", str(CLUSTER_ROOT / MANIFESTS.name / manifest_name),
         "--output-root", OUTPUT_ROOT,
     ]
     if attempt:
@@ -922,16 +928,23 @@ def build() -> dict[str, Any]:
         dump_json(MANIFESTS / f"{key}.json", payload)
     # Smoke is completed evidence from release v12. Never rewrite those
     # manifests/jobs when preparing a later formal Pilot release.
-    smoke = json.loads((MANIFESTS / "smoke_manifest.json").read_text())
+    smoke = json.loads((LEGACY_MANIFESTS / "smoke_manifest.json").read_text())
     feasibility_smoke = json.loads(
-        (MANIFESTS / "feasibility_smoke_manifest.json").read_text()
+        (LEGACY_MANIFESTS / "feasibility_smoke_manifest.json").read_text()
     )
     leaf_dynamic_smoke = json.loads(
-        (MANIFESTS / "leaf_dynamic_smoke_manifest.json").read_text()
+        (LEGACY_MANIFESTS / "leaf_dynamic_smoke_manifest.json").read_text()
     )
     leaf_controls_smoke = json.loads(
-        (MANIFESTS / "leaf_controls_smoke_manifest.json").read_text()
+        (LEGACY_MANIFESTS / "leaf_controls_smoke_manifest.json").read_text()
     )
+    for name, payload in (
+        ("smoke_manifest.json", smoke),
+        ("feasibility_smoke_manifest.json", feasibility_smoke),
+        ("leaf_dynamic_smoke_manifest.json", leaf_dynamic_smoke),
+        ("leaf_controls_smoke_manifest.json", leaf_controls_smoke),
+    ):
+        dump_json(MANIFESTS / name, payload)
     leaf_recipe_dynamic_smoke = execution_manifest(
         kind="smoke",
         components=components,
@@ -957,10 +970,10 @@ def build() -> dict[str, Any]:
     pilot = execution_manifest(kind="pilot", components=components)
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
-    for stale in JOB_DIR.glob("pilot-*-indexed-job.yaml"):
+    for stale in JOB_DIR.glob("pilot-*-indexed-job-v23.yaml"):
         stale.unlink()
     pilot_job = job(
-        name="mlevolve-e2e-agentic-pilot-all-40-v22",
+        name="mlevolve-e2e-agentic-pilot-all-40-v23",
         manifest_name="pilot_manifest.json",
         completions=40,
         task_id=None,
@@ -969,11 +982,11 @@ def build() -> dict[str, Any]:
         components=components,
         resume=True,
     )
-    (JOB_DIR / "pilot-all-40-indexed-job.yaml").write_text(
+    (JOB_DIR / "pilot-all-40-indexed-job-v23.yaml").write_text(
         yaml.safe_dump(pilot_job, sort_keys=False), encoding="utf-8"
     )
     leaf_recipe_job = job(
-        name="mlevolve-e2e-leaf-layered-recipe-smoke-v28",
+        name="mlevolve-e2e-leaf-layered-recipe-smoke-v29",
         manifest_name="leaf_recipe_dynamic_smoke_manifest.json",
         completions=1,
         task_id=None,
@@ -982,10 +995,10 @@ def build() -> dict[str, Any]:
         components=components,
         resume=True,
     )
-    (JOB_DIR / "smoke-leaf-layered-recipe-job.yaml").write_text(
+    (JOB_DIR / "smoke-leaf-layered-recipe-v23-job.yaml").write_text(
         yaml.safe_dump(leaf_recipe_job, sort_keys=False), encoding="utf-8"
     )
-    generated_jobs = ["pilot-all-40-indexed-job.yaml"]
+    generated_jobs = ["pilot-all-40-indexed-job-v23.yaml"]
     packet = finalize(
         {
             "schema": "mlevolve_end2end_launch_packet_v1",

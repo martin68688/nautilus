@@ -24,7 +24,6 @@ from typing import Any, Iterator, Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-MANIFESTS = ROOT / "manifests"
 SYSTEM_CONFIGS = ROOT / "systems"
 HOST_RESULT_SCHEMA = "mlevolve_experiment_c_host_terminal_result_v1"
 
@@ -194,14 +193,15 @@ def load_frozen_inputs(manifest_path: Path) -> dict[str, Any]:
     """Load experiment bookkeeping without turning hashes into launch gates."""
 
     manifest = read_object(manifest_path)
+    manifests = manifest_path.parent
     component_files = {
-        "systems": MANIFESTS / "systems.json",
-        "tasks": MANIFESTS / "tasks.json",
-        "budget": MANIFESTS / "budget.json",
-        "memory_bundles": MANIFESTS / "memory_bundles.json",
-        "evaluators": MANIFESTS / "evaluators.json",
-        "schemas": MANIFESTS / "schemas.json",
-        "source_lock": MANIFESTS / "source_lock.json",
+        "systems": manifests / "systems.json",
+        "tasks": manifests / "tasks.json",
+        "budget": manifests / "budget.json",
+        "memory_bundles": manifests / "memory_bundles.json",
+        "evaluators": manifests / "evaluators.json",
+        "schemas": manifests / "schemas.json",
+        "source_lock": manifests / "source_lock.json",
     }
     components: dict[str, Any] = {}
     for key, path in component_files.items():
@@ -525,6 +525,33 @@ def recover_orphaned_attempt(
         if started_ns
         else 0.0
     )
+    prior_measurement: dict[str, Any] = {}
+    if attempt > 0:
+        prior_path = (
+            attempt_root.parent
+            / f"attempt-{attempt - 1:03d}"
+            / "MEASUREMENT.json"
+        )
+        if prior_path.is_file() and not prior_path.is_symlink():
+            prior_measurement = read_object(prior_path)
+    prior_wall_seconds = float(
+        prior_measurement.get(
+            "cumulative_agent_wall_seconds",
+            prior_measurement.get("agent_wall_seconds", 0.0),
+        )
+        or 0.0
+    )
+    prior_gpu_hours = float(
+        prior_measurement.get(
+            "cumulative_allocated_gpu_hours",
+            prior_measurement.get("allocated_gpu_hours", 0.0),
+        )
+        or 0.0
+    )
+    prior_ttfv = prior_measurement.get(
+        "cumulative_time_to_first_valid_seconds",
+        prior_measurement.get("time_to_first_valid_seconds"),
+    )
     log_parent = attempt_root / "agent" / "logs"
     log_root = locate_runtime_directory(
         log_parent, ("RUN_OUTCOME.json", "journal.json")
@@ -566,10 +593,26 @@ def recover_orphaned_attempt(
         ),
         "candidate_set_hash": str(request.get("candidate_set_hash") or ""),
         "time_to_first_valid_seconds": ttfv,
+        "cumulative_time_to_first_valid_seconds": (
+            prior_ttfv
+            if prior_ttfv is not None
+            else (
+                prior_wall_seconds + ttfv
+                if ttfv is not None
+                else None
+            )
+        ),
         "first_valid_event_sha256": first_valid_sha,
         "agent_wall_seconds": observed_wall_seconds,
+        "cumulative_agent_wall_seconds": (
+            prior_wall_seconds + observed_wall_seconds
+        ),
         "allocated_gpu_hours": (
             observed_wall_seconds / 3600.0 * int(budget["gpu_count"])
+        ),
+        "cumulative_allocated_gpu_hours": (
+            prior_gpu_hours
+            + observed_wall_seconds / 3600.0 * int(budget["gpu_count"])
         ),
         "hardware": dict(launch.get("hardware") or {}),
         "llm_token_usage": None,
@@ -588,6 +631,63 @@ def recover_orphaned_attempt(
     }
     _write_exclusive(measurement_path, measurement, "measurement_hash")
     return measurement
+
+
+def build_search_resume_binding(
+    attempt_root: Path,
+    *,
+    expected_total_steps: int,
+    prior_agent_wall_seconds: float = 0.0,
+) -> dict[str, Any]:
+    """Bind a fresh attempt to the last durable completed-node checkpoint."""
+
+    log_root = locate_runtime_directory(
+        attempt_root / "agent" / "logs",
+        ("RUN_OUTCOME.json", "journal.json"),
+    )
+    workspace_root = locate_runtime_directory(
+        attempt_root / "agent" / "workspace",
+        ("submission", "working"),
+    )
+    journal_path = log_root / "journal.json"
+    outcome_path = log_root / "RUN_OUTCOME.json"
+    if not journal_path.is_file() or journal_path.is_symlink():
+        raise ValueError("Infrastructure retry has no durable Journal checkpoint")
+    if not outcome_path.is_file() or outcome_path.is_symlink():
+        raise ValueError("Infrastructure retry has no durable RUN_OUTCOME checkpoint")
+    if not workspace_root.is_dir() or workspace_root.is_symlink():
+        raise ValueError("Infrastructure retry has no durable workspace checkpoint")
+    outcome = read_object(outcome_path)
+    completed_steps = int(outcome.get("completed_steps") or 0)
+    total_steps = int(outcome.get("total_steps") or 0)
+    if outcome.get("status") != "partial" or outcome.get("interrupted") is not True:
+        raise ValueError("Only an interrupted partial run can resume search state")
+    if total_steps != int(expected_total_steps):
+        raise ValueError(
+            f"Resume total-step mismatch: checkpoint={total_steps}, "
+            f"budget={expected_total_steps}"
+        )
+    journal = read_object(journal_path)
+    if len(list(journal.get("nodes") or [])) - 1 != completed_steps:
+        raise ValueError("Journal node count does not match RUN_OUTCOME completed_steps")
+    if not 0 < completed_steps < total_steps:
+        raise ValueError("Resume checkpoint has no remaining search work")
+    return {
+        "schema": "mlevolve_search_resume_binding_v1",
+        "source_attempt_root": str(attempt_root.resolve(strict=True)),
+        "source_attempt": int(attempt_root.name.removeprefix("attempt-")),
+        "journal_path": str(journal_path.resolve(strict=True)),
+        "journal_sha256": sha256_file(journal_path),
+        "outcome_path": str(outcome_path.resolve(strict=True)),
+        "outcome_sha256": sha256_file(outcome_path),
+        "workspace_root": str(workspace_root.resolve(strict=True)),
+        "completed_steps": completed_steps,
+        "total_steps": total_steps,
+        "remaining_steps": total_steps - completed_steps,
+        "prior_agent_wall_seconds": max(
+            0.0, float(prior_agent_wall_seconds)
+        ),
+    }
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
@@ -626,6 +726,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     condition_root = output_root / row["logical_run_id"] / f"attempt-{args.attempt:03d}"
     if condition_root.exists():
         raise ValueError(f"Refusing to replace immutable attempt: {condition_root}")
+    prior_measurement: dict[str, Any] | None = None
+    search_resume: dict[str, Any] | None = None
     if args.attempt > 0:
         previous = output_root / row["logical_run_id"] / f"attempt-{args.attempt - 1:03d}" / "MEASUREMENT.json"
         if not previous.is_file():
@@ -641,8 +743,21 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 manifest=manifest,
             )
         prior = read_object(previous)
+        prior_measurement = prior
         if prior.get("failure_class") != "infrastructure":
             raise ValueError("Explicit retry is allowed only after an infrastructure failure")
+        if args.resume:
+            search_resume = build_search_resume_binding(
+                previous.parent,
+                expected_total_steps=int(budget["agent_steps"]),
+                prior_agent_wall_seconds=float(
+                    prior.get(
+                        "cumulative_agent_wall_seconds",
+                        prior.get("agent_wall_seconds", 0.0),
+                    )
+                    or 0.0
+                ),
+            )
 
     memory = verify_memory_bundle(row["task_id"], components["memory_bundles"])
     evaluator = verify_evaluator_release(row["task_id"], components["evaluators"])
@@ -684,6 +799,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         },
         "hardware": hardware,
         "validation_mode": "experiment_fast_nonblocking_v1",
+        "search_resume": dict(search_resume or {}),
         "receipt_hash": "",
     }
     _write_exclusive(condition_root / "LAUNCH_RECEIPT.json", launch, "receipt_hash")
@@ -726,15 +842,52 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "TOKENIZERS_PARALLELISM": "false",
         }
     )
+    if search_resume is not None:
+        env.update(
+            {
+                "MLEVOLVE_RESUME_SOURCE_ATTEMPT_ROOT": str(
+                    search_resume["source_attempt_root"]
+                ),
+                "MLEVOLVE_RESUME_JOURNAL_PATH": str(
+                    search_resume["journal_path"]
+                ),
+                "MLEVOLVE_RESUME_JOURNAL_SHA256": str(
+                    search_resume["journal_sha256"]
+                ),
+                "MLEVOLVE_RESUME_OUTCOME_PATH": str(
+                    search_resume["outcome_path"]
+                ),
+                "MLEVOLVE_RESUME_OUTCOME_SHA256": str(
+                    search_resume["outcome_sha256"]
+                ),
+                "MLEVOLVE_RESUME_WORKSPACE_ROOT": str(
+                    search_resume["workspace_root"]
+                ),
+                "MLEVOLVE_RESUME_PRIOR_WALL_SECONDS": str(
+                    search_resume["prior_agent_wall_seconds"]
+                ),
+            }
+        )
     solver_exit_code: int | None = None
     solver_error = ""
     termination_signal: int | None = None
     try:
+        solver_timeout_seconds = int(budget["agent_time_limit_seconds"])
+        if search_resume is not None:
+            solver_timeout_seconds = max(
+                1,
+                int(
+                    math.ceil(
+                        float(budget["agent_time_limit_seconds"])
+                        - float(search_resume["prior_agent_wall_seconds"])
+                    )
+                ),
+            )
         solver_exit_code, termination_signal = run_solver_process(
             command,
             cwd=REPO / "mlevolve",
             env=env,
-            timeout_seconds=int(budget["agent_time_limit_seconds"]),
+            timeout_seconds=solver_timeout_seconds,
         )
         if termination_signal is not None:
             solver_error = f"runner_forwarded_signal_{termination_signal}"
@@ -807,6 +960,25 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         status, failure_class = f"retained_agent_{outcome.get('status', 'failure')}", "agent"
     else:
         status, failure_class = "retained_agent_failure_without_outcome", "infrastructure"
+    prior_wall_seconds = float(
+        (prior_measurement or {}).get(
+            "cumulative_agent_wall_seconds",
+            (prior_measurement or {}).get("agent_wall_seconds", 0.0),
+        )
+        or 0.0
+    )
+    prior_gpu_hours = float(
+        (prior_measurement or {}).get(
+            "cumulative_allocated_gpu_hours",
+            (prior_measurement or {}).get("allocated_gpu_hours", 0.0),
+        )
+        or 0.0
+    )
+    prior_ttfv = (prior_measurement or {}).get(
+        "cumulative_time_to_first_valid_seconds",
+        (prior_measurement or {}).get("time_to_first_valid_seconds"),
+    )
+    resume_receipt_path = log_root / "SEARCH_RESUME_RECEIPT.json"
     measurement = {
         "schema": "mlevolve_end2end_condition_measurement_v1",
         "logical_run_id": row["logical_run_id"],
@@ -834,9 +1006,23 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "candidate_set_frozen": candidate_set_frozen,
         "candidate_set_hash": str(request.get("candidate_set_hash") or ""),
         "time_to_first_valid_seconds": ttfv,
+        "cumulative_time_to_first_valid_seconds": (
+            prior_ttfv
+            if prior_ttfv is not None
+            else (
+                prior_wall_seconds + ttfv
+                if ttfv is not None
+                else None
+            )
+        ),
         "first_valid_event_sha256": first_valid_sha,
         "agent_wall_seconds": wall_seconds,
+        "cumulative_agent_wall_seconds": prior_wall_seconds + wall_seconds,
         "allocated_gpu_hours": wall_seconds / 3600.0 * int(budget["gpu_count"]),
+        "cumulative_allocated_gpu_hours": (
+            prior_gpu_hours
+            + wall_seconds / 3600.0 * int(budget["gpu_count"])
+        ),
         "hardware": hardware,
         "llm_token_usage": None,
         "llm_cost_usd": None,
@@ -844,6 +1030,24 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "terminal_report_sha256": terminal_report_sha256,
         "agent_outcome_sha256": sha256_file(outcome_path) if outcome_path.is_file() else "",
         "journal_path": str(log_root / "journal.json"),
+        "search_resume": {
+            "enabled": search_resume is not None,
+            "source_attempt": (
+                search_resume.get("source_attempt")
+                if search_resume is not None
+                else None
+            ),
+            "completed_steps_before_resume": (
+                search_resume.get("completed_steps")
+                if search_resume is not None
+                else 0
+            ),
+            "receipt_sha256": (
+                sha256_file(resume_receipt_path)
+                if resume_receipt_path.is_file()
+                else ""
+            ),
+        },
         "measurement_hash": "",
     }
     _write_exclusive(condition_root / "MEASUREMENT.json", measurement, "measurement_hash")
