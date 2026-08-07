@@ -305,3 +305,66 @@ def test_missing_runtime_probe_is_unobserved_not_zero_activation() -> None:
     assert rates["static_adoption_rate"] is None
     assert rates["runtime_activation_rate"] is None
     assert rates["prompt_visible_without_adoption_plan"] == 6
+
+
+def test_mechanism_reads_all_attempt_journals_and_latest_node_wins(tmp_path) -> None:
+    def route(stage: str) -> dict:
+        return {
+            "schema": "mlevolve_memory_routing_trace_v1",
+            "stage_route": {"stage": stage},
+            "raw_candidates": [],
+            "suppressed_candidates": [],
+            "final_prompt_candidate_ids": [],
+        }
+
+    old_journal = tmp_path / "attempt-000-journal.json"
+    new_journal = tmp_path / "attempt-002-journal.json"
+    old_journal.write_text(
+        json.dumps(
+            {
+                "nodes": [
+                    {
+                        "id": "shared-node",
+                        "stage": "draft",
+                        "memory_routing_trace": route("draft"),
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    new_journal.write_text(
+        json.dumps(
+            {
+                "nodes": [
+                    {
+                        "id": "shared-node",
+                        "stage": "improve",
+                        "memory_routing_trace": route("improve"),
+                    },
+                    {
+                        "id": "new-node",
+                        "stage": "debug",
+                        "memory_routing_trace": route("debug"),
+                    },
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    outcome = {
+        "logical_run_id": "run-1",
+        "task_id": "leaf-classification",
+        "system_id": "dynamic_hybrid",
+        "journal_path": str(new_journal),
+        "retained_journal_paths": [str(old_journal), str(new_journal)],
+    }
+
+    report = MECHANISM.base_analysis.mechanism_summary(
+        [outcome], manifests=MECHANISM.MANIFESTS
+    )
+    row = report["runs"][0]
+    assert row["routing_routes"] == 2
+    assert "draft" not in row["by_stage"]
+    assert row["by_stage"]["improve"]["routing_routes"] == 1
+    assert row["by_stage"]["debug"]["routing_routes"] == 1

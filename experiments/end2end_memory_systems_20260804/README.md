@@ -87,7 +87,9 @@ the official Dynamic cell.
   search and operational active time/GPU-hours.  These are diagnostic curves,
   never substitutes for fixed-holdout terminal scores;
 - `analysis_v23/analyze_composite_mechanism.py`: routing, suppression, static
-  adoption and runtime activation after terminal outcomes;
+  adoption and runtime activation after terminal outcomes.  It reads every
+  retained attempt Journal newest-first and deduplicates resumed RunForest
+  nodes, so failed-attempt paths are not silently discarded;
 - `build_manifests.py`: deterministic generator and non-mutating `--check`.
 
 ## Local validation

@@ -142,7 +142,14 @@ def build_report(
         "completed_cells": int(terminal_summary.get("completed_cells") or 0),
         "coverage": {
             "runs_with_journal": sum(
-                Path(str(row.get("journal_path") or "")).is_file()
+                any(
+                    Path(str(path)).is_file()
+                    for path in (
+                        row.get("retained_journal_paths")
+                        or [row.get("journal_path")]
+                    )
+                    if path
+                )
                 for row in outcomes
             ),
             "runs_with_routing_trace": sum(

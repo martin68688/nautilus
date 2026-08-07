@@ -196,6 +196,7 @@ def build_summary(
                         "completed": row.get("completed") is True,
                         "agent_wall_seconds": row.get("agent_wall_seconds"),
                         "allocated_gpu_hours": row.get("allocated_gpu_hours"),
+                        "journal_path": row.get("journal_path"),
                         "measurement_hash": row.get("measurement_hash"),
                         "measurement_path": row.get("_measurement_path"),
                     }
@@ -228,6 +229,7 @@ def build_summary(
                     "llm_cost_usd": None,
                     "selected_candidate_id": None,
                     "journal_path": None,
+                    "retained_journal_paths": [],
                     "terminal_report_sha256": None,
                     "measurement_path": None,
                 }
@@ -289,6 +291,13 @@ def build_summary(
                 "llm_cost_usd": outcome.get("llm_cost_usd"),
                 "selected_candidate_id": outcome.get("selected_candidate_id"),
                 "journal_path": outcome.get("journal_path"),
+                "retained_journal_paths": list(
+                    dict.fromkeys(
+                        str(row.get("journal_path") or "")
+                        for row in attempts
+                        if str(row.get("journal_path") or "")
+                    )
+                ),
                 "terminal_report_sha256": outcome.get("terminal_report_sha256"),
                 "measurement_path": outcome.get("_measurement_path"),
             }

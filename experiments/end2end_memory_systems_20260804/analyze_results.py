@@ -423,7 +423,13 @@ def mechanism_summary(
         collector_public_key = str(_test_collector_public_key_ed25519)
     rows = []
     for outcome in outcomes:
-        journal_path = Path(str(outcome.get("journal_path") or ""))
+        retained_paths = [
+            Path(str(value))
+            for value in outcome.get("retained_journal_paths") or []
+            if str(value)
+        ]
+        if not retained_paths:
+            retained_paths = [Path(str(outcome.get("journal_path") or ""))]
         counters = {
             "routing_routes": 0,
             "native_routing_trace_routes": 0,
@@ -444,9 +450,22 @@ def mechanism_summary(
             "invalid_agent_evidence_routes": 0,
         }
         by_stage: dict[str, dict[str, int]] = {}
-        if journal_path.is_file():
-            nodes = _journal_nodes(json.loads(journal_path.read_text(encoding="utf-8")))
+        seen_node_ids: set[str] = set()
+        # Newest attempt first: a resumed journal can contain an updated copy
+        # of an older node.  The latest serialized state wins, while unique
+        # routes from failed attempts remain observable.
+        for journal_path in reversed(retained_paths):
+            if not journal_path.is_file():
+                continue
+            nodes = _journal_nodes(
+                json.loads(journal_path.read_text(encoding="utf-8"))
+            )
             for node in nodes:
+                node_id = str(node.get("id") or "")
+                if node_id and node_id in seen_node_ids:
+                    continue
+                if node_id:
+                    seen_node_ids.add(node_id)
                 route = node.get("memory_routing_trace") or {}
                 reconstructed = False
                 if route.get("schema") != "mlevolve_memory_routing_trace_v1":
@@ -568,6 +587,10 @@ def mechanism_summary(
             "routing_trace_reconstruction": (
                 "v21 layered Dynamic routes may be reconstructed from retained "
                 "memory_navigation_trace + adoption_log and are labelled post-hoc"
+            ),
+            "retained_attempt_journals": (
+                "all retained attempt journals are read newest-first and "
+                "deduplicated by RunForest node ID"
             ),
             "suppression": "raw authorized candidate not visible in the final Prompt",
             "static_adoption": "independent Agent plan disposition is implemented or partially_implemented",
