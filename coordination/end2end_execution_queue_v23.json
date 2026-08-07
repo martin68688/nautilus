@@ -5,6 +5,7 @@
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
   "monitor_interval_minutes": 30,
+  "last_cluster_observation_at": "2026-08-07T03:45:35Z",
   "active_at_last_observation": [
     "mlevolve-e2e-leaf-gome-pilot-v23",
     "mlevolve-e2e-leaf-static-pilot-v23",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -65,6 +66,9 @@ def test_leaf_execution_queue_is_exactly_bound_to_frozen_resume_manifest() -> No
     assert queue["gpu_resource"] == "nvidia.com/a100"
     assert queue["max_total_gpu_parallelism"] == 4
     assert queue["monitor_interval_minutes"] >= 30
+    observed = datetime.fromisoformat(queue["last_cluster_observation_at"])
+    next_monitor = datetime.fromisoformat(queue["next_monitor_not_before"])
+    assert (next_monitor - observed).total_seconds() >= 30 * 60
     assert queue["submission_rules"]["never_stop_active_pending_or_running"] is True
     assert queue["submission_rules"][
         "explicit_user_cancellation_is_only_stop_exception"
