@@ -26,6 +26,11 @@ CANCELLATION = (
     / "infrastructure_attempts"
     / "20260807_v24_fairness_stop.json"
 )
+FOURWAY_RETRY = (
+    EXPERIMENT
+    / "infrastructure_attempts"
+    / "20260807_leaf_fourway_external_deletion_fresh_retry_v25.json"
+)
 
 
 def _read(path: Path) -> dict:
@@ -154,6 +159,81 @@ def test_leaf_execution_queue_is_exactly_bound_to_frozen_resume_manifest() -> No
         assert manifest_row["system_id"] == system_id
         assert manifest_row["seed"] == 1
         assert manifest_row["formal_result_eligible"] is True
+
+
+def test_fourway_external_deletion_retry_is_fresh_and_preserves_attempt_zero() -> None:
+    queue = _read(QUEUE)
+    record = _read(FOURWAY_RETRY)
+    frozen = _read(EXPERIMENT / "manifests_resume_v23" / "pilot_manifest.json")
+    expected = {
+        "mlevolve-e2e-leaf-static-fresh-retry-v25": (
+            14,
+            "static_hybrid",
+            "mlevolve-e2e-leaf-static-pilot-v23",
+        ),
+        "mlevolve-e2e-leaf-rcr-fresh-retry-v25": (
+            17,
+            "rcr_router_style_port",
+            "mlevolve-e2e-leaf-rcr-pilot-v23",
+        ),
+        "mlevolve-e2e-leaf-runforest-fresh-retry-v25": (
+            18,
+            "runforest_only",
+            "mlevolve-e2e-leaf-runforest-pilot-v23",
+        ),
+        "mlevolve-e2e-leaf-macla-fresh-retry-v25": (
+            19,
+            "macla_style_port",
+            "mlevolve-e2e-leaf-macla-pilot-v23",
+        ),
+    }
+    retries = queue["leaf_infrastructure_retries"]
+    assert [row["workload"] for row in retries] == list(expected)
+    assert queue["active_at_last_observation"] == list(expected)
+
+    recorded_jobs = {
+        row["workload"]: row for row in record["fresh_retry_jobs"]
+    }
+    assert set(recorded_jobs) == set(expected)
+    assert record["policy"]["attempt_000_retained"] is True
+    assert record["policy"]["attempt_001_search_resume_enabled"] is False
+    assert record["policy"]["attempt_001_agent_time_limit_seconds"] == 21600
+    assert record["policy"]["runner_sha256"] == queue["submission_rules"][
+        "fairness_runner_sha256"
+    ]
+    assert len(record["interrupted_attempts"]) == 4
+    assert all(row["attempt"] == 0 for row in record["interrupted_attempts"])
+    assert all(row["measurement_hash"] for row in record["interrupted_attempts"])
+
+    for row in retries:
+        workload = row["workload"]
+        index, system_id, source_workload = expected[workload]
+        path = REPO / row["manifest"]
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        assert digest == row["manifest_sha256"]
+        assert digest == recorded_jobs[workload]["manifest_sha256"]
+        job = yaml.safe_load(path.read_text(encoding="utf-8"))
+        args = _assert_common_one_a100_job(job, workload)
+        assert job["spec"]["activeDeadlineSeconds"] == 25200
+        assert job["metadata"]["annotations"]["mlevolve.ai/attempt-mode"] == (
+            "fresh-retry"
+        )
+        assert job["metadata"]["annotations"]["mlevolve.ai/retry-of"] == (
+            source_workload
+        )
+        assert job["metadata"]["annotations"]["mlevolve.ai/runner-sha256"] == (
+            queue["submission_rules"]["fairness_runner_sha256"]
+        )
+        assert "--resume" not in args
+        assert args[args.index("--attempt") + 1] == "1"
+        assert args[args.index("--index") + 1] == str(index)
+        assert args[args.index("--manifest") + 1].endswith(
+            "/manifests_resume_v23/pilot_manifest.json"
+        )
+        manifest_row = frozen["runs"][index]
+        assert manifest_row["task_id"] == "leaf-classification"
+        assert manifest_row["system_id"] == system_id
+        assert manifest_row["seed"] == 1
 
 
 def test_post_leaf_task_jobs_are_four_way_indexed_a100_blocks() -> None:

@@ -1,16 +1,16 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-07T04:25:08Z",
+  "updated_at": "2026-08-07T05:58:56Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
   "monitor_interval_minutes": 30,
-  "last_cluster_observation_at": "2026-08-07T04:25:08Z",
+  "last_cluster_observation_at": "2026-08-07T05:58:56Z",
   "active_at_last_observation": [
-    "mlevolve-e2e-leaf-static-pilot-v23",
-    "mlevolve-e2e-leaf-rcr-pilot-v23",
-    "mlevolve-e2e-leaf-runforest-pilot-v23",
-    "mlevolve-e2e-leaf-macla-pilot-v23"
+    "mlevolve-e2e-leaf-static-fresh-retry-v25",
+    "mlevolve-e2e-leaf-rcr-fresh-retry-v25",
+    "mlevolve-e2e-leaf-runforest-fresh-retry-v25",
+    "mlevolve-e2e-leaf-macla-fresh-retry-v25"
   ],
   "retained_terminal_at_last_observation": [
     {
@@ -72,6 +72,30 @@
       "measurement_hash": "d6774ffdd0c93c429d2b7731323abd92a89570bfd60a3cd3b0544d745b15655f",
       "run_outcome_hash": "921e1eefd0749b809fe530dcff2741870de608eecf264392659bd53913524380",
       "retry_allowed": false
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-static-pilot-v23",
+      "failure_class": "infrastructure",
+      "status": "retained_infrastructure_or_timeout_failure",
+      "measurement_hash": "3ab4e8b3175d92c1c7c71aeaff7af3e3a76386dd6581229908fdc799bab7d2fd"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-rcr-pilot-v23",
+      "failure_class": "infrastructure",
+      "status": "retained_infrastructure_or_timeout_failure",
+      "measurement_hash": "c697a31bd771378fdf5115151c6a29b5fe7d7018f7a082c621fff345008d3898"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-runforest-pilot-v23",
+      "failure_class": "infrastructure",
+      "status": "retained_infrastructure_or_timeout_failure",
+      "measurement_hash": "6ae214a161a0f43764aafbe0bb8402d0fa63a93a78288f3b6c9a38f0e5945f2d"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-macla-pilot-v23",
+      "failure_class": "infrastructure",
+      "status": "retained_infrastructure_hard_interruption",
+      "measurement_hash": "1587f7318f452caa02c2b51bae4fa9e09f1c6733fd1de8cf9edc48ae4780bbd2"
     }
   ],
   "leaf_submitted_in_priority_order": [
@@ -93,6 +117,44 @@
       "manifest_sha256": "5e3efcf1ab03e102a03916c53df4fe6600663b65f6aca347cf8bdccfe46ac35c",
       "kind": "fresh_condition",
       "submitted_at": "2026-08-07T04:18:52Z"
+    }
+  ],
+  "leaf_infrastructure_retries": [
+    {
+      "workload": "mlevolve-e2e-leaf-static-fresh-retry-v25",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-static-fresh-retry-v25.yaml",
+      "manifest_sha256": "b88087d098857eb406ad84a37d1298bd26bd9ef33229d73c7303f79d15d0cc9e",
+      "kind": "fresh_infrastructure_retry",
+      "source_attempt": 0,
+      "attempt": 1,
+      "submitted_at": "2026-08-07T05:55:56Z"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-rcr-fresh-retry-v25",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-rcr-fresh-retry-v25.yaml",
+      "manifest_sha256": "51b050626bfca79a7b04913465ab20107215ce733179cc5842ade0e8f8c13281",
+      "kind": "fresh_infrastructure_retry",
+      "source_attempt": 0,
+      "attempt": 1,
+      "submitted_at": "2026-08-07T05:56:15Z"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-runforest-fresh-retry-v25",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-runforest-fresh-retry-v25.yaml",
+      "manifest_sha256": "f65c992fcd052a8374ca170693a45ea08770143663ccc2607ac2709fcef27af5",
+      "kind": "fresh_infrastructure_retry",
+      "source_attempt": 0,
+      "attempt": 1,
+      "submitted_at": "2026-08-07T05:56:35Z"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-macla-fresh-retry-v25",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-macla-fresh-retry-v25.yaml",
+      "manifest_sha256": "eaefa830a0743417a15260ccfde15a171495d54ed6bf32a34dac00109defb778",
+      "kind": "fresh_infrastructure_retry",
+      "source_attempt": 0,
+      "attempt": 1,
+      "submitted_at": "2026-08-07T05:56:55Z"
     }
   ],
   "leaf_pending_priority": [],
@@ -145,5 +207,5 @@
     "adapter_recovery_must_preserve_intermediate_attempts": true,
     "seed_1_is_exploratory_only": true
   },
-  "next_monitor_not_before": "2026-08-07T04:55:08Z"
+  "next_monitor_not_before": "2026-08-07T06:28:56Z"
 }

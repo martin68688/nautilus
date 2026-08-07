@@ -1,0 +1,107 @@
+{
+  "schema": "mlevolve_external_job_deletion_retry_record_v1",
+  "recorded_at": "2026-08-07T05:58:56Z",
+  "namespace": "ecepxie",
+  "deletion_observed_at": "2026-08-07T04:46:29Z",
+  "cause": "external Kubernetes Job deletion; deleting actor is not available from retained namespace events",
+  "user_disposition": "preserve attempt-000 and restart each condition from scratch as immutable attempt-001",
+  "policy": {
+    "seed": 1,
+    "exploratory_pilot": true,
+    "attempt_000_retained": true,
+    "attempt_001_search_resume_enabled": false,
+    "attempt_001_agent_time_limit_seconds": 21600,
+    "attempt_001_gpu_count": 1,
+    "attempt_001_gpu_resource": "nvidia.com/a100",
+    "runner_sha256": "0731ca54733e78eadc1d7eead725d776d8279c4deb416a821dc401fa4e4d36f9"
+  },
+  "interrupted_attempts": [
+    {
+      "workload": "mlevolve-e2e-leaf-static-pilot-v23",
+      "pod": "mlevolve-e2e-leaf-static-pilot-v23-n4t75",
+      "system_id": "static_hybrid",
+      "attempt": 0,
+      "completed_steps": 19,
+      "total_steps": 80,
+      "best_internal_metric": 0.08933469958801094,
+      "agent_wall_seconds": 13980.573955033,
+      "allocated_gpu_hours": 3.8834927652869444,
+      "measurement_hash": "3ab4e8b3175d92c1c7c71aeaff7af3e3a76386dd6581229908fdc799bab7d2fd",
+      "measurement_file_sha256": "47b5c2684a1b66cb68a3852d8304d2a62542125f45cd8140e8c4eadab9326f89",
+      "run_outcome_sha256": "c14879244fcb26249a87db85f8e0450408df44c58ec87d53cd731eba3b649dcd",
+      "journal_sha256": "5e631d1516af72c239dd512531ce232efd041f87138e794b968442248d9a0b8b"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-rcr-pilot-v23",
+      "pod": "mlevolve-e2e-leaf-rcr-pilot-v23-sk786",
+      "system_id": "rcr_router_style_port",
+      "attempt": 0,
+      "completed_steps": 14,
+      "total_steps": 80,
+      "best_internal_metric": 0.05207500832581986,
+      "agent_wall_seconds": 3708.521526938,
+      "allocated_gpu_hours": 1.030144868593889,
+      "measurement_hash": "c697a31bd771378fdf5115151c6a29b5fe7d7018f7a082c621fff345008d3898",
+      "measurement_file_sha256": "9d96329129d68694d86c535c4a49773b4b4f4d87d2a6f4697ef94daa8c24484b",
+      "run_outcome_sha256": "561b3060e68654fb6ebe77eb17de28163253ce6c52dbb36b073b580da1d4728f",
+      "journal_sha256": "5b2fcf0b8165e844a94057b12cd6a6b54d4be6a8d56195d6e1deaa063e2c0074"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-runforest-pilot-v23",
+      "pod": "mlevolve-e2e-leaf-runforest-pilot-v23-4tlxg",
+      "system_id": "runforest_only",
+      "attempt": 0,
+      "completed_steps": 18,
+      "total_steps": 80,
+      "best_internal_metric": 0.035322510044173416,
+      "agent_wall_seconds": 3664.28564672,
+      "allocated_gpu_hours": 1.017857124088889,
+      "measurement_hash": "6ae214a161a0f43764aafbe0bb8402d0fa63a93a78288f3b6c9a38f0e5945f2d",
+      "measurement_file_sha256": "7110083078e11da73824d325f38aeb1b343f976700ec7cc285b439e34bf5986c",
+      "run_outcome_sha256": "ef31540889f869a1ac9e554b13df6e69958fd1f024d5bf13547589115ec30951",
+      "journal_sha256": "5c81dc6ed10d686551258aff6d574632a213522965307e1f5378dcd959e0598e"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-macla-pilot-v23",
+      "pod": "mlevolve-e2e-leaf-macla-pilot-v23-m9xbh",
+      "system_id": "macla_style_port",
+      "attempt": 0,
+      "completed_steps": 9,
+      "total_steps": 80,
+      "best_internal_metric": 0.07473134397992126,
+      "agent_wall_seconds": 1648.223998867,
+      "allocated_gpu_hours": 0.4578399996852778,
+      "measurement_recovered_from_durable_artifacts": true,
+      "measurement_hash": "1587f7318f452caa02c2b51bae4fa9e09f1c6733fd1de8cf9edc48ae4780bbd2",
+      "measurement_file_sha256": "a5826970145b7fb173bdb79941e53fe074c034774510f81317adeac48cc01695",
+      "run_outcome_sha256": "535980b4d30a7af4108f407affe9e21cda08af0c5511d25da6aab21952e0452d",
+      "journal_sha256": "358cd6831b1f3682f5c6628699eae3a91474470cecf23b72352222866ee8319a"
+    }
+  ],
+  "fresh_retry_jobs": [
+    {
+      "workload": "mlevolve-e2e-leaf-static-fresh-retry-v25",
+      "manifest_sha256": "b88087d098857eb406ad84a37d1298bd26bd9ef33229d73c7303f79d15d0cc9e",
+      "submitted_at": "2026-08-07T05:55:56Z",
+      "launch_receipt_hash": "5a01780b7d7f658e25815ddc9248f957353c1990cc5787641aefeb94e57ac9b4"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-rcr-fresh-retry-v25",
+      "manifest_sha256": "51b050626bfca79a7b04913465ab20107215ce733179cc5842ade0e8f8c13281",
+      "submitted_at": "2026-08-07T05:56:15Z",
+      "launch_receipt_hash": "ac43a9cc0ac14e71d2f74aef56fa7c0c60686279eea3269adcfa57302cbb89dc"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-runforest-fresh-retry-v25",
+      "manifest_sha256": "f65c992fcd052a8374ca170693a45ea08770143663ccc2607ac2709fcef27af5",
+      "submitted_at": "2026-08-07T05:56:35Z",
+      "launch_receipt_hash": "22259b527ad3717aae0a842f4005597544235b6e7e720e997e5e92084f64482a"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-macla-fresh-retry-v25",
+      "manifest_sha256": "eaefa830a0743417a15260ccfde15a171495d54ed6bf32a34dac00109defb778",
+      "submitted_at": "2026-08-07T05:56:55Z",
+      "launch_receipt_hash": "960492c246195c065a1d8c3f999ff1ebcf802a72440d781e5f1d67fa71d20c21"
+    }
+  ]
+}
