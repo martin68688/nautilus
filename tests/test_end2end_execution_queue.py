@@ -111,6 +111,10 @@ def test_leaf_execution_queue_is_exactly_bound_to_frozen_resume_manifest() -> No
         workload = row["workload"]
         index, system_id = expected[workload]
         path = REPO / row["manifest"]
+        if "manifest_sha256" in row:
+            assert hashlib.sha256(path.read_bytes()).hexdigest() == row[
+                "manifest_sha256"
+            ]
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
         args = _assert_common_one_a100_job(job, workload)
         assert job["spec"]["activeDeadlineSeconds"] == 25200
@@ -152,6 +156,9 @@ def test_post_leaf_task_jobs_are_four_way_indexed_a100_blocks() -> None:
     observed = []
     for row in queue["task_jobs_after_leaf"]:
         path = REPO / row["manifest"]
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == row[
+            "manifest_sha256"
+        ]
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
         args = _assert_common_one_a100_job(job, row["workload"])
         assert job["spec"]["completionMode"] == "Indexed"
