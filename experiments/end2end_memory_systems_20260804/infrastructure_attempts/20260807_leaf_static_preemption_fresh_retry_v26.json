@@ -1,0 +1,46 @@
+{
+  "schema": "mlevolve_end2end_infrastructure_retry_v1",
+  "recorded_at": "2026-08-07T06:25:38Z",
+  "task_id": "leaf-classification",
+  "system_id": "static_hybrid",
+  "logical_run_id": "e2e-pilot-agentic-three-role-v21__leaf-classification__static_hybrid__seed-1",
+  "interrupted_attempt": {
+    "attempt": 1,
+    "workload": "mlevolve-e2e-leaf-static-fresh-retry-v25",
+    "pod": "mlevolve-e2e-leaf-static-fresh-retry-v25-8rqsr",
+    "node": "node-1-1.sdsc.optiputer.net",
+    "failure_class": "infrastructure",
+    "failure_reason": "kubernetes_preemption",
+    "preempted_by_pod_uid": "bf4073f5-0c83-4251-a49b-3be81d689667",
+    "agent_wall_seconds": 222.923272686,
+    "allocated_gpu_hours": 0.06192313130166666,
+    "completed_steps": 0,
+    "measurement_hash": "05335a639913b2a1b352a381ea96ac24895cc5374e53fd12d8b92d141666e80f",
+    "records_retained": true
+  },
+  "fresh_retry": {
+    "attempt": 2,
+    "workload": "mlevolve-e2e-leaf-static-fresh-retry-v26",
+    "job_uid": "39fe4a86-66ce-4b48-9e86-447d9713eb7d",
+    "pod": "mlevolve-e2e-leaf-static-fresh-retry-v26-vjbt4",
+    "pod_uid": "5cb2d219-d71d-45f9-8b92-8d4c80c3b6ef",
+    "node": "rci-nrp-gpu-04.sdsu.edu",
+    "gpu_product": "NVIDIA A100 80GB PCIe",
+    "submitted_at": "2026-08-07T06:23:31Z",
+    "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-static-fresh-retry-v26.yaml",
+    "manifest_sha256": "600c1a4a74af27e19ac5ab6f25205a41de3418558c8511afdacf51f75a8ec634",
+    "launch_receipt_hash": "61553300796315a1541443b7a8614369ca654d415456c1c1168558f534bcfcef",
+    "runner_sha256": "0731ca54733e78eadc1d7eead725d776d8279c4deb416a821dc401fa4e4d36f9",
+    "agent_time_limit_seconds": 21600,
+    "search_resume_enabled": false,
+    "status_at_record": "running"
+  },
+  "policy": {
+    "user_requested_fresh_restart": true,
+    "attempt_000_retained": true,
+    "attempt_001_retained": true,
+    "attempt_002_uses_resume": false,
+    "old_workloads_deleted": false,
+    "seed_1_is_exploratory_only": true
+  }
+}

@@ -1,13 +1,13 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-07T05:58:56Z",
+  "updated_at": "2026-08-07T06:25:38Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
   "monitor_interval_minutes": 30,
-  "last_cluster_observation_at": "2026-08-07T05:58:56Z",
+  "last_cluster_observation_at": "2026-08-07T06:25:38Z",
   "active_at_last_observation": [
-    "mlevolve-e2e-leaf-static-fresh-retry-v25",
+    "mlevolve-e2e-leaf-static-fresh-retry-v26",
     "mlevolve-e2e-leaf-rcr-fresh-retry-v25",
     "mlevolve-e2e-leaf-runforest-fresh-retry-v25",
     "mlevolve-e2e-leaf-macla-fresh-retry-v25"
@@ -96,6 +96,17 @@
       "failure_class": "infrastructure",
       "status": "retained_infrastructure_hard_interruption",
       "measurement_hash": "1587f7318f452caa02c2b51bae4fa9e09f1c6733fd1de8cf9edc48ae4780bbd2"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-static-fresh-retry-v25",
+      "failure_class": "infrastructure",
+      "status": "retained_infrastructure_or_timeout_failure",
+      "failure_reason": "a100_pod_preempted",
+      "attempt": 1,
+      "agent_wall_seconds": 222.923272686,
+      "allocated_gpu_hours": 0.06192313130166666,
+      "measurement_hash": "05335a639913b2a1b352a381ea96ac24895cc5374e53fd12d8b92d141666e80f",
+      "retry_allowed": true
     }
   ],
   "leaf_submitted_in_priority_order": [
@@ -155,6 +166,15 @@
       "source_attempt": 0,
       "attempt": 1,
       "submitted_at": "2026-08-07T05:56:55Z"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-static-fresh-retry-v26",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-static-fresh-retry-v26.yaml",
+      "manifest_sha256": "600c1a4a74af27e19ac5ab6f25205a41de3418558c8511afdacf51f75a8ec634",
+      "kind": "fresh_infrastructure_retry",
+      "source_attempt": 1,
+      "attempt": 2,
+      "submitted_at": "2026-08-07T06:23:31Z"
     }
   ],
   "leaf_pending_priority": [],
@@ -207,5 +227,5 @@
     "adapter_recovery_must_preserve_intermediate_attempts": true,
     "seed_1_is_exploratory_only": true
   },
-  "next_monitor_not_before": "2026-08-07T06:28:56Z"
+  "next_monitor_not_before": "2026-08-07T06:55:38Z"
 }

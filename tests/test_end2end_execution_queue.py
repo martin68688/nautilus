@@ -31,6 +31,11 @@ FOURWAY_RETRY = (
     / "infrastructure_attempts"
     / "20260807_leaf_fourway_external_deletion_fresh_retry_v25.json"
 )
+STATIC_V26_RETRY = (
+    EXPERIMENT
+    / "infrastructure_attempts"
+    / "20260807_leaf_static_preemption_fresh_retry_v26.json"
+)
 
 
 def _read(path: Path) -> dict:
@@ -187,9 +192,14 @@ def test_fourway_external_deletion_retry_is_fresh_and_preserves_attempt_zero() -
             "mlevolve-e2e-leaf-macla-pilot-v23",
         ),
     }
-    retries = queue["leaf_infrastructure_retries"]
+    retries = queue["leaf_infrastructure_retries"][:4]
     assert [row["workload"] for row in retries] == list(expected)
-    assert queue["active_at_last_observation"] == list(expected)
+    assert queue["active_at_last_observation"] == [
+        "mlevolve-e2e-leaf-static-fresh-retry-v26",
+        "mlevolve-e2e-leaf-rcr-fresh-retry-v25",
+        "mlevolve-e2e-leaf-runforest-fresh-retry-v25",
+        "mlevolve-e2e-leaf-macla-fresh-retry-v25",
+    ]
 
     recorded_jobs = {
         row["workload"]: row for row in record["fresh_retry_jobs"]
@@ -234,6 +244,40 @@ def test_fourway_external_deletion_retry_is_fresh_and_preserves_attempt_zero() -
         assert manifest_row["task_id"] == "leaf-classification"
         assert manifest_row["system_id"] == system_id
         assert manifest_row["seed"] == 1
+
+
+def test_static_preemption_retry_v26_is_fresh_and_preserves_older_attempts() -> None:
+    queue = _read(QUEUE)
+    record = _read(STATIC_V26_RETRY)
+    row = queue["leaf_infrastructure_retries"][-1]
+    workload = "mlevolve-e2e-leaf-static-fresh-retry-v26"
+    assert row["workload"] == workload
+    assert row["source_attempt"] == 1
+    assert row["attempt"] == 2
+    path = REPO / row["manifest"]
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    assert digest == row["manifest_sha256"]
+    assert digest == record["fresh_retry"]["manifest_sha256"]
+
+    job = yaml.safe_load(path.read_text(encoding="utf-8"))
+    args = _assert_common_one_a100_job(job, workload)
+    assert job["metadata"]["annotations"]["mlevolve.ai/attempt-mode"] == (
+        "fresh-retry"
+    )
+    assert job["metadata"]["annotations"]["mlevolve.ai/retry-source-attempt"] == (
+        "1"
+    )
+    assert "--resume" not in args
+    assert "--resume-source-attempt" not in args
+    assert args[args.index("--attempt") + 1] == "2"
+    assert record["interrupted_attempt"]["failure_reason"] == (
+        "kubernetes_preemption"
+    )
+    assert record["interrupted_attempt"]["records_retained"] is True
+    assert record["fresh_retry"]["search_resume_enabled"] is False
+    assert record["policy"]["attempt_000_retained"] is True
+    assert record["policy"]["attempt_001_retained"] is True
+    assert record["policy"]["old_workloads_deleted"] is False
 
 
 def test_post_leaf_task_jobs_are_four_way_indexed_a100_blocks() -> None:
