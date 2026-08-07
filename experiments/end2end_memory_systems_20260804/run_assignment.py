@@ -731,6 +731,46 @@ def build_search_resume_binding(
     }
 
 
+def remaining_agent_budget_seconds(
+    *, total_seconds: int, prior_agent_wall_seconds: float
+) -> int:
+    """Return remaining wall budget, rejecting any post-budget resume."""
+
+    total = int(total_seconds)
+    prior = float(prior_agent_wall_seconds)
+    if total <= 0 or not math.isfinite(prior) or prior < 0.0:
+        raise ValueError("Invalid agent wall budget")
+    remaining = total - prior
+    if remaining <= 0.0:
+        raise ValueError(
+            "Search wall budget is exhausted; fairness policy forbids resume"
+        )
+    return max(1, int(math.ceil(remaining)))
+
+
+def condition_disposition(
+    *,
+    completed_condition: bool,
+    terminal_error: str,
+    solver_exit_code: int | None,
+    solver_error: str,
+    outcome: Mapping[str, Any],
+) -> tuple[str, str]:
+    """Classify search-budget exhaustion as an Agent outcome."""
+
+    if completed_condition:
+        return "scored_terminal_result", "none"
+    if terminal_error:
+        return "retained_terminal_evaluator_failure", "evaluator"
+    if solver_error == "agent_time_limit_exceeded":
+        return "retained_agent_budget_exhausted", "agent"
+    if solver_exit_code in {124, 125, 137, 143} or solver_error:
+        return "retained_infrastructure_or_timeout_failure", "infrastructure"
+    if outcome:
+        return f"retained_agent_{outcome.get('status', 'failure')}", "agent"
+    return "retained_agent_failure_without_outcome", "infrastructure"
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
     manifest_path = Path(args.manifest).resolve(strict=True)
     manifest = load_frozen_inputs(manifest_path)
@@ -810,6 +850,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                         prior.get("agent_wall_seconds", 0.0),
                     )
                     or 0.0
+                ),
+            )
+            remaining_agent_budget_seconds(
+                total_seconds=int(budget["agent_time_limit_seconds"]),
+                prior_agent_wall_seconds=float(
+                    search_resume["prior_agent_wall_seconds"]
                 ),
             )
 
@@ -928,13 +974,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     try:
         solver_timeout_seconds = int(budget["agent_time_limit_seconds"])
         if search_resume is not None:
-            solver_timeout_seconds = max(
-                1,
-                int(
-                    math.ceil(
-                        float(budget["agent_time_limit_seconds"])
-                        - float(search_resume["prior_agent_wall_seconds"])
-                    )
+            solver_timeout_seconds = remaining_agent_budget_seconds(
+                total_seconds=int(budget["agent_time_limit_seconds"]),
+                prior_agent_wall_seconds=float(
+                    search_resume["prior_agent_wall_seconds"]
                 ),
             )
         solver_exit_code, termination_signal = run_solver_process(
@@ -1004,16 +1047,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     ttfv, first_valid_sha = _first_valid(run_root / "logs", started_ns)
     wall_seconds = (agent_finished_ns - started_ns) / 1_000_000_000.0
-    if completed_condition:
-        status, failure_class = "scored_terminal_result", "none"
-    elif terminal_error:
-        status, failure_class = "retained_terminal_evaluator_failure", "evaluator"
-    elif solver_exit_code in {124, 125, 137, 143} or solver_error:
-        status, failure_class = "retained_infrastructure_or_timeout_failure", "infrastructure"
-    elif outcome:
-        status, failure_class = f"retained_agent_{outcome.get('status', 'failure')}", "agent"
-    else:
-        status, failure_class = "retained_agent_failure_without_outcome", "infrastructure"
+    status, failure_class = condition_disposition(
+        completed_condition=completed_condition,
+        terminal_error=terminal_error,
+        solver_exit_code=solver_exit_code,
+        solver_error=solver_error,
+        outcome=outcome,
+    )
     prior_wall_seconds = float(
         (prior_measurement or {}).get(
             "cumulative_agent_wall_seconds",

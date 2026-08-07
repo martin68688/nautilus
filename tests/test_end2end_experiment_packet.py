@@ -1548,6 +1548,28 @@ def test_runner_selects_hardware_from_global_runtime_not_phase_budget() -> None:
     }
 
 
+def test_budget_exhaustion_is_terminal_agent_outcome_and_cannot_resume() -> None:
+    assert run_assignment.remaining_agent_budget_seconds(
+        total_seconds=21600,
+        prior_agent_wall_seconds=18506.887410196003,
+    ) == 3094
+    with pytest.raises(ValueError, match="fairness policy forbids resume"):
+        run_assignment.remaining_agent_budget_seconds(
+            total_seconds=21600,
+            prior_agent_wall_seconds=21600.0,
+        )
+
+    status, failure_class = run_assignment.condition_disposition(
+        completed_condition=False,
+        terminal_error="",
+        solver_exit_code=124,
+        solver_error="agent_time_limit_exceeded",
+        outcome={"status": "partial"},
+    )
+    assert status == "retained_agent_budget_exhausted"
+    assert failure_class == "agent"
+
+
 def test_host_artifact_namespace_is_collision_free_and_safe() -> None:
     from config import _resolve_host_artifact_roots
 
