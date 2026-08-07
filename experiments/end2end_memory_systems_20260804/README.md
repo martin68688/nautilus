@@ -56,6 +56,10 @@ the official Dynamic cell.
 - `manifests_v23/`: system, task, budget, source, Bundle, evaluator, Smoke and
   Pilot locks with canonical SHA-256 self-hashes; earlier releases remain
   retained for provenance;
+- `manifests_resume_v23/` and `manifests_resume_v24/`: byte-identical copies of
+  the frozen PVC-only adapter manifests used by the Leaf v23/v24 Jobs.  Their
+  Pilot and source-lock self-hashes are bound to the retained publication
+  records under `infrastructure_attempts/`;
 - `jobs/`: retained Smoke definitions, immutable Leaf condition Jobs and the
   three task-local v23 Indexed Jobs; current submission order is frozen in the
   coordination queue;

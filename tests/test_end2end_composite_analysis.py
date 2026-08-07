@@ -261,6 +261,44 @@ def test_dynamic_official_cell_ignores_v21_diagnostic_resume(tmp_path) -> None:
     assert MODULE.select_outcome(attempts)["terminal_score"] is None
 
 
+def test_resume_manifest_snapshots_match_publication_receipts() -> None:
+    experiment = SCRIPT.parents[1]
+    releases = (
+        ("v23", "20260807_v21_resume_adapter_v23.json"),
+        ("v24", "20260807_v21_resume_adapter_v24.json"),
+    )
+    for release, receipt_name in releases:
+        manifests = experiment / f"manifests_resume_{release}"
+        receipt = MODULE.read_object(
+            experiment / "infrastructure_attempts" / receipt_name
+        )
+        pilot = MODULE.read_object(manifests / "pilot_manifest.json")
+        source_lock = MODULE.read_object(manifests / "source_lock.json")
+        MODULE.verify_hash(pilot, "manifest_hash", f"{release} Pilot manifest")
+        MODULE.verify_hash(
+            source_lock, "manifest_hash", f"{release} source-lock manifest"
+        )
+        assert pilot["manifest_hash"] == receipt["pilot_manifest_hash"]
+        assert (
+            source_lock["manifest_hash"]
+            == receipt["source_lock_manifest_hash"]
+        )
+        assert len(pilot["runs"]) == 40
+        assert len(
+            {(row["task_id"], row["system_id"]) for row in pilot["runs"]}
+        ) == 40
+
+    v23 = MODULE.read_object(
+        experiment / "manifests_resume_v23" / "pilot_manifest.json"
+    )
+    expected = {
+        17: "rcr_router_style_port",
+        18: "runforest_only",
+        19: "macla_style_port",
+    }
+    assert {index: v23["runs"][index]["system_id"] for index in expected} == expected
+
+
 def test_mechanism_aggregation_keeps_stage_system_and_activation_counts() -> None:
     row = {
         "logical_run_id": "run-1",

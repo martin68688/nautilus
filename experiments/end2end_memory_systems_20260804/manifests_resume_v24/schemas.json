@@ -1,0 +1,18 @@
+{
+  "manifest_hash": "bc3a3b6aad773f0d5f67c531c505f2999a23656c947b81472aab952258526a38",
+  "schema": "mlevolve_end2end_schema_manifest_v1",
+  "schemas": [
+    {
+      "path": "schemas/condition_measurement.schema.json",
+      "sha256": "364064584be204b30731ce55041811d0fcb3a2648999db112f30c5fc47127bdc"
+    },
+    {
+      "path": "schemas/execution_manifest.schema.json",
+      "sha256": "a88807e3ec7cf742750c18ec255a5989e748410e25ba6e7b554bd30a3313c8c1"
+    },
+    {
+      "path": "schemas/smoke_gate.schema.json",
+      "sha256": "917600987ab32042c202a545a01942e605b5112b3c94701bf14b5eb834ddc17f"
+    }
+  ]
+}
