@@ -27,17 +27,27 @@ assert MECHANISM_SPEC.loader is not None
 MECHANISM_SPEC.loader.exec_module(MECHANISM)
 
 
-def _write_measurement(root: Path, cell: dict, score: float, *, cumulative: float) -> None:
-    attempt = root / cell["logical_run_id"] / "attempt-001"
+def _write_measurement(
+    root: Path,
+    cell: dict,
+    score: float | None,
+    *,
+    cumulative: float,
+    attempt_number: int = 1,
+    completed: bool = True,
+    status: str = "scored_terminal_result",
+    failure_class: str = "none",
+) -> None:
+    attempt = root / cell["logical_run_id"] / f"attempt-{attempt_number:03d}"
     attempt.mkdir(parents=True)
     payload = {
         "logical_run_id": cell["logical_run_id"],
         "task_id": cell["task_id"],
         "system_id": cell["system_id"],
-        "attempt": 1,
-        "status": "scored_terminal_result",
-        "failure_class": "none",
-        "completed": True,
+        "attempt": attempt_number,
+        "status": status,
+        "failure_class": failure_class,
+        "completed": completed,
         "terminal_score": score,
         "time_to_first_valid_seconds": 5.0,
         "cumulative_time_to_first_valid_seconds": cumulative,
@@ -90,6 +100,101 @@ def test_composite_plan_is_40_cells_and_uses_cumulative_resume_metrics(tmp_path)
     assert first["agent_wall_seconds"] == 110.0
     assert first["allocated_gpu_hours"] == 2.5
     assert summary["summary_hash"] == MODULE.payload_hash(summary, "summary_hash")
+
+
+def test_flat_resume_selects_completed_attempt_and_retains_failed_attempts(tmp_path) -> None:
+    pilot = MODULE.read_object(MODULE.V23_MANIFESTS / "pilot_manifest.json")
+    roots = {name: tmp_path / name for name in ("v21", "v22", "v23")}
+    flat = next(
+        row
+        for row in MODULE.official_cells(pilot, roots)
+        if row["task_id"] == "leaf-classification"
+        and row["system_id"] == "flat_retrieval"
+    )
+    assert flat["release"] == "v21"
+    _write_measurement(
+        roots["v21"],
+        flat,
+        None,
+        cumulative=100.0,
+        attempt_number=0,
+        completed=False,
+        status="retained_infrastructure_or_timeout_failure",
+        failure_class="infrastructure",
+    )
+    _write_measurement(
+        roots["v21"],
+        flat,
+        None,
+        cumulative=110.0,
+        attempt_number=1,
+        completed=False,
+        status="retained_adapter_failure",
+        failure_class="agent",
+    )
+    _write_measurement(
+        roots["v21"],
+        flat,
+        0.031,
+        cumulative=220.0,
+        attempt_number=2,
+    )
+
+    attempts = MODULE.load_cell_attempts(flat)
+    assert [row["attempt"] for row in attempts] == [0, 1, 2]
+    selected = MODULE.select_outcome(attempts)
+    assert selected is not None
+    assert selected["attempt"] == 2
+    assert selected["terminal_score"] == 0.031
+
+
+def test_dynamic_official_cell_ignores_v21_diagnostic_resume(tmp_path) -> None:
+    pilot = MODULE.read_object(MODULE.V23_MANIFESTS / "pilot_manifest.json")
+    roots = {name: tmp_path / name for name in ("v21", "v22", "v23")}
+    dynamic = next(
+        row
+        for row in MODULE.official_cells(pilot, roots)
+        if row["task_id"] == "leaf-classification"
+        and row["system_id"] == "dynamic_hybrid"
+    )
+    assert dynamic["release"] == "v22"
+    _write_measurement(
+        roots["v22"],
+        dynamic,
+        None,
+        cumulative=21600.0,
+        completed=False,
+        status="retained_agent_partial",
+        failure_class="agent",
+    )
+
+    diagnostic = {
+        **dynamic,
+        "release": "v21",
+        "logical_run_id": (
+            "e2e-pilot-agentic-three-role-v21__leaf-classification__"
+            "dynamic_hybrid__seed-1"
+        ),
+        "condition_root": roots["v21"]
+        / (
+            "e2e-pilot-agentic-three-role-v21__leaf-classification__"
+            "dynamic_hybrid__seed-1"
+        ),
+    }
+    _write_measurement(
+        roots["v21"],
+        diagnostic,
+        0.011208,
+        cumulative=22000.0,
+        attempt_number=2,
+    )
+
+    attempts = MODULE.load_cell_attempts(dynamic)
+    assert len(attempts) == 1
+    assert attempts[0]["logical_run_id"].endswith(
+        "v22__leaf-classification__dynamic_hybrid__seed-1"
+    )
+    assert MODULE.select_outcome(attempts)["terminal_score"] is None
 
 
 def test_mechanism_aggregation_keeps_stage_system_and_activation_counts() -> None:
