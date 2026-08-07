@@ -37,6 +37,10 @@ def _write_measurement(
     completed: bool = True,
     status: str = "scored_terminal_result",
     failure_class: str = "none",
+    agent_wall_seconds: float = 10.0,
+    cumulative_agent_wall_seconds: float | None = None,
+    allocated_gpu_hours: float = 1.0,
+    cumulative_allocated_gpu_hours: float | None = None,
 ) -> None:
     attempt = root / cell["logical_run_id"] / f"attempt-{attempt_number:03d}"
     attempt.mkdir(parents=True)
@@ -51,10 +55,18 @@ def _write_measurement(
         "terminal_score": score,
         "time_to_first_valid_seconds": 5.0,
         "cumulative_time_to_first_valid_seconds": cumulative,
-        "agent_wall_seconds": 10.0,
-        "cumulative_agent_wall_seconds": cumulative + 10.0,
-        "allocated_gpu_hours": 1.0,
-        "cumulative_allocated_gpu_hours": 2.5,
+        "agent_wall_seconds": agent_wall_seconds,
+        "cumulative_agent_wall_seconds": (
+            cumulative + agent_wall_seconds
+            if cumulative_agent_wall_seconds is None
+            else cumulative_agent_wall_seconds
+        ),
+        "allocated_gpu_hours": allocated_gpu_hours,
+        "cumulative_allocated_gpu_hours": (
+            2.5
+            if cumulative_allocated_gpu_hours is None
+            else cumulative_allocated_gpu_hours
+        ),
         "llm_token_usage": None,
         "llm_cost_usd": None,
         "measurement_hash": "",
@@ -121,6 +133,10 @@ def test_flat_resume_selects_completed_attempt_and_retains_failed_attempts(tmp_p
         completed=False,
         status="retained_infrastructure_or_timeout_failure",
         failure_class="infrastructure",
+        agent_wall_seconds=100.0,
+        cumulative_agent_wall_seconds=100.0,
+        allocated_gpu_hours=1.0,
+        cumulative_allocated_gpu_hours=1.0,
     )
     _write_measurement(
         roots["v21"],
@@ -131,6 +147,10 @@ def test_flat_resume_selects_completed_attempt_and_retains_failed_attempts(tmp_p
         completed=False,
         status="retained_adapter_failure",
         failure_class="agent",
+        agent_wall_seconds=10.0,
+        cumulative_agent_wall_seconds=110.0,
+        allocated_gpu_hours=0.1,
+        cumulative_allocated_gpu_hours=1.1,
     )
     _write_measurement(
         roots["v21"],
@@ -138,6 +158,10 @@ def test_flat_resume_selects_completed_attempt_and_retains_failed_attempts(tmp_p
         0.031,
         cumulative=220.0,
         attempt_number=2,
+        agent_wall_seconds=120.0,
+        cumulative_agent_wall_seconds=220.0,
+        allocated_gpu_hours=1.2,
+        cumulative_allocated_gpu_hours=2.2,
     )
 
     attempts = MODULE.load_cell_attempts(flat)
@@ -146,6 +170,46 @@ def test_flat_resume_selects_completed_attempt_and_retains_failed_attempts(tmp_p
     assert selected is not None
     assert selected["attempt"] == 2
     assert selected["terminal_score"] == 0.031
+
+    tasks = MODULE.read_object(MODULE.V23_MANIFESTS / "tasks.json")
+    directions = {row["task_id"]: row["direction"] for row in tasks["tasks"]}
+    summary, _ = MODULE.build_summary(
+        MODULE.official_cells(pilot, roots), directions, allow_incomplete=True
+    )
+    flat_cell = next(
+        row
+        for row in summary["cells"]
+        if row["task_id"] == "leaf-classification"
+        and row["system_id"] == "flat_retrieval"
+    )
+    assert flat_cell["attempt_count"] == 3
+    assert flat_cell["failed_attempt_count"] == 2
+    assert flat_cell["agent_wall_seconds"] == 220.0
+    assert flat_cell["retained_attempt_agent_wall_seconds"] == 230.0
+    assert flat_cell["retry_overhead_agent_wall_seconds"] == 10.0
+    assert flat_cell["allocated_gpu_hours"] == 2.2
+    assert flat_cell["retained_attempt_gpu_hours"] == 2.3
+    assert abs(flat_cell["retry_overhead_gpu_hours"] - 0.1) < 1e-12
+
+
+def test_allow_incomplete_materializes_zero_cost_missing_cells(tmp_path) -> None:
+    pilot = MODULE.read_object(MODULE.V23_MANIFESTS / "pilot_manifest.json")
+    roots = {name: tmp_path / name for name in ("v21", "v22", "v23")}
+    tasks = MODULE.read_object(MODULE.V23_MANIFESTS / "tasks.json")
+    directions = {row["task_id"]: row["direction"] for row in tasks["tasks"]}
+    summary, inventory = MODULE.build_summary(
+        MODULE.official_cells(pilot, roots), directions, allow_incomplete=True
+    )
+
+    assert summary["observed_terminal_outcomes"] == 0
+    assert summary["completed_cells"] == 0
+    assert len(summary["cells"]) == 40
+    assert len(inventory["cells"]) == 40
+    assert all(row["status"] == "missing" for row in summary["cells"])
+    assert all(row["allocated_gpu_hours"] == 0.0 for row in summary["cells"])
+    assert all(
+        row["retained_attempt_gpu_hours"] == 0.0 for row in summary["cells"]
+    )
 
 
 def test_dynamic_official_cell_ignores_v21_diagnostic_resume(tmp_path) -> None:

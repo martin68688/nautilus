@@ -122,6 +122,21 @@ def cumulative_value(row: Mapping[str, Any], cumulative: str, local: str) -> Any
     return value if value is not None else row.get(local)
 
 
+def sum_attempt_value(attempts: list[dict[str, Any]], field: str) -> float:
+    total = 0.0
+    for row in attempts:
+        value = row.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise ValueError(f"Attempt {field} is not numeric: {row.get('_measurement_path')}")
+        value = float(value)
+        if not math.isfinite(value) or value < 0.0:
+            raise ValueError(f"Attempt {field} is invalid: {row.get('_measurement_path')}")
+        total += value
+    return total
+
+
 def normalized_delta(score: float, baseline: float, direction: str) -> float:
     raw = score - baseline if direction == "maximize" else baseline - score
     return raw / max(abs(baseline), 1e-12)
@@ -163,6 +178,12 @@ def build_summary(
     for cell in cells:
         attempts = load_cell_attempts(cell)
         outcome = select_outcome(attempts)
+        retained_attempt_agent_wall_seconds = sum_attempt_value(
+            attempts, "agent_wall_seconds"
+        )
+        retained_attempt_gpu_hours = sum_attempt_value(
+            attempts, "allocated_gpu_hours"
+        )
         inventory.append(
             {
                 **{key: value for key, value in cell.items() if key != "condition_root"},
@@ -173,6 +194,8 @@ def build_summary(
                         "status": row.get("status"),
                         "failure_class": row.get("failure_class"),
                         "completed": row.get("completed") is True,
+                        "agent_wall_seconds": row.get("agent_wall_seconds"),
+                        "allocated_gpu_hours": row.get("allocated_gpu_hours"),
                         "measurement_hash": row.get("measurement_hash"),
                         "measurement_path": row.get("_measurement_path"),
                     }
@@ -191,6 +214,22 @@ def build_summary(
                     "failure_class": "missing",
                     "terminal_score": None,
                     "attempt": None,
+                    "attempt_count": 0,
+                    "failed_attempt_count": 0,
+                    "infrastructure_attempt_count": 0,
+                    "time_to_first_valid_seconds": None,
+                    "agent_wall_seconds": 0.0,
+                    "allocated_gpu_hours": 0.0,
+                    "retained_attempt_agent_wall_seconds": 0.0,
+                    "retained_attempt_gpu_hours": 0.0,
+                    "retry_overhead_agent_wall_seconds": 0.0,
+                    "retry_overhead_gpu_hours": 0.0,
+                    "llm_token_usage": None,
+                    "llm_cost_usd": None,
+                    "selected_candidate_id": None,
+                    "journal_path": None,
+                    "terminal_report_sha256": None,
+                    "measurement_path": None,
                 }
             )
             continue
@@ -202,6 +241,14 @@ def build_summary(
             or not math.isfinite(float(score))
         ):
             raise ValueError(f"Completed outcome has no finite score: {cell['logical_run_id']}")
+        search_lineage_agent_wall_seconds = cumulative_value(
+            outcome, "cumulative_agent_wall_seconds", "agent_wall_seconds"
+        )
+        search_lineage_gpu_hours = cumulative_value(
+            outcome,
+            "cumulative_allocated_gpu_hours",
+            "allocated_gpu_hours",
+        )
         selected.append(
             {
                 **cell,
@@ -215,13 +262,28 @@ def build_summary(
                     "cumulative_time_to_first_valid_seconds",
                     "time_to_first_valid_seconds",
                 ),
-                "agent_wall_seconds": cumulative_value(
-                    outcome, "cumulative_agent_wall_seconds", "agent_wall_seconds"
+                "agent_wall_seconds": search_lineage_agent_wall_seconds,
+                "allocated_gpu_hours": search_lineage_gpu_hours,
+                "attempt_count": len(attempts),
+                "failed_attempt_count": sum(
+                    row.get("completed") is not True for row in attempts
                 ),
-                "allocated_gpu_hours": cumulative_value(
-                    outcome,
-                    "cumulative_allocated_gpu_hours",
-                    "allocated_gpu_hours",
+                "infrastructure_attempt_count": sum(
+                    row.get("failure_class") == "infrastructure" for row in attempts
+                ),
+                "retained_attempt_agent_wall_seconds": (
+                    retained_attempt_agent_wall_seconds
+                ),
+                "retained_attempt_gpu_hours": retained_attempt_gpu_hours,
+                "retry_overhead_agent_wall_seconds": max(
+                    0.0,
+                    retained_attempt_agent_wall_seconds
+                    - float(search_lineage_agent_wall_seconds or 0.0),
+                ),
+                "retry_overhead_gpu_hours": max(
+                    0.0,
+                    retained_attempt_gpu_hours
+                    - float(search_lineage_gpu_hours or 0.0),
                 ),
                 "llm_token_usage": outcome.get("llm_token_usage"),
                 "llm_cost_usd": outcome.get("llm_cost_usd"),
@@ -290,6 +352,18 @@ def build_summary(
                 "total_agent_wall_seconds": sum(
                     float(row["agent_wall_seconds"] or 0.0) for row in rows
                 ),
+                "total_retained_attempt_gpu_hours": sum(
+                    float(row["retained_attempt_gpu_hours"] or 0.0)
+                    for row in rows
+                ),
+                "total_retained_attempt_agent_wall_seconds": sum(
+                    float(row["retained_attempt_agent_wall_seconds"] or 0.0)
+                    for row in rows
+                ),
+                "total_retry_overhead_gpu_hours": sum(
+                    float(row["retry_overhead_gpu_hours"] or 0.0)
+                    for row in rows
+                ),
             }
         )
     summary = {
@@ -336,6 +410,9 @@ def write_outputs(root: Path, summary: Mapping[str, Any], inventory: Mapping[str
         "normalized_delta_vs_no_memory", "negative_transfer", "task_rank",
         "time_to_first_valid_seconds", "agent_wall_seconds",
         "allocated_gpu_hours", "llm_token_usage", "llm_cost_usd",
+        "attempt_count", "failed_attempt_count", "infrastructure_attempt_count",
+        "retained_attempt_agent_wall_seconds", "retained_attempt_gpu_hours",
+        "retry_overhead_agent_wall_seconds", "retry_overhead_gpu_hours",
     ]
     with (root / "terminal_cells.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
