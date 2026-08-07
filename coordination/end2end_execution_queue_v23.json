@@ -1,6 +1,6 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-07T04:09:35Z",
+  "updated_at": "2026-08-07T04:13:01Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
@@ -117,6 +117,7 @@
     "normal_creating_or_pending_is_not_deleted": true,
     "fresh_unstarted_condition_must_not_use_resume": true,
     "exact_workload_preflight_required": true,
+    "local_submission_validator": "experiments/end2end_memory_systems_20260804/analysis_v23/validate_queue_submission.py",
     "submit_task_indexed_job_only_when_no_other_gpu_workload_is_active": true,
     "preserve_all_attempts_and_infrastructure_failures": true,
     "only_infrastructure_failure_may_retry": true,

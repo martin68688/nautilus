@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 from datetime import datetime
 from pathlib import Path
@@ -11,6 +12,15 @@ import yaml
 REPO = Path(__file__).resolve().parents[1]
 QUEUE = REPO / "coordination" / "end2end_execution_queue_v23.json"
 EXPERIMENT = REPO / "experiments" / "end2end_memory_systems_20260804"
+SUBMISSION_VALIDATOR_PATH = (
+    EXPERIMENT / "analysis_v23" / "validate_queue_submission.py"
+)
+SUBMISSION_SPEC = importlib.util.spec_from_file_location(
+    "validate_queue_submission", SUBMISSION_VALIDATOR_PATH
+)
+SUBMISSION_VALIDATOR = importlib.util.module_from_spec(SUBMISSION_SPEC)
+assert SUBMISSION_SPEC.loader is not None
+SUBMISSION_SPEC.loader.exec_module(SUBMISSION_VALIDATOR)
 CANCELLATION = (
     EXPERIMENT
     / "infrastructure_attempts"
@@ -78,6 +88,9 @@ def test_leaf_execution_queue_is_exactly_bound_to_frozen_resume_manifest() -> No
         "fresh_unstarted_condition_must_not_use_resume"
     ] is True
     assert queue["submission_rules"]["exact_workload_preflight_required"] is True
+    assert REPO / queue["submission_rules"][
+        "local_submission_validator"
+    ] == SUBMISSION_VALIDATOR_PATH
     assert queue["submission_rules"]["seed_1_is_exploratory_only"] is True
     assert queue["submission_rules"][
         "never_retry_after_six_hour_search_budget_exhaustion"
@@ -246,3 +259,17 @@ def test_v24_resume_attempts_are_retained_but_never_resubmitted_or_scored() -> N
         assert retained[workload]["status"] == "retained_fairness_stop"
         assert retained[workload]["formal_result_eligible"] is False
         assert retained[workload]["measurement_hash"] == expected["measurement_hash"]
+
+
+def test_pending_fresh_jobs_pass_lightweight_submission_validation() -> None:
+    queue = _read(QUEUE)
+    workloads = [
+        *(row["workload"] for row in queue["leaf_pending_priority"]),
+        *(row["workload"] for row in queue["task_jobs_after_leaf"]),
+    ]
+    assert len(workloads) == 4
+    for workload in workloads:
+        report = SUBMISSION_VALIDATOR.validate(QUEUE, workload)
+        assert report["workload"] == workload
+        assert report["attempt_mode"] == "fresh-only"
+        assert report["status"] == "validated"
