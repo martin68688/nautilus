@@ -94,6 +94,10 @@ the official Dynamic cell.
   adoption and runtime activation after terminal outcomes.  It reads every
   retained attempt Journal newest-first and deduplicates resumed RunForest
   nodes, so failed-attempt paths are not silently discarded;
+- `analysis_v23/audit_pilot_completion.py`: final fail-closed gate for the
+  exact 10×4 matrix, retained attempt files, terminal-score consistency,
+  journals, memory-on retrieval/Prompt evidence, No-Memory emptiness and the
+  exploratory Seed-1 interpretation boundary;
 - `build_manifests.py`: deterministic generator and non-mutating `--check`.
 
 ## Local validation
