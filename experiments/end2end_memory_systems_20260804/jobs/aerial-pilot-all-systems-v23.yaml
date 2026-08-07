@@ -16,14 +16,14 @@ metadata:
     mlevolve.ai/max-total-gpu-parallelism: "4"
     mlevolve.ai/preserve-failed-index-artifacts: "true"
     mlevolve.ai/per-index-deadline-seconds: "25200"
-    mlevolve.ai/global-deadline-seconds: "75600"
+    mlevolve.ai/global-deadline-seconds: "90000"
 spec:
   completionMode: Indexed
   completions: 10
   parallelism: 4
   backoffLimitPerIndex: 0
   maxFailedIndexes: 10
-  activeDeadlineSeconds: 75600
+  activeDeadlineSeconds: 90000
   template:
     metadata:
       labels: *labels
@@ -79,4 +79,3 @@ spec:
         persistentVolumeClaim: {claimName: haoming-storage}
       - name: shm
         emptyDir: {medium: Memory, sizeLimit: 16Gi}
-
