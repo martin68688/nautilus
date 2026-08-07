@@ -1,6 +1,6 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-07T03:45:35Z",
+  "updated_at": "2026-08-07T04:00:01Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
@@ -109,6 +109,8 @@
     "preserve_all_attempts_and_infrastructure_failures": true,
     "only_infrastructure_failure_may_retry": true,
     "infrastructure_retry_is_allowed_only_before_search_budget_exhaustion": true,
+    "infrastructure_retry_requires_fairness_runner_release": true,
+    "fairness_runner_sha256": "0731ca54733e78eadc1d7eead725d776d8279c4deb416a821dc401fa4e4d36f9",
     "never_retry_after_six_hour_search_budget_exhaustion": true,
     "budget_exhausted_partial_is_a_terminal_experimental_outcome": true,
     "operator_cancelled_resume_attempt_is_never_formal_result": true,

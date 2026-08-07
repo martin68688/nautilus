@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -77,6 +78,13 @@ def test_leaf_execution_queue_is_exactly_bound_to_frozen_resume_manifest() -> No
     assert queue["submission_rules"][
         "infrastructure_retry_is_allowed_only_before_search_budget_exhaustion"
     ] is True
+    assert queue["submission_rules"][
+        "infrastructure_retry_requires_fairness_runner_release"
+    ] is True
+    runner = EXPERIMENT / "run_assignment.py"
+    assert hashlib.sha256(runner.read_bytes()).hexdigest() == queue[
+        "submission_rules"
+    ]["fairness_runner_sha256"]
     assert queue["submission_rules"][
         "budget_exhausted_partial_is_a_terminal_experimental_outcome"
     ] is True
