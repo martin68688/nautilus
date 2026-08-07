@@ -1,16 +1,16 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-07T04:13:01Z",
+  "updated_at": "2026-08-07T04:19:41Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
   "monitor_interval_minutes": 30,
-  "last_cluster_observation_at": "2026-08-07T03:45:35Z",
+  "last_cluster_observation_at": "2026-08-07T04:19:41Z",
   "active_at_last_observation": [
-    "mlevolve-e2e-leaf-gome-pilot-v23",
     "mlevolve-e2e-leaf-static-pilot-v23",
     "mlevolve-e2e-leaf-rcr-pilot-v23",
-    "mlevolve-e2e-leaf-runforest-pilot-v23"
+    "mlevolve-e2e-leaf-runforest-pilot-v23",
+    "mlevolve-e2e-leaf-macla-pilot-v23"
   ],
   "retained_terminal_at_last_observation": [
     {
@@ -58,6 +58,20 @@
       "status": "retained_fairness_stop",
       "formal_result_eligible": false,
       "measurement_hash": "8768918b3a519d5f181eed612affc752b8d5db3bf698674006fd2d2b5d299aa9"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-gome-pilot-v23",
+      "failure_class": "agent",
+      "status": "retained_agent_partial",
+      "formal_result_eligible": true,
+      "completed_steps": 52,
+      "total_steps": 80,
+      "agent_wall_seconds": 20713.159796197,
+      "allocated_gpu_hours": 5.753655498943611,
+      "best_internal_metric": 0.007668362295007117,
+      "measurement_hash": "d6774ffdd0c93c429d2b7731323abd92a89570bfd60a3cd3b0544d745b15655f",
+      "run_outcome_hash": "921e1eefd0749b809fe530dcff2741870de608eecf264392659bd53913524380",
+      "retry_allowed": false
     }
   ],
   "leaf_submitted_in_priority_order": [
@@ -72,16 +86,16 @@
       "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-runforest-v23.yaml",
       "kind": "fresh_condition",
       "submitted_at": "2026-08-07T03:45:03Z"
-    }
-  ],
-  "leaf_pending_priority": [
+    },
     {
       "workload": "mlevolve-e2e-leaf-macla-pilot-v23",
       "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-macla-v23.yaml",
       "manifest_sha256": "5e3efcf1ab03e102a03916c53df4fe6600663b65f6aca347cf8bdccfe46ac35c",
-      "kind": "fresh_condition"
+      "kind": "fresh_condition",
+      "submitted_at": "2026-08-07T04:18:52Z"
     }
   ],
+  "leaf_pending_priority": [],
   "task_jobs_after_leaf": [
     {
       "workload": "mlevolve-e2e-aerial-pilot-v23",
@@ -131,5 +145,5 @@
     "adapter_recovery_must_preserve_intermediate_attempts": true,
     "seed_1_is_exploratory_only": true
   },
-  "next_monitor_not_before": "2026-08-07T04:16:00Z"
+  "next_monitor_not_before": "2026-08-07T04:49:41Z"
 }

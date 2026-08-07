@@ -267,7 +267,11 @@ def test_pending_fresh_jobs_pass_lightweight_submission_validation() -> None:
         *(row["workload"] for row in queue["leaf_pending_priority"]),
         *(row["workload"] for row in queue["task_jobs_after_leaf"]),
     ]
-    assert len(workloads) == 4
+    assert workloads == [
+        "mlevolve-e2e-aerial-pilot-v23",
+        "mlevolve-e2e-denoising-pilot-v23",
+        "mlevolve-e2e-taxi-pilot-v23",
+    ]
     for workload in workloads:
         report = SUBMISSION_VALIDATOR.validate(QUEUE, workload)
         assert report["workload"] == workload
