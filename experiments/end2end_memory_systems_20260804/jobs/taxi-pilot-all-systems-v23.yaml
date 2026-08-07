@@ -46,7 +46,6 @@ spec:
         - /workspace/experiment-end2end-memory-agent-v23/runs
         - --task
         - new-york-city-taxi-fare-prediction
-        - --resume
         envFrom:
         - secretRef: {name: prevalence-audit-deepseek-r1}
         env:

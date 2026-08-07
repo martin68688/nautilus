@@ -1,6 +1,6 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-07T04:03:11Z",
+  "updated_at": "2026-08-07T04:05:04Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
@@ -110,6 +110,7 @@
     "never_stop_active_pending_or_running": true,
     "explicit_user_cancellation_is_only_stop_exception": true,
     "normal_creating_or_pending_is_not_deleted": true,
+    "fresh_unstarted_condition_must_not_use_resume": true,
     "exact_workload_preflight_required": true,
     "submit_task_indexed_job_only_when_no_other_gpu_workload_is_active": true,
     "preserve_all_attempts_and_infrastructure_failures": true,

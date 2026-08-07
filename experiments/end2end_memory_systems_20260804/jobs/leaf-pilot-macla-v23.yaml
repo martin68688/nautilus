@@ -40,7 +40,6 @@ spec:
         - "19"
         - --output-root
         - /workspace/experiment-end2end-memory-agent-v21/runs
-        - --resume
         envFrom:
         - secretRef: {name: prevalence-audit-deepseek-r1}
         env:
@@ -68,4 +67,3 @@ spec:
         persistentVolumeClaim: {claimName: haoming-storage}
       - name: shm
         emptyDir: {medium: Memory, sizeLimit: 16Gi}
-

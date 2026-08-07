@@ -70,6 +70,9 @@ def test_leaf_execution_queue_is_exactly_bound_to_frozen_resume_manifest() -> No
         "explicit_user_cancellation_is_only_stop_exception"
     ] is True
     assert queue["submission_rules"]["normal_creating_or_pending_is_not_deleted"] is True
+    assert queue["submission_rules"][
+        "fresh_unstarted_condition_must_not_use_resume"
+    ] is True
     assert queue["submission_rules"]["exact_workload_preflight_required"] is True
     assert queue["submission_rules"]["seed_1_is_exploratory_only"] is True
     assert queue["submission_rules"][
@@ -115,7 +118,12 @@ def test_leaf_execution_queue_is_exactly_bound_to_frozen_resume_manifest() -> No
         assert args[args.index("--output-root") + 1] == (
             "/workspace/experiment-end2end-memory-agent-v21/runs"
         )
-        assert args[-1] == "--resume"
+        if workload == "mlevolve-e2e-leaf-macla-pilot-v23":
+            assert "--resume" not in args
+        else:
+            # These two jobs were already submitted before the fresh-condition
+            # fail-closed rule was frozen; both started from absent roots.
+            assert args[-1] == "--resume"
         assert "--resume-source-attempt" not in args
         manifest_row = frozen["runs"][index]
         assert manifest_row["task_id"] == "leaf-classification"
@@ -154,7 +162,7 @@ def test_post_leaf_task_jobs_are_four_way_indexed_a100_blocks() -> None:
         assert job["metadata"]["annotations"][
             "mlevolve.ai/global-deadline-seconds"
         ] == "90000"
-        assert args[-1] == "--resume"
+        assert "--resume" not in args
         task_id = job["metadata"]["labels"]["task"]
         observed.append(task_id)
     assert observed == expected_tasks
