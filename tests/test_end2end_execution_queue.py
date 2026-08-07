@@ -143,7 +143,11 @@ def test_post_leaf_task_jobs_are_four_way_indexed_a100_blocks() -> None:
         assert job["spec"]["completions"] == row["completions"] == 10
         assert job["spec"]["parallelism"] == row["parallelism"] == 4
         assert job["spec"]["backoffLimitPerIndex"] == 0
-        assert job["spec"]["activeDeadlineSeconds"] == 90000
+        assert row["per_condition_search_budget_seconds"] == 21600
+        assert row["global_job_deadline_seconds"] == 90000
+        assert job["spec"]["activeDeadlineSeconds"] == row[
+            "global_job_deadline_seconds"
+        ]
         assert job["metadata"]["annotations"][
             "mlevolve.ai/per-index-deadline-seconds"
         ] == "25200"
