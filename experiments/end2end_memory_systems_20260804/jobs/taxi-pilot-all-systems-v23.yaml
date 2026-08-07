@@ -11,7 +11,7 @@ metadata:
     ecepxie.nrp/owner: haoming
     app.kubernetes.io/managed-by: codex-nrp-training
   annotations:
-    mlevolve.ai/generated-not-submitted: "true"
+    mlevolve.ai/manifest-state: frozen-ready
     mlevolve.ai/attempt-mode: fresh-only
     mlevolve.ai/gpu-contract: nvidia.com/a100=1
     mlevolve.ai/max-total-gpu-parallelism: "4"

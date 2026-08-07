@@ -180,6 +180,12 @@ def test_post_leaf_task_jobs_are_four_way_indexed_a100_blocks() -> None:
         assert job["metadata"]["annotations"][
             "mlevolve.ai/attempt-mode"
         ] == "fresh-only"
+        assert job["metadata"]["annotations"][
+            "mlevolve.ai/manifest-state"
+        ] == "frozen-ready"
+        assert "mlevolve.ai/generated-not-submitted" not in job["metadata"][
+            "annotations"
+        ]
         task_id = job["metadata"]["labels"]["task"]
         observed.append(task_id)
     assert observed == expected_tasks

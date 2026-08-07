@@ -1,6 +1,6 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-07T04:08:00Z",
+  "updated_at": "2026-08-07T04:09:35Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
@@ -86,7 +86,7 @@
     {
       "workload": "mlevolve-e2e-aerial-pilot-v23",
       "manifest": "experiments/end2end_memory_systems_20260804/jobs/aerial-pilot-all-systems-v23.yaml",
-      "manifest_sha256": "3e69df0a5894fddd889092ebb3417c8b3e88233c85b2a9569c33240693ffef47",
+      "manifest_sha256": "c010e22594df2e164502289dc9bc6c6c963a8a9015c4c545cb550163b7402e73",
       "completions": 10,
       "parallelism": 4,
       "per_condition_search_budget_seconds": 21600,
@@ -95,7 +95,7 @@
     {
       "workload": "mlevolve-e2e-denoising-pilot-v23",
       "manifest": "experiments/end2end_memory_systems_20260804/jobs/denoising-pilot-all-systems-v23.yaml",
-      "manifest_sha256": "06d255881c22e78e71dcce2ef63a07928b37245168824685501286829ae69de7",
+      "manifest_sha256": "73676c1bf8d19ae0fee2018c010d489ba14c47be7a3c87f3e5a1d467a5ba971e",
       "completions": 10,
       "parallelism": 4,
       "per_condition_search_budget_seconds": 21600,
@@ -104,7 +104,7 @@
     {
       "workload": "mlevolve-e2e-taxi-pilot-v23",
       "manifest": "experiments/end2end_memory_systems_20260804/jobs/taxi-pilot-all-systems-v23.yaml",
-      "manifest_sha256": "7f6c0e0b0a9b1219334a5b7539e683641b766a024a933852f3c8b3889c2d6ab7",
+      "manifest_sha256": "e8977e21e4c57aa2eeaf8b74d726936a7e187c78ae3f6a0e0b835a8b860aa24e",
       "completions": 10,
       "parallelism": 4,
       "per_condition_search_budget_seconds": 21600,
