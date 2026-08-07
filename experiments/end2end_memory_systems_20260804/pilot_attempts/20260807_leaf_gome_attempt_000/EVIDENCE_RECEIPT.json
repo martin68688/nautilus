@@ -1,0 +1,25 @@
+{
+  "schema": "mlevolve_end2end_retained_attempt_evidence_v1",
+  "archived_at": "2026-08-07T04:22:35Z",
+  "workload": "mlevolve-e2e-leaf-gome-pilot-v23",
+  "pod": "mlevolve-e2e-leaf-gome-pilot-v23-vz9pv",
+  "controller_uid": "5c95e12a-c0a2-4569-bab6-2e11b8fe7374",
+  "attempt": 0,
+  "classification": "agent_budget_partial_no_retry",
+  "formal_result_eligible": true,
+  "terminal_score_available": false,
+  "best_internal_metric": 0.007668362295007117,
+  "pvc_full_evidence_retained": true,
+  "pvc_evidence": [
+    "journal.json",
+    "RUN_OUTCOME.json",
+    "MEASUREMENT.json",
+    "workspace candidate source",
+    "submission artifacts",
+    "runtime logs"
+  ],
+  "local_evidence": [
+    "MEASUREMENT.json",
+    "RUN_OUTCOME.json"
+  ]
+}

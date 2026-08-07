@@ -1,0 +1,15 @@
+{
+  "active_candidate_ids": [],
+  "certified_solution_available": true,
+  "completed_steps": 52,
+  "completion_ratio": 0.65,
+  "interrupted": true,
+  "journal_checkpoint_ref": "/workspace/experiment-end2end-memory-agent-v21/runs/e2e-pilot-agentic-three-role-v21__leaf-classification__gome_style_port__seed-1/attempt-000/agent/logs/20260806_220452_e2e-pilot-agentic-three-role-v21__leaf-classification__gome_style_port__seed-1/journal.json",
+  "kubernetes_success_eligible": false,
+  "outcome_hash": "921e1eefd0749b809fe530dcff2741870de608eecf264392659bd53913524380",
+  "reason": "finalization_reserve_reached",
+  "schema": "mlevolve_run_outcome_v1",
+  "search_exhausted": false,
+  "status": "partial",
+  "total_steps": 80
+}
