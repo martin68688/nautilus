@@ -1,0 +1,61 @@
+{
+  "schema": "mlevolve_operator_cancellation_record_v1",
+  "recorded_at": "2026-08-07T03:45:35Z",
+  "reason": "User cancelled v24 resume validation and froze a no-retry policy after the common six-hour search budget is exhausted, so systems cannot receive unequal post-budget compute.",
+  "policy": {
+    "six_hour_search_budget_seconds": 21600,
+    "never_retry_after_budget_exhaustion": true,
+    "budget_exhausted_partial_is_terminal_experimental_outcome": true,
+    "preserve_cancelled_attempt_evidence": true,
+    "cancelled_attempt_is_formal_result_eligible": false
+  },
+  "cancelled_jobs": [
+    {
+      "workload": "mlevolve-e2e-leaf-dynamic-resume-v24",
+      "logical_run_id": "e2e-pilot-agentic-three-role-v21__leaf-classification__dynamic_hybrid__seed-1",
+      "attempt": 2,
+      "original_agent_wall_seconds": 8539.0130575,
+      "resume_agent_wall_seconds": 9967.874352696,
+      "cumulative_agent_wall_seconds": 18506.887410196003,
+      "cumulative_allocated_gpu_hours": 5.140802058387778,
+      "completed_steps": 51,
+      "total_steps": 80,
+      "best_internal_metric": 0.01120820146100338,
+      "measurement_hash": "527a4f85404acd709535a420dad788393f471f13ebb8cdca2e7089dde2900971",
+      "run_outcome_hash": "a623026f42e3adce9080f566d3e3d658133d30289b916d27b72f0edc607eda12",
+      "evidence_retained": [
+        "MEASUREMENT.json",
+        "journal.json",
+        "RUN_OUTCOME.json",
+        "RunForest candidate code and runtime logs"
+      ]
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-flat-resume-v24",
+      "logical_run_id": "e2e-pilot-agentic-three-role-v21__leaf-classification__flat_retrieval__seed-1",
+      "attempt": 2,
+      "original_agent_wall_seconds": 8460.62915085,
+      "resume_agent_wall_seconds": 7809.261419407,
+      "cumulative_agent_wall_seconds": 16269.890570257001,
+      "cumulative_allocated_gpu_hours": 4.519414047293612,
+      "completed_steps": 52,
+      "total_steps": 80,
+      "best_internal_metric": 0.04279451594120567,
+      "measurement_hash": "8768918b3a519d5f181eed612affc752b8d5db3bf698674006fd2d2b5d299aa9",
+      "run_outcome_hash": "2d26c695959ebc6923075048859dd77f9fad96b0e3eab78e53c4715d5e4a61b8",
+      "evidence_retained": [
+        "MEASUREMENT.json",
+        "journal.json",
+        "RUN_OUTCOME.json",
+        "RunForest candidate code and runtime logs"
+      ]
+    }
+  ],
+  "replacement_compute": {
+    "fresh_conditions_submitted": [
+      "mlevolve-e2e-leaf-rcr-pilot-v23",
+      "mlevolve-e2e-leaf-runforest-pilot-v23"
+    ],
+    "resume_attempts_restarted": false
+  }
+}

@@ -54,15 +54,27 @@ def _assert_common_one_a100_job(job: dict, workload: str) -> list[str]:
     return [str(value) for value in container["args"]]
 
 
-def test_leaf_pending_queue_is_exactly_bound_to_frozen_resume_manifest() -> None:
+def test_leaf_execution_queue_is_exactly_bound_to_frozen_resume_manifest() -> None:
     queue = _read(QUEUE)
     assert queue["gpu_resource"] == "nvidia.com/a100"
     assert queue["max_total_gpu_parallelism"] == 4
     assert queue["monitor_interval_minutes"] >= 30
     assert queue["submission_rules"]["never_stop_active_pending_or_running"] is True
+    assert queue["submission_rules"][
+        "explicit_user_cancellation_is_only_stop_exception"
+    ] is True
     assert queue["submission_rules"]["normal_creating_or_pending_is_not_deleted"] is True
     assert queue["submission_rules"]["exact_workload_preflight_required"] is True
     assert queue["submission_rules"]["seed_1_is_exploratory_only"] is True
+    assert queue["submission_rules"][
+        "never_retry_after_six_hour_search_budget_exhaustion"
+    ] is True
+    assert queue["submission_rules"][
+        "infrastructure_retry_is_allowed_only_before_search_budget_exhaustion"
+    ] is True
+    assert queue["submission_rules"][
+        "budget_exhausted_partial_is_a_terminal_experimental_outcome"
+    ] is True
 
     frozen = _read(EXPERIMENT / "manifests_resume_v23" / "pilot_manifest.json")
     expected = {
@@ -70,10 +82,12 @@ def test_leaf_pending_queue_is_exactly_bound_to_frozen_resume_manifest() -> None
         "mlevolve-e2e-leaf-runforest-pilot-v23": (18, "runforest_only"),
         "mlevolve-e2e-leaf-macla-pilot-v23": (19, "macla_style_port"),
     }
-    assert [row["workload"] for row in queue["leaf_pending_priority"]] == list(
-        expected
+    scheduled = (
+        queue.get("leaf_submitted_in_priority_order", [])
+        + queue["leaf_pending_priority"]
     )
-    for row in queue["leaf_pending_priority"]:
+    assert [row["workload"] for row in scheduled] == list(expected)
+    for row in scheduled:
         workload = row["workload"]
         index, system_id = expected[workload]
         path = REPO / row["manifest"]

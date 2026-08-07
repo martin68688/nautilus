@@ -1,15 +1,15 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-07T03:34:06Z",
+  "updated_at": "2026-08-07T03:45:35Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
   "monitor_interval_minutes": 30,
   "active_at_last_observation": [
     "mlevolve-e2e-leaf-gome-pilot-v23",
-    "mlevolve-e2e-leaf-dynamic-resume-v24",
     "mlevolve-e2e-leaf-static-pilot-v23",
-    "mlevolve-e2e-leaf-flat-resume-v24"
+    "mlevolve-e2e-leaf-rcr-pilot-v23",
+    "mlevolve-e2e-leaf-runforest-pilot-v23"
   ],
   "retained_terminal_at_last_observation": [
     {
@@ -43,19 +43,37 @@
       "failure_class": "agent",
       "status": "retained_adapter_failure",
       "preserve_for_v24_recovery": true
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-dynamic-resume-v24",
+      "failure_class": "operator_cancelled",
+      "status": "retained_fairness_stop",
+      "formal_result_eligible": false,
+      "measurement_hash": "527a4f85404acd709535a420dad788393f471f13ebb8cdca2e7089dde2900971"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-flat-resume-v24",
+      "failure_class": "operator_cancelled",
+      "status": "retained_fairness_stop",
+      "formal_result_eligible": false,
+      "measurement_hash": "8768918b3a519d5f181eed612affc752b8d5db3bf698674006fd2d2b5d299aa9"
     }
   ],
-  "leaf_pending_priority": [
+  "leaf_submitted_in_priority_order": [
     {
       "workload": "mlevolve-e2e-leaf-rcr-pilot-v23",
       "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-rcr-v23.yaml",
-      "kind": "fresh_condition"
+      "kind": "fresh_condition",
+      "submitted_at": "2026-08-07T03:44:20Z"
     },
     {
       "workload": "mlevolve-e2e-leaf-runforest-pilot-v23",
       "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-runforest-v23.yaml",
-      "kind": "fresh_condition"
-    },
+      "kind": "fresh_condition",
+      "submitted_at": "2026-08-07T03:45:03Z"
+    }
+  ],
+  "leaf_pending_priority": [
     {
       "workload": "mlevolve-e2e-leaf-macla-pilot-v23",
       "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-macla-v23.yaml",
@@ -84,13 +102,19 @@
   ],
   "submission_rules": {
     "never_stop_active_pending_or_running": true,
+    "explicit_user_cancellation_is_only_stop_exception": true,
     "normal_creating_or_pending_is_not_deleted": true,
     "exact_workload_preflight_required": true,
     "submit_task_indexed_job_only_when_no_other_gpu_workload_is_active": true,
     "preserve_all_attempts_and_infrastructure_failures": true,
     "only_infrastructure_failure_may_retry": true,
+    "infrastructure_retry_is_allowed_only_before_search_budget_exhaustion": true,
+    "never_retry_after_six_hour_search_budget_exhaustion": true,
+    "budget_exhausted_partial_is_a_terminal_experimental_outcome": true,
+    "operator_cancelled_resume_attempt_is_never_formal_result": true,
     "adapter_recovery_must_bind_original_infrastructure_attempt": true,
     "adapter_recovery_must_preserve_intermediate_attempts": true,
     "seed_1_is_exploratory_only": true
-  }
+  },
+  "next_monitor_not_before": "2026-08-07T04:16:00Z"
 }
