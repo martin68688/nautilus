@@ -12,6 +12,7 @@ metadata:
     app.kubernetes.io/managed-by: codex-nrp-training
   annotations:
     mlevolve.ai/generated-not-submitted: "true"
+    mlevolve.ai/attempt-mode: fresh-only
     mlevolve.ai/gpu-contract: nvidia.com/a100=1
     mlevolve.ai/max-total-gpu-parallelism: "4"
     mlevolve.ai/preserve-failed-index-artifacts: "true"

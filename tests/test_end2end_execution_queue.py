@@ -124,6 +124,9 @@ def test_leaf_execution_queue_is_exactly_bound_to_frozen_resume_manifest() -> No
         )
         if workload == "mlevolve-e2e-leaf-macla-pilot-v23":
             assert "--resume" not in args
+            assert job["metadata"]["annotations"][
+                "mlevolve.ai/attempt-mode"
+            ] == "fresh-only"
         else:
             # These two jobs were already submitted before the fresh-condition
             # fail-closed rule was frozen; both started from absent roots.
@@ -167,6 +170,9 @@ def test_post_leaf_task_jobs_are_four_way_indexed_a100_blocks() -> None:
             "mlevolve.ai/global-deadline-seconds"
         ] == "90000"
         assert "--resume" not in args
+        assert job["metadata"]["annotations"][
+            "mlevolve.ai/attempt-mode"
+        ] == "fresh-only"
         task_id = job["metadata"]["labels"]["task"]
         observed.append(task_id)
     assert observed == expected_tasks

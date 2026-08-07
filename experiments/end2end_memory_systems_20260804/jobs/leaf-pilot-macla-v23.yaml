@@ -12,6 +12,7 @@ metadata:
     ecepxie.nrp/owner: haoming
     app.kubernetes.io/managed-by: codex-nrp-training
   annotations:
+    mlevolve.ai/attempt-mode: fresh-only
     mlevolve.ai/gpu-contract: nvidia.com/a100=1
     mlevolve.ai/preserve-failed-attempt: "true"
     mlevolve.ai/resume-adapter-receipt: 94f564bd0a101538e7f5ccced69c009fc932888e18101a6974055aa83718e6f8
