@@ -33,6 +33,8 @@
   "dynamic_failed_adapter_measurement_hash": "30dfa7eccdba030ae295dfbcc7740230a15fdd1398a2bb3e481ca018ba6654f8",
   "dynamic_next_attempt": 2,
   "flat_source_attempt": 0,
+  "flat_failed_adapter_attempt": 1,
+  "flat_failed_adapter_measurement_hash": "343bf3f1dd2623898b2ced40d8598ec6028fa26f549ceb3404094d7efac3ee0d",
   "flat_next_attempt": 2,
   "real_journal_validation": {
     "logical_run_id": "e2e-pilot-agentic-three-role-v21__leaf-classification__dynamic_hybrid__seed-1",
@@ -42,6 +44,22 @@
     "resolved_resume_plan": [2, null]
   },
   "source_lock_verified_files": 248,
+  "online_resume_validation": {
+    "dynamic": {
+      "source_attempt": 0,
+      "completed_steps": 38,
+      "remaining_steps": 42,
+      "restored_node_count": 39,
+      "post_resume_candidate_started": true
+    },
+    "flat": {
+      "source_attempt": 0,
+      "completed_steps": 49,
+      "remaining_steps": 31,
+      "restored_node_count": 50,
+      "post_resume_candidate_started": true
+    }
+  },
   "manifest_dry_run_agent_calls": 0,
   "manifest_dry_run_filesystem_written": false,
   "source_lock_verified": true

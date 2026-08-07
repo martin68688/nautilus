@@ -1,15 +1,15 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-07T00:56:00Z",
+  "updated_at": "2026-08-07T01:32:00Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
   "monitor_interval_minutes": 30,
   "active_at_last_observation": [
-    "mlevolve-e2e-leaf-flat-resume-v23",
     "mlevolve-e2e-leaf-gome-pilot-v23",
     "mlevolve-e2e-leaf-dynamic-resume-v24",
-    "mlevolve-e2e-leaf-static-pilot-v23"
+    "mlevolve-e2e-leaf-static-pilot-v23",
+    "mlevolve-e2e-leaf-flat-resume-v24"
   ],
   "retained_terminal_at_last_observation": [
     {
@@ -37,17 +37,15 @@
       "workload": "mlevolve-e2e-leaf-dynamic-pilot-v22",
       "failure_class": "agent",
       "status": "retained_agent_partial"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-flat-resume-v23",
+      "failure_class": "agent",
+      "status": "retained_adapter_failure",
+      "preserve_for_v24_recovery": true
     }
   ],
   "leaf_pending_priority": [
-    {
-      "workload": "mlevolve-e2e-leaf-flat-resume-v24",
-      "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-flat-resume-v24.yaml",
-      "kind": "infrastructure_resume_after_preserved_adapter_failure",
-      "source_attempt": 0,
-      "next_attempt": 2,
-      "completed_steps_before_resume": 49
-    },
     {
       "workload": "mlevolve-e2e-leaf-rcr-pilot-v23",
       "manifest": "experiments/end2end_memory_systems_20260804/jobs/leaf-pilot-rcr-v23.yaml",
