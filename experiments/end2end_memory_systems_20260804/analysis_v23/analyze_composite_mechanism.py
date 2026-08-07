@@ -111,6 +111,24 @@ def aggregate_runs(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def scoped_outcomes(
+    terminal_summary: Mapping[str, Any],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    retained = [
+        dict(row)
+        for row in terminal_summary.get("cells") or []
+        if row.get("status") != "missing"
+    ]
+    formal = []
+    for row in retained:
+        scoped = dict(row)
+        formal_paths = list(row.get("formal_journal_paths") or [])
+        scoped["retained_journal_paths"] = formal_paths
+        scoped["journal_path"] = formal_paths[-1] if formal_paths else None
+        formal.append(scoped)
+    return formal, retained
+
+
 def build_report(
     terminal_summary: Mapping[str, Any],
     *,
@@ -123,14 +141,16 @@ def build_report(
         raise ValueError(
             f"Mechanism analysis requires 40 terminal outcomes; observed={observed}"
         )
-    outcomes = [
-        dict(row)
-        for row in terminal_summary.get("cells") or []
-        if row.get("status") != "missing"
-    ]
+    outcomes, retained_outcomes = scoped_outcomes(terminal_summary)
     mechanism = base_analysis.mechanism_summary(outcomes, manifests=manifests)
     rows = list(mechanism["runs"])
     for row in rows:
+        row.update(_rates(row))
+    retained_mechanism = base_analysis.mechanism_summary(
+        retained_outcomes, manifests=manifests
+    )
+    retained_rows = list(retained_mechanism["runs"])
+    for row in retained_rows:
         row.update(_rates(row))
     report = {
         **mechanism,
@@ -168,6 +188,11 @@ def build_report(
             ),
         },
         "aggregate": aggregate_runs(rows),
+        "retained_operational_analysis": {
+            "scope": "all retained attempts including failed, diagnostic, and cancelled",
+            "runs": retained_rows,
+            "aggregate": aggregate_runs(retained_rows),
+        },
         "summary_hash": "",
     }
     report["definitions"].update(
@@ -178,6 +203,14 @@ def build_report(
             ),
             "missing_probe_disposition": (
                 "unobserved; never interpreted as zero activation"
+            ),
+            "formal_mechanism_scope": (
+                "routing, suppression, adoption, and activation from formal-result-eligible "
+                "attempts only"
+            ),
+            "retained_operational_scope": (
+                "separate diagnostics over every retained failed, adapter, retry, and "
+                "operator-cancelled attempt"
             ),
         }
     )

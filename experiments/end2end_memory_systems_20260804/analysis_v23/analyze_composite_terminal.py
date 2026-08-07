@@ -20,6 +20,12 @@ DEFAULT_ROOTS = {
     "v23": Path("/workspace/experiment-end2end-memory-agent-v23/runs"),
 }
 LEAF_V22_SYSTEMS = {"sop_only", "dynamic_hybrid"}
+# Flat attempt-001 was a resume-adapter diagnostic failure and attempt-002 was
+# explicitly cancelled for fairness.  They remain in the retained operational
+# inventory and cost totals, but neither may replace the original formal cell.
+FORMAL_ATTEMPT_EXCLUSIONS = {
+    ("leaf-classification", "flat_retrieval", "v21"): {1, 2},
+}
 
 
 def canonical_bytes(value: object) -> bytes:
@@ -117,6 +123,16 @@ def select_outcome(attempts: list[dict[str, Any]]) -> dict[str, Any] | None:
     return completed[0] if completed else (attempts[-1] if attempts else None)
 
 
+def formal_attempts(
+    cell: Mapping[str, Any], attempts: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    excluded = FORMAL_ATTEMPT_EXCLUSIONS.get(
+        (str(cell["task_id"]), str(cell["system_id"]), str(cell["release"])),
+        set(),
+    )
+    return [row for row in attempts if row.get("attempt") not in excluded]
+
+
 def cumulative_value(row: Mapping[str, Any], cumulative: str, local: str) -> Any:
     value = row.get(cumulative)
     return value if value is not None else row.get(local)
@@ -177,7 +193,8 @@ def build_summary(
     inventory = []
     for cell in cells:
         attempts = load_cell_attempts(cell)
-        outcome = select_outcome(attempts)
+        eligible_attempts = formal_attempts(cell, attempts)
+        outcome = select_outcome(eligible_attempts)
         retained_attempt_agent_wall_seconds = sum_attempt_value(
             attempts, "agent_wall_seconds"
         )
@@ -199,6 +216,7 @@ def build_summary(
                         "journal_path": row.get("journal_path"),
                         "measurement_hash": row.get("measurement_hash"),
                         "measurement_path": row.get("_measurement_path"),
+                        "formal_result_eligible": row in eligible_attempts,
                     }
                     for row in attempts
                 ],
@@ -216,6 +234,8 @@ def build_summary(
                     "terminal_score": None,
                     "attempt": None,
                     "attempt_count": 0,
+                    "formal_attempt_count": 0,
+                    "excluded_attempt_count": 0,
                     "failed_attempt_count": 0,
                     "infrastructure_attempt_count": 0,
                     "time_to_first_valid_seconds": None,
@@ -229,6 +249,7 @@ def build_summary(
                     "llm_cost_usd": None,
                     "selected_candidate_id": None,
                     "journal_path": None,
+                    "formal_journal_paths": [],
                     "retained_journal_paths": [],
                     "terminal_report_sha256": None,
                     "measurement_path": None,
@@ -267,6 +288,8 @@ def build_summary(
                 "agent_wall_seconds": search_lineage_agent_wall_seconds,
                 "allocated_gpu_hours": search_lineage_gpu_hours,
                 "attempt_count": len(attempts),
+                "formal_attempt_count": len(eligible_attempts),
+                "excluded_attempt_count": len(attempts) - len(eligible_attempts),
                 "failed_attempt_count": sum(
                     row.get("completed") is not True for row in attempts
                 ),
@@ -291,6 +314,13 @@ def build_summary(
                 "llm_cost_usd": outcome.get("llm_cost_usd"),
                 "selected_candidate_id": outcome.get("selected_candidate_id"),
                 "journal_path": outcome.get("journal_path"),
+                "formal_journal_paths": list(
+                    dict.fromkeys(
+                        str(row.get("journal_path") or "")
+                        for row in eligible_attempts
+                        if str(row.get("journal_path") or "")
+                    )
+                ),
                 "retained_journal_paths": list(
                     dict.fromkeys(
                         str(row.get("journal_path") or "")

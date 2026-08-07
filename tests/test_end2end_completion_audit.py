@@ -56,6 +56,7 @@ def _fixtures(tmp_path: Path) -> tuple[dict, dict, dict]:
                 "retry_overhead_agent_wall_seconds": 0.0,
                 "retry_overhead_gpu_hours": 0.0,
                 "journal_path": str(journal),
+                "formal_journal_paths": [str(journal)],
                 "retained_journal_paths": [str(journal)],
             }
         )
@@ -66,6 +67,7 @@ def _fixtures(tmp_path: Path) -> tuple[dict, dict, dict]:
                     {
                         "attempt": 0,
                         "measurement_path": str(measurement_path),
+                        "formal_result_eligible": True,
                     }
                 ],
             }
@@ -109,6 +111,9 @@ def _fixtures(tmp_path: Path) -> tuple[dict, dict, dict]:
         "terminal_summary_hash": terminal_summary["summary_hash"],
         "observed_terminal_outcomes": 40,
         "runs": mechanisms,
+        "retained_operational_analysis": {
+            "runs": mechanisms,
+        },
         "summary_hash": "",
     }
     mechanism["summary_hash"] = MODULE.terminal.payload_hash(

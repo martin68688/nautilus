@@ -94,7 +94,16 @@ def test_composite_plan_is_40_cells_and_uses_cumulative_resume_metrics(tmp_path)
     for index, cell in enumerate(cells):
         score = 1.0 + index / 100.0
         _write_measurement(
-            roots[cell["release"]], cell, score, cumulative=100.0 + index
+            roots[cell["release"]],
+            cell,
+            score,
+            cumulative=100.0 + index,
+            attempt_number=(
+                0
+                if cell["task_id"] == "leaf-classification"
+                and cell["system_id"] == "flat_retrieval"
+                else 1
+            ),
         )
     tasks = MODULE.read_object(MODULE.V23_MANIFESTS / "tasks.json")
     directions = {row["task_id"]: row["direction"] for row in tasks["tasks"]}
@@ -114,7 +123,7 @@ def test_composite_plan_is_40_cells_and_uses_cumulative_resume_metrics(tmp_path)
     assert summary["summary_hash"] == MODULE.payload_hash(summary, "summary_hash")
 
 
-def test_flat_resume_selects_completed_attempt_and_retains_failed_attempts(tmp_path) -> None:
+def test_flat_cancelled_resume_is_costed_but_cannot_replace_formal_attempt(tmp_path) -> None:
     pilot = MODULE.read_object(MODULE.V23_MANIFESTS / "pilot_manifest.json")
     roots = {name: tmp_path / name for name in ("v21", "v22", "v23")}
     flat = next(
@@ -166,10 +175,12 @@ def test_flat_resume_selects_completed_attempt_and_retains_failed_attempts(tmp_p
 
     attempts = MODULE.load_cell_attempts(flat)
     assert [row["attempt"] for row in attempts] == [0, 1, 2]
-    selected = MODULE.select_outcome(attempts)
+    eligible = MODULE.formal_attempts(flat, attempts)
+    assert [row["attempt"] for row in eligible] == [0]
+    selected = MODULE.select_outcome(eligible)
     assert selected is not None
-    assert selected["attempt"] == 2
-    assert selected["terminal_score"] == 0.031
+    assert selected["attempt"] == 0
+    assert selected["terminal_score"] is None
 
     tasks = MODULE.read_object(MODULE.V23_MANIFESTS / "tasks.json")
     directions = {row["task_id"]: row["direction"] for row in tasks["tasks"]}
@@ -183,13 +194,18 @@ def test_flat_resume_selects_completed_attempt_and_retains_failed_attempts(tmp_p
         and row["system_id"] == "flat_retrieval"
     )
     assert flat_cell["attempt_count"] == 3
+    assert flat_cell["formal_attempt_count"] == 1
+    assert flat_cell["excluded_attempt_count"] == 2
     assert flat_cell["failed_attempt_count"] == 2
-    assert flat_cell["agent_wall_seconds"] == 220.0
+    assert flat_cell["completed"] is False
+    assert flat_cell["terminal_score"] is None
+    assert flat_cell["formal_journal_paths"] == []
+    assert flat_cell["agent_wall_seconds"] == 100.0
     assert flat_cell["retained_attempt_agent_wall_seconds"] == 230.0
-    assert flat_cell["retry_overhead_agent_wall_seconds"] == 10.0
-    assert flat_cell["allocated_gpu_hours"] == 2.2
+    assert flat_cell["retry_overhead_agent_wall_seconds"] == 130.0
+    assert flat_cell["allocated_gpu_hours"] == 1.0
     assert flat_cell["retained_attempt_gpu_hours"] == 2.3
-    assert abs(flat_cell["retry_overhead_gpu_hours"] - 0.1) < 1e-12
+    assert abs(flat_cell["retry_overhead_gpu_hours"] - 1.3) < 1e-12
 
 
 def test_allow_incomplete_materializes_zero_cost_missing_cells(tmp_path) -> None:
@@ -406,3 +422,34 @@ def test_mechanism_reads_all_attempt_journals_and_latest_node_wins(tmp_path) -> 
     assert "draft" not in row["by_stage"]
     assert row["by_stage"]["improve"]["routing_routes"] == 1
     assert row["by_stage"]["debug"]["routing_routes"] == 1
+
+
+def test_composite_mechanism_separates_formal_and_retained_journals() -> None:
+    terminal_summary = {
+        "cells": [
+            {
+                "logical_run_id": "run-1",
+                "task_id": "leaf-classification",
+                "system_id": "flat_retrieval",
+                "status": "retained_infrastructure_hard_interruption",
+                "journal_path": "/attempt-000/journal.json",
+                "formal_journal_paths": ["/attempt-000/journal.json"],
+                "retained_journal_paths": [
+                    "/attempt-000/journal.json",
+                    "/attempt-001/journal.json",
+                    "/attempt-002/journal.json",
+                ],
+            }
+        ]
+    }
+    formal, retained = MECHANISM.scoped_outcomes(terminal_summary)
+
+    assert formal[0]["journal_path"] == "/attempt-000/journal.json"
+    assert formal[0]["retained_journal_paths"] == [
+        "/attempt-000/journal.json"
+    ]
+    assert retained[0]["retained_journal_paths"] == [
+        "/attempt-000/journal.json",
+        "/attempt-001/journal.json",
+        "/attempt-002/journal.json",
+    ]

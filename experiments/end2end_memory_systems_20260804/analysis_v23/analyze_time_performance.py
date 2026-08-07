@@ -192,6 +192,9 @@ def build_cell_curve(
                         ),
                         "direction": direction,
                         "internal_metric_not_terminal": True,
+                        "formal_result_eligible": bool(
+                            attempt.get("formal_result_eligible", True)
+                        ),
                     }
                 )
         operational_wall_prior += local_wall
@@ -206,6 +209,7 @@ def build_cell_curve(
         )
     )
     incumbent = None
+    formal_incumbent = None
     for row in points:
         score = float(row["candidate_internal_metric"])
         if incumbent is None:
@@ -215,6 +219,14 @@ def build_cell_curve(
         else:
             incumbent = min(incumbent, score)
         row["best_internal_metric_so_far"] = incumbent
+        if row["formal_result_eligible"]:
+            if formal_incumbent is None:
+                formal_incumbent = score
+            elif direction == "maximize":
+                formal_incumbent = max(formal_incumbent, score)
+            else:
+                formal_incumbent = min(formal_incumbent, score)
+        row["best_formal_internal_metric_so_far"] = formal_incumbent
     return points
 
 
@@ -242,6 +254,9 @@ def build_report(
                 "task_id": cell["task_id"],
                 "system_id": cell["system_id"],
                 "point_count": len(points),
+                "formal_point_count": sum(
+                    row["formal_result_eligible"] is True for row in points
+                ),
                 "attempt_count": len(cell.get("attempts") or []),
             }
         )
@@ -261,8 +276,12 @@ def build_report(
                 "adapters and retries"
             ),
             "best_internal_metric_so_far": (
-                "incumbent internal development metric; not the fixed-holdout "
-                "terminal score"
+                "incumbent internal development metric across every retained "
+                "attempt; not the fixed-holdout terminal score"
+            ),
+            "best_formal_internal_metric_so_far": (
+                "incumbent internal development metric from formal-result-eligible "
+                "attempts only"
             ),
         },
         "curves": curves,
@@ -282,9 +301,10 @@ def write_outputs(root: Path, report: Mapping[str, Any]) -> None:
     fields = [
         "logical_run_id", "task_id", "system_id", "release", "attempt",
         "node_id", "step", "stage", "candidate_internal_metric",
-        "best_internal_metric_so_far", "direction", "search_active_seconds",
+        "best_internal_metric_so_far", "best_formal_internal_metric_so_far",
+        "direction", "search_active_seconds",
         "operational_active_seconds", "search_gpu_hours", "operational_gpu_hours",
-        "internal_metric_not_terminal",
+        "internal_metric_not_terminal", "formal_result_eligible",
     ]
     with (root / "time_performance_points.csv").open(
         "w", newline="", encoding="utf-8"

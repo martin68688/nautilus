@@ -29,8 +29,10 @@ def _finite_nonnegative(value: object) -> bool:
     )
 
 
-def _existing_journals(cell: Mapping[str, Any]) -> list[Path]:
-    values = cell.get("retained_journal_paths") or [cell.get("journal_path")]
+def _existing_journals(cell: Mapping[str, Any], field: str) -> list[Path]:
+    values = cell.get(field) or (
+        [cell.get("journal_path")] if field == "retained_journal_paths" else []
+    )
     return [
         Path(str(value))
         for value in values
@@ -54,12 +56,23 @@ def audit(
     mechanism_rows = [
         dict(row) for row in mechanism_summary.get("runs") or []
     ]
+    retained_mechanism_rows = [
+        dict(row)
+        for row in (
+            mechanism_summary.get("retained_operational_analysis") or {}
+        ).get("runs")
+        or []
+    ]
     cell_ids = [str(row.get("logical_run_id") or "") for row in cells]
     inventory_by_id = {
         str(row.get("logical_run_id") or ""): row for row in inventory_cells
     }
     mechanism_by_id = {
         str(row.get("logical_run_id") or ""): row for row in mechanism_rows
+    }
+    retained_mechanism_by_id = {
+        str(row.get("logical_run_id") or ""): row
+        for row in retained_mechanism_rows
     }
     condition_pairs = {
         (str(row.get("task_id") or ""), str(row.get("system_id") or ""))
@@ -88,6 +101,8 @@ def audit(
     terminal_scores_consistent = True
     cost_fields_valid = True
     all_journals_present = True
+    all_formal_journals_present = True
+    formal_journals_are_retained = True
     for cell in cells:
         completed = cell.get("completed") is True
         score = cell.get("terminal_score")
@@ -109,7 +124,13 @@ def audit(
                 "retry_overhead_gpu_hours",
             )
         )
-        all_journals_present &= bool(_existing_journals(cell))
+        retained_journals = _existing_journals(cell, "retained_journal_paths")
+        formal_journals = _existing_journals(cell, "formal_journal_paths")
+        all_journals_present &= bool(retained_journals)
+        all_formal_journals_present &= bool(formal_journals)
+        formal_journals_are_retained &= set(formal_journals).issubset(
+            retained_journals
+        )
 
     memory_on_trace_complete = True
     no_memory_is_empty = True
@@ -162,6 +183,8 @@ def audit(
         "all_attempt_measurements_exist_and_hash": attempt_files_valid,
         "cost_fields_nonnegative": cost_fields_valid,
         "all_cells_have_retained_journal": all_journals_present,
+        "all_cells_have_formal_journal": all_formal_journals_present,
+        "formal_journals_are_subset_of_retained": formal_journals_are_retained,
         "mechanism_bound_to_terminal_summary": (
             mechanism_summary.get("terminal_summary_hash")
             == terminal_summary.get("summary_hash")
@@ -170,6 +193,10 @@ def audit(
             mechanism_summary.get("observed_terminal_outcomes") == 40
             and len(mechanism_rows) == 40
             and set(mechanism_by_id) == set(cell_ids)
+        ),
+        "retained_operational_mechanism_covers_all_cells": (
+            len(retained_mechanism_rows) == 40
+            and set(retained_mechanism_by_id) == set(cell_ids)
         ),
         "memory_on_has_real_retrieval_and_prompt_trace": (
             memory_on_trace_complete

@@ -86,39 +86,48 @@ def test_curve_deduplicates_restored_nodes_and_keeps_two_time_clocks(tmp_path) -
         "is_buggy": False,
     }
     attempts = [
-        _write_attempt(
-            root,
-            logical_run_id=logical_run_id,
-            attempt=0,
-            started=1000.0,
-            local_wall=100.0,
-            cumulative_wall=100.0,
-            local_gpu=1.0,
-            cumulative_gpu=1.0,
-            nodes=[original],
-        ),
-        _write_attempt(
-            root,
-            logical_run_id=logical_run_id,
-            attempt=1,
-            started=2000.0,
-            local_wall=10.0,
-            cumulative_wall=110.0,
-            local_gpu=0.1,
-            cumulative_gpu=1.1,
-            nodes=None,
-        ),
-        _write_attempt(
-            root,
-            logical_run_id=logical_run_id,
-            attempt=2,
-            started=3000.0,
-            local_wall=100.0,
-            cumulative_wall=200.0,
-            local_gpu=1.0,
-            cumulative_gpu=2.0,
-            nodes=[original, improved],
-        ),
+        {
+            **_write_attempt(
+                root,
+                logical_run_id=logical_run_id,
+                attempt=0,
+                started=1000.0,
+                local_wall=100.0,
+                cumulative_wall=100.0,
+                local_gpu=1.0,
+                cumulative_gpu=1.0,
+                nodes=[original],
+            ),
+            "formal_result_eligible": True,
+        },
+        {
+            **_write_attempt(
+                root,
+                logical_run_id=logical_run_id,
+                attempt=1,
+                started=2000.0,
+                local_wall=10.0,
+                cumulative_wall=110.0,
+                local_gpu=0.1,
+                cumulative_gpu=1.1,
+                nodes=None,
+            ),
+            "formal_result_eligible": False,
+        },
+        {
+            **_write_attempt(
+                root,
+                logical_run_id=logical_run_id,
+                attempt=2,
+                started=3000.0,
+                local_wall=100.0,
+                cumulative_wall=200.0,
+                local_gpu=1.0,
+                cumulative_gpu=2.0,
+                nodes=[original, improved],
+            ),
+            "formal_result_eligible": False,
+        },
     ]
     cell = {
         "logical_run_id": logical_run_id,
@@ -132,6 +141,11 @@ def test_curve_deduplicates_restored_nodes_and_keeps_two_time_clocks(tmp_path) -
 
     assert [row["node_id"] for row in points] == ["node-a", "node-b"]
     assert [row["best_internal_metric_so_far"] for row in points] == [0.3, 0.2]
+    assert [row["formal_result_eligible"] for row in points] == [True, False]
+    assert [row["best_formal_internal_metric_so_far"] for row in points] == [
+        0.3,
+        0.3,
+    ]
     assert points[1]["search_active_seconds"] == 115.0
     assert points[1]["operational_active_seconds"] == 125.0
     assert points[1]["search_gpu_hours"] == 1.15
@@ -168,3 +182,4 @@ def test_real_archived_journal_can_export_internal_score_curve() -> None:
     assert points[0]["node_id"] == "d2fccc688085447c9ad84356deac9194"
     assert points[0]["candidate_internal_metric"] == 0.05326
     assert points[0]["internal_metric_not_terminal"] is True
+    assert points[0]["formal_result_eligible"] is True
