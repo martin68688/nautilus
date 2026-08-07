@@ -1,11 +1,11 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-07T08:40:02Z",
+  "updated_at": "2026-08-07T09:38:30Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
   "max_total_gpu_parallelism": 4,
   "monitor_interval_minutes": 30,
-  "last_cluster_observation_at": "2026-08-07T08:40:02Z",
+  "last_cluster_observation_at": "2026-08-07T09:38:30Z",
   "active_at_last_observation": [
     "mlevolve-e2e-leaf-static-fresh-retry-v26",
     "mlevolve-e2e-leaf-rcr-fresh-retry-v25",
@@ -227,5 +227,5 @@
     "adapter_recovery_must_preserve_intermediate_attempts": true,
     "seed_1_is_exploratory_only": true
   },
-  "next_monitor_not_before": "2026-08-07T09:10:02Z"
+  "next_monitor_not_before": "2026-08-07T10:08:30Z"
 }
