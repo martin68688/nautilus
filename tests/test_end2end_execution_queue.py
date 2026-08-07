@@ -9,6 +9,11 @@ import yaml
 REPO = Path(__file__).resolve().parents[1]
 QUEUE = REPO / "coordination" / "end2end_execution_queue_v23.json"
 EXPERIMENT = REPO / "experiments" / "end2end_memory_systems_20260804"
+CANCELLATION = (
+    EXPERIMENT
+    / "infrastructure_attempts"
+    / "20260807_v24_fairness_stop.json"
+)
 
 
 def _read(path: Path) -> dict:
@@ -134,3 +139,60 @@ def test_post_leaf_task_jobs_are_four_way_indexed_a100_blocks() -> None:
         task_id = job["metadata"]["labels"]["task"]
         observed.append(task_id)
     assert observed == expected_tasks
+
+
+def test_v24_resume_attempts_are_retained_but_never_resubmitted_or_scored() -> None:
+    queue = _read(QUEUE)
+    cancellation = _read(CANCELLATION)
+    cancelled = {
+        "mlevolve-e2e-leaf-dynamic-resume-v24": {
+            "measurement_hash": (
+                "527a4f85404acd709535a420dad788393f471f13ebb8cdca2e7089dde2900971"
+            ),
+            "completed_steps": 51,
+        },
+        "mlevolve-e2e-leaf-flat-resume-v24": {
+            "measurement_hash": (
+                "8768918b3a519d5f181eed612affc752b8d5db3bf698674006fd2d2b5d299aa9"
+            ),
+            "completed_steps": 52,
+        },
+    }
+
+    assert cancellation["policy"] == {
+        "six_hour_search_budget_seconds": 21600,
+        "never_retry_after_budget_exhaustion": True,
+        "budget_exhausted_partial_is_terminal_experimental_outcome": True,
+        "preserve_cancelled_attempt_evidence": True,
+        "cancelled_attempt_is_formal_result_eligible": False,
+    }
+    rows = {row["workload"]: row for row in cancellation["cancelled_jobs"]}
+    assert set(rows) == set(cancelled)
+    for workload, expected in cancelled.items():
+        row = rows[workload]
+        assert row["measurement_hash"] == expected["measurement_hash"]
+        assert row["completed_steps"] == expected["completed_steps"]
+        assert row["total_steps"] == 80
+        assert row["cumulative_agent_wall_seconds"] < 21600
+        assert set(row["evidence_retained"]) >= {
+            "MEASUREMENT.json",
+            "journal.json",
+            "RUN_OUTCOME.json",
+        }
+
+    queue_names = {
+        *queue["active_at_last_observation"],
+        *(row["workload"] for row in queue["leaf_submitted_in_priority_order"]),
+        *(row["workload"] for row in queue["leaf_pending_priority"]),
+    }
+    assert set(cancelled).isdisjoint(queue_names)
+    retained = {
+        row["workload"]: row
+        for row in queue["retained_terminal_at_last_observation"]
+        if row["workload"] in cancelled
+    }
+    assert set(retained) == set(cancelled)
+    for workload, expected in cancelled.items():
+        assert retained[workload]["status"] == "retained_fairness_stop"
+        assert retained[workload]["formal_result_eligible"] is False
+        assert retained[workload]["measurement_hash"] == expected["measurement_hash"]
