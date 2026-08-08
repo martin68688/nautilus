@@ -14,6 +14,16 @@ from agents.debug_agent import (  # noqa: E402
     _requires_offline_model_repair,
     _runtime_recovery_guidance,
 )
+from config import Config, _load_cfg  # noqa: E402
+
+
+V42_CONFIG = (
+    ROOT
+    / "experiments"
+    / "end2end_memory_systems_20260804"
+    / "systems_v42"
+    / "dynamic_hybrid.yaml"
+)
 
 
 def test_offline_runtime_repair_guidance_and_marker_guard() -> None:
@@ -47,3 +57,8 @@ def test_offline_runtime_repair_guidance_and_marker_guard() -> None:
     assert "forbidden" in guidance
     assert "torch.hub.load" in guidance
 
+
+def test_v42_config_declares_hermetic_runtime_policy() -> None:
+    cfg = _load_cfg(V42_CONFIG, Config)
+    assert cfg.external_skill_memory.experiment_r_offline_runtime_only is True
+    assert cfg.external_skill_memory.runtime_network_policy == "offline"

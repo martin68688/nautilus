@@ -446,6 +446,11 @@ class ExternalSkillMemoryConfig:
     experiment_r_debug_tiered_retrieval_enabled: bool = False
     experiment_r_debug_portable_runtime_enabled: bool = False
     experiment_r_debug_portable_max_candidates: int = 2
+    # Candidate execution on production clusters may be hermetic even when
+    # the development environment supports remote assets.  When enabled,
+    # Debug rejects repairs that introduce runtime network downloads.
+    experiment_r_offline_runtime_only: bool = False
+    runtime_network_policy: str = ""
     experiment_r_same_task_best_pin_stages: list[str] = field(
         default_factory=lambda: ["draft", "improve", "debug"]
     )
