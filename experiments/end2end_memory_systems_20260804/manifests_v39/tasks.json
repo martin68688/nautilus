@@ -1,0 +1,15 @@
+{
+  "exploratory_pilot": true,
+  "manifest_hash": "558a16271c67dbc59560bc9c4e98f93d77d29647110719c4838e2f98ddd9deaa",
+  "schema": "mlevolve_end2end_tasks_manifest_v1",
+  "seed": 1,
+  "task_count": 1,
+  "tasks": [
+    {
+      "direction": "minimize",
+      "display_name": "Spooky",
+      "task_id": "spooky-author-identification",
+      "terminal_metric": "log_loss"
+    }
+  ]
+}

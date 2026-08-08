@@ -1,0 +1,48 @@
+{
+  "experimental_axis": "first-batch system comparison; v38 metric reconciliation source with Dynamic plus three frozen competitor-style controllers",
+  "manifest_hash": "86f60fac34564adf48cc46d49cb38ac35385b286a48ddd01e93866f2ead2f0b8",
+  "schema": "mlevolve_end2end_systems_manifest_v1",
+  "system_count": 4,
+  "systems": [
+    {
+      "config_path": "systems_v39/runforest_only.yaml",
+      "config_sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2",
+      "description": "RunForest Top-6",
+      "kind": "internal",
+      "label": "S3",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "runforest_only"
+    },
+    {
+      "config_path": "systems_v39/dynamic_hybrid.yaml",
+      "config_sha256": "7609b985c356758c1bbc64280f0a4cfea3720bf22221b6415cb7e90506cb2d63",
+      "description": "Draft 5/1, Improve 3/3, Debug 1/5",
+      "kind": "internal",
+      "label": "S5",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "dynamic_hybrid"
+    },
+    {
+      "config_path": "systems_v39/gome_style_port.yaml",
+      "config_sha256": "451abc8087cbfc2c2b8b2a5bbaefbadf0a99d539e5fcc0b22b737e5affb0ae03",
+      "description": "Verified Success Memory cards",
+      "kind": "competitor_style_port",
+      "label": "C1",
+      "limitation": "Not the full GOME multi-trace optimizer",
+      "primary_reference": "https://arxiv.org/abs/2603.01692",
+      "system_id": "gome_style_port"
+    },
+    {
+      "config_path": "systems_v39/macla_style_port.yaml",
+      "config_sha256": "ade946a3e98de146c7c1bbcb654662e21f08bc76ee1db16bb74f9c3c0a522991",
+      "description": "Beta reliability utility",
+      "kind": "competitor_style_port",
+      "label": "C2",
+      "limitation": "No full online contrastive refinement",
+      "primary_reference": "https://arxiv.org/abs/2512.18950",
+      "system_id": "macla_style_port"
+    }
+  ]
+}

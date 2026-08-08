@@ -1,0 +1,28 @@
+{
+  "checkpoint_policy": "new immutable attempts; preserve every outcome",
+  "gpu_contract": "4 x nvidia.com/a100, one worker per GPU",
+  "indexed_workers": 4,
+  "job": "jobs/pilot-spooky-metric-reconcile-v39-job.yaml",
+  "manifest": "manifests_v39/spooky_pilot_manifest.json",
+  "manifest_sha256": "3cc7a18d459679eae5ab3dcc059ccec6e73776ac090048b262a0edeaa0e9e843",
+  "packet_hash": "7879f8032facb0fbdfd332ec57484afe3d569c407b250e67993e24b81f2c3977",
+  "release_id": "end2end-spooky-metric-reconcile-router-v39",
+  "schema": "mlevolve_end2end_spooky_v39_launch_packet_v1",
+  "source_root": "/workspace/nautilus-exp-end2end-agent-v39",
+  "spooky_memory": {
+    "best_clean_same_task_metric": 0.193,
+    "best_clean_same_task_node_id": "run::20260509_042918_spooky-author-identification::node::8c5286bb1da2400486bafdd5878e30f9",
+    "bundle_root": "/workspace/experiment-end2end-memory-agent-v39/memory-spooky-v1/spooky-author-identification",
+    "graph_sha256": "72f057236266f30359995c58de84cff71faf6e13a870d553e6987d7e8032740a",
+    "index_sha256": "1ca0b9d60810bb876963af291ca0449b6dc00f216f91c6b7f51cddf3df2472f1",
+    "positive_eligible_count": 120
+  },
+  "status": "generated_not_submitted",
+  "systems": [
+    "dynamic_hybrid",
+    "macla_style_port",
+    "runforest_only",
+    "gome_style_port"
+  ],
+  "task": "spooky-author-identification"
+}

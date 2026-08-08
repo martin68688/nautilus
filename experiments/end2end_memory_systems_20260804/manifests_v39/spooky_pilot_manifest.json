@@ -1,0 +1,113 @@
+{
+  "bindings": {
+    "budget_manifest_hash": "2be908cac1786b54ba706e03af431746e75b0d3289c01e93685a82126e1a8528",
+    "evaluators_manifest_hash": "6a84db34502022f8972c2c6d1490841af1fd31a11213d9d0194291033cce84b7",
+    "memory_bundles_manifest_hash": "2d26de7db8ca928e20f177d4b721acc2f510352d8369427058b1320788d571b5",
+    "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+    "source_lock_manifest_hash": "205be114fd8cbf56f814667cdaa9706da2d1eb464b9394fb609720a6dc80ec4e",
+    "systems_manifest_hash": "86f60fac34564adf48cc46d49cb38ac35385b286a48ddd01e93866f2ead2f0b8",
+    "tasks_manifest_hash": "558a16271c67dbc59560bc9c4e98f93d77d29647110719c4838e2f98ddd9deaa"
+  },
+  "comparison_baseline_release_id": "end2end-agent-v3",
+  "exploratory_pilot": true,
+  "formal_result_eligible": true,
+  "kind": "pilot",
+  "launch_order_randomization": "explicit first-batch order locked by v39 packet: dynamic, MACLA-style, RunForest-only, GOME-style",
+  "manifest_hash": "3cc7a18d459679eae5ab3dcc059ccec6e73776ac090048b262a0edeaa0e9e843",
+  "release_id": "end2end-spooky-metric-reconcile-router-v39",
+  "run_count": 4,
+  "runs": [
+    {
+      "bindings": {
+        "budget_manifest_hash": "2be908cac1786b54ba706e03af431746e75b0d3289c01e93685a82126e1a8528",
+        "evaluators_manifest_hash": "6a84db34502022f8972c2c6d1490841af1fd31a11213d9d0194291033cce84b7",
+        "memory_bundles_manifest_hash": "2d26de7db8ca928e20f177d4b721acc2f510352d8369427058b1320788d571b5",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "205be114fd8cbf56f814667cdaa9706da2d1eb464b9394fb609720a6dc80ec4e",
+        "systems_manifest_hash": "86f60fac34564adf48cc46d49cb38ac35385b286a48ddd01e93866f2ead2f0b8",
+        "tasks_manifest_hash": "558a16271c67dbc59560bc9c4e98f93d77d29647110719c4838e2f98ddd9deaa"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 0,
+      "logical_run_id": "e2e-pilot-spooky-metric-reconcile-router-v39__spooky-author-identification__dynamic_hybrid__seed-1",
+      "row_hash": "85e24ec064c8addab41134d3bebf966764df8cbf5e33d52ec695760d8069ac66",
+      "seed": 1,
+      "system_id": "dynamic_hybrid",
+      "task_id": "spooky-author-identification",
+      "task_launch_position": 0
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "2be908cac1786b54ba706e03af431746e75b0d3289c01e93685a82126e1a8528",
+        "evaluators_manifest_hash": "6a84db34502022f8972c2c6d1490841af1fd31a11213d9d0194291033cce84b7",
+        "memory_bundles_manifest_hash": "2d26de7db8ca928e20f177d4b721acc2f510352d8369427058b1320788d571b5",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "205be114fd8cbf56f814667cdaa9706da2d1eb464b9394fb609720a6dc80ec4e",
+        "systems_manifest_hash": "86f60fac34564adf48cc46d49cb38ac35385b286a48ddd01e93866f2ead2f0b8",
+        "tasks_manifest_hash": "558a16271c67dbc59560bc9c4e98f93d77d29647110719c4838e2f98ddd9deaa"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 1,
+      "logical_run_id": "e2e-pilot-spooky-metric-reconcile-router-v39__spooky-author-identification__macla_style_port__seed-1",
+      "row_hash": "6b3e9e7016450b8f071f182871b438787703d43096cf9da63e4bbcb934df36b4",
+      "seed": 1,
+      "system_id": "macla_style_port",
+      "task_id": "spooky-author-identification",
+      "task_launch_position": 1
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "2be908cac1786b54ba706e03af431746e75b0d3289c01e93685a82126e1a8528",
+        "evaluators_manifest_hash": "6a84db34502022f8972c2c6d1490841af1fd31a11213d9d0194291033cce84b7",
+        "memory_bundles_manifest_hash": "2d26de7db8ca928e20f177d4b721acc2f510352d8369427058b1320788d571b5",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "205be114fd8cbf56f814667cdaa9706da2d1eb464b9394fb609720a6dc80ec4e",
+        "systems_manifest_hash": "86f60fac34564adf48cc46d49cb38ac35385b286a48ddd01e93866f2ead2f0b8",
+        "tasks_manifest_hash": "558a16271c67dbc59560bc9c4e98f93d77d29647110719c4838e2f98ddd9deaa"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 2,
+      "logical_run_id": "e2e-pilot-spooky-metric-reconcile-router-v39__spooky-author-identification__runforest_only__seed-1",
+      "row_hash": "fae5ed3ec6231e8a1d6b316d627001d86ebd0a5c87ea276cdcc8972d35b24ef6",
+      "seed": 1,
+      "system_id": "runforest_only",
+      "task_id": "spooky-author-identification",
+      "task_launch_position": 2
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "2be908cac1786b54ba706e03af431746e75b0d3289c01e93685a82126e1a8528",
+        "evaluators_manifest_hash": "6a84db34502022f8972c2c6d1490841af1fd31a11213d9d0194291033cce84b7",
+        "memory_bundles_manifest_hash": "2d26de7db8ca928e20f177d4b721acc2f510352d8369427058b1320788d571b5",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "205be114fd8cbf56f814667cdaa9706da2d1eb464b9394fb609720a6dc80ec4e",
+        "systems_manifest_hash": "86f60fac34564adf48cc46d49cb38ac35385b286a48ddd01e93866f2ead2f0b8",
+        "tasks_manifest_hash": "558a16271c67dbc59560bc9c4e98f93d77d29647110719c4838e2f98ddd9deaa"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 3,
+      "logical_run_id": "e2e-pilot-spooky-metric-reconcile-router-v39__spooky-author-identification__gome_style_port__seed-1",
+      "row_hash": "e6df12157484af7f315fd41e999bef082e41bd67be825bb8f617caea3effd583",
+      "seed": 1,
+      "system_id": "gome_style_port",
+      "task_id": "spooky-author-identification",
+      "task_launch_position": 3
+    }
+  ],
+  "schema": "mlevolve_end2end_execution_manifest_v1",
+  "seed": 1,
+  "statistical_significance_claim_allowed": false,
+  "system_ids": [
+    "dynamic_hybrid",
+    "macla_style_port",
+    "runforest_only",
+    "gome_style_port"
+  ],
+  "task_ids": [
+    "spooky-author-identification"
+  ]
+}

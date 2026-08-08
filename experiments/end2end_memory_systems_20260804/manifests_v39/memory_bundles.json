@@ -1,0 +1,30 @@
+{
+  "excluded_run_ids": [],
+  "manifest_hash": "2d26de7db8ca928e20f177d4b721acc2f510352d8369427058b1320788d571b5",
+  "production_binding_path": "",
+  "production_binding_sha256": "",
+  "same_task_history_policy": "enabled for Spooky; Dynamic pins the direction-aware best clean positive-eligible record",
+  "schema": "mlevolve_end2end_memory_bundle_manifest_v1",
+  "source_graph_manifest_schema": "hyperbolic_run_forest_memory_v1",
+  "source_graph_sha256": "72f057236266f30359995c58de84cff71faf6e13a870d553e6987d7e8032740a",
+  "source_index_sha256": "1ca0b9d60810bb876963af291ca0449b6dc00f216f91c6b7f51cddf3df2472f1",
+  "task_bundles": {
+    "spooky-author-identification": {
+      "bundle_id": "end2end-spooky-direct-runforest-v1",
+      "bundle_manifest_file_sha256": "31ea3fe1faddc37acbaadd5afa985ffb75f4798ab21e2383eda14ed2960e6943",
+      "bundle_manifest_sha256": "f1001dbf0458b25e0d3f8111e395a90ceb1c15094e259d200dfde38b7a488bfc",
+      "bundle_root": "/workspace/experiment-end2end-memory-agent-v39/memory-spooky-v1/spooky-author-identification",
+      "bundle_version": "v1",
+      "current_file_sha256": "4ad626bf3430fb48d63724bd49db8a02952a28b495061db590468f371c39578d",
+      "formal_child_publication": false,
+      "graph_sha256": "72f057236266f30359995c58de84cff71faf6e13a870d553e6987d7e8032740a",
+      "index_sha256": "1ca0b9d60810bb876963af291ca0449b6dc00f216f91c6b7f51cddf3df2472f1",
+      "memory_scope": "full_reviewed_multitask_with_spooky_same_task_history",
+      "positive_eligible_count": 120,
+      "protocol_ref": "stratified-log-loss-classification@1#spooky-v39-fixed-holdout",
+      "same_task_best_node_id": "run::20260509_042918_spooky-author-identification::node::8c5286bb1da2400486bafdd5878e30f9",
+      "same_task_history_enabled": true
+    }
+  },
+  "verification_mode": "experiment_fast_nonblocking_v1"
+}

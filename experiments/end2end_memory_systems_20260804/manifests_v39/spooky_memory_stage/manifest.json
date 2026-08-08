@@ -1,0 +1,32 @@
+{
+  "artifact_hashes": {
+    "runforest/graph.json": "72f057236266f30359995c58de84cff71faf6e13a870d553e6987d7e8032740a",
+    "runforest/index.npz": "1ca0b9d60810bb876963af291ca0449b6dc00f216f91c6b7f51cddf3df2472f1"
+  },
+  "authority_policy_version": "experiment_effectiveness_offline_freeze_v1",
+  "build_report": "runforest/graph.json",
+  "bundle_id": "end2end-spooky-direct-runforest-v1",
+  "bundle_version": "v1",
+  "certification_level": "legacy_uncertified",
+  "created_at": "2026-08-08T10:30:00Z",
+  "graph_hashes": {
+    "runforest": "72f057236266f30359995c58de84cff71faf6e13a870d553e6987d7e8032740a"
+  },
+  "index_hashes": {
+    "runforest": "1ca0b9d60810bb876963af291ca0449b6dc00f216f91c6b7f51cddf3df2472f1"
+  },
+  "manifest_sha256": "f1001dbf0458b25e0d3f8111e395a90ceb1c15094e259d200dfde38b7a488bfc",
+  "parent_bundle": null,
+  "schema": "memory_bundle_manifest_v1",
+  "source_archive_sha256": "1a8356ad983e640073646d284976a04d6429c6b0c059485b030f27ec5d601be9",
+  "source_graph_manifest_schema": "hyperbolic_run_forest_memory_v1",
+  "source_task_ids": [
+    "aerial-cactus-identification",
+    "denoising-dirty-documents",
+    "elite-peach-mayfly",
+    "leaf-classification",
+    "new-york-city-taxi-fare-prediction",
+    "spooky-author-identification"
+  ],
+  "target_task_id": "spooky-author-identification"
+}

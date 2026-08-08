@@ -1,0 +1,10 @@
+{
+  "bundle_id": "end2end-spooky-direct-runforest-v1",
+  "bundle_path": "bundles/v1",
+  "bundle_version": "v1",
+  "manifest_sha256": "f1001dbf0458b25e0d3f8111e395a90ceb1c15094e259d200dfde38b7a488bfc",
+  "parent_bundle": null,
+  "pointer_sha256": "48d1c52a8c4534923634d2484939c2141e89cde93a237c2923613c5aec6db695",
+  "published_at": "2026-08-08T10:30:00Z",
+  "schema": "memory_bundle_current_v1"
+}
