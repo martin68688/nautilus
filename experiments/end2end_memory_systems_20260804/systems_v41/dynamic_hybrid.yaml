@@ -1,0 +1,10 @@
+# v41: strict L3 first, then safe task-local and portable runtime Debug tiers.
+extends: ../systems_v39/dynamic_hybrid.yaml
+
+external_skill_memory:
+  experiment_r_debug_tiered_retrieval_enabled: true
+  experiment_r_debug_portable_runtime_enabled: true
+  experiment_r_debug_portable_max_candidates: 2
+
+run_identity:
+  memory_version: experiment_r_leaf_tiered_debug_router_v1

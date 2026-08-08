@@ -441,6 +441,11 @@ class ExternalSkillMemoryConfig:
     experiment_r_allow_agent_abstention: bool = False
     experiment_r_stage_selection_caps: dict = field(default_factory=dict)
     experiment_r_debug_causal_only: bool = False
+    # Debug keeps the strict L3 matcher as a first tier, then lets the main
+    # Retrieval Agent inspect safe task-local and portable runtime repairs.
+    experiment_r_debug_tiered_retrieval_enabled: bool = False
+    experiment_r_debug_portable_runtime_enabled: bool = False
+    experiment_r_debug_portable_max_candidates: int = 2
     experiment_r_same_task_best_pin_stages: list[str] = field(
         default_factory=lambda: ["draft", "improve", "debug"]
     )

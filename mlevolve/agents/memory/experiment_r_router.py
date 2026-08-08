@@ -1062,6 +1062,14 @@ def _compact_agent_row(layer: Any, row: dict[str, Any]) -> dict[str, Any]:
         "task": node.get("task"),
         "metric_improvement": node.get("metric_improvement"),
         "confidence": row.get("confidence"),
+        "debug_tier": str(row.get("debug_tier") or ""),
+        "evidence_mode": str(row.get("evidence_mode") or ""),
+        "portable_runtime_authorized": bool(
+            row.get("portable_runtime_authorized")
+        ),
+        "portable_anchor_match": copy.deepcopy(
+            row.get("portable_anchor_match") or {}
+        ),
         "clean_supporting_transition_count": row.get(
             "clean_supporting_transition_count"
         ),
@@ -1277,6 +1285,17 @@ def _agentic_runforest_search(
     limit: int,
     l3_agent_match: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
+    if stage == "debug" and bool(
+        getattr(layer, "experiment_r_debug_tiered_retrieval_enabled", False)
+    ):
+        rows, _audit = _tiered_debug_runforest_rows(
+            layer,
+            query_text=query_text,
+            task_id=task_id,
+            limit=limit,
+            l3_agent_match=l3_agent_match,
+        )
+        return rows
     eligible_ids = [
         node_id
         for node_id in [*layer._run_nodes, *layer._transitions]
@@ -1410,6 +1429,409 @@ def _task_match_audit(
     ):
         return {"task_match": 0.70, "task_scope": "same_task_type"}
     return {"task_match": 0.0, "task_scope": "different_task_type"}
+
+
+_PORTABLE_DEBUG_GENERIC_TOKENS = {
+    "after",
+    "before",
+    "candidate",
+    "classification",
+    "code",
+    "current",
+    "debug",
+    "error",
+    "failed",
+    "failure",
+    "file",
+    "first",
+    "fold",
+    "input",
+    "line",
+    "model",
+    "node",
+    "output",
+    "repair",
+    "runtime",
+    "script",
+    "tensor",
+    "training",
+    "validation",
+}
+
+
+def _debug_repair_evidence(
+    layer: Any, transition_id: str
+) -> tuple[dict[str, Any] | None, str]:
+    """Validate one reusable Debug repair independently of L3 distillation.
+
+    Recipe repair evidence is already frozen under the strict parent-failure /
+    child-success admission contract.  Full implementation capsules are
+    stronger but sparse, so a hash-bound repair action remains eligible and is
+    explicitly labeled instead of being presented as an exact code diff.
+    """
+
+    transition = layer.nodes.get(str(transition_id), {})
+    positive, reason = layer._positive_transition(str(transition_id))
+    if not positive:
+        return None, str(reason)
+    if (
+        transition.get("type") != "Transition"
+        or str(transition.get("outcome") or "") != "debug_fixed"
+        or transition.get("parent_buggy") is not True
+        or transition.get("child_buggy") is not False
+        or "debug" not in str(transition.get("stage_pair") or "")
+    ):
+        return None, "not_clean_debug_repair_transition"
+    if transition.get("infrastructure_failure") is True:
+        return None, "infrastructure_failure"
+    if transition.get("one_off_code_failure") is True:
+        return None, "one_off_code_failure"
+
+    frozen = copy.deepcopy(
+        getattr(layer, "_recipe_repair_evidence_by_transition", {}).get(
+            str(transition_id)
+        )
+        or {}
+    )
+    capsule = transition.get("implementation_repair_capsule")
+    capsule = copy.deepcopy(capsule) if isinstance(capsule, dict) else {}
+    before_hash = str(
+        capsule.get("before_code_sha256")
+        or frozen.get("failure_node_code_sha256")
+        or ""
+    )
+    after_hash = str(
+        capsule.get("after_code_sha256")
+        or frozen.get("successful_node_code_sha256")
+        or ""
+    )
+    if len(before_hash) != 64 or len(after_hash) != 64:
+        return None, "missing_hash_bound_before_after_code"
+    if frozen:
+        if (
+            frozen.get("audit_status") != "clean"
+            or frozen.get("memory_disposition") != "positive_eligible"
+            or frozen.get("paper_grade_eligible") is not True
+            or frozen.get("rank_eligible") is not True
+            or not str(frozen.get("failure_text") or "").strip()
+            or not str(frozen.get("repair_action_text") or "").strip()
+        ):
+            return None, "frozen_repair_evidence_not_strict_clean"
+    elif not (
+        str(capsule.get("before_code") or "").strip()
+        and str(capsule.get("after_code") or "").strip()
+        and str(capsule.get("unified_diff") or "").strip()
+    ):
+        return None, "missing_frozen_repair_evidence_or_full_diff"
+
+    evidence = copy.deepcopy(layer._debug_transition_evidence(transition))
+    if frozen:
+        evidence["parent_failure"] = str(frozen.get("failure_text") or "")
+        evidence["code_change"] = str(frozen.get("repair_action_text") or "")
+        evidence["child_result"] = str(
+            frozen.get("successful_execution_summary") or ""
+        )
+    evidence["before_code_sha256"] = before_hash
+    evidence["after_code_sha256"] = after_hash
+    full_diff = bool(
+        str(evidence.get("before_code") or "").strip()
+        and str(evidence.get("after_code") or "").strip()
+        and str(evidence.get("unified_diff") or "").strip()
+    )
+    evidence_mode = "full_code_diff" if full_diff else "hash_bound_repair_action_only"
+    return {
+        "frozen": frozen,
+        "transition_evidence": evidence,
+        "evidence_mode": evidence_mode,
+        "before_code_sha256": before_hash,
+        "after_code_sha256": after_hash,
+    }, "safe_hash_bound_debug_repair"
+
+
+def _distinctive_debug_anchors(text: str) -> dict[str, set[str]]:
+    raw = _raw_failure_anchors(text)
+    exceptions = {str(value).lower() for value in raw["exception_names"]}
+    shapes = {str(value).lower() for value in raw["tensor_shapes"]}
+    quoted = {
+        str(value).strip().lower()
+        for value in raw["quoted_identifiers"]
+        if str(value).strip()
+    }
+    literals = {
+        str(value).strip(".,:;()[]{}<>").lower()
+        for value in raw["literal_tokens"]
+        if str(value).strip()
+    }
+    distinctive = {
+        value
+        for value in quoted | literals
+        if len(value) >= 4
+        and value not in _PORTABLE_DEBUG_GENERIC_TOKENS
+        and (
+            "." in value
+            or "_" in value
+            or any(character.isdigit() for character in value)
+        )
+    }
+    return {
+        "exceptions": exceptions,
+        "shapes": shapes,
+        "distinctive": distinctive,
+    }
+
+
+def _portable_debug_anchor_match(
+    query_text: str, candidate_failure: str
+) -> dict[str, Any]:
+    """Authorize only literal, task-agnostic runtime/API correspondence."""
+
+    query = _distinctive_debug_anchors(query_text)
+    candidate = _distinctive_debug_anchors(candidate_failure)
+    shared_exceptions = sorted(query["exceptions"] & candidate["exceptions"])
+    shared_shapes = sorted(query["shapes"] & candidate["shapes"])
+    shared_distinctive = sorted(query["distinctive"] & candidate["distinctive"])
+    authorized = bool(shared_exceptions and (shared_distinctive or shared_shapes))
+    score = (
+        min(
+            1.0,
+            0.60
+            + 0.12 * len(shared_distinctive)
+            + 0.08 * len(shared_shapes),
+        )
+        if authorized
+        else 0.0
+    )
+    return {
+        "authorized": authorized,
+        "score": score,
+        "shared_exception_names": shared_exceptions,
+        "shared_distinctive_anchors": shared_distinctive,
+        "shared_tensor_shapes": shared_shapes,
+        "contract": "exact_exception_plus_literal_runtime_anchor_v1",
+    }
+
+
+def _tiered_debug_runforest_rows(
+    layer: Any,
+    *,
+    query_text: str,
+    task_id: str,
+    limit: int,
+    l3_agent_match: dict[str, Any] | None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Build strict-L3, exact-task, then portable Debug transition tiers."""
+
+    target = _canonical_task(task_id)
+    selected_l3_transition_id = str(
+        (l3_agent_match or {}).get("selected_transition_id") or ""
+    )
+    l3_transition_ids = {
+        str(transition_id)
+        for sop_id in layer._sops
+        if _is_l3_sop(layer, sop_id)
+        for transition_id in (
+            layer.nodes.get(sop_id, {}).get("supporting_transition_ids") or []
+        )
+    }
+    task_local: list[dict[str, Any]] = []
+    portable: list[dict[str, Any]] = []
+    rejected: dict[str, int] = {}
+
+    for transition_id in layer._transitions:
+        transition_id = str(transition_id)
+        if transition_id == selected_l3_transition_id:
+            continue
+        evidence, reason = _debug_repair_evidence(layer, transition_id)
+        if evidence is None:
+            rejected[reason] = rejected.get(reason, 0) + 1
+            continue
+        transition = layer.nodes[transition_id]
+        source_task = _canonical_task(transition.get("task"))
+        failure_text = str(
+            evidence["transition_evidence"].get("parent_failure") or ""
+        )
+        repair_text = str(
+            evidence["transition_evidence"].get("code_change") or ""
+        )
+        semantic = float(
+            layer._bounded_token_similarity(
+                query_text, f"{failure_text}\n{repair_text}"
+            )
+        )
+        common = {
+            "id": transition_id,
+            "source": "runforest",
+            "stage": transition.get("stage_pair"),
+            "task": transition.get("task"),
+            "metric": transition.get("child_metric"),
+            "metric_improvement": transition.get("metric_improvement"),
+            "rank_eligible": True,
+            "eligibility_reason": reason,
+            "transition_evidence": evidence["transition_evidence"],
+            "evidence_mode": evidence["evidence_mode"],
+            "safety_receipt": {
+                "positive_transition": True,
+                "parent_buggy": True,
+                "child_buggy": False,
+                "before_code_sha256": evidence["before_code_sha256"],
+                "after_code_sha256": evidence["after_code_sha256"],
+                "infrastructure_excluded": True,
+                "one_off_excluded": True,
+            },
+            "debug_relevance_score": semantic,
+            "flat_score": semantic,
+        }
+        if source_task == target:
+            # L3 cards already received a dedicated root-cause assessment.  An
+            # abstained card must not silently re-enter through the task-local
+            # backfill route; Tier B is specifically the undistilled evidence.
+            if transition_id in l3_transition_ids:
+                rejected["l3_transition_already_root_cause_assessed"] = (
+                    rejected.get("l3_transition_already_root_cause_assessed", 0) + 1
+                )
+                continue
+            task_local.append(
+                {
+                    **common,
+                    "score": 0.55 + 0.45 * semantic,
+                    "debug_tier": "task_local_clean_transition",
+                    "task_scope": "exact_task",
+                    "portable_runtime_authorized": False,
+                    "ranking_backend": "debug_task_local_clean_transition_v1",
+                }
+            )
+            continue
+        if not bool(
+            getattr(layer, "experiment_r_debug_portable_runtime_enabled", False)
+        ):
+            continue
+        anchor_match = _portable_debug_anchor_match(query_text, failure_text)
+        if not anchor_match["authorized"]:
+            rejected["portable_runtime_anchor_mismatch"] = (
+                rejected.get("portable_runtime_anchor_mismatch", 0) + 1
+            )
+            continue
+        portable.append(
+            {
+                **common,
+                "score": float(anchor_match["score"]),
+                "debug_tier": "portable_runtime_repair",
+                "task_scope": "portable_runtime_cross_task",
+                "portable_runtime_authorized": True,
+                "portable_anchor_match": anchor_match,
+                "ranking_backend": "debug_portable_runtime_literal_anchor_v1",
+            }
+        )
+
+    task_local.sort(
+        key=lambda row: (-float(row["score"]), str(row["id"]))
+    )
+    portable.sort(key=lambda row: (-float(row["score"]), str(row["id"])))
+    portable_limit = min(
+        int(getattr(layer, "experiment_r_debug_portable_max_candidates", 2)),
+        max(0, int(limit)),
+    )
+    selected_portable = portable[:portable_limit]
+    task_local_limit = max(0, int(limit) - len(selected_portable))
+    selected_task_local = task_local[:task_local_limit]
+
+    rows: list[dict[str, Any]] = []
+    if selected_l3_transition_id:
+        selected_node = layer.nodes.get(selected_l3_transition_id, {})
+        selected_evidence, selected_reason = _debug_repair_evidence(
+            layer, selected_l3_transition_id
+        )
+        if selected_evidence is None:
+            raise RuntimeError(
+                "L3 Agent selected a Debug transition that failed the reusable "
+                f"repair gate: {selected_l3_transition_id}/{selected_reason}"
+            )
+        rows.append(
+            {
+                "id": selected_l3_transition_id,
+                "source": "runforest",
+                "score": float(
+                    (l3_agent_match or {}).get("final_confidence") or 0.0
+                ),
+                "confidence": float(
+                    (l3_agent_match or {}).get("final_confidence") or 0.0
+                ),
+                "stage": selected_node.get("stage")
+                or selected_node.get("stage_pair"),
+                "task": selected_node.get("task"),
+                "metric": selected_node.get("metric")
+                or selected_node.get("child_metric"),
+                "metric_improvement": selected_node.get("metric_improvement"),
+                "rank_eligible": True,
+                "eligibility_reason": "clean_l3_agent_root_cause_match",
+                "transition_evidence": selected_evidence["transition_evidence"],
+                "evidence_mode": selected_evidence["evidence_mode"],
+                "debug_tier": "strict_l3_root_cause_match",
+                "task_scope": "exact_task",
+                "portable_runtime_authorized": False,
+                "l3_agent_selected": True,
+                "l3_sop_id": str(
+                    (l3_agent_match or {}).get("selected_sop_id") or ""
+                ),
+                "ranking_backend": (
+                    "agent_keyword_and_root_cause_semantic_match_v1"
+                ),
+                "flat_score": float(
+                    (l3_agent_match or {}).get("final_confidence") or 0.0
+                ),
+            }
+        )
+    remaining = max(0, int(limit) - len(rows))
+    rows.extend([*selected_task_local, *selected_portable][:remaining])
+    for rank, row in enumerate(rows, 1):
+        row["source_rank"] = rank
+
+    audit = {
+        "schema": "experiment_r_debug_candidate_tiers_v1",
+        "enabled": True,
+        "strict_l3_confidence": float(
+            (l3_agent_match or {}).get("final_confidence") or 0.0
+        ),
+        "strict_l3_confidence_below_threshold": bool(
+            float((l3_agent_match or {}).get("final_confidence") or 0.0)
+            < layer.experiment_r_debug_confidence_threshold
+        ),
+        "strict_l3_candidate_count": sum(
+            int(tier.get("candidate_count") or 0)
+            for tier in (l3_agent_match or {}).get("trace") or []
+        ),
+        "strict_l3_selected_count": int(bool(selected_l3_transition_id)),
+        "strict_l3_decision": str((l3_agent_match or {}).get("decision") or ""),
+        "task_local_safe_count": len(task_local),
+        "task_local_shortlist_count": len(selected_task_local),
+        "portable_runtime_safe_count": len(portable),
+        "portable_runtime_shortlist_count": len(selected_portable),
+        "safe_pool_max_score": max(
+            (float(row.get("score") or 0.0) for row in rows),
+            default=0.0,
+        ),
+        "main_retrieval_agent_input_count": len(rows),
+        "candidate_ids_by_tier": {
+            "strict_l3": [
+                selected_l3_transition_id
+            ]
+            if selected_l3_transition_id
+            else [],
+            "task_local": [row["id"] for row in selected_task_local],
+            "portable_runtime": [row["id"] for row in selected_portable],
+        },
+        "rejection_reason_counts": dict(sorted(rejected.items())),
+        "fallback_reason": (
+            "strict_l3_selected_with_safe_alternatives"
+            if selected_l3_transition_id and len(rows) > 1
+            else "strict_l3_selected"
+            if selected_l3_transition_id
+            else "strict_l3_abstained_safe_backfill"
+            if rows
+            else "no_safe_debug_candidate_in_any_tier"
+        ),
+    }
+    return rows, audit
 
 
 def _agentic_pre_gate_audit(
@@ -1938,6 +2360,11 @@ def _agentic_candidate_pool(
         stage == "debug"
         and getattr(layer, "experiment_r_debug_causal_only", False)
     )
+    tiered_debug = bool(
+        debug_causal_only
+        and getattr(layer, "experiment_r_debug_tiered_retrieval_enabled", False)
+    )
+    debug_tier_audit: dict[str, Any] = {}
     causal_allowed_ids = {
         str(value)
         for value in (
@@ -1955,7 +2382,7 @@ def _agentic_candidate_pool(
             if not node_id:
                 continue
             source_node = layer.nodes.get(node_id, {})
-            if _task_match_audit(
+            task_match = _task_match_audit(
                 layer,
                 target_task_id=task_id,
                 target_task_desc=task_desc,
@@ -1965,9 +2392,18 @@ def _agentic_candidate_pool(
                 source_task_families=list(
                     source_node.get("task_families") or []
                 ),
-            )["task_match"] <= 0.0:
+            )
+            portable_authorized = bool(
+                row.get("debug_tier") == "portable_runtime_repair"
+                and row.get("portable_runtime_authorized") is True
+            )
+            if task_match["task_match"] <= 0.0 and not portable_authorized:
                 continue
-            if debug_causal_only and node_id not in causal_allowed_ids:
+            if (
+                debug_causal_only
+                and not tiered_debug
+                and node_id not in causal_allowed_ids
+            ):
                 continue
             returned.append(node_id)
             if node_id in known:
@@ -2056,9 +2492,16 @@ def _agentic_candidate_pool(
         ),
         "initial current-context landmarks",
     )
-    observe(
-        "search_runforest",
-        _agentic_runforest_search(
+    if tiered_debug:
+        initial_runforest_rows, debug_tier_audit = _tiered_debug_runforest_rows(
+            layer,
+            query_text=query_text,
+            task_id=task_id,
+            limit=per_step,
+            l3_agent_match=l3_agent_match,
+        )
+    else:
+        initial_runforest_rows = _agentic_runforest_search(
             layer,
             query_text=query_text,
             stage=stage,
@@ -2067,7 +2510,10 @@ def _agentic_candidate_pool(
             visible_sop_ids=visible_sop_ids,
             limit=per_step,
             l3_agent_match=l3_agent_match,
-        ),
+        )
+    observe(
+        "search_runforest",
+        initial_runforest_rows,
         "initial current-context landmarks",
     )
     refresh_rrf_shortlist()
@@ -2135,6 +2581,7 @@ def _agentic_candidate_pool(
                 "ranked_sop": 0,
                 "ranked_runforest": 0,
             },
+            "debug_candidate_tiers": copy.deepcopy(debug_tier_audit),
             "retrieval_agent": {
                 "enabled": True,
                 "mode": "authority_tool_navigation",
@@ -2148,6 +2595,10 @@ def _agentic_candidate_pool(
                     "ranking_contract": "disabled_for_debug_causal_only_v1",
                 },
                 "agent_calls": 0,
+                "root_cause_agent_calls": int(
+                    (l3_agent_match or {}).get("agent_calls") or 0
+                ),
+                "main_retrieval_agent_calls": 0,
                 "observed_candidate_count": 0,
                 "agent_selected_ids": [],
                 "effective_selected_ids": [],
@@ -2362,6 +2813,10 @@ def _agentic_candidate_pool(
         and tree_confidence < layer.experiment_r_debug_confidence_threshold
         else None
     )
+    if tiered_debug:
+        # Tier B/C rows are safe shortlist candidates; their deterministic
+        # relevance score is not the L3 Agent's causal confidence threshold.
+        fallback_reason = None
     return {
         "schema": "experiment_r_candidate_pool_v1",
         "candidate_limit_per_source": layer.experiment_r_candidate_limit,
@@ -2389,11 +2844,12 @@ def _agentic_candidate_pool(
             "ranked_sop": len(ordered["sop"]),
             "ranked_runforest": len(ordered["runforest"]),
         },
+        "debug_candidate_tiers": copy.deepcopy(debug_tier_audit),
         "retrieval_agent": {
             "enabled": True,
             "mode": "authority_tool_navigation",
             "same_task_best_first": {
-                "enforced": True,
+                "enforced": not debug_causal_only,
                 "independent_of_draft_role_policy": True,
                 "target_task_id": task_id,
                 "eligible_history_found": bool(same_task_observation["candidate_ids"]),
@@ -2414,11 +2870,21 @@ def _agentic_candidate_pool(
                     ),
                     "",
                 ),
-                "ranking_contract": "same_task_best_history_v2",
+                "ranking_contract": (
+                    "disabled_for_debug_tiered_causal_retrieval_v1"
+                    if tiered_debug
+                    else "disabled_for_debug_causal_only_v1"
+                    if debug_causal_only
+                    else "same_task_best_history_v2"
+                ),
             },
             "temperature": layer.experiment_r_agentic_temperature,
             "max_steps": layer.experiment_r_agentic_max_steps,
             "agent_calls": agent_calls,
+            "root_cause_agent_calls": int(
+                (l3_agent_match or {}).get("agent_calls") or 0
+            ),
+            "main_retrieval_agent_calls": agent_calls,
             "observed_candidate_count": len(known),
             "agent_selected_ids": selected_ids,
             "effective_selected_ids": list(selected_ids),
@@ -2691,6 +3157,11 @@ def _candidate_pool(
         stage == "debug"
         and getattr(layer, "experiment_r_l3_agent_match_enabled", False)
     )
+    tiered_debug = bool(
+        stage == "debug"
+        and getattr(layer, "experiment_r_debug_causal_only", False)
+        and getattr(layer, "experiment_r_debug_tiered_retrieval_enabled", False)
+    )
     agentic_error = ""
     if bool(getattr(layer, "experiment_r_agentic_retrieval_enabled", False)):
         try:
@@ -2702,7 +3173,8 @@ def _candidate_pool(
                 query_text=query_text,
                 visible_sop_ids=visible_sop_ids,
             )
-            pool = _pin_agent_selected_l3_for_dynamic(layer, pool=pool)
+            if not tiered_debug:
+                pool = _pin_agent_selected_l3_for_dynamic(layer, pool=pool)
             return (
                 _pin_same_task_best_for_dynamic(
                     layer,
@@ -2727,6 +3199,7 @@ def _candidate_pool(
         agentic_error
         and stage == "debug"
         and bool(getattr(layer, "experiment_r_debug_causal_only", False))
+        and not tiered_debug
     ):
         pre_gate_rows, pre_gate_summary = _agentic_pre_gate_audit(
             layer,
@@ -2863,6 +3336,16 @@ def _candidate_pool(
     selected_l3_transition_id = str(
         (fallback_l3_match or {}).get("selected_transition_id") or ""
     )
+    tiered_fallback_rows: list[dict[str, Any]] = []
+    tiered_fallback_audit: dict[str, Any] = {}
+    if tiered_debug:
+        tiered_fallback_rows, tiered_fallback_audit = _tiered_debug_runforest_rows(
+            layer,
+            query_text=query_text,
+            task_id=task_id,
+            limit=layer.experiment_r_agentic_per_step_top_k,
+            l3_agent_match=fallback_l3_match,
+        )
     neutral_tree_ids = [
         node_id
         for node_id in [*layer._run_nodes, *layer._transitions]
@@ -2899,6 +3382,13 @@ def _candidate_pool(
                 ],
             }
         )
+    if tiered_debug:
+        observed_tree_ids = {row["id"] for row in raw_tree_rows}
+        for tiered_row in tiered_fallback_rows:
+            if tiered_row["id"] in observed_tree_ids:
+                continue
+            raw_tree_rows.append(copy.deepcopy(tiered_row))
+            observed_tree_ids.add(tiered_row["id"])
     neutral_tree_set = {row["id"] for row in raw_tree_rows}
 
     raw_observer_ids = []
@@ -2947,7 +3437,23 @@ def _candidate_pool(
     fallback_reason = None
     tree_confidence = None
     if stage == "debug":
-        if agent_l3_path:
+        if tiered_debug:
+            tree_rows = copy.deepcopy(tiered_fallback_rows)
+            tree_confidence = max(
+                (float(row.get("score") or 0.0) for row in tree_rows),
+                default=0.0,
+            )
+            # In the tiered path, a low strict-L3 score is a diagnostic about
+            # Tier A, not proof that the safe Tier B/C pool is unusable.  Keep
+            # it in the tier audit and reserve ``fallback_reason`` for an
+            # actual deterministic fallback after the main Agent failed.
+            fallback_reason = (
+                "tiered_debug_safe_deterministic_fallback"
+                if agentic_error
+                else None
+            )
+            tiered_fallback_audit["safe_pool_max_score"] = tree_confidence
+        elif agent_l3_path:
             tree_rows = []
             if selected_l3_transition_id in neutral_tree_set:
                 selected_node = layer.nodes[selected_l3_transition_id]
@@ -2991,7 +3497,10 @@ def _candidate_pool(
             (float(row.get("confidence") or 0.0) for row in tree_rows),
             default=0.0,
         )
-        if tree_confidence < layer.experiment_r_debug_confidence_threshold:
+        if (
+            tree_confidence < layer.experiment_r_debug_confidence_threshold
+            and not tiered_debug
+        ):
             fallback_reason = (
                 "l3_agent_abstained_no_manual_match_fallback"
                 if agent_l3_path
@@ -3045,7 +3554,9 @@ def _candidate_pool(
             {
                 "source": "runforest",
                 "source_rank": rank,
-                "flat_score": float(raw_tree_by_id[row["id"]]["flat_score"]),
+                "flat_score": float(
+                    raw_tree_by_id.get(row["id"], row).get("flat_score") or 0.0
+                ),
             }
         )
         runforest.append(copied)
@@ -3107,6 +3618,7 @@ def _candidate_pool(
             "ranked_sop": len(sops),
             "ranked_runforest": len(runforest),
         },
+        "debug_candidate_tiers": copy.deepcopy(tiered_fallback_audit),
         "retrieval_agent": {
             "enabled": bool(
                 getattr(layer, "experiment_r_agentic_retrieval_enabled", False)
@@ -3125,7 +3637,54 @@ def _candidate_pool(
         },
         "l3_agent_match": copy.deepcopy(fallback_l3_match or {}),
     }
-    pool = _pin_agent_selected_l3_for_dynamic(layer, pool=pool)
+    if agentic_error and tiered_debug:
+        stage_cap = int(
+            getattr(layer, "experiment_r_stage_selection_caps", {}).get(
+                "debug", layer.experiment_r_top_k
+            )
+        )
+        fallback_rows = sorted(
+            [*sops, *runforest],
+            key=lambda row: (
+                0
+                if row.get("debug_tier") == "strict_l3_root_cause_match"
+                else 1
+                if row.get("debug_tier") == "task_local_clean_transition"
+                else 2,
+                -float(row.get("score") or row.get("flat_score") or 0.0),
+                str(row.get("id") or ""),
+            ),
+        )[: min(stage_cap, layer.experiment_r_top_k)]
+        fallback_ids = [str(row["id"]) for row in fallback_rows]
+        pool["retrieval_agent"].update(
+            {
+                "agent_calls": None,
+                "main_retrieval_agent_calls": None,
+                "root_cause_agent_calls": int(
+                    (fallback_l3_match or {}).get("agent_calls") or 0
+                ),
+                "agent_calls_unknown_due_to_exception": True,
+                "agent_selected_ids": [],
+                "effective_selected_ids": fallback_ids,
+                "selection_complete": True,
+                "agent_abstained": not bool(fallback_ids),
+                "allow_abstention": bool(
+                    getattr(layer, "experiment_r_allow_agent_abstention", False)
+                ),
+                "final_selection_authority": "deterministic_fallback",
+                "fallback_used": True,
+                "fallback_reason": agentic_error,
+                "selection_contract": {
+                    "minimum_selection_count": 0,
+                    "maximum_selection_count": min(
+                        stage_cap, layer.experiment_r_top_k
+                    ),
+                    "selection_semantics": "tiered_debug_safe_fallback_v1",
+                },
+            }
+        )
+    if not tiered_debug:
+        pool = _pin_agent_selected_l3_for_dynamic(layer, pool=pool)
     return (
         _pin_same_task_best_for_dynamic(
             layer,
@@ -3352,6 +3911,14 @@ def build_experiment_r_pack(
         and retrieval.get("agent_abstained") is True
         and getattr(layer, "experiment_r_allow_agent_abstention", False)
     )
+    candidate_pool_nonempty = bool(
+        pool.get("sop_candidates") or pool.get("runforest_candidates")
+    )
+    if candidate_pool_nonempty and not selected and not explicit_agent_abstention:
+        raise RuntimeError(
+            "Dynamic Router silently abstained despite a non-empty safe Debug "
+            "candidate pool"
+        )
     if same_task_pool_nonempty and not selected and not explicit_agent_abstention:
         raise RuntimeError(
             "Dynamic Router silently abstained despite non-empty same-task history"
@@ -3472,6 +4039,9 @@ def build_experiment_r_pack(
         "target_task_id": task_id,
         "memory_pool_sha256": layer.experiment_r_memory_pool_sha256,
         "candidate_pool": pool,
+        "debug_candidate_tiers": copy.deepcopy(
+            pool.get("debug_candidate_tiers") or {}
+        ),
         "candidate_pool_hash": pool["candidate_pool_hash"],
         "candidate_pool_source": pool.get("candidate_pool_source", "live_retrieval"),
         "qualification_checkpoint_id": pool.get("qualification_checkpoint_id", ""),
@@ -3499,9 +4069,7 @@ def build_experiment_r_pack(
         "final_prompt_candidate_ids": selected_ids,
         "router_activation": {
             "status": activation_status,
-            "candidate_pool_nonempty": bool(
-                pool.get("sop_candidates") or pool.get("runforest_candidates")
-            ),
+            "candidate_pool_nonempty": candidate_pool_nonempty,
             "same_task_pool_nonempty": same_task_pool_nonempty,
             "selected_count": len(selected_ids),
             "visible_count": 0,

@@ -651,6 +651,21 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else False
         )
+        self.experiment_r_debug_tiered_retrieval_enabled = bool(
+            getattr(ext_cfg, "experiment_r_debug_tiered_retrieval_enabled", False)
+            if ext_cfg is not None
+            else False
+        )
+        self.experiment_r_debug_portable_runtime_enabled = bool(
+            getattr(ext_cfg, "experiment_r_debug_portable_runtime_enabled", False)
+            if ext_cfg is not None
+            else False
+        )
+        self.experiment_r_debug_portable_max_candidates = int(
+            getattr(ext_cfg, "experiment_r_debug_portable_max_candidates", 2)
+            if ext_cfg is not None
+            else 2
+        )
         configured_pin_stages = (
             getattr(ext_cfg, "experiment_r_same_task_best_pin_stages", None)
             if ext_cfg is not None
@@ -730,6 +745,10 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 raise ValueError("Experiment R Improve patch cap must be in [1, 20]")
             if self.experiment_r_debug_max_patches not in range(1, 11):
                 raise ValueError("Experiment R Debug patch cap must be in [1, 10]")
+            if self.experiment_r_debug_portable_max_candidates not in range(0, 5):
+                raise ValueError(
+                    "Experiment R portable Debug candidate cap must be in [0, 4]"
+                )
         self.recipe_sop_path = str(
             recipe_sop_path
             if recipe_sop_path is not None
