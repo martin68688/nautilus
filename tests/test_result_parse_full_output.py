@@ -87,3 +87,53 @@ def test_submission_aligned_metric_wins_over_better_component_metric():
     facts = result_parser_facts(node, True, output)
     assert facts["submission_aligned_metric"] == 0.010162
     assert facts["submission_variant"] == "nn_lgbm_blend"
+
+
+def test_missing_marker_with_single_metric_is_nonblocking():
+    from agents.result_log_facts import (
+        reconcile_missing_submission_alignment,
+        result_parser_facts,
+    )
+    from engine.search_node import SearchNode
+
+    output = (
+        "=== OOF Log Loss: 0.043141 ===\n"
+        "Submission saved: (99, 100)\n"
+        "Final Validation Score: 0.043140515499590075\n"
+    )
+    node = SearchNode(
+        code="print('run')", stage="improve", _term_out=[output], exc_type=None
+    )
+    facts = result_parser_facts(node, True, output)
+    metric, status = reconcile_missing_submission_alignment(
+        facts, 0.043140515499590075
+    )
+    assert metric == 0.043140515499590075
+    assert status == "inferred_single_metric"
+    assert facts["high_confidence_metric_ambiguous"] is False
+
+
+def test_missing_marker_with_multiple_metrics_uses_agent_reconciliation():
+    from agents.result_log_facts import (
+        reconcile_missing_submission_alignment,
+        result_parser_facts,
+    )
+    from engine.search_node import SearchNode
+
+    output = (
+        "Final OOF Log Loss: 0.005086\n"
+        "Blend OOF Log Loss: 0.010162\n"
+        "Submission saved: (594, 100)\n"
+    )
+    node = SearchNode(
+        code="print('run')", stage="improve", _term_out=[output], exc_type=None
+    )
+    facts = result_parser_facts(node, True, output)
+    assert facts["high_confidence_metric_ambiguous"] is True
+    assert [
+        candidate["metric"]
+        for candidate in facts["high_confidence_metric_candidates"]
+    ] == [0.005086, 0.010162]
+    metric, status = reconcile_missing_submission_alignment(facts, 0.010162)
+    assert metric == 0.010162
+    assert status == "agent_reconciled_multiple_metrics"

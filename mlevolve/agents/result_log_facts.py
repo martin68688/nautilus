@@ -34,6 +34,14 @@ _HIGH_CONFIDENCE_METRIC_PATTERNS = (
     ),
 )
 
+_NAMED_OOF_METRIC_RE = re.compile(
+    r"(?im)^\s*(?P<label>[^\r\n:=]{0,80}?)\b"
+    r"(?:oof|out[- ]of[- ]fold)\s+"
+    r"(?:validation\s+)?(?:log\s*loss|roc[- ]?auc|auc|rmse|mae|mse|"
+    r"score|metric)\s*[:=]\s*"
+    r"(?P<value>-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\b"
+)
+
 _SUBMISSION_ALIGNED_METRIC_RE = re.compile(
     r"(?im)^\s*Final\s+Submission[- ]Aligned\s+Validation\s+Score\s*:\s*"
     r"(-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*\|\s*"
@@ -59,8 +67,12 @@ def extract_submission_aligned_metric(
     return value, variant, line
 
 
-def extract_high_confidence_metric(output: str) -> tuple[float | None, str]:
-    matches: list[tuple[int, float, str]] = []
+def extract_high_confidence_metric_candidates(
+    output: str,
+) -> list[dict[str, object]]:
+    """Return every explicit final/OOF metric without guessing from epochs."""
+
+    matches: dict[tuple[int, str], tuple[int, float, str]] = {}
     for pattern in _HIGH_CONFIDENCE_METRIC_PATTERNS:
         for match in pattern.finditer(output or ""):
             try:
@@ -68,11 +80,72 @@ def extract_high_confidence_metric(output: str) -> tuple[float | None, str]:
             except (TypeError, ValueError):
                 continue
             if math.isfinite(value):
-                matches.append((match.start(), value, match.group(0).strip()))
-    if not matches:
+                line = match.group(0).strip()
+                matches[(match.start(), line)] = (match.start(), value, line)
+    for match in _NAMED_OOF_METRIC_RE.finditer(output or ""):
+        try:
+            value = float(match.group("value"))
+        except (TypeError, ValueError):
+            continue
+        if math.isfinite(value):
+            line = match.group(0).strip()
+            matches[(match.start(), line)] = (match.start(), value, line)
+
+    ordered = sorted(matches.values(), key=lambda item: item[0])
+    return [
+        {"position": position, "metric": value, "line": line}
+        for position, value, line in ordered
+    ]
+
+
+def extract_high_confidence_metric(output: str) -> tuple[float | None, str]:
+    candidates = extract_high_confidence_metric_candidates(output)
+    if not candidates:
         return None, ""
-    _position, value, line = max(matches, key=lambda item: item[0])
-    return value, line
+    selected = candidates[-1]
+    return float(selected["metric"]), str(selected["line"])
+
+
+def reconcile_missing_submission_alignment(
+    facts: Mapping, response_metric: object
+) -> tuple[float | None, str]:
+    """Resolve missing text metadata without making a clean run retrain."""
+
+    raw_candidates = facts.get("high_confidence_metric_candidates") or []
+    values: list[float] = []
+    for candidate in raw_candidates:
+        if not isinstance(candidate, Mapping):
+            continue
+        value = candidate.get("metric")
+        if isinstance(value, (int, float)) and math.isfinite(float(value)):
+            numeric = float(value)
+            if not any(
+                math.isclose(numeric, existing, rel_tol=1e-9, abs_tol=1e-12)
+                for existing in values
+            ):
+                values.append(numeric)
+
+    if len(values) == 1:
+        return values[0], "inferred_single_metric"
+
+    response_value: float | None = None
+    if isinstance(response_metric, (int, float)):
+        numeric = float(response_metric)
+        if math.isfinite(numeric):
+            response_value = numeric
+
+    if len(values) > 1:
+        if response_value is not None:
+            for value in values:
+                if math.isclose(
+                    response_value, value, rel_tol=1e-6, abs_tol=1e-9
+                ):
+                    return response_value, "agent_reconciled_multiple_metrics"
+        return values[-1], "deterministic_last_metric_fallback"
+
+    if response_value is not None:
+        return response_value, "agent_reconciled_metric_only"
+    return None, "metric_missing_unresolved"
 
 
 def result_parser_output_view(node: Any, max_chars: int = 16000) -> str:
@@ -103,6 +176,7 @@ def result_parser_facts(
     node: Any, has_csv_submission: bool, parser_view: str
 ) -> dict[str, object]:
     output = str(getattr(node, "full_term_out", "") or "")
+    metric_candidates = extract_high_confidence_metric_candidates(output)
     metric, metric_line = extract_high_confidence_metric(output)
     aligned_metric, submission_variant, aligned_line = (
         extract_submission_aligned_metric(output)
@@ -116,6 +190,15 @@ def result_parser_facts(
         "agent_output_view_compacted": len(parser_view) < len(output),
         "high_confidence_self_reported_metric": metric,
         "high_confidence_metric_line": metric_line,
+        "high_confidence_metric_candidates": metric_candidates,
+        "high_confidence_metric_ambiguous": len(
+            {
+                float(candidate["metric"])
+                for candidate in metric_candidates
+                if isinstance(candidate.get("metric"), (int, float))
+            }
+        )
+        > 1,
         "submission_aligned_metric": aligned_metric,
         "submission_variant": submission_variant,
         "submission_aligned_metric_line": aligned_line,

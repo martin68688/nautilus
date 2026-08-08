@@ -17,6 +17,7 @@ from engine.validation import call_validate, _validate_submission_with_retry, va
 from agents import data_leakage_agent, leakage_audit, protocol_repair
 from agents.result_log_facts import (
     extract_high_confidence_metric as _extract_high_confidence_metric,
+    reconcile_missing_submission_alignment,
     result_parser_conflict as _result_parser_conflict,
     result_parser_facts as _result_parser_facts,
     result_parser_output_view as _result_parser_output_view,
@@ -1190,14 +1191,29 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                 response["metric"] = float(aligned_metric)
                 submission_alignment_status = "verified_marker"
             elif submission_alignment_required and not legacy_exact_replay:
-                response["metric"] = None
-                response["is_bug"] = True
-                response["summary"] = (
-                    str(response.get("summary") or "")
-                    + " SUBMISSION_METRIC_ALIGNMENT_MISSING: the run did not emit "
-                    "the required submission-aligned metric and variant marker."
-                ).strip()
-                submission_alignment_status = "required_marker_missing"
+                if (
+                    parser_facts.get("high_confidence_metric_ambiguous")
+                    and parser_facts.get("process_exited_normally")
+                    and parser_facts.get("submission_file_exists")
+                ):
+                    parser_calls += 1
+                    response = normalize_response(
+                        query_result_review(
+                            "Several explicit final/OOF metrics are present but the optional "
+                            "submission-alignment text marker is absent. Inspect the supplied "
+                            "Implementation and identify the metric for the exact prediction "
+                            "variable written to submission.csv. This is metadata "
+                            "reconciliation, not a runtime failure; do not request model "
+                            "re-execution merely because the marker is absent."
+                        )
+                    )
+                reconciled_metric, submission_alignment_status = (
+                    reconcile_missing_submission_alignment(
+                        parser_facts, response.get("metric")
+                    )
+                )
+                if reconciled_metric is not None:
+                    response["metric"] = float(reconciled_metric)
             elif submission_alignment_required:
                 submission_alignment_status = "legacy_exact_replay_unverified"
             else:
@@ -1220,12 +1236,15 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                 "required": submission_alignment_required,
                 "status": submission_alignment_status,
                 "metric": aligned_metric,
+                "resolved_metric": response.get("metric"),
                 "submission_variant": str(
                     parser_facts.get("submission_variant") or ""
                 ),
                 "marker_line": str(
                     parser_facts.get("submission_aligned_metric_line") or ""
                 ),
+                "blocking": False,
+                "reexecution_required": False,
             }
 
             if signed_metric is not None:
