@@ -1,0 +1,50 @@
+{
+  "bindings": {
+    "budget_manifest_hash": "998adbcf5276e205b30492f4efd9c2ff76a8990837a1c2d7dc0ad08b0e2f4ad4",
+    "evaluators_manifest_hash": "bdb0d161cffa4d3d5799769247c5a6346755906cd3a25396d3b75a8833468762",
+    "memory_bundles_manifest_hash": "9010d740e303ca48f6ada950fdf593c215d35ef29328e939604646792a3c8912",
+    "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+    "source_lock_manifest_hash": "b5b775c7c152af4aa44ed6f83b092b15d2a6fcb7ff854a3f1047e1c796cb3d2f",
+    "systems_manifest_hash": "6285c7db91057be58766e4346613b9d4ee35651df8eec4d3ff2781101ba20463",
+    "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+  },
+  "comparison_baseline_release_id": "end2end-agent-v3",
+  "exploratory_pilot": true,
+  "formal_result_eligible": false,
+  "kind": "smoke",
+  "launch_order_randomization": "task-local SHA256-seeded deterministic shuffle; comparison order locked to end2end-agent-v3",
+  "manifest_hash": "6403cf18a29d510af4f7b4c69a9d79b5b45bc89356f17c6ec9083b5e35ba226a",
+  "release_id": "end2end-leaf-metric-reconcile-router-v38",
+  "run_count": 1,
+  "runs": [
+    {
+      "bindings": {
+        "budget_manifest_hash": "998adbcf5276e205b30492f4efd9c2ff76a8990837a1c2d7dc0ad08b0e2f4ad4",
+        "evaluators_manifest_hash": "bdb0d161cffa4d3d5799769247c5a6346755906cd3a25396d3b75a8833468762",
+        "memory_bundles_manifest_hash": "9010d740e303ca48f6ada950fdf593c215d35ef29328e939604646792a3c8912",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "b5b775c7c152af4aa44ed6f83b092b15d2a6fcb7ff854a3f1047e1c796cb3d2f",
+        "systems_manifest_hash": "6285c7db91057be58766e4346613b9d4ee35651df8eec4d3ff2781101ba20463",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 0,
+      "logical_run_id": "e2e-smoke-leaf-metric-reconcile-router-v38__leaf-classification__dynamic_hybrid__seed-1",
+      "row_hash": "2795df68250668935ff47e5b1e00dcacd172181128f4622809beae227eeffd56",
+      "seed": 1,
+      "system_id": "dynamic_hybrid",
+      "task_id": "leaf-classification",
+      "task_launch_position": 0
+    }
+  ],
+  "schema": "mlevolve_end2end_execution_manifest_v1",
+  "seed": 1,
+  "statistical_significance_claim_allowed": false,
+  "system_ids": [
+    "dynamic_hybrid"
+  ],
+  "task_ids": [
+    "leaf-classification"
+  ]
+}

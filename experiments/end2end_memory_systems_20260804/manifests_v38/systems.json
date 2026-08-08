@@ -1,0 +1,18 @@
+{
+  "experimental_axis": "single Leaf Dynamic condition; v35 controls remain frozen and are not rerun",
+  "manifest_hash": "6285c7db91057be58766e4346613b9d4ee35651df8eec4d3ff2781101ba20463",
+  "schema": "mlevolve_end2end_systems_manifest_v1",
+  "system_count": 1,
+  "systems": [
+    {
+      "config_path": "systems_v38/dynamic_hybrid.yaml",
+      "config_sha256": "7609b985c356758c1bbc64280f0a4cfea3720bf22221b6415cb7e90506cb2d63",
+      "description": "Leaf-only sparse Agent selection with causal Debug and atomic actuation",
+      "kind": "internal",
+      "label": "S5-v38",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "dynamic_hybrid"
+    }
+  ]
+}
