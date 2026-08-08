@@ -97,8 +97,61 @@ def _protocol_preflight_recovery_guidance(parent_node: SearchNode) -> list[str]:
     return guidance
 
 
+def _offline_runtime_repair_enabled(agent: Any) -> bool:
+    """Return whether runtime repairs must stay inside the frozen environment.
+
+    The cluster runner has no permission to fetch model repositories or weights.
+    Older experiments did not declare that constraint explicitly, so keep the
+    default permissive for them and opt in from the frozen experiment recipe.
+    """
+
+    ext_cfg = getattr(getattr(agent, "cfg", None), "external_skill_memory", None)
+    if ext_cfg is None:
+        return False
+    if bool(getattr(ext_cfg, "experiment_r_offline_runtime_only", False)):
+        return True
+    policy = str(getattr(ext_cfg, "runtime_network_policy", "") or "").strip().lower()
+    return policy in {"offline", "hermetic", "disabled"}
+
+
+def _runtime_repair_failure_text(parent_node: SearchNode) -> str:
+    return "\n".join(
+        str(getattr(parent_node, field, "") or "")
+        for field in ("exc_type", "term_out", "analysis")
+    ).lower()
+
+
+def _requires_offline_model_repair(parent_node: SearchNode) -> bool:
+    failure_text = _runtime_repair_failure_text(parent_node)
+    return (
+        "filenotfounderror" in failure_text
+        and ("hubconf.py" in failure_text or "torch.hub" in failure_text)
+    )
+
+
+def _remote_runtime_asset_markers(code: str) -> list[str]:
+    """Find repair code that would require network access at execution time."""
+
+    lowered = str(code or "").lower()
+    markers = (
+        "torch.hub.load(",
+        "torch.hub.load_state_dict_from_url(",
+        "torch.hub._get_torch_home(",
+        "urllib.request",
+        "requests.get(",
+        "wget ",
+        "curl ",
+        "http://",
+        "https://",
+    )
+    return [marker for marker in markers if marker in lowered]
+
+
 def _runtime_recovery_guidance(
-    parent_node: SearchNode, *, allow_remote_assets: bool = True
+    parent_node: SearchNode,
+    *,
+    allow_remote_assets: bool = True,
+    offline_runtime_only: bool = False,
 ) -> list[str]:
     """Return targeted constraints for deterministic environment failures."""
     failure_values = []
@@ -130,16 +183,20 @@ def _runtime_recovery_guidance(
             "Set num_workers=0 on every DataLoader used by this script, set persistent_workers=False, and omit prefetch_factor. Preserve the dataset, model, optimizer, batch size, and training budget unless a separate error proves they must change.",
             "Do not redesign or simplify the branch: this is an execution-environment repair only.",
         ])
-    if (
-        allow_remote_assets
-        and
-        "filenotfounderror" in failure_text
-        and ("hubconf.py" in failure_text or "torch.hub" in failure_text)
+    if "filenotfounderror" in failure_text and (
+        "hubconf.py" in failure_text or "torch.hub" in failure_text
     ):
-        guidance.extend([
-            "The configured local torch.hub repository is missing. Do not replace the architecture or model family merely to bypass the missing path.",
-            "Keep the same model variant and first resolve it through an existing configured checkpoint/repository path; if the repository is absent, use torch.hub's online GitHub source during development as explicitly permitted by the environment instructions.",
-        ])
+        if offline_runtime_only or not allow_remote_assets:
+            guidance.extend([
+                "This Job is hermetic: network downloads are unavailable and forbidden during candidate execution.",
+                "The configured local torch.hub repository is missing. Do not call torch.hub.load, download a repository or checkpoint, or add an HTTP/HTTPS/urllib/requests fetch.",
+                "Use an already-present local asset if one exists; otherwise use an installed offline architecture (for example torchvision.models with weights=None) and keep the complete data, training, validation, and submission pipeline intact.",
+            ])
+        else:
+            guidance.extend([
+                "The configured local torch.hub repository is missing. Do not replace the architecture or model family merely to bypass the missing path.",
+                "Keep the same model variant and first resolve it through an existing configured checkpoint/repository path; if the repository is absent, use torch.hub's online GitHub source during development as explicitly permitted by the environment instructions.",
+            ])
     return guidance
 
 
@@ -282,7 +339,11 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         ] = preflight_guidance
     runtime_guidance = _runtime_recovery_guidance(
         parent_node,
-        allow_remote_assets=not host_protocol_preflight_enabled(agent),
+        allow_remote_assets=(
+            not host_protocol_preflight_enabled(agent)
+            and not _offline_runtime_repair_enabled(agent)
+        ),
+        offline_runtime_only=_offline_runtime_repair_enabled(agent),
     )
     if runtime_guidance:
         prompt["Instructions"]["RUNTIME RESOURCE RECOVERY - HIGHEST PRIORITY"] = runtime_guidance
@@ -455,6 +516,28 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
                         current_code = updated_code
                         total_applied += count
 
+                    if (
+                        _offline_runtime_repair_enabled(agent)
+                        and _requires_offline_model_repair(parent_node)
+                        and _remote_runtime_asset_markers(current_code)
+                    ):
+                        markers = _remote_runtime_asset_markers(current_code)
+                        logger.warning(
+                            "Rejecting network-dependent runtime repair: markers=%s",
+                            markers,
+                        )
+                        current_code = parent_node.code
+                        total_applied = 0
+                        retry_note = (
+                            "The candidate still requires network access at runtime "
+                            f"({', '.join(markers)}). Keep the repair hermetic: use only "
+                            "an existing local asset or an installed offline model, and "
+                            "output new SEARCH/REPLACE blocks without any network marker."
+                        )
+                        if retry_idx < max_diff_retries - 1:
+                            continue
+                        break
+
                     if total_applied > 0 and current_code and current_code != parent_node.code and not has_incomplete_block:
                         plan = extract_plan_from_diff_response(response).strip()
                         if not plan:
@@ -533,6 +616,23 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         logger.info(f"Falling back to full code rewrite debugging method for node {parent_node.id}")
         prompt_complete = build_prompt_complete(base_instructions, use_full_code_requirement=True)
         plan, code = plan_and_code_query(agent, prompt_complete)
+
+    if (
+        code
+        and _offline_runtime_repair_enabled(agent)
+        and _requires_offline_model_repair(parent_node)
+        and _remote_runtime_asset_markers(code)
+    ):
+        logger.warning(
+            "Rejecting full-rewrite runtime repair with network markers=%s",
+            _remote_runtime_asset_markers(code),
+        )
+        code = parent_node.code
+        plan = (
+            "Offline runtime repair was rejected because the generated code "
+            "requires a network asset; preserve the failed node for a later "
+            "deterministic repair."
+        )
 
     from_topk = getattr(parent_node, '_topk_triggered', False)
 
