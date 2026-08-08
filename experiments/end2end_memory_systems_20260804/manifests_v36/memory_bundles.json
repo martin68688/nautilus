@@ -1,0 +1,29 @@
+{
+  "excluded_run_ids": [],
+  "manifest_hash": "9010d740e303ca48f6ada950fdf593c215d35ef29328e939604646792a3c8912",
+  "production_binding_path": "/workspace/experiment-end2end-memory-agent-v13/memory-direct-v2/MEMORY_BINDING.json",
+  "production_binding_sha256": "30854860e2a2cd79f788ddd94cd6225192d2ccb203d5c45b9281628baf2b9b56",
+  "same_task_history_policy": "enabled for Leaf; Dynamic pins the direction-aware best clean positive-eligible record during Draft only",
+  "schema": "mlevolve_end2end_memory_bundle_manifest_v1",
+  "source_graph_manifest_schema": "fourtask_runforest_graph_manifest_v2",
+  "source_graph_sha256": "74ce8cd66d4b2b78399ad9a8f703029f33e22a78d2a5e721474dda5065d402fc",
+  "source_index_sha256": "4185ad3c55fce9a5d9af85ccd2059ccb81dad8991c5e98dd6b41cd7a8cb8fced",
+  "task_bundles": {
+    "leaf-classification": {
+      "bundle_id": "end2end-fourtask-direct-leaf-classification-v2",
+      "bundle_manifest_file_sha256": "c65ae7940d96dffdba3428da64a692e34f30298d9c3ef05a1169b782ebc288df",
+      "bundle_manifest_sha256": "4e4a3c3dbe541dc025431d9947a35e650093f008e995f108358e9450f4336d69",
+      "bundle_root": "/workspace/experiment-end2end-memory-agent-v13/memory-direct-v2/leaf-classification",
+      "bundle_version": "v2",
+      "current_file_sha256": "ba458d44121a960493d04fe0b593dfaca341710ad280a8febf89e37f32c4bef0",
+      "formal_child_publication": false,
+      "graph_sha256": "74ce8cd66d4b2b78399ad9a8f703029f33e22a78d2a5e721474dda5065d402fc",
+      "index_sha256": "4185ad3c55fce9a5d9af85ccd2059ccb81dad8991c5e98dd6b41cd7a8cb8fced",
+      "memory_scope": "full_reviewed_fourtask_with_same_task_history",
+      "protocol_ref": "stratified-log-loss-classification@1#a7601be6346021743e01ab144b38e457109ca3ddc701a4aaae9cd562203d79d5",
+      "same_task_best_node_id": "run::20260717_060628_leaf-classification::node::c9368a59b9324c31afc4813545813045",
+      "same_task_history_enabled": true
+    }
+  },
+  "verification_mode": "experiment_fast_nonblocking_v1"
+}
