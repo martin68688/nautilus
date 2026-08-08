@@ -1,0 +1,15 @@
+{
+  "exploratory_pilot": true,
+  "manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3",
+  "schema": "mlevolve_end2end_tasks_manifest_v1",
+  "seed": 1,
+  "task_count": 1,
+  "tasks": [
+    {
+      "direction": "minimize",
+      "display_name": "Leaf",
+      "task_id": "leaf-classification",
+      "terminal_metric": "log_loss"
+    }
+  ]
+}

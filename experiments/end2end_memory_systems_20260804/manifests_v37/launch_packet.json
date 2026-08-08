@@ -1,0 +1,26 @@
+{
+  "component_manifest_hashes": {
+    "budget": "998adbcf5276e205b30492f4efd9c2ff76a8990837a1c2d7dc0ad08b0e2f4ad4",
+    "evaluators": "bdb0d161cffa4d3d5799769247c5a6346755906cd3a25396d3b75a8833468762",
+    "memory_bundles": "9010d740e303ca48f6ada950fdf593c215d35ef29328e939604646792a3c8912",
+    "schemas": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+    "source_lock": "6c3a19bcf6e1b3da532bc2082f9469121deefd9b438cf51d9ede6ffb189d0c1b",
+    "systems": "6bfd4595040c156dfa667792f9c44aa780e3d7598d6fdaa364a1bd468ef1d1e0",
+    "tasks": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+  },
+  "job_count": 2,
+  "jobs": [
+    "smoke-leaf-causal-sparse-v37-job.yaml",
+    "pilot-leaf-causal-sparse-v37-job.yaml"
+  ],
+  "launch_gate": "explicit_user_authorization_required",
+  "leaf_dynamic_repaired_pilot_manifest_hash": "4e6f00d141e8b43ac4cb1947b4ddfe5bbd2d026205c093fb6047d5cdeb83fec8",
+  "leaf_recipe_dynamic_smoke_manifest_hash": "572dacafd5379581936c6f3a97458ecf2316b378a446b3a5d371990df7965c38",
+  "packet_hash": "cd2df88a966157cdd44a7626230c7bcdb5e8d0a4d9004b2de1ead22c7d8ea630",
+  "pilot_manifest_hash": "4e6f00d141e8b43ac4cb1947b4ddfe5bbd2d026205c093fb6047d5cdeb83fec8",
+  "pilot_requires_passing_smoke_gate": true,
+  "pre_run_confirmation": "one local human-facing intent confirmation only",
+  "schema": "mlevolve_end2end_launch_packet_v1",
+  "status": "generated_not_submitted",
+  "workload_objects_created": 0
+}
