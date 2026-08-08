@@ -435,6 +435,20 @@ class ExternalSkillMemoryConfig:
     experiment_r_agentic_max_observed: int = 48
     experiment_r_agentic_temperature: float = 0.0
     experiment_r_agentic_max_tokens: int = 1200
+    # Optional sparse Agent selection.  Stage source allocations become
+    # ceilings, and the Agent may return fewer than Top-K or abstain.
+    experiment_r_flexible_selection_enabled: bool = False
+    experiment_r_allow_agent_abstention: bool = False
+    experiment_r_stage_selection_caps: dict = field(default_factory=dict)
+    experiment_r_debug_causal_only: bool = False
+    experiment_r_same_task_best_pin_stages: list[str] = field(
+        default_factory=lambda: ["draft", "improve", "debug"]
+    )
+    # Bound each retrieved hypothesis to a local code edit.
+    experiment_r_atomic_actuation_enabled: bool = False
+    experiment_r_improve_max_modules: int = 2
+    experiment_r_improve_max_patches: int = 6
+    experiment_r_debug_max_patches: int = 3
     # Dynamic Hybrid may delegate L3 failure/root-cause matching to the
     # Retrieval Agent.  The Host keeps only objective task/evidence gates and
     # literal traceback-anchor extraction; no maintained synonym table is

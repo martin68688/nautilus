@@ -1,0 +1,4 @@
+extends: ../systems_v35/base.yaml
+
+# v37 carries the v36 Dynamic policy plus the runtime schema declaration that
+# the first v36 Smoke proved was required before Agent startup.

@@ -3,21 +3,23 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from omegaconf import OmegaConf
+
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "mlevolve"))
 
 from agents.coder.diff_coder.apply import apply_diff_with_retry
 from agents.memory.experiment_r_router import _task_match_audit
-from config import _load_cfg
+from config import Config, _load_cfg
 from tests.test_experiment_r_dynamic_routing import _layer
 
 
-V36_CONFIG = (
+V37_CONFIG = (
     ROOT
     / "experiments"
     / "end2end_memory_systems_20260804"
-    / "systems_v36"
+    / "systems_v37"
     / "dynamic_hybrid.yaml"
 )
 
@@ -37,7 +39,12 @@ def _enable_sparse_v36(layer) -> None:
 
 
 def test_v36_config_freezes_sparse_causal_atomic_leaf_policy():
-    cfg = _load_cfg(V36_CONFIG, use_cli_args=False)
+    raw_cfg = _load_cfg(V37_CONFIG, use_cli_args=False)
+    raw_cfg.exp_name = "leaf-v37-schema-test"
+    cfg = OmegaConf.merge(
+        OmegaConf.structured(Config),
+        raw_cfg,
+    )
     ext = cfg.external_skill_memory
     assert ext.experiment_r_flexible_selection_enabled is True
     assert ext.experiment_r_allow_agent_abstention is True

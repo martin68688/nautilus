@@ -16,24 +16,24 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v36")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v37")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
-MANIFESTS = ROOT / "manifests_v36"
-SYSTEM_DIR = ROOT / "systems_v36"
+MANIFESTS = ROOT / "manifests_v37"
+SYSTEM_DIR = ROOT / "systems_v37"
 JOB_DIR = ROOT / "jobs"
 SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-leaf-causal-sparse-router-v36"
+RELEASE_ID = "end2end-leaf-causal-sparse-router-v37"
 BASELINE_RELEASE_ID = "end2end-agent-v3"
 RANDOMIZATION_RELEASE_ID = BASELINE_RELEASE_ID
-OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v36/runs"
-EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v36"
+OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v37/runs"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v37"
 SOLVER_TEMPERATURE = 1.0
 SYSTEMS = (
     (
-        "S5-v36",
+        "S5-v37",
         "dynamic_hybrid",
         "internal",
         "Leaf-only sparse Agent selection with causal Debug and atomic actuation",
@@ -379,7 +379,7 @@ def write_system_configs() -> None:
     missing = [path for path in required if not path.is_file()]
     if missing:
         raise FileNotFoundError(
-            "v36 configs must be reviewed before manifest generation: "
+            "v37 configs must be reviewed before manifest generation: "
             + ", ".join(str(path) for path in missing)
         )
 
@@ -454,7 +454,7 @@ def component_manifests(
                 "system_id": system_id,
                 "kind": kind,
                 "description": description,
-                "config_path": f"systems_v36/{system_id}.yaml",
+                "config_path": f"systems_v37/{system_id}.yaml",
                 "config_sha256": sha256_file(config),
                 "limitation": limitation,
                 "primary_reference": reference,
@@ -719,7 +719,7 @@ def execution_manifest(
         ]
         system_ids = system_ids_override
         formal = True
-        prefix = prefix_override or "e2e-pilot-leaf-causal-sparse-router-v36"
+        prefix = prefix_override or "e2e-pilot-leaf-causal-sparse-router-v37"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -937,7 +937,7 @@ def build() -> dict[str, Any]:
         components=components,
         system_ids_override=["dynamic_hybrid"],
         task_ids_override=["leaf-classification"],
-        prefix_override="e2e-smoke-leaf-causal-sparse-router-v36",
+        prefix_override="e2e-smoke-leaf-causal-sparse-router-v37",
     )
     dump_json(
         MANIFESTS / "leaf_recipe_dynamic_smoke_manifest.json",
@@ -946,10 +946,10 @@ def build() -> dict[str, Any]:
     pilot = execution_manifest(kind="pilot", components=components)
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
-    for stale in JOB_DIR.glob("pilot-*-indexed-job-v36.yaml"):
+    for stale in JOB_DIR.glob("pilot-*-indexed-job-v37.yaml"):
         stale.unlink()
     leaf_recipe_job = job(
-        name="mlevolve-e2e-leaf-causal-sparse-smoke-v36",
+        name="mlevolve-e2e-leaf-causal-sparse-smoke-v37",
         manifest_name="leaf_recipe_dynamic_smoke_manifest.json",
         completions=1,
         task_id=None,
@@ -959,7 +959,7 @@ def build() -> dict[str, Any]:
         resume=False,
         budget_profile="debug_smoke",
     )
-    (JOB_DIR / "smoke-leaf-causal-sparse-v36-job.yaml").write_text(
+    (JOB_DIR / "smoke-leaf-causal-sparse-v37-job.yaml").write_text(
         yaml.safe_dump(leaf_recipe_job, sort_keys=False), encoding="utf-8"
     )
     leaf_dynamic_pilot = execution_manifest(
@@ -967,14 +967,14 @@ def build() -> dict[str, Any]:
         components=components,
         system_ids_override=["dynamic_hybrid"],
         task_ids_override=["leaf-classification"],
-        prefix_override="e2e-pilot-leaf-causal-sparse-router-v36",
+        prefix_override="e2e-pilot-leaf-causal-sparse-router-v37",
     )
     dump_json(
         MANIFESTS / "leaf_dynamic_repaired_pilot_manifest.json",
         leaf_dynamic_pilot,
     )
     leaf_dynamic_job = job(
-        name="mlevolve-e2e-leaf-causal-sparse-pilot-v36",
+        name="mlevolve-e2e-leaf-causal-sparse-pilot-v37",
         manifest_name="leaf_dynamic_repaired_pilot_manifest.json",
         completions=1,
         task_id=None,
@@ -983,12 +983,12 @@ def build() -> dict[str, Any]:
         components=components,
         resume=False,
     )
-    (JOB_DIR / "pilot-leaf-causal-sparse-v36-job.yaml").write_text(
+    (JOB_DIR / "pilot-leaf-causal-sparse-v37-job.yaml").write_text(
         yaml.safe_dump(leaf_dynamic_job, sort_keys=False), encoding="utf-8"
     )
     generated_jobs = [
-        "smoke-leaf-causal-sparse-v36-job.yaml",
-        "pilot-leaf-causal-sparse-v36-job.yaml",
+        "smoke-leaf-causal-sparse-v37-job.yaml",
+        "pilot-leaf-causal-sparse-v37-job.yaml",
     ]
     packet = finalize(
         {
@@ -1039,9 +1039,9 @@ def check() -> dict[str, Any]:
         raise ValueError("Leaf-only matrix cardinality mismatch")
     for manifest in (pilot, smoke, leaf_dynamic):
         if manifest["task_ids"] != ["leaf-classification"]:
-            raise ValueError("v36 manifest escaped the Leaf-only task scope")
+            raise ValueError("v37 manifest escaped the Leaf-only task scope")
         if manifest["system_ids"] != ["dynamic_hybrid"]:
-            raise ValueError("v36 manifest escaped the Dynamic-only system scope")
+            raise ValueError("v37 manifest escaped the Dynamic-only system scope")
     if len({row["logical_run_id"] for row in pilot["runs"]}) != 1:
         raise ValueError("Pilot logical run IDs are not unique")
     packet = json.loads((MANIFESTS / "launch_packet.json").read_text())
