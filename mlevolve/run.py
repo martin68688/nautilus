@@ -18,6 +18,7 @@ from utils.visualization import journal_to_string_tree
 from utils.seed import set_global_seed
 from engine.coldstart import build_guidance_description
 from engine.run_control import (
+    RequiredRouterFailureCircuitBreaker,
     draft_execution_lane,
     focused_outcome_context,
     focused_protocol_status,
@@ -243,6 +244,7 @@ def _run_impl():
     runtime_state["completed"] = completed
     search_exhausted = False
     deadline_reached = False
+    router_failure_breaker = RequiredRouterFailureCircuitBreaker()
 
     dev_execution_role = os.environ.get("RUNFOREST_DEV_EXECUTION_ROLE", "").strip()
     draft_start = (
@@ -471,6 +473,7 @@ def _run_impl():
                     focus_futures.discard(fut)
                     try:
                         cur_node = fut.result()
+                        router_failure_breaker.reset()
                         if cur_node:
                             logger.info(f"✅ Task completed: node_id={cur_node.id}, step={cur_node.step}, is_buggy={cur_node.is_buggy}, metric={cur_node.metric.value if cur_node.metric else 'N/A'}")
                         else:
@@ -481,6 +484,14 @@ def _run_impl():
                             logger.warning("Search space exhausted: %s", e)
                         else:
                             logger.exception(f"❌ Exception during task execution: {e}")
+                            if router_failure_breaker.record(e):
+                                search_exhausted = True
+                                logger.error(
+                                    "Required Router failure circuit breaker opened after %s "
+                                    "identical failures; stopping invalid search retries: %s",
+                                    router_failure_breaker.count,
+                                    e,
+                                )
                         cur_node = None
 
                     with lock:

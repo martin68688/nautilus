@@ -8,6 +8,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "mlevolve"))
 
 from engine.run_control import (  # noqa: E402
+    RequiredRouterFailureCircuitBreaker,
     draft_execution_lane,
     focused_outcome_context,
     focused_protocol_status,
@@ -40,6 +41,23 @@ def test_focused_protocol_status_uses_only_latest_target_role_node():
     assert status.seen is True
     assert status.state == "final_pending"
     assert status.active is True
+
+
+def test_required_router_failure_circuit_breaker_stops_identical_retry_storm():
+    breaker = RequiredRouterFailureCircuitBreaker(threshold=3)
+    error = RuntimeError(
+        "Stage-hybrid memory retrieval failed: deterministic router defect"
+    )
+
+    assert breaker.record(error) is False
+    assert breaker.record(error) is False
+    assert breaker.record(error) is True
+    assert breaker.count == 3
+
+    breaker.reset()
+    assert breaker.count == 0
+    assert breaker.record(RuntimeError("unrelated candidate failure")) is False
+    assert breaker.count == 0
 
 
 def test_active_focused_protocol_outlives_shared_step_budget():

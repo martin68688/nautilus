@@ -4795,11 +4795,17 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if stage not in STAGE_QUOTAS:
             raise ValueError(f"Unsupported stage-hybrid stage: {stage}")
         if self.experiment_r_enabled:
+            # Exp-R deliberately has only three retrieval policies
+            # (Draft/Improve/Debug), while the search engine retains finer
+            # generation-stage names such as Evolution and Fusion.  Route
+            # those aliases through the Improve policy without changing the
+            # raw generation stage that retrieve_for_node records on the pack.
+            from agents.memory.end2end_memory_system import canonical_stage
             from agents.memory.experiment_r_router import build_experiment_r_pack
 
             return build_experiment_r_pack(
                 self,
-                stage=stage,
+                stage=canonical_stage(stage),
                 task_id=task_id,
                 task_desc=task_desc,
                 query_text=query_text,

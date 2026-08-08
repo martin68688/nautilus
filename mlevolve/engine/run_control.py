@@ -1,10 +1,43 @@
-"""Run-loop controls for a role-focused protocol repair."""
+"""Run-loop controls for role-focused repair and deterministic failures."""
 
 from dataclasses import dataclass
 from typing import Iterable, Literal, Optional
 
 
 ACTIVE_PROTOCOL_STATES = frozenset({"pending", "stage_in_progress", "final_pending"})
+REQUIRED_ROUTER_FAILURE_PREFIX = "Stage-hybrid memory retrieval failed:"
+
+
+@dataclass
+class RequiredRouterFailureCircuitBreaker:
+    """Stop a broken required Router from consuming the full search budget.
+
+    Exp-R retrieval is fail-closed, so repeatedly receiving the same required
+    Router exception cannot produce a valid child.  A short threshold permits
+    one-off/transient failures, but converts a deterministic retry storm into
+    an explicit partial outcome.
+    """
+
+    threshold: int = 3
+    signature: str = ""
+    count: int = 0
+
+    def record(self, error: BaseException) -> bool:
+        message = str(error)
+        if not message.startswith(REQUIRED_ROUTER_FAILURE_PREFIX):
+            self.reset()
+            return False
+        signature = f"{type(error).__name__}:{message}"
+        if signature == self.signature:
+            self.count += 1
+        else:
+            self.signature = signature
+            self.count = 1
+        return self.count >= self.threshold
+
+    def reset(self) -> None:
+        self.signature = ""
+        self.count = 0
 
 
 def draft_execution_lane(node: object) -> Literal["execute", "repair"]:

@@ -153,6 +153,19 @@ def test_frozen_design_and_config_are_structurally_valid():
     assert cfg.methodology_kb_path == ""
 
 
+def test_evolution_uses_improve_router_policy_and_preserves_raw_stage(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+
+    _text, _refs, pack = _retrieve(
+        layer,
+        stage="evolution",
+        query="stagnant replay branch needs a different improvement",
+    )
+
+    assert pack["stage_route"]["stage"] == "improve"
+    assert pack["requested_generation_stage"] == "evolution"
+
+
 def test_host_candidate_pool_attestation_signature_is_fail_closed():
     identity = HostCollectorIdentity.generate()
     payload = {
