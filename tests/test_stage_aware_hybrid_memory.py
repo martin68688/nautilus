@@ -614,7 +614,7 @@ def test_hybrid_retrieval_errors_fail_closed():
         fetch_external_skill_memory(agent, "draft")
 
 
-def test_baseline_and_reproduction_roles_bypass_hybrid():
+def test_draft_roles_bypass_only_draft_and_reopen_hybrid_afterward():
     from agents.memory.external_skill_memory import fetch_external_skill_memory
 
     class CountingHybrid:
@@ -635,12 +635,21 @@ def test_baseline_and_reproduction_roles_bypass_hybrid():
         task_desc="task description",
     )
     for role in ("coldstart_baseline", "memory_reproduction"):
-        text, refs, _source = fetch_external_skill_memory(agent, "improve", draft_role=role)
+        text, refs, _source = fetch_external_skill_memory(
+            agent, "draft", draft_role=role
+        )
         assert text == "" and refs == []
     assert layer.calls == 0
+
+    for role in ("coldstart_baseline", "memory_reproduction"):
+        text, refs, _source = fetch_external_skill_memory(
+            agent, "improve", draft_role=role
+        )
+        assert text == "memory" and refs == ["ref"]
+    assert layer.calls == 2
     text, refs, _source = fetch_external_skill_memory(agent, "improve", draft_role="novel_exploration")
     assert text == "memory" and refs == ["ref"]
-    assert layer.calls == 1
+    assert layer.calls == 3
 
 
 def test_replacement_draft_retrieves_as_novel_exploration():
@@ -955,6 +964,40 @@ def test_recipe_overlay_loads_frozen_three_layer_nodes_and_dynamic_uses_layered_
     assert layer.recipe_implementation_receipt["required_node_count"] == 290
     assert layer.recipe_implementation_receipt["missing_node_ids"]
     assert layer.recipe_implementation_receipt["complete_recipe_coverage"] is False
+    best_id = (
+        "postsmoke::e2e-smoke-leaf-layered-recipe-v4__leaf-classification__"
+        "dynamic_hybrid__seed-1::d2fccc688085447c9ad84356deac9194"
+    )
+    assert len(layer.nodes[best_id]["implementation_capsule"]["code"]) == 21762
+
+
+def test_recipe_overlays_load_for_full_experiment_r_dynamic_router():
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+    from config import _load_cfg
+
+    cfg = _load_cfg(DYNAMIC_CONFIG, use_cli_args=False)
+    cfg.exp_id = "leaf-classification"
+    cfg.agent.search.num_gpus = 1
+    cfg.external_skill_memory.retrieval_control = "dynamic_hybrid"
+    cfg.external_skill_memory.experiment_r_enabled = True
+    cfg.external_skill_memory.experiment_r_memory_pool_sha256 = "a" * 64
+    layer = StageAwareHybridMemoryLayer(
+        graph_path=str(GRAPH),
+        index_path=str(INDEX),
+        source_name="run_forest_stage_hybrid_memory",
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        enable_agentic=False,
+        top_k=6,
+        max_chars=0,
+        cfg=cfg,
+    )
+
+    assert layer.retrieval_control == "dynamic_hybrid"
+    assert layer.experiment_r_enabled is True
+    assert layer.recipe_sop_receipt["node_count"] == 89
+    assert layer.recipe_evidence_receipt["selected_node_count"] == 152
+    assert layer.recipe_implementation_receipt["node_count"] == 83
     best_id = (
         "postsmoke::e2e-smoke-leaf-layered-recipe-v4__leaf-classification__"
         "dynamic_hybrid__seed-1::d2fccc688085447c9ad84356deac9194"

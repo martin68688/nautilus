@@ -24,6 +24,9 @@ from typing import Any, Iterator, Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
+MLEVOLVE_ROOT = REPO / "mlevolve"
+if str(MLEVOLVE_ROOT) not in sys.path:
+    sys.path.insert(0, str(MLEVOLVE_ROOT))
 SYSTEM_CONFIGS = ROOT / "systems"
 HOST_RESULT_SCHEMA = "mlevolve_experiment_c_host_terminal_result_v1"
 

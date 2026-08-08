@@ -1,0 +1,60 @@
+{
+  "candidate_inventory": [
+    {
+      "node_id": "422e3154c5274b6c86de6f9149325981",
+      "submission": "submission_422e3154c5274b6c86de6f9149325981.csv",
+      "submission_sha256": "1bc95b916773771fa9558c20f689a0572fb4bec9a349e0a696c2eb796b76a8b4"
+    }
+  ],
+  "candidate_set_frozen_before_scoring": true,
+  "candidate_set_hash": "a65619b24bd10286a45c90b3e455830dd932db3514318c00ffcd06bd28b939cb",
+  "evaluation_request_hash": "1d0acb9548e9a3a876463a9e6257121f035d19c53f5518ff21f14cabc3b8b0bc",
+  "evaluation_request_sha256": "9bb37ffd7ad467801516c291605aa2f2d59f1022a016cad757f6a8a009e463a8",
+  "evaluator_manifest_sha256": "dac23ecfeb625e7a2cd650a710012f0028f83cf93a873d227356622fc4c1cf55",
+  "journal_sha256": "3fcf8fdbb326b5e5d15a3c5891ff30c2b3e49febf644c6795fbdb534352ae030",
+  "maximize": true,
+  "metric": "binary_roc_auc",
+  "oracle_best_node_id": "422e3154c5274b6c86de6f9149325981",
+  "oracle_best_score": 0.999989751278162,
+  "oracle_best_submission_sha256": "1bc95b916773771fa9558c20f689a0572fb4bec9a349e0a696c2eb796b76a8b4",
+  "oracle_selection_is_host_only": true,
+  "report_hash": "42d17918b39b4256abf90e214d6dd85cfcf9d7c7206eeb5341a8a4dcbbb11d38",
+  "report_schema": "fixed_holdout_terminal_score_report_v3",
+  "results": [
+    {
+      "draft_role": "novel_exploration",
+      "internal_metric": 0.9999419504900706,
+      "internal_metric_disposition": "search_only",
+      "node_id": "422e3154c5274b6c86de6f9149325981",
+      "score": 0.999989751278162,
+      "stage": "draft",
+      "status": "scored",
+      "submission": "submission_422e3154c5274b6c86de6f9149325981.csv",
+      "submission_sha256": "1bc95b916773771fa9558c20f689a0572fb4bec9a349e0a696c2eb796b76a8b4"
+    }
+  ],
+  "schema": "mlevolve_fixed_holdout_v1",
+  "scores_were_visible_during_search": false,
+  "selected_node_id": "422e3154c5274b6c86de6f9149325981",
+  "selected_score": 0.999989751278162,
+  "selected_submission": "submission_422e3154c5274b6c86de6f9149325981.csv",
+  "selected_submission_sha256": "1bc95b916773771fa9558c20f689a0572fb4bec9a349e0a696c2eb796b76a8b4",
+  "selection_basis": {
+    "draft_role": "novel_exploration",
+    "formal_rank_claim_authorized": false,
+    "metric_disposition": "search_only",
+    "metric_maximize": true,
+    "metric_value": 0.9999419504900706,
+    "source_score_inherited": false,
+    "stage": "draft",
+    "terminal_metric_observed": false,
+    "type": "solver_internal_search_metric"
+  },
+  "selection_frozen_before_terminal_evaluation": true,
+  "selection_policy": "terminal_only",
+  "split_id": "aerial-cactus-identification-6217a0196966-2089629209a8",
+  "system_selection_used_terminal_labels": false,
+  "task_id": "aerial-cactus-identification",
+  "terminal_score_sealed": true,
+  "train_manifest_sha256": "a7968c2bd3ee254f6e70d6b360bc9362aafc4449b5985078d508ecb3b8de64ea"
+}

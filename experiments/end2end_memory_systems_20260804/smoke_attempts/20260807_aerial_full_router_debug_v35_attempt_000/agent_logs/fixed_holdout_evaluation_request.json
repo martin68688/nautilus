@@ -1,0 +1,66 @@
+{
+  "authority_writeback": {
+    "active_protocol": {
+      "canonical_hash": "cdb8439fa96b3add95788d9c1462811e5319ef73bca1cb4cc606ce07cd7a3a29",
+      "protocol_id": "mlevolve-default",
+      "version": "1"
+    },
+    "authority_ledger_event_count": 0,
+    "authority_ledger_last_event_hash": "",
+    "authority_ledger_path": "/workspace/experiment-end2end-memory-agent-v35/runs/e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/attempt-000/agent/logs/20260807_182955_e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/authority_events.jsonl",
+    "authority_mode": "off",
+    "authority_snapshot_path": "/workspace/experiment-end2end-memory-agent-v35/runs/e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/attempt-000/agent/logs/20260807_182955_e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/authority_snapshot.json",
+    "authority_snapshot_sha256": "",
+    "bundle_id": "end2end-fourtask-direct-aerial-cactus-identification-v2",
+    "bundle_manifest_sha256": "87b03da6fde381807b2ac58f18ad0404215c0c316d57e3cea556cf39e2a9c812",
+    "collector_version": "1",
+    "descriptor_hash": "d0f5164b9e4acfbcaf66fe54b58a2d5449c4971a7e3048c114c75c546150f121",
+    "policy_version": "authority_v1",
+    "protocol_registry_path": "/workspace/nautilus-exp-end2end-agent-v35/mlevolve/config/protocols",
+    "rollout_version_hash": "22ff3750bd71cf7ef1e2b418efdd032b10e42c3964fa82ea64073f302695a83e",
+    "run_id": "20260807_182955_e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1",
+    "schema": "fixed_holdout_authority_writeback_descriptor_v1",
+    "session_overlay_id": "overlay::848d8e94bc6af025ad9d61fe",
+    "session_overlay_manifest_sha256": "b25784cc7a60365083b43be9ead8f50309cfe37f1809d413188024aed7bb9c99",
+    "session_overlay_path": "/workspace/experiment-end2end-memory-agent-v35/runs/e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/attempt-000/agent/logs/20260807_182955_e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/session_overlay",
+    "status": "writeback_incomplete",
+    "task_id": "aerial-cactus-identification"
+  },
+  "candidate_inventory": [
+    {
+      "node_id": "422e3154c5274b6c86de6f9149325981",
+      "submission": "submission_422e3154c5274b6c86de6f9149325981.csv",
+      "submission_sha256": "1bc95b916773771fa9558c20f689a0572fb4bec9a349e0a696c2eb796b76a8b4"
+    }
+  ],
+  "candidate_set_hash": "a65619b24bd10286a45c90b3e455830dd932db3514318c00ffcd06bd28b939cb",
+  "journal_path": "/workspace/experiment-end2end-memory-agent-v35/runs/e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/attempt-000/agent/logs/20260807_182955_e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/journal.json",
+  "journal_sha256": "3fcf8fdbb326b5e5d15a3c5891ff30c2b3e49febf644c6795fbdb534352ae030",
+  "maximize": true,
+  "metric": "binary_roc_auc",
+  "request_hash": "1d0acb9548e9a3a876463a9e6257121f035d19c53f5518ff21f14cabc3b8b0bc",
+  "request_schema": "fixed_holdout_evaluation_request_v3",
+  "schema": "mlevolve_fixed_holdout_v1",
+  "scores_were_visible_during_search": false,
+  "selected_node_id": "422e3154c5274b6c86de6f9149325981",
+  "selected_submission": "submission_422e3154c5274b6c86de6f9149325981.csv",
+  "selected_submission_sha256": "1bc95b916773771fa9558c20f689a0572fb4bec9a349e0a696c2eb796b76a8b4",
+  "selection_basis": {
+    "draft_role": "novel_exploration",
+    "formal_rank_claim_authorized": false,
+    "metric_disposition": "search_only",
+    "metric_maximize": true,
+    "metric_value": 0.9999419504900706,
+    "source_score_inherited": false,
+    "stage": "draft",
+    "terminal_metric_observed": false,
+    "type": "solver_internal_search_metric"
+  },
+  "selection_frozen_before_terminal_evaluation": true,
+  "selection_policy": "terminal_only",
+  "split_id": "aerial-cactus-identification-6217a0196966-2089629209a8",
+  "status": "awaiting_external_evaluator",
+  "submission_dir": "/workspace/experiment-end2end-memory-agent-v35/runs/e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/attempt-000/agent/workspace/20260807_182955_e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/submission",
+  "task_id": "aerial-cactus-identification",
+  "train_manifest_sha256": "a7968c2bd3ee254f6e70d6b360bc9362aafc4449b5985078d508ecb3b8de64ea"
+}

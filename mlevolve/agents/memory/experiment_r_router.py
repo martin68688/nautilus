@@ -1048,6 +1048,10 @@ def _compact_agent_row(layer: Any, row: dict[str, Any]) -> dict[str, Any]:
         "id": str(row.get("id") or ""),
         "source": str(row.get("source") or ""),
         "score": round(float(row.get("score") or 0.0), 8),
+        "source_rank": int(row.get("source_rank") or 0),
+        "rrf_priority_score": round(
+            float(row.get("rrf_priority_score") or 0.0), 10
+        ),
         "stage": node.get("stage") or node.get("stage_pair"),
         "task": node.get("task"),
         "metric_improvement": node.get("metric_improvement"),
@@ -1095,6 +1099,9 @@ def _agentic_selection_contract(
         "requested_source_slots": requested,
         "minimum_source_counts": minimum,
         "available_source_counts": available,
+        "deterministic_backfill_slots": max(
+            0, target_count - sum(int(value) for value in minimum.values())
+        ),
         "selection_semantics": "agent_final_ids_with_frozen_source_minima_v1",
     }
 
@@ -1692,6 +1699,24 @@ def _agentic_candidate_pool(
         )
         return len(admitted)
 
+    def refresh_rrf_shortlist() -> None:
+        """Expose Exp-R's stage RRF as the Agent shortlist priority signal."""
+
+        weights = FUSION_WEIGHTS["dynamic_hybrid"][stage]
+        for source in ("sop", "runforest"):
+            source_rows = sorted(
+                (row for row in known.values() if row.get("source") == source),
+                key=lambda row: (
+                    -float(row.get("score") or row.get("flat_score") or 0.0),
+                    str(row.get("id") or ""),
+                ),
+            )
+            for rank, row in enumerate(source_rows, 1):
+                row["source_rank"] = rank
+                row["rrf_priority_score"] = float(weights[source]) / (
+                    RRF_K + rank
+                )
+
     # Safe landmarks keep the first Agent call grounded while every later
     # search still operates over the complete authorized Bundle.
     same_task_rows = _same_task_best_rows(
@@ -1738,6 +1763,7 @@ def _agentic_candidate_pool(
         ),
         "initial current-context landmarks",
     )
+    refresh_rrf_shortlist()
 
     selected_ids: list[str] = []
     agent_calls = 0
@@ -1747,6 +1773,7 @@ def _agentic_candidate_pool(
     forced_finalization_used = False
     max_steps = int(layer.experiment_r_agentic_max_steps)
     for step_index in range(max_steps):
+        refresh_rrf_shortlist()
         selection_contract = _agentic_selection_contract(
             layer,
             stage=stage,
@@ -1996,6 +2023,10 @@ def _agentic_candidate_pool(
             "trace": trace,
             "trace_sha256": _sha(trace),
             "fallback_used": False,
+            "shortlist_rrf_applied": True,
+            "shortlist_rrf_weights": copy.deepcopy(
+                FUSION_WEIGHTS["dynamic_hybrid"][stage]
+            ),
         },
         "l3_agent_match": copy.deepcopy(l3_agent_match or {}),
     }
@@ -2779,6 +2810,13 @@ def build_experiment_r_pack(
         active_protocol=active_protocol,
     )
     selected, route = _select(pool, control, stage, layer.experiment_r_top_k)
+    retrieval = pool.get("retrieval_agent") or {}
+    same_task = retrieval.get("same_task_best_first") or {}
+    same_task_pool_nonempty = bool(same_task.get("eligible_history_found"))
+    if same_task_pool_nonempty and not selected:
+        raise RuntimeError(
+            "Dynamic Router silently abstained despite non-empty same-task history"
+        )
     visible_sop_ids = set(visibility_pack.effective_sop_ids)
     unsafe = []
     for row in selected:
@@ -2852,7 +2890,25 @@ def build_experiment_r_pack(
         observed_ids.add(item["id"])
     for row in pre_gate_raw_candidates:
         row["final_prompt_visible"] = row["candidate_id"] in set(selected_ids)
-    return {
+    if selected:
+        activation_status = (
+            "deterministic_fallback"
+            if retrieval.get("fallback_used")
+            else "retrieval_agent_selected"
+            if route.get("decision_authority")
+            else "deterministic_router_selected"
+        )
+        abstention = None
+    else:
+        activation_status = "abstain"
+        abstention = {
+            "status": "abstain",
+            "reason": (
+                pool.get("fallback_reason")
+                or "no_eligible_candidates_after_task_stage_and_execution_gates"
+            ),
+        }
+    pack = {
         "schema": PACK_SCHEMA,
         "algorithm_version": (
             "experiment_r_agentic_final_selection_v2"
@@ -2894,6 +2950,21 @@ def build_experiment_r_pack(
         "failure_patterns": [],
         "navigation_trace": _navigation_trace(pool, selected),
         "final_prompt_candidate_ids": selected_ids,
+        "router_activation": {
+            "status": activation_status,
+            "candidate_pool_nonempty": bool(
+                pool.get("sop_candidates") or pool.get("runforest_candidates")
+            ),
+            "same_task_pool_nonempty": same_task_pool_nonempty,
+            "selected_count": len(selected_ids),
+            "visible_count": 0,
+            "fallback_used": bool(retrieval.get("fallback_used")),
+            "reason": (
+                str(retrieval.get("fallback_reason") or "")
+                if retrieval.get("fallback_used")
+                else ""
+            ),
+        },
         "pre_gate_raw_candidates": pre_gate_raw_candidates,
         "visible_clause_ids": list(visibility_pack.effective_clause_ids),
         "visibility_trace": copy.deepcopy(visibility_pack.visibility_trace),
@@ -2921,6 +2992,9 @@ def build_experiment_r_pack(
             "all_outputs_authorized": True,
         },
     }
+    if abstention is not None:
+        pack["memory_abstention"] = abstention
+    return pack
 
 
 def build_no_memory_pack(
@@ -3127,6 +3201,10 @@ def format_experiment_r_pack(layer: Any, pack: dict[str, Any]) -> str:
     visible_ids = [
         row["id"] for row in pack["selected_items"] if _prompt_marker_visible(text, row)
     ]
+    if pack.get("selected_items") and not visible_ids:
+        raise RuntimeError(
+            "Dynamic Router selected a non-empty shortlist but exposed an empty Prompt"
+        )
     prompt_pin = (
         (pack.get("retrieval_agent") or {})
         .get("same_task_best_first", {})
@@ -3144,6 +3222,9 @@ def format_experiment_r_pack(layer: Any, pack: dict[str, Any]) -> str:
     pack["prompt_truncated"] = truncated
     pack["prompt_visible_candidate_ids"] = visible_ids
     pack["final_prompt_candidate_ids"] = visible_ids
+    activation = pack.setdefault("router_activation", {})
+    activation["visible_count"] = len(visible_ids)
+    activation["prompt_nonempty"] = bool(text and visible_ids)
     pack["final_prompt_candidates"] = [
         {
             "candidate_id": str(row["id"]),

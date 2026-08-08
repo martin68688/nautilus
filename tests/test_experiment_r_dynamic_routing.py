@@ -856,6 +856,204 @@ def test_agentic_router_invalid_id_falls_back_and_retains_failure(tmp_path):
     assert "unobserved candidate" in pack["retrieval_agent"]["fallback_reason"]
 
 
+def test_draft_coldstart_adoption_alias_matches_dynamic_router_pack(tmp_path):
+    from engine.search_node import SearchNode
+
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    _text, refs, pack = _retrieve(layer, stage="draft")
+    assert pack["stage_route"]["stage"] == "draft"
+    agent = SimpleNamespace(
+        external_skill_memory=layer,
+        cfg=SimpleNamespace(exp_id="task", run_identity=SimpleNamespace()),
+        adoption_tracking_enabled=True,
+        evaluation_authority=None,
+    )
+    node = SearchNode(code="print('draft')", stage="draft")
+
+    log_adoption(
+        node,
+        agent,
+        layer.source_name,
+        refs,
+        "coldstart",
+    )
+
+    assert node.memory_routing_trace["node_stage"] == "draft"
+    assert node.memory_routing_trace["node_stage_raw"] == "coldstart"
+    assert node.memory_routing_trace["pack_stage"] == "draft"
+    assert node.memory_routing_trace["pack_stage_raw"] == "draft"
+
+
+def test_coldstart_role_abstention_pack_records_canonical_draft_stage(tmp_path):
+    from engine.search_node import SearchNode
+
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="task",
+        task_desc="text classification",
+        query_parts=["cold start"],
+        draft_role="coldstart_baseline",
+    )
+    pack = layer.current_navigation_pack()
+    assert text == "" and refs == []
+    assert pack["schema"] == "stage_hybrid_role_policy_abstention_v1"
+    assert pack["stage_route"]["stage"] == "draft"
+    agent = SimpleNamespace(
+        external_skill_memory=layer,
+        cfg=SimpleNamespace(exp_id="task", run_identity=SimpleNamespace()),
+        adoption_tracking_enabled=True,
+        evaluation_authority=None,
+    )
+    node = SearchNode(
+        code="print('coldstart')",
+        stage="draft",
+        draft_role="coldstart_baseline",
+    )
+
+    log_adoption(node, agent, layer.source_name, [], "draft")
+
+    assert node.memory_routing_trace["node_stage"] == "draft"
+    assert node.memory_routing_trace["node_stage_raw"] == "draft"
+    assert node.memory_routing_trace["pack_stage"] == "draft"
+    assert node.memory_routing_trace["pack_stage_raw"] == "draft"
+
+
+def test_replay_branch_reopens_router_for_improve_and_debug_without_pack_leakage(
+    tmp_path,
+):
+    from agents.memory.external_skill_memory import fetch_external_skill_memory
+    from engine.search_node import SearchNode
+
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer.experiment_r_agentic_max_steps = 1
+    calls = []
+
+    def query_fn(**kwargs):
+        prompt = kwargs["system_message"]
+        stage = str(prompt["stage"])
+        known = json.loads(prompt["known_candidates"])
+        contract = json.loads(prompt["final_selection_contract"])
+        selected = []
+        for source in ("sop", "runforest"):
+            required = int(contract["minimum_source_counts"][source])
+            selected.extend(
+                row["id"]
+                for row in known
+                if row["source"] == source and row["id"] not in selected
+            )
+            source_ids = [
+                node_id
+                for node_id in selected
+                if next(row for row in known if row["id"] == node_id)["source"]
+                == source
+            ]
+            for node_id in source_ids[required:]:
+                selected.remove(node_id)
+        for row in known:
+            if len(selected) >= int(contract["exact_selection_count"]):
+                break
+            if row["id"] not in selected:
+                selected.append(row["id"])
+        calls.append(
+            {
+                "stage": stage,
+                "selected_ids": list(selected),
+                "known_candidates": known,
+            }
+        )
+        return {
+            "action": "finish",
+            "reason": f"final {stage} selection",
+            "selected_ids": selected,
+        }
+
+    layer._experiment_r_agentic_query_fn = query_fn
+    agent = SimpleNamespace(
+        external_skill_memory=layer,
+        cfg=SimpleNamespace(
+            exp_id="task",
+            run_identity=SimpleNamespace(),
+        ),
+        task_desc="text classification",
+        adoption_tracking_enabled=True,
+        evaluation_authority=None,
+    )
+
+    improve_text, improve_refs, source = fetch_external_skill_memory(
+        agent,
+        "improve",
+        parent_plan="improve the replayed classifier",
+        execution_output="validation succeeded",
+        draft_role="memory_reproduction",
+    )
+    improve_pack = layer.current_navigation_pack()
+    assert improve_text and improve_refs and source == layer.source_name
+    assert improve_pack["stage_route"]["stage"] == "improve"
+    assert improve_pack["stage_route"]["decision_authority"].startswith(
+        "retrieval_agent"
+    )
+    assert improve_pack["router_activation"]["status"] == (
+        "retrieval_agent_selected"
+    )
+    assert improve_pack["router_activation"]["prompt_nonempty"] is True
+    assert improve_pack["retrieval_agent"]["agent_calls"] == 1
+    assert improve_pack["retrieval_agent"]["fallback_used"] is False
+    assert improve_pack["retrieval_agent"]["shortlist_rrf_applied"] is True
+    assert improve_pack["retrieval_agent"]["shortlist_rrf_weights"] == {
+        "sop": 0.40,
+        "runforest": 0.60,
+    }
+    assert any(
+        row["rrf_priority_score"] > 0
+        for row in calls[0]["known_candidates"]
+    )
+    same_task_best = improve_pack["retrieval_agent"]["same_task_best_first"][
+        "best_runforest_id"
+    ]
+    assert same_task_best in improve_pack["final_prompt_candidate_ids"]
+
+    node = SearchNode(
+        code="print('improve')",
+        stage="improve",
+        draft_role="memory_reproduction",
+    )
+    log_adoption(node, agent, source, improve_refs, "improve")
+    assert node.memory_routing_trace["node_stage"] == "improve"
+    assert node.memory_routing_trace["pack_stage"] == "improve"
+    assert node.memory_routing_trace["retrieval_agent"]["agent_calls"] == 1
+
+    debug_text, debug_refs, _source = fetch_external_skill_memory(
+        agent,
+        "debug",
+        execution_output="RuntimeError: classifier shape mismatch",
+        error_type="RuntimeError",
+        draft_role="memory_reproduction",
+    )
+    debug_pack = layer.current_navigation_pack()
+    assert debug_text and debug_refs
+    assert debug_pack["stage_route"]["stage"] == "debug"
+    assert debug_pack["requested_generation_stage"] == "debug"
+    assert debug_pack["retrieval_agent"]["agent_calls"] == 1
+    assert [row["stage"] for row in calls] == ["improve", "debug"]
+
+    gated_text, gated_refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="task",
+        task_desc="text classification",
+        query_parts=["exact replay"],
+        draft_role="memory_reproduction",
+    )
+    gated_pack = layer.current_navigation_pack()
+    assert gated_text == "" and gated_refs == []
+    assert gated_pack["schema"] == "stage_hybrid_role_policy_abstention_v1"
+    assert gated_pack["stage_route"]["stage"] == "draft"
+    assert gated_pack["stage_route"]["route"] == "role_policy_abstention"
+    assert gated_pack["role_policy_abstention"]["draft_only"] is True
+    assert "retrieval_agent" not in gated_pack
+
+
 def test_formal_visible_clause_closes_exact_navigation_support_only():
     sop_id = "sop::formal"
     transition_id = "transition::clean"

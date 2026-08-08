@@ -27,6 +27,7 @@ SYSTEM_IDS = (
 )
 
 STAGE_ALIASES = {
+    "coldstart": "draft",
     "multi_fusion": "improve",
     "fusion_draft": "improve",
     "aggregation": "improve",

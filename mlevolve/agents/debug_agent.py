@@ -235,15 +235,11 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     }
     if parent_node.draft_role:
         inherited = [
-            f"This node belongs to the `{parent_node.draft_role}` branch.",
-            f"Inherited contract: {parent_node.role_contract}",
+            f"This node originated from the `{parent_node.draft_role}` Draft branch.",
+            "That role selected only the initial Draft origin. It does not restrict "
+            "the Dynamic Router or Debug-memory visibility at this stage.",
             "Apply the smallest root-cause fix that preserves the branch's intended solution.",
         ]
-        if parent_node.draft_role == "memory_reproduction":
-            inherited.append(
-                "Do not remove or replace DeBERTa/XGBoost/Logistic Regression/TF-IDF/weight-blending "
-                "components merely to make the script easier to run."
-            )
         if (
             parent_node.replay_source
             and parent_node.replay_source.get("requires_full_runtime_migration") is True
@@ -255,7 +251,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
                     "Do not inherit the historical metric. The derived program must obtain a fresh Host score and fresh signed runtime receipts under its new code hash.",
                 ]
             )
-        prompt["Instructions"]["Inherited draft role contract (MANDATORY)"] = inherited
+        prompt["Instructions"]["Draft origin metadata"] = inherited
     if parent_node.leakage_audit and parent_node.leakage_audit.get("status") != "clean":
         repair_contract = {
             "LEAKAGE REPAIR CONTRACT - HIGHEST PRIORITY": [

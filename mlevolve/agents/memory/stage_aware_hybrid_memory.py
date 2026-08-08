@@ -1502,11 +1502,26 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         )
         return node
 
+    def _recipe_overlay_route_enabled(self) -> bool:
+        """Whether the active router may consume the frozen Recipe overlays.
+
+        Recipe overlays were introduced for ``layered_strategy``.  The full
+        Experiment-R route deliberately reuses the same frozen SOP, evidence,
+        and implementation capsules, so ``dynamic_hybrid`` must be admitted
+        when (and only when) Experiment-R is enabled.
+        """
+
+        return self.retrieval_control == "layered_strategy" or (
+            self.retrieval_control == "dynamic_hybrid"
+            and self.experiment_r_enabled
+        )
+
     def _load_recipe_sop_overlay(self) -> None:
-        if self.retrieval_control != "layered_strategy":
-            raise ValueError("Recipe SOP overlay is only valid for layered_strategy")
-        if self.experiment_r_enabled:
-            raise ValueError("Recipe layered_strategy cannot be short-circuited by Experiment R")
+        if not self._recipe_overlay_route_enabled():
+            raise ValueError(
+                "Recipe SOP overlay requires layered_strategy or the full "
+                "Experiment-R dynamic_hybrid router"
+            )
         if len(self.recipe_sop_file_sha256) != 64 or len(self.recipe_sop_bundle_sha256) != 64:
             raise ValueError("Recipe SOP overlay requires frozen file and bundle SHA-256 pins")
         path = self._resolve_config_path(self.recipe_sop_path)
@@ -1578,8 +1593,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         }
 
     def _load_recipe_evidence_overlay(self) -> None:
-        if self.retrieval_control != "layered_strategy":
-            raise ValueError("Recipe evidence overlay is only valid for layered_strategy")
+        if not self._recipe_overlay_route_enabled():
+            raise ValueError(
+                "Recipe evidence overlay requires layered_strategy or the full "
+                "Experiment-R dynamic_hybrid router"
+            )
         if len(self.recipe_evidence_file_sha256) != 64 or len(
             self.recipe_evidence_manifest_sha256
         ) != 64:
@@ -1973,9 +1991,10 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         strategy or repair has been selected, so code never changes ranking.
         """
 
-        if self.retrieval_control != "layered_strategy":
+        if not self._recipe_overlay_route_enabled():
             raise ValueError(
-                "Recipe implementation capsules are only valid for layered_strategy"
+                "Recipe implementation capsules require layered_strategy or the "
+                "full Experiment-R dynamic_hybrid router"
             )
         path = self._resolve_config_path(self.recipe_implementation_path)
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -5747,6 +5766,60 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         """Return a defensive copy of this thread's latest retrieval pack."""
         return copy.deepcopy(getattr(self._trace_local, "pack", {}))
 
+    def _begin_navigation_request(self) -> None:
+        """Clear request-local state before every retrieval decision.
+
+        A branch that abstains or is role-gated must never inherit a sibling
+        node's Router trace.  Clearing both fields up front also makes an
+        exception observable as a missing current request rather than stale
+        successful navigation.
+        """
+
+        self._trace_local.pack = {}
+        self._trace_local.visibility_pack = None
+        self._last_agentic_pack = {}
+
+    def _record_role_policy_abstention(
+        self,
+        *,
+        stage: str,
+        task_id: str,
+        draft_role: str | None,
+        reason: str,
+    ) -> None:
+        canonical = STAGE_ALIASES.get(stage, stage)
+        pack = {
+            "schema": "stage_hybrid_role_policy_abstention_v1",
+            "algorithm_version": "draft_origin_only_role_policy_v1",
+            "stage_route": {
+                "stage": canonical,
+                "requested_generation_stage": str(stage),
+                "control": self.retrieval_control,
+                "route": "role_policy_abstention",
+            },
+            "target_task_id": str(task_id),
+            "draft_role": str(draft_role or ""),
+            "role_policy_abstention": {
+                "status": "abstain",
+                "reason": str(reason),
+                "draft_only": canonical == "draft",
+            },
+            "navigation_trace": [],
+            "selected_items": [],
+            "selected_sop_gateways": [],
+            "fused_execution_candidates": [],
+            "sop_only_candidates": [],
+            "evidence_refs": [],
+            "failure_patterns": [],
+            "final_prompt_candidate_ids": [],
+            "final_prompt_candidates": [],
+            "prompt_text": "",
+            "prompt_token_count": 0,
+            "prompt_truncated": False,
+        }
+        self._trace_local.pack = pack
+        self._last_agentic_pack = pack
+
     def current_visibility_pack(self) -> VisibleSOPPack | None:
         """Return the host-only clause visibility result for this thread."""
         pack = getattr(self._trace_local, "visibility_pack", None)
@@ -5778,6 +5851,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         authority_operation: Operation | str | None = None,
         active_protocol: ProtocolRef | str | None = None,
     ) -> tuple[str, list[str]]:
+        self._begin_navigation_request()
         if self.end2end_controller is not None:
             return self._retrieve_end2end_for_node(
                 stage=stage,
@@ -5826,9 +5900,27 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 "memory_snapshot_bound_but_not_exposed": True,
             }
             return "", []
+        canonical_stage = STAGE_ALIASES.get(stage, stage)
         if not self.stage_enabled(stage):
+            self._record_role_policy_abstention(
+                stage=stage,
+                task_id=task_id,
+                draft_role=draft_role,
+                reason="generation_stage_disabled_by_memory_configuration",
+            )
             return "", []
-        if draft_role in {"coldstart_baseline", "memory_reproduction"}:
+        # Branch roles choose only the initial Draft origin.  Improve, Debug,
+        # Evolution and Fusion all regain the same Dynamic Router capability.
+        if (
+            canonical_stage == "draft"
+            and draft_role in {"coldstart_baseline", "memory_reproduction"}
+        ):
+            self._record_role_policy_abstention(
+                stage=stage,
+                task_id=task_id,
+                draft_role=draft_role,
+                reason="draft_origin_policy_uses_no_router_prompt",
+            )
             return "", []
         if self.retrieval_control == "layered_strategy" and stage == "draft":
             if draft_role == "memory_transfer":
@@ -5905,6 +5997,10 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         )
         if pack.get("schema") == "experiment_r_memory_pack_v1":
             pack["draft_role"] = str(draft_role or "")
+            pack["requested_generation_stage"] = str(stage)
+            pack.setdefault("stage_route", {})[
+                "requested_generation_stage"
+            ] = str(stage)
         self._mark_empty_visibility_abstention(pack)
         self._last_agentic_pack = pack
         self._trace_local.pack = pack

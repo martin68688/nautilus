@@ -1,17 +1,12 @@
 {
   "schema": "mlevolve_end2end_execution_queue_v1",
-  "updated_at": "2026-08-07T11:10:16Z",
+  "updated_at": "2026-08-08T03:03:10Z",
   "namespace": "ecepxie",
   "gpu_resource": "nvidia.com/a100",
-  "max_total_gpu_parallelism": 4,
+  "max_total_gpu_parallelism": 5,
   "monitor_interval_minutes": 30,
-  "last_cluster_observation_at": "2026-08-07T11:10:16Z",
-  "active_at_last_observation": [
-    "mlevolve-e2e-leaf-static-fresh-retry-v26",
-    "mlevolve-e2e-leaf-rcr-fresh-retry-v25",
-    "mlevolve-e2e-leaf-runforest-fresh-retry-v25",
-    "mlevolve-e2e-leaf-macla-fresh-retry-v25"
-  ],
+  "last_cluster_observation_at": "2026-08-08T03:03:10Z",
+  "active_at_last_observation": [],
   "retained_terminal_at_last_observation": [
     {
       "workload": "mlevolve-e2e-leaf-nomem-pilot-v21",
@@ -107,6 +102,85 @@
       "allocated_gpu_hours": 0.06192313130166666,
       "measurement_hash": "05335a639913b2a1b352a381ea96ac24895cc5374e53fd12d8b92d141666e80f",
       "retry_allowed": true
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-macla-fresh-retry-v25",
+      "failure_class": "agent",
+      "status": "retained_agent_partial",
+      "failure_reason": "finalization_reserve_reached",
+      "formal_result_eligible": true,
+      "completed_steps": 51,
+      "total_steps": 80,
+      "agent_wall_seconds": 20738.361363263,
+      "allocated_gpu_hours": 5.760655934239722,
+      "best_internal_metric": 0.002827361857504395,
+      "measurement_hash": "7b2d999392077e9616d7b1947b05fef7baefe5f56abd462a0ae5cbfe7a7b0e3a",
+      "run_outcome_hash": "4c03d4329f89ff227f61f7e38f1b2a7f4b314a3f43ece973788d1b1fb06ed14b",
+      "retry_allowed": false
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-rcr-fresh-retry-v25",
+      "failure_class": "agent",
+      "status": "retained_agent_partial",
+      "failure_reason": "finalization_reserve_reached",
+      "formal_result_eligible": true,
+      "completed_steps": 47,
+      "total_steps": 80,
+      "agent_wall_seconds": 21093.683136336,
+      "allocated_gpu_hours": 5.85935642676,
+      "best_internal_metric": 0.0808529,
+      "measurement_hash": "93ea2dd7dc2e11fceee2451fe4f59a1a7cdda2cb0829fabbd3d146c9df8ace5a",
+      "run_outcome_hash": "a7faa19a1e782a9e33407454c40beb84dead45124e6749ac3452fa0179601be5",
+      "retry_allowed": false
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-runforest-fresh-retry-v25",
+      "failure_class": "agent",
+      "status": "retained_agent_partial",
+      "failure_reason": "finalization_reserve_reached",
+      "formal_result_eligible": true,
+      "completed_steps": 36,
+      "total_steps": 80,
+      "agent_wall_seconds": 20791.695156988,
+      "allocated_gpu_hours": 5.775470876941111,
+      "best_internal_metric": 0.0048590419143516046,
+      "measurement_hash": "2e93ffed042b1d8395f40670a73f6fe3f1be02a1d3b2fa5eee1920f09bb8e4ed",
+      "run_outcome_hash": "12be33523328dab7aded2c3db02aabdf57a761d48517cc984960e09d8a5c44e0",
+      "retry_allowed": false
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-static-fresh-retry-v26",
+      "failure_class": "agent",
+      "status": "retained_agent_partial",
+      "failure_reason": "finalization_reserve_reached",
+      "formal_result_eligible": true,
+      "completed_steps": 30,
+      "total_steps": 80,
+      "agent_wall_seconds": 20734.196550429,
+      "allocated_gpu_hours": 5.7594990417858325,
+      "best_internal_metric": 0.018640343855587833,
+      "measurement_hash": "927a95627238a19b137c793e1f975726b36d36acdc4e6a4ad953f03bce9b5407",
+      "run_outcome_hash": "58c35faed76814d9e3a323ed61ab037f02f0470b7ace6757a9a3ce60b15f6471",
+      "retry_allowed": false
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-dynamic-routerfix-pilot-v35",
+      "failure_class": "agent",
+      "status": "retained_agent_partial",
+      "failure_reason": "finalization_reserve_reached",
+      "formal_result_eligible": true,
+      "completed_steps": 30,
+      "total_steps": 80,
+      "agent_wall_seconds": 20736.933685944,
+      "allocated_gpu_hours": 5.7602593572066665,
+      "time_to_first_valid_seconds": 882.822729831,
+      "best_internal_metric": 0.047164001623471716,
+      "terminal_metric": "log_loss",
+      "terminal_score": null,
+      "terminal_evaluation_skipped_reason": "non_complete_budget_limited_run",
+      "measurement_hash": "97ded87cc4da97334d23f6cb94990eabbfbb5b4e979c4ddd35f24819e9c871e6",
+      "agent_outcome_hash": "84f4af2cf1b822370d7b25dbcc59dce509410fe0ee7b6644117d611d59aef9ad",
+      "retry_allowed": false
     }
   ],
   "leaf_submitted_in_priority_order": [
@@ -128,6 +202,15 @@
       "manifest_sha256": "5e3efcf1ab03e102a03916c53df4fe6600663b65f6aca347cf8bdccfe46ac35c",
       "kind": "fresh_condition",
       "submitted_at": "2026-08-07T04:18:52Z"
+    },
+    {
+      "workload": "mlevolve-e2e-leaf-dynamic-routerfix-pilot-v35",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/pilot-leaf-dynamic-routerfix-v35-job.yaml",
+      "manifest_sha256": "1ef218cdeab1778148da0ed4a9e33366ca3ea3fc460b87079ce2ab60bab6a802",
+      "kind": "fresh_dynamic_routerfix_condition",
+      "submitted_at": "2026-08-07T19:45:41Z",
+      "resume": false,
+      "source_lock_manifest_hash": "917abd239853588fef9c2c1e35a209741e396b1a8497134d0b8c886d85cfe52d"
     }
   ],
   "leaf_infrastructure_retries": [
@@ -177,6 +260,26 @@
       "submitted_at": "2026-08-07T06:23:31Z"
     }
   ],
+  "task_infrastructure_failures": [
+    {
+      "workload": "mlevolve-e2e-aerial-pilot-v23",
+      "completion_index": 2,
+      "system_id": "reversed_router",
+      "failure_class": "infrastructure",
+      "failure_reason": "node_not_ready_taint_eviction_unhealthy_a100",
+      "pod_name": "mlevolve-e2e-aerial-pilot-v23-2-qfj2q",
+      "pod_uid": "937e3319-5d29-4ec7-971c-ffe36a3dc7f5",
+      "node_name": "ren-gp-argo-01.madren.org",
+      "failed_at": "2026-08-07T13:42:49Z",
+      "completed_steps_before_failure": 8,
+      "best_internal_metric": 0.9999947000914234,
+      "journal_sha256": "875086932d6bcb47bf0610fcaa463d227e58ddd1c821eb489b71d9afcf7aef02",
+      "evidence_file": "coordination/aerial_reversed_index2_infrastructure_failure_20260807.md",
+      "retry_allowed": true,
+      "retry_submitted": false,
+      "retry_blocker": "wait_for_aerial_indexed_job_slot_and_verified_fairness_runner_release"
+    }
+  ],
   "leaf_pending_priority": [],
   "task_jobs_after_leaf": [
     {
@@ -186,7 +289,53 @@
       "completions": 10,
       "parallelism": 4,
       "per_condition_search_budget_seconds": 21600,
-      "global_job_deadline_seconds": 90000
+      "global_job_deadline_seconds": 90000,
+      "submitted_at": "2026-08-07T12:28:33Z",
+      "job_uid": "4a49708a-4bb1-4574-8a47-7dcfd3ee9cd4",
+      "status_at_last_observation": "terminal_failed_indexes",
+      "terminal_observed_at": "2026-08-08T03:03:10Z",
+      "kubernetes_failed_indexes": "0-9",
+      "terminal_score_available_count": 0,
+      "budget_limited_agent_partial_count": 7,
+      "infrastructure_failure_count": 2,
+      "adapter_configuration_failure_count": 1,
+      "condition_outcomes": {
+        "0": {"system_id": "no_memory", "completed_steps": 13, "best_internal_metric": 1.0, "outcome": "budget_limited_agent_partial"},
+        "1": {"system_id": "rcr_router_style_port", "completed_steps": 34, "best_internal_metric": 0.9999973500457117, "outcome": "budget_limited_agent_partial"},
+        "2": {"system_id": "reversed_router", "completed_steps": 8, "best_internal_metric": 0.9999947000914234, "outcome": "infrastructure_failure"},
+        "3": {"system_id": "macla_style_port", "completed_steps": 33, "best_internal_metric": 0.9999973075149037, "outcome": "infrastructure_oom_failure"},
+        "4": {"system_id": "gome_style_port", "completed_steps": 46, "best_internal_metric": 1.0, "outcome": "budget_limited_agent_partial"},
+        "5": {"system_id": "sop_only", "completed_steps": 25, "best_internal_metric": 1.0, "outcome": "budget_limited_agent_partial"},
+        "6": {"system_id": "dynamic_hybrid", "completed_steps": 0, "best_internal_metric": null, "outcome": "adapter_configuration_failure"},
+        "7": {"system_id": "runforest_only", "completed_steps": 15, "best_internal_metric": 1.0, "outcome": "budget_limited_agent_partial"},
+        "8": {"system_id": "static_hybrid", "completed_steps": 26, "best_internal_metric": 1.0, "outcome": "budget_limited_agent_partial"},
+        "9": {"system_id": "flat_retrieval", "completed_steps": 19, "best_internal_metric": 0.999885891249053, "outcome": "budget_limited_agent_partial"}
+      },
+      "active_indexes_at_last_observation": [
+        5,
+        7,
+        8,
+        9
+      ],
+      "failed_indexes_at_last_observation": "0-4,6",
+      "active_index_progress_at_last_observation": {
+        "5": {
+          "completed_steps": 24,
+          "best_internal_metric": 1.0
+        },
+        "7": {
+          "completed_steps": 14,
+          "best_internal_metric": 1.0
+        },
+        "8": {
+          "completed_steps": 21,
+          "best_internal_metric": 1.0
+        },
+        "9": {
+          "completed_steps": 18,
+          "best_internal_metric": 0.999885891249053
+        }
+      }
     },
     {
       "workload": "mlevolve-e2e-denoising-pilot-v23",
@@ -207,6 +356,65 @@
       "global_job_deadline_seconds": 90000
     }
   ],
+  "dynamic_router_v35": {
+    "release_id": "end2end-agentic-full-router-v35",
+    "cluster_source_root": "/workspace/nautilus-exp-end2end-agent-v35",
+    "source_lock_manifest_hash": "917abd239853588fef9c2c1e35a209741e396b1a8497134d0b8c886d85cfe52d",
+    "source_lock_files_verified": 249,
+    "failed_predecessor": {
+      "workload": "mlevolve-e2e-aerial-full-router-debug-smoke-v34",
+      "failure_class": "adapter_configuration",
+      "failure_reason": "exact_replay_journal_resolved_inside_frozen_checkout",
+      "records_preserved": true
+    },
+    "active_smoke": {
+      "workload": "mlevolve-e2e-aerial-full-router-debug-smoke-v35",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/smoke-aerial-full-router-debug-v35-job.yaml",
+      "manifest_sha256": "357f04521df4fcab5dd07b66246d6d28d0dd2008357f0fe2b0cb4fd766b9fa65",
+      "submitted_at": "2026-08-07T18:29:18Z",
+      "resume": false,
+      "budget_profile": "debug_smoke",
+      "status_at_last_observation": "complete",
+      "pod_name": "mlevolve-e2e-aerial-full-router-debug-smoke-v35-0-ljn7l",
+      "node_name": "rci-nrp-gpu-04.sdsu.edu",
+      "preserve_terminal_artifacts": true,
+      "completed_steps": 8,
+      "total_steps": 8,
+      "terminal_score": 0.999989751278162,
+      "terminal_metric": "roc_auc",
+      "measurement_hash": "38ba974fa7fce874598a9216f9a1245698667bcad11eabbc0df2e025c2375dd1",
+      "router_runtime_audit_passed": true
+    },
+    "gated_leaf_pilot": {
+      "workload": "mlevolve-e2e-leaf-dynamic-routerfix-pilot-v35",
+      "manifest": "experiments/end2end_memory_systems_20260804/jobs/pilot-leaf-dynamic-routerfix-v35-job.yaml",
+      "manifest_sha256": "1ef218cdeab1778148da0ed4a9e33366ca3ea3fc460b87079ce2ab60bab6a802",
+      "submit_only_after_smoke_passes": true,
+      "resume": false,
+      "per_condition_search_budget_seconds": 21600,
+      "exploratory_pilot": true,
+      "submitted_at": "2026-08-07T19:45:41Z",
+      "status_at_last_observation": "terminal_budget_limited_partial",
+      "pod_name": "mlevolve-e2e-leaf-dynamic-routerfix-pilot-v35-0-dzfr7",
+      "node_name": "gpengine-uams.areon.net",
+      "observed_at": "2026-08-08T03:03:10Z",
+      "completed_steps_at_last_observation": 30,
+      "best_internal_metric_at_last_observation": 0.047164001623471716,
+      "agent_wall_seconds": 20736.933685944,
+      "allocated_gpu_hours": 5.7602593572066665,
+      "time_to_first_valid_seconds": 882.822729831,
+      "terminal_score": null,
+      "terminal_evaluation_skipped_reason": "non_complete_budget_limited_run",
+      "measurement_hash": "97ded87cc4da97334d23f6cb94990eabbfbb5b4e979c4ddd35f24819e9c871e6",
+      "retry_allowed": false,
+      "active_candidate_process_observed": true,
+      "active_candidate_process_observation_at": "2026-08-07T21:25:57Z",
+      "active_candidate_process_id": 28700,
+      "active_candidate_cpu_percent_at_last_observation": 1535.0,
+      "active_candidate_gpu_utilization_percent_at_last_observation": 0
+    },
+    "temporary_extra_a100_authorized_by_user": true
+  },
   "submission_rules": {
     "never_stop_active_pending_or_running": true,
     "explicit_user_cancellation_is_only_stop_exception": true,
@@ -227,5 +435,5 @@
     "adapter_recovery_must_preserve_intermediate_attempts": true,
     "seed_1_is_exploratory_only": true
   },
-  "next_monitor_not_before": "2026-08-07T11:40:16Z"
+  "next_monitor_not_before": null
 }

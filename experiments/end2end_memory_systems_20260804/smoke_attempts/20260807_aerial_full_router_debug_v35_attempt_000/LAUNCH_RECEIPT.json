@@ -1,0 +1,44 @@
+{
+  "attempt": 0,
+  "budget": {
+    "agent_steps": 8,
+    "agent_time_limit_seconds": 5400,
+    "cpu_count": 16,
+    "execution_timeout_seconds": 1200,
+    "finalize_reserve_seconds": 180,
+    "gpu_count": 1,
+    "initial_drafts": 3,
+    "max_replacement_drafts": 0,
+    "memory_gib": 64,
+    "parallel_search_num": 1
+  },
+  "command_sha256": "e5ef1a4f1d3d0d166a984b620fb55228437a45efb7ca5efe4c930f5d5975b1d7",
+  "formal_result_eligible": false,
+  "hardware": {
+    "gpu_product_constraint": null,
+    "gpu_query_error": "",
+    "node_name": "rci-nrp-gpu-04.sdsu.edu",
+    "observed_gpu_products": [
+      "NVIDIA A100 80GB PCIe"
+    ],
+    "requested_gpu_resource": "nvidia.com/a100"
+  },
+  "kubernetes": {
+    "completion_index": "0",
+    "job_name": "mlevolve-e2e-aerial-full-router-debug-smoke-v35",
+    "job_uid": "21970067-45c4-476f-8cb8-d4cbee1e401a",
+    "node_name": "rci-nrp-gpu-04.sdsu.edu",
+    "pod_name": "mlevolve-e2e-aerial-full-router-debug-smoke-v35-0-ljn7l",
+    "pod_uid": "e220aa81-51df-4d7d-8c3e-e3a8a5966169"
+  },
+  "logical_run_id": "e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1",
+  "manifest_hash": "f7af86ef0647b11353e7d722360a8f3567f23c4b374f5db5fbb34cebde9c3f1d",
+  "receipt_hash": "4751e89651caa8d3db6bd828067945e2be72d42da020dde005640b4cfef06b3b",
+  "schema": "mlevolve_end2end_launch_receipt_v1",
+  "search_resume": {},
+  "seed": 1,
+  "started_at_ns": 1786127384978293303,
+  "system_id": "dynamic_hybrid",
+  "task_id": "aerial-cactus-identification",
+  "validation_mode": "experiment_fast_nonblocking_v1"
+}

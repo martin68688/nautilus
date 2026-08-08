@@ -16,21 +16,21 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v23")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v35")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
 LEGACY_MANIFESTS = ROOT / "manifests"
-MANIFESTS = ROOT / "manifests_v23"
-SYSTEM_DIR = ROOT / "systems_v23"
+MANIFESTS = ROOT / "manifests_v35"
+SYSTEM_DIR = ROOT / "systems_v35"
 JOB_DIR = ROOT / "jobs"
 SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-agentic-three-role-v23"
+RELEASE_ID = "end2end-agentic-full-router-v35"
 BASELINE_RELEASE_ID = "end2end-agent-v3"
 RANDOMIZATION_RELEASE_ID = BASELINE_RELEASE_ID
-OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v23/runs"
-EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v23"
+OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v35/runs"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v35"
 SOLVER_TEMPERATURE = 1.0
 SYSTEMS = (
     ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
@@ -305,13 +305,14 @@ agent:
   draft_role_policy:
     enabled: true
     replay_targets_path: ../paper-skills/eval_skill_memory/clean_replay_targets.json
+    replay_runs_root: ../nautilus/mlevolve/runs
     roles:
       - coldstart_baseline
       - memory_reproduction
       - novel_exploration
 external_skill_memory:
   end2end_memory_system: ""
-  retrieval_control: layered_strategy
+  retrieval_control: dynamic_hybrid
   enable_agentic: true
   recipe_sop_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v3/recipe_sops.json
   recipe_sop_file_sha256: e6db95649c20a642738d6ee35df1aa11ff15287e3613221becb393e28d2a9398
@@ -320,7 +321,7 @@ external_skill_memory:
   recipe_evidence_file_sha256: fcb084206cdaa31cfd052c1bce290871b8c075a6376ee698b5c4119636adda04
   recipe_evidence_manifest_sha256: 25f6729ece9b1ead76b0d8501aa6aa4026cb163e3eaa7eb05c755b1d72f6160f
   recipe_implementation_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v3/implementation_capsules.json
-  experiment_r_enabled: false
+  experiment_r_enabled: true
   experiment_r_candidate_limit: 12
   experiment_r_top_k: 6
   experiment_r_prompt_token_budget: 1536
@@ -364,6 +365,8 @@ external_skill_memory:
 run_identity:
   memory_system: dynamic_hybrid
   system_id: dynamic_hybrid
+  memory_version: experiment_r_full_router_post_draft_v1
+  require_submission_aligned_internal_metric: true
 """
     return f"""extends: base.yaml
 
@@ -454,7 +457,7 @@ def component_manifests(
                 "system_id": system_id,
                 "kind": kind,
                 "description": description,
-                "config_path": f"systems_v23/{system_id}.yaml",
+                "config_path": f"systems_v35/{system_id}.yaml",
                 "config_sha256": sha256_file(config),
                 "limitation": limitation,
                 "primary_reference": reference,
@@ -712,10 +715,12 @@ def execution_manifest(
         formal = False
         prefix = prefix_override or "e2e-smoke-all-systems-v2"
     else:
-        task_ids = [task_id for task_id, _display, _metric, _direction in TASKS]
-        system_ids = None
+        task_ids = task_ids_override or [
+            task_id for task_id, _display, _metric, _direction in TASKS
+        ]
+        system_ids = system_ids_override
         formal = True
-        prefix = "e2e-pilot-agentic-three-role-v23"
+        prefix = prefix_override or "e2e-pilot-agentic-full-router-v35"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -772,7 +777,7 @@ def execution_manifest(
 def job(
     *, name: str, manifest_name: str, completions: int, task_id: str | None,
     active_deadline: int, parallelism: int, components: Mapping[str, Mapping[str, Any]],
-    attempt: int = 0, resume: bool = False,
+    attempt: int = 0, resume: bool = False, budget_profile: str | None = None,
 ) -> dict[str, Any]:
     runtime = components["budget"]["runtime"]
     index_waves = (completions + parallelism - 1) // parallelism
@@ -795,6 +800,8 @@ def job(
         args.append("--resume")
     if task_id:
         args.extend(["--task", task_id])
+    if budget_profile:
+        args.extend(["--budget-profile", budget_profile])
     resources = {
         "cpu": "16",
         "memory": "64Gi",
@@ -950,7 +957,7 @@ def build() -> dict[str, Any]:
         components=components,
         system_ids_override=["dynamic_hybrid"],
         task_ids_override=["leaf-classification"],
-        prefix_override="e2e-smoke-leaf-layered-recipe-v4",
+        prefix_override="e2e-smoke-leaf-full-router-v35",
     )
     dump_json(
         MANIFESTS / "leaf_recipe_dynamic_smoke_manifest.json",
@@ -961,7 +968,7 @@ def build() -> dict[str, Any]:
         components=components,
         system_ids_override=["dynamic_hybrid"],
         task_ids_override=["aerial-cactus-identification"],
-        prefix_override="e2e-smoke-l3-debug-v1",
+        prefix_override="e2e-smoke-l3-debug-v2",
     )
     dump_json(
         MANIFESTS / "l3_debug_dynamic_smoke_manifest.json",
@@ -970,42 +977,71 @@ def build() -> dict[str, Any]:
     pilot = execution_manifest(kind="pilot", components=components)
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
-    for stale in JOB_DIR.glob("pilot-*-indexed-job-v23.yaml"):
+    for stale in JOB_DIR.glob("pilot-*-indexed-job-v35.yaml"):
         stale.unlink()
-    pilot_job = job(
-        name="mlevolve-e2e-agentic-pilot-all-40-v23",
-        manifest_name="pilot_manifest.json",
-        completions=40,
-        task_id=None,
-        active_deadline=25200,
-        parallelism=1,
-        components=components,
-        resume=True,
-    )
-    (JOB_DIR / "pilot-all-40-indexed-job-v23.yaml").write_text(
-        yaml.safe_dump(pilot_job, sort_keys=False), encoding="utf-8"
-    )
     leaf_recipe_job = job(
-        name="mlevolve-e2e-leaf-layered-recipe-smoke-v29",
+        name="mlevolve-e2e-leaf-full-router-smoke-v35",
         manifest_name="leaf_recipe_dynamic_smoke_manifest.json",
         completions=1,
         task_id=None,
         active_deadline=5400,
         parallelism=1,
         components=components,
-        resume=True,
+        resume=False,
     )
-    (JOB_DIR / "smoke-leaf-layered-recipe-v23-job.yaml").write_text(
+    (JOB_DIR / "smoke-leaf-full-router-v35-job.yaml").write_text(
         yaml.safe_dump(leaf_recipe_job, sort_keys=False), encoding="utf-8"
     )
-    generated_jobs = ["pilot-all-40-indexed-job-v23.yaml"]
+    aerial_debug_job = job(
+        name="mlevolve-e2e-aerial-full-router-debug-smoke-v35",
+        manifest_name="l3_debug_dynamic_smoke_manifest.json",
+        completions=1,
+        task_id=None,
+        active_deadline=7200,
+        parallelism=1,
+        components=components,
+        resume=False,
+        budget_profile="debug_smoke",
+    )
+    (JOB_DIR / "smoke-aerial-full-router-debug-v35-job.yaml").write_text(
+        yaml.safe_dump(aerial_debug_job, sort_keys=False), encoding="utf-8"
+    )
+    leaf_dynamic_pilot = execution_manifest(
+        kind="pilot",
+        components=components,
+        system_ids_override=["dynamic_hybrid"],
+        task_ids_override=["leaf-classification"],
+        prefix_override="e2e-pilot-leaf-full-router-v1",
+    )
+    dump_json(
+        MANIFESTS / "leaf_dynamic_repaired_pilot_manifest.json",
+        leaf_dynamic_pilot,
+    )
+    leaf_dynamic_job = job(
+        name="mlevolve-e2e-leaf-dynamic-routerfix-pilot-v35",
+        manifest_name="leaf_dynamic_repaired_pilot_manifest.json",
+        completions=1,
+        task_id=None,
+        active_deadline=25200,
+        parallelism=1,
+        components=components,
+        resume=False,
+    )
+    (JOB_DIR / "pilot-leaf-dynamic-routerfix-v35-job.yaml").write_text(
+        yaml.safe_dump(leaf_dynamic_job, sort_keys=False), encoding="utf-8"
+    )
+    generated_jobs = [
+        "smoke-leaf-full-router-v35-job.yaml",
+        "smoke-aerial-full-router-debug-v35-job.yaml",
+        "pilot-leaf-dynamic-routerfix-v35-job.yaml",
+    ]
     packet = finalize(
         {
             "schema": "mlevolve_end2end_launch_packet_v1",
             "status": "generated_not_submitted",
             "launch_gate": "explicit_user_authorization_required",
             "pre_run_confirmation": "one local human-facing intent confirmation only",
-            "pilot_requires_passing_smoke_gate": False,
+            "pilot_requires_passing_smoke_gate": True,
             "smoke_manifest_hash": smoke["manifest_hash"],
             "feasibility_smoke_manifest_hash": feasibility_smoke["manifest_hash"],
             "leaf_dynamic_smoke_manifest_hash": leaf_dynamic_smoke["manifest_hash"],
@@ -1017,6 +1053,9 @@ def build() -> dict[str, Any]:
                 "manifest_hash"
             ],
             "pilot_manifest_hash": pilot["manifest_hash"],
+            "leaf_dynamic_repaired_pilot_manifest_hash": leaf_dynamic_pilot[
+                "manifest_hash"
+            ],
             "component_manifest_hashes": {
                 key: value["manifest_hash"] for key, value in components.items()
             },

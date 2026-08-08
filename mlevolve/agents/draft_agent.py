@@ -19,10 +19,28 @@ from agents.prompts import (
     get_candidate_execution_contract_from_agent,
     get_impl_guideline_from_agent,
     host_protocol_preflight_enabled,
+    submission_aligned_metric_required,
 )
 from agents.planner import build_chat_prompt_for_model
 
 logger = logging.getLogger("MLEvolve")
+
+
+def _record_draft_router_abstention(agent, draft_role: str, reason: str) -> None:
+    layer = getattr(agent, "external_skill_memory", None)
+    if str(getattr(layer, "mode", "")).lower() != "run_forest_stage_hybrid":
+        return
+    begin = getattr(layer, "_begin_navigation_request", None)
+    record = getattr(layer, "_record_role_policy_abstention", None)
+    if callable(begin):
+        begin()
+    if callable(record):
+        record(
+            stage="draft",
+            task_id=str(getattr(agent.cfg, "exp_id", "") or ""),
+            draft_role=draft_role,
+            reason=reason,
+        )
 
 
 def run(
@@ -41,6 +59,11 @@ def run(
         from agents.adoption import log_adoption
         from agents.memory.run_forest_replay import load_exact_replay
 
+        _record_draft_router_abstention(
+            agent,
+            draft_role,
+            "draft_origin_policy_uses_exact_code_replay_not_router_prompt",
+        )
         replay = load_exact_replay(agent)
         agent.virtual_root.add_expected_child_count()
         new_node = SearchNode(
@@ -128,6 +151,14 @@ def run(
     }
     prompt["Instructions"] |= prompt_resp_fmt()
 
+    final_metric_requirement = (
+        "- **FINAL OUTPUT**: The VERY LAST line MUST be "
+        "`print(f'Final Submission-Aligned Validation Score: {score} | variant={submission_variant}')`. "
+        "The score and submission must use the same selected prediction variant."
+        if submission_aligned_metric_required(agent)
+        else "- **FINAL OUTPUT**: The VERY LAST line of execution MUST be "
+        "`print(f'Final Validation Score: {score}')`. This is required for the score parser."
+    )
     prompt["Instructions"] |= {
         "🔬 Critical: Scientific Approach to Design": [
             "",
@@ -167,7 +198,7 @@ def run(
         "Coding & Execution Guidelines (CRITICAL)": [
             "- **NO PROGRESS BARS**: You MUST NOT use `tqdm`. Assume `tqdm` is not installed. Use standard Python loops only. Do not use `verbose=1`.",
             "- **MINIMAL LOGGING**: Print ONLY 1 line per epoch (e.g. loss/accuracy). Do NOT print batch-level logs.",
-            "- **FINAL OUTPUT**: The VERY LAST line of execution MUST be `print(f'Final Validation Score: {score}')`. This is required for the score parser."
+            final_metric_requirement,
         ]
     }
 
@@ -276,6 +307,11 @@ def run(
     prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
 
     if draft_role == "coldstart_baseline":
+        _record_draft_router_abstention(
+            agent,
+            draft_role,
+            "draft_origin_policy_uses_no_router_prompt",
+        )
         external_skill_text, external_skill_ref_ids, external_skill_source = "", [], "run_forest_agentic_memory"
     else:
         memory_draft_role = (
@@ -413,6 +449,16 @@ def run(
     register_node(agent, new_node, prompt_complete, new_branch=True)
 
     from agents.adoption import log_adoption
+    if draft_role == "coldstart_baseline":
+        layer = getattr(agent, "external_skill_memory", None)
+        if str(getattr(layer, "mode", "")).lower() == "run_forest_stage_hybrid":
+            log_adoption(
+                new_node,
+                agent,
+                getattr(layer, "source_name", "run_forest_stage_hybrid_memory"),
+                [],
+                "draft",
+            )
     log_adoption(new_node, agent, "methodology", getattr(agent, "methodology_ref_ids", []), "draft")
     if draft_role != "coldstart_baseline":
         log_adoption(

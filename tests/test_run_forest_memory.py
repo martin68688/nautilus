@@ -469,7 +469,7 @@ def test_run_forest_runtime_layer_returns_map_path_pack():
     assert external_memory_section_title(layer.source_name) == "Agentic Run-Forest Memory Navigation"
 
 
-def _replay_agent(targets_path=REPLAY_TARGETS):
+def _replay_agent(targets_path=REPLAY_TARGETS, replay_runs_root=""):
     import sys
 
     sys.path.insert(0, str(REPO / "mlevolve"))
@@ -487,7 +487,10 @@ def _replay_agent(targets_path=REPLAY_TARGETS):
     return SimpleNamespace(
         cfg=SimpleNamespace(exp_id="spooky-author-identification"),
         acfg=SimpleNamespace(
-            draft_role_policy=SimpleNamespace(replay_targets_path=str(targets_path)),
+            draft_role_policy=SimpleNamespace(
+                replay_targets_path=str(targets_path),
+                replay_runs_root=str(replay_runs_root),
+            ),
             check_data_leakage=True,
         ),
         external_skill_memory=layer,
@@ -523,6 +526,34 @@ def test_exact_replay_loads_historical_three_model_source_as_blocked_repair_seed
     }
     for required in ("XGBClassifier", "LogisticRegression", "TfidfVectorizer"):
         assert required in replay["code"]
+
+
+def test_exact_replay_resolves_journal_from_explicit_frozen_artifact_root(tmp_path):
+    import shutil
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents.memory.run_forest_replay import load_exact_replay
+
+    relative = Path(
+        "20260509_185008_spooky-author-identification/logs/journal.json"
+    )
+    source = REPO / "mlevolve" / "runs" / relative
+    frozen_root = tmp_path / "historical-runs"
+    destination = frozen_root / relative
+    destination.parent.mkdir(parents=True)
+    shutil.copyfile(source, destination)
+
+    replay = load_exact_replay(
+        _replay_agent(replay_runs_root=frozen_root)
+    )
+    assert replay["replay_source"]["journal_path"] == str(
+        Path("mlevolve/runs") / relative
+    )
+    assert replay["replay_source"]["journal_artifact_root"] == str(
+        frozen_root.resolve()
+    )
+    assert "XGBClassifier" in replay["code"]
 
 
 def test_replay_repair_seed_is_blocked_before_execution_and_freezes_original_design(tmp_path):

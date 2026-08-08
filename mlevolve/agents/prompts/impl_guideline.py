@@ -23,6 +23,13 @@ def host_protocol_preflight_enabled(agent) -> bool:
     return bool(preflight is not None and getattr(preflight, "enabled", False))
 
 
+def submission_aligned_metric_required(agent) -> bool:
+    identity = getattr(getattr(agent, "cfg", None), "run_identity", None)
+    return bool(
+        getattr(identity, "require_submission_aligned_internal_metric", False)
+    )
+
+
 def get_host_protocol_contract_from_agent(agent) -> dict:
     """Return the frozen Host SDK surface that generated code must implement."""
 
@@ -229,6 +236,7 @@ def get_impl_guideline_from_agent(agent):
             agent
         ),
         host_protocol_contract=get_host_protocol_contract_from_agent(agent),
+        require_submission_aligned_metric=submission_aligned_metric_required(agent),
     )
 
 
@@ -246,6 +254,7 @@ def get_impl_guideline(
     pretrain_model_dir: str = "",
     candidate_execution_contract: dict | None = None,
     host_protocol_contract: dict | None = None,
+    require_submission_aligned_metric: bool = False,
 ) -> dict:
     """Build implementation guideline from time and config."""
     impl_guideline = [
@@ -267,8 +276,21 @@ def get_impl_guideline(
         "• Format: Follow task description exactly",
         "",
         "**3. Print Validation Metric**",
-        "• MUST print: `print(f'Final Validation Score: {score}')`",
-        "• Score MUST be computed on hold-out validation set using proper metric formula",
+        (
+            "• MUST make the very last line: `print(f'Final Submission-Aligned Validation Score: {score} | variant={submission_variant}')`"
+            if require_submission_aligned_metric
+            else "• MUST print: `print(f'Final Validation Score: {score}')`"
+        ),
+        "• Score MUST be computed on hold-out validation set using the proper metric formula",
+        *(
+            [
+                "• SUBMISSION ALIGNMENT IS REQUIRED: `score` must evaluate the exact model/ensemble, preprocessing, post-processing and blend weights used for `submission.csv`.",
+                "• If you compare NN-only, tree-only and blend variants, print them as diagnostics, select one variant, then use that same selected variant for both validation scoring and test submission.",
+                "• Set `submission_variant` to a short stable name for the actually submitted variant. A component-only best score paired with a different submitted blend is invalid.",
+            ]
+            if require_submission_aligned_metric
+            else []
+        ),
         "• CRITICAL CONSISTENCY REQUIREMENT: Ensure that validation and test inference use IDENTICAL processing logic. Any differences in how validation and test data are handled (such as post-processing, reconstruction, or formatting) can cause large performance gaps between validation and test sets. Maintain consistency across all data processing steps for both validation and test phases.",
         "",
         "📁 **Directories**: Input data in `./input/`, submission in `./submission/`, temp files in `./working/`",
@@ -291,7 +313,11 @@ def get_impl_guideline(
         "⚠️  **Self-Check Before Finalizing**:",
         "□ Did predictions pass through model's learned weights during inference? (If NO → INVALID)",
         "□ Did I generate submission.csv in correct path with ALL test predictions?",
-        "□ Did I print validation metric as the last line?",
+        (
+            "□ Does the final submission-aligned metric use the exact prediction variant written to submission.csv?"
+            if require_submission_aligned_metric
+            else "□ Did I print validation metric as the last line?"
+        ),
         "□ Did I use the COMPLETE training dataset (not a tiny subset)?",
     ]
     contract = dict(candidate_execution_contract or {})

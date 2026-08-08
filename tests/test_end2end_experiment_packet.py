@@ -17,6 +17,7 @@ from protocol_runtime.collector import HostCollectorIdentity
 REPO = Path(__file__).resolve().parents[1]
 ROOT = REPO / "experiments" / "end2end_memory_systems_20260804"
 MANIFESTS = ROOT / "manifests_v23"
+REPAIRED_MANIFESTS = ROOT / "manifests_v35"
 TEST_COLLECTOR_IDENTITY = HostCollectorIdentity.generate()
 
 sys.path.insert(0, str(ROOT))
@@ -705,8 +706,30 @@ def test_system_configs_load_against_structured_runtime(monkeypatch) -> None:
         assert merged.prospective_audit.enabled is False
 
 
+def test_repaired_dynamic_config_opens_full_router_and_aligns_metric() -> None:
+    from config import Config, _load_cfg
+    from omegaconf import OmegaConf
+
+    path = ROOT / "systems_v35" / "dynamic_hybrid.yaml"
+    cfg = _load_cfg(path, use_cli_args=False)
+    cfg.exp_name = "dynamic-repair-config-test"
+    cfg.exp_id = "leaf-classification"
+    cfg.data_dir = "./data"
+    cfg.goal = "config validation"
+    cfg.desc_file = None
+    merged = OmegaConf.merge(OmegaConf.structured(Config), cfg)
+    assert merged.external_skill_memory.retrieval_control == "dynamic_hybrid"
+    assert merged.external_skill_memory.experiment_r_enabled is True
+    assert merged.external_skill_memory.experiment_r_agentic_retrieval_enabled is True
+    assert merged.agent.draft_role_policy.replay_runs_root.endswith(
+        "nautilus/mlevolve/runs"
+    )
+    assert merged.run_identity.system_id == "dynamic_hybrid"
+    assert merged.run_identity.require_submission_aligned_internal_metric is True
+
+
 def test_source_lock_covers_and_matches_runtime_files() -> None:
-    lock = _read(MANIFESTS / "source_lock.json")
+    lock = _read(REPAIRED_MANIFESTS / "source_lock.json")
     assert lock["complete_runtime_file_hash_lock"] is True
     paths = {row["path"] for row in lock["files"]}
     assert "mlevolve/agents/memory/end2end_memory_system.py" in paths

@@ -119,6 +119,11 @@ class DraftRolePolicyConfig:
     roles: list[str] = field(default_factory=list)
     extra_role: str = "novel_exploration"
     replay_targets_path: str = ""
+    # Optional immutable root containing historical ``mlevolve/runs``
+    # artifacts.  Frozen source releases intentionally omit bulky run logs,
+    # so exact replay must not assume that the journal lives inside the
+    # currently executing checkout.
+    replay_runs_root: str = ""
 
 
 @dataclass
@@ -469,6 +474,9 @@ class RunIdentityConfig:
     system_id: str = ""
     rng_state_hash: str = ""
     rng_state_components: dict[str, str] = field(default_factory=dict)
+    # Search-rank metrics must describe the exact prediction variant written
+    # to submission.csv when this experiment-level measurement gate is on.
+    require_submission_aligned_internal_metric: bool = False
 
 
 @dataclass

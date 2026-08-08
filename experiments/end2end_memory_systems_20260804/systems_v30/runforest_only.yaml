@@ -1,0 +1,8 @@
+extends: base.yaml
+
+external_skill_memory:
+  end2end_memory_system: runforest_only
+
+run_identity:
+  memory_system: runforest_only
+  system_id: runforest_only

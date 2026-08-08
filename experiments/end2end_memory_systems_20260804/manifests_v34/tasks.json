@@ -1,0 +1,33 @@
+{
+  "exploratory_pilot": true,
+  "manifest_hash": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca",
+  "schema": "mlevolve_end2end_tasks_manifest_v1",
+  "seed": 1,
+  "task_count": 4,
+  "tasks": [
+    {
+      "direction": "maximize",
+      "display_name": "Aerial",
+      "task_id": "aerial-cactus-identification",
+      "terminal_metric": "roc_auc"
+    },
+    {
+      "direction": "minimize",
+      "display_name": "Leaf",
+      "task_id": "leaf-classification",
+      "terminal_metric": "log_loss"
+    },
+    {
+      "direction": "minimize",
+      "display_name": "Denoising",
+      "task_id": "denoising-dirty-documents",
+      "terminal_metric": "rmse"
+    },
+    {
+      "direction": "minimize",
+      "display_name": "Taxi",
+      "task_id": "new-york-city-taxi-fare-prediction",
+      "terminal_metric": "rmse"
+    }
+  ]
+}

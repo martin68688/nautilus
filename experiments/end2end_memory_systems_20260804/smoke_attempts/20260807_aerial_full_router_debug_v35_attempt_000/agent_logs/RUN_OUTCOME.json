@@ -1,0 +1,15 @@
+{
+  "active_candidate_ids": [],
+  "certified_solution_available": true,
+  "completed_steps": 8,
+  "completion_ratio": 1.0,
+  "interrupted": false,
+  "journal_checkpoint_ref": "/workspace/experiment-end2end-memory-agent-v35/runs/e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/attempt-000/agent/logs/20260807_182955_e2e-smoke-l3-debug-v2__aerial-cactus-identification__dynamic_hybrid__seed-1/journal.json",
+  "kubernetes_success_eligible": true,
+  "outcome_hash": "cc95f355bf9614cffdd1c78bac2ce001784a41852f9485a5c1f9e86213dd709e",
+  "reason": "step_target_reached",
+  "schema": "mlevolve_run_outcome_v1",
+  "search_exhausted": false,
+  "status": "complete",
+  "total_steps": 8
+}

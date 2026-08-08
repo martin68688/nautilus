@@ -537,6 +537,17 @@ def stepwise_plan_and_code_query(
     )
 
     step_agents = create_default_step_agents()
+    identity = getattr(getattr(agent_instance, "cfg", None), "run_identity", None)
+    if bool(getattr(identity, "require_submission_aligned_internal_metric", False)):
+        training_agent = next(
+            item for item in step_agents if item.name == "training_evaluation"
+        )
+        training_agent.guidelines[-1] = (
+            "CRITICAL: The exact model/ensemble variant used for submission.csv "
+            "must also be used for the reported validation score. The final line "
+            "must be: `print(f'Final Submission-Aligned Validation Score: "
+            "{score} | variant={submission_variant}')`."
+        )
     meta_agent = MetaAgent()
 
     step_results: List[Dict[str, str]] = []

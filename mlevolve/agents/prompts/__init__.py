@@ -15,6 +15,7 @@ from .impl_guideline import (
     get_impl_guideline,
     get_impl_guideline_from_agent,
     host_protocol_preflight_enabled,
+    submission_aligned_metric_required,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "get_impl_guideline",
     "get_impl_guideline_from_agent",
     "host_protocol_preflight_enabled",
+    "submission_aligned_metric_required",
 ]

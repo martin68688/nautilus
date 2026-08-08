@@ -1151,6 +1151,13 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
             remaining_conflict = _result_parser_conflict(response, parser_facts)
             fallback_metric_used = False
             false_failure_overridden = False
+            submission_alignment_required = bool(
+                getattr(
+                    getattr(agent.cfg, "run_identity", None),
+                    "require_submission_aligned_internal_metric",
+                    False,
+                )
+            )
             if (
                 response.get("metric") is None
                 and parser_facts.get("high_confidence_self_reported_metric")
@@ -1169,6 +1176,32 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                 remaining_conflict = _result_parser_conflict(
                     response, parser_facts
                 )
+            aligned_metric = parser_facts.get("submission_aligned_metric")
+            legacy_exact_replay = bool(
+                node.stage == "draft"
+                and node.draft_role == "memory_reproduction"
+                and node.replay_source
+            )
+            if (
+                aligned_metric is not None
+                and parser_facts.get("process_exited_normally")
+                and parser_facts.get("submission_file_exists")
+            ):
+                response["metric"] = float(aligned_metric)
+                submission_alignment_status = "verified_marker"
+            elif submission_alignment_required and not legacy_exact_replay:
+                response["metric"] = None
+                response["is_bug"] = True
+                response["summary"] = (
+                    str(response.get("summary") or "")
+                    + " SUBMISSION_METRIC_ALIGNMENT_MISSING: the run did not emit "
+                    "the required submission-aligned metric and variant marker."
+                ).strip()
+                submission_alignment_status = "required_marker_missing"
+            elif submission_alignment_required:
+                submission_alignment_status = "legacy_exact_replay_unverified"
+            else:
+                submission_alignment_status = "not_required"
             observation = getattr(node, "protocol_observation", None)
             if not isinstance(observation, dict):
                 observation = {}
@@ -1181,6 +1214,18 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                 "remaining_conflict": remaining_conflict,
                 "fallback_metric_used": fallback_metric_used,
                 "false_failure_overridden": false_failure_overridden,
+            }
+            observation["submission_metric_alignment"] = {
+                "schema": "mlevolve_submission_metric_alignment_v1",
+                "required": submission_alignment_required,
+                "status": submission_alignment_status,
+                "metric": aligned_metric,
+                "submission_variant": str(
+                    parser_facts.get("submission_variant") or ""
+                ),
+                "marker_line": str(
+                    parser_facts.get("submission_aligned_metric_line") or ""
+                ),
             }
 
             if signed_metric is not None:

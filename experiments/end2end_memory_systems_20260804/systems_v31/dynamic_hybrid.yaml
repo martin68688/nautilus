@@ -1,0 +1,70 @@
+extends: base.yaml
+
+agent:
+  initial_drafts: 3
+  search:
+    num_drafts: 3
+  draft_role_policy:
+    enabled: true
+    replay_targets_path: ../paper-skills/eval_skill_memory/clean_replay_targets.json
+    roles:
+      - coldstart_baseline
+      - memory_reproduction
+      - novel_exploration
+external_skill_memory:
+  end2end_memory_system: ""
+  retrieval_control: dynamic_hybrid
+  enable_agentic: true
+  recipe_sop_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v3/recipe_sops.json
+  recipe_sop_file_sha256: e6db95649c20a642738d6ee35df1aa11ff15287e3613221becb393e28d2a9398
+  recipe_sop_bundle_sha256: 8cce9dd7ee70897e23e5f1dfda08d056cf6ae77ad63e758bd2bbd05376e88749
+  recipe_evidence_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v3/evidence_manifest.json
+  recipe_evidence_file_sha256: fcb084206cdaa31cfd052c1bce290871b8c075a6376ee698b5c4119636adda04
+  recipe_evidence_manifest_sha256: 25f6729ece9b1ead76b0d8501aa6aa4026cb163e3eaa7eb05c755b1d72f6160f
+  recipe_implementation_path: ../experiments/end2end_memory_systems_20260804/recipe_distillation_v3/implementation_capsules.json
+  experiment_r_enabled: true
+  experiment_r_candidate_limit: 12
+  experiment_r_top_k: 6
+  experiment_r_prompt_token_budget: 1536
+  experiment_r_debug_confidence_threshold: 0.50
+  experiment_r_agentic_retrieval_enabled: true
+  experiment_r_agentic_max_steps: 4
+  experiment_r_agentic_per_step_top_k: 8
+  experiment_r_agentic_max_observed: 48
+  experiment_r_agentic_temperature: 0.0
+  experiment_r_agentic_max_tokens: 1200
+  experiment_r_l3_agent_match_enabled: false
+  experiment_r_l3_agent_match_max_attempts: 2
+  experiment_r_l3_agent_match_min_confidence: 0.50
+  experiment_r_l3_agent_match_max_tokens: 1800
+  experiment_r_memory_transfer_static_gate: false
+  experiment_r_memory_transfer_runtime_gate: false
+  stage_quotas:
+    draft:
+      sop_candidates: 5
+      sop_gateways: 3
+      tree_candidates: 1
+    improve:
+      sop_candidates: 3
+      sop_gateways: 2
+      tree_candidates: 3
+    debug:
+      sop_candidates: 1
+      sop_gateways: 1
+      tree_candidates: 5
+  rrf_weights:
+    draft:
+      sop: 0.8333333333333334
+      tree: 0.16666666666666666
+    improve:
+      sop: 0.5
+      tree: 0.5
+    debug:
+      sop: 0.16666666666666666
+      tree: 0.8333333333333334
+
+run_identity:
+  memory_system: dynamic_hybrid
+  system_id: dynamic_hybrid
+  memory_version: experiment_r_full_router_post_draft_v1
+  require_submission_aligned_internal_metric: true

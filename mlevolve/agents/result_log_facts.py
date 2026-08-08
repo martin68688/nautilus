@@ -34,6 +34,30 @@ _HIGH_CONFIDENCE_METRIC_PATTERNS = (
     ),
 )
 
+_SUBMISSION_ALIGNED_METRIC_RE = re.compile(
+    r"(?im)^\s*Final\s+Submission[- ]Aligned\s+Validation\s+Score\s*:\s*"
+    r"(-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*\|\s*"
+    r"variant\s*=\s*([^\r\n|]+?)\s*$"
+)
+
+
+def extract_submission_aligned_metric(
+    output: str,
+) -> tuple[float | None, str, str]:
+    matches: list[tuple[int, float, str, str]] = []
+    for match in _SUBMISSION_ALIGNED_METRIC_RE.finditer(output or ""):
+        try:
+            value = float(match.group(1))
+        except (TypeError, ValueError):
+            continue
+        variant = str(match.group(2) or "").strip()
+        if math.isfinite(value) and variant:
+            matches.append((match.start(), value, variant, match.group(0).strip()))
+    if not matches:
+        return None, "", ""
+    _position, value, variant, line = max(matches, key=lambda item: item[0])
+    return value, variant, line
+
 
 def extract_high_confidence_metric(output: str) -> tuple[float | None, str]:
     matches: list[tuple[int, float, str]] = []
@@ -80,6 +104,9 @@ def result_parser_facts(
 ) -> dict[str, object]:
     output = str(getattr(node, "full_term_out", "") or "")
     metric, metric_line = extract_high_confidence_metric(output)
+    aligned_metric, submission_variant, aligned_line = (
+        extract_submission_aligned_metric(output)
+    )
     return {
         "process_exited_normally": getattr(node, "exc_type", None) is None,
         "exception_type": getattr(node, "exc_type", None),
@@ -89,6 +116,9 @@ def result_parser_facts(
         "agent_output_view_compacted": len(parser_view) < len(output),
         "high_confidence_self_reported_metric": metric,
         "high_confidence_metric_line": metric_line,
+        "submission_aligned_metric": aligned_metric,
+        "submission_variant": submission_variant,
+        "submission_aligned_metric_line": aligned_line,
     }
 
 
@@ -97,6 +127,12 @@ def result_parser_conflict(response: Mapping, facts: Mapping) -> str:
         return ""
     if not facts.get("submission_file_exists"):
         return ""
+    aligned = facts.get("submission_aligned_metric")
+    if aligned is not None and isinstance(response.get("metric"), (int, float)):
+        if not math.isclose(
+            float(response["metric"]), float(aligned), rel_tol=1e-9, abs_tol=1e-12
+        ):
+            return "metric_differs_from_submission_aligned_marker"
     if (
         response.get("metric") is None
         and facts.get("high_confidence_self_reported_metric") is not None

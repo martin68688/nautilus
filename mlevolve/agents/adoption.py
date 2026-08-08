@@ -207,6 +207,11 @@ def _serialize_exact_replay_trace(node, ref_ids):
             "route": "exact_code_replay",
             "control": "memory_reproduction",
         },
+        "role_policy_abstention": {
+            "status": "abstain",
+            "reason": "draft_origin_policy_uses_exact_code_replay_not_router_prompt",
+            "draft_only": True,
+        },
         "target_task_id": str(source.get("task_id") or ""),
         "candidate_pool_hash": pool_hash,
         "candidate_pool_source": "frozen_exact_replay_target",
@@ -298,6 +303,19 @@ def log_adoption(
         getter = getattr(layer, "current_navigation_pack", None)
         if callable(getter):
             pack = getter()
+            from agents.memory.end2end_memory_system import canonical_stage
+
+            expected_stage = canonical_stage(stage)
+            raw_pack_stage = str(
+                (pack.get("stage_route") or {}).get("stage") or ""
+            )
+            pack_stage = canonical_stage(raw_pack_stage)
+            if pack.get("schema") == "experiment_r_memory_pack_v1":
+                if pack_stage != expected_stage:
+                    raise RuntimeError(
+                        "Current Router pack stage does not match generated node: "
+                        f"pack={pack_stage!r} node={expected_stage!r}"
+                    )
             node.memory_navigation_trace = copy.deepcopy(
                 pack.get("navigation_trace", [])
             )
@@ -314,6 +332,10 @@ def log_adoption(
                     "algorithm_version": str(pack.get("algorithm_version") or ""),
                     "system_id": "dynamic_hybrid",
                     "stage_route": copy.deepcopy(pack.get("stage_route") or {}),
+                    "node_stage": expected_stage,
+                    "node_stage_raw": str(stage),
+                    "pack_stage": pack_stage,
+                    "pack_stage_raw": raw_pack_stage,
                     "target_task_id": str(pack.get("target_task_id") or ""),
                     "memory_pool_sha256": str(
                         pack.get("memory_pool_sha256")
@@ -346,6 +368,12 @@ def log_adoption(
                     ),
                     "final_prompt_candidates": copy.deepcopy(
                         pack.get("final_prompt_candidates") or []
+                    ),
+                    "retrieval_agent": copy.deepcopy(
+                        pack.get("retrieval_agent") or {}
+                    ),
+                    "router_activation": copy.deepcopy(
+                        pack.get("router_activation") or {}
                     ),
                     "visible_clause_ids": list(pack.get("visible_clause_ids") or []),
                     "prompt_token_count": int(pack.get("prompt_token_count") or 0),

@@ -41,6 +41,64 @@ def _metric_value(raw_node: dict[str, Any]) -> tuple[float | None, bool | None]:
     return None, None
 
 
+def _journal_relative_to_runs(journal_value: str) -> Path:
+    """Return the portion of a graph journal path below ``mlevolve/runs``."""
+
+    raw = Path(str(journal_value or ""))
+    if raw.is_absolute() or not raw.parts or ".." in raw.parts:
+        raise ValueError(f"Replay journal path is unsafe: {journal_value}")
+    parts = raw.parts
+    if parts[:2] == ("mlevolve", "runs"):
+        parts = parts[2:]
+    elif parts[:1] == ("runs",):
+        parts = parts[1:]
+    else:
+        raise ValueError(
+            "Replay journal must be recorded below mlevolve/runs: "
+            f"{journal_value}"
+        )
+    if not parts:
+        raise ValueError(f"Replay journal path has no file component: {journal_value}")
+    return Path(*parts)
+
+
+def _resolve_replay_journal(
+    policy: Any,
+    *,
+    repo_root: Path,
+    journal_value: str,
+) -> tuple[Path, Path]:
+    """Resolve a journal from an explicit historical-run root or this checkout.
+
+    End-to-end releases contain code and manifests but intentionally do not
+    duplicate historical ``runs`` directories.  ``replay_runs_root`` binds
+    exact replay to the persistent, read-only artifact store instead of the
+    release checkout.  The old in-checkout location remains the default for
+    legacy configs and unit tests.
+    """
+
+    relative = _journal_relative_to_runs(journal_value)
+    configured_root = str(getattr(policy, "replay_runs_root", "") or "").strip()
+    if configured_root:
+        roots = [resolve_memory_path(configured_root, base_dir=repo_root)]
+    else:
+        roots = [(repo_root / "mlevolve" / "runs").resolve()]
+
+    attempted: list[str] = []
+    for root in roots:
+        resolved_root = root.resolve()
+        candidate = (resolved_root / relative).resolve()
+        if not candidate.is_relative_to(resolved_root):
+            raise ValueError(f"Replay journal escapes configured runs root: {candidate}")
+        attempted.append(str(candidate))
+        if candidate.is_file():
+            return candidate, resolved_root
+    raise FileNotFoundError(
+        "Replay journal not found in configured artifact root: "
+        + ", ".join(attempted)
+    )
+
+
 def requires_protocol_repair(agent: Any, target_audit_status: str) -> bool:
     """Return whether a historical candidate must enter the internal repair flow."""
     return (
@@ -170,12 +228,12 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
         if not run_record:
             raise ValueError(f"Replay Run record is missing from graph: {run_id}")
         repo_root = Path(__file__).resolve().parents[3]
-        allowed_root = (repo_root / "mlevolve" / "runs").resolve()
-        journal_path = (repo_root / str(run_record.get("journal_path") or "")).resolve()
-        if not journal_path.is_relative_to(allowed_root):
-            raise ValueError(f"Replay journal escapes clean runs directory: {journal_path}")
-        if not journal_path.exists():
-            raise FileNotFoundError(f"Replay journal not found: {journal_path}")
+        journal_record_path = str(run_record.get("journal_path") or "")
+        journal_path, journal_runs_root = _resolve_replay_journal(
+            policy,
+            repo_root=repo_root,
+            journal_value=journal_record_path,
+        )
 
         journal = json.loads(journal_path.read_text(encoding="utf-8"))
         raw_nodes = [
@@ -189,7 +247,7 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
             )
         raw_node = raw_nodes[0]
         journal_reference = str(
-            Path("mlevolve/runs") / journal_path.relative_to(allowed_root)
+            Path("mlevolve/runs") / journal_path.relative_to(journal_runs_root)
         )
     else:
         capsule = graph_node.get("implementation_capsule")
@@ -314,6 +372,9 @@ def load_exact_replay(agent: Any) -> dict[str, Any]:
         "original_node_id": original_node_id,
         "graph_node_id": graph_node_id,
         "journal_path": journal_reference,
+        "journal_artifact_root": (
+            str(journal_runs_root) if source_kind == "runforest_journal" else ""
+        ),
         "historical_metric": metric,
         "maximize": maximize,
         "code_sha256": code_sha256,

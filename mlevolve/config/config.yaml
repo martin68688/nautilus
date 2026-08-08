@@ -88,6 +88,7 @@ agent:
     roles: []
     extra_role: novel_exploration
     replay_targets_path: ""
+    replay_runs_root: ""
 
   # Optional host-enforced feasibility boundary for paired online experiments.
   # It is inert by default and must be identical across paired conditions.

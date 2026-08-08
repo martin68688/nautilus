@@ -1,0 +1,103 @@
+# End2End is an effectiveness experiment, not a Host-protocol or provenance
+# audit. Inherit directly from authority-off so Host gates cannot reactivate.
+extends: ../../../mlevolve/config/config_authority_off.yaml
+
+methodology_kb_path: ""
+methodology_dynamic: false
+
+fixed_holdout:
+  # The fixed split is already published. Never rescan and hash every public
+  # asset before an End2End condition.
+  preflight_validate_train_view: false
+
+agent:
+  check_data_leakage: false
+  use_global_memory: false
+  code:
+    temp: 1.0
+  feedback:
+    temp: 1.0
+  search:
+    num_gpus: 1
+    parallel_search_num: 1
+    num_drafts: 3
+  draft_role_policy:
+    enabled: false
+    roles: []
+  protocol_repair:
+    enabled: false
+  protocol_preflight:
+    enabled: false
+    agent_semantic_review_enabled: false
+    agent_semantic_max_repair_attempts: 0
+    agent_semantic_max_review_attempts: 0
+    agent_semantic_temperature: 0.0
+    agent_semantic_max_tokens: 4096
+    agent_controls_protocol_preflight: false
+    install_host_candidate_entrypoint: false
+    candidate_process_isolation: true
+
+adoption_tracking:
+  enable: true
+  enable_analysis: false
+  judge_mode: keyword
+
+adoption_verifier:
+  enabled: false
+  mode: shadow
+  model: ""
+  temperature: 0.0
+  max_tokens: 4096
+  max_contracts_per_call: 8
+  max_code_chars: 120000
+  require_signed_trace: false
+
+prospective_audit:
+  enabled: false
+  allow_pending_counterfactual: false
+
+external_skill_memory:
+  enable: true
+  bundle_root: ""
+  current_pointer_path: CURRENT.json
+  verify_bundle_artifacts: false
+  session_overlay_path: ""
+  graph_path: ""
+  index_path: ""
+  text_model_path: ""
+  source_name: run_forest_stage_hybrid_memory
+  mode: run_forest_stage_hybrid
+  scoring_mode: flat_twin
+  enable_agentic: false
+  top_k: 6
+  max_chars: 0
+  include_draft: true
+  include_improve: true
+  include_evolution: true
+  include_debug: true
+  include_fusion: true
+  retrieval_control: stage_hybrid
+  visibility_token_budget: 4096
+  end2end_memory_system: ""
+  end2end_prompt_token_budget: 1536
+  end2end_candidate_pool_limit: 12
+  excluded_run_ids: []
+
+evaluation_authority:
+  require_bound_bundle: false
+  mode: "off"
+  enforce_operations: []
+  enforce_generation_stages: []
+  enforce_governance_stages: []
+  emit_snapshot: false
+  runtime_protocol_observer_enabled: false
+  protocol_runtime_mode: legacy_ast
+
+run_identity:
+  schema: mlevolve_run_identity_v1
+  experiment_group: experiment_end2end_memory_systems_pilot_v1
+  baseline_reference_group: experiment_end2end_no_memory_v1
+  memory_enabled: true
+  memory_system: ""
+  memory_version: end2end_fourtask_direct_v2
+  identity_source: end2end_frozen_manifest_v1

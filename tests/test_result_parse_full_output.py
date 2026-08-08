@@ -62,3 +62,28 @@ def test_parser_does_not_invent_metric_from_ordinary_epoch_lines():
     )
     assert metric is None
     assert line == ""
+
+
+def test_submission_aligned_metric_wins_over_better_component_metric():
+    from agents.result_log_facts import (
+        extract_submission_aligned_metric,
+        result_parser_facts,
+    )
+    from engine.search_node import SearchNode
+
+    output = (
+        "Final OOF Log Loss: 0.005086\n"
+        "Blend OOF Log Loss: 0.010162\n"
+        "Submission saved: (594, 100)\n"
+        "Final Submission-Aligned Validation Score: 0.010162 | variant=nn_lgbm_blend\n"
+    )
+    node = SearchNode(
+        code="print('run')", stage="improve", _term_out=[output], exc_type=None
+    )
+    metric, variant, line = extract_submission_aligned_metric(output)
+    assert metric == 0.010162
+    assert variant == "nn_lgbm_blend"
+    assert line.endswith("variant=nn_lgbm_blend")
+    facts = result_parser_facts(node, True, output)
+    assert facts["submission_aligned_metric"] == 0.010162
+    assert facts["submission_variant"] == "nn_lgbm_blend"

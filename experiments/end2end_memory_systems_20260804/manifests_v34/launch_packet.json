@@ -1,0 +1,31 @@
+{
+  "component_manifest_hashes": {
+    "budget": "2be908cac1786b54ba706e03af431746e75b0d3289c01e93685a82126e1a8528",
+    "evaluators": "196cd211ab85022e0f5aca48b0c16b30738338ee60cc47912ba2f9f5e80342a9",
+    "memory_bundles": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
+    "schemas": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+    "source_lock": "23164a3f7d9eb5e716595e82a96f608ed04490be5f4142293d25108213316d09",
+    "systems": "6be88e32fda71cd615234fe4332623b7e0940a26ff74c4bae383d4162b6689e5",
+    "tasks": "cf7b0cc58331a8c04092f5251eb2dbc0f2233dcbde24ce7b4e9d31943b8118ca"
+  },
+  "feasibility_smoke_manifest_hash": "31cca88477184ff071c98abb2b58c1457e1d4a6e3df72d9bf51ca90b9be72646",
+  "job_count": 2,
+  "jobs": [
+    "smoke-leaf-full-router-v34-job.yaml",
+    "pilot-leaf-dynamic-routerfix-v34-job.yaml"
+  ],
+  "l3_debug_dynamic_smoke_manifest_hash": "27260565e70cc092fad800afd957ca6b2f3e0b12dca6c7943e1d0d4c5b4bd3ab",
+  "launch_gate": "explicit_user_authorization_required",
+  "leaf_controls_smoke_manifest_hash": "f06a873f590dcce35011517d6697e50d4340c1f16263e250c746daa561794261",
+  "leaf_dynamic_repaired_pilot_manifest_hash": "db97e0073fb50bdb75e74c2db608012405de1e5b349344e863a5d1cdcf9322d2",
+  "leaf_dynamic_smoke_manifest_hash": "c0579d8d421af9ec5cdbcfa80910791dfce891c29d573c73eab7933bcf2a5e26",
+  "leaf_recipe_dynamic_smoke_manifest_hash": "2e380ae7ed530e163c1d46ce5050ca5b8c8a3b63ffd10a3b4e81b70517ed5f19",
+  "packet_hash": "436e8c625232c403f796be8736c62a44fc2e6b5a6a55b29a8dd15efae73ec55e",
+  "pilot_manifest_hash": "d3932c583b9bd1a841a64033231025e4ecaff77a2717d16e03a84f942e35c7d1",
+  "pilot_requires_passing_smoke_gate": true,
+  "pre_run_confirmation": "one local human-facing intent confirmation only",
+  "schema": "mlevolve_end2end_launch_packet_v1",
+  "smoke_manifest_hash": "10c8633c705ec555f20bd8d40ede664cb7c2cd25dc3cef3a5c395b5d33ca0d77",
+  "status": "generated_not_submitted",
+  "workload_objects_created": 0
+}

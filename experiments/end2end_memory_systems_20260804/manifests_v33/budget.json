@@ -1,0 +1,129 @@
+{
+  "adoption_verifier": {
+    "enabled": false,
+    "mode": "off",
+    "reason": "experiment tracks prompt visibility and code adoption without a blocking verifier"
+  },
+  "agent_semantic_protocol_review": {
+    "actual_entrypoint_required": false,
+    "agent_controls_protocol_preflight": false,
+    "enabled_for_systems": [],
+    "host_dry_run_executed": false,
+    "host_receipt_admission_authority": false,
+    "host_runtime_semantic_disposition": "disabled",
+    "max_repair_attempts": 0,
+    "max_review_attempts": 0,
+    "method_preservation_required": false,
+    "unresolved_disposition": "not_applicable"
+  },
+  "debug_smoke": {
+    "agent_steps": 8,
+    "agent_time_limit_seconds": 5400,
+    "cpu_count": 16,
+    "execution_timeout_seconds": 1200,
+    "finalize_reserve_seconds": 180,
+    "gpu_count": 1,
+    "initial_drafts": 3,
+    "max_replacement_drafts": 0,
+    "memory_gib": 64,
+    "parallel_search_num": 1
+  },
+  "experiment_validation": {
+    "bundle_artifact_traversal": false,
+    "host_protocol_preflight": false,
+    "host_runtime_protocol": false,
+    "mode": "experiment_fast_nonblocking_v1",
+    "pre_run_confirmations": [
+      "human_confirms_local_experiment_intent_summary"
+    ],
+    "public_train_tree_hash_scan": false,
+    "receipt_admission": false,
+    "source_lock_enforcement": false
+  },
+  "failure_policy": {
+    "archived_active_candidate_boundary_resume": true,
+    "automatic_job_retry": false,
+    "backoff_limit_per_index": 0,
+    "completed_conditions_are_skipped": true,
+    "completed_search_step_resume": true,
+    "condition_level_resume": true,
+    "cumulative_wall_gpu_and_ttfv": true,
+    "epoch_level_checkpoint_guaranteed": false,
+    "explicit_retry_only_for": "infrastructure",
+    "hard_interruption_orphans_finalized_as_infrastructure": true,
+    "preserve_all_attempts": true,
+    "resume_semantics": "restore completed Journal nodes, branch/Top-K state, submissions, and archived in-flight candidate source into a new immutable attempt; continue under the original total wall budget. Candidate programs without native epoch checkpoints restart from their candidate boundary",
+    "score_imputation": false
+  },
+  "l3_agent_matching": {
+    "agent_cannot_restore_rejected_candidates": true,
+    "agent_input_scope": "hard_gated_clean_candidates_only",
+    "cross_task_type_allowed": false,
+    "decision_stage": "debug",
+    "failure_fallback": "deterministic_manual_router_order",
+    "failure_signature_min_match": 0.5,
+    "gateway_selector_agent_enabled": true,
+    "gateway_selector_temperature": 0.0,
+    "manual_router_enabled_for_systems": [
+      "dynamic_hybrid"
+    ],
+    "manual_synonym_table_used": true,
+    "specialized_root_cause_agent_enabled_for_systems": [],
+    "task_scope_order": [
+      "exact_task",
+      "same_task_type"
+    ]
+  },
+  "manifest_hash": "2be908cac1786b54ba706e03af431746e75b0d3289c01e93685a82126e1a8528",
+  "pilot": {
+    "agent_steps": 80,
+    "agent_time_limit_seconds": 21600,
+    "cpu_count": 16,
+    "execution_timeout_seconds": 18000,
+    "finalize_reserve_seconds": 900,
+    "gpu_count": 1,
+    "initial_drafts": 3,
+    "max_replacement_drafts": 5,
+    "memory_gib": 64,
+    "parallel_search_num": 1
+  },
+  "runtime": {
+    "container_image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+    "gpu_product_constraint": null,
+    "gpu_resource_key": "nvidia.com/a100",
+    "gpu_type": "NVIDIA A100 family",
+    "provider_seed_supported": false,
+    "rng_commitment_scope": "Python/NumPy/Torch local RNG state; no provider determinism claim",
+    "solver_model_id": "deepseek-production-solver",
+    "solver_model_revision": "sha256:6c72890187efc83ef04ac6527c8f22f823708d99c83b7f7b3393dfe27fe4efc6"
+  },
+  "schema": "mlevolve_end2end_budget_manifest_v1",
+  "shared_memory": {
+    "prompt_token_budget": 1536,
+    "raw_candidate_max": 24,
+    "raw_candidates_per_source": 12,
+    "token_counter": "whitespace_split_v1",
+    "top_k": 6,
+    "visibility_token_budget": 4096
+  },
+  "smoke": {
+    "agent_steps": 3,
+    "agent_time_limit_seconds": 3600,
+    "cpu_count": 16,
+    "execution_timeout_seconds": 900,
+    "finalize_reserve_seconds": 120,
+    "gpu_count": 1,
+    "initial_drafts": 3,
+    "max_replacement_drafts": 0,
+    "memory_gib": 64,
+    "parallel_search_num": 1
+  },
+  "solver_sampling": {
+    "adoption_verifier_temperature": 0.0,
+    "all_other_frozen_axes_unchanged": true,
+    "baseline_release_id": "end2end-agent-v3",
+    "code_temperature": 1.0,
+    "comparison_axis": "memory_system",
+    "feedback_temperature": 1.0
+  }
+}

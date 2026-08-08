@@ -2448,11 +2448,27 @@ def fetch_external_skill_memory(agent: Any, stage: str, **kwargs: Any) -> tuple[
     draft_role = kwargs.pop("draft_role", None)
     if draft_role == "replacement_draft":
         draft_role = "novel_exploration"
-    if draft_role in {"coldstart_baseline", "memory_reproduction"}:
+    mode = str(getattr(layer, "mode", "")).lower()
+    canonical_stage = {
+        "multi_fusion": "improve",
+        "fusion_draft": "improve",
+        "aggregation": "improve",
+        "fusion": "improve",
+        "evolution": "improve",
+    }.get(str(stage), str(stage))
+    # The three-role policy chooses only the initial Draft origin.  It must
+    # never become a permanent memory-visibility capability attached to the
+    # branch.  Legacy memory layers retain their old Draft-only behavior;
+    # StageAwareHybridMemoryLayer records the Draft abstention itself and
+    # opens the full Router again for every later stage.
+    if (
+        draft_role in {"coldstart_baseline", "memory_reproduction"}
+        and not (mode == "run_forest_stage_hybrid" and canonical_stage != "draft")
+    ):
         return "", [], getattr(layer, "source_name", "skillgraph")
     try:
         query_values = list(kwargs.values())
-        if str(getattr(layer, "mode", "")).lower() == "run_forest_stage_hybrid":
+        if mode == "run_forest_stage_hybrid":
             query_values = [
                 value
                 for key, value in kwargs.items()
@@ -2464,7 +2480,7 @@ def fetch_external_skill_memory(agent: Any, stage: str, **kwargs: Any) -> tuple[
             "task_desc": getattr(agent, "task_desc", "") or "",
             "query_parts": [str(v) for v in query_values if v],
         }
-        if str(getattr(layer, "mode", "")).lower() == "run_forest_stage_hybrid":
+        if mode == "run_forest_stage_hybrid":
             call_kwargs.update(
                 {
                     "draft_role": draft_role,
