@@ -398,6 +398,7 @@ def source_lock() -> dict[str, Any]:
     for path in (
         sorted(ROOT.glob("*.py"))
         + sorted(ROOT.glob("*.json"))
+        + [ROOT / "systems_v35" / "base.yaml"]
         + sorted(SYSTEM_DIR.glob("*.yaml"))
         + sorted(SCHEMA_DIR.glob("*.json"))
         + sorted(HOST_BINDINGS_DIR.rglob("*.json"))
