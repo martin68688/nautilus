@@ -4,7 +4,7 @@
     "evaluators_manifest_hash": "bdb0d161cffa4d3d5799769247c5a6346755906cd3a25396d3b75a8833468762",
     "memory_bundles_manifest_hash": "9010d740e303ca48f6ada950fdf593c215d35ef29328e939604646792a3c8912",
     "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
-    "source_lock_manifest_hash": "c3e66378a7e201f0e8786eaecd3120188316c63a888ef9be08479a98d8c0d5cf",
+    "source_lock_manifest_hash": "55cd45dc31d6f49fa7efdd2f0f658af56fa9f3e460f1ced38f9c591fefc3ae2e",
     "systems_manifest_hash": "896a2442f50cfadc308485df5f3deb65389cb6aa19215e6f1573dc10f269e34c",
     "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
   },
@@ -13,7 +13,7 @@
   "formal_result_eligible": false,
   "kind": "smoke",
   "launch_order_randomization": "task-local SHA256-seeded deterministic shuffle; comparison order locked to end2end-agent-v3",
-  "manifest_hash": "0efcd572885986718f764e11089601186e276eeae33764876039bd89f864d603",
+  "manifest_hash": "1a76fd9a0b285c76b925a1c1bb5822036ce21f54823cf545c267de982b51ba58",
   "release_id": "end2end-leaf-causal-sparse-router-v36",
   "run_count": 1,
   "runs": [
@@ -23,7 +23,7 @@
         "evaluators_manifest_hash": "bdb0d161cffa4d3d5799769247c5a6346755906cd3a25396d3b75a8833468762",
         "memory_bundles_manifest_hash": "9010d740e303ca48f6ada950fdf593c215d35ef29328e939604646792a3c8912",
         "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
-        "source_lock_manifest_hash": "c3e66378a7e201f0e8786eaecd3120188316c63a888ef9be08479a98d8c0d5cf",
+        "source_lock_manifest_hash": "55cd45dc31d6f49fa7efdd2f0f658af56fa9f3e460f1ced38f9c591fefc3ae2e",
         "systems_manifest_hash": "896a2442f50cfadc308485df5f3deb65389cb6aa19215e6f1573dc10f269e34c",
         "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
       },
@@ -31,7 +31,7 @@
       "formal_result_eligible": false,
       "launch_position": 0,
       "logical_run_id": "e2e-smoke-leaf-causal-sparse-router-v36__leaf-classification__dynamic_hybrid__seed-1",
-      "row_hash": "14acb7bf2557d21ad06fa60e19be0185d7b2e344f0ad73543770f4f4fec34382",
+      "row_hash": "72d0cf19f26887d77b94dd54bfde22bae0818e883bbf5f79ea8645233c530274",
       "seed": 1,
       "system_id": "dynamic_hybrid",
       "task_id": "leaf-classification",
