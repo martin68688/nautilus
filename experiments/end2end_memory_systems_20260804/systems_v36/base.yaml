@@ -1,0 +1,4 @@
+extends: ../systems_v35/base.yaml
+
+# v36 changes only the Dynamic Router. All evaluator, task, budget, and
+# hardware-facing defaults remain inherited from the frozen v35 base.

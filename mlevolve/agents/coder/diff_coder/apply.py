@@ -20,6 +20,7 @@ def apply_diff_with_retry(
     original_code: str,
     max_retries: int = 3,
     regenerate_fn=None,
+    max_total_patches: int | None = None,
 ) -> Tuple[Optional[str], int, str]:
     current_code = original_code
     total_applied = 0
@@ -48,6 +49,27 @@ def apply_diff_with_retry(
 
                 patcher = SearchReplacePatcher()
                 updated_code, count = patcher.apply_patch(current_response, current_code, strict=False)
+                if (
+                    max_total_patches is not None
+                    and total_applied + count > int(max_total_patches)
+                ):
+                    retry_note = (
+                        "Your diff is too broad for this controlled experiment: "
+                        f"it contains {total_applied + count} applicable patches, but the "
+                        f"maximum is {int(max_total_patches)}. Return a smaller atomic change "
+                        "that implements one hypothesis and preserves the rest of the pipeline."
+                    )
+                    logger.warning(
+                        "Rejecting over-broad diff: applicable_patches=%s cap=%s",
+                        total_applied + count,
+                        max_total_patches,
+                    )
+                    current_code = original_code
+                    total_applied = 0
+                    if attempt < max_retries - 1 and regenerate_fn:
+                        current_response = regenerate_fn(original_code, retry_note)
+                        continue
+                    return None, 0, retry_note
                 if count > 0 and updated_code and updated_code != current_code:
                     current_code = updated_code
                     total_applied += count

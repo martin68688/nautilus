@@ -16,39 +16,31 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
-CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v35")
+CLUSTER_REPO = Path("/workspace/nautilus-exp-end2end-agent-v36")
 CLUSTER_ROOT = CLUSTER_REPO / "experiments" / "end2end_memory_systems_20260804"
-LEGACY_MANIFESTS = ROOT / "manifests"
-MANIFESTS = ROOT / "manifests_v35"
-SYSTEM_DIR = ROOT / "systems_v35"
+MANIFESTS = ROOT / "manifests_v36"
+SYSTEM_DIR = ROOT / "systems_v36"
 JOB_DIR = ROOT / "jobs"
 SCHEMA_DIR = ROOT / "schemas"
 HOST_BINDINGS_DIR = ROOT / "host_bindings"
 CLUSTER_HOST_BINDINGS_DIR = CLUSTER_ROOT / "host_bindings"
 SEED = 1
-RELEASE_ID = "end2end-agentic-full-router-v35"
+RELEASE_ID = "end2end-leaf-causal-sparse-router-v36"
 BASELINE_RELEASE_ID = "end2end-agent-v3"
 RANDOMIZATION_RELEASE_ID = BASELINE_RELEASE_ID
-OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v35/runs"
-EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v35"
+OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v36/runs"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v36"
 SOLVER_TEMPERATURE = 1.0
 SYSTEMS = (
-    ("S0", "no_memory", "internal", "Bundle-bound zero Prompt exposure"),
-    ("S1", "flat_retrieval", "internal", "Mixed global relevance Top-6"),
-    ("S2", "sop_only", "internal", "SOP Top-6"),
-    ("S3", "runforest_only", "internal", "RunForest Top-6"),
-    ("S4", "static_hybrid", "internal", "3 SOP / 3 RunForest"),
-    ("S5", "dynamic_hybrid", "internal", "Draft 5/1, Improve 3/3, Debug 1/5"),
-    ("S6", "reversed_router", "internal", "Draft 2/4, Improve 3/3, Debug 4/2"),
-    ("C1", "gome_style_port", "competitor_style_port", "Verified Success Memory cards"),
-    ("C2", "macla_style_port", "competitor_style_port", "Beta reliability utility"),
-    ("C3", "rcr_router_style_port", "competitor_style_port", "Role/stage/recency token routing"),
+    (
+        "S5-v36",
+        "dynamic_hybrid",
+        "internal",
+        "Leaf-only sparse Agent selection with causal Debug and atomic actuation",
+    ),
 )
 TASKS = (
-    ("aerial-cactus-identification", "Aerial", "roc_auc", "maximize"),
     ("leaf-classification", "Leaf", "log_loss", "minimize"),
-    ("denoising-dirty-documents", "Denoising", "rmse", "minimize"),
-    ("new-york-city-taxi-fare-prediction", "Taxi", "rmse", "minimize"),
 )
 MEMORY = {
     "aerial-cactus-identification": {
@@ -381,10 +373,14 @@ run_identity:
 
 def write_system_configs() -> None:
     SYSTEM_DIR.mkdir(parents=True, exist_ok=True)
-    (SYSTEM_DIR / "base.yaml").write_text(base_config(), encoding="utf-8")
+    required = [SYSTEM_DIR / "base.yaml"]
     for _label, system_id, _kind, _description in SYSTEMS:
-        (SYSTEM_DIR / f"{system_id}.yaml").write_text(
-            system_config(system_id), encoding="utf-8"
+        required.append(SYSTEM_DIR / f"{system_id}.yaml")
+    missing = [path for path in required if not path.is_file()]
+    if missing:
+        raise FileNotFoundError(
+            "v36 configs must be reviewed before manifest generation: "
+            + ", ".join(str(path) for path in missing)
         )
 
 
@@ -457,7 +453,7 @@ def component_manifests(
                 "system_id": system_id,
                 "kind": kind,
                 "description": description,
-                "config_path": f"systems_v35/{system_id}.yaml",
+                "config_path": f"systems_v36/{system_id}.yaml",
                 "config_sha256": sha256_file(config),
                 "limitation": limitation,
                 "primary_reference": reference,
@@ -466,10 +462,9 @@ def component_manifests(
     systems_manifest = finalize(
         {
             "schema": "mlevolve_end2end_systems_manifest_v1",
-            "system_count": 10,
+            "system_count": len(SYSTEMS),
             "experimental_axis": (
-                "system_id; dynamic_hybrid is the full Agentic three-role proposed "
-                "system while the other nine retain their frozen controller behavior"
+                "single Leaf Dynamic condition; v35 controls remain frozen and are not rerun"
             ),
             "systems": systems,
             "manifest_hash": "",
@@ -478,7 +473,7 @@ def component_manifests(
     tasks_manifest = finalize(
         {
             "schema": "mlevolve_end2end_tasks_manifest_v1",
-            "task_count": 4,
+            "task_count": len(TASKS),
             "seed": SEED,
             "exploratory_pilot": True,
             "tasks": [
@@ -524,18 +519,18 @@ def component_manifests(
                 "visibility_token_budget": 4096,
             },
             "l3_agent_matching": {
-                "specialized_root_cause_agent_enabled_for_systems": [],
-                "manual_router_enabled_for_systems": ["dynamic_hybrid"],
+                "specialized_root_cause_agent_enabled_for_systems": ["dynamic_hybrid"],
+                "manual_router_enabled_for_systems": [],
                 "decision_stage": "debug",
                 "gateway_selector_agent_enabled": True,
                 "gateway_selector_temperature": 0.0,
                 "failure_signature_min_match": 0.50,
                 "task_scope_order": ["exact_task", "same_task_type"],
                 "cross_task_type_allowed": False,
-                "manual_synonym_table_used": True,
+                "manual_synonym_table_used": False,
                 "agent_input_scope": "hard_gated_clean_candidates_only",
-                "agent_cannot_restore_rejected_candidates": True,
-                "failure_fallback": "deterministic_manual_router_order",
+                "agent_cannot_restore_safety_rejected_candidates": True,
+                "failure_fallback": "explicit_abstention_without_generic_debug_backfill",
             },
             "adoption_verifier": {
                 "enabled": False,
@@ -636,10 +631,13 @@ def component_manifests(
             "source_graph_sha256": "74ce8cd66d4b2b78399ad9a8f703029f33e22a78d2a5e721474dda5065d402fc",
             "source_index_sha256": "4185ad3c55fce9a5d9af85ccd2059ccb81dad8991c5e98dd6b41cd7a8cb8fced",
             "same_task_history_policy": (
-                "enabled for all four tasks; Dynamic pins the direction-aware "
-                "best clean positive-eligible record"
+                "enabled for Leaf; Dynamic pins the direction-aware best clean "
+                "positive-eligible record during Draft only"
             ),
-            "task_bundles": MEMORY,
+            "task_bundles": {
+                task_id: MEMORY[task_id]
+                for task_id, _display, _metric, _direction in TASKS
+            },
             "excluded_run_ids": [],
             "manifest_hash": "",
         }
@@ -720,7 +718,7 @@ def execution_manifest(
         ]
         system_ids = system_ids_override
         formal = True
-        prefix = prefix_override or "e2e-pilot-agentic-full-router-v35"
+        prefix = prefix_override or "e2e-pilot-leaf-causal-sparse-router-v36"
     bindings = {
         f"{key}_manifest_hash": value["manifest_hash"]
         for key, value in components.items()
@@ -933,68 +931,25 @@ def build() -> dict[str, Any]:
     )
     for key, payload in components.items():
         dump_json(MANIFESTS / f"{key}.json", payload)
-    # Smoke is completed evidence from release v12. Never rewrite those
-    # manifests/jobs when preparing a later formal Pilot release.
-    smoke = json.loads((LEGACY_MANIFESTS / "smoke_manifest.json").read_text())
-    feasibility_smoke = json.loads(
-        (LEGACY_MANIFESTS / "feasibility_smoke_manifest.json").read_text()
-    )
-    leaf_dynamic_smoke = json.loads(
-        (LEGACY_MANIFESTS / "leaf_dynamic_smoke_manifest.json").read_text()
-    )
-    leaf_controls_smoke = json.loads(
-        (LEGACY_MANIFESTS / "leaf_controls_smoke_manifest.json").read_text()
-    )
-    for name, payload in (
-        ("smoke_manifest.json", smoke),
-        ("feasibility_smoke_manifest.json", feasibility_smoke),
-        ("leaf_dynamic_smoke_manifest.json", leaf_dynamic_smoke),
-        ("leaf_controls_smoke_manifest.json", leaf_controls_smoke),
-    ):
-        dump_json(MANIFESTS / name, payload)
     leaf_recipe_dynamic_smoke = execution_manifest(
         kind="smoke",
         components=components,
         system_ids_override=["dynamic_hybrid"],
         task_ids_override=["leaf-classification"],
-        prefix_override="e2e-smoke-leaf-full-router-v35",
+        prefix_override="e2e-smoke-leaf-causal-sparse-router-v36",
     )
     dump_json(
         MANIFESTS / "leaf_recipe_dynamic_smoke_manifest.json",
         leaf_recipe_dynamic_smoke,
     )
-    l3_debug_dynamic_smoke = execution_manifest(
-        kind="smoke",
-        components=components,
-        system_ids_override=["dynamic_hybrid"],
-        task_ids_override=["aerial-cactus-identification"],
-        prefix_override="e2e-smoke-l3-debug-v2",
-    )
-    dump_json(
-        MANIFESTS / "l3_debug_dynamic_smoke_manifest.json",
-        l3_debug_dynamic_smoke,
-    )
     pilot = execution_manifest(kind="pilot", components=components)
     dump_json(MANIFESTS / "pilot_manifest.json", pilot)
     JOB_DIR.mkdir(parents=True, exist_ok=True)
-    for stale in JOB_DIR.glob("pilot-*-indexed-job-v35.yaml"):
+    for stale in JOB_DIR.glob("pilot-*-indexed-job-v36.yaml"):
         stale.unlink()
     leaf_recipe_job = job(
-        name="mlevolve-e2e-leaf-full-router-smoke-v35",
+        name="mlevolve-e2e-leaf-causal-sparse-smoke-v36",
         manifest_name="leaf_recipe_dynamic_smoke_manifest.json",
-        completions=1,
-        task_id=None,
-        active_deadline=5400,
-        parallelism=1,
-        components=components,
-        resume=False,
-    )
-    (JOB_DIR / "smoke-leaf-full-router-v35-job.yaml").write_text(
-        yaml.safe_dump(leaf_recipe_job, sort_keys=False), encoding="utf-8"
-    )
-    aerial_debug_job = job(
-        name="mlevolve-e2e-aerial-full-router-debug-smoke-v35",
-        manifest_name="l3_debug_dynamic_smoke_manifest.json",
         completions=1,
         task_id=None,
         active_deadline=7200,
@@ -1003,22 +958,22 @@ def build() -> dict[str, Any]:
         resume=False,
         budget_profile="debug_smoke",
     )
-    (JOB_DIR / "smoke-aerial-full-router-debug-v35-job.yaml").write_text(
-        yaml.safe_dump(aerial_debug_job, sort_keys=False), encoding="utf-8"
+    (JOB_DIR / "smoke-leaf-causal-sparse-v36-job.yaml").write_text(
+        yaml.safe_dump(leaf_recipe_job, sort_keys=False), encoding="utf-8"
     )
     leaf_dynamic_pilot = execution_manifest(
         kind="pilot",
         components=components,
         system_ids_override=["dynamic_hybrid"],
         task_ids_override=["leaf-classification"],
-        prefix_override="e2e-pilot-leaf-full-router-v1",
+        prefix_override="e2e-pilot-leaf-causal-sparse-router-v36",
     )
     dump_json(
         MANIFESTS / "leaf_dynamic_repaired_pilot_manifest.json",
         leaf_dynamic_pilot,
     )
     leaf_dynamic_job = job(
-        name="mlevolve-e2e-leaf-dynamic-routerfix-pilot-v35",
+        name="mlevolve-e2e-leaf-causal-sparse-pilot-v36",
         manifest_name="leaf_dynamic_repaired_pilot_manifest.json",
         completions=1,
         task_id=None,
@@ -1027,13 +982,12 @@ def build() -> dict[str, Any]:
         components=components,
         resume=False,
     )
-    (JOB_DIR / "pilot-leaf-dynamic-routerfix-v35-job.yaml").write_text(
+    (JOB_DIR / "pilot-leaf-causal-sparse-v36-job.yaml").write_text(
         yaml.safe_dump(leaf_dynamic_job, sort_keys=False), encoding="utf-8"
     )
     generated_jobs = [
-        "smoke-leaf-full-router-v35-job.yaml",
-        "smoke-aerial-full-router-debug-v35-job.yaml",
-        "pilot-leaf-dynamic-routerfix-v35-job.yaml",
+        "smoke-leaf-causal-sparse-v36-job.yaml",
+        "pilot-leaf-causal-sparse-v36-job.yaml",
     ]
     packet = finalize(
         {
@@ -1042,14 +996,7 @@ def build() -> dict[str, Any]:
             "launch_gate": "explicit_user_authorization_required",
             "pre_run_confirmation": "one local human-facing intent confirmation only",
             "pilot_requires_passing_smoke_gate": True,
-            "smoke_manifest_hash": smoke["manifest_hash"],
-            "feasibility_smoke_manifest_hash": feasibility_smoke["manifest_hash"],
-            "leaf_dynamic_smoke_manifest_hash": leaf_dynamic_smoke["manifest_hash"],
-            "leaf_controls_smoke_manifest_hash": leaf_controls_smoke["manifest_hash"],
             "leaf_recipe_dynamic_smoke_manifest_hash": leaf_recipe_dynamic_smoke[
-                "manifest_hash"
-            ],
-            "l3_debug_dynamic_smoke_manifest_hash": l3_debug_dynamic_smoke[
                 "manifest_hash"
             ],
             "pilot_manifest_hash": pilot["manifest_hash"],
@@ -1077,21 +1024,24 @@ def check() -> dict[str, Any]:
         if payload_hash(payload, field) != payload.get(field):
             raise ValueError(f"Self-hash mismatch: {path}")
     pilot = json.loads((MANIFESTS / "pilot_manifest.json").read_text())
-    smoke = json.loads((MANIFESTS / "smoke_manifest.json").read_text())
-    feasibility = json.loads(
-        (MANIFESTS / "feasibility_smoke_manifest.json").read_text()
+    smoke = json.loads(
+        (MANIFESTS / "leaf_recipe_dynamic_smoke_manifest.json").read_text()
     )
     leaf_dynamic = json.loads(
-        (MANIFESTS / "leaf_dynamic_smoke_manifest.json").read_text()
+        (MANIFESTS / "leaf_dynamic_repaired_pilot_manifest.json").read_text()
     )
     if (
-        pilot["run_count"] != 40
-        or smoke["run_count"] != 10
-        or feasibility["run_count"] != 1
+        pilot["run_count"] != 1
+        or smoke["run_count"] != 1
         or leaf_dynamic["run_count"] != 1
     ):
-        raise ValueError("Frozen matrix cardinality mismatch")
-    if len({row["logical_run_id"] for row in pilot["runs"]}) != 40:
+        raise ValueError("Leaf-only matrix cardinality mismatch")
+    for manifest in (pilot, smoke, leaf_dynamic):
+        if manifest["task_ids"] != ["leaf-classification"]:
+            raise ValueError("v36 manifest escaped the Leaf-only task scope")
+        if manifest["system_ids"] != ["dynamic_hybrid"]:
+            raise ValueError("v36 manifest escaped the Dynamic-only system scope")
+    if len({row["logical_run_id"] for row in pilot["runs"]}) != 1:
         raise ValueError("Pilot logical run IDs are not unique")
     packet = json.loads((MANIFESTS / "launch_packet.json").read_text())
     for name in packet["jobs"]:

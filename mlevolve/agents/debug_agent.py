@@ -182,6 +182,13 @@ def _format_debug_memory_guidance(agent, similar_fixes: List[Tuple]) -> str:
 
 
 def run(agent, parent_node: SearchNode) -> SearchNode:
+    memory_layer = getattr(agent, "external_skill_memory", None)
+    atomic_memory_actuation = bool(
+        getattr(memory_layer, "experiment_r_atomic_actuation_enabled", False)
+    )
+    debug_patch_cap = int(
+        getattr(memory_layer, "experiment_r_debug_max_patches", 3)
+    )
     debugging_standards = (
         "🔧 Debug SYSTEMATICALLY: Read error → Identify root cause → Apply minimal, targeted fix.\n\n"
         "**Do**: Fix root cause, preserve solution intent, maintain code quality.\n"
@@ -281,6 +288,15 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         prompt["Instructions"]["RUNTIME RESOURCE RECOVERY - HIGHEST PRIORITY"] = runtime_guidance
     prompt["Instructions"] |= ROBUSTNESS_GENERALIZATION_STRATEGY
     prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
+
+    if atomic_memory_actuation:
+        prompt["Instructions"]["DYNAMIC DEBUG REPAIR-ONLY CONTRACT"] = [
+            "Fix only the observed runtime root cause. Retrieved memories are diagnostic evidence, not optimization requests.",
+            "Preserve the parent model family, feature set, split, ensemble, loss, optimizer, and submission variant unless the traceback proves one exact line must change.",
+            "Do not add a backbone, feature family, model, ensemble member, or calibration step while repairing this failure.",
+            f"Use at most {debug_patch_cap} small SEARCH/REPLACE blocks. If more are needed, repair the earliest causal failure first and leave optimization for a later Improve node.",
+            "After the edit, reason through import/syntax validity, one representative data batch, one model forward pass, and submission-shape preservation.",
+        ]
 
     if not host_protocol_preflight_enabled(agent):
         internet_clarification = get_internet_clarification(
@@ -415,6 +431,26 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
 
                     patcher = SearchReplacePatcher()
                     updated_code, count = patcher.apply_patch(response, current_code, strict=False)
+                    if (
+                        atomic_memory_actuation
+                        and total_applied + count > debug_patch_cap
+                    ):
+                        retry_note = (
+                            "The proposed Debug change is too broad: "
+                            f"{total_applied + count} patches exceed the repair-only cap "
+                            f"of {debug_patch_cap}. Return only the smallest root-cause fix."
+                        )
+                        logger.warning(
+                            "Rejecting over-broad Debug diff: applicable_patches=%s cap=%s",
+                            total_applied + count,
+                            debug_patch_cap,
+                        )
+                        current_code = parent_node.code
+                        total_applied = 0
+                        if retry_idx < max_diff_retries - 1:
+                            logger.info("Retrying Debug with the atomic patch cap")
+                            continue
+                        break
                     if count > 0 and updated_code and updated_code != current_code:
                         current_code = updated_code
                         total_applied += count

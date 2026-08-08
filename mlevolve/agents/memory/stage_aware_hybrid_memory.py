@@ -617,6 +617,73 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else 1800
         )
+        self.experiment_r_flexible_selection_enabled = bool(
+            getattr(ext_cfg, "experiment_r_flexible_selection_enabled", False)
+            if ext_cfg is not None
+            else False
+        )
+        configured_selection_caps = (
+            getattr(ext_cfg, "experiment_r_stage_selection_caps", None)
+            if ext_cfg is not None
+            else None
+        )
+        default_selection_caps = {
+            "draft": self.experiment_r_top_k,
+            "improve": self.experiment_r_top_k,
+            "debug": self.experiment_r_top_k,
+        }
+        if configured_selection_caps is not None:
+            default_selection_caps.update(
+                {
+                    stage: int(getattr(configured_selection_caps, stage))
+                    for stage in ("draft", "improve", "debug")
+                    if getattr(configured_selection_caps, stage, None) is not None
+                }
+            )
+        self.experiment_r_stage_selection_caps = default_selection_caps
+        self.experiment_r_allow_agent_abstention = bool(
+            getattr(ext_cfg, "experiment_r_allow_agent_abstention", False)
+            if ext_cfg is not None
+            else False
+        )
+        self.experiment_r_debug_causal_only = bool(
+            getattr(ext_cfg, "experiment_r_debug_causal_only", False)
+            if ext_cfg is not None
+            else False
+        )
+        configured_pin_stages = (
+            getattr(ext_cfg, "experiment_r_same_task_best_pin_stages", None)
+            if ext_cfg is not None
+            else None
+        )
+        self.experiment_r_same_task_best_pin_stages = {
+            str(stage)
+            for stage in (
+                configured_pin_stages
+                if configured_pin_stages is not None
+                else ("draft", "improve", "debug")
+            )
+        }
+        self.experiment_r_atomic_actuation_enabled = bool(
+            getattr(ext_cfg, "experiment_r_atomic_actuation_enabled", False)
+            if ext_cfg is not None
+            else False
+        )
+        self.experiment_r_improve_max_modules = int(
+            getattr(ext_cfg, "experiment_r_improve_max_modules", 2)
+            if ext_cfg is not None
+            else 2
+        )
+        self.experiment_r_improve_max_patches = int(
+            getattr(ext_cfg, "experiment_r_improve_max_patches", 6)
+            if ext_cfg is not None
+            else 6
+        )
+        self.experiment_r_debug_max_patches = int(
+            getattr(ext_cfg, "experiment_r_debug_max_patches", 3)
+            if ext_cfg is not None
+            else 3
+        )
         self._experiment_r_agentic_query_fn = experiment_r_agentic_query_fn
         if self.experiment_r_enabled:
             from agents.memory.experiment_r_router import ONLINE_CONTROLS
@@ -644,6 +711,25 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 raise ValueError("L3 Agent match confidence must be in [0, 1]")
             if self.experiment_r_l3_agent_match_max_tokens not in range(800, 4001):
                 raise ValueError("L3 Agent match token budget must be in [800, 4000]")
+            for stage, cap in self.experiment_r_stage_selection_caps.items():
+                if stage not in {"draft", "improve", "debug"}:
+                    raise ValueError(f"Unknown Experiment R selection-cap stage: {stage}")
+                if cap not in range(0, self.experiment_r_top_k + 1):
+                    raise ValueError(
+                        "Experiment R stage selection caps must be between 0 and Top-K"
+                    )
+            if not self.experiment_r_same_task_best_pin_stages <= {
+                "draft",
+                "improve",
+                "debug",
+            }:
+                raise ValueError("Experiment R same-task pin stages are invalid")
+            if self.experiment_r_improve_max_modules not in range(1, 4):
+                raise ValueError("Experiment R Improve module cap must be in [1, 3]")
+            if self.experiment_r_improve_max_patches not in range(1, 21):
+                raise ValueError("Experiment R Improve patch cap must be in [1, 20]")
+            if self.experiment_r_debug_max_patches not in range(1, 11):
+                raise ValueError("Experiment R Debug patch cap must be in [1, 10]")
         self.recipe_sop_path = str(
             recipe_sop_path
             if recipe_sop_path is not None
@@ -3684,6 +3770,19 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if value.startswith("multimodal_"):
             return "multimodal"
         return "general"
+
+    def _task_type_for_query(self, task_id: str, task_desc: str = "") -> str:
+        """Prefer the registered task modality over its modeling family.
+
+        Leaf is registered as multimodal even though ``tabular_multiclass`` is
+        its useful ranking family.  That ranking label must not authorize Taxi
+        repair memories for a Leaf Debug decision.
+        """
+
+        canonical = canonical_task_id(task_id)
+        return TASK_TYPES.get(canonical) or self._task_type_for_family(
+            self._task_family_for_query(canonical, task_desc)
+        )
 
     def _debug_transition_task_fit(
         self,

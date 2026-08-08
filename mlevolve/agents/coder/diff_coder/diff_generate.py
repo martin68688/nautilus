@@ -36,6 +36,7 @@ def diff_generate_and_apply(
     extra_user_sections: str = "",
     learning_guidance: str = "",
     max_diff_retries: int = 3,
+    max_total_patches: int | None = None,
 ) -> Tuple[str, str]:
     model_name = agent_instance.acfg.code.model
 
@@ -90,6 +91,7 @@ def diff_generate_and_apply(
         diff_response, parent_code,
         max_retries=max_diff_retries,
         regenerate_fn=regenerate_fn,
+        max_total_patches=max_total_patches,
     )
 
     plan_str = format_planning_result_for_plan(planning_result)

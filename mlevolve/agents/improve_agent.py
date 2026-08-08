@@ -31,6 +31,10 @@ logger = logging.getLogger("MLEvolve")
 
 
 def run(agent, parent_node: SearchNode) -> SearchNode:
+    memory_layer = getattr(agent, "external_skill_memory", None)
+    atomic_memory_actuation = bool(
+        getattr(memory_layer, "experiment_r_atomic_actuation_enabled", False)
+    )
     improvement_standards = (
         "🎯 As a Grandmaster, make MEANINGFUL improvements that boost leaderboard performance.\n\n"
         "**Acceptable**: Advanced architectures, ensemble techniques, feature engineering, hyperparameter optimization, improved pipelines.\n"
@@ -243,6 +247,16 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         ],
     }
 
+    if atomic_memory_actuation:
+        prompt["Instructions"]["DYNAMIC MEMORY ATOMIC ACTUATION CONTRACT"] = [
+            "Retrieved memories are alternatives, not a shopping list. Choose one primary causal hypothesis for this child.",
+            "Modify one primary component; a second component is allowed only when it is an interface dependency of the same hypothesis.",
+            "Do not combine a new backbone, a new tree model, a new fusion architecture, and new feature families in one child.",
+            "When the parent is already competitive, preserve its model family, split, prediction variant, and working feature pipeline by default.",
+            "Do not introduce a heavier pretrained backbone, extra cross-validation loop, or broad ensemble when it cannot finish comfortably within the remaining search budget.",
+            "State the one selected memory ID or memory hypothesis you are actuating and explicitly list the other retrieved alternatives you are declining.",
+        ]
+
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
     prompt["Instructions"] |= prompt_leakage_prevention()
     prompt["Instructions"] |= MODEL_ARCHITECTURE_SAFETY
@@ -401,7 +415,36 @@ def _diff_improve(agent, prompt_base, data_preview, parent_node):
         raise RuntimeError("Planner returned empty result after retries, triggering outer fallback")
 
     if not modules and plans:
-        planning_result['module'] = list(plans.keys())
+        modules = list(plans.keys())
+        planning_result['module'] = modules
+
+    memory_layer = getattr(agent, "external_skill_memory", None)
+    atomic_memory_actuation = bool(
+        getattr(memory_layer, "experiment_r_atomic_actuation_enabled", False)
+    )
+    if atomic_memory_actuation:
+        module_cap = int(
+            getattr(memory_layer, "experiment_r_improve_max_modules", 2)
+        )
+        modules = list(planning_result.get("module") or [])
+        if len(modules) > module_cap:
+            kept = modules[:module_cap]
+            planning_result["module"] = kept
+            planning_result["plan"] = {
+                key: value
+                for key, value in plans.items()
+                if key in set(kept)
+            }
+            planning_result["atomicity_enforced"] = {
+                "status": "trimmed_to_module_cap",
+                "module_cap": module_cap,
+                "declined_modules": modules[module_cap:],
+            }
+            logger.warning(
+                "[DiffImprove] Atomic actuation trimmed modules from %s to %s",
+                modules,
+                kept,
+            )
 
     extra_user_sections = ""
     if prompt_base.get("External Skill Memory", "").strip():
@@ -419,4 +462,9 @@ def _diff_improve(agent, prompt_base, data_preview, parent_node):
         execution_output=context["execution_output"],
         introduction=_IMPROVE_DIFF_INTRODUCTION,
         extra_user_sections=extra_user_sections,
+        max_total_patches=(
+            int(getattr(memory_layer, "experiment_r_improve_max_patches", 6))
+            if atomic_memory_actuation
+            else None
+        ),
     )
