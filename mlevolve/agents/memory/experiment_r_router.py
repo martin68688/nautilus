@@ -1984,6 +1984,32 @@ def _metric_maximize(node: dict[str, Any]) -> tuple[bool | None, str]:
     return None, "unknown"
 
 
+def _validation_protocol_priority(node: dict[str, Any]) -> tuple[int, str]:
+    """Rank metric evidence before comparing values from incompatible protocols.
+
+    Leaf history contains sealed/OOF, submission-aligned holdout, single-holdout,
+    and legacy metrics.  A numerically tiny legacy holdout score must not outrank
+    a complete OOF result merely because both happen to use log loss.
+    """
+
+    protocol = str(node.get("validation_protocol") or "").strip().lower()
+    if "kaggle" in protocol and ("official" in protocol or "scored" in protocol):
+        return 7, protocol
+    if "sealed" in protocol and "terminal" in protocol:
+        return 6, protocol
+    if "full_oof" in protocol and "submission_aligned" in protocol:
+        return 5, protocol
+    if "full_oof" in protocol:
+        return 4, protocol
+    if "submission_aligned" in protocol:
+        return 3, protocol
+    if "single" in protocol and ("holdout" in protocol or "fold" in protocol):
+        return 2, protocol
+    if protocol and "unknown" not in protocol:
+        return 1, protocol
+    return 0, protocol or "unclassified"
+
+
 def _same_task_best_rows(
     layer: Any,
     *,
@@ -1994,7 +2020,9 @@ def _same_task_best_rows(
     """Return the best clean pre-existing target-task memories first."""
 
     target = _canonical_task(task_id)
-    run_rows: list[tuple[tuple[float, float, float, str], dict[str, Any]]] = []
+    run_rows: list[
+        tuple[tuple[int, float, float, float, str], dict[str, Any]]
+    ] = []
     for node_id in [*layer._run_nodes, *layer._transitions]:
         node = layer.nodes.get(node_id, {})
         if _canonical_task(node.get("task")) != target:
@@ -2002,7 +2030,20 @@ def _same_task_best_rows(
         eligible, reason = layer._execution_candidate_eligibility(node_id)
         if not eligible:
             continue
+        protocol_priority, validation_protocol = _validation_protocol_priority(node)
         metric = node.get("metric")
+        metric_source = "metric"
+        official_metric = node.get("official_metric")
+        if isinstance(official_metric, dict):
+            official_metric = official_metric.get("value")
+        if (
+            protocol_priority == 7
+            and isinstance(official_metric, (int, float))
+            and not isinstance(official_metric, bool)
+            and math.isfinite(float(official_metric))
+        ):
+            metric = official_metric
+            metric_source = "official_metric"
         if isinstance(metric, dict):
             metric = metric.get("value")
         metric_value = (
@@ -2046,22 +2087,27 @@ def _same_task_best_rows(
             "stage": node.get("stage") or node.get("stage_pair"),
             "task": node.get("task"),
             "metric": metric_value,
+            "metric_source": metric_source,
             "metric_maximize": maximize,
             "metric_direction_source": direction_source,
+            "validation_protocol": validation_protocol,
+            "validation_protocol_priority": protocol_priority,
+            "evidence_tier": str(node.get("evidence_tier") or ""),
             "raw_metric_rankable": maximize is not None and metric_value is not None,
             "metric_improvement": node.get("metric_improvement"),
             "rank_eligible": True,
             "eligibility_reason": reason,
             "same_task_priority": (
-                "direction_aware_historical_metric_then_improvement"
+                "validation_protocol_then_direction_aware_metric_then_improvement"
                 if maximize is not None
-                else "direction_unknown_improvement_then_step"
+                else "validation_protocol_then_direction_unknown_improvement_then_step"
             ),
-            "ranking_backend": "same_task_best_history_v2",
+            "ranking_backend": "same_task_best_protocol_tier_v4",
         }
         run_rows.append(
             (
                 (
+                    protocol_priority,
                     normalized_metric,
                     improvement_value,
                     step_value,
@@ -2075,7 +2121,8 @@ def _same_task_best_rows(
             -item[0][0],
             -item[0][1],
             -item[0][2],
-            item[0][3],
+            -item[0][3],
+            item[0][4],
         )
     )
     best_run_rows = [row for _key, row in run_rows[:limit]]
@@ -2121,7 +2168,7 @@ def _same_task_best_rows(
                 "decision_stages": list(node.get("decision_stages") or []),
                 "task_families": list(node.get("task_families") or []),
                 "same_task_priority": "clean_same_task_support",
-                "ranking_backend": "same_task_best_history_v2",
+                "ranking_backend": "same_task_best_protocol_tier_v4",
             }
         )
         if len(sop_rows) >= limit:
@@ -2875,7 +2922,7 @@ def _agentic_candidate_pool(
                     if tiered_debug
                     else "disabled_for_debug_causal_only_v1"
                     if debug_causal_only
-                    else "same_task_best_history_v2"
+                    else "same_task_best_protocol_tier_v4"
                 ),
             },
             "temperature": layer.experiment_r_agentic_temperature,
@@ -2997,7 +3044,7 @@ def _pin_same_task_best_for_dynamic(
     same_task.setdefault("target_task_id", task_id)
     same_task.setdefault("eligible_history_found", True)
     same_task.setdefault("best_runforest_id", candidate_id)
-    same_task.setdefault("ranking_contract", "same_task_best_history_v2")
+    same_task.setdefault("ranking_contract", "same_task_best_protocol_tier_v4")
     same_task["prompt_pin"] = {
         "required": True,
         "candidate_id": candidate_id,

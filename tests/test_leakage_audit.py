@@ -619,6 +619,44 @@ protocol_guard.freeze()
     )
 
 
+def test_static_audit_blocks_meta_learner_training_set_self_evaluation():
+    code = """
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import log_loss
+
+meta_features_train = build_oof_base_predictions(X, y)
+meta_learner = LogisticRegression()
+meta_learner.fit(meta_features_train, y)
+oof_pred = meta_learner.predict_proba(meta_features_train)
+score = log_loss(y, oof_pred)
+"""
+    audit = audit_code(code)
+    issues = {item["issue_code"]: item for item in audit["issues"]}
+    assert "META_LEARNER_TRAINING_SET_SELF_EVALUATION" in issues
+    assert (
+        issues["META_LEARNER_TRAINING_SET_SELF_EVALUATION"][
+            "execution_disposition"
+        ]
+        == "block"
+    )
+
+
+def test_static_audit_allows_cross_fitted_meta_learner():
+    code = """
+from sklearn.linear_model import LogisticRegression
+
+meta_oof = np.zeros((len(y), n_classes))
+for train_idx, val_idx in outer_folds.split(meta_features, y):
+    meta_learner = LogisticRegression()
+    meta_learner.fit(meta_features[train_idx], y[train_idx])
+    meta_oof[val_idx] = meta_learner.predict_proba(meta_features[val_idx])
+"""
+    audit = audit_code(code)
+    assert "META_LEARNER_TRAINING_SET_SELF_EVALUATION" not in {
+        item["issue_code"] for item in audit["issues"]
+    }
+
+
 def test_preflight_block_is_structured_persisted_and_saved_as_negative_memory(tmp_path):
     class FakeGlobalMemory:
         def __init__(self):

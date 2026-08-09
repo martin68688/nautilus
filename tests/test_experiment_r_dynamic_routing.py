@@ -585,7 +585,7 @@ def test_agentic_router_searches_same_task_best_first_without_role_policy(tmp_pa
         "observed_candidate_ids": same_task_ids,
         "best_runforest_id": "n1",
         "best_sop_id": "s1",
-        "ranking_contract": "same_task_best_history_v2",
+        "ranking_contract": "same_task_best_protocol_tier_v4",
         "prompt_pin": {
             "required": True,
             "candidate_id": "n1",
@@ -717,6 +717,60 @@ def test_same_task_best_history_respects_minimize_metric_direction(tmp_path):
     assert agent["same_task_best_first"]["best_runforest_id"] == "n1"
     first_rows = agent["trace"][0]["observation"]["candidates"]
     assert [row["id"] for row in first_rows[:2]] == ["n1", "n0"]
+
+
+def test_same_task_best_history_ranks_validation_protocol_before_metric(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.nodes["n0"].update(
+        metric=0.000978,
+        maximize=False,
+        validation_protocol="single_holdout_internal",
+    )
+    layer.nodes["n1"].update(
+        metric=0.002827,
+        maximize=False,
+        validation_protocol="full_oof_internal",
+    )
+
+    rows = _same_task_best_rows(
+        layer,
+        task_id="task",
+        visible_sop_ids=None,
+        limit=8,
+    )
+    runforest = [row for row in rows if row["source"] == "runforest"]
+    assert [row["id"] for row in runforest[:2]] == ["n1", "n0"]
+    assert runforest[0]["validation_protocol_priority"] > runforest[1][
+        "validation_protocol_priority"
+    ]
+    assert runforest[0]["ranking_backend"] == "same_task_best_protocol_tier_v4"
+
+
+def test_same_task_best_history_prioritizes_official_kaggle_metric(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.nodes["n0"].update(
+        metric=0.000541,
+        maximize=False,
+        validation_protocol="full_oof_internal",
+    )
+    layer.nodes["n1"].update(
+        metric=0.046599,
+        official_metric={"value": 0.00599, "name": "multi_class_log_loss"},
+        maximize=False,
+        validation_protocol="official_kaggle_scored_test",
+    )
+
+    rows = _same_task_best_rows(
+        layer,
+        task_id="task",
+        visible_sop_ids=None,
+        limit=8,
+    )
+    runforest = [row for row in rows if row["source"] == "runforest"]
+    assert [row["id"] for row in runforest[:2]] == ["n1", "n0"]
+    assert runforest[0]["metric"] == 0.00599
+    assert runforest[0]["metric_source"] == "official_metric"
+    assert runforest[0]["validation_protocol_priority"] == 7
 
 
 def test_fast_experiment_accepts_successful_history_without_paper_grade_markers(

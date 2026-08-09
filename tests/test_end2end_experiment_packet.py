@@ -1542,10 +1542,36 @@ def test_hardware_receipt_records_unpinned_a100_contract(monkeypatch) -> None:
         }
     )
     assert receipt == {
+        "execution_mode": "gpu",
         "requested_gpu_resource": "nvidia.com/a100",
         "gpu_product_constraint": None,
         "node_name": "node-a100.example",
         "observed_gpu_products": ["NVIDIA A100-SXM4-80GB"],
+        "gpu_query_error": "",
+    }
+
+
+def test_hardware_receipt_cpu_mode_skips_nvidia_smi(monkeypatch) -> None:
+    monkeypatch.setattr(
+        run_assignment.subprocess,
+        "run",
+        lambda *_args, **_kwargs: pytest.fail(
+            "CPU-only hardware receipt must not invoke nvidia-smi"
+        ),
+    )
+    receipt = run_assignment.capture_hardware_receipt(
+        {
+            "execution_mode": "cpu_only",
+            "gpu_resource_key": "",
+            "gpu_product_constraint": None,
+        }
+    )
+    assert receipt == {
+        "execution_mode": "cpu_only",
+        "requested_gpu_resource": "",
+        "gpu_product_constraint": None,
+        "node_name": "",
+        "observed_gpu_products": [],
         "gpu_query_error": "",
     }
 

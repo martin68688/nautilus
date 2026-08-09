@@ -139,6 +139,7 @@ def _candidate_uid_isolation_enabled(cfg) -> bool:
         runtime_mode == "host_sdk_enforce"
         or (
             preflight is not None
+            and getattr(preflight, "enabled", False)
             and getattr(preflight, "candidate_process_isolation", False)
         )
     )
@@ -470,10 +471,27 @@ class Interpreter:
                 cpu_set = set(avail_cpus)
             logger.info(f"has set process_id:{process_id} to use cpu: {cpu_set}")
 
-            # GPU allocation for multi-GPU support
-            num_gpus = getattr(self.cfg.agent.search, 'num_gpus', 1) if self.cfg else 1
-            gpu_id = process_id % num_gpus
-            logger.info(f"has set process_id:{process_id} to use GPU: {gpu_id}")
+            # Accelerator allocation. ``num_gpus=0`` is an explicit CPU-only
+            # contract: do not perform the multi-GPU modulo and hide any GPU
+            # visibility inherited from the parent process. This also lets
+            # CPU-only Kubernetes Pods run the same immutable experiment
+            # runner without pretending that a GPU was allocated.
+            num_gpus = int(
+                getattr(self.cfg.agent.search, "num_gpus", 1)
+                if self.cfg
+                else 1
+            )
+            if num_gpus < 0:
+                raise ValueError("agent.search.num_gpus must be non-negative")
+            gpu_id = process_id % num_gpus if num_gpus else None
+            if gpu_id is None:
+                logger.info(
+                    "has set process_id:%s to CPU-only execution", process_id
+                )
+            else:
+                logger.info(
+                    "has set process_id:%s to use GPU: %s", process_id, gpu_id
+                )
 
             # decide runfile location and cwd
             run_wd = Path(working_dir).resolve() if working_dir is not None else self.working_dir
@@ -494,7 +512,17 @@ class Interpreter:
                     writable.mkdir(parents=True, exist_ok=True)
                     writable.chmod(0o777)
 
-            pre_code = "import os\nif hasattr(os, 'sched_setaffinity'):\n    os.sched_setaffinity(0, {cpu_set})\nos.environ['CUDA_VISIBLE_DEVICES'] = '{gpu_id}'\n".format(cpu_set=cpu_set, gpu_id=gpu_id)
+            pre_code = (
+                "import os\n"
+                "if hasattr(os, 'sched_setaffinity'):\n"
+                "    os.sched_setaffinity(0, {cpu_set})\n"
+            ).format(cpu_set=cpu_set)
+            if gpu_id is None:
+                pre_code += "os.environ['CUDA_VISIBLE_DEVICES'] = ''\n"
+            else:
+                pre_code += (
+                    "os.environ['CUDA_VISIBLE_DEVICES'] = '{gpu_id}'\n"
+                ).format(gpu_id=gpu_id)
             source_code_sha256 = hashlib.sha256(code.encode("utf-8")).hexdigest()
             preflight_report = None
             if bool(getattr(self.protocol_preflight_config, "enabled", False)):

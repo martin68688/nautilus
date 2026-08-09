@@ -1117,7 +1117,7 @@ def audit_code(code: str) -> dict[str, Any]:
                 }:
                     continue
                 fit_taints.update(_expr_taints(keyword.value, taints))
-            if fit_taints:
+            if fit_taints and transformer_like:
                 holdouts = ", ".join(sorted(fit_taints))
                 issues.append(
                     _issue(
@@ -1197,6 +1197,42 @@ def audit_code(code: str) -> dict[str, Any]:
         )
         item["line"] = line
         issues.append(item)
+
+    # OOF base predictions do not make the second-level score OOF by
+    # themselves.  If a meta learner is fitted on every meta-feature row and
+    # then predicts the same matrix, its score is ordinary training-set
+    # self-evaluation.  This exact pattern produced the spurious near-zero Leaf
+    # metrics that were previously admitted as positive memory.
+    meta_fit_pattern = re.compile(
+        r"(?m)^\s*(?P<model>\w*(?:meta|stack)\w*)\.fit\s*\(\s*"
+        r"(?P<features>\w*(?:meta|stack)\w*)"
+    )
+    for meta_fit in meta_fit_pattern.finditer(lower):
+        model_name = re.escape(meta_fit.group("model"))
+        feature_name = re.escape(meta_fit.group("features"))
+        same_rows_prediction = re.search(
+            rf"(?m)^\s*(?P<pred>\w*(?:oof|val|valid|validation|holdout|report)\w*)\s*=\s*"
+            rf"{model_name}\.predict(?:_proba)?\s*\(\s*{feature_name}\s*\)",
+            lower,
+        )
+        if same_rows_prediction is None:
+            continue
+        add_protocol_issue(
+            "META_LEARNER_TRAINING_SET_SELF_EVALUATION",
+            "selection_bias",
+            (
+                "A meta/stacking learner is fitted on a meta-feature matrix and "
+                "then predicts that same matrix into a variable presented as OOF "
+                "or validation output."
+            ),
+            (
+                "Cross-fit the meta learner in an outer loop: each reported row "
+                "must be predicted by a second-level model that did not fit that row."
+            ),
+            line=code[: meta_fit.start()].count("\n") + 1,
+            severity="critical",
+        )
+        break
 
     # Reporting rows used by early stopping are model-selection data, not an
     # untouched estimate. This is expressed as a protocol invariant rather

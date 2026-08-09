@@ -131,26 +131,33 @@ def sha256_file(path: Path) -> str:
 
 
 def capture_hardware_receipt(runtime: Mapping[str, Any]) -> dict[str, Any]:
-    """Record the observed GPU against the frozen scheduler contract."""
+    """Record the observed accelerator against the frozen scheduler contract."""
 
     products: list[str] = []
     query_error = ""
-    try:
-        result = subprocess.run(
-            ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-            check=False,
-        )
-        if result.returncode == 0:
-            products = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-        else:
-            query_error = f"nvidia-smi exited {result.returncode}"
-    except (OSError, subprocess.SubprocessError) as error:
-        query_error = f"{type(error).__name__}: {error}"
+    execution_mode = str(runtime.get("execution_mode") or "gpu").lower()
+    if execution_mode != "cpu_only":
+        try:
+            result = subprocess.run(
+                ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+            if result.returncode == 0:
+                products = [
+                    line.strip()
+                    for line in result.stdout.splitlines()
+                    if line.strip()
+                ]
+            else:
+                query_error = f"nvidia-smi exited {result.returncode}"
+        except (OSError, subprocess.SubprocessError) as error:
+            query_error = f"{type(error).__name__}: {error}"
     return {
-        "requested_gpu_resource": str(runtime["gpu_resource_key"]),
+        "execution_mode": execution_mode,
+        "requested_gpu_resource": str(runtime.get("gpu_resource_key") or ""),
         "gpu_product_constraint": runtime.get("gpu_product_constraint"),
         "node_name": os.environ.get("KUBERNETES_NODE_NAME", ""),
         "observed_gpu_products": products,
@@ -162,7 +169,12 @@ def frozen_hardware_runtime(components: Mapping[str, Any]) -> dict[str, Any]:
     """Select hardware identity from the global budget manifest, not a phase budget."""
 
     runtime = dict(components["budget"]["runtime"])
-    if not str(runtime.get("gpu_resource_key") or ""):
+    execution_mode = str(runtime.get("execution_mode") or "gpu").lower()
+    if execution_mode not in {"gpu", "cpu_only"}:
+        raise ValueError("Frozen runtime has an invalid execution_mode")
+    if execution_mode != "cpu_only" and not str(
+        runtime.get("gpu_resource_key") or ""
+    ):
         raise ValueError("Frozen runtime is missing gpu_resource_key")
     return runtime
 

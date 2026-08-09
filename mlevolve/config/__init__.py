@@ -987,6 +987,26 @@ def prep_agent_workspace(cfg: Config):
     copytree(cfg.data_dir, cfg.workspace_dir / "input", use_symlinks=not cfg.copy_data)
     if cfg.preprocess_data:
         preproc_data(cfg.workspace_dir / "input")
+    _install_task_training_filename_compatibility(cfg)
+
+
+def _install_task_training_filename_compatibility(cfg: Config) -> None:
+    """Expose legacy public-training names without changing the data view.
+
+    Historical Taxi replay candidates were produced against the original
+    MLE-Bench filename ``labels.csv``. The fixed-holdout public training view
+    names the exact same labeled rows ``train.csv``. A workspace-local relative
+    symlink keeps those immutable replay candidates executable; it neither
+    copies nor exposes the separately held terminal labels.
+    """
+
+    if str(cfg.exp_id) != "new-york-city-taxi-fare-prediction":
+        return
+    input_dir = Path(cfg.workspace_dir) / "input"
+    train_path = input_dir / "train.csv"
+    legacy_path = input_dir / "labels.csv"
+    if train_path.is_file() and not legacy_path.exists():
+        legacy_path.symlink_to(train_path.name)
 
 
 def save_run_identity(cfg: Config) -> Path:
