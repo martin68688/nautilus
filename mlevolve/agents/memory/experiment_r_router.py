@@ -3055,6 +3055,7 @@ def _pin_same_task_best_for_dynamic(
     }
     effective = list(retrieval.get("effective_selected_ids") or [])
     if retrieval.get("selection_complete") and candidate_id not in effective:
+        quota_preserving = True
         victim_index = next(
             (
                 index
@@ -3064,13 +3065,46 @@ def _pin_same_task_best_for_dynamic(
             None,
         )
         if victim_index is None:
-            raise RuntimeError(
-                "Dynamic Agent final selection has no RunForest slot for the "
-                "mandatory same-task best"
+            flexible = bool(
+                getattr(layer, "experiment_r_flexible_selection_enabled", False)
             )
-        replaced_id = effective[victim_index]
-        effective[victim_index] = candidate_id
+            stage_caps = getattr(layer, "experiment_r_stage_selection_caps", {})
+            stage_cap = int(stage_caps.get(stage, int(layer.experiment_r_top_k)))
+            protected_ids = {
+                str((pool.get("l3_agent_match") or {}).get("selected_sop_id") or "")
+            }
+            protected_ids.discard("")
+            if flexible and len(effective) < stage_cap:
+                effective.append(candidate_id)
+                replaced_id = ""
+                quota_preserving = False
+            elif flexible:
+                victim_index = next(
+                    (
+                        index
+                        for index in range(len(effective) - 1, -1, -1)
+                        if effective[index] not in protected_ids
+                    ),
+                    None,
+                )
+                if victim_index is None:
+                    raise RuntimeError(
+                        "Dynamic Agent final selection has no capacity for both "
+                        "mandatory same-task best and the selected L3 repair"
+                    )
+                replaced_id = effective[victim_index]
+                effective[victim_index] = candidate_id
+                quota_preserving = False
+            else:
+                raise RuntimeError(
+                    "Dynamic Agent final selection has no RunForest slot for the "
+                    "mandatory same-task best"
+                )
+        else:
+            replaced_id = effective[victim_index]
+            effective[victim_index] = candidate_id
         retrieval["effective_selected_ids"] = effective
+        retrieval["agent_abstained"] = False
         retrieval[
             "final_selection_authority"
         ] = "retrieval_agent_plus_mandatory_same_task_pin"
@@ -3080,9 +3114,11 @@ def _pin_same_task_best_for_dynamic(
                 "inserted_id": candidate_id,
                 "replaced_id": replaced_id,
                 "source": "runforest",
-                "quota_preserving": True,
+                "quota_preserving": quota_preserving,
             }
         )
+        same_task["prompt_pin"]["quota_preserving"] = quota_preserving
+        same_task["prompt_pin"]["applied"] = True
     return pool
 
 

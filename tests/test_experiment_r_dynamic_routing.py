@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "mlevolve"))
 
 from agents.memory.experiment_r_router import (
     _experiment_r_clean_sop_support,
+    _pin_same_task_best_for_dynamic,
     _prompt_marker_visible,
     _same_task_best_rows,
     _truncate_prompt,
@@ -903,6 +904,49 @@ def test_dynamic_prompt_pins_same_task_best_when_retrieval_agent_declines_it(
         "sop": 1,
         "runforest": 2,
     }
+
+
+def test_dynamic_flexible_debug_reallocates_a_sop_slot_for_same_task_best(
+    tmp_path,
+):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer.experiment_r_flexible_selection_enabled = True
+    layer.experiment_r_stage_selection_caps = {"debug": 2}
+    pool = {
+        "raw_runforest_candidates": [dict(id="n1"), dict(id="n0")],
+        "runforest_candidates": [dict(id="n1"), dict(id="n0")],
+        "pool_identity": {"runforest_ids": ["n1", "n0"]},
+        "pool_counts": {"raw_runforest": 2, "ranked_runforest": 2},
+        "ranking_contract": "test_agent_selection",
+        "retrieval_agent": {
+            "selection_complete": True,
+            "agent_selected_ids": ["s1", "s2"],
+            "effective_selected_ids": ["s1", "s2"],
+        },
+    }
+
+    result = _pin_same_task_best_for_dynamic(
+        layer,
+        pool=pool,
+        stage="debug",
+        task_id="task",
+        visible_sop_ids=None,
+    )
+    agent = result["retrieval_agent"]
+    assert agent["agent_selected_ids"] == ["s1", "s2"]
+    assert agent["effective_selected_ids"] == ["s1", "n1"]
+    assert agent["selection_overrides"][-1] == {
+        "reason": "mandatory_same_task_best",
+        "inserted_id": "n1",
+        "replaced_id": "s2",
+        "source": "runforest",
+        "quota_preserving": False,
+    }
+    pin = agent["same_task_best_first"]["prompt_pin"]
+    assert pin["applied"] is True
+    assert pin["prompt_visible"] is False
+    assert pin["quota_preserving"] is False
 
 
 def test_agentic_router_invalid_id_falls_back_and_retains_failure(tmp_path):
