@@ -1075,6 +1075,16 @@ def build_strategy_evidence_view(
         "historical_diverse_frontier_ids": [
             str(card.get("memory_id") or "") for card in historical_cards
         ],
+        "historical_lineage_signatures": [
+            str(card.get("component_lineage_signature") or "")
+            for card in historical_cards
+        ],
+        "historical_metric_claim_statuses": {
+            str(card.get("memory_id") or ""): str(
+                card.get("metric_claim_status") or ""
+            )
+            for card in historical_cards
+        },
         "missing_configured_draft_roles": missing_roles,
         "historical_candidate_count": len(raw_historical),
         "historical_rejections": rejected,

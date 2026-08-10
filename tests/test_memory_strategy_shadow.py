@@ -442,6 +442,8 @@ def test_strategy_evidence_uses_role_frontiers_failure_and_diverse_history():
         "current_node_duplicate": 1,
         "duplicate_lineage": 1,
     }
+    signatures = selection["historical_lineage_signatures"]
+    assert len(signatures) == len(set(signatures)) == 4
     # Selecting a frontier must not mutate the live SearchNode.
     assert cold_best.branch_id is None
     cold_card = next(card for card in cards if card["memory_id"] == "current::cold-best")

@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-e2e-memory-strategy-shadow-stager-v70
+  namespace: ecepxie
+  labels:
+    ecepxie.nrp/owner: haoming
+    app.kubernetes.io/managed-by: codex-nrp-training
+    mlevolve.ai/workload: mlevolve-e2e-memory-strategy-shadow-stager-v70
+spec:
+  restartPolicy: Never
+  containers:
+    - name: stager
+      image: haomingwang22/mlevolve:v1
+      command: ["/bin/sh", "-c", "sleep 3600"]
+      resources:
+        requests:
+          cpu: "1"
+          memory: 2Gi
+        limits:
+          cpu: "1"
+          memory: 2Gi
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
