@@ -39,12 +39,24 @@ def _strategy_checks(
     signatures = list(selection.get("historical_lineage_signatures") or [])
     rejections = dict(selection.get("historical_rejections") or {})
     memory_count = int(strategy.get("memory_card_count") or 0)
+    normalizations = [
+        dict(attempt.get("json_normalization") or {}) for attempt in attempts
+    ]
     return {
         "trace_v2": strategy.get("schema") == "mlevolve_memory_strategy_shadow_trace_v2",
         "completed": strategy.get("status") == "completed",
         "model_is_v4_pro": strategy.get("model") == "deepseek-v4-pro",
         "thinking_enabled": strategy.get("thinking_enabled") is True,
         "contract_valid": bool(attempts and attempts[-1].get("valid")),
+        "json_boundary_audited": bool(normalizations)
+        and all(
+            not row.get("used")
+            or (
+                row.get("authority") == "serialization_only"
+                and row.get("thinking_enabled") is False
+            )
+            for row in normalizations
+        ),
         "noninterference": strategy.get("production_prompt_modified") is False,
         "hidden_future_isolated": not result.get("hidden_future_leakage_ids"),
         "all_citations_visible": evaluation.get("all_citations_visible") is True,

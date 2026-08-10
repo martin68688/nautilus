@@ -49,6 +49,10 @@ def _config(*, shadow_enabled=True, stages=None):
         memory_strategy_temperature=0.0,
         memory_strategy_model="deepseek-v4-pro",
         memory_strategy_thinking_enabled=True,
+        memory_strategy_json_normalization_enabled=True,
+        memory_strategy_json_normalization_model="",
+        memory_strategy_json_normalization_max_tokens=12000,
+        memory_strategy_json_normalization_max_retries=2,
         memory_strategy_history_limit=16,
         memory_strategy_atomic_max_modules=2,
         memory_strategy_atomic_max_changes=3,
@@ -698,6 +702,39 @@ def test_strategy_uses_independent_v4_pro_thinking_without_mutating_coder_cfg(
         "json_schema": None,
         "max_tokens": 12000,
     }
+    assert agent.cfg.agent.code.model == "deepseek-v4-flash"
+
+
+def test_strategy_repairs_malformed_thinking_json_with_non_thinking_transcriber():
+    agent = _agent()
+    parent = _parent()
+    observed = {}
+    agent._memory_strategy_query_fn = lambda **_kwargs: (
+        '{"decision":"propose" "candidate_compositions":[]}'
+    )
+
+    def normalize(**kwargs):
+        observed.update(kwargs)
+        return _strategy_memo()
+
+    agent._memory_strategy_json_normalizer_fn = normalize
+    trace = run_memory_strategy_shadow(
+        agent,
+        parent,
+        stage="improve",
+        router_pack=_router_pack(),
+    )
+
+    assert trace["status"] == "completed"
+    normalization = trace["contract_attempts"][0]["json_normalization"]
+    assert normalization["used"] is True
+    assert normalization["authority"] == "serialization_only"
+    assert normalization["model"] == "deepseek-v4-pro"
+    assert normalization["thinking_enabled"] is False
+    assert "JSONDecodeError" in normalization["initial_parse_error"]
+    assert observed["model"] == "deepseek-v4-pro"
+    assert observed["thinking_enabled"] is False
+    assert observed["json_schema"] == memory_strategy_module.STRATEGY_MEMO_SCHEMA
     assert agent.cfg.agent.code.model == "deepseek-v4-flash"
 
 

@@ -504,6 +504,13 @@ class ExternalSkillMemoryConfig:
     memory_strategy_temperature: float = 0.0
     memory_strategy_model: str = "deepseek-v4-pro"
     memory_strategy_thinking_enabled: bool = True
+    # V4 Pro thinking is retained for synthesis.  If its text is malformed
+    # JSON, a second call to the same model runs with thinking disabled and
+    # native JSON mode, with serialization-only authority.
+    memory_strategy_json_normalization_enabled: bool = True
+    memory_strategy_json_normalization_model: str = ""
+    memory_strategy_json_normalization_max_tokens: int = 12000
+    memory_strategy_json_normalization_max_retries: int = 2
     memory_strategy_history_limit: int = 16
     # Isolated actuation-chain defaults.  Shadow mode never consults these to
     # mutate the live Improve/Debug candidate.

@@ -1328,6 +1328,93 @@ def _parse_json_object(response: Any) -> dict[str, Any]:
     return value
 
 
+def _strategy_json_normalization_prompt(
+    response: Any,
+) -> dict[str, str]:
+    """Ask a non-thinking pass to transcribe reasoning into strict JSON.
+
+    This pass has no strategy authority: it may repair serialization and fill
+    required container fields, but it may not invent hypotheses, citations,
+    metrics, or recommendations absent from the thinking response.
+    """
+
+    return {
+        "system": (
+            "You are a lossless JSON transcriber, not a strategy agent. Convert "
+            "the supplied Strategy Agent response into one syntactically valid "
+            "JSON object matching the supplied schema. Preserve every substantive "
+            "claim, hypothesis, source_memory_id, metric, estimate, and decision. "
+            "Do not add new hypotheses, citations, evidence, recommendations, or "
+            "numbers. You may only repair JSON syntax and add missing empty "
+            "containers required by the schema. Return JSON only."
+        ),
+        "user": (
+            "STRATEGY_SCHEMA_JSON:\n"
+            + _canonical_json(STRATEGY_MEMO_SCHEMA)
+            + "\n\nMALFORMED_STRATEGY_RESPONSE:\n"
+            + str(response or "")
+        ),
+    }
+
+
+def _normalize_strategy_json(
+    agent: Any,
+    *,
+    response: Any,
+    strategy_cfg: Any,
+    strategy_model: str,
+    ext_cfg: Any,
+) -> tuple[Any, dict[str, Any]]:
+    normalizer_model = str(
+        getattr(ext_cfg, "memory_strategy_json_normalization_model", "")
+        or strategy_model
+    )
+    normalizer_cfg = copy.deepcopy(strategy_cfg)
+    normalizer_cfg.agent.code.model = normalizer_model
+    prompt = _strategy_json_normalization_prompt(response)
+    query_fn = getattr(agent, "_memory_strategy_json_normalizer_fn", None)
+    if callable(query_fn):
+        normalized = query_fn(
+            prompt=copy.deepcopy(prompt),
+            response=response,
+            json_schema=copy.deepcopy(STRATEGY_MEMO_SCHEMA),
+            model=normalizer_model,
+            thinking_enabled=False,
+        )
+    else:
+        normalized = generate(
+            prompt=prompt,
+            cfg=normalizer_cfg,
+            temperature=0.0,
+            max_tokens=int(
+                getattr(
+                    ext_cfg,
+                    "memory_strategy_json_normalization_max_tokens",
+                    12000,
+                )
+                or 12000
+            ),
+            json_schema=STRATEGY_MEMO_SCHEMA,
+            max_retries=int(
+                getattr(
+                    ext_cfg,
+                    "memory_strategy_json_normalization_max_retries",
+                    2,
+                )
+                or 2
+            ),
+        )
+    return normalized, {
+        "used": True,
+        "authority": "serialization_only",
+        "model": normalizer_model,
+        "thinking_enabled": False,
+        "response_sha256": hashlib.sha256(
+            _canonical_json(normalized).encode("utf-8")
+        ).hexdigest(),
+    }
+
+
 def validate_strategy_memo(
     memo: Mapping[str, Any],
     *,
@@ -1648,8 +1735,46 @@ def run_memory_strategy_shadow(
                         getattr(ext_cfg, "memory_strategy_max_retries", 2) or 2
                     ),
                 )
+            normalization: dict[str, Any] = {
+                "used": False,
+                "authority": "serialization_only",
+            }
             try:
-                memo = _parse_json_object(response)
+                try:
+                    memo = _parse_json_object(response)
+                except Exception as initial_parse_error:
+                    normalization["initial_parse_error"] = (
+                        f"{type(initial_parse_error).__name__}: "
+                        f"{initial_parse_error}"
+                    )
+                    normalization_enabled = bool(
+                        getattr(
+                            ext_cfg,
+                            "memory_strategy_json_normalization_enabled",
+                            True,
+                        )
+                    )
+                    if not normalization_enabled or not str(response or "").strip():
+                        raise
+                    normalized_response, normalized_trace = _normalize_strategy_json(
+                        agent,
+                        response=response,
+                        strategy_cfg=strategy_cfg,
+                        strategy_model=strategy_model,
+                        ext_cfg=ext_cfg,
+                    )
+                    normalization.update(normalized_trace)
+                    try:
+                        memo = _parse_json_object(normalized_response)
+                    except Exception as normalized_parse_error:
+                        normalization["normalized_parse_error"] = (
+                            f"{type(normalized_parse_error).__name__}: "
+                            f"{normalized_parse_error}"
+                        )
+                        raise ValueError(
+                            "strategy response remained invalid after "
+                            "serialization-only normalization"
+                        ) from normalized_parse_error
                 validation = validate_strategy_memo(
                     memo,
                     available_memory_ids=[card["memory_id"] for card in cards],
@@ -1679,6 +1804,7 @@ def run_memory_strategy_shadow(
                     ).hexdigest(),
                     "valid": bool(validation.get("valid")),
                     "violations": list(validation.get("violations") or []),
+                    "json_normalization": normalization,
                 }
             )
             if validation.get("valid"):
