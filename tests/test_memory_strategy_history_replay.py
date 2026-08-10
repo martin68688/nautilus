@@ -50,6 +50,9 @@ SMOKE_JOB_V70 = SMOKE_JOB.with_name(
 SMOKE_JOB_V71 = SMOKE_JOB.with_name(
     "mlevolve-e2e-memory-strategy-shadow-smoke-v71.yaml"
 )
+SMOKE_JOB_V72 = SMOKE_JOB.with_name(
+    "mlevolve-e2e-memory-strategy-shadow-smoke-v72.yaml"
+)
 
 
 def _runner_module():
@@ -287,6 +290,7 @@ def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
         SMOKE_JOB_V69,
         SMOKE_JOB_V70,
         SMOKE_JOB_V71,
+        SMOKE_JOB_V72,
     ):
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
         labels = job["metadata"]["labels"]
@@ -312,6 +316,7 @@ def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
             SMOKE_JOB_V69,
             SMOKE_JOB_V70,
             SMOKE_JOB_V71,
+            SMOKE_JOB_V72,
         }:
             assert (
                 "strategy_model_is_v4_pro" in command
@@ -335,3 +340,7 @@ def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
             assert "memory_strategy_shadow_history_slices_v3.json" in command
         if path == SMOKE_JOB_V71:
             assert "verify_strategy_shadow_smoke_v71.py" in command
+        if path == SMOKE_JOB_V72:
+            assert "memory_strategy_shadow_history_slices_v3.json" in command
+            assert "verify_strategy_shadow_smoke_v71.py" in command
+            assert "test_run_case_allows_strategy_current_frontier_citations" in command
