@@ -1,0 +1,23 @@
+{
+  "schema": "run-forest-replay-targets-v1",
+  "targets": [
+    {
+      "audit_status": "verified_clean",
+      "code_sha256": "5e52d77382ac581170f77c2294a7e8103a94cd72c290c5d14b5382fc13ae2c06",
+      "graph_node_id": "run::20260726_022228_new-york-city-taxi-fare-prediction-host-shadow-r7::node::eeb6e2364829449ba6e1ce6c1600fc3d",
+      "historical_metric": 3.108837,
+      "known_issue_codes": [],
+      "maximize": false,
+      "method_family": "temporal_rich_feature_lightgbm",
+      "metric_status": "historical_selected_validation_score",
+      "original_node_id": "eeb6e2364829449ba6e1ce6c1600fc3d",
+      "run_id": "20260726_022228_new-york-city-taxi-fare-prediction-host-shadow-r7",
+      "selection_basis": "Best clean, rank-eligible Taxi node in the frozen v4 RunForest. Exact code is loaded from the hash-bound v4 implementation capsule because the historical journal is no longer retained in the shared runs root.",
+      "sop_ids": [
+        "sop::sg_0081"
+      ],
+      "source_kind": "recipe_implementation_capsule",
+      "task_id": "new-york-city-taxi-fare-prediction"
+    }
+  ]
+}
