@@ -1,0 +1,123 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-e2e-leaf-strategy-active-smoke-v76
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-memory-agent-v76
+    mlevolve.ai/workload: mlevolve-e2e-leaf-strategy-active-smoke-v76
+    task: leaf-classification
+  annotations:
+    mlevolve.ai/purpose: six-hour-online-strategy-contract-reconcile-smoke
+    mlevolve.ai/actuation: required-strategy-decomposed-alternate-reconcile-improve-debug
+    mlevolve.ai/manifest-sha256: 7bb1108825c1f02891cfd53b7ba772f071f2921c3c0ca6cf6c5e70c61a2e497d
+    mlevolve.ai/source-manifest-sha256: c923196b30d187417e59f06949f816e8d4160fca311e92cb152133e6585c00d1
+    mlevolve.ai/source-lock-manifest-sha256: 5bb82aa6928dbebb94c2ee671968b81d2730642401e5be5640efc0b2ae45f9cc
+    mlevolve.ai/systems-manifest-sha256: 860c67c5a62b4c43e2fea2320883fef595b66c7a1a43a8110825b8bb6ef1a6d2
+    mlevolve.ai/source-git-head: 5dee9871
+    mlevolve.ai/per-index-search-budget-seconds: "21600"
+    mlevolve.ai/preserve-failed-index-artifacts: "true"
+spec:
+  activeDeadlineSeconds: 25200
+  backoffLimitPerIndex: 0
+  completionMode: Indexed
+  completions: 1
+  maxFailedIndexes: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        app: mlevolve-end2end
+        app.kubernetes.io/managed-by: codex-nrp-training
+        ecepxie.nrp/owner: haoming
+        experiment: experiment-end2end-memory-agent-v76
+        mlevolve.ai/workload: mlevolve-e2e-leaf-strategy-active-smoke-v76
+        task: leaf-classification
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 120
+      containers:
+        - name: end2end-runner
+          image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+          imagePullPolicy: IfNotPresent
+          command:
+            - /usr/local/bin/python
+            - -u
+          args:
+            - /workspace/nautilus-exp-end2end-agent-v76/experiments/end2end_memory_systems_20260804/run_assignment.py
+            - --manifest
+            - /workspace/nautilus-exp-end2end-agent-v76/experiments/end2end_memory_systems_20260804/manifests_v76/leaf_strategy_active_smoke_manifest.json
+            - --output-root
+            - /workspace/experiment-end2end-memory-agent-v76/smoke/runs
+          envFrom:
+            - secretRef:
+                name: prevalence-audit-deepseek-r1
+          env:
+            - name: JOB_COMPLETION_INDEX
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+            - name: KUBERNETES_JOB_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['batch.kubernetes.io/job-name']
+            - name: KUBERNETES_JOB_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['batch.kubernetes.io/controller-uid']
+            - name: KUBERNETES_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: KUBERNETES_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: KUBERNETES_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: TOKENIZERS_PARALLELISM
+              value: "false"
+            - name: PYTHONPATH
+              value: /workspace/nautilus-exp-end2end-agent-v76/mlevolve:/workspace/nautilus-exp-end2end-agent-v76
+            - name: MLEVOLVE_CONTAINER_IMAGE_REFERENCE
+              value: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+            - name: MLEVOLVE_SOLVER_BINDING_ID
+              value: deepseek-production-solver
+            - name: MLEVOLVE_SOLVER_MODEL_REVISION
+              value: sha256:6c72890187efc83ef04ac6527c8f22f823708d99c83b7f7b3393dfe27fe4efc6
+          resources:
+            requests:
+              cpu: "16"
+              memory: 64Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/a100: "1"
+            limits:
+              cpu: "16"
+              memory: 64Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/a100: "1"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: shm
+              mountPath: /dev/shm
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Gi
