@@ -1,0 +1,34 @@
+{
+  "schema": "mlevolve_memory_strategy_branch_portfolio_release_v1",
+  "branch": "codex/memory-strategy-branch-portfolio-v70",
+  "checkpoint_commit": "5ea6d9c9",
+  "implementation_commit": "f59f1a3f3fbbb5d95971873769271feb0e7f77aa",
+  "frozen_source": "/workspace/nautilus-exp-end2end-agent-v70",
+  "frozen_source_file_count": 238,
+  "source_manifest_sha256": "5876c84b3813dce9e6d06c509e944c0af06f7d3ce90f5b1a20d49ae7d0a0cab1",
+  "history_slices": {
+    "path": "experiments/end2end_memory_systems_20260804/memory_strategy_shadow_history_slices_v3.json",
+    "sha256": "ce4b56d4b5af7f4e0e32971f6cbc194049d895fa002446dec82a6163b684a2cd"
+  },
+  "stager_manifest": {
+    "path": "experiments/end2end_memory_systems_20260804/jobs/mlevolve-e2e-memory-strategy-shadow-stager-v70.yaml",
+    "sha256": "85b9b679445106587cee4d9f11bb65054127d1f535001a38d306b82ac497e05e"
+  },
+  "smoke_manifest": {
+    "path": "experiments/end2end_memory_systems_20260804/jobs/mlevolve-e2e-memory-strategy-shadow-smoke-v70.yaml",
+    "sha256": "7e4519bb4ff453ae1b4dbe72a4746f461503a686c078285efde99bb007823ad0"
+  },
+  "local_verification": {
+    "strategy_atomic_tests": "19 passed",
+    "config_resume_tests": "46 passed, 1 historical source-lock test deselected",
+    "frozen_source_tests": "19 passed",
+    "discovery_evidence_partition": "3 current + 0 failure + 5 historical = 8",
+    "repair_evidence_partition": "3 current + 1 failure + 4 historical = 8"
+  },
+  "v69_terminal_archive": {
+    "path": "coordination/memory_strategy_shadow_smoke_v69_terminal_20260810T144831Z",
+    "artifact_manifest_sha256": "7b76247f6f227c8ee8cf1581c51f41271b47120b8ff974c2b932a044af966017",
+    "root_cause": "deepseek-v4-pro thinking returned malformed JSON on all contract attempts"
+  },
+  "actuation_authority": "shadow_only"
+}
