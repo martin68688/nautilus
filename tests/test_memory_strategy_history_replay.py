@@ -29,6 +29,9 @@ SMOKE_JOB = (
     / "jobs"
     / "mlevolve-e2e-memory-strategy-shadow-smoke-v64.yaml"
 )
+SMOKE_JOB_V65 = SMOKE_JOB.with_name(
+    "mlevolve-e2e-memory-strategy-shadow-smoke-v65.yaml"
+)
 
 
 def _runner_module():
@@ -114,16 +117,17 @@ def test_replay_evaluator_measures_hit_budget_duplicate_and_incompatibility():
 
 
 def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
-    job = yaml.safe_load(SMOKE_JOB.read_text(encoding="utf-8"))
-    labels = job["metadata"]["labels"]
-    pod_labels = job["spec"]["template"]["metadata"]["labels"]
-    container = job["spec"]["template"]["spec"]["containers"][0]
-    command = "\n".join(container["command"])
+    for path in (SMOKE_JOB, SMOKE_JOB_V65):
+        job = yaml.safe_load(path.read_text(encoding="utf-8"))
+        labels = job["metadata"]["labels"]
+        pod_labels = job["spec"]["template"]["metadata"]["labels"]
+        container = job["spec"]["template"]["spec"]["containers"][0]
+        command = "\n".join(container["command"])
 
-    assert labels["ecepxie.nrp/owner"] == "haoming"
-    assert pod_labels["ecepxie.nrp/owner"] == "haoming"
-    assert not any("nvidia.com/" in key for key in container["resources"]["limits"])
-    assert "future_strategy_hit" in command
-    assert "atomic_actuation" in command
-    assert "sleep" not in command
-    assert job["spec"]["backoffLimit"] == 0
+        assert labels["ecepxie.nrp/owner"] == "haoming"
+        assert pod_labels["ecepxie.nrp/owner"] == "haoming"
+        assert not any("nvidia.com/" in key for key in container["resources"]["limits"])
+        assert "future_strategy_hit" in command
+        assert "atomic_actuation" in command
+        assert "sleep" not in command
+        assert job["spec"]["backoffLimit"] == 0

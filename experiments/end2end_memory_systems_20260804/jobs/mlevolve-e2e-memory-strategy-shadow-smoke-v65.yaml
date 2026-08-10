@@ -1,0 +1,95 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-e2e-memory-strategy-shadow-smoke-v65
+  namespace: ecepxie
+  labels:
+    ecepxie.nrp/owner: haoming
+    app.kubernetes.io/managed-by: codex-nrp-training
+    mlevolve.ai/workload: mlevolve-e2e-memory-strategy-shadow-smoke-v65
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        ecepxie.nrp/owner: haoming
+        app.kubernetes.io/managed-by: codex-nrp-training
+        mlevolve.ai/workload: mlevolve-e2e-memory-strategy-shadow-smoke-v65
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: strategy-shadow-smoke
+          image: haomingwang22/mlevolve:v1
+          command:
+            - /bin/bash
+            - -lc
+            - |
+              set -euo pipefail
+              SOURCE=/workspace/nautilus-exp-end2end-agent-v65
+              OUT=/workspace/experiment-end2end-memory-agent-v65/strategy-shadow-smoke-v65
+              mkdir -p "$OUT"
+              cd "$SOURCE"
+              sha256sum -c SOURCE_FILES.sha256 > "$OUT/source_check.log"
+              set -a
+              . /workspace/nautilus/mlevolve/.env
+              set +a
+              export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+              python -m pytest -q tests/test_memory_strategy_shadow.py | tee "$OUT/pytest.log"
+              python experiments/end2end_memory_systems_20260804/probe_solver_model_context.py \
+                --active-probe-if-metadata-missing \
+                --output "$OUT/SOLVER_CONTEXT_PROBE.json" | tee "$OUT/context_probe.log"
+              python experiments/end2end_memory_systems_20260804/run_strategy_shadow_replay.py \
+                --cases experiments/end2end_memory_systems_20260804/memory_strategy_shadow_history_slices_v1.json \
+                --case-id spooky-before-frozen-multibackbone-fivefold-xgb \
+                --actuate \
+                --output "$OUT/STRATEGY_SHADOW_REPLAY.json" | tee "$OUT/replay.log"
+              python - "$OUT" <<'PY'
+              import hashlib
+              import json
+              import sys
+              from pathlib import Path
+
+              out = Path(sys.argv[1])
+              replay = json.loads((out / "STRATEGY_SHADOW_REPLAY.json").read_text())
+              result = replay["results"][0]
+              receipt = {
+                  "schema": "mlevolve_memory_strategy_shadow_smoke_receipt_v1",
+                  "status": "passed" if (
+                      result["strategy_trace"]["status"] == "completed"
+                      and result["strategy_trace"]["production_prompt_modified"] is False
+                      and not result["hidden_future_leakage_ids"]
+                      and result["evaluation"]["all_citations_visible"]
+                      and result["evaluation"]["future_strategy_hit"] is True
+                      and result["atomic_actuation"]["status"] == "accepted"
+                  ) else "failed",
+                  "strategy_status": result["strategy_trace"]["status"],
+                  "noninterference": not result["strategy_trace"]["production_prompt_modified"],
+                  "hidden_future_leakage_ids": result["hidden_future_leakage_ids"],
+                  "future_strategy_hit": result["evaluation"]["future_strategy_hit"],
+                  "atomic_status": result["atomic_actuation"].get("status"),
+                  "plan_diff_valid": result["atomic_actuation"].get("coder", {}).get("plan_diff_verdict", {}).get("valid"),
+              }
+              receipt["replay_sha256"] = hashlib.sha256(
+                  (out / "STRATEGY_SHADOW_REPLAY.json").read_bytes()
+              ).hexdigest()
+              (out / "SMOKE_RECEIPT.json").write_text(
+                  json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+              )
+              print(json.dumps(receipt, sort_keys=True))
+              if receipt["status"] != "passed":
+                  raise SystemExit(1)
+              PY
+          resources:
+            requests:
+              cpu: "4"
+              memory: 16Gi
+            limits:
+              cpu: "4"
+              memory: 16Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
