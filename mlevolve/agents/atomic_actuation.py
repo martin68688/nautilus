@@ -361,6 +361,12 @@ def _planner_prompt(
             ),
         }
     if coder_replan_feedback:
+        allow_hypothesis_switch = bool(
+            (coder_replan_feedback or {}).get("allow_hypothesis_switch", False)
+        )
+        rejected_hypothesis_ids = list(
+            (coder_replan_feedback or {}).get("rejected_hypothesis_ids") or []
+        )
         payload["coder_replan_required"] = {
             "previous_plan": dict(
                 (coder_replan_feedback or {}).get("previous_plan") or {}
@@ -368,12 +374,23 @@ def _planner_prompt(
             "coder_verdict": dict(
                 (coder_replan_feedback or {}).get("coder_verdict") or {}
             ),
+            "allow_hypothesis_switch": allow_hypothesis_switch,
+            "rejected_hypothesis_ids": rejected_hypothesis_ids,
             "instruction": (
+                "The selected roadmap remained non-actuatable after bounded decomposition. "
+                "Select a different existing Strategy hypothesis whose smallest complete test "
+                "has the fewest modules, symbols, imports, and patches. Do not select any "
+                "rejected_hypothesis_id and do not invent a new hypothesis."
+                if allow_hypothesis_switch
+                else
                 "The Coder could not implement the previous plan inside its verified boundary. "
                 "Keep the same hypothesis_id and source_memory_ids, but decompose the roadmap: "
                 "return a strictly smaller first phase that independently runs and tests one "
                 "mechanism. Remove or defer every change, symbol, and import not required for "
-                "that phase. For Debug, the phase must only repair the observed exception."
+                "that phase. The host will reject a same-sized plan: allowed modules, changes, "
+                "target symbols, new imports, and max_patches may not increase, and at least one "
+                "of those boundaries must strictly decrease. For Debug, the phase must only "
+                "repair the observed exception."
             ),
         }
     user = _canonical_json(payload)
@@ -504,6 +521,44 @@ def run_atomic_actuation_planner(
                         )
                     ),
                 )
+                if validation.get("valid") and coder_replan_feedback:
+                    if bool(
+                        (coder_replan_feedback or {}).get(
+                            "allow_hypothesis_switch", False
+                        )
+                    ):
+                        rejected_ids = {
+                            str(value)
+                            for value in (
+                                (coder_replan_feedback or {}).get(
+                                    "rejected_hypothesis_ids"
+                                )
+                                or []
+                            )
+                        }
+                        decomposition_violations = (
+                            [
+                                "alternate atomic plan must select a different "
+                                "non-rejected Strategy hypothesis"
+                            ]
+                            if str(plan.get("hypothesis_id") or "") in rejected_ids
+                            else []
+                        )
+                    else:
+                        decomposition_violations = validate_decomposed_replan(
+                            plan,
+                            previous_plan=dict(
+                                (coder_replan_feedback or {}).get("previous_plan")
+                                or {}
+                            ),
+                        )
+                    if decomposition_violations:
+                        validation = copy.deepcopy(validation)
+                        validation["valid"] = False
+                        validation["violations"] = [
+                            *list(validation.get("violations") or []),
+                            *decomposition_violations,
+                        ]
             except Exception as exc:
                 plan = {}
                 validation = {
@@ -565,6 +620,17 @@ def _top_level_units(code: str) -> tuple[dict[str, str], set[str]]:
         end = int(getattr(node, "end_lineno", start + 1))
         return "".join(lines[start:end])
 
+    def assigned_names(target: ast.AST) -> set[str]:
+        if isinstance(target, ast.Name):
+            return {target.id}
+        if isinstance(target, (ast.Tuple, ast.List)):
+            return {
+                name
+                for child in target.elts
+                for name in assigned_names(child)
+            }
+        return set()
+
     for node in tree.body:
         if isinstance(node, ast.Import):
             imports.update(alias.name for alias in node.names)
@@ -577,6 +643,22 @@ def _top_level_units(code: str) -> tuple[dict[str, str], set[str]]:
             units.setdefault("__imports__", []).append(segment(node))
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             units.setdefault(node.name, []).append(segment(node))
+        elif isinstance(node, ast.Assign):
+            names = {
+                name
+                for target in node.targets
+                for name in assigned_names(target)
+            }
+            for name in sorted(names):
+                units.setdefault(name, []).append(segment(node))
+            if not names:
+                units.setdefault("__module__", []).append(segment(node))
+        elif isinstance(node, (ast.AnnAssign, ast.AugAssign)):
+            names = assigned_names(node.target)
+            for name in sorted(names):
+                units.setdefault(name, []).append(segment(node))
+            if not names:
+                units.setdefault("__module__", []).append(segment(node))
         else:
             units.setdefault("__module__", []).append(segment(node))
     return (
@@ -594,6 +676,80 @@ def _allowed_target_symbols(plan: Mapping[str, Any]) -> set[str]:
         if isinstance(change, Mapping):
             symbols.update(str(value) for value in (change.get("target_symbols") or []))
     return symbols
+
+
+def validate_decomposed_replan(
+    plan: Mapping[str, Any],
+    *,
+    previous_plan: Mapping[str, Any],
+) -> list[str]:
+    """Require a Coder-feedback replan to make a real, bounded decomposition."""
+
+    violations: list[str] = []
+    if str(plan.get("hypothesis_id") or "") != str(
+        previous_plan.get("hypothesis_id") or ""
+    ):
+        violations.append("decomposed replan must keep the same hypothesis_id")
+    if {
+        str(value) for value in (plan.get("source_memory_ids") or [])
+    } != {
+        str(value) for value in (previous_plan.get("source_memory_ids") or [])
+    }:
+        violations.append("decomposed replan must keep the same source_memory_ids")
+
+    current_modules = {str(value) for value in (plan.get("allowed_modules") or [])}
+    previous_modules = {
+        str(value) for value in (previous_plan.get("allowed_modules") or [])
+    }
+    current_symbols = _allowed_target_symbols(plan)
+    previous_symbols = _allowed_target_symbols(previous_plan)
+    current_imports = {
+        str(value) for value in (plan.get("allowed_new_imports") or [])
+    }
+    previous_imports = {
+        str(value) for value in (previous_plan.get("allowed_new_imports") or [])
+    }
+    current_changes = len(list(plan.get("allowed_changes") or []))
+    previous_changes = len(list(previous_plan.get("allowed_changes") or []))
+    try:
+        current_patches = int(plan.get("max_patches") or 0)
+    except (TypeError, ValueError):
+        current_patches = 0
+    try:
+        previous_patches = int(previous_plan.get("max_patches") or 0)
+    except (TypeError, ValueError):
+        previous_patches = 0
+
+    boundaries = (
+        ("allowed_modules", current_modules, previous_modules),
+        ("target_symbols", current_symbols, previous_symbols),
+        ("allowed_new_imports", current_imports, previous_imports),
+    )
+    for label, current, previous in boundaries:
+        if not current.issubset(previous):
+            violations.append(
+                f"decomposed replan {label} must be a subset of the rejected plan"
+            )
+    if current_changes > previous_changes:
+        violations.append(
+            "decomposed replan allowed_changes may not exceed the rejected plan"
+        )
+    if current_patches > previous_patches:
+        violations.append(
+            "decomposed replan max_patches may not exceed the rejected plan"
+        )
+    strictly_smaller = bool(
+        len(current_modules) < len(previous_modules)
+        or current_changes < previous_changes
+        or len(current_symbols) < len(previous_symbols)
+        or len(current_imports) < len(previous_imports)
+        or current_patches < previous_patches
+    )
+    if not strictly_smaller:
+        violations.append(
+            "decomposed replan must strictly reduce at least one verified boundary"
+        )
+    return violations
 
 
 def verify_atomic_code_change(
@@ -910,6 +1066,17 @@ def run_atomic_actuation_pipeline(
             or 0
         ),
     )
+    alternate_hypothesis_attempts = max(
+        0,
+        int(
+            getattr(
+                ext_cfg,
+                "memory_strategy_atomic_alternate_hypothesis_attempts",
+                0,
+            )
+            or 0
+        ),
+    )
     actuation_attempts: list[dict[str, Any]] = []
     coder_replan_feedback: dict[str, Any] | None = None
     planner_trace: dict[str, Any] = {}
@@ -952,6 +1119,56 @@ def run_atomic_actuation_pipeline(
                 dict(coder_trace.get("plan_diff_verdict") or {})
             ),
         }
+    rejected_hypothesis_ids = {
+        str((attempt.get("planner") or {}).get("plan", {}).get("hypothesis_id") or "")
+        for attempt in actuation_attempts
+        if str((attempt.get("planner") or {}).get("plan", {}).get("hypothesis_id") or "")
+    }
+    alternate_hypothesis_used = False
+    if coder_trace.get("status") != "accepted":
+        for alternate_attempt in range(alternate_hypothesis_attempts):
+            coder_replan_feedback = {
+                "previous_plan": copy.deepcopy(dict(planner_trace.get("plan") or {})),
+                "coder_verdict": copy.deepcopy(
+                    dict(coder_trace.get("plan_diff_verdict") or {})
+                ),
+                "allow_hypothesis_switch": True,
+                "rejected_hypothesis_ids": sorted(rejected_hypothesis_ids),
+            }
+            planner_trace = run_atomic_actuation_planner(
+                agent,
+                strategy_memo=strategy_memo,
+                parent_code=parent_code,
+                budget=budget,
+                stage=stage,
+                coder_replan_feedback=coder_replan_feedback,
+            )
+            coder_trace = run_atomic_coder(
+                agent,
+                planner_trace=planner_trace,
+                parent_code=parent_code,
+                task_description=task_description,
+                execution_output=execution_output,
+            )
+            actuation_attempts.append(
+                {
+                    "attempt": len(actuation_attempts) + 1,
+                    "kind": "alternate_hypothesis",
+                    "planner": planner_trace,
+                    "coder": coder_trace,
+                }
+            )
+            selected_id = str(
+                (planner_trace.get("plan") or {}).get("hypothesis_id") or ""
+            )
+            if selected_id:
+                rejected_hypothesis_ids.add(selected_id)
+            if (
+                planner_trace.get("status") == "accepted"
+                and coder_trace.get("status") == "accepted"
+            ):
+                alternate_hypothesis_used = True
+                break
     return {
         "schema": "mlevolve_atomic_actuation_pipeline_v1",
         "status": (
@@ -965,6 +1182,7 @@ def run_atomic_actuation_pipeline(
         "planner": planner_trace,
         "coder": coder_trace,
         "decomposition_used": len(actuation_attempts) > 1,
+        "alternate_hypothesis_used": alternate_hypothesis_used,
         "actuation_attempts": actuation_attempts,
     }
 
@@ -976,5 +1194,6 @@ __all__ = [
     "run_atomic_actuation_planner",
     "run_atomic_coder",
     "validate_atomic_plan",
+    "validate_decomposed_replan",
     "verify_atomic_code_change",
 ]

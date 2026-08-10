@@ -1,0 +1,15 @@
+# v75: preserve v74 evidence-complete active Strategy, then repair the three
+# runtime defects observed online: strict Planner decomposition, one bounded
+# alternate hypothesis, and in-flight-safe search exhaustion.
+extends: ../systems_v74/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v75/experiments/end2end_memory_systems_20260804/manifests_v75/leaf_official_replay_targets.json
+
+external_skill_memory:
+  memory_strategy_atomic_coder_replan_attempts: 2
+  memory_strategy_atomic_alternate_hypothesis_attempts: 1
+
+run_identity:
+  memory_version: leaf_official_recipe_runforest_v6_strategy_active_runtimefix_v75

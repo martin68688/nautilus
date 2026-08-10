@@ -155,6 +155,31 @@ def _remote_runtime_asset_markers(code: str) -> list[str]:
     return [marker for marker in markers if marker in lowered]
 
 
+def _should_reject_legacy_offline_runtime_repair(
+    agent: Any,
+    parent_node: SearchNode,
+    code: str,
+    *,
+    strategy_active: bool,
+) -> bool:
+    """Keep the broad legacy guard out of machine-bounded Atomic candidates.
+
+    Active Strategy code has already passed an exact symbol/import/diff
+    contract.  Reverting that candidate to the failed parent creates an
+    unchanged child and destroys the auditable actuation.  Its remaining
+    runtime assumptions are therefore tested by execution and the next Debug
+    transaction, while legacy full rewrites retain the conservative guard.
+    """
+
+    return bool(
+        not strategy_active
+        and code
+        and _offline_runtime_repair_enabled(agent)
+        and _requires_offline_model_repair(parent_node)
+        and _remote_runtime_asset_markers(code)
+    )
+
+
 def _runtime_recovery_guidance(
     parent_node: SearchNode,
     *,
@@ -694,11 +719,11 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         prompt_complete = build_prompt_complete(base_instructions, use_full_code_requirement=True)
         plan, code = plan_and_code_query(agent, prompt_complete)
 
-    if (
-        code
-        and _offline_runtime_repair_enabled(agent)
-        and _requires_offline_model_repair(parent_node)
-        and _remote_runtime_asset_markers(code)
+    if _should_reject_legacy_offline_runtime_repair(
+        agent,
+        parent_node,
+        str(code or ""),
+        strategy_active=strategy_active,
     ):
         logger.warning(
             "Rejecting full-rewrite runtime repair with network markers=%s",

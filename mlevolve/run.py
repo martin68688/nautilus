@@ -23,6 +23,7 @@ from engine.run_control import (
     focused_outcome_context,
     focused_protocol_status,
     should_continue_focused_search,
+    should_finalize_search_exhaustion,
 )
 from engine.run_outcome import (
     FailedRunError,
@@ -479,10 +480,12 @@ def _run_impl():
 
                 # Process the focused lane first so its newly queued repair is
                 # claimed before an ordinary worker asks for more work.
+                worker_reported_exhaustion = False
                 for fut in sorted(done, key=lambda item: item not in focus_futures):
                     futures.remove(fut)
                     was_focused = fut in focus_futures
                     focus_futures.discard(fut)
+                    worker_exhausted = False
                     try:
                         cur_node = fut.result()
                         router_failure_breaker.reset()
@@ -492,8 +495,14 @@ def _run_impl():
                             logger.warning(f"⚠️  Task returned None (execution failed)")
                     except Exception as e:
                         if isinstance(e, SearchSpaceExhausted):
-                            search_exhausted = True
-                            logger.warning("Search space exhausted: %s", e)
+                            worker_exhausted = True
+                            worker_reported_exhaustion = True
+                            logger.info(
+                                "Search worker found no selectable node while %s other "
+                                "task(s) remain in flight: %s",
+                                len(futures),
+                                e,
+                            )
                         else:
                             logger.exception(f"❌ Exception during task execution: {e}")
                             if router_failure_breaker.record(e):
@@ -541,6 +550,7 @@ def _run_impl():
                     )
                     if (
                         not search_exhausted
+                        and not worker_exhausted
                         and not focus_has_finished
                         and (within_shared_budget or continue_focused_replay)
                     ):
@@ -556,6 +566,14 @@ def _run_impl():
                         )
                         logger.info(f"📤 Submitted next task based on node {cur_node.id if cur_node else 'None'}")
                     logger.info(f"📊 Progress: {completed}/{total_steps} steps completed, {len(futures)} tasks running")
+                if should_finalize_search_exhaustion(
+                    worker_reported_exhaustion=worker_reported_exhaustion,
+                    in_flight_count=len(futures),
+                ):
+                    search_exhausted = True
+                    logger.warning(
+                        "Search space exhausted after all in-flight work was persisted"
+                    )
                 if search_exhausted:
                     for pending in futures:
                         pending.cancel()

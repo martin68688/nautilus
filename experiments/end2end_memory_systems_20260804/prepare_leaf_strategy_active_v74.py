@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build an immutable six-hour v74 Leaf Strategy Smoke release."""
+"""Build an immutable six-hour Leaf Strategy Smoke release (v74+)."""
 
 from __future__ import annotations
 
@@ -47,7 +47,13 @@ def main() -> int:
     parser.add_argument("--overlay", type=Path, required=True)
     parser.add_argument("--git-head", required=True)
     parser.add_argument("--receipt", type=Path, required=True)
+    parser.add_argument("--release-version", type=int, default=74)
     args = parser.parse_args()
+
+    if args.release_version < 74:
+        raise ValueError("release-version must be at least 74")
+    release_tag = f"v{args.release_version}"
+    source_manifest_version = 61 if args.release_version == 74 else args.release_version - 1
 
     base = args.base.resolve(strict=True)
     destination = args.destination.resolve()
@@ -59,29 +65,30 @@ def main() -> int:
     extract_overlay(overlay, destination)
 
     exp_root = destination / "experiments/end2end_memory_systems_20260804"
-    source_manifests = exp_root / "manifests_v61"
-    manifests = exp_root / "manifests_v74"
+    source_manifests = exp_root / f"manifests_v{source_manifest_version}"
+    manifests = exp_root / f"manifests_{release_tag}"
     if manifests.exists():
         raise FileExistsError(f"overlay unexpectedly created {manifests}")
     shutil.copytree(source_manifests, manifests)
     make_writable(manifests)
 
-    config_path = exp_root / "systems_v74/dynamic_hybrid.yaml"
+    config_path = exp_root / f"systems_{release_tag}/dynamic_hybrid.yaml"
     systems_path = manifests / "systems.json"
     systems = read_object(systems_path)
     systems["experimental_axis"] = (
-        "Leaf required Strategy with method-complete evidence and staged Atomic actuation"
+        "Leaf required Strategy with method-complete evidence, staged Atomic actuation, "
+        "and in-flight-safe search finalization"
     )
     systems["systems"] = [
         {
-            "config_path": "systems_v74/dynamic_hybrid.yaml",
+            "config_path": f"systems_{release_tag}/dynamic_hybrid.yaml",
             "config_sha256": sha256_file(config_path),
             "description": (
-                "Dynamic Router plus required active Strategy with Planner feedback "
-                "decomposition for Improve and Debug"
+                "Dynamic Router plus required active Strategy with verified Planner "
+                "decomposition and alternate atomic fallback for Improve and Debug"
             ),
             "kind": "internal_exploratory",
-            "label": "S5-v74-active-decomposed",
+            "label": f"S5-{release_tag}-active-runtimefix",
             "limitation": "single exploratory six-hour Leaf Smoke",
             "primary_reference": None,
             "system_id": "dynamic_hybrid",
@@ -124,7 +131,7 @@ def main() -> int:
     smoke_path = manifests / "leaf_strategy_active_smoke_manifest.json"
     smoke = read_object(smoke_source)
     logical_id = (
-        "e2e-smoke-leaf-strategy-active-decomposed-v74__leaf-classification__"
+        f"e2e-smoke-leaf-strategy-active-runtimefix-{release_tag}__leaf-classification__"
         "dynamic_hybrid__seed-1"
     )
     row = dict(smoke["runs"][0])
@@ -145,7 +152,7 @@ def main() -> int:
     row["row_hash"] = payload_hash(row, "row_hash")
     smoke.update(
         {
-            "release_id": "end2end-leaf-strategy-active-decomposed-v74-smoke",
+            "release_id": f"end2end-leaf-strategy-active-runtimefix-{release_tag}-smoke",
             "kind": "smoke",
             "run_count": 1,
             "runs": [row],
@@ -163,7 +170,8 @@ def main() -> int:
 
     file_count, source_manifest_sha = freeze(destination)
     receipt = {
-        "schema": "mlevolve_leaf_strategy_active_source_release_v2",
+        "schema": "mlevolve_leaf_strategy_active_source_release_v3",
+        "release_version": args.release_version,
         "git_head": args.git_head,
         "base_source": str(base),
         "frozen_source": str(destination),

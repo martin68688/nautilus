@@ -14,6 +14,7 @@ from engine.run_control import (  # noqa: E402
     focused_protocol_status,
     focused_protocol_success_error,
     should_continue_focused_search,
+    should_finalize_search_exhaustion,
 )
 from engine.agent_search import AgentSearch  # noqa: E402
 from engine.search_node import Journal, SearchNode  # noqa: E402
@@ -81,6 +82,21 @@ def test_inflight_focused_draft_cannot_be_cut_off_before_transaction_exists():
         status=status,
         focus_in_flight=True,
     ) is True
+
+
+def test_idle_worker_cannot_exhaust_other_inflight_search_lanes():
+    assert should_finalize_search_exhaustion(
+        worker_reported_exhaustion=True,
+        in_flight_count=2,
+    ) is False
+    assert should_finalize_search_exhaustion(
+        worker_reported_exhaustion=True,
+        in_flight_count=0,
+    ) is True
+    assert should_finalize_search_exhaustion(
+        worker_reported_exhaustion=False,
+        in_flight_count=0,
+    ) is False
 
 
 def test_focused_job_requires_clean_ranked_metric():

@@ -13,6 +13,7 @@ from agents.debug_agent import (  # noqa: E402
     _remote_runtime_asset_markers,
     _requires_offline_model_repair,
     _runtime_recovery_guidance,
+    _should_reject_legacy_offline_runtime_repair,
 )
 from config import Config, _load_cfg  # noqa: E402
 
@@ -62,3 +63,31 @@ def test_v42_config_declares_hermetic_runtime_policy() -> None:
     cfg = _load_cfg(V42_CONFIG, Config)
     assert cfg.external_skill_memory.experiment_r_offline_runtime_only is True
     assert cfg.external_skill_memory.runtime_network_policy == "offline"
+
+
+def test_atomic_candidate_is_not_reverted_by_legacy_full_rewrite_guard() -> None:
+    agent = SimpleNamespace(
+        cfg=SimpleNamespace(
+            external_skill_memory=SimpleNamespace(
+                experiment_r_offline_runtime_only=True
+            )
+        )
+    )
+    parent = SimpleNamespace(
+        exc_type="FileNotFoundError",
+        term_out="torch.hub.load failed because hubconf.py is missing",
+        analysis="offline runtime",
+    )
+    candidate = 'unused = torch.hub.load("/local/repo", "model")\n'
+    assert _should_reject_legacy_offline_runtime_repair(
+        agent,
+        parent,
+        candidate,
+        strategy_active=False,
+    ) is True
+    assert _should_reject_legacy_offline_runtime_repair(
+        agent,
+        parent,
+        candidate,
+        strategy_active=True,
+    ) is False

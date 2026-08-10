@@ -137,6 +137,16 @@ def should_continue_focused_search(
     return completed_steps < total_steps
 
 
+def should_finalize_search_exhaustion(
+    *,
+    worker_reported_exhaustion: bool,
+    in_flight_count: int,
+) -> bool:
+    """A temporarily idle worker cannot terminate still-running search lanes."""
+
+    return bool(worker_reported_exhaustion and int(in_flight_count) == 0)
+
+
 def focused_protocol_success_error(status: FocusedProtocolStatus) -> str | None:
     """Explain why a focused replay cannot be reported as a successful Job."""
     if not status.seen:

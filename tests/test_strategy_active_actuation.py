@@ -14,7 +14,11 @@ sys.path.insert(0, str(ROOT / "mlevolve"))
 import agents.strategy_actuation as strategy_actuation
 import agents.atomic_actuation as atomic_actuation
 import agents.memory_strategy_agent as memory_strategy_agent
-from agents.atomic_actuation import validate_atomic_plan
+from agents.atomic_actuation import (
+    validate_atomic_plan,
+    validate_decomposed_replan,
+    verify_atomic_code_change,
+)
 from agents.memory_strategy_agent import validate_strategy_memo
 from config import Config, _load_cfg
 
@@ -290,6 +294,117 @@ def test_atomic_pipeline_replans_smaller_phase_after_coder_rejection(monkeypatch
     assert trace["planner"]["plan"]["objective"] == "path-only"
 
 
+def test_atomic_pipeline_tries_smaller_alternate_hypothesis_after_decomposition(
+    monkeypatch,
+):
+    agent = _agent()
+    ext = agent.cfg.external_skill_memory
+    ext.memory_strategy_atomic_coder_replan_attempts = 0
+    ext.memory_strategy_atomic_alternate_hypothesis_attempts = 1
+    planner_feedback = []
+
+    def fake_planner(*_args, coder_replan_feedback=None, **_kwargs):
+        planner_feedback.append(coder_replan_feedback)
+        hypothesis_id = (
+            "h2"
+            if (coder_replan_feedback or {}).get("allow_hypothesis_switch")
+            else "h1"
+        )
+        return {
+            "status": "accepted",
+            "plan": {
+                "hypothesis_id": hypothesis_id,
+                "source_memory_ids": ["current::parent"],
+                "objective": "alternate" if hypothesis_id == "h2" else "broad",
+            },
+        }
+
+    def fake_coder(*_args, planner_trace, **_kwargs):
+        accepted = planner_trace["plan"]["hypothesis_id"] == "h2"
+        return {
+            "status": "accepted" if accepted else "rejected",
+            "candidate_code": "value = 2\n" if accepted else "",
+            "plan_diff_verdict": {
+                "valid": accepted,
+                "violations": [] if accepted else ["scope mismatch"],
+            },
+        }
+
+    monkeypatch.setattr(atomic_actuation, "run_atomic_actuation_planner", fake_planner)
+    monkeypatch.setattr(atomic_actuation, "run_atomic_coder", fake_coder)
+    trace = atomic_actuation.run_atomic_actuation_pipeline(
+        agent,
+        strategy_memo=_strategy_trace()["memo"],
+        parent_code="value = 1\n",
+        task_description="leaf classification",
+        stage="improve",
+    )
+
+    assert trace["status"] == "accepted"
+    assert trace["alternate_hypothesis_used"] is True
+    assert [item["kind"] for item in trace["actuation_attempts"]] == [
+        "initial",
+        "alternate_hypothesis",
+    ]
+    assert planner_feedback[1]["rejected_hypothesis_ids"] == ["h1"]
+    assert trace["planner"]["plan"]["hypothesis_id"] == "h2"
+
+
+def test_decomposed_replan_must_strictly_reduce_verified_boundary():
+    broad = {
+        "hypothesis_id": "h1",
+        "source_memory_ids": ["history::1"],
+        "allowed_modules": ["data", "model"],
+        "allowed_changes": [
+            {"target_symbols": ["load_images", "train_transform"]},
+            {"target_symbols": ["extract_features"]},
+        ],
+        "allowed_new_imports": ["torchvision.transforms"],
+        "max_patches": 8,
+    }
+    assert validate_decomposed_replan(broad, previous_plan=broad) == [
+        "decomposed replan must strictly reduce at least one verified boundary"
+    ]
+
+    first_phase = {
+        **broad,
+        "allowed_modules": ["data"],
+        "allowed_changes": [
+            {"target_symbols": ["load_images", "train_transform"]}
+        ],
+        "max_patches": 4,
+    }
+    assert validate_decomposed_replan(first_phase, previous_plan=broad) == []
+
+
+def test_atomic_verifier_tracks_top_level_assignments_as_named_symbols():
+    original = "def load_images():\n    return []\n"
+    candidate = (
+        'train_transform = "augment"\n'
+        'test_transform = "base"\n'
+        "def load_images():\n    return []\n"
+    )
+    verdict = verify_atomic_code_change(
+        original_code=original,
+        candidate_code=candidate,
+        atomic_plan={
+            "allowed_changes": [
+                {
+                    "target_symbols": ["train_transform", "test_transform"],
+                }
+            ],
+            "allowed_new_imports": [],
+            "forbidden_symbols": [],
+            "forbidden_code_patterns": [],
+            "max_patches": 2,
+        },
+        patch_count=1,
+    )
+    assert verdict["valid"] is True
+    assert verdict["changed_symbols"] == ["test_transform", "train_transform"]
+    assert "__module__" not in verdict["changed_symbols"]
+
+
 def test_v74_config_enables_required_staged_actuation_with_modest_limits():
     path = (
         ROOT
@@ -313,3 +428,23 @@ def test_v74_config_enables_required_staged_actuation_with_modest_limits():
     assert ext.memory_strategy_atomic_debug_max_changes == 2
     assert ext.experiment_r_debug_max_patches == 4
     assert ext.memory_strategy_atomic_coder_replan_attempts == 2
+
+
+def test_v75_config_adds_one_bounded_alternate_atomic_hypothesis():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v75"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v75-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    ext = cfg.external_skill_memory
+    assert ext.memory_strategy_active_required is True
+    assert ext.memory_strategy_atomic_coder_replan_attempts == 2
+    assert ext.memory_strategy_atomic_alternate_hypothesis_attempts == 1
+    assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
+        "/workspace/nautilus-exp-end2end-agent-v75/"
+    )

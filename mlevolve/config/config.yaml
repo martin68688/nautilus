@@ -413,6 +413,7 @@ external_skill_memory:
   memory_strategy_atomic_planner_contract_retries: 2
   memory_strategy_atomic_coder_contract_retries: 1
   memory_strategy_atomic_coder_replan_attempts: 1
+  memory_strategy_atomic_alternate_hypothesis_attempts: 0
 
 # ============================================================
 #  Persisted run identity (baseline vs memory-system experiments)
