@@ -59,6 +59,7 @@ spec:
                       and result["strategy_trace"]["production_prompt_modified"] is False
                       and not result["hidden_future_leakage_ids"]
                       and result["evaluation"]["all_citations_visible"]
+                      and result["evaluation"]["future_strategy_hit"] is True
                       and result["atomic_actuation"]["status"] == "accepted"
                   ) else "failed",
                   "strategy_status": result["strategy_trace"]["status"],
