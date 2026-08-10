@@ -35,7 +35,10 @@ spec:
               . /workspace/nautilus/mlevolve/.env
               set +a
               export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
-              python -m pytest -q tests/test_memory_strategy_shadow.py tests/test_memory_strategy_history_replay.py | tee "$OUT/pytest.log"
+              # The point-in-time JSON is already frozen and hash-checked.
+              # Rebuilding it would require the multi-GB source journals, which
+              # intentionally are not part of this minimal execution closure.
+              python -m pytest -q tests/test_memory_strategy_shadow.py | tee "$OUT/pytest.log"
               python experiments/end2end_memory_systems_20260804/run_strategy_shadow_replay.py \
                 --cases "$CASES" \
                 --case-id spooky-before-frozen-multibackbone-fivefold-xgb \
