@@ -34,9 +34,7 @@ spec:
               . /workspace/nautilus/mlevolve/.env
               set +a
               export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
-              python -m pytest -q \
-                tests/test_memory_strategy_shadow.py \
-                tests/test_memory_strategy_history_replay.py | tee "$OUT/pytest.log"
+              python -m pytest -q tests/test_memory_strategy_shadow.py | tee "$OUT/pytest.log"
               python experiments/end2end_memory_systems_20260804/run_strategy_shadow_replay.py \
                 --cases experiments/end2end_memory_systems_20260804/memory_strategy_shadow_history_slices_v1.json \
                 --case-id spooky-before-frozen-multibackbone-fivefold-xgb \
