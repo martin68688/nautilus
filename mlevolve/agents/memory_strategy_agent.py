@@ -895,10 +895,12 @@ def _select_historical_frontier(
     task_id = str(getattr(getattr(agent, "cfg", None), "exp_id", "") or "")
     current_protocol = _node_metric_protocol(parent_node)
     eligible: list[dict[str, Any]] = []
+    method_only: list[dict[str, Any]] = []
     rejected = {
         "task_mismatch": 0,
         "rank_ineligible": 0,
         "missing_metric": 0,
+        "missing_metric_retained_as_method_evidence": 0,
         "current_node_duplicate": 0,
         "duplicate_lineage": 0,
     }
@@ -927,7 +929,18 @@ def _select_historical_frontier(
             metric_value = card.get("historical_metric")
         metric = _metric_number(metric_value)
         if metric is None:
-            rejected["missing_metric"] += 1
+            # The Router frequently exposes a complete method/repair card but
+            # intentionally strips a non-comparable historical score.  That
+            # makes the card unsafe for numeric ranking, not useless for
+            # Strategy synthesis.  Retain it after metric-bearing cards and
+            # label it explicitly as method-only evidence.
+            rejected["missing_metric_retained_as_method_evidence"] += 1
+            card["metric"] = None
+            card["submission_aligned_receipt_present"] = False
+            card["metric_protocol"] = _historical_metric_protocol(card)
+            card["metric_comparable_to_current"] = False
+            card["metric_claim_status"] = "same_task_method_evidence_only"
+            method_only.append(card)
             continue
         card["metric"] = metric
         receipt = card.get("official_submission_receipt") or {}
@@ -982,6 +995,21 @@ def _select_historical_frontier(
         for _, group in sorted(grouped.items(), key=group_key)
         for card in group
     ]
+    visibility_priority = {
+        "prompt_visible": 0,
+        "agent_selected": 1,
+        "pre_gate": 2,
+        "candidate_pool": 3,
+        "raw_candidates": 4,
+    }
+    method_only.sort(
+        key=lambda card: (
+            visibility_priority.get(str(card.get("router_visibility") or ""), 9),
+            int(card.get("router_rank") or 10**9),
+            str(card.get("memory_id") or ""),
+        )
+    )
+    ordered_eligible.extend(method_only)
     selected: list[dict[str, Any]] = []
     signatures: set[str] = set()
     for card in ordered_eligible:
@@ -992,7 +1020,9 @@ def _select_historical_frontier(
         signatures.add(signature)
         card["router_visibility"] = "historical_diverse_frontier"
         card["selection_reason"] = (
-            "same_task_same_protocol_metric_then_component_diversity"
+            "same_task_router_ranked_method_evidence_then_component_diversity"
+            if card.get("metric") is None
+            else "same_task_same_protocol_metric_then_component_diversity"
             if card.get("metric_comparable_to_current")
             else "same_task_within_protocol_metric_then_component_diversity"
             if card.get("metric_protocol")
@@ -1091,12 +1121,13 @@ def build_strategy_evidence_view(
         "current_metric_protocol": _node_metric_protocol(parent_node),
         "historical_metric_comparison_policy": (
             "scores rank only inside the same task and validation protocol; "
-            "cross-protocol and protocol-unknown cards are method evidence only"
+            "cross-protocol, protocol-unknown, and metric-free cards are method evidence only"
         ),
         "policy": (
             "one best valid node per configured draft role, then one recent causal "
-            "failure, then same-task metric-ranked historical nodes deduplicated by "
-            "component lineage; no cross-protocol numeric blending"
+            "failure, then same-task metric-ranked historical nodes followed by "
+            "Router-ranked metric-free method evidence, all deduplicated by component "
+            "lineage; no cross-protocol numeric blending"
         ),
     }
     return cards, selection
@@ -1109,6 +1140,7 @@ def build_strategy_context(
     stage: str,
     router_pack: Mapping[str, Any] | None,
     branch_best_metric: float | None = None,
+    mode: str = "shadow_read_only",
 ) -> dict[str, Any]:
     ext_cfg = getattr(getattr(agent, "cfg", None), "external_skill_memory", None)
     evidence_limit = int(
@@ -1149,8 +1181,33 @@ def build_strategy_context(
     current_code = str(getattr(parent_node, "code", "") or "")
     context = {
         "schema": "mlevolve_memory_strategy_context_v2",
-        "mode": "shadow_read_only",
+        "mode": str(mode),
         "stage": str(stage),
+        "strategy_contract": {
+            "active": str(mode) == "active_atomic",
+            "abstention_allowed": bool(
+                getattr(ext_cfg, "memory_strategy_active_allow_abstention", False)
+            )
+            if str(mode) == "active_atomic"
+            else True,
+            "min_candidate_compositions": int(
+                getattr(
+                    ext_cfg,
+                    "memory_strategy_debug_min_candidate_compositions",
+                    1,
+                )
+                or 1
+            )
+            if str(stage) == "debug"
+            else int(
+                getattr(
+                    ext_cfg,
+                    "memory_strategy_min_candidate_compositions",
+                    3,
+                )
+                or 1
+            ),
+        },
         "task": {
             "task_id": str(getattr(getattr(agent, "cfg", None), "exp_id", "") or ""),
             "description": str(getattr(agent, "task_desc", "") or ""),
@@ -1237,6 +1294,31 @@ def _strategy_prompt(
     contract_violations: Iterable[str] = (),
 ) -> dict[str, str]:
     exact_contract = _canonical_json(STRATEGY_MEMO_SCHEMA)
+    active_mode = str(context.get("mode") or "") == "active_atomic"
+    strategy_contract = dict(context.get("strategy_contract") or {})
+    min_compositions = int(
+        strategy_contract.get("min_candidate_compositions") or 1
+    )
+    if active_mode:
+        mode_contract = (
+            "This is ACTIVE ATOMIC MODE: an accepted memo is production input to a "
+            "bounded Planner and Coder. Treat every hypothesis as a staged roadmap whose "
+            "smallest independently executable phase may be selected now. "
+        )
+        if bool(strategy_contract.get("abstention_allowed", False)):
+            mode_contract += (
+                "Abstention is allowed only when the complete citable evidence set is "
+                "genuinely insufficient."
+            )
+        else:
+            mode_contract += (
+                "Abstention is forbidden for this required transaction; use current and "
+                "historical method evidence to propose a falsifiable next step."
+            )
+    else:
+        mode_contract = (
+            "This is SHADOW MODE: the memo has no authority to change the live plan."
+        )
     system = (
         "You are the Memory Strategy Agent, a read-only task-level research strategist. "
         "Do not write code and do not merely repeat the highest-ranked memory. Decompose each "
@@ -1276,16 +1358,22 @@ def _strategy_prompt(
         "conflicts, preserve a minimal change set, and state a falsification condition. Reject "
         "duplicate, already-tried, over-budget, or unsupported combinations. Output one JSON "
         "object only using the exact field names in RESPONSE_SCHEMA; do not substitute fields such "
-        "as proposed_experiment, experiment, changes, or memory_ids. This is SHADOW MODE: your "
-        "memo has no authority to change the live plan.\n\nRESPONSE_SCHEMA:\n" + exact_contract
+        "as proposed_experiment, experiment, changes, or memory_ids. "
+        + mode_contract
+        + "\n\nRESPONSE_SCHEMA:\n"
+        + exact_contract
     )
     if str(context.get("stage") or "") == "debug":
         system += (
-            "\n\nDEBUG_STAGE_RULE: Treat the execution output as causal evidence. Include at "
-            "least one targeted_repair hypothesis that fixes the narrowest demonstrated "
-            "exception while explicitly preserving model, data, validation, and submission "
-            "behavior that already completed. Do not turn a terminal cleanup exception into "
-            "an architecture rewrite."
+            "\n\nDEBUG_STAGE_RULE: Treat the execution output as causal evidence. Propose "
+            f"{min_compositions} to 3 hypotheses rather than the general 3-to-5 Improve "
+            "portfolio. The recommended hypothesis must be a targeted_repair whose first "
+            "phase only fixes the narrowest demonstrated exception while explicitly preserving "
+            "model, data, validation, calibration, and submission behavior. Put optional OOF, "
+            "calibration, ensembling, feature expansion, or performance work into later roadmap "
+            "phases; never include it in the first repair unless it is the demonstrated root "
+            "cause. Do not turn a path, cache, import, or cleanup exception into an architecture "
+            "rewrite."
         )
     user = (
         "Analyze this frozen point-in-time context. A natural composition is useful only if "
@@ -1305,7 +1393,11 @@ def _strategy_prompt(
                     "violations": violations,
                     "previous_response": dict(previous_memo or {}),
                     "repair_checklist": {
-                        "decision_propose_composition_count": "3..5",
+                        "decision_propose_composition_count": (
+                            f"{min_compositions}..3"
+                            if str(context.get("stage") or "") == "debug"
+                            else f"{min_compositions}..5"
+                        ),
                         "required_composition_fields": list(
                             _COMPOSITION_REQUIRED_KEYS
                         ),
@@ -1459,6 +1551,7 @@ def validate_strategy_memo(
     available_memory_ids: Iterable[str],
     min_candidate_compositions: int = 1,
     max_candidate_compositions: int = 5,
+    abstention_allowed: bool = True,
     required_opportunity_ids: Iterable[str] = (),
     required_opportunities: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
@@ -1471,6 +1564,8 @@ def validate_strategy_memo(
     decision = str(memo.get("decision") or "")
     if decision not in {"propose", "abstain"}:
         violations.append("decision must be propose or abstain")
+    if decision == "abstain" and not abstention_allowed:
+        violations.append("abstention is disabled for required active Strategy actuation")
     if not isinstance(memo.get("current_system_map"), Mapping):
         violations.append("current_system_map must be an object")
     if not isinstance(memo.get("evidence_portfolio"), Mapping):
@@ -1743,6 +1838,7 @@ def run_memory_strategy_shadow(
         stage=stage,
         router_pack=router_pack,
         branch_best_metric=branch_best_metric,
+        mode=_mode,
     )
     cards = list(context.get("memory_cards") or [])
     evidence_selection = copy.deepcopy(
@@ -1791,9 +1887,23 @@ def run_memory_strategy_shadow(
         contract_retries = int(
             getattr(ext_cfg, "memory_strategy_contract_retries", 2) or 0
         )
-        min_compositions = int(
-            getattr(ext_cfg, "memory_strategy_min_candidate_compositions", 3)
-            or 1
+        min_compositions = (
+            int(
+                getattr(
+                    ext_cfg,
+                    "memory_strategy_debug_min_candidate_compositions",
+                    1,
+                )
+                or 1
+            )
+            if str(stage) == "debug"
+            else int(
+                getattr(ext_cfg, "memory_strategy_min_candidate_compositions", 3)
+                or 1
+            )
+        )
+        abstention_allowed = not _force_run or bool(
+            getattr(ext_cfg, "memory_strategy_active_allow_abstention", False)
         )
         contract_attempts: list[dict[str, Any]] = []
         memo: dict[str, Any] = {}
@@ -1882,6 +1992,7 @@ def run_memory_strategy_shadow(
                     memo,
                     available_memory_ids=[card["memory_id"] for card in cards],
                     min_candidate_compositions=min_compositions,
+                    abstention_allowed=abstention_allowed,
                     required_opportunity_ids=required_opportunity_ids,
                     required_opportunities=required_opportunities,
                 )

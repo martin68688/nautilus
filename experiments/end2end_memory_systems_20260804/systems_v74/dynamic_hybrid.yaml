@@ -1,0 +1,40 @@
+# v74: active Strategy actuation with evidence-complete context and staged
+# Planner -> Coder decomposition after a verified diff rejection.
+extends: ../systems_v73/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v74/experiments/end2end_memory_systems_20260804/manifests_v74/leaf_official_replay_targets.json
+
+external_skill_memory:
+  memory_strategy_shadow_enabled: false
+  memory_strategy_active_enabled: true
+  memory_strategy_active_stages:
+    - improve
+    - debug
+  memory_strategy_active_required: true
+  memory_strategy_active_allow_abstention: false
+  memory_strategy_debug_trigger: always
+  memory_strategy_model: deepseek-v4-pro
+  memory_strategy_thinking_enabled: true
+  memory_strategy_contract_retries: 4
+  memory_strategy_min_candidate_compositions: 3
+  memory_strategy_debug_min_candidate_compositions: 1
+
+  # Improve receives a modestly wider verified boundary. Debug remains one
+  # module/two declared changes, but may use four SEARCH/REPLACE blocks so an
+  # import plus one class/function repair is representable.
+  experiment_r_improve_max_patches: 8
+  experiment_r_debug_max_patches: 4
+  memory_strategy_atomic_max_modules: 2
+  memory_strategy_atomic_max_changes: 4
+  memory_strategy_atomic_max_patches: 8
+  memory_strategy_atomic_debug_max_modules: 1
+  memory_strategy_atomic_debug_max_changes: 2
+  memory_strategy_atomic_debug_targeted_repair_only: true
+  memory_strategy_atomic_planner_contract_retries: 2
+  memory_strategy_atomic_coder_contract_retries: 1
+  memory_strategy_atomic_coder_replan_attempts: 2
+
+run_identity:
+  memory_version: leaf_official_recipe_runforest_v6_strategy_active_decomposed_v74

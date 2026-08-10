@@ -311,24 +311,33 @@ def _planner_prompt(
     stage: str = "",
     previous_plan: Mapping[str, Any] | None = None,
     contract_violations: Iterable[str] = (),
+    coder_replan_feedback: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     stage_contract = ""
     if str(stage) == "debug":
         stage_contract = (
             " This is a Debug transaction: select only a targeted_repair that fixes the "
-            "narrowest demonstrated root cause. Preserve the parent model family, feature "
-            "families, split, ensemble, loss, optimizer, and submission variant."
+            "narrowest demonstrated root cause. The first executable phase must only make "
+            "the failed parent runnable; defer OOF, calibration, ensembling, feature expansion, "
+            "and performance tuning to later nodes unless one is itself the demonstrated root "
+            "cause. Preserve the parent model family, feature families, split, ensemble, loss, "
+            "optimizer, and submission variant."
         )
     system = (
         "You are the Atomic Actuation Planner. Select exactly one hypothesis from the "
-        "Strategy Memo and convert it into one falsifiable experiment. You do not invent a "
+        "Strategy Memo and convert its smallest independently executable phase into one "
+        "falsifiable experiment. A Strategy hypothesis is a roadmap: you may defer later "
+        "steps from its minimal_change_set when the current phase can be executed and evaluated "
+        "on its own. Record deferred work in optional additional fields, but never bundle it "
+        "into the current allowed_changes. You do not invent a "
         "new strategy and you do not write code. Name exact Python top-level target symbols: "
         "function/class names, __imports__, or __module__ for guarded top-level execution. "
         "Keep the allowed set narrow enough for a host verifier. The Coder will be rejected if "
         "it changes anything outside this set. Preserve the evaluation and submission protocol. "
         "Prefer recommended_hypothesis_id when it fits the hard limits; otherwise select another "
-        "existing hypothesis that can be executed atomically. Never shrink a hypothesis into a "
-        "different experiment merely to satisfy limits. Use the exact field names in "
+        "existing hypothesis that can be executed atomically. Staging must preserve the selected "
+        "hypothesis's mechanism and citations; it must not turn it into a different experiment. "
+        "Use the exact field names in "
         "RESPONSE_SCHEMA; fields such as experiment, modules, changes, or memory_ids are invalid. "
         f"Output one JSON object only.{stage_contract}\n\nRESPONSE_SCHEMA:\n"
         + _canonical_json(ATOMIC_ACTUATION_PLAN_SCHEMA)
@@ -347,7 +356,24 @@ def _planner_prompt(
             "previous_response": dict(previous_plan or {}),
             "instruction": (
                 "Return a corrected complete Atomic Actuation Contract for the same selected "
-                "Strategy hypothesis. Do not change or compress the hypothesis."
+                "Strategy hypothesis. Keep only the smallest independently executable phase "
+                "needed now and defer the remainder instead of changing the mechanism."
+            ),
+        }
+    if coder_replan_feedback:
+        payload["coder_replan_required"] = {
+            "previous_plan": dict(
+                (coder_replan_feedback or {}).get("previous_plan") or {}
+            ),
+            "coder_verdict": dict(
+                (coder_replan_feedback or {}).get("coder_verdict") or {}
+            ),
+            "instruction": (
+                "The Coder could not implement the previous plan inside its verified boundary. "
+                "Keep the same hypothesis_id and source_memory_ids, but decompose the roadmap: "
+                "return a strictly smaller first phase that independently runs and tests one "
+                "mechanism. Remove or defer every change, symbol, and import not required for "
+                "that phase. For Debug, the phase must only repair the observed exception."
             ),
         }
     user = _canonical_json(payload)
@@ -361,6 +387,7 @@ def run_atomic_actuation_planner(
     parent_code: str,
     budget: Mapping[str, Any] | None = None,
     stage: str = "",
+    coder_replan_feedback: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
     limits = {
@@ -440,6 +467,7 @@ def run_atomic_actuation_planner(
                 contract_violations=(validation.get("violations") or [])
                 if contract_attempt
                 else (),
+                coder_replan_feedback=coder_replan_feedback,
             )
             query_fn = getattr(agent, "_atomic_planner_query_fn", None)
             if callable(query_fn):
@@ -870,20 +898,60 @@ def run_atomic_actuation_pipeline(
     budget: Mapping[str, Any] | None = None,
     stage: str = "",
 ) -> dict[str, Any]:
-    planner_trace = run_atomic_actuation_planner(
-        agent,
-        strategy_memo=strategy_memo,
-        parent_code=parent_code,
-        budget=budget,
-        stage=stage,
+    ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
+    replan_attempts = max(
+        0,
+        int(
+            getattr(
+                ext_cfg,
+                "memory_strategy_atomic_coder_replan_attempts",
+                1,
+            )
+            or 0
+        ),
     )
-    coder_trace = run_atomic_coder(
-        agent,
-        planner_trace=planner_trace,
-        parent_code=parent_code,
-        task_description=task_description,
-        execution_output=execution_output,
-    )
+    actuation_attempts: list[dict[str, Any]] = []
+    coder_replan_feedback: dict[str, Any] | None = None
+    planner_trace: dict[str, Any] = {}
+    coder_trace: dict[str, Any] = {}
+    for actuation_attempt in range(replan_attempts + 1):
+        planner_trace = run_atomic_actuation_planner(
+            agent,
+            strategy_memo=strategy_memo,
+            parent_code=parent_code,
+            budget=budget,
+            stage=stage,
+            coder_replan_feedback=coder_replan_feedback,
+        )
+        coder_trace = run_atomic_coder(
+            agent,
+            planner_trace=planner_trace,
+            parent_code=parent_code,
+            task_description=task_description,
+            execution_output=execution_output,
+        )
+        attempt_trace = {
+            "attempt": actuation_attempt + 1,
+            "kind": "initial" if actuation_attempt == 0 else "decomposed_replan",
+            "planner": planner_trace,
+            "coder": coder_trace,
+        }
+        actuation_attempts.append(attempt_trace)
+        if (
+            planner_trace.get("status") == "accepted"
+            and coder_trace.get("status") == "accepted"
+        ):
+            break
+        if planner_trace.get("status") != "accepted":
+            break
+        if actuation_attempt >= replan_attempts:
+            break
+        coder_replan_feedback = {
+            "previous_plan": copy.deepcopy(dict(planner_trace.get("plan") or {})),
+            "coder_verdict": copy.deepcopy(
+                dict(coder_trace.get("plan_diff_verdict") or {})
+            ),
+        }
     return {
         "schema": "mlevolve_atomic_actuation_pipeline_v1",
         "status": (
@@ -896,6 +964,8 @@ def run_atomic_actuation_pipeline(
         "stage": str(stage),
         "planner": planner_trace,
         "coder": coder_trace,
+        "decomposition_used": len(actuation_attempts) > 1,
+        "actuation_attempts": actuation_attempts,
     }
 
 

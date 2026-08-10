@@ -5,13 +5,18 @@ import time
 from pathlib import Path
 from types import SimpleNamespace
 
+from omegaconf import OmegaConf
+
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "mlevolve"))
 
 import agents.strategy_actuation as strategy_actuation
+import agents.atomic_actuation as atomic_actuation
 import agents.memory_strategy_agent as memory_strategy_agent
 from agents.atomic_actuation import validate_atomic_plan
+from agents.memory_strategy_agent import validate_strategy_memo
+from config import Config, _load_cfg
 
 
 def _agent() -> SimpleNamespace:
@@ -201,3 +206,110 @@ def test_debug_atomic_plan_requires_targeted_repair():
     assert "Debug actuation must select a targeted_repair hypothesis" in verdict[
         "violations"
     ]
+
+
+def test_required_active_strategy_rejects_abstention_contract():
+    memo = {
+        "decision": "abstain",
+        "abstention_reason": "only one observed pipeline",
+        "current_system_map": {},
+        "evidence_portfolio": {},
+        "coverage_gaps": [],
+        "candidate_compositions": [],
+        "addressed_opportunities": [],
+        "recommended_hypothesis_id": "",
+        "recommendation_reason": "collect more evidence",
+        "declined_hypotheses": [],
+    }
+    verdict = validate_strategy_memo(
+        memo,
+        available_memory_ids=["history::method"],
+        min_candidate_compositions=1,
+        abstention_allowed=False,
+    )
+    assert verdict["valid"] is False
+    assert "abstention is disabled for required active Strategy actuation" in verdict[
+        "violations"
+    ]
+
+
+def test_atomic_pipeline_replans_smaller_phase_after_coder_rejection(monkeypatch):
+    agent = _agent()
+    agent.cfg.external_skill_memory.memory_strategy_atomic_coder_replan_attempts = 1
+    planner_feedback = []
+
+    def fake_planner(*_args, coder_replan_feedback=None, **_kwargs):
+        planner_feedback.append(coder_replan_feedback)
+        phase = "broad" if coder_replan_feedback is None else "path-only"
+        return {
+            "status": "accepted",
+            "plan": {
+                "hypothesis_id": "h1",
+                "source_memory_ids": ["current::parent"],
+                "objective": phase,
+            },
+        }
+
+    def fake_coder(*_args, planner_trace, **_kwargs):
+        if planner_trace["plan"]["objective"] == "broad":
+            return {
+                "status": "rejected",
+                "plan_diff_verdict": {
+                    "valid": False,
+                    "violations": ["patch count 5 is outside atomic limit 1..4"],
+                },
+            }
+        return {
+            "status": "accepted",
+            "candidate_code": "value = 2\n",
+            "plan_diff_verdict": {"valid": True, "patch_count": 1},
+        }
+
+    monkeypatch.setattr(
+        atomic_actuation,
+        "run_atomic_actuation_planner",
+        fake_planner,
+    )
+    monkeypatch.setattr(atomic_actuation, "run_atomic_coder", fake_coder)
+
+    trace = atomic_actuation.run_atomic_actuation_pipeline(
+        agent,
+        strategy_memo=_strategy_trace()["memo"],
+        parent_code="value = 1\n",
+        task_description="leaf classification",
+        execution_output="FileNotFoundError",
+        stage="debug",
+    )
+
+    assert trace["status"] == "accepted"
+    assert trace["decomposition_used"] is True
+    assert len(trace["actuation_attempts"]) == 2
+    assert planner_feedback[0] is None
+    assert planner_feedback[1]["previous_plan"]["objective"] == "broad"
+    assert planner_feedback[1]["coder_verdict"]["valid"] is False
+    assert trace["planner"]["plan"]["objective"] == "path-only"
+
+
+def test_v74_config_enables_required_staged_actuation_with_modest_limits():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v74"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v74-config-test"
+    cfg = OmegaConf.merge(
+        OmegaConf.structured(Config),
+        raw,
+    )
+    ext = cfg.external_skill_memory
+    assert ext.memory_strategy_active_enabled is True
+    assert ext.memory_strategy_active_allow_abstention is False
+    assert ext.memory_strategy_debug_min_candidate_compositions == 1
+    assert ext.memory_strategy_atomic_max_patches == 8
+    assert ext.memory_strategy_atomic_debug_max_modules == 1
+    assert ext.memory_strategy_atomic_debug_max_changes == 2
+    assert ext.experiment_r_debug_max_patches == 4
+    assert ext.memory_strategy_atomic_coder_replan_attempts == 2

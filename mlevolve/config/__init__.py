@@ -489,6 +489,7 @@ class ExternalSkillMemoryConfig:
         default_factory=lambda: ["improve", "debug"]
     )
     memory_strategy_active_required: bool = True
+    memory_strategy_active_allow_abstention: bool = False
     # Strategy v2 uses one shared attention budget across current branches,
     # causal failure evidence, and history.  The wider candidate pool is
     # ranked and lineage-deduplicated before any card reaches the model.
@@ -507,6 +508,7 @@ class ExternalSkillMemoryConfig:
     memory_strategy_max_retries: int = 2
     memory_strategy_contract_retries: int = 4
     memory_strategy_min_candidate_compositions: int = 3
+    memory_strategy_debug_min_candidate_compositions: int = 1
     memory_strategy_temperature: float = 0.0
     memory_strategy_model: str = "deepseek-v4-pro"
     memory_strategy_thinking_enabled: bool = True
@@ -528,6 +530,7 @@ class ExternalSkillMemoryConfig:
     memory_strategy_atomic_debug_targeted_repair_only: bool = True
     memory_strategy_atomic_planner_contract_retries: int = 2
     memory_strategy_atomic_coder_contract_retries: int = 1
+    memory_strategy_atomic_coder_replan_attempts: int = 1
     # Dynamic Hybrid may delegate L3 failure/root-cause matching to the
     # Retrieval Agent.  The Host keeps only objective task/evidence gates and
     # literal traceback-anchor extraction; no maintained synonym table is

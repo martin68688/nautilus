@@ -443,7 +443,8 @@ def test_strategy_evidence_uses_role_frontiers_failure_and_diverse_history():
     assert selection["historical_rejections"] == {
         "task_mismatch": 1,
         "rank_ineligible": 1,
-        "missing_metric": 1,
+        "missing_metric": 0,
+        "missing_metric_retained_as_method_evidence": 1,
         "current_node_duplicate": 1,
         "duplicate_lineage": 1,
     }
@@ -534,6 +535,44 @@ def test_unverified_historical_score_is_labelled_as_method_evidence():
     assert card["submission_aligned_receipt_present"] is False
     assert card["metric_claim_status"] == "unverified_method_evidence_only"
     assert card["metric_comparable_to_current"] is False
+
+
+def test_metric_free_router_memory_remains_visible_as_method_evidence():
+    agent = _agent()
+    parent = _parent()
+    agent.branch_successful_nodes = {1: [parent]}
+    pack = {
+        "final_prompt_candidates": [
+            {
+                "candidate_id": "history::router-selected-no-metric",
+                "source_task_id": "spooky-author-identification",
+                "rank_eligible": True,
+                "text": "frozen DeBERTa embeddings with XGBoost and five-fold OOF",
+            }
+        ]
+    }
+
+    cards, selection = build_strategy_evidence_view(
+        agent,
+        parent,
+        stage="improve",
+        router_pack=pack,
+        max_items=8,
+        current_frontier_slots=1,
+        causal_failure_slots=0,
+    )
+
+    card = next(
+        item
+        for item in cards
+        if item["memory_id"] == "history::router-selected-no-metric"
+    )
+    assert card["metric"] is None
+    assert card["metric_claim_status"] == "same_task_method_evidence_only"
+    assert card["metric_comparable_to_current"] is False
+    assert selection["historical_rejections"][
+        "missing_metric_retained_as_method_evidence"
+    ] == 1
 
 
 def test_component_portfolio_prefers_executed_summary_over_discussed_plan():

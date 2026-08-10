@@ -380,6 +380,7 @@ external_skill_memory:
   memory_strategy_active_enabled: false
   memory_strategy_active_stages: ["improve", "debug"]
   memory_strategy_active_required: true
+  memory_strategy_active_allow_abstention: false
   # One shared Strategy attention budget: three current role frontiers, one
   # causal failure, then same-task diverse historical evidence.
   memory_strategy_evidence_limit: 8
@@ -394,6 +395,7 @@ external_skill_memory:
   memory_strategy_max_retries: 2
   memory_strategy_contract_retries: 4
   memory_strategy_min_candidate_compositions: 3
+  memory_strategy_debug_min_candidate_compositions: 1
   memory_strategy_temperature: 0.0
   memory_strategy_model: "deepseek-v4-pro"
   memory_strategy_thinking_enabled: true
@@ -410,6 +412,7 @@ external_skill_memory:
   memory_strategy_atomic_debug_targeted_repair_only: true
   memory_strategy_atomic_planner_contract_retries: 2
   memory_strategy_atomic_coder_contract_retries: 1
+  memory_strategy_atomic_coder_replan_attempts: 1
 
 # ============================================================
 #  Persisted run identity (baseline vs memory-system experiments)
