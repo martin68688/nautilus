@@ -1,0 +1,31 @@
+# v73: required production Strategy -> Atomic Planner -> Coder actuation for
+# both Improve and Debug, evaluated as an exploratory Leaf dev-pod smoke.
+extends: ../systems_v61/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v73/experiments/end2end_memory_systems_20260804/manifests_v73/leaf_official_replay_targets.json
+
+external_skill_memory:
+  memory_strategy_shadow_enabled: false
+  memory_strategy_active_enabled: true
+  memory_strategy_active_stages:
+    - improve
+    - debug
+  memory_strategy_active_required: true
+  memory_strategy_debug_trigger: always
+  memory_strategy_model: deepseek-v4-pro
+  memory_strategy_thinking_enabled: true
+  memory_strategy_contract_retries: 4
+  memory_strategy_min_candidate_compositions: 3
+  memory_strategy_atomic_max_modules: 2
+  memory_strategy_atomic_max_changes: 3
+  memory_strategy_atomic_max_patches: 6
+  memory_strategy_atomic_debug_max_modules: 1
+  memory_strategy_atomic_debug_max_changes: 2
+  memory_strategy_atomic_debug_targeted_repair_only: true
+  memory_strategy_atomic_planner_contract_retries: 2
+  memory_strategy_atomic_coder_contract_retries: 1
+
+run_identity:
+  memory_version: leaf_official_recipe_runforest_v6_strategy_active_v73

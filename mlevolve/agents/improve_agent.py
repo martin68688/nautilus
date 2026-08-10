@@ -28,6 +28,12 @@ from agents.coder import plan_and_code_query
 from agents.coder.diff_coder import diff_generate_and_apply
 from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
 from agents.memory_strategy_agent import payload_sha256, run_memory_strategy_shadow
+from agents.strategy_actuation import (
+    MemoryStrategyActuationRejected,
+    active_strategy_enabled,
+    active_strategy_required,
+    run_active_strategy_actuation,
+)
 
 logger = logging.getLogger("MLEvolve")
 
@@ -37,6 +43,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     atomic_memory_actuation = bool(
         getattr(memory_layer, "experiment_r_atomic_actuation_enabled", False)
     )
+    strategy_active = active_strategy_enabled(agent, "improve")
     improvement_standards = (
         "🎯 As a Grandmaster, make MEANINGFUL improvements that boost leaderboard performance.\n\n"
         "**Acceptable**: Advanced architectures, ensemble techniques, feature engineering, hyperparameter optimization, improved pipelines.\n"
@@ -292,9 +299,9 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text
 
-    # The Strategy Agent receives the wider Router pack, but its first rollout
-    # is a strict side channel.  Hash and restore the production prompt object
-    # around the call so accidental mutation cannot reach Planner/Coder.
+    # Strategy receives the wider Router pack. Shadow mode remains a strict
+    # side channel; active mode actuates only through the separate bounded
+    # Atomic Planner/Coder transaction.
     strategy_prompt_snapshot = copy.deepcopy(prompt)
     strategy_prompt_sha256 = payload_sha256(strategy_prompt_snapshot)
     router_pack = (
@@ -303,14 +310,27 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         and callable(getattr(memory_layer, "current_navigation_pack", None))
         else {}
     )
-    memory_strategy_trace = run_memory_strategy_shadow(
-        agent,
-        parent_node,
-        stage="improve",
-        router_pack=router_pack,
-        branch_best_metric=branch_best_score,
-        production_prompt_sha256=strategy_prompt_sha256,
-    )
+    parent_node.add_expected_child_count()
+    active_actuation_trace: dict[str, Any] = {}
+    if strategy_active:
+        active_actuation_trace = run_active_strategy_actuation(
+            agent,
+            parent_node,
+            stage="improve",
+            router_pack=router_pack,
+            branch_best_metric=branch_best_score,
+            production_prompt_sha256=strategy_prompt_sha256,
+        )
+        memory_strategy_trace = dict(active_actuation_trace.get("strategy") or {})
+    else:
+        memory_strategy_trace = run_memory_strategy_shadow(
+            agent,
+            parent_node,
+            stage="improve",
+            router_pack=router_pack,
+            branch_best_metric=branch_best_score,
+            production_prompt_sha256=strategy_prompt_sha256,
+        )
     strategy_prompt_sha256_after = payload_sha256(prompt)
     if strategy_prompt_sha256_after != strategy_prompt_sha256:
         logger.error(
@@ -345,9 +365,32 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     assistant_prefix = f"Let me approach this systematically.\nFirst, I'll review the dataset:\n{agent.data_preview}\nThe current solution uses the following code:\n{prompt['Previous solution']['Code']}\nIts output was:\n{output}\nBuilding on this, I'll develop an improved approach."
     prompt_complete = build_chat_prompt_for_model(agent.acfg.code.model, introduction, user_prompt, assistant_prefix)
 
-    parent_node.add_expected_child_count()
-
-    if agent.acfg.use_diff_mode:
+    if strategy_active and active_actuation_trace.get("status") == "accepted":
+        plan = str(active_actuation_trace.get("plan_text") or "")
+        code = str(active_actuation_trace.get("candidate_code") or "")
+        prompt_complete = dict(active_actuation_trace.get("prompt_record") or {})
+        logger.info(
+            "Required Memory Strategy actuation accepted for Improve node %s",
+            parent_node.id,
+        )
+    elif strategy_active and active_strategy_required(agent):
+        parent_node.memory_strategy_trace = memory_strategy_trace
+        parent_node.atomic_actuation_trace = dict(
+            active_actuation_trace.get("atomic") or {}
+        )
+        if not isinstance(parent_node.protocol_observation, dict):
+            parent_node.protocol_observation = {}
+        parent_node.protocol_observation[
+            "memory_strategy_active_rejection"
+        ] = {
+            "schema": "mlevolve_memory_strategy_active_rejection_v1",
+            "stage": "improve",
+            "reason": str(active_actuation_trace.get("reason") or "rejected"),
+        }
+        parent_node.is_terminal = True
+        parent_node.continue_improve = False
+        raise MemoryStrategyActuationRejected(active_actuation_trace)
+    elif agent.acfg.use_diff_mode:
         try:
             logger.info(f"Using diff improve for node {parent_node.id}")
             plan, code = _diff_improve(agent, prompt, agent.data_preview, parent_node)
@@ -362,10 +405,26 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     new_node = SearchNode(plan=plan, code=code, parent=parent_node, stage="improve",
                         local_best_node=parent_node.local_best_node, from_topk=from_topk)
     new_node.memory_strategy_trace = memory_strategy_trace
+    if active_actuation_trace:
+        new_node.atomic_actuation_trace = dict(
+            active_actuation_trace.get("atomic") or {}
+        )
+        new_node.plan_diff_verdict = dict(
+            active_actuation_trace.get("plan_diff_verdict") or {}
+        )
     register_node(agent, new_node, prompt_complete, parent_node=parent_node)
 
     from agents.adoption import log_adoption
     log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "improve")
+    if active_actuation_trace.get("status") == "accepted":
+        log_adoption(
+            new_node,
+            agent,
+            "memory_strategy",
+            list(active_actuation_trace.get("source_memory_ids") or []),
+            "improve",
+            adoption_mode="strategy_atomic_actuation",
+        )
     if new_node.leakage_repair_context:
         log_adoption(
             new_node,

@@ -22,6 +22,7 @@ from agents import (
     result_parse_agent, agent_protocol_review_agent,
 )
 from agents import protocol_repair
+from agents.atomic_actuation import verify_atomic_code_change
 from agents.triggers import (
     refresh_replay_lineage_after_instrumentation,
     refresh_replay_lineage_after_revision,
@@ -988,6 +989,41 @@ class AgentSearch:
                             original_code=semantic_source,
                             revision_kind="agent_semantic_protocol_repair",
                         )
+
+                    # Active Strategy candidates remain bound to the same
+                    # Atomic Actuation Contract after every LLM review.  A
+                    # reviewer may correct code inside the allowed symbols,
+                    # but it cannot silently widen the experiment.
+                    atomic_trace = dict(
+                        getattr(result_node, "atomic_actuation_trace", None) or {}
+                    )
+                    if atomic_trace.get("status") == "accepted":
+                        atomic_plan = dict(
+                            (atomic_trace.get("planner") or {}).get("plan") or {}
+                        )
+                        initial_verdict = dict(
+                            (atomic_trace.get("coder") or {}).get(
+                                "plan_diff_verdict"
+                            )
+                            or {}
+                        )
+                        post_review_verdict = verify_atomic_code_change(
+                            original_code=parent_node.code,
+                            candidate_code=result_node.code,
+                            atomic_plan=atomic_plan,
+                            patch_count=int(initial_verdict.get("patch_count") or 0),
+                        )
+                        result_node.atomic_actuation_trace[
+                            "post_review_plan_diff_verdict"
+                        ] = post_review_verdict
+                        result_node.plan_diff_verdict = post_review_verdict
+                        if post_review_verdict.get("valid") is not True:
+                            raise ValueError(
+                                "Post-review code escaped the Atomic Actuation Contract: "
+                                + "; ".join(
+                                    post_review_verdict.get("violations") or []
+                                )
+                            )
 
                     pre_instrumentation_code = result_node.code
                     immutable_migration_seed = bool(

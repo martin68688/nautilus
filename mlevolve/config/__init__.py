@@ -473,16 +473,22 @@ class ExternalSkillMemoryConfig:
     experiment_r_improve_max_modules: int = 2
     experiment_r_improve_max_patches: int = 6
     experiment_r_debug_max_patches: int = 3
-    # Read-only task-level synthesis over the Router's wider candidate view.
-    # Shadow mode is deliberately separate from Retrieval Agent selection and
-    # from the production Planner/Coder prompt.  Enabling it may add latency
-    # and Journal evidence, but must not change the generated candidate.
+    # Task-level synthesis over the Router's wider candidate view.  Shadow mode
+    # is observational.  Active mode replaces the legacy Improve/Debug code
+    # generation core with Strategy -> Atomic Planner -> bounded Coder and is
+    # fail-closed: an invalid Strategy/Plan/Diff never falls back to an
+    # unconstrained full rewrite.
     memory_strategy_shadow_enabled: bool = False
     memory_strategy_shadow_stages: list[str] = field(
         default_factory=lambda: ["improve"]
     )
     memory_strategy_debug_trigger: str = "causal_gap_or_repeated_failure"
     memory_strategy_debug_failure_threshold: int = 2
+    memory_strategy_active_enabled: bool = False
+    memory_strategy_active_stages: list[str] = field(
+        default_factory=lambda: ["improve", "debug"]
+    )
+    memory_strategy_active_required: bool = True
     # Strategy v2 uses one shared attention budget across current branches,
     # causal failure evidence, and history.  The wider candidate pool is
     # ranked and lineage-deduplicated before any card reaches the model.
@@ -512,11 +518,14 @@ class ExternalSkillMemoryConfig:
     memory_strategy_json_normalization_max_tokens: int = 12000
     memory_strategy_json_normalization_max_retries: int = 2
     memory_strategy_history_limit: int = 16
-    # Isolated actuation-chain defaults.  Shadow mode never consults these to
-    # mutate the live Improve/Debug candidate.
+    # Atomic actuation-chain defaults.  Stage-specific caps are intersected
+    # with the global limits below.
     memory_strategy_atomic_max_modules: int = 2
     memory_strategy_atomic_max_changes: int = 3
     memory_strategy_atomic_max_patches: int = 6
+    memory_strategy_atomic_debug_max_modules: int = 1
+    memory_strategy_atomic_debug_max_changes: int = 2
+    memory_strategy_atomic_debug_targeted_repair_only: bool = True
     memory_strategy_atomic_planner_contract_retries: int = 2
     memory_strategy_atomic_coder_contract_retries: int = 1
     # Dynamic Hybrid may delegate L3 failure/root-cause matching to the

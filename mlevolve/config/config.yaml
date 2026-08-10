@@ -370,14 +370,16 @@ external_skill_memory:
   include_debug: True
   include_fusion: True
   visibility_token_budget: 4096
-  # Task-level synthesis is opt-in and read-only.  When enabled, the Strategy
-  # Agent records a memo beside the generated node but cannot alter the legacy
-  # Planner/Coder prompt.  Actuation is exercised only by the isolated smoke
-  # harness until shadow replay evidence justifies promotion.
+  # Task-level synthesis is opt-in. Shadow mode records evidence only. Active
+  # mode fail-closed replaces the legacy Improve/Debug generator with Strategy
+  # -> Atomic Planner -> bounded Coder for the configured stages.
   memory_strategy_shadow_enabled: false
   memory_strategy_shadow_stages: ["improve"]
   memory_strategy_debug_trigger: "causal_gap_or_repeated_failure"
   memory_strategy_debug_failure_threshold: 2
+  memory_strategy_active_enabled: false
+  memory_strategy_active_stages: ["improve", "debug"]
+  memory_strategy_active_required: true
   # One shared Strategy attention budget: three current role frontiers, one
   # causal failure, then same-task diverse historical evidence.
   memory_strategy_evidence_limit: 8
@@ -403,6 +405,9 @@ external_skill_memory:
   memory_strategy_atomic_max_modules: 2
   memory_strategy_atomic_max_changes: 3
   memory_strategy_atomic_max_patches: 6
+  memory_strategy_atomic_debug_max_modules: 1
+  memory_strategy_atomic_debug_max_changes: 2
+  memory_strategy_atomic_debug_targeted_repair_only: true
   memory_strategy_atomic_planner_contract_retries: 2
   memory_strategy_atomic_coder_contract_retries: 1
 

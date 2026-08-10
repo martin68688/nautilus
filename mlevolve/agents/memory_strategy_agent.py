@@ -1656,7 +1656,10 @@ def should_run_memory_strategy_shadow(
     stage: str,
     parent_node: Any,
     router_pack: Mapping[str, Any] | None,
+    force_run: bool = False,
 ) -> tuple[bool, str]:
+    if force_run:
+        return True, "active_required"
     ext_cfg = getattr(getattr(agent, "cfg", None), "external_skill_memory", None)
     if not bool(getattr(ext_cfg, "memory_strategy_shadow_enabled", False)):
         return False, "disabled"
@@ -1701,23 +1704,33 @@ def run_memory_strategy_shadow(
     router_pack: Mapping[str, Any] | None,
     branch_best_metric: float | None = None,
     production_prompt_sha256: str = "",
+    _mode: str = "shadow_read_only",
+    _actuation_authority: str = "none",
+    _force_run: bool = False,
 ) -> dict[str, Any]:
-    """Run the Strategy Agent and return a Journal-ready read-only trace."""
+    """Run the Strategy Agent and return a Journal-ready trace.
+
+    The public defaults preserve the original read-only shadow contract.  The
+    active wrapper below uses the same evidence/contract machinery but marks
+    the trace as production-authorized; code generation remains a separate,
+    machine-bounded Atomic Planner/Coder transaction.
+    """
 
     enabled, trigger_reason = should_run_memory_strategy_shadow(
         agent,
         stage=stage,
         parent_node=parent_node,
         router_pack=router_pack,
+        force_run=_force_run,
     )
     base_trace = {
         "schema": "mlevolve_memory_strategy_shadow_trace_v2",
-        "mode": "shadow_read_only",
+        "mode": str(_mode),
         "stage": str(stage),
         "parent_node_id": str(getattr(parent_node, "id", "")),
         "enabled": enabled,
         "trigger_reason": trigger_reason,
-        "actuation_authority": "none",
+        "actuation_authority": str(_actuation_authority),
         "production_prompt_modified": False,
         "production_prompt_sha256_before": str(production_prompt_sha256 or ""),
     }
@@ -1940,6 +1953,30 @@ def run_memory_strategy_shadow(
         }
 
 
+def run_memory_strategy_active(
+    agent: Any,
+    parent_node: Any,
+    *,
+    stage: str,
+    router_pack: Mapping[str, Any] | None,
+    branch_best_metric: float | None = None,
+    production_prompt_sha256: str = "",
+) -> dict[str, Any]:
+    """Run the required production Strategy analysis for atomic actuation."""
+
+    return run_memory_strategy_shadow(
+        agent,
+        parent_node,
+        stage=stage,
+        router_pack=router_pack,
+        branch_best_metric=branch_best_metric,
+        production_prompt_sha256=production_prompt_sha256,
+        _mode="active_atomic",
+        _actuation_authority="atomic_planner_coder",
+        _force_run=True,
+    )
+
+
 __all__ = [
     "STRATEGY_MEMO_SCHEMA",
     "build_component_portfolio",
@@ -1948,6 +1985,7 @@ __all__ = [
     "build_strategy_evidence_view",
     "code_component_fingerprint",
     "payload_sha256",
+    "run_memory_strategy_active",
     "run_memory_strategy_shadow",
     "should_run_memory_strategy_shadow",
     "validate_strategy_memo",

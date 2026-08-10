@@ -25,6 +25,12 @@ from agents.leakage_audit import (
 )
 from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
 from agents.memory_strategy_agent import payload_sha256, run_memory_strategy_shadow
+from agents.strategy_actuation import (
+    MemoryStrategyActuationRejected,
+    active_strategy_enabled,
+    active_strategy_required,
+    run_active_strategy_actuation,
+)
 
 logger = logging.getLogger("MLEvolve")
 
@@ -248,6 +254,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     debug_patch_cap = int(
         getattr(memory_layer, "experiment_r_debug_max_patches", 3)
     )
+    strategy_active = active_strategy_enabled(agent, "debug")
     debugging_standards = (
         "🔧 Debug SYSTEMATICALLY: Read error → Identify root cause → Apply minimal, targeted fix.\n\n"
         "**Do**: Fix root cause, preserve solution intent, maintain code quality.\n"
@@ -428,14 +435,27 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     _success_patience, _total_patience, branch_best_score = get_patience_counter(
         agent, parent_node
     )
-    memory_strategy_trace = run_memory_strategy_shadow(
-        agent,
-        parent_node,
-        stage="debug",
-        router_pack=router_pack,
-        branch_best_metric=branch_best_score,
-        production_prompt_sha256=strategy_prompt_sha256,
-    )
+    parent_node.add_expected_child_count()
+    active_actuation_trace: dict[str, Any] = {}
+    if strategy_active:
+        active_actuation_trace = run_active_strategy_actuation(
+            agent,
+            parent_node,
+            stage="debug",
+            router_pack=router_pack,
+            branch_best_metric=branch_best_score,
+            production_prompt_sha256=strategy_prompt_sha256,
+        )
+        memory_strategy_trace = dict(active_actuation_trace.get("strategy") or {})
+    else:
+        memory_strategy_trace = run_memory_strategy_shadow(
+            agent,
+            parent_node,
+            stage="debug",
+            router_pack=router_pack,
+            branch_best_metric=branch_best_score,
+            production_prompt_sha256=strategy_prompt_sha256,
+        )
     strategy_prompt_sha256_after = payload_sha256(prompt)
     if strategy_prompt_sha256_after != strategy_prompt_sha256:
         logger.error(
@@ -467,13 +487,36 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         assistant_prefix = f"Let me approach this systematically.\nFirst, I'll review the dataset:\n{agent.data_preview}\nThe code that needs fixing:\n{prompt['Previous (buggy) implementation']}\nThe error/issue encountered:\n{prompt['Execution output']}\nAnalyzing the root cause: {parent_node.analysis}\nI'll now fix this issue."
         return build_chat_prompt_for_model(agent.acfg.code.model, current_introduction, user_prompt, assistant_prefix)
 
-    parent_node.add_expected_child_count()
-
     plan, code = None, None
     prompt_complete = None
     max_diff_retries = 3
 
-    if agent.acfg.use_diff_mode:
+    if strategy_active and active_actuation_trace.get("status") == "accepted":
+        plan = str(active_actuation_trace.get("plan_text") or "")
+        code = str(active_actuation_trace.get("candidate_code") or "")
+        prompt_complete = dict(active_actuation_trace.get("prompt_record") or {})
+        logger.info(
+            "Required Memory Strategy actuation accepted for Debug node %s",
+            parent_node.id,
+        )
+    elif strategy_active and active_strategy_required(agent):
+        parent_node.memory_strategy_trace = memory_strategy_trace
+        parent_node.atomic_actuation_trace = dict(
+            active_actuation_trace.get("atomic") or {}
+        )
+        if not isinstance(parent_node.protocol_observation, dict):
+            parent_node.protocol_observation = {}
+        parent_node.protocol_observation[
+            "memory_strategy_active_rejection"
+        ] = {
+            "schema": "mlevolve_memory_strategy_active_rejection_v1",
+            "stage": "debug",
+            "reason": str(active_actuation_trace.get("reason") or "rejected"),
+        }
+        parent_node.is_terminal = True
+        parent_node.continue_improve = False
+        raise MemoryStrategyActuationRejected(active_actuation_trace)
+    elif agent.acfg.use_diff_mode:
         diff_instructions = base_instructions + f"\n\n🔴 **IMPORTANT**: There is a bug that MUST be fixed. "
         diff_instructions += f"You MUST provide code modifications using SEARCH/REPLACE format. "
         diff_instructions += (
@@ -646,7 +689,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             if plan is None:
                 plan = "Partial diff patches applied; continuing with partially fixed code."
 
-    if code is None:
+    if code is None and not strategy_active:
         logger.info(f"Falling back to full code rewrite debugging method for node {parent_node.id}")
         prompt_complete = build_prompt_complete(base_instructions, use_full_code_requirement=True)
         plan, code = plan_and_code_query(agent, prompt_complete)
@@ -673,6 +716,13 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     new_node = SearchNode(plan=plan, code=code, parent=parent_node, stage="debug",
                         local_best_node=parent_node.local_best_node, from_topk=from_topk)
     new_node.memory_strategy_trace = memory_strategy_trace
+    if active_actuation_trace:
+        new_node.atomic_actuation_trace = dict(
+            active_actuation_trace.get("atomic") or {}
+        )
+        new_node.plan_diff_verdict = dict(
+            active_actuation_trace.get("plan_diff_verdict") or {}
+        )
     register_node(agent, new_node, prompt_complete, parent_node=parent_node)
 
     from agents.adoption import log_adoption
@@ -682,6 +732,15 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         _mem_ids = []
     log_adoption(new_node, agent, "global_memory", _mem_ids, "debug")
     log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "debug")
+    if active_actuation_trace.get("status") == "accepted":
+        log_adoption(
+            new_node,
+            agent,
+            "memory_strategy",
+            list(active_actuation_trace.get("source_memory_ids") or []),
+            "debug",
+            adoption_mode="strategy_atomic_actuation",
+        )
     if new_node.leakage_repair_context:
         log_adoption(
             new_node,

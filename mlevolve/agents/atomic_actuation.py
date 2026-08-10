@@ -171,6 +171,8 @@ def validate_atomic_plan(
     max_changes: int,
     max_patches: int,
     parent_code: str | None = None,
+    stage: str = "",
+    debug_targeted_repair_only: bool = False,
 ) -> dict[str, Any]:
     violations: list[str] = []
     missing_keys = [key for key in _ATOMIC_REQUIRED_KEYS if key not in plan]
@@ -182,10 +184,20 @@ def validate_atomic_plan(
         violations.append("hypothesis_id is not present in the Strategy Memo")
         source_ids: set[str] = set()
     else:
+        selected_composition = compositions[hypothesis_id]
         source_ids = {
             str(value)
-            for value in (compositions[hypothesis_id].get("source_memory_ids") or [])
+            for value in (selected_composition.get("source_memory_ids") or [])
         }
+        if (
+            str(stage) == "debug"
+            and debug_targeted_repair_only
+            and str(selected_composition.get("novelty_kind") or "")
+            != "targeted_repair"
+        ):
+            violations.append(
+                "Debug actuation must select a targeted_repair hypothesis"
+            )
     cited = {str(value) for value in (plan.get("source_memory_ids") or [])}
     if not cited:
         violations.append("source_memory_ids must not be empty")
@@ -296,9 +308,17 @@ def _planner_prompt(
     parent_code: str,
     budget: Mapping[str, Any] | None,
     limits: Mapping[str, int],
+    stage: str = "",
     previous_plan: Mapping[str, Any] | None = None,
     contract_violations: Iterable[str] = (),
 ) -> dict[str, str]:
+    stage_contract = ""
+    if str(stage) == "debug":
+        stage_contract = (
+            " This is a Debug transaction: select only a targeted_repair that fixes the "
+            "narrowest demonstrated root cause. Preserve the parent model family, feature "
+            "families, split, ensemble, loss, optimizer, and submission variant."
+        )
     system = (
         "You are the Atomic Actuation Planner. Select exactly one hypothesis from the "
         "Strategy Memo and convert it into one falsifiable experiment. You do not invent a "
@@ -310,13 +330,14 @@ def _planner_prompt(
         "existing hypothesis that can be executed atomically. Never shrink a hypothesis into a "
         "different experiment merely to satisfy limits. Use the exact field names in "
         "RESPONSE_SCHEMA; fields such as experiment, modules, changes, or memory_ids are invalid. "
-        "Output one JSON object only.\n\nRESPONSE_SCHEMA:\n"
+        f"Output one JSON object only.{stage_contract}\n\nRESPONSE_SCHEMA:\n"
         + _canonical_json(ATOMIC_ACTUATION_PLAN_SCHEMA)
     )
     payload: dict[str, Any] = {
         "strategy_memo": strategy_memo,
         "budget": dict(budget or {}),
         "hard_limits": dict(limits),
+        "stage": str(stage),
         "parent_code": parent_code,
     }
     violations = [str(value) for value in contract_violations]
@@ -339,6 +360,7 @@ def run_atomic_actuation_planner(
     strategy_memo: Mapping[str, Any],
     parent_code: str,
     budget: Mapping[str, Any] | None = None,
+    stage: str = "",
 ) -> dict[str, Any]:
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
     limits = {
@@ -352,6 +374,34 @@ def run_atomic_actuation_planner(
             getattr(ext_cfg, "memory_strategy_atomic_max_patches", 6) or 6
         ),
     }
+    if str(stage) == "improve":
+        limits["max_modules"] = min(
+            limits["max_modules"],
+            int(getattr(ext_cfg, "experiment_r_improve_max_modules", 2) or 2),
+        )
+        limits["max_patches"] = min(
+            limits["max_patches"],
+            int(getattr(ext_cfg, "experiment_r_improve_max_patches", 6) or 6),
+        )
+    elif str(stage) == "debug":
+        limits["max_modules"] = min(
+            limits["max_modules"],
+            int(
+                getattr(ext_cfg, "memory_strategy_atomic_debug_max_modules", 1)
+                or 1
+            ),
+        )
+        limits["max_changes"] = min(
+            limits["max_changes"],
+            int(
+                getattr(ext_cfg, "memory_strategy_atomic_debug_max_changes", 2)
+                or 2
+            ),
+        )
+        limits["max_patches"] = min(
+            limits["max_patches"],
+            int(getattr(ext_cfg, "experiment_r_debug_max_patches", 3) or 3),
+        )
     started = time.monotonic()
     if not _composition_by_id(strategy_memo):
         return {
@@ -385,6 +435,7 @@ def run_atomic_actuation_planner(
                 parent_code=parent_code,
                 budget=budget,
                 limits=limits,
+                stage=stage,
                 previous_plan=plan if contract_attempt else None,
                 contract_violations=(validation.get("violations") or [])
                 if contract_attempt
@@ -416,6 +467,14 @@ def run_atomic_actuation_planner(
                     max_changes=limits["max_changes"],
                     max_patches=limits["max_patches"],
                     parent_code=parent_code,
+                    stage=stage,
+                    debug_targeted_repair_only=bool(
+                        getattr(
+                            ext_cfg,
+                            "memory_strategy_atomic_debug_targeted_repair_only",
+                            True,
+                        )
+                    ),
                 )
             except Exception as exc:
                 plan = {}
@@ -809,12 +868,14 @@ def run_atomic_actuation_pipeline(
     task_description: str,
     execution_output: str = "",
     budget: Mapping[str, Any] | None = None,
+    stage: str = "",
 ) -> dict[str, Any]:
     planner_trace = run_atomic_actuation_planner(
         agent,
         strategy_memo=strategy_memo,
         parent_code=parent_code,
         budget=budget,
+        stage=stage,
     )
     coder_trace = run_atomic_coder(
         agent,
@@ -832,6 +893,7 @@ def run_atomic_actuation_pipeline(
             else "rejected"
         ),
         "strategy_memo_sha256": payload_sha256(strategy_memo),
+        "stage": str(stage),
         "planner": planner_trace,
         "coder": coder_trace,
     }
