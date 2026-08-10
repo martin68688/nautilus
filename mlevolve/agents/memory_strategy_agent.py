@@ -95,6 +95,28 @@ STRATEGY_MEMO_SCHEMA: dict[str, Any] = {
                 "additionalProperties": True,
             },
         },
+        "addressed_opportunities": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "opportunity_id": {"type": "string"},
+                    "disposition": {
+                        "type": "string",
+                        "enum": ["proposed", "declined"],
+                    },
+                    "hypothesis_id": {"type": "string"},
+                    "reason": {"type": "string"},
+                },
+                "required": [
+                    "opportunity_id",
+                    "disposition",
+                    "hypothesis_id",
+                    "reason",
+                ],
+                "additionalProperties": True,
+            },
+        },
         "recommended_hypothesis_id": {"type": "string"},
         "recommendation_reason": {"type": "string"},
         "declined_hypotheses": {
@@ -117,6 +139,7 @@ STRATEGY_MEMO_SCHEMA: dict[str, Any] = {
         "evidence_portfolio",
         "coverage_gaps",
         "candidate_compositions",
+        "addressed_opportunities",
         "recommended_hypothesis_id",
         "recommendation_reason",
         "declined_hypotheses",
@@ -408,6 +431,59 @@ def build_component_portfolio(
                 "components": matched,
             }
         )
+    opportunities: list[dict[str, Any]] = []
+    for axis, components in sorted(axes.items()):
+        if len(components) < 3:
+            continue
+        ordered_components = sorted(components)
+        support_sets = [set(components[name]) for name in ordered_components]
+        # If one historical card already contains every alternative, this is
+        # not a missing within-axis composition.
+        jointly_observed = set.intersection(*support_sets) if support_sets else set()
+        if jointly_observed:
+            continue
+        interface_sets: list[set[str]] = []
+        alternative_evidence = []
+        for component, supporting_ids in zip(ordered_components, support_sets):
+            interfaces: set[str] = set()
+            for row in card_components:
+                if row["memory_id"] not in supporting_ids:
+                    continue
+                for other_axis, values in row["components"].items():
+                    if other_axis == axis:
+                        continue
+                    interfaces.update(f"{other_axis}:{value}" for value in values)
+            interface_sets.append(interfaces)
+            alternative_evidence.append(
+                {
+                    "component": component,
+                    "memory_ids": sorted(supporting_ids),
+                    "observed_interfaces": sorted(interfaces),
+                }
+            )
+        common_interfaces = (
+            sorted(set.intersection(*interface_sets)) if interface_sets else []
+        )
+        if not common_interfaces:
+            continue
+        opportunity_id = "within_axis::" + axis + "::" + "+".join(
+            ordered_components
+        )
+        opportunities.append(
+            {
+                "opportunity_id": opportunity_id,
+                "axis": axis,
+                "alternatives": ordered_components,
+                "alternative_evidence": alternative_evidence,
+                "common_interfaces": common_interfaces,
+                "already_jointly_observed": False,
+                "analysis_question": (
+                    "Would one budget-compatible experiment combining these alternatives "
+                    "at a shared interface reduce representation/model blind spots? Assess "
+                    "component compatibility separately from each source pipeline's score."
+                ),
+            }
+        )
     return {
         "schema": "mlevolve_memory_component_portfolio_v1",
         "interpretation_rule": (
@@ -417,6 +493,7 @@ def build_component_portfolio(
         ),
         "component_axes": axes,
         "card_components": card_components,
+        "within_axis_diversity_opportunities": opportunities,
     }
 
 
@@ -662,7 +739,12 @@ def _strategy_prompt(
         "tested. If an axis contains three or more independently observed alternatives and they "
         "share a budget-compatible interface (for example frozen features or prediction vectors), "
         "include at least one diversity/set-cover hypothesis that combines alternatives within "
-        "that axis. Do not make every candidate a descendant of the current best lineage: when "
+        "that axis. The deterministic component_portfolio may list these as "
+        "within_axis_diversity_opportunities. Address every listed opportunity exactly once in "
+        "addressed_opportunities. Use disposition='proposed' with the corresponding hypothesis_id, "
+        "or disposition='declined' with a concrete compatibility/budget reason. A weak source "
+        "pipeline score alone is not a valid decline reason because it does not isolate the shared "
+        "component. Do not make every candidate a descendant of the current best lineage: when "
         "the portfolio permits it, at least two candidates must use a different base lineage. "
         "You may combine ideas only when interfaces and compute budgets are compatible. "
         "If evidence is genuinely insufficient, decision may be 'abstain', candidate_compositions "
@@ -725,6 +807,7 @@ def validate_strategy_memo(
     available_memory_ids: Iterable[str],
     min_candidate_compositions: int = 1,
     max_candidate_compositions: int = 5,
+    required_opportunity_ids: Iterable[str] = (),
 ) -> dict[str, Any]:
     violations: list[str] = []
     missing_keys = [key for key in _STRATEGY_REQUIRED_KEYS if key not in memo]
@@ -817,6 +900,43 @@ def validate_strategy_memo(
         violations.append("nonempty compositions require one recommendation")
     if decision == "abstain" and recommended:
         violations.append("abstain requires empty recommended_hypothesis_id")
+    required_opportunities = {str(value) for value in required_opportunity_ids}
+    addressed_rows = list(memo.get("addressed_opportunities") or [])
+    addressed_ids: list[str] = []
+    for index, row in enumerate(addressed_rows):
+        if not isinstance(row, Mapping):
+            violations.append(f"addressed_opportunities[{index}] is not an object")
+            continue
+        opportunity_id = str(row.get("opportunity_id") or "")
+        disposition = str(row.get("disposition") or "")
+        hypothesis_id = str(row.get("hypothesis_id") or "")
+        if not opportunity_id:
+            violations.append(f"addressed_opportunities[{index}] has no opportunity_id")
+        elif opportunity_id in addressed_ids:
+            violations.append(f"duplicate addressed opportunity: {opportunity_id}")
+        addressed_ids.append(opportunity_id)
+        if disposition not in {"proposed", "declined"}:
+            violations.append(
+                f"{opportunity_id or index} disposition must be proposed or declined"
+            )
+        if disposition == "proposed" and hypothesis_id not in hypothesis_ids:
+            violations.append(
+                f"{opportunity_id or index} proposed disposition requires a valid hypothesis_id"
+            )
+        if disposition == "declined" and not str(row.get("reason") or "").strip():
+            violations.append(
+                f"{opportunity_id or index} declined disposition requires a reason"
+            )
+    missing_opportunities = sorted(required_opportunities - set(addressed_ids))
+    if missing_opportunities:
+        violations.append(
+            f"unaddressed within-axis diversity opportunities: {missing_opportunities}"
+        )
+    unknown_opportunities = sorted(set(addressed_ids) - required_opportunities)
+    if unknown_opportunities:
+        violations.append(
+            f"addressed unknown diversity opportunities: {unknown_opportunities}"
+        )
     return {
         "schema": "mlevolve_memory_strategy_validation_v1",
         "valid": not violations,
@@ -825,6 +945,8 @@ def validate_strategy_memo(
         "hypothesis_ids": hypothesis_ids,
         "decision": decision,
         "composition_count": len(compositions),
+        "required_opportunity_ids": sorted(required_opportunities),
+        "addressed_opportunity_ids": addressed_ids,
     }
 
 
@@ -910,6 +1032,15 @@ def run_memory_strategy_shadow(
         branch_best_metric=branch_best_metric,
     )
     cards = list(context.get("memory_cards") or [])
+    required_opportunity_ids = [
+        str(item.get("opportunity_id") or "")
+        for item in (
+            (context.get("component_portfolio") or {}).get(
+                "within_axis_diversity_opportunities", []
+            )
+        )
+        if isinstance(item, Mapping) and item.get("opportunity_id")
+    ]
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
     inherited_model = str(getattr(agent.acfg.code, "model", "") or "")
     strategy_model = str(
@@ -979,6 +1110,7 @@ def run_memory_strategy_shadow(
                     memo,
                     available_memory_ids=[card["memory_id"] for card in cards],
                     min_candidate_compositions=min_compositions,
+                    required_opportunity_ids=required_opportunity_ids,
                 )
             except Exception as exc:
                 memo = {}

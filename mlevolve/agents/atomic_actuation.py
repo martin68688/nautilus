@@ -254,6 +254,32 @@ def validate_atomic_plan(
         violations.append("expected_mechanism must not be empty")
     if not str(plan.get("falsification_condition") or "").strip():
         violations.append("falsification_condition must not be empty")
+    allowed_imports = [str(value) for value in (plan.get("allowed_new_imports") or [])]
+    forbidden_patterns = [
+        str(value) for value in (plan.get("forbidden_code_patterns") or [])
+    ]
+    conflicting_import_rules: list[dict[str, str]] = []
+    for allowed_import in allowed_imports:
+        parts = allowed_import.split(".")
+        module_name = ".".join(parts[:-1])
+        imported_name = parts[-1]
+        for forbidden_pattern in forbidden_patterns:
+            if allowed_import in forbidden_pattern or (
+                module_name
+                and module_name in forbidden_pattern
+                and imported_name in forbidden_pattern
+            ):
+                conflicting_import_rules.append(
+                    {
+                        "allowed_import": allowed_import,
+                        "forbidden_pattern": forbidden_pattern,
+                    }
+                )
+    if conflicting_import_rules:
+        violations.append(
+            f"allowed_new_imports conflict with forbidden_code_patterns: "
+            f"{conflicting_import_rules}"
+        )
     return {
         "schema": "mlevolve_atomic_actuation_plan_validation_v1",
         "valid": not violations,
@@ -454,11 +480,13 @@ def _top_level_units(code: str) -> tuple[dict[str, str], set[str]]:
 
     for node in tree.body:
         if isinstance(node, ast.Import):
-            imports.update(alias.name.split(".")[0] for alias in node.names)
+            imports.update(alias.name for alias in node.names)
             units.setdefault("__imports__", []).append(segment(node))
         elif isinstance(node, ast.ImportFrom):
             if node.module:
-                imports.add(node.module.split(".")[0])
+                imports.update(
+                    f"{node.module}.{alias.name}" for alias in node.names
+                )
             units.setdefault("__imports__", []).append(segment(node))
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             units.setdefault(node.name, []).append(segment(node))
@@ -510,13 +538,20 @@ def verify_atomic_code_change(
     new_imports = sorted(after_imports - before_imports)
     removed_imports = sorted(before_imports - after_imports)
     allowed_new_imports = {
-        str(value).split(".")[0]
-        for value in (atomic_plan.get("allowed_new_imports") or [])
+        str(value) for value in (atomic_plan.get("allowed_new_imports") or [])
     }
+
+    def import_is_allowed(import_name: str) -> bool:
+        return any(
+            import_name == allowed
+            or allowed.startswith(import_name + ".")
+            or import_name.startswith(allowed + ".")
+            for allowed in allowed_new_imports
+        )
 
     symbol_changes_to_check = set(changed_symbols)
     if "__imports__" in symbol_changes_to_check:
-        if new_imports and set(new_imports) <= allowed_new_imports and not removed_imports:
+        if new_imports and all(import_is_allowed(value) for value in new_imports) and not removed_imports:
             symbol_changes_to_check.remove("__imports__")
         elif "__imports__" not in allowed_symbols:
             violations.append(
@@ -531,7 +566,9 @@ def verify_atomic_code_change(
     forbidden_touched = sorted(set(changed_symbols) & forbidden_symbols)
     if forbidden_touched:
         violations.append(f"forbidden symbols changed: {forbidden_touched}")
-    unauthorized_imports = sorted(set(new_imports) - allowed_new_imports)
+    unauthorized_imports = sorted(
+        value for value in new_imports if not import_is_allowed(value)
+    )
     if unauthorized_imports:
         violations.append(f"unauthorized new imports: {unauthorized_imports}")
 

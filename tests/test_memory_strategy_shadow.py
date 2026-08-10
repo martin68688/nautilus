@@ -22,6 +22,7 @@ from agents.memory_strategy_agent import (
     payload_sha256,
     run_memory_strategy_shadow,
     should_run_memory_strategy_shadow,
+    validate_strategy_memo,
 )
 from engine.search_node import Journal, SearchNode
 from utils.metric import MetricValue
@@ -184,6 +185,7 @@ def _strategy_memo():
                 "novelty_kind": "new_composition",
             }
         ],
+        "addressed_opportunities": [],
         "recommended_hypothesis_id": "h-three-model-five-fold",
         "recommendation_reason": "both components have independent task-local support",
         "declined_hypotheses": [],
@@ -220,6 +222,32 @@ def test_component_portfolio_prefers_executed_summary_over_discussed_plan():
     assert "frozen_embedding" in axes["adaptation_mode"]
     assert "fine_tuning" not in axes["adaptation_mode"]
     assert portfolio["card_components"][0]["evidence_basis"] == "text"
+
+
+def test_strategy_contract_requires_auditable_opportunity_disposition():
+    memo = _strategy_memo()
+    missing = validate_strategy_memo(
+        memo,
+        available_memory_ids=["run::three-model", "run::five-fold"],
+        required_opportunity_ids=["within_axis::model::a+b+c"],
+    )
+    assert missing["valid"] is False
+    assert "unaddressed within-axis" in " ".join(missing["violations"])
+
+    memo["addressed_opportunities"] = [
+        {
+            "opportunity_id": "within_axis::model::a+b+c",
+            "disposition": "proposed",
+            "hypothesis_id": "h-three-model-five-fold",
+            "reason": "all models expose aligned probability vectors",
+        }
+    ]
+    accepted = validate_strategy_memo(
+        memo,
+        available_memory_ids=["run::three-model", "run::five-fold"],
+        required_opportunity_ids=["within_axis::model::a+b+c"],
+    )
+    assert accepted["valid"] is True
 
 
 def test_shadow_agent_records_global_composition_without_mutating_router_or_prompt():
@@ -438,6 +466,52 @@ def test_atomic_diff_rejects_coder_scope_expansion():
     assert verdict["valid"] is False
     assert verdict["forbidden_symbols_touched"] == ["untouched"]
     assert any("outside allowed set" in value for value in verdict["violations"])
+
+
+def test_atomic_diff_allows_explicit_nested_import_when_root_is_already_present():
+    parent_code = (
+        "import torch\n\n"
+        "def train_models(x):\n"
+        "    return x\n"
+    )
+    plan = {
+        "allowed_changes": [{"target_symbols": ["train_models"]}],
+        "allowed_new_imports": [
+            "torch.optim.lr_scheduler.CosineAnnealingWarmRestarts"
+        ],
+        "forbidden_symbols": [],
+        "forbidden_code_patterns": [],
+        "max_patches": 2,
+    }
+    response = (
+        "<<<<<<< SEARCH\n"
+        "import torch\n"
+        "=======\n"
+        "import torch\n"
+        "from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts\n"
+        ">>>>>>> REPLACE\n"
+        "<<<<<<< SEARCH\n"
+        "def train_models(x):\n"
+        "    return x\n"
+        "=======\n"
+        "def train_models(x):\n"
+        "    scheduler = CosineAnnealingWarmRestarts(x, T_0=2)\n"
+        "    return scheduler\n"
+        ">>>>>>> REPLACE\n"
+    )
+
+    code, verdict = apply_atomic_diff_response(
+        response=response,
+        original_code=parent_code,
+        atomic_plan=plan,
+    )
+
+    assert code is not None
+    assert verdict["valid"] is True
+    assert verdict["new_imports"] == [
+        "torch.optim.lr_scheduler.CosineAnnealingWarmRestarts"
+    ]
+    assert verdict["changed_symbols"] == ["__imports__", "train_models"]
 
 
 def test_shadow_disabled_does_not_call_model():

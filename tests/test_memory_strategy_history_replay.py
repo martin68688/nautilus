@@ -38,6 +38,9 @@ SMOKE_JOB_V66 = SMOKE_JOB.with_name(
 SMOKE_JOB_V67 = SMOKE_JOB.with_name(
     "mlevolve-e2e-memory-strategy-shadow-smoke-v67.yaml"
 )
+SMOKE_JOB_V68 = SMOKE_JOB.with_name(
+    "mlevolve-e2e-memory-strategy-shadow-smoke-v68.yaml"
+)
 
 
 def _runner_module():
@@ -87,6 +90,19 @@ def test_history_slice_builder_hides_future_ids_for_all_three_tasks(tmp_path):
     assert "frozen_embedding" in axes["adaptation_mode"]
     assert "xgboost" in axes["downstream_estimator"]
     assert "five_fold" in axes["validation"]
+    representation_opportunity = next(
+        item
+        for item in portfolio["within_axis_diversity_opportunities"]
+        if item["axis"] == "representation"
+    )
+    assert {"modernbert", "deberta", "distilbert"} <= set(
+        representation_opportunity["alternatives"]
+    )
+    assert {
+        "adaptation_mode:frozen_embedding",
+        "downstream_estimator:xgboost",
+        "feature_family:embedding",
+    } <= set(representation_opportunity["common_interfaces"])
 
 
 def test_replay_evaluator_measures_hit_budget_duplicate_and_incompatibility():
@@ -139,7 +155,13 @@ def test_replay_evaluator_measures_hit_budget_duplicate_and_incompatibility():
 
 
 def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
-    for path in (SMOKE_JOB, SMOKE_JOB_V65, SMOKE_JOB_V66, SMOKE_JOB_V67):
+    for path in (
+        SMOKE_JOB,
+        SMOKE_JOB_V65,
+        SMOKE_JOB_V66,
+        SMOKE_JOB_V67,
+        SMOKE_JOB_V68,
+    ):
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
         labels = job["metadata"]["labels"]
         pod_labels = job["spec"]["template"]["metadata"]["labels"]
@@ -153,6 +175,8 @@ def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
         assert "atomic_actuation" in command
         assert "sleep" not in command
         assert job["spec"]["backoffLimit"] == 0
-        if path == SMOKE_JOB_V67:
+        if path in {SMOKE_JOB_V67, SMOKE_JOB_V68}:
             assert "strategy_model_is_v4_pro" in command
             assert "strategy_thinking_enabled" in command
+        if path == SMOKE_JOB_V68:
+            assert "all_diversity_opportunities_addressed" in command
