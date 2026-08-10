@@ -17,6 +17,7 @@ import agents.memory_strategy_agent as memory_strategy_agent
 from agents.atomic_actuation import (
     validate_atomic_plan,
     validate_decomposed_replan,
+    validate_scope_reconciliation,
     verify_atomic_code_change,
 )
 from agents.memory_strategy_agent import validate_strategy_memo
@@ -207,9 +208,56 @@ def test_debug_atomic_plan_requires_targeted_repair():
         debug_targeted_repair_only=True,
     )
     assert verdict["valid"] is False
-    assert "Debug actuation must select a targeted_repair hypothesis" in verdict[
-        "violations"
-    ]
+    assert any(
+        value.startswith("Debug actuation must select a targeted_repair")
+        for value in verdict["violations"]
+    )
+
+
+def test_debug_atomic_plan_accepts_bounded_single_memory_repair():
+    memo = {
+        "candidate_compositions": [
+            {
+                "hypothesis_id": "fix-unpack",
+                "novelty_kind": "single_memory_actuation",
+                "source_memory_ids": ["current::failed"],
+            }
+        ]
+    }
+    plan = {
+        "hypothesis_id": "fix-unpack",
+        "objective": "fix the demonstrated tuple unpack",
+        "source_memory_ids": ["current::failed"],
+        "allowed_modules": ["data_processing_and_feature_engineering"],
+        "allowed_changes": [
+            {
+                "change_id": "fix",
+                "operation": "modify",
+                "target_symbols": ["extract_features"],
+                "description": "unpack the two values emitted by DataLoader",
+            }
+        ],
+        "allowed_new_imports": [],
+        "forbidden_symbols": [],
+        "forbidden_code_patterns": [],
+        "preserve_invariants": ["model and validation"],
+        "compatibility_checks": ["loader emits two values"],
+        "estimated_compute_seconds": 60,
+        "max_patches": 1,
+        "expected_mechanism": "matching tuple arity removes the exception",
+        "falsification_condition": "the same unpack error remains",
+    }
+    verdict = validate_atomic_plan(
+        plan,
+        strategy_memo=memo,
+        max_modules=1,
+        max_changes=2,
+        max_patches=4,
+        parent_code="def extract_features():\n    return None\n",
+        stage="debug",
+        debug_targeted_repair_only=True,
+    )
+    assert verdict["valid"] is True
 
 
 def test_required_active_strategy_rejects_abstention_contract():
@@ -350,6 +398,87 @@ def test_atomic_pipeline_tries_smaller_alternate_hypothesis_after_decomposition(
     assert trace["planner"]["plan"]["hypothesis_id"] == "h2"
 
 
+def test_alternate_hypothesis_reconciles_only_observed_scope(monkeypatch):
+    agent = _agent()
+    ext = agent.cfg.external_skill_memory
+    ext.memory_strategy_atomic_coder_replan_attempts = 0
+    ext.memory_strategy_atomic_alternate_hypothesis_attempts = 1
+    ext.memory_strategy_atomic_alternate_replan_attempts = 1
+
+    def fake_planner(*_args, coder_replan_feedback=None, **_kwargs):
+        feedback = coder_replan_feedback or {}
+        hypothesis_id = "h2" if feedback else "h1"
+        symbols = ["extract_features"]
+        if feedback.get("replan_mode") == "scope_reconciliation":
+            symbols.append("__module__")
+        return {
+            "status": "accepted",
+            "plan": {
+                "hypothesis_id": hypothesis_id,
+                "source_memory_ids": ["current::parent"],
+                "allowed_modules": ["data_processing_and_feature_engineering"],
+                "allowed_changes": [{"target_symbols": symbols}],
+                "allowed_new_imports": [],
+                "max_patches": 4,
+            },
+        }
+
+    def fake_coder(*_args, planner_trace, **_kwargs):
+        plan = planner_trace["plan"]
+        symbols = {
+            value
+            for change in plan["allowed_changes"]
+            for value in change["target_symbols"]
+        }
+        if plan["hypothesis_id"] == "h1":
+            return {
+                "status": "rejected",
+                "plan_diff_verdict": {
+                    "valid": False,
+                    "violations": ["patch count 9 is outside atomic limit 1..4"],
+                    "patch_count": 9,
+                    "max_patches": 4,
+                },
+            }
+        if "__module__" not in symbols:
+            return {
+                "status": "rejected",
+                "plan_diff_verdict": {
+                    "valid": False,
+                    "violations": [
+                        "changed symbols outside allowed set: ['__module__']"
+                    ],
+                    "unauthorized_changed_symbols": ["__module__"],
+                    "patch_count": 2,
+                    "max_patches": 4,
+                    "new_imports": [],
+                },
+            }
+        return {
+            "status": "accepted",
+            "candidate_code": "value = 2\n",
+            "plan_diff_verdict": {"valid": True, "patch_count": 2},
+        }
+
+    monkeypatch.setattr(atomic_actuation, "run_atomic_actuation_planner", fake_planner)
+    monkeypatch.setattr(atomic_actuation, "run_atomic_coder", fake_coder)
+    trace = atomic_actuation.run_atomic_actuation_pipeline(
+        agent,
+        strategy_memo=_strategy_trace()["memo"],
+        parent_code="value = 1\n",
+        task_description="leaf classification",
+        stage="improve",
+    )
+    assert trace["status"] == "accepted"
+    assert trace["alternate_hypothesis_used"] is True
+    assert trace["scope_reconciliation_used"] is True
+    assert [item["kind"] for item in trace["actuation_attempts"]] == [
+        "initial",
+        "alternate_hypothesis",
+        "alternate_replan",
+    ]
+
+
 def test_decomposed_replan_must_strictly_reduce_verified_boundary():
     broad = {
         "hypothesis_id": "h1",
@@ -375,6 +504,52 @@ def test_decomposed_replan_must_strictly_reduce_verified_boundary():
         "max_patches": 4,
     }
     assert validate_decomposed_replan(first_phase, previous_plan=broad) == []
+
+
+def test_scope_reconciliation_only_authorizes_observed_symbols():
+    previous = {
+        "hypothesis_id": "h1",
+        "source_memory_ids": ["history::1"],
+        "allowed_modules": ["data"],
+        "allowed_changes": [{"target_symbols": ["extract_features"]}],
+        "allowed_new_imports": [],
+        "max_patches": 4,
+    }
+    verdict = {
+        "violations": ["changed symbols outside allowed set: ['__module__']"],
+        "unauthorized_changed_symbols": ["__module__"],
+        "patch_count": 2,
+        "new_imports": [],
+    }
+    assert atomic_actuation._coder_replan_mode(previous, verdict) == (
+        "scope_reconciliation"
+    )
+    reconciled = {
+        **previous,
+        "allowed_changes": [
+            {"target_symbols": ["extract_features", "__module__"]}
+        ],
+    }
+    assert validate_scope_reconciliation(
+        reconciled,
+        previous_plan=previous,
+        coder_verdict=verdict,
+    ) == []
+
+    widened = {
+        **reconciled,
+        "allowed_changes": [
+            {"target_symbols": ["extract_features", "__module__", "train_fold"]}
+        ],
+    }
+    assert any(
+        "not observed" in value
+        for value in validate_scope_reconciliation(
+            widened,
+            previous_plan=previous,
+            coder_verdict=verdict,
+        )
+    )
 
 
 def test_atomic_verifier_tracks_top_level_assignments_as_named_symbols():
@@ -447,4 +622,24 @@ def test_v75_config_adds_one_bounded_alternate_atomic_hypothesis():
     assert ext.memory_strategy_atomic_alternate_hypothesis_attempts == 1
     assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
         "/workspace/nautilus-exp-end2end-agent-v75/"
+    )
+
+
+def test_v76_config_replans_one_alternate_scope_reconciliation():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v76"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v76-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    ext = cfg.external_skill_memory
+    assert ext.memory_strategy_active_required is True
+    assert ext.memory_strategy_atomic_alternate_hypothesis_attempts == 1
+    assert ext.memory_strategy_atomic_alternate_replan_attempts == 1
+    assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
+        "/workspace/nautilus-exp-end2end-agent-v76/"
     )

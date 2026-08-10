@@ -532,6 +532,7 @@ class ExternalSkillMemoryConfig:
     memory_strategy_atomic_coder_contract_retries: int = 1
     memory_strategy_atomic_coder_replan_attempts: int = 1
     memory_strategy_atomic_alternate_hypothesis_attempts: int = 0
+    memory_strategy_atomic_alternate_replan_attempts: int = 0
     # Dynamic Hybrid may delegate L3 failure/root-cause matching to the
     # Retrieval Agent.  The Host keeps only objective task/evidence gates and
     # literal traceback-anchor extraction; no maintained synonym table is

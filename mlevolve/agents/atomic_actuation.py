@@ -193,10 +193,11 @@ def validate_atomic_plan(
             str(stage) == "debug"
             and debug_targeted_repair_only
             and str(selected_composition.get("novelty_kind") or "")
-            != "targeted_repair"
+            not in {"targeted_repair", "single_memory_actuation"}
         ):
             violations.append(
-                "Debug actuation must select a targeted_repair hypothesis"
+                "Debug actuation must select a targeted_repair or bounded "
+                "single_memory_actuation hypothesis"
             )
     cited = {str(value) for value in (plan.get("source_memory_ids") or [])}
     if not cited:
@@ -364,6 +365,9 @@ def _planner_prompt(
         allow_hypothesis_switch = bool(
             (coder_replan_feedback or {}).get("allow_hypothesis_switch", False)
         )
+        replan_mode = str(
+            (coder_replan_feedback or {}).get("replan_mode") or "decompose"
+        )
         rejected_hypothesis_ids = list(
             (coder_replan_feedback or {}).get("rejected_hypothesis_ids") or []
         )
@@ -375,6 +379,7 @@ def _planner_prompt(
                 (coder_replan_feedback or {}).get("coder_verdict") or {}
             ),
             "allow_hypothesis_switch": allow_hypothesis_switch,
+            "replan_mode": replan_mode,
             "rejected_hypothesis_ids": rejected_hypothesis_ids,
             "instruction": (
                 "The selected roadmap remained non-actuatable after bounded decomposition. "
@@ -382,15 +387,23 @@ def _planner_prompt(
                 "has the fewest modules, symbols, imports, and patches. Do not select any "
                 "rejected_hypothesis_id and do not invent a new hypothesis."
                 if allow_hypothesis_switch
-                else
-                "The Coder could not implement the previous plan inside its verified boundary. "
-                "Keep the same hypothesis_id and source_memory_ids, but decompose the roadmap: "
-                "return a strictly smaller first phase that independently runs and tests one "
-                "mechanism. Remove or defer every change, symbol, and import not required for "
-                "that phase. The host will reject a same-sized plan: allowed modules, changes, "
-                "target symbols, new imports, and max_patches may not increase, and at least one "
-                "of those boundaries must strictly decrease. For Debug, the phase must only "
-                "repair the observed exception."
+                else (
+                    "The prior Coder stayed inside the patch cap but touched undeclared "
+                    "top-level symbols. Reconcile only the machine-observed boundary: keep "
+                    "the same hypothesis, objective, and modules; add only exact "
+                    "unauthorized_changed_symbols or new_imports from the Coder verdict. "
+                    "Do not authorize any unobserved symbol or widen the experiment."
+                    if replan_mode == "scope_reconciliation"
+                    else
+                    "The Coder could not implement the previous plan inside its verified boundary. "
+                    "Keep the same hypothesis_id and source_memory_ids, but decompose the roadmap: "
+                    "return a strictly smaller first phase that independently runs and tests one "
+                    "mechanism. Remove or defer every change, symbol, and import not required for "
+                    "that phase. The host will reject a same-sized plan: allowed modules, changes, "
+                    "target symbols, new imports, and max_patches may not increase, and at least one "
+                    "of those boundaries must strictly decrease. For Debug, the phase must only "
+                    "repair the observed exception."
+                )
             ),
         }
     user = _canonical_json(payload)
@@ -543,6 +556,21 @@ def run_atomic_actuation_planner(
                             ]
                             if str(plan.get("hypothesis_id") or "") in rejected_ids
                             else []
+                        )
+                    elif str(
+                        (coder_replan_feedback or {}).get("replan_mode")
+                        or "decompose"
+                    ) == "scope_reconciliation":
+                        decomposition_violations = validate_scope_reconciliation(
+                            plan,
+                            previous_plan=dict(
+                                (coder_replan_feedback or {}).get("previous_plan")
+                                or {}
+                            ),
+                            coder_verdict=dict(
+                                (coder_replan_feedback or {}).get("coder_verdict")
+                                or {}
+                            ),
                         )
                     else:
                         decomposition_violations = validate_decomposed_replan(
@@ -749,6 +777,104 @@ def validate_decomposed_replan(
         violations.append(
             "decomposed replan must strictly reduce at least one verified boundary"
         )
+    return violations
+
+
+def _coder_replan_mode(
+    plan: Mapping[str, Any],
+    coder_verdict: Mapping[str, Any],
+) -> str:
+    """Reconcile scope only when a bounded diff missed declarations."""
+
+    violations = [str(value) for value in (coder_verdict.get("violations") or [])]
+    allowed_prefixes = (
+        "changed symbols outside allowed set:",
+        "imports changed without __imports__ permission",
+        "unauthorized new imports:",
+    )
+    try:
+        patch_count = int(coder_verdict.get("patch_count") or 0)
+        max_patches = int(plan.get("max_patches") or 0)
+    except (TypeError, ValueError):
+        return "decompose"
+    unauthorized = {
+        str(value)
+        for value in (coder_verdict.get("unauthorized_changed_symbols") or [])
+    }
+    if (
+        violations
+        and unauthorized
+        and 1 <= patch_count <= max_patches
+        and all(value.startswith(allowed_prefixes) for value in violations)
+    ):
+        return "scope_reconciliation"
+    return "decompose"
+
+
+def validate_scope_reconciliation(
+    plan: Mapping[str, Any],
+    *,
+    previous_plan: Mapping[str, Any],
+    coder_verdict: Mapping[str, Any],
+) -> list[str]:
+    """Permit only exact missing symbols observed by the deterministic verifier."""
+
+    violations: list[str] = []
+    if str(plan.get("hypothesis_id") or "") != str(
+        previous_plan.get("hypothesis_id") or ""
+    ):
+        violations.append("scope reconciliation must keep the same hypothesis_id")
+    if {
+        str(value) for value in (plan.get("source_memory_ids") or [])
+    } != {
+        str(value) for value in (previous_plan.get("source_memory_ids") or [])
+    }:
+        violations.append("scope reconciliation must keep the same source_memory_ids")
+    current_modules = {str(value) for value in (plan.get("allowed_modules") or [])}
+    previous_modules = {
+        str(value) for value in (previous_plan.get("allowed_modules") or [])
+    }
+    if not current_modules.issubset(previous_modules):
+        violations.append("scope reconciliation may not add allowed_modules")
+
+    current_symbols = _allowed_target_symbols(plan)
+    previous_symbols = _allowed_target_symbols(previous_plan)
+    observed_symbols = {
+        str(value)
+        for value in (coder_verdict.get("unauthorized_changed_symbols") or [])
+    }
+    added_symbols = current_symbols - previous_symbols
+    if not added_symbols:
+        violations.append("scope reconciliation must authorize an observed missing symbol")
+    if not added_symbols.issubset(observed_symbols):
+        violations.append(
+            "scope reconciliation added symbols not observed by the Coder verifier"
+        )
+    if not observed_symbols.issubset(current_symbols):
+        violations.append(
+            "scope reconciliation must account for every observed unauthorized symbol"
+        )
+
+    previous_imports = {
+        str(value) for value in (previous_plan.get("allowed_new_imports") or [])
+    }
+    current_imports = {
+        str(value) for value in (plan.get("allowed_new_imports") or [])
+    }
+    observed_imports = {
+        str(value) for value in (coder_verdict.get("new_imports") or [])
+    }
+    if not (current_imports - previous_imports).issubset(observed_imports):
+        violations.append(
+            "scope reconciliation added imports not observed by the Coder verifier"
+        )
+    try:
+        if int(plan.get("max_patches") or 0) > int(
+            previous_plan.get("max_patches") or 0
+        ):
+            violations.append("scope reconciliation may not increase max_patches")
+    except (TypeError, ValueError):
+        violations.append("scope reconciliation has invalid max_patches")
     return violations
 
 
@@ -1077,6 +1203,17 @@ def run_atomic_actuation_pipeline(
             or 0
         ),
     )
+    alternate_replan_attempts = max(
+        0,
+        int(
+            getattr(
+                ext_cfg,
+                "memory_strategy_atomic_alternate_replan_attempts",
+                0,
+            )
+            or 0
+        ),
+    )
     actuation_attempts: list[dict[str, Any]] = []
     coder_replan_feedback: dict[str, Any] | None = None
     planner_trace: dict[str, Any] = {}
@@ -1100,6 +1237,9 @@ def run_atomic_actuation_pipeline(
         attempt_trace = {
             "attempt": actuation_attempt + 1,
             "kind": "initial" if actuation_attempt == 0 else "decomposed_replan",
+            "replan_mode": str(
+                (coder_replan_feedback or {}).get("replan_mode") or ""
+            ),
             "planner": planner_trace,
             "coder": coder_trace,
         }
@@ -1117,6 +1257,10 @@ def run_atomic_actuation_pipeline(
             "previous_plan": copy.deepcopy(dict(planner_trace.get("plan") or {})),
             "coder_verdict": copy.deepcopy(
                 dict(coder_trace.get("plan_diff_verdict") or {})
+            ),
+            "replan_mode": _coder_replan_mode(
+                dict(planner_trace.get("plan") or {}),
+                dict(coder_trace.get("plan_diff_verdict") or {}),
             ),
         }
     rejected_hypothesis_ids = {
@@ -1154,6 +1298,7 @@ def run_atomic_actuation_pipeline(
                 {
                     "attempt": len(actuation_attempts) + 1,
                     "kind": "alternate_hypothesis",
+                    "replan_mode": "alternate_hypothesis",
                     "planner": planner_trace,
                     "coder": coder_trace,
                 }
@@ -1169,6 +1314,54 @@ def run_atomic_actuation_pipeline(
             ):
                 alternate_hypothesis_used = True
                 break
+            for _ in range(alternate_replan_attempts):
+                if planner_trace.get("status") != "accepted":
+                    break
+                replan_mode = _coder_replan_mode(
+                    dict(planner_trace.get("plan") or {}),
+                    dict(coder_trace.get("plan_diff_verdict") or {}),
+                )
+                coder_replan_feedback = {
+                    "previous_plan": copy.deepcopy(
+                        dict(planner_trace.get("plan") or {})
+                    ),
+                    "coder_verdict": copy.deepcopy(
+                        dict(coder_trace.get("plan_diff_verdict") or {})
+                    ),
+                    "replan_mode": replan_mode,
+                }
+                planner_trace = run_atomic_actuation_planner(
+                    agent,
+                    strategy_memo=strategy_memo,
+                    parent_code=parent_code,
+                    budget=budget,
+                    stage=stage,
+                    coder_replan_feedback=coder_replan_feedback,
+                )
+                coder_trace = run_atomic_coder(
+                    agent,
+                    planner_trace=planner_trace,
+                    parent_code=parent_code,
+                    task_description=task_description,
+                    execution_output=execution_output,
+                )
+                actuation_attempts.append(
+                    {
+                        "attempt": len(actuation_attempts) + 1,
+                        "kind": "alternate_replan",
+                        "replan_mode": replan_mode,
+                        "planner": planner_trace,
+                        "coder": coder_trace,
+                    }
+                )
+                if (
+                    planner_trace.get("status") == "accepted"
+                    and coder_trace.get("status") == "accepted"
+                ):
+                    alternate_hypothesis_used = True
+                    break
+            if alternate_hypothesis_used:
+                break
     return {
         "schema": "mlevolve_atomic_actuation_pipeline_v1",
         "status": (
@@ -1183,6 +1376,10 @@ def run_atomic_actuation_pipeline(
         "coder": coder_trace,
         "decomposition_used": len(actuation_attempts) > 1,
         "alternate_hypothesis_used": alternate_hypothesis_used,
+        "scope_reconciliation_used": any(
+            attempt.get("replan_mode") == "scope_reconciliation"
+            for attempt in actuation_attempts
+        ),
         "actuation_attempts": actuation_attempts,
     }
 
@@ -1195,5 +1392,6 @@ __all__ = [
     "run_atomic_coder",
     "validate_atomic_plan",
     "validate_decomposed_replan",
+    "validate_scope_reconciliation",
     "verify_atomic_code_change",
 ]

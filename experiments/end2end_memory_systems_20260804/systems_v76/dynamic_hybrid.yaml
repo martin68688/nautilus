@@ -1,0 +1,13 @@
+# v76: reconcile only machine-observed Coder scope misses, permit bounded
+# single-memory Debug repairs, and give an alternate hypothesis one replan.
+extends: ../systems_v75/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v76/experiments/end2end_memory_systems_20260804/manifests_v76/leaf_official_replay_targets.json
+
+external_skill_memory:
+  memory_strategy_atomic_alternate_replan_attempts: 1
+
+run_identity:
+  memory_version: leaf_official_recipe_runforest_v6_strategy_active_contract_reconcile_v76
