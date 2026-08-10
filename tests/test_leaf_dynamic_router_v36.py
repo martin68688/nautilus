@@ -288,6 +288,45 @@ def test_v36_debug_without_causal_l3_match_abstains_without_generic_backfill(
     assert pack["pre_gate_raw_candidates"]
 
 
+def test_debug_abstention_remains_explicit_when_same_task_best_is_pinned(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    _enable_sparse_v36(layer)
+    layer.experiment_r_l3_agent_match_enabled = True
+    layer.experiment_r_same_task_best_pin_stages = {"draft", "improve", "debug"}
+
+    def unexpected_general_agent_call(**_kwargs):
+        raise AssertionError("general Retrieval Agent must not fill an empty Debug repair pool")
+
+    layer._experiment_r_agentic_query_fn = unexpected_general_agent_call
+    text, refs = layer.retrieve_for_node(
+        stage="debug",
+        task_id="task",
+        task_desc="text classification",
+        query_parts=["IndexError: index 192 is out of bounds for axis 1"],
+        draft_role="memory_reproduction",
+    )
+    pack = layer.current_navigation_pack()
+
+    assert text and refs == ["n1"]
+    assert pack["retrieval_agent"]["agent_calls"] == 0
+    assert pack["retrieval_agent"]["agent_abstained"] is True
+    assert pack["retrieval_agent"]["effective_selected_ids"] == ["n1"]
+    assert pack["retrieval_agent"]["effective_prompt_abstained"] is False
+    assert pack["retrieval_agent"]["finish_reason"] == (
+        "no causally matched L3 repair; explicit Debug abstention"
+    )
+    assert pack["stage_route"]["agent_abstained"] is True
+    assert pack["stage_route"]["effective_prompt_abstained"] is False
+    assert pack["stage_route"]["route"] == (
+        "dynamic_hybrid_mandatory_pin_after_agent_abstention"
+    )
+    assert pack["stage_route"]["same_task_best_prompt_pin"]["prompt_visible"] is True
+    assert pack["router_activation"]["status"] == (
+        "mandatory_prompt_pin_after_agent_abstention"
+    )
+    assert pack["stage_route"]["stage"] == "debug"
+
+
 def test_v41_l3_abstention_opens_task_local_tier_b_for_main_agent(tmp_path):
     layer = _layer(tmp_path, "dynamic_hybrid")
     _enable_tiered_v41(layer)

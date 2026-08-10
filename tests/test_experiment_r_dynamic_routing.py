@@ -949,6 +949,45 @@ def test_dynamic_flexible_debug_reallocates_a_sop_slot_for_same_task_best(
     assert pin["quota_preserving"] is False
 
 
+def test_mandatory_same_task_pin_preserves_explicit_agent_abstention(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer.experiment_r_flexible_selection_enabled = True
+    layer.experiment_r_stage_selection_caps = {"debug": 2}
+    pool = {
+        "raw_runforest_candidates": [],
+        "runforest_candidates": [],
+        "pool_identity": {"runforest_ids": []},
+        "pool_counts": {"raw_runforest": 0, "ranked_runforest": 0},
+        "ranking_contract": "debug_causal_only_agent_abstention_v1",
+        "retrieval_agent": {
+            "selection_complete": True,
+            "agent_selected_ids": [],
+            "effective_selected_ids": [],
+            "agent_abstained": True,
+            "finish_reason": "no causally matched L3 repair",
+            "final_selection_authority": "l3_root_cause_agent_abstention",
+        },
+    }
+
+    result = _pin_same_task_best_for_dynamic(
+        layer,
+        pool=pool,
+        stage="debug",
+        task_id="task",
+        visible_sop_ids=None,
+    )
+    agent = result["retrieval_agent"]
+    assert agent["agent_selected_ids"] == []
+    assert agent["effective_selected_ids"] == ["n1"]
+    assert agent["agent_abstained"] is True
+    assert agent["effective_prompt_abstained"] is False
+    assert agent["final_selection_authority"] == (
+        "mandatory_same_task_pin_after_retrieval_agent_abstention"
+    )
+    assert agent["same_task_best_first"]["prompt_pin"]["applied"] is True
+
+
 def test_agentic_router_invalid_id_falls_back_and_retains_failure(tmp_path):
     layer = _layer(tmp_path, "dynamic_hybrid")
     layer.experiment_r_agentic_retrieval_enabled = True

@@ -3055,6 +3055,7 @@ def _pin_same_task_best_for_dynamic(
     }
     effective = list(retrieval.get("effective_selected_ids") or [])
     if retrieval.get("selection_complete") and candidate_id not in effective:
+        agent_abstained_before_pin = retrieval.get("agent_abstained") is True
         quota_preserving = True
         victim_index = next(
             (
@@ -3104,10 +3105,18 @@ def _pin_same_task_best_for_dynamic(
             replaced_id = effective[victim_index]
             effective[victim_index] = candidate_id
         retrieval["effective_selected_ids"] = effective
-        retrieval["agent_abstained"] = False
-        retrieval[
-            "final_selection_authority"
-        ] = "retrieval_agent_plus_mandatory_same_task_pin"
+        # A mandatory safety/quality pin changes what reaches the Prompt; it
+        # must not rewrite the Retrieval Agent's own decision.  In particular,
+        # Debug can explicitly abstain after finding no causal L3 repair while
+        # the independent same-task-best invariant still exposes one landmark.
+        # Keep those two facts separately observable in the Journal.
+        retrieval["agent_abstained"] = agent_abstained_before_pin
+        retrieval["effective_prompt_abstained"] = False
+        retrieval["final_selection_authority"] = (
+            "mandatory_same_task_pin_after_retrieval_agent_abstention"
+            if agent_abstained_before_pin
+            else "retrieval_agent_plus_mandatory_same_task_pin"
+        )
         retrieval.setdefault("selection_overrides", []).append(
             {
                 "reason": "mandatory_same_task_best",
@@ -3860,10 +3869,14 @@ def _select(
             source: sum(row["source"] == source for row in selected)
             for source in ("sop", "runforest")
         }
+        agent_abstained = retrieval.get("agent_abstained") is True
+        effective_prompt_abstained = not bool(selected)
         route = {
             "route": (
                 "dynamic_hybrid_agent_abstention"
-                if not selected
+                if effective_prompt_abstained
+                else "dynamic_hybrid_mandatory_pin_after_agent_abstention"
+                if agent_abstained
                 else "dynamic_hybrid_agent_final_selection"
             ),
             "decision_authority": retrieval.get(
@@ -3875,7 +3888,8 @@ def _select(
             "agent_selected_ids": list(retrieval.get("agent_selected_ids") or []),
             "effective_selected_ids": effective_agent_ids,
             "deterministic_quota_selection_used": False,
-            "agent_abstained": not bool(selected),
+            "agent_abstained": agent_abstained,
+            "effective_prompt_abstained": effective_prompt_abstained,
         }
     elif control == "flat_retrieval":
         selected = sorted(
@@ -4083,6 +4097,8 @@ def build_experiment_r_pack(
         activation_status = (
             "deterministic_fallback"
             if retrieval.get("fallback_used")
+            else "mandatory_prompt_pin_after_agent_abstention"
+            if retrieval.get("agent_abstained") is True
             else "retrieval_agent_selected"
             if route.get("decision_authority")
             else "deterministic_router_selected"
