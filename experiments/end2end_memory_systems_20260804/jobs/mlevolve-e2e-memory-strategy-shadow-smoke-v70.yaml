@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-e2e-memory-strategy-shadow-smoke-v70
+  namespace: ecepxie
+  labels:
+    ecepxie.nrp/owner: haoming
+    app.kubernetes.io/managed-by: codex-nrp-training
+    mlevolve.ai/workload: mlevolve-e2e-memory-strategy-shadow-smoke-v70
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 7200
+  template:
+    metadata:
+      labels:
+        ecepxie.nrp/owner: haoming
+        app.kubernetes.io/managed-by: codex-nrp-training
+        mlevolve.ai/workload: mlevolve-e2e-memory-strategy-shadow-smoke-v70
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: strategy-shadow-smoke
+          image: haomingwang22/mlevolve:v1
+          command:
+            - /bin/bash
+            - -lc
+            - |
+              set -euo pipefail
+              SOURCE=/workspace/nautilus-exp-end2end-agent-v70
+              OUT=/workspace/experiment-end2end-memory-agent-v70/strategy-shadow-smoke-v70
+              CASES=experiments/end2end_memory_systems_20260804/memory_strategy_shadow_history_slices_v3.json
+              mkdir -p "$OUT"
+              cd "$SOURCE"
+              sha256sum -c SOURCE_FILES.sha256 > "$OUT/source_check.log"
+              set -a
+              . /workspace/nautilus/mlevolve/.env
+              set +a
+              export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+              python -m pytest -q tests/test_memory_strategy_shadow.py \
+                | tee "$OUT/pytest.log"
+              python experiments/end2end_memory_systems_20260804/run_strategy_shadow_replay.py \
+                --cases "$CASES" \
+                --case-id spooky-before-frozen-multibackbone-fivefold-xgb \
+                --case-id spooky-after-multibackbone-before-cleanup-repair \
+                --actuate \
+                --output "$OUT/STRATEGY_SHADOW_REPLAY.json" \
+                | tee "$OUT/replay.log"
+              python experiments/end2end_memory_systems_20260804/verify_strategy_shadow_smoke_v70.py \
+                --replay "$OUT/STRATEGY_SHADOW_REPLAY.json" \
+                --cases "$CASES" \
+                --output "$OUT/SMOKE_RECEIPT.json" \
+                | tee "$OUT/verify.log"
+          resources:
+            requests:
+              cpu: "4"
+              memory: 16Gi
+            limits:
+              cpu: "4"
+              memory: 16Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
