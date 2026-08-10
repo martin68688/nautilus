@@ -1,0 +1,22 @@
+{
+  "schema": "mlevolve_memory_strategy_branch_portfolio_release_v1",
+  "branch": "codex/memory-strategy-branch-portfolio-v72",
+  "implementation_commit": "b79c3d62ccaa8918ef07b48b6fcb536b528f7c3c",
+  "frozen_source": "/workspace/nautilus-exp-end2end-agent-v72",
+  "frozen_source_file_count": 240,
+  "source_manifest_sha256": "9e673aec4b1501e219c5c51f12f81ef12e644d93bf14e016ef5f9ef4a030a56a",
+  "history_slices_sha256": "ce4b56d4b5af7f4e0e32971f6cbc194049d895fa002446dec82a6163b684a2cd",
+  "smoke_manifest_sha256": "af52db90985197b8a6927ffd43a8ff4eaa67bb9d2151f414690ef3432f3f37ae",
+  "verification": {
+    "local_strategy_replay_resume_tests": "33 passed",
+    "frozen_runtime_closure_tests": "24 passed",
+    "frozen_source_hash_check": "240/240 passed",
+    "writable_frozen_files": 0
+  },
+  "supersedes_unsubmitted_source": {
+    "path": "/workspace/nautilus-exp-end2end-agent-v71",
+    "reason": "full historical builder tests required intentionally excluded multi-GB source journals; no v71 Job was submitted"
+  },
+  "v70_terminal_archive": "coordination/memory_strategy_shadow_smoke_v70_terminal_20260810T161243Z",
+  "actuation_authority": "shadow_only"
+}
