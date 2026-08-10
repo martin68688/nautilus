@@ -36,11 +36,15 @@ def _config(*, shadow_enabled=True, stages=None):
         memory_strategy_max_input_chars=0,
         memory_strategy_max_output_tokens=6000,
         memory_strategy_max_retries=2,
+        memory_strategy_contract_retries=2,
+        memory_strategy_min_candidate_compositions=1,
         memory_strategy_temperature=0.0,
         memory_strategy_history_limit=16,
         memory_strategy_atomic_max_modules=2,
         memory_strategy_atomic_max_changes=3,
         memory_strategy_atomic_max_patches=6,
+        memory_strategy_atomic_planner_contract_retries=2,
+        memory_strategy_atomic_coder_contract_retries=1,
     )
     code = SimpleNamespace(model="deepseek-v4-flash", temp=0.0)
     search = SimpleNamespace(num_gpus=1)
@@ -145,10 +149,15 @@ def _router_pack():
 
 def _strategy_memo():
     return {
+        "decision": "propose",
+        "abstention_reason": "",
         "current_system_map": {
             "features": "word+character TF-IDF",
             "models": "three-model blend",
             "validation": "single split",
+        },
+        "evidence_portfolio": {
+            "supported_axes": ["model diversity", "five-fold validation"]
         },
         "coverage_gaps": ["three-model blend and five-fold averaging were not tested together"],
         "candidate_compositions": [
@@ -221,6 +230,8 @@ def test_shadow_agent_records_global_composition_without_mutating_router_or_prom
     assert set(trace["memory_card_ids"]) >= {"run::three-model", "run::five-fold"}
     assert observed["context"]["metrics"]["parent_submission_metric"]["value"] == 0.336
     assert observed["context"]["metrics"]["branch_best_metric"] == 0.331
+    portfolio = observed["context"]["component_portfolio"]["component_axes"]
+    assert "five_fold" in portfolio["validation"]
     assert pack == frozen_pack
     assert payload_sha256(production_prompt) == before
 
@@ -388,3 +399,90 @@ def test_shadow_disabled_does_not_call_model():
     )
     assert trace["status"] == "not_run"
     assert trace["trigger_reason"] == "disabled"
+
+
+def test_strategy_contract_retries_legacy_shape_instead_of_marking_it_valid():
+    agent = _agent()
+    parent = _parent()
+    calls = []
+
+    def query_fn(**kwargs):
+        calls.append(kwargs["contract_attempt"])
+        if kwargs["contract_attempt"] == 0:
+            return {
+                "analysis": "use the five-fold protocol",
+                "proposed_experiment": {"name": "legacy shape"},
+            }
+        return _strategy_memo()
+
+    agent._memory_strategy_query_fn = query_fn
+    trace = run_memory_strategy_shadow(
+        agent,
+        parent,
+        stage="improve",
+        router_pack=_router_pack(),
+    )
+
+    assert trace["status"] == "completed"
+    assert calls == [0, 1]
+    assert trace["contract_attempts"][0]["valid"] is False
+    assert "missing required top-level keys" in " ".join(
+        trace["contract_attempts"][0]["violations"]
+    )
+    assert trace["contract_attempts"][1]["valid"] is True
+
+
+def test_atomic_planner_retries_legacy_shape_without_shrinking_hypothesis():
+    agent = _agent()
+    parent_code = "def train_models(x):\n    return x\n"
+    calls = []
+
+    def planner_query(**kwargs):
+        calls.append(kwargs["contract_attempt"])
+        if kwargs["contract_attempt"] == 0:
+            return {"experiment": {"hypothesis": "legacy planner shape"}}
+        return {
+            "hypothesis_id": "h-three-model-five-fold",
+            "objective": "cross-fit the existing model collection",
+            "source_memory_ids": ["run::three-model", "run::five-fold"],
+            "allowed_modules": ["training_evaluation"],
+            "allowed_changes": [
+                {
+                    "change_id": "cross_fit_existing_models",
+                    "operation": "modify",
+                    "target_symbols": ["train_models"],
+                    "description": "loop over five folds",
+                }
+            ],
+            "allowed_new_imports": [],
+            "forbidden_symbols": [],
+            "forbidden_code_patterns": [],
+            "preserve_invariants": ["keep output class order"],
+            "compatibility_checks": ["fold class columns match"],
+            "estimated_compute_seconds": 1200,
+            "max_patches": 1,
+            "expected_mechanism": "reduce split variance",
+            "falsification_condition": "OOF does not improve",
+        }
+
+    agent._atomic_planner_query_fn = planner_query
+    agent._atomic_coder_query_fn = lambda **_kwargs: (
+        "<<<<<<< SEARCH\n"
+        "def train_models(x):\n"
+        "    return x\n"
+        "=======\n"
+        "def train_models(x):\n"
+        "    return sum([x for _ in range(5)]) / 5\n"
+        ">>>>>>> REPLACE\n"
+    )
+    result = run_atomic_actuation_pipeline(
+        agent,
+        strategy_memo=_strategy_memo(),
+        parent_code=parent_code,
+        task_description="authorship classification",
+    )
+
+    assert result["status"] == "accepted"
+    assert calls == [0, 1]
+    assert result["planner"]["contract_attempts"][0]["valid"] is False
+    assert result["planner"]["plan"]["hypothesis_id"] == "h-three-model-five-fold"

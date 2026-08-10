@@ -32,6 +32,9 @@ SMOKE_JOB = (
 SMOKE_JOB_V65 = SMOKE_JOB.with_name(
     "mlevolve-e2e-memory-strategy-shadow-smoke-v65.yaml"
 )
+SMOKE_JOB_V66 = SMOKE_JOB.with_name(
+    "mlevolve-e2e-memory-strategy-shadow-smoke-v66.yaml"
+)
 
 
 def _runner_module():
@@ -65,6 +68,22 @@ def test_history_slice_builder_hides_future_ids_for_all_three_tasks(tmp_path):
         assert hidden_ids.isdisjoint(visible_ids)
         assert case["hidden_future"]["evaluator_only"] is True
         assert case["parent"]["code"]
+
+    from agents.memory_strategy_agent import (
+        build_component_portfolio,
+        build_memory_cards,
+    )
+
+    spooky = packet["cases"][0]
+    spooky_pack, _ = runner._build_router_pack(spooky)
+    portfolio = build_component_portfolio(build_memory_cards(spooky_pack))
+    axes = portfolio["component_axes"]
+    assert {"modernbert", "deberta", "distilbert"} <= set(
+        axes["representation"]
+    )
+    assert "frozen_embedding" in axes["adaptation_mode"]
+    assert "xgboost" in axes["downstream_estimator"]
+    assert "five_fold" in axes["validation"]
 
 
 def test_replay_evaluator_measures_hit_budget_duplicate_and_incompatibility():
@@ -117,7 +136,7 @@ def test_replay_evaluator_measures_hit_budget_duplicate_and_incompatibility():
 
 
 def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
-    for path in (SMOKE_JOB, SMOKE_JOB_V65):
+    for path in (SMOKE_JOB, SMOKE_JOB_V65, SMOKE_JOB_V66):
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
         labels = job["metadata"]["labels"]
         pod_labels = job["spec"]["template"]["metadata"]["labels"]

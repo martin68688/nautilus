@@ -491,6 +491,8 @@ class ExternalSkillMemoryConfig:
     memory_strategy_max_input_chars: int = 0
     memory_strategy_max_output_tokens: int = 6000
     memory_strategy_max_retries: int = 2
+    memory_strategy_contract_retries: int = 2
+    memory_strategy_min_candidate_compositions: int = 3
     memory_strategy_temperature: float = 0.0
     memory_strategy_history_limit: int = 16
     # Isolated actuation-chain defaults.  Shadow mode never consults these to
@@ -498,6 +500,8 @@ class ExternalSkillMemoryConfig:
     memory_strategy_atomic_max_modules: int = 2
     memory_strategy_atomic_max_changes: int = 3
     memory_strategy_atomic_max_patches: int = 6
+    memory_strategy_atomic_planner_contract_retries: int = 2
+    memory_strategy_atomic_coder_contract_retries: int = 1
     # Dynamic Hybrid may delegate L3 failure/root-cause matching to the
     # Retrieval Agent.  The Host keeps only objective task/evidence gates and
     # literal traceback-anchor extraction; no maintained synonym table is

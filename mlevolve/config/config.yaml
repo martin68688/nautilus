@@ -383,11 +383,15 @@ external_skill_memory:
   memory_strategy_max_input_chars: 0
   memory_strategy_max_output_tokens: 6000
   memory_strategy_max_retries: 2
+  memory_strategy_contract_retries: 2
+  memory_strategy_min_candidate_compositions: 3
   memory_strategy_temperature: 0.0
   memory_strategy_history_limit: 16
   memory_strategy_atomic_max_modules: 2
   memory_strategy_atomic_max_changes: 3
   memory_strategy_atomic_max_patches: 6
+  memory_strategy_atomic_planner_contract_retries: 2
+  memory_strategy_atomic_coder_contract_retries: 1
 
 # ============================================================
 #  Persisted run identity (baseline vs memory-system experiments)

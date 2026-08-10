@@ -120,6 +120,14 @@ ATOMIC_ACTUATION_PLAN_SCHEMA: dict[str, Any] = {
 }
 
 
+_ATOMIC_REQUIRED_KEYS = tuple(ATOMIC_ACTUATION_PLAN_SCHEMA["required"])
+_ALLOWED_MODULES = {
+    "data_processing_and_feature_engineering",
+    "model_design",
+    "training_evaluation",
+}
+
+
 def _canonical_json(value: Any) -> str:
     return json.dumps(
         value,
@@ -164,6 +172,9 @@ def validate_atomic_plan(
     max_patches: int,
 ) -> dict[str, Any]:
     violations: list[str] = []
+    missing_keys = [key for key in _ATOMIC_REQUIRED_KEYS if key not in plan]
+    if missing_keys:
+        violations.append(f"missing required top-level keys: {missing_keys}")
     compositions = _composition_by_id(strategy_memo)
     hypothesis_id = str(plan.get("hypothesis_id") or "")
     if hypothesis_id not in compositions:
@@ -185,6 +196,9 @@ def validate_atomic_plan(
     modules = list(plan.get("allowed_modules") or [])
     if not 1 <= len(modules) <= int(max_modules):
         violations.append(f"allowed_modules must contain 1..{int(max_modules)} modules")
+    invalid_modules = sorted(set(str(value) for value in modules) - _ALLOWED_MODULES)
+    if invalid_modules:
+        violations.append(f"invalid allowed_modules: {invalid_modules}")
     changes = list(plan.get("allowed_changes") or [])
     if not 1 <= len(changes) <= int(max_changes):
         violations.append(f"allowed_changes must contain 1..{int(max_changes)} changes")
@@ -200,6 +214,8 @@ def validate_atomic_plan(
         targets = [str(value) for value in (change.get("target_symbols") or [])]
         if not targets:
             violations.append(f"{change_id or index} must name at least one target symbol")
+        if str(change.get("operation") or "") not in {"modify", "add", "delete"}:
+            violations.append(f"{change_id or index} has invalid operation")
     try:
         requested_patches = int(plan.get("max_patches", 0))
     except (TypeError, ValueError):
@@ -213,6 +229,14 @@ def validate_atomic_plan(
         violations.append("estimated_compute_seconds must be an integer")
     if not list(plan.get("compatibility_checks") or []):
         violations.append("compatibility_checks must not be empty")
+    if not list(plan.get("preserve_invariants") or []):
+        violations.append("preserve_invariants must not be empty")
+    if not str(plan.get("objective") or "").strip():
+        violations.append("objective must not be empty")
+    if not str(plan.get("expected_mechanism") or "").strip():
+        violations.append("expected_mechanism must not be empty")
+    if not str(plan.get("falsification_condition") or "").strip():
+        violations.append("falsification_condition must not be empty")
     return {
         "schema": "mlevolve_atomic_actuation_plan_validation_v1",
         "valid": not violations,
@@ -228,6 +252,8 @@ def _planner_prompt(
     parent_code: str,
     budget: Mapping[str, Any] | None,
     limits: Mapping[str, int],
+    previous_plan: Mapping[str, Any] | None = None,
+    contract_violations: Iterable[str] = (),
 ) -> dict[str, str]:
     system = (
         "You are the Atomic Actuation Planner. Select exactly one hypothesis from the "
@@ -236,16 +262,30 @@ def _planner_prompt(
         "function/class names, __imports__, or __module__ for guarded top-level execution. "
         "Keep the allowed set narrow enough for a host verifier. The Coder will be rejected if "
         "it changes anything outside this set. Preserve the evaluation and submission protocol. "
-        "Output one JSON object only."
+        "Prefer recommended_hypothesis_id when it fits the hard limits; otherwise select another "
+        "existing hypothesis that can be executed atomically. Never shrink a hypothesis into a "
+        "different experiment merely to satisfy limits. Use the exact field names in "
+        "RESPONSE_SCHEMA; fields such as experiment, modules, changes, or memory_ids are invalid. "
+        "Output one JSON object only.\n\nRESPONSE_SCHEMA:\n"
+        + _canonical_json(ATOMIC_ACTUATION_PLAN_SCHEMA)
     )
-    user = _canonical_json(
-        {
-            "strategy_memo": strategy_memo,
-            "budget": dict(budget or {}),
-            "hard_limits": dict(limits),
-            "parent_code": parent_code,
+    payload: dict[str, Any] = {
+        "strategy_memo": strategy_memo,
+        "budget": dict(budget or {}),
+        "hard_limits": dict(limits),
+        "parent_code": parent_code,
+    }
+    violations = [str(value) for value in contract_violations]
+    if previous_plan is not None or violations:
+        payload["contract_repair_required"] = {
+            "violations": violations,
+            "previous_response": dict(previous_plan or {}),
+            "instruction": (
+                "Return a corrected complete Atomic Actuation Contract for the same selected "
+                "Strategy hypothesis. Do not change or compress the hypothesis."
+            ),
         }
-    )
+    user = _canonical_json(payload)
     return {"system": system, "user": user, "assistant": "{"}
 
 
@@ -268,38 +308,95 @@ def run_atomic_actuation_planner(
             getattr(ext_cfg, "memory_strategy_atomic_max_patches", 6) or 6
         ),
     }
-    prompt = _planner_prompt(
-        strategy_memo,
-        parent_code=parent_code,
-        budget=budget,
-        limits=limits,
-    )
     started = time.monotonic()
+    if not _composition_by_id(strategy_memo):
+        return {
+            "schema": "mlevolve_atomic_actuation_planner_trace_v1",
+            "status": "rejected",
+            "elapsed_seconds": round(time.monotonic() - started, 6),
+            "strategy_memo_sha256": payload_sha256(strategy_memo),
+            "parent_code_sha256": hashlib.sha256(parent_code.encode("utf-8")).hexdigest(),
+            "reason": "Strategy Memo has no candidate_compositions",
+            "limits": limits,
+            "contract_attempts": [],
+        }
     try:
-        query_fn = getattr(agent, "_atomic_planner_query_fn", None)
-        if callable(query_fn):
-            response = query_fn(
-                prompt=copy.deepcopy(prompt),
-                strategy_memo=copy.deepcopy(dict(strategy_memo)),
-                json_schema=copy.deepcopy(ATOMIC_ACTUATION_PLAN_SCHEMA),
+        contract_retries = int(
+            getattr(
+                ext_cfg,
+                "memory_strategy_atomic_planner_contract_retries",
+                2,
             )
-        else:
-            response = generate(
-                prompt=prompt,
-                cfg=agent.cfg,
-                temperature=0.0,
-                max_tokens=4000,
-                json_schema=ATOMIC_ACTUATION_PLAN_SCHEMA,
-                max_retries=2,
-            )
-        plan = _parse_json_object(response)
-        validation = validate_atomic_plan(
-            plan,
-            strategy_memo=strategy_memo,
-            max_modules=limits["max_modules"],
-            max_changes=limits["max_changes"],
-            max_patches=limits["max_patches"],
+            or 0
         )
+        plan: dict[str, Any] = {}
+        validation: dict[str, Any] = {
+            "valid": False,
+            "violations": ["planner did not produce a plan"],
+        }
+        contract_attempts: list[dict[str, Any]] = []
+        for contract_attempt in range(contract_retries + 1):
+            prompt = _planner_prompt(
+                strategy_memo,
+                parent_code=parent_code,
+                budget=budget,
+                limits=limits,
+                previous_plan=plan if contract_attempt else None,
+                contract_violations=(validation.get("violations") or [])
+                if contract_attempt
+                else (),
+            )
+            query_fn = getattr(agent, "_atomic_planner_query_fn", None)
+            if callable(query_fn):
+                response = query_fn(
+                    prompt=copy.deepcopy(prompt),
+                    strategy_memo=copy.deepcopy(dict(strategy_memo)),
+                    json_schema=copy.deepcopy(ATOMIC_ACTUATION_PLAN_SCHEMA),
+                    contract_attempt=contract_attempt,
+                )
+            else:
+                response = generate(
+                    prompt=prompt,
+                    cfg=agent.cfg,
+                    temperature=0.0,
+                    max_tokens=4000,
+                    json_schema=ATOMIC_ACTUATION_PLAN_SCHEMA,
+                    max_retries=2,
+                )
+            try:
+                plan = _parse_json_object(response)
+                validation = validate_atomic_plan(
+                    plan,
+                    strategy_memo=strategy_memo,
+                    max_modules=limits["max_modules"],
+                    max_changes=limits["max_changes"],
+                    max_patches=limits["max_patches"],
+                )
+            except Exception as exc:
+                plan = {}
+                validation = {
+                    "schema": "mlevolve_atomic_actuation_plan_validation_v1",
+                    "valid": False,
+                    "violations": [
+                        f"response parse failed: {type(exc).__name__}: {exc}"
+                    ],
+                    "selected_hypothesis_id": "",
+                    "available_hypothesis_ids": sorted(
+                        _composition_by_id(strategy_memo)
+                    ),
+                }
+            contract_attempts.append(
+                {
+                    "attempt": contract_attempt + 1,
+                    "response_sha256": hashlib.sha256(
+                        _canonical_json(response).encode("utf-8")
+                    ).hexdigest(),
+                    "valid": bool(validation.get("valid")),
+                    "violations": list(validation.get("violations") or []),
+                }
+            )
+            if validation.get("valid"):
+                break
         return {
             "schema": "mlevolve_atomic_actuation_planner_trace_v1",
             "status": "accepted" if validation["valid"] else "rejected",
@@ -310,6 +407,7 @@ def run_atomic_actuation_planner(
             "plan_sha256": payload_sha256(plan),
             "validation": validation,
             "limits": limits,
+            "contract_attempts": contract_attempts,
         }
     except Exception as exc:
         return {
@@ -504,6 +602,8 @@ def _coder_prompt(
     parent_code: str,
     task_description: str,
     execution_output: str,
+    previous_response: str = "",
+    previous_verdict: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     contract = _canonical_json(atomic_plan)
     system = (
@@ -523,6 +623,15 @@ def _coder_prompt(
         f"{instructions}\n\n{build_diff_format_suffix()}\n\n"
         f"Response format: {DIFF_SYS_FORMAT}"
     )
+    if previous_verdict is not None:
+        user += (
+            "\n\n# Contract-preserving repair\n"
+            "The prior diff was rejected. Repair only its mechanical contract violations; "
+            "the Atomic Actuation Contract and hypothesis are unchanged. Do not reduce or "
+            "replace the experiment.\n"
+            f"Prior verdict: {_canonical_json(previous_verdict)}\n"
+            f"Prior response:\n{previous_response}"
+        )
     assistant = (
         "I will implement only the allowed symbols in the contract. The current code is:\n"
         f"```python\n{parent_code}\n```\n"
@@ -546,34 +655,67 @@ def run_atomic_coder(
             "reason": "atomic planner was not accepted",
         }
     plan = dict(planner_trace.get("plan") or {})
-    prompt = _coder_prompt(
-        atomic_plan=plan,
-        parent_code=parent_code,
-        task_description=task_description,
-        execution_output=execution_output,
-    )
     started = time.monotonic()
     query_fn = getattr(agent, "_atomic_coder_query_fn", None)
     try:
-        if callable(query_fn):
-            response = query_fn(
-                prompt=copy.deepcopy(prompt),
-                atomic_plan=copy.deepcopy(plan),
-                parent_code=parent_code,
+        ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
+        contract_retries = int(
+            getattr(
+                ext_cfg,
+                "memory_strategy_atomic_coder_contract_retries",
+                1,
             )
-        else:
-            response = generate(
-                prompt=prompt,
-                cfg=agent.cfg,
-                temperature=getattr(agent.acfg.code, "temp", 0.0),
-                max_tokens=12000,
-                max_retries=2,
-            )
-        candidate_code, verdict = apply_atomic_diff_response(
-            response=str(response or ""),
-            original_code=parent_code,
-            atomic_plan=plan,
+            or 0
         )
+        candidate_code: str | None = None
+        response: Any = ""
+        verdict: dict[str, Any] = {
+            "schema": "mlevolve_plan_diff_verdict_v1",
+            "valid": False,
+            "violations": ["coder did not produce a diff"],
+        }
+        contract_attempts: list[dict[str, Any]] = []
+        for contract_attempt in range(contract_retries + 1):
+            prompt = _coder_prompt(
+                atomic_plan=plan,
+                parent_code=parent_code,
+                task_description=task_description,
+                execution_output=execution_output,
+                previous_response=str(response or "") if contract_attempt else "",
+                previous_verdict=verdict if contract_attempt else None,
+            )
+            if callable(query_fn):
+                response = query_fn(
+                    prompt=copy.deepcopy(prompt),
+                    atomic_plan=copy.deepcopy(plan),
+                    parent_code=parent_code,
+                    contract_attempt=contract_attempt,
+                )
+            else:
+                response = generate(
+                    prompt=prompt,
+                    cfg=agent.cfg,
+                    temperature=getattr(agent.acfg.code, "temp", 0.0),
+                    max_tokens=12000,
+                    max_retries=2,
+                )
+            candidate_code, verdict = apply_atomic_diff_response(
+                response=str(response or ""),
+                original_code=parent_code,
+                atomic_plan=plan,
+            )
+            contract_attempts.append(
+                {
+                    "attempt": contract_attempt + 1,
+                    "response_sha256": hashlib.sha256(
+                        str(response or "").encode("utf-8")
+                    ).hexdigest(),
+                    "valid": bool(verdict.get("valid")),
+                    "violations": list(verdict.get("violations") or []),
+                }
+            )
+            if candidate_code is not None:
+                break
         return {
             "schema": "mlevolve_atomic_coder_trace_v1",
             "status": "accepted" if candidate_code is not None else "rejected",
@@ -587,6 +729,7 @@ def run_atomic_coder(
                 else ""
             ),
             "plan_diff_verdict": verdict,
+            "contract_attempts": contract_attempts,
         }
     except Exception as exc:
         logger.exception("Atomic Coder failed")

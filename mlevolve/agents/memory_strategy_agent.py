@@ -27,13 +27,20 @@ logger = logging.getLogger("MLEvolve")
 STRATEGY_MEMO_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
+        "decision": {
+            "type": "string",
+            "enum": ["propose", "abstain"],
+        },
+        "abstention_reason": {"type": "string"},
         "current_system_map": {"type": "object"},
+        "evidence_portfolio": {"type": "object"},
         "coverage_gaps": {
             "type": "array",
             "items": {"type": "string"},
         },
         "candidate_compositions": {
             "type": "array",
+            "maxItems": 5,
             "items": {
                 "type": "object",
                 "properties": {
@@ -104,7 +111,10 @@ STRATEGY_MEMO_SCHEMA: dict[str, Any] = {
         },
     },
     "required": [
+        "decision",
+        "abstention_reason",
         "current_system_map",
+        "evidence_portfolio",
         "coverage_gaps",
         "candidate_compositions",
         "recommended_hypothesis_id",
@@ -112,6 +122,62 @@ STRATEGY_MEMO_SCHEMA: dict[str, Any] = {
         "declined_hypotheses",
     ],
     "additionalProperties": True,
+}
+
+
+_STRATEGY_REQUIRED_KEYS = tuple(STRATEGY_MEMO_SCHEMA["required"])
+_COMPOSITION_REQUIRED_KEYS = tuple(
+    STRATEGY_MEMO_SCHEMA["properties"]["candidate_compositions"]["items"][
+        "required"
+    ]
+)
+
+
+_PORTFOLIO_PATTERNS: dict[str, dict[str, tuple[str, ...]]] = {
+    "representation": {
+        "modernbert": (r"\bmodernbert\b",),
+        "deberta": (r"\bdeberta\b",),
+        "roberta": (r"\broberta\b",),
+        "distilbert": (r"\bdistilbert\b",),
+        "bert": (r"(?<![a-z])bert(?![a-z])",),
+        "efficientnet": (r"\befficientnet\b",),
+        "siglip": (r"\bsiglip\b",),
+        "dinov2": (r"\bdinov2\b",),
+        "vit": (r"\bvit\b", r"vision transformer"),
+    },
+    "adaptation_mode": {
+        "frozen_embedding": (
+            r"frozen.{0,40}(embedding|feature|backbone)",
+            r"(embedding|backbone).{0,40}frozen",
+            r"feature extractor",
+        ),
+        "fine_tuning": (r"fine[- ]?tun", r"unfrozen", r"classification head"),
+    },
+    "downstream_estimator": {
+        "xgboost": (r"\bxgboost\b", r"\bxgb\b"),
+        "lightgbm": (r"\blightgbm\b", r"\blgbm\b"),
+        "catboost": (r"\bcatboost\b",),
+        "linear_model": (r"logistic regression", r"linear classifier", r"\bsvm\b"),
+        "neural_head": (r"classification head", r"\bmlp\b", r"neural network"),
+    },
+    "validation": {
+        "five_fold": (r"(?:\b5\b|five)[- ]?fold", r"stratifiedkfold"),
+        "oof": (r"\boof\b", r"out[- ]of[- ]fold"),
+        "holdout": (r"holdout", r"train.{0,12}validation split", r"\b85/15\b", r"\b80/20\b"),
+        "temporal": (r"temporal split", r"chronological split", r"time[- ]based split"),
+    },
+    "feature_family": {
+        "embedding": (r"\bembedding", r"\bcls token\b", r"mean pooling"),
+        "tfidf": (r"tf[- ]?idf", r"n[- ]?gram"),
+        "stylometric": (r"stylometric", r"punctuation density", r"readability"),
+        "tabular": (r"tabular", r"numeric descriptor"),
+        "image": (r"\bimage", r"convolution", r"cnn"),
+        "geospatial": (r"geospatial", r"haversine", r"airport", r"manhattan"),
+    },
+    "calibration_or_ensemble": {
+        "temperature_scaling": (r"temperature scal",),
+        "probability_blend": (r"\bblend", r"weighted average", r"ensemble average"),
+    },
 }
 
 
@@ -282,6 +348,68 @@ def build_memory_cards(
     return cards
 
 
+def build_component_portfolio(
+    cards: Iterable[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Index independently observed components without inferring causality.
+
+    A whole pipeline's metric is not a component ablation.  The index therefore
+    exposes only deterministic text matches and their supporting memory IDs; the
+    Strategy Agent must decide whether a cross-memory composition is justified.
+    """
+
+    axes: dict[str, dict[str, list[str]]] = {}
+    card_components: list[dict[str, Any]] = []
+    for card in cards:
+        memory_id = str(card.get("memory_id") or "")
+        if not memory_id:
+            continue
+        evidence_text = _canonical_json(
+            {
+                key: card.get(key)
+                for key in (
+                    "title",
+                    "method_family",
+                    "plan",
+                    "text",
+                    "prompt_text",
+                    "analysis",
+                    "failure_signature",
+                    "repair_action",
+                )
+                if card.get(key) not in (None, "", [], {})
+            }
+        )
+        matched: dict[str, list[str]] = {}
+        for axis, components in _PORTFOLIO_PATTERNS.items():
+            for component, patterns in components.items():
+                if not any(
+                    re.search(pattern, evidence_text, re.IGNORECASE)
+                    for pattern in patterns
+                ):
+                    continue
+                axes.setdefault(axis, {}).setdefault(component, []).append(memory_id)
+                matched.setdefault(axis, []).append(component)
+        card_components.append(
+            {
+                "memory_id": memory_id,
+                "metric": card.get("metric"),
+                "outcome": card.get("outcome", ""),
+                "components": matched,
+            }
+        )
+    return {
+        "schema": "mlevolve_memory_component_portfolio_v1",
+        "interpretation_rule": (
+            "A pipeline metric applies to the full memory card, not to each matched "
+            "component. A weak pipeline may still contain a useful component if its "
+            "failure arose at a different interface."
+        ),
+        "component_axes": axes,
+        "card_components": card_components,
+    }
+
+
 def code_component_fingerprint(code: str) -> dict[str, Any]:
     """Return a compact structural view without pretending to understand code."""
 
@@ -316,7 +444,8 @@ def code_component_fingerprint(code: str) -> dict[str, Any]:
         "model_families": (
             "lightgbm", "xgboost", "catboost", "randomforest", "resnet",
             "efficientnet", "convnext", "vit", "dinov2", "siglip", "deberta",
-            "roberta", "tfidf", "logisticregression", "svm", "knn",
+            "modernbert", "distilbert", "roberta", "tfidf",
+            "logisticregression", "svm", "knn",
         ),
         "validation": (
             "stratifiedkfold", "kfold", "groupkfold", "train_test_split",
@@ -476,6 +605,7 @@ def build_strategy_context(
             ),
         },
         "memory_cards": cards,
+        "component_portfolio": build_component_portfolio(cards),
     }
     max_input_chars = int(
         getattr(ext_cfg, "memory_strategy_max_input_chars", 0) or 0
@@ -499,26 +629,61 @@ def build_strategy_context(
     return context
 
 
-def _strategy_prompt(context: Mapping[str, Any]) -> dict[str, str]:
+def _strategy_prompt(
+    context: Mapping[str, Any],
+    *,
+    previous_memo: Mapping[str, Any] | None = None,
+    contract_violations: Iterable[str] = (),
+) -> dict[str, str]:
+    exact_contract = _canonical_json(STRATEGY_MEMO_SCHEMA)
     system = (
         "You are the Memory Strategy Agent, a read-only task-level research strategist. "
-        "Do not write code and do not merely repeat the highest-ranked memory. Build a map "
-        "of the current system, identify evidence-backed coverage gaps, and propose a small "
-        "number of globally coherent hypotheses. You may combine separately successful ideas "
-        "only when their interfaces and compute budgets are compatible. Every proposal must "
+        "Do not write code and do not merely repeat the highest-ranked memory. Decompose each "
+        "memory into representation, adaptation mode, downstream estimator, validation, feature, "
+        "calibration, compute, and failure components. A full-pipeline score is not an ablation: "
+        "do not discard one component solely because the pipeline containing it scored poorly. "
+        "Instead ask whether the failure came from another component or an incompatible interface. "
+        "Build a map of the current system, identify missing crossings in the component portfolio, "
+        "and propose globally coherent hypotheses. If evidence is sufficient, decision must be "
+        "'propose' and candidate_compositions must contain 3 to 5 distinct hypotheses: include "
+        "at least one conservative transfer, at least one cross-lineage composition citing two or "
+        "more memory IDs, and at least one discriminating ablation or frontier alternative. At "
+        "least one composition must explicitly examine a component combination not yet jointly "
+        "tested. You may combine ideas only when interfaces and compute budgets are compatible. "
+        "If evidence is genuinely insufficient, decision may be 'abstain', candidate_compositions "
+        "must be empty, and abstention_reason must be specific. Every proposal must "
         "cite only memory IDs present in memory_cards, distinguish the parent's real "
         "submission-aligned metric from branch_best_metric, estimate full training cost, name "
         "conflicts, preserve a minimal change set, and state a falsification condition. Reject "
         "duplicate, already-tried, over-budget, or unsupported combinations. Output one JSON "
-        "object only. This is SHADOW MODE: your memo has no authority to change the live plan."
+        "object only using the exact field names in RESPONSE_SCHEMA; do not substitute fields such "
+        "as proposed_experiment, experiment, changes, or memory_ids. This is SHADOW MODE: your "
+        "memo has no authority to change the live plan.\n\nRESPONSE_SCHEMA:\n" + exact_contract
     )
     user = (
         "Analyze this frozen point-in-time context. A natural composition is useful only if "
-        "the supplied evidence independently supports its parts and the combined experiment "
-        "fits the remaining budget. Prefer one executable next experiment, while documenting "
-        "declined alternatives.\n\nCONTEXT_JSON:\n"
+        "the supplied evidence supports its parts or supplies a concrete failure-mode argument "
+        "for transferring them, and the combined experiment fits the remaining budget. Use the "
+        "component_portfolio to look for axes that have each been observed but never crossed. "
+        "Prefer one executable next experiment, while preserving other defensible alternatives "
+        "for evaluation.\n\nCONTEXT_JSON:\n"
         + _canonical_json(context)
     )
+    violations = [str(value) for value in contract_violations]
+    if previous_memo is not None or violations:
+        user += (
+            "\n\nCONTRACT_REPAIR_REQUIRED:\n"
+            + _canonical_json(
+                {
+                    "violations": violations,
+                    "previous_response": dict(previous_memo or {}),
+                    "instruction": (
+                        "Return a corrected complete object. Preserve useful analysis, but use "
+                        "the exact schema and satisfy every listed violation."
+                    ),
+                }
+            )
+        )
     return {"system": system, "user": user, "assistant": "{"}
 
 
@@ -540,16 +705,52 @@ def _parse_json_object(response: Any) -> dict[str, Any]:
 
 
 def validate_strategy_memo(
-    memo: Mapping[str, Any], *, available_memory_ids: Iterable[str]
+    memo: Mapping[str, Any],
+    *,
+    available_memory_ids: Iterable[str],
+    min_candidate_compositions: int = 1,
+    max_candidate_compositions: int = 5,
 ) -> dict[str, Any]:
     violations: list[str] = []
+    missing_keys = [key for key in _STRATEGY_REQUIRED_KEYS if key not in memo]
+    if missing_keys:
+        violations.append(f"missing required top-level keys: {missing_keys}")
     available = {str(value) for value in available_memory_ids}
     compositions = list(memo.get("candidate_compositions") or [])
+    decision = str(memo.get("decision") or "")
+    if decision not in {"propose", "abstain"}:
+        violations.append("decision must be propose or abstain")
+    if not isinstance(memo.get("current_system_map"), Mapping):
+        violations.append("current_system_map must be an object")
+    if not isinstance(memo.get("evidence_portfolio"), Mapping):
+        violations.append("evidence_portfolio must be an object")
+    if decision == "propose" and not (
+        int(min_candidate_compositions)
+        <= len(compositions)
+        <= int(max_candidate_compositions)
+    ):
+        violations.append(
+            "propose requires "
+            f"{int(min_candidate_compositions)}..{int(max_candidate_compositions)} "
+            "candidate_compositions"
+        )
+    if decision == "abstain":
+        if compositions:
+            violations.append("abstain requires empty candidate_compositions")
+        if not str(memo.get("abstention_reason") or "").strip():
+            violations.append("abstain requires a specific abstention_reason")
     hypothesis_ids: list[str] = []
     for index, item in enumerate(compositions):
         if not isinstance(item, Mapping):
             violations.append(f"composition[{index}] is not an object")
             continue
+        missing_composition_keys = [
+            key for key in _COMPOSITION_REQUIRED_KEYS if key not in item
+        ]
+        if missing_composition_keys:
+            violations.append(
+                f"composition[{index}] missing required keys: {missing_composition_keys}"
+            )
         hypothesis_id = str(item.get("hypothesis_id") or "")
         if not hypothesis_id:
             violations.append(f"composition[{index}] has no hypothesis_id")
@@ -564,8 +765,31 @@ def validate_strategy_memo(
             violations.append(
                 f"{hypothesis_id or index} cites unavailable memory IDs: {unknown}"
             )
+        cited = [str(value) for value in (item.get("source_memory_ids") or [])]
+        if not cited:
+            violations.append(f"{hypothesis_id or index} has no source_memory_ids")
+        if (
+            str(item.get("novelty_kind") or "") == "new_composition"
+            and len(set(cited)) < 2
+        ):
+            violations.append(
+                f"{hypothesis_id or index} new_composition requires at least two memory IDs"
+            )
+        if not list(item.get("compatibility_checks") or []):
+            violations.append(f"{hypothesis_id or index} has no compatibility_checks")
         if not list(item.get("minimal_change_set") or []):
             violations.append(f"{hypothesis_id or index} has an empty minimal_change_set")
+        if not str(item.get("expected_mechanism") or "").strip():
+            violations.append(f"{hypothesis_id or index} has no expected_mechanism")
+        if not str(item.get("falsification_condition") or "").strip():
+            violations.append(f"{hypothesis_id or index} has no falsification_condition")
+        if str(item.get("novelty_kind") or "") not in {
+            "new_composition",
+            "missing_ablation",
+            "targeted_repair",
+            "single_memory_actuation",
+        }:
+            violations.append(f"{hypothesis_id or index} has invalid novelty_kind")
         try:
             if int(item.get("estimated_compute_seconds", -1)) < 0:
                 violations.append(f"{hypothesis_id or index} has invalid compute estimate")
@@ -576,12 +800,16 @@ def validate_strategy_memo(
         violations.append("recommended_hypothesis_id is not in candidate_compositions")
     if compositions and not recommended:
         violations.append("nonempty compositions require one recommendation")
+    if decision == "abstain" and recommended:
+        violations.append("abstain requires empty recommended_hypothesis_id")
     return {
         "schema": "mlevolve_memory_strategy_validation_v1",
         "valid": not violations,
         "violations": violations,
         "available_memory_ids": sorted(available),
         "hypothesis_ids": hypothesis_ids,
+        "decision": decision,
+        "composition_count": len(compositions),
     }
 
 
@@ -667,38 +895,88 @@ def run_memory_strategy_shadow(
         branch_best_metric=branch_best_metric,
     )
     cards = list(context.get("memory_cards") or [])
-    prompt = _strategy_prompt(context)
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
     started = time.monotonic()
     try:
-        query_fn = getattr(agent, "_memory_strategy_query_fn", None)
-        if callable(query_fn):
-            response = query_fn(
-                prompt=copy.deepcopy(prompt),
-                context=copy.deepcopy(context),
-                json_schema=copy.deepcopy(STRATEGY_MEMO_SCHEMA),
-            )
-        else:
-            response = generate(
-                prompt=prompt,
-                cfg=agent.cfg,
-                temperature=float(
-                    getattr(ext_cfg, "memory_strategy_temperature", 0.0) or 0.0
-                ),
-                max_tokens=int(
-                    getattr(ext_cfg, "memory_strategy_max_output_tokens", 6000)
-                    or 6000
-                ),
-                json_schema=STRATEGY_MEMO_SCHEMA,
-                max_retries=int(
-                    getattr(ext_cfg, "memory_strategy_max_retries", 2) or 2
-                ),
-            )
-        memo = _parse_json_object(response)
-        validation = validate_strategy_memo(
-            memo,
-            available_memory_ids=[card["memory_id"] for card in cards],
+        contract_retries = int(
+            getattr(ext_cfg, "memory_strategy_contract_retries", 2) or 0
         )
+        min_compositions = int(
+            getattr(ext_cfg, "memory_strategy_min_candidate_compositions", 3)
+            or 1
+        )
+        contract_attempts: list[dict[str, Any]] = []
+        memo: dict[str, Any] = {}
+        validation: dict[str, Any] = {
+            "valid": False,
+            "violations": ["strategy call did not produce a memo"],
+        }
+        for contract_attempt in range(contract_retries + 1):
+            prompt = _strategy_prompt(
+                context,
+                previous_memo=memo if contract_attempt else None,
+                contract_violations=(validation.get("violations") or [])
+                if contract_attempt
+                else (),
+            )
+            query_fn = getattr(agent, "_memory_strategy_query_fn", None)
+            if callable(query_fn):
+                response = query_fn(
+                    prompt=copy.deepcopy(prompt),
+                    context=copy.deepcopy(context),
+                    json_schema=copy.deepcopy(STRATEGY_MEMO_SCHEMA),
+                    contract_attempt=contract_attempt,
+                )
+            else:
+                response = generate(
+                    prompt=prompt,
+                    cfg=agent.cfg,
+                    temperature=float(
+                        getattr(ext_cfg, "memory_strategy_temperature", 0.0) or 0.0
+                    ),
+                    max_tokens=int(
+                        getattr(ext_cfg, "memory_strategy_max_output_tokens", 6000)
+                        or 6000
+                    ),
+                    json_schema=STRATEGY_MEMO_SCHEMA,
+                    max_retries=int(
+                        getattr(ext_cfg, "memory_strategy_max_retries", 2) or 2
+                    ),
+                )
+            try:
+                memo = _parse_json_object(response)
+                validation = validate_strategy_memo(
+                    memo,
+                    available_memory_ids=[card["memory_id"] for card in cards],
+                    min_candidate_compositions=min_compositions,
+                )
+            except Exception as exc:
+                memo = {}
+                validation = {
+                    "schema": "mlevolve_memory_strategy_validation_v1",
+                    "valid": False,
+                    "violations": [
+                        f"response parse failed: {type(exc).__name__}: {exc}"
+                    ],
+                    "available_memory_ids": sorted(
+                        card["memory_id"] for card in cards
+                    ),
+                    "hypothesis_ids": [],
+                    "decision": "",
+                    "composition_count": 0,
+                }
+            contract_attempts.append(
+                {
+                    "attempt": contract_attempt + 1,
+                    "response_sha256": hashlib.sha256(
+                        _canonical_json(response).encode("utf-8")
+                    ).hexdigest(),
+                    "valid": bool(validation.get("valid")),
+                    "violations": list(validation.get("violations") or []),
+                }
+            )
+            if validation.get("valid"):
+                break
         status = "completed" if validation["valid"] else "completed_with_contract_violations"
         return {
             **base_trace,
@@ -715,6 +993,7 @@ def run_memory_strategy_shadow(
             "memo": memo,
             "memo_sha256": payload_sha256(memo),
             "validation": validation,
+            "contract_attempts": contract_attempts,
         }
     except Exception as exc:
         logger.exception("Memory Strategy shadow call failed")
@@ -733,6 +1012,7 @@ def run_memory_strategy_shadow(
 
 __all__ = [
     "STRATEGY_MEMO_SCHEMA",
+    "build_component_portfolio",
     "build_memory_cards",
     "build_strategy_context",
     "code_component_fingerprint",
