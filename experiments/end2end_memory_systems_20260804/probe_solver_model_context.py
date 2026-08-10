@@ -39,6 +39,11 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--active-probe", action="store_true")
     parser.add_argument(
+        "--active-probe-if-metadata-missing",
+        action="store_true",
+        help="Run synthetic probes only when /models exposes no context field.",
+    )
+    parser.add_argument(
         "--probe-words",
         default="32768,65536,98304,126000",
         help="Synthetic repeated-word counts; stop after the first rejection.",
@@ -78,7 +83,11 @@ def main() -> int:
             "error": str(exc),
         }
 
-    if args.active_probe:
+    should_probe = bool(args.active_probe) or bool(
+        args.active_probe_if_metadata_missing
+        and not report.get("provider_metadata", {}).get("context_fields")
+    )
+    if should_probe:
         for words in [int(value) for value in args.probe_words.split(",") if value.strip()]:
             synthetic = "probe " * words
             try:
