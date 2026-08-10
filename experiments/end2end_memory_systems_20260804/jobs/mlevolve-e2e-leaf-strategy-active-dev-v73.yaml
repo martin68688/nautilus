@@ -46,12 +46,12 @@ spec:
       resources:
         requests:
           cpu: "16"
-          memory: 64Gi
+          memory: 32Gi
           ephemeral-storage: 64Gi
           nvidia.com/a100: "1"
         limits:
           cpu: "16"
-          memory: 64Gi
+          memory: 32Gi
           ephemeral-storage: 64Gi
           nvidia.com/a100: "1"
       volumeMounts:
