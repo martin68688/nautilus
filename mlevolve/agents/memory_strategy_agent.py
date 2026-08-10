@@ -1263,7 +1263,10 @@ def _strategy_prompt(
         "addressed_opportunities. Use disposition='proposed' with the corresponding hypothesis_id, "
         "or disposition='declined' with a concrete compatibility/budget reason. A weak source "
         "pipeline score alone is not a valid decline reason because it does not isolate the shared "
-        "component. Do not make every candidate a descendant of the current best lineage: when "
+        "component. When disposition='proposed', the referenced hypothesis must explicitly name "
+        "every alternative listed by that opportunity and the shared interface used to combine "
+        "them; a two-item subset does not satisfy a three-alternative opportunity. Do not make "
+        "every candidate a descendant of the current best lineage: when "
         "the portfolio permits it, at least two candidates must use a different base lineage. "
         "You may combine ideas only when interfaces and compute budgets are compatible. "
         "If evidence is genuinely insufficient, decision may be 'abstain', candidate_compositions "
@@ -1301,9 +1304,30 @@ def _strategy_prompt(
                 {
                     "violations": violations,
                     "previous_response": dict(previous_memo or {}),
+                    "repair_checklist": {
+                        "decision_propose_composition_count": "3..5",
+                        "required_composition_fields": list(
+                            _COMPOSITION_REQUIRED_KEYS
+                        ),
+                        "required_opportunity_ids": [
+                            str(item.get("opportunity_id") or "")
+                            for item in (
+                                (context.get("component_portfolio") or {}).get(
+                                    "within_axis_diversity_opportunities", []
+                                )
+                            )
+                            if isinstance(item, Mapping)
+                            and item.get("opportunity_id")
+                        ],
+                        "recommendation_required_when_compositions_nonempty": True,
+                    },
                     "instruction": (
                         "Return a corrected complete object. Preserve useful analysis, but use "
-                        "the exact schema and satisfy every listed violation."
+                        "the exact schema and satisfy every listed violation. Before returning, "
+                        "audit every composition against required_composition_fields, ensure "
+                        "recommended_hypothesis_id names an existing complete composition, and "
+                        "address every required opportunity exactly once. Drop an incomplete "
+                        "candidate only if at least three complete candidates remain."
                     ),
                 }
             )
@@ -1315,6 +1339,14 @@ def _parse_json_object(response: Any) -> dict[str, Any]:
     if isinstance(response, Mapping):
         return copy.deepcopy(dict(response))
     text = str(response or "").strip()
+    if (
+        not text.startswith("{")
+        and text.endswith("}")
+        and re.match(r'^"[^"\\]+"\s*:', text)
+    ):
+        # The assistant prefill supplied the opening brace, so some providers
+        # stream only the continuation beginning with the first JSON key.
+        text = "{" + text
     fenced = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, re.DOTALL)
     if fenced:
         text = fenced.group(1)
@@ -1322,6 +1354,12 @@ def _parse_json_object(response: Any) -> dict[str, Any]:
         start, end = text.find("{"), text.rfind("}")
         if start >= 0 and end >= start:
             text = text[start : end + 1]
+        elif start < 0 and end >= 0 and ":" in text:
+            # Chat assistant prefill may contain the opening brace while the
+            # provider returns only the continuation. Reattach that one known
+            # framing character; all substantive JSON still comes from the
+            # model and remains subject to the full contract validator.
+            text = "{" + text[: end + 1]
     value = json.loads(text)
     if not isinstance(value, dict):
         raise ValueError("strategy response is not a JSON object")
@@ -1422,6 +1460,7 @@ def validate_strategy_memo(
     min_candidate_compositions: int = 1,
     max_candidate_compositions: int = 5,
     required_opportunity_ids: Iterable[str] = (),
+    required_opportunities: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     violations: list[str] = []
     missing_keys = [key for key in _STRATEGY_REQUIRED_KEYS if key not in memo]
@@ -1514,7 +1553,19 @@ def validate_strategy_memo(
         violations.append("nonempty compositions require one recommendation")
     if decision == "abstain" and recommended:
         violations.append("abstain requires empty recommended_hypothesis_id")
-    required_opportunities = {str(value) for value in required_opportunity_ids}
+    opportunity_details = {
+        str(row.get("opportunity_id") or ""): dict(row)
+        for row in required_opportunities
+        if isinstance(row, Mapping) and row.get("opportunity_id")
+    }
+    required_opportunity_set = {
+        str(value) for value in required_opportunity_ids
+    } | set(opportunity_details)
+    composition_by_id = {
+        str(item.get("hypothesis_id") or ""): item
+        for item in compositions
+        if isinstance(item, Mapping) and item.get("hypothesis_id")
+    }
     addressed_rows = list(memo.get("addressed_opportunities") or [])
     addressed_ids: list[str] = []
     for index, row in enumerate(addressed_rows):
@@ -1537,16 +1588,51 @@ def validate_strategy_memo(
             violations.append(
                 f"{opportunity_id or index} proposed disposition requires a valid hypothesis_id"
             )
+        if disposition == "proposed" and hypothesis_id in composition_by_id:
+            opportunity = opportunity_details.get(opportunity_id) or {}
+            alternatives = [
+                str(value)
+                for value in (opportunity.get("alternatives") or [])
+                if value
+            ]
+            composition_text = _canonical_json(
+                {
+                    key: composition_by_id[hypothesis_id].get(key)
+                    for key in (
+                        "hypothesis",
+                        "minimal_change_set",
+                        "expected_mechanism",
+                    )
+                }
+            )
+            missing_alternatives = [
+                alternative
+                for alternative in alternatives
+                if not re.search(
+                    re.escape(alternative).replace(r"\_", r"[- _]?"),
+                    composition_text,
+                    re.IGNORECASE,
+                )
+            ]
+            if missing_alternatives:
+                violations.append(
+                    f"{opportunity_id} proposed hypothesis {hypothesis_id} does not "
+                    f"explicitly cover alternatives: {missing_alternatives}"
+                )
         if disposition == "declined" and not str(row.get("reason") or "").strip():
             violations.append(
                 f"{opportunity_id or index} declined disposition requires a reason"
             )
-    missing_opportunities = sorted(required_opportunities - set(addressed_ids))
+    missing_opportunities = sorted(
+        required_opportunity_set - set(addressed_ids)
+    )
     if missing_opportunities:
         violations.append(
             f"unaddressed within-axis diversity opportunities: {missing_opportunities}"
         )
-    unknown_opportunities = sorted(set(addressed_ids) - required_opportunities)
+    unknown_opportunities = sorted(
+        set(addressed_ids) - required_opportunity_set
+    )
     if unknown_opportunities:
         violations.append(
             f"addressed unknown diversity opportunities: {unknown_opportunities}"
@@ -1559,7 +1645,7 @@ def validate_strategy_memo(
         "hypothesis_ids": hypothesis_ids,
         "decision": decision,
         "composition_count": len(compositions),
-        "required_opportunity_ids": sorted(required_opportunities),
+        "required_opportunity_ids": sorted(required_opportunity_set),
         "addressed_opportunity_ids": addressed_ids,
     }
 
@@ -1663,14 +1749,18 @@ def run_memory_strategy_shadow(
             "memory_card_ids": [card.get("memory_id", "") for card in cards],
             "memory_card_count": len(cards),
         }
-    required_opportunity_ids = [
-        str(item.get("opportunity_id") or "")
+    required_opportunities = [
+        copy.deepcopy(dict(item))
         for item in (
             (context.get("component_portfolio") or {}).get(
                 "within_axis_diversity_opportunities", []
             )
         )
         if isinstance(item, Mapping) and item.get("opportunity_id")
+    ]
+    required_opportunity_ids = [
+        str(item.get("opportunity_id") or "")
+        for item in required_opportunities
     ]
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
     inherited_model = str(getattr(agent.acfg.code, "model", "") or "")
@@ -1780,6 +1870,7 @@ def run_memory_strategy_shadow(
                     available_memory_ids=[card["memory_id"] for card in cards],
                     min_candidate_compositions=min_compositions,
                     required_opportunity_ids=required_opportunity_ids,
+                    required_opportunities=required_opportunities,
                 )
             except Exception as exc:
                 memo = {}

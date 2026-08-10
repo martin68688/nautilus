@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 import sys
 import time
 from pathlib import Path
@@ -44,7 +45,7 @@ def _config(*, shadow_enabled=True, stages=None):
         memory_strategy_max_input_chars=0,
         memory_strategy_max_output_tokens=12000,
         memory_strategy_max_retries=2,
-        memory_strategy_contract_retries=2,
+        memory_strategy_contract_retries=4,
         memory_strategy_min_candidate_compositions=1,
         memory_strategy_temperature=0.0,
         memory_strategy_model="deepseek-v4-pro",
@@ -580,6 +581,43 @@ def test_strategy_contract_requires_auditable_opportunity_disposition():
     assert accepted["valid"] is True
 
 
+def test_proposed_diversity_opportunity_must_name_every_alternative():
+    memo = _strategy_memo()
+    memo["addressed_opportunities"] = [
+        {
+            "opportunity_id": "within_axis::representation::a+b+c",
+            "disposition": "proposed",
+            "hypothesis_id": "h-three-model-five-fold",
+            "reason": "shared frozen prediction interface",
+        }
+    ]
+    opportunity = {
+        "opportunity_id": "within_axis::representation::a+b+c",
+        "alternatives": ["deberta", "distilbert", "modernbert"],
+    }
+
+    rejected = validate_strategy_memo(
+        memo,
+        available_memory_ids=["run::three-model", "run::five-fold"],
+        required_opportunities=[opportunity],
+    )
+    assert rejected["valid"] is False
+    assert "does not explicitly cover alternatives" in " ".join(
+        rejected["violations"]
+    )
+
+    composition = memo["candidate_compositions"][0]
+    composition["hypothesis"] = (
+        "combine DeBERTa, DistilBERT, and ModernBERT at one frozen feature interface"
+    )
+    accepted = validate_strategy_memo(
+        memo,
+        available_memory_ids=["run::three-model", "run::five-fold"],
+        required_opportunities=[opportunity],
+    )
+    assert accepted["valid"] is True
+
+
 def test_shadow_agent_records_global_composition_without_mutating_router_or_prompt():
     agent = _agent()
     parent = _parent()
@@ -736,6 +774,26 @@ def test_strategy_repairs_malformed_thinking_json_with_non_thinking_transcriber(
     assert observed["thinking_enabled"] is False
     assert observed["json_schema"] == memory_strategy_module.STRATEGY_MEMO_SCHEMA
     assert agent.cfg.agent.code.model == "deepseek-v4-flash"
+
+
+def test_strategy_restores_opening_brace_consumed_by_assistant_prefill():
+    agent = _agent()
+    parent = _parent()
+    continuation = json.dumps(_strategy_memo())[1:]
+    agent._memory_strategy_query_fn = lambda **_kwargs: continuation
+    agent._memory_strategy_json_normalizer_fn = lambda **_kwargs: (_ for _ in ()).throw(
+        AssertionError("deterministic prefill repair should parse before normalization")
+    )
+
+    trace = run_memory_strategy_shadow(
+        agent,
+        parent,
+        stage="improve",
+        router_pack=_router_pack(),
+    )
+
+    assert trace["status"] == "completed"
+    assert trace["contract_attempts"][0]["json_normalization"]["used"] is False
 
 
 def test_debug_shadow_runs_only_for_causal_gap_or_repeated_failure():
@@ -954,6 +1012,36 @@ def test_strategy_contract_retries_legacy_shape_instead_of_marking_it_valid():
         trace["contract_attempts"][0]["violations"]
     )
     assert trace["contract_attempts"][1]["valid"] is True
+
+
+def test_strategy_contract_allows_four_bounded_semantic_repair_retries():
+    agent = _agent()
+    parent = _parent()
+    calls = []
+    prompts = []
+
+    def query_fn(**kwargs):
+        calls.append(kwargs["contract_attempt"])
+        prompts.append(kwargs["prompt"])
+        if kwargs["contract_attempt"] < 4:
+            incomplete = _strategy_memo()
+            incomplete["recommended_hypothesis_id"] = ""
+            incomplete["recommendation_reason"] = ""
+            return incomplete
+        return _strategy_memo()
+
+    agent._memory_strategy_query_fn = query_fn
+    trace = run_memory_strategy_shadow(
+        agent,
+        parent,
+        stage="improve",
+        router_pack=_router_pack(),
+    )
+
+    assert trace["status"] == "completed"
+    assert calls == [0, 1, 2, 3, 4]
+    assert "repair_checklist" in prompts[1]["user"]
+    assert trace["contract_attempts"][-1]["valid"] is True
 
 
 def test_atomic_planner_retries_legacy_shape_without_shrinking_hypothesis():

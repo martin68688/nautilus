@@ -390,7 +390,7 @@ external_skill_memory:
   memory_strategy_max_input_chars: 0
   memory_strategy_max_output_tokens: 12000
   memory_strategy_max_retries: 2
-  memory_strategy_contract_retries: 2
+  memory_strategy_contract_retries: 4
   memory_strategy_min_candidate_compositions: 3
   memory_strategy_temperature: 0.0
   memory_strategy_model: "deepseek-v4-pro"

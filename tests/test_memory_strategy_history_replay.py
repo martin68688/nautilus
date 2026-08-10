@@ -44,6 +44,12 @@ SMOKE_JOB_V68 = SMOKE_JOB.with_name(
 SMOKE_JOB_V69 = SMOKE_JOB.with_name(
     "mlevolve-e2e-memory-strategy-shadow-smoke-v69.yaml"
 )
+SMOKE_JOB_V70 = SMOKE_JOB.with_name(
+    "mlevolve-e2e-memory-strategy-shadow-smoke-v70.yaml"
+)
+SMOKE_JOB_V71 = SMOKE_JOB.with_name(
+    "mlevolve-e2e-memory-strategy-shadow-smoke-v71.yaml"
+)
 
 
 def _runner_module():
@@ -210,6 +216,67 @@ def test_replay_evaluator_distinguishes_structural_from_exact_future_match():
     assert result["future_strategy_hit_ids"] == ["exact-three"]
 
 
+def test_run_case_allows_strategy_current_frontier_citations(monkeypatch):
+    runner = _runner_module()
+    current_id = "current::branch-best"
+    memo = {
+        "candidate_compositions": [
+            {
+                "hypothesis_id": "use-current",
+                "hypothesis": "retain the current branch best",
+                "source_memory_ids": [current_id],
+            }
+        ]
+    }
+    monkeypatch.setattr(
+        runner,
+        "run_memory_strategy_shadow",
+        lambda *_args, **_kwargs: {
+            "status": "completed",
+            "memory_card_ids": [current_id, "history::one"],
+            "memo": memo,
+        },
+    )
+    case = {
+        "case_id": "current-citation",
+        "task_id": "spooky-author-identification",
+        "task_description": "authorship",
+        "data_preview": "text",
+        "stage": "improve",
+        "parent": {
+            "node_id": "branch-best",
+            "code": "def train():\n    return 1\n",
+            "plan": "baseline",
+            "metric": 0.3,
+            "maximize": False,
+            "stage": "draft",
+            "is_buggy": False,
+        },
+        "memory_events": [
+            {
+                "candidate_id": "history::one",
+                "source_task_id": "spooky-author-identification",
+                "metric": 0.4,
+            }
+        ],
+        "cutoff": {"order": 1},
+        "hidden_future": {
+            "id": "future::hidden",
+            "memory_ids": ["future::hidden"],
+        },
+    }
+
+    result = runner.run_case(
+        case,
+        config_path=ROOT / "mlevolve" / "config" / "config.yaml",
+        actuate=False,
+    )
+
+    assert result["evaluation"]["all_citations_visible"] is True
+    assert result["strategy_visible_memory_ids"] == [current_id, "history::one"]
+    assert result["visible_memory_ids"] == ["history::one"]
+
+
 def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
     for path in (
         SMOKE_JOB,
@@ -218,6 +285,8 @@ def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
         SMOKE_JOB_V67,
         SMOKE_JOB_V68,
         SMOKE_JOB_V69,
+        SMOKE_JOB_V70,
+        SMOKE_JOB_V71,
     ):
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
         labels = job["metadata"]["labels"]
@@ -231,18 +300,30 @@ def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
         assert (
             "future_strategy_hit" in command
             or "future_strategy_structural_hit" in command
+            or "verify_strategy_shadow_smoke_v70.py" in command
+            or "verify_strategy_shadow_smoke_v71.py" in command
         )
-        assert "atomic_actuation" in command
+        assert "atomic_actuation" in command or "--actuate" in command
         assert "sleep" not in command
         assert job["spec"]["backoffLimit"] == 0
-        if path in {SMOKE_JOB_V67, SMOKE_JOB_V68, SMOKE_JOB_V69}:
+        if path in {
+            SMOKE_JOB_V67,
+            SMOKE_JOB_V68,
+            SMOKE_JOB_V69,
+            SMOKE_JOB_V70,
+            SMOKE_JOB_V71,
+        }:
             assert (
                 "strategy_model_is_v4_pro" in command
                 or '"model_is_v4_pro"' in command
+                or "verify_strategy_shadow_smoke_v70.py" in command
+                or "verify_strategy_shadow_smoke_v71.py" in command
             )
             assert (
                 "strategy_thinking_enabled" in command
                 or '"thinking_enabled"' in command
+                or "verify_strategy_shadow_smoke_v70.py" in command
+                or "verify_strategy_shadow_smoke_v71.py" in command
             )
         if path == SMOKE_JOB_V68:
             assert "all_diversity_opportunities_addressed" in command
@@ -250,3 +331,7 @@ def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
             assert "future_strategy_structural_hit" in command
             assert "future_strategy_exact_hit" in command
             assert "spooky-after-multibackbone-before-cleanup-repair" in command
+        if path in {SMOKE_JOB_V70, SMOKE_JOB_V71}:
+            assert "memory_strategy_shadow_history_slices_v3.json" in command
+        if path == SMOKE_JOB_V71:
+            assert "verify_strategy_shadow_smoke_v71.py" in command

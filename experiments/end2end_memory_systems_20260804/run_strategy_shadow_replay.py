@@ -355,10 +355,17 @@ def run_case(
         production_prompt_sha256=str(case.get("production_prompt_sha256") or "historical-replay"),
     )
     memo = dict(trace.get("memo") or {})
+    strategy_visible_ids = [
+        str(value) for value in (trace.get("memory_card_ids") or []) if value
+    ]
     evaluation = evaluate_memo(
         case,
         memo=memo,
-        visible_memory_ids=visible_ids,
+        # Strategy may cite current::<node_id> cards in addition to historical
+        # Router IDs.  Hidden-future isolation is still checked against the
+        # raw time-sliced Router pool above; citation support is checked against
+        # the exact eight-card evidence view that the Strategy actually saw.
+        visible_memory_ids=strategy_visible_ids,
     )
     atomic = {}
     if (
@@ -383,6 +390,7 @@ def run_case(
         "hidden_future_id": str((case.get("hidden_future") or {}).get("id") or ""),
         "hidden_future_leakage_ids": leakage_ids,
         "visible_memory_ids": visible_ids,
+        "strategy_visible_memory_ids": strategy_visible_ids,
         "model": str(cfg.agent.code.model),
         "strategy_trace": trace,
         "evaluation": evaluation,
