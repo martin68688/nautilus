@@ -473,6 +473,31 @@ class ExternalSkillMemoryConfig:
     experiment_r_improve_max_modules: int = 2
     experiment_r_improve_max_patches: int = 6
     experiment_r_debug_max_patches: int = 3
+    # Read-only task-level synthesis over the Router's wider candidate view.
+    # Shadow mode is deliberately separate from Retrieval Agent selection and
+    # from the production Planner/Coder prompt.  Enabling it may add latency
+    # and Journal evidence, but must not change the generated candidate.
+    memory_strategy_shadow_enabled: bool = False
+    memory_strategy_shadow_stages: list[str] = field(
+        default_factory=lambda: ["improve"]
+    )
+    memory_strategy_debug_trigger: str = "causal_gap_or_repeated_failure"
+    memory_strategy_debug_failure_threshold: int = 2
+    memory_strategy_max_cards: int = 24
+    memory_strategy_card_max_chars: int = 6000
+    # Zero means no additional host-side character truncation.  The structured
+    # card count remains bounded; the provider's advertised context window is
+    # probed separately by the smoke harness.
+    memory_strategy_max_input_chars: int = 0
+    memory_strategy_max_output_tokens: int = 6000
+    memory_strategy_max_retries: int = 2
+    memory_strategy_temperature: float = 0.0
+    memory_strategy_history_limit: int = 16
+    # Isolated actuation-chain defaults.  Shadow mode never consults these to
+    # mutate the live Improve/Debug candidate.
+    memory_strategy_atomic_max_modules: int = 2
+    memory_strategy_atomic_max_changes: int = 3
+    memory_strategy_atomic_max_patches: int = 6
     # Dynamic Hybrid may delegate L3 failure/root-cause matching to the
     # Retrieval Agent.  The Host keeps only objective task/evidence gates and
     # literal traceback-anchor extraction; no maintained synonym table is

@@ -78,6 +78,13 @@ class SearchNode(DataClassJsonMixin):
     adoption_log: list = field(default_factory=list, kw_only=True)
     memory_navigation_trace: list = field(default_factory=list, kw_only=True)
     memory_routing_trace: dict = field(default_factory=dict, kw_only=True)
+    # Read-only Memory Strategy shadow evidence.  It is intentionally stored
+    # outside prompt_input/adoption_log so replay analysis can prove that the
+    # memo did not actuate the production Planner/Coder.
+    memory_strategy_trace: dict = field(default_factory=dict, kw_only=True)
+    # Populated only by the isolated Strategy -> Atomic Planner -> Coder path.
+    atomic_actuation_trace: dict = field(default_factory=dict, kw_only=True)
+    plan_diff_verdict: dict = field(default_factory=dict, kw_only=True)
     draft_role: Optional[str] = field(default=None, kw_only=True)
     role_contract: dict = field(default_factory=dict, kw_only=True)
     source_ref_ids: list[str] = field(default_factory=list, kw_only=True)

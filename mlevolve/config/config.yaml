@@ -370,6 +370,24 @@ external_skill_memory:
   include_debug: True
   include_fusion: True
   visibility_token_budget: 4096
+  # Task-level synthesis is opt-in and read-only.  When enabled, the Strategy
+  # Agent records a memo beside the generated node but cannot alter the legacy
+  # Planner/Coder prompt.  Actuation is exercised only by the isolated smoke
+  # harness until shadow replay evidence justifies promotion.
+  memory_strategy_shadow_enabled: false
+  memory_strategy_shadow_stages: ["improve"]
+  memory_strategy_debug_trigger: "causal_gap_or_repeated_failure"
+  memory_strategy_debug_failure_threshold: 2
+  memory_strategy_max_cards: 24
+  memory_strategy_card_max_chars: 6000
+  memory_strategy_max_input_chars: 0
+  memory_strategy_max_output_tokens: 6000
+  memory_strategy_max_retries: 2
+  memory_strategy_temperature: 0.0
+  memory_strategy_history_limit: 16
+  memory_strategy_atomic_max_modules: 2
+  memory_strategy_atomic_max_changes: 3
+  memory_strategy_atomic_max_patches: 6
 
 # ============================================================
 #  Persisted run identity (baseline vs memory-system experiments)

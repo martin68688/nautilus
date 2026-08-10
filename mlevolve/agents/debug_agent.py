@@ -1,3 +1,4 @@
+import copy
 import json
 import logging
 from typing import Any, List, Tuple
@@ -16,13 +17,14 @@ from agents.prompts import (
 
 from agents.coder.diff_coder import SearchReplacePatcher, DIFF_SYS_FORMAT
 from agents.planner import build_chat_prompt_for_model
-from agents.triggers import register_node
+from agents.triggers import get_patience_counter, register_node
 from agents.leakage_audit import (
     build_repair_preservation_contract,
     format_audit,
     format_repair_preservation_contract,
 )
 from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
+from agents.memory_strategy_agent import payload_sha256, run_memory_strategy_shadow
 
 logger = logging.getLogger("MLEvolve")
 
@@ -415,6 +417,38 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text
 
+    strategy_prompt_snapshot = copy.deepcopy(prompt)
+    strategy_prompt_sha256 = payload_sha256(strategy_prompt_snapshot)
+    router_pack = (
+        memory_layer.current_navigation_pack()
+        if memory_layer is not None
+        and callable(getattr(memory_layer, "current_navigation_pack", None))
+        else {}
+    )
+    _success_patience, _total_patience, branch_best_score = get_patience_counter(
+        agent, parent_node
+    )
+    memory_strategy_trace = run_memory_strategy_shadow(
+        agent,
+        parent_node,
+        stage="debug",
+        router_pack=router_pack,
+        branch_best_metric=branch_best_score,
+        production_prompt_sha256=strategy_prompt_sha256,
+    )
+    strategy_prompt_sha256_after = payload_sha256(prompt)
+    if strategy_prompt_sha256_after != strategy_prompt_sha256:
+        logger.error(
+            "Memory Strategy shadow attempted to mutate the production Debug prompt; restoring snapshot"
+        )
+        prompt = strategy_prompt_snapshot
+        memory_strategy_trace["status"] = "noninterference_violation"
+        memory_strategy_trace["production_prompt_modified"] = True
+    memory_strategy_trace["production_prompt_sha256_after"] = payload_sha256(prompt)
+    memory_strategy_trace["noninterference_verified"] = bool(
+        payload_sha256(prompt) == strategy_prompt_sha256
+    )
+
     base_instructions = "\n# Instructions\n\n"
     base_instructions += compile_prompt_to_md(prompt["Instructions"], 2)
 
@@ -638,6 +672,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
 
     new_node = SearchNode(plan=plan, code=code, parent=parent_node, stage="debug",
                         local_best_node=parent_node.local_best_node, from_topk=from_topk)
+    new_node.memory_strategy_trace = memory_strategy_trace
     register_node(agent, new_node, prompt_complete, parent_node=parent_node)
 
     from agents.adoption import log_adoption
