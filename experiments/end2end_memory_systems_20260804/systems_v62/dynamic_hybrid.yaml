@@ -1,0 +1,16 @@
+# Taxi v62: dynamic-only immutable rerun after replay-target graph repair.
+extends: ../systems_v54/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v62/experiments/end2end_memory_systems_20260804/manifests_v62/taxi_dynamic_replay_targets.json
+
+external_skill_memory:
+  experiment_r_enabled: true
+  experiment_r_same_task_best_pin_stages:
+    - draft
+    - improve
+    - debug
+
+run_identity:
+  memory_version: experiment_r_taxi_recipe_v4_replay_graph_repaired_v62
