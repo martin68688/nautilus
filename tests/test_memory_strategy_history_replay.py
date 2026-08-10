@@ -41,6 +41,9 @@ SMOKE_JOB_V67 = SMOKE_JOB.with_name(
 SMOKE_JOB_V68 = SMOKE_JOB.with_name(
     "mlevolve-e2e-memory-strategy-shadow-smoke-v68.yaml"
 )
+SMOKE_JOB_V69 = SMOKE_JOB.with_name(
+    "mlevolve-e2e-memory-strategy-shadow-smoke-v69.yaml"
+)
 
 
 def _runner_module():
@@ -63,6 +66,7 @@ def test_history_slice_builder_hides_future_ids_for_all_three_tasks(tmp_path):
     packet = json.loads(output.read_text(encoding="utf-8"))
 
     assert [case["task_id"] for case in packet["cases"]] == [
+        "spooky-author-identification",
         "spooky-author-identification",
         "leaf-classification",
         "new-york-city-taxi-fare-prediction",
@@ -103,6 +107,17 @@ def test_history_slice_builder_hides_future_ids_for_all_three_tasks(tmp_path):
         "downstream_estimator:xgboost",
         "feature_family:embedding",
     } <= set(representation_opportunity["common_interfaces"])
+
+    repair = packet["cases"][1]
+    assert repair["stage"] == "debug"
+    assert repair["parent"]["is_buggy"] is True
+    assert repair["parent"]["node_id"] == "13675db86b424a579d66e82bf2515d74"
+    assert repair["hidden_future"]["id"].endswith(
+        "8c5286bb1da2400486bafdd5878e30f9"
+    )
+    assert repair["hidden_future"]["id"] not in {
+        event["candidate_id"] for event in repair["memory_events"]
+    }
 
 
 def test_replay_evaluator_measures_hit_budget_duplicate_and_incompatibility():
@@ -146,12 +161,53 @@ def test_replay_evaluator_measures_hit_budget_duplicate_and_incompatibility():
     )
 
     assert result["future_strategy_hit_ids"] == ["future-hit"]
+    assert result["future_strategy_structural_hit"] is True
+    assert result["future_strategy_exact_hit"] is False
     assert result["over_budget_ids"] == ["future-hit"]
     assert result["duplicate_ids"] == ["duplicate"]
     assert result["invalid_combinations"] == [
         {"hypothesis_id": "future-hit", "rule": "too expensive"}
     ]
     assert result["all_citations_visible"] is True
+
+
+def test_replay_evaluator_distinguishes_structural_from_exact_future_match():
+    runner = _runner_module()
+    case = {
+        "case_id": "exact-vs-structural",
+        "expected_structural_pattern_groups": [
+            ["three transformer"],
+            ["five fold"],
+        ],
+        "expected_exact_future_pattern_groups": [
+            ["deberta"],
+            ["roberta"],
+            ["distilbert"],
+        ],
+    }
+    memo = {
+        "candidate_compositions": [
+            {
+                "hypothesis_id": "wrong-three",
+                "hypothesis": "three transformer five fold: ModernBERT, DeBERTa, DistilBERT",
+                "source_memory_ids": ["m1"],
+            },
+            {
+                "hypothesis_id": "exact-three",
+                "hypothesis": "three transformer five fold: DeBERTa, RoBERTa, DistilBERT",
+                "source_memory_ids": ["m1"],
+            },
+        ]
+    }
+
+    result = runner.evaluate_memo(case, memo=memo, visible_memory_ids=["m1"])
+
+    assert result["future_strategy_structural_hit_ids"] == [
+        "wrong-three",
+        "exact-three",
+    ]
+    assert result["future_strategy_exact_hit_ids"] == ["exact-three"]
+    assert result["future_strategy_hit_ids"] == ["exact-three"]
 
 
 def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
@@ -161,6 +217,7 @@ def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
         SMOKE_JOB_V66,
         SMOKE_JOB_V67,
         SMOKE_JOB_V68,
+        SMOKE_JOB_V69,
     ):
         job = yaml.safe_load(path.read_text(encoding="utf-8"))
         labels = job["metadata"]["labels"]
@@ -171,12 +228,25 @@ def test_strategy_smoke_job_is_owned_cpu_only_and_fails_closed():
         assert labels["ecepxie.nrp/owner"] == "haoming"
         assert pod_labels["ecepxie.nrp/owner"] == "haoming"
         assert not any("nvidia.com/" in key for key in container["resources"]["limits"])
-        assert "future_strategy_hit" in command
+        assert (
+            "future_strategy_hit" in command
+            or "future_strategy_structural_hit" in command
+        )
         assert "atomic_actuation" in command
         assert "sleep" not in command
         assert job["spec"]["backoffLimit"] == 0
-        if path in {SMOKE_JOB_V67, SMOKE_JOB_V68}:
-            assert "strategy_model_is_v4_pro" in command
-            assert "strategy_thinking_enabled" in command
+        if path in {SMOKE_JOB_V67, SMOKE_JOB_V68, SMOKE_JOB_V69}:
+            assert (
+                "strategy_model_is_v4_pro" in command
+                or '"model_is_v4_pro"' in command
+            )
+            assert (
+                "strategy_thinking_enabled" in command
+                or '"thinking_enabled"' in command
+            )
         if path == SMOKE_JOB_V68:
             assert "all_diversity_opportunities_addressed" in command
+        if path == SMOKE_JOB_V69:
+            assert "future_strategy_structural_hit" in command
+            assert "future_strategy_exact_hit" in command
+            assert "spooky-after-multibackbone-before-cleanup-repair" in command

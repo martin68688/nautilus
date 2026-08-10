@@ -123,6 +123,10 @@ def _build_agent(case: Mapping[str, Any], config_path: Path):
     ext.memory_strategy_max_cards = int(case.get("max_cards") or 24)
     ext.memory_strategy_max_input_chars = int(case.get("max_input_chars") or 0)
     ext.memory_strategy_max_output_tokens = int(case.get("max_output_tokens") or 6000)
+    ext.memory_strategy_debug_trigger = str(
+        case.get("memory_strategy_debug_trigger")
+        or getattr(ext, "memory_strategy_debug_trigger", "causal_gap_or_repeated_failure")
+    )
     agent = SimpleNamespace(
         cfg=cfg,
         acfg=cfg.agent,
@@ -174,11 +178,20 @@ def evaluate_memo(
         for item in (memo.get("candidate_compositions") or [])
         if isinstance(item, Mapping)
     ]
-    expected_groups = [
+    structural_groups = [
         [str(pattern) for pattern in group]
-        for group in (case.get("expected_future_pattern_groups") or [])
+        for group in (
+            case.get("expected_structural_pattern_groups")
+            or case.get("expected_future_pattern_groups")
+            or []
+        )
     ]
-    future_hits = []
+    exact_groups = [
+        [str(pattern) for pattern in group]
+        for group in (case.get("expected_exact_future_pattern_groups") or [])
+    ]
+    structural_hits = []
+    exact_hits = []
     over_budget = []
     duplicate = []
     invalid_combinations = []
@@ -207,8 +220,10 @@ def evaluate_memo(
     for composition in compositions:
         text = _positive_composition_text(composition)
         hypothesis_id = str(composition.get("hypothesis_id") or "")
-        if expected_groups and _matches_all_groups(text, expected_groups):
-            future_hits.append(hypothesis_id)
+        if structural_groups and _matches_all_groups(text, structural_groups):
+            structural_hits.append(hypothesis_id)
+        if exact_groups and _matches_all_groups(text, exact_groups):
+            exact_hits.append(hypothesis_id)
         if remaining is not None and int(composition.get("estimated_compute_seconds") or 0) > int(remaining):
             over_budget.append(hypothesis_id)
         if any(
@@ -245,11 +260,17 @@ def evaluate_memo(
     unsupported_ids = sorted(cited - set(visible_memory_ids))
     total = len(compositions)
     return {
-        "schema": "mlevolve_memory_strategy_replay_evaluation_v1",
+        "schema": "mlevolve_memory_strategy_replay_evaluation_v2",
         "case_id": str(case.get("case_id") or ""),
         "composition_count": total,
-        "future_strategy_hit": bool(future_hits),
-        "future_strategy_hit_ids": future_hits,
+        "future_strategy_structural_hit": bool(structural_hits),
+        "future_strategy_structural_hit_ids": structural_hits,
+        "future_strategy_exact_hit": bool(exact_hits),
+        "future_strategy_exact_hit_ids": exact_hits,
+        # Compatibility alias: when an exact future criterion exists, a merely
+        # structural resemblance is no longer reported as a full future hit.
+        "future_strategy_hit": bool(exact_hits if exact_groups else structural_hits),
+        "future_strategy_hit_ids": exact_hits if exact_groups else structural_hits,
         "over_budget_count": len(over_budget),
         "over_budget_ratio": len(over_budget) / total if total else 0.0,
         "over_budget_ids": over_budget,
@@ -299,10 +320,12 @@ def run_case(
         visible_memory_ids=visible_ids,
     )
     atomic = {}
-    if actuate and trace.get("status") in {
-        "completed",
-        "completed_with_contract_violations",
-    }:
+    if (
+        actuate
+        and bool(case.get("atomic_actuation_enabled", True))
+        and trace.get("status")
+        in {"completed", "completed_with_contract_violations"}
+    ):
         atomic = run_atomic_actuation_pipeline(
             agent,
             strategy_memo=memo,
@@ -312,7 +335,7 @@ def run_case(
             budget=dict(case.get("budget") or {}),
         )
     return {
-        "schema": "mlevolve_memory_strategy_historical_replay_result_v1",
+        "schema": "mlevolve_memory_strategy_historical_replay_result_v2",
         "case_id": str(case.get("case_id") or ""),
         "task_id": str(case.get("task_id") or ""),
         "cutoff": copy.deepcopy(dict(case.get("cutoff") or {})),
@@ -330,8 +353,14 @@ def summarize(results: list[Mapping[str, Any]]) -> dict[str, Any]:
     evaluations = [dict(item.get("evaluation") or {}) for item in results]
     total_compositions = sum(int(item.get("composition_count") or 0) for item in evaluations)
     return {
-        "schema": "mlevolve_memory_strategy_historical_replay_summary_v1",
+        "schema": "mlevolve_memory_strategy_historical_replay_summary_v2",
         "case_count": len(results),
+        "future_strategy_structural_case_hits": sum(
+            bool(item.get("future_strategy_structural_hit")) for item in evaluations
+        ),
+        "future_strategy_exact_case_hits": sum(
+            bool(item.get("future_strategy_exact_hit")) for item in evaluations
+        ),
         "future_strategy_case_hits": sum(bool(item.get("future_strategy_hit")) for item in evaluations),
         "future_strategy_case_hit_rate": (
             sum(bool(item.get("future_strategy_hit")) for item in evaluations) / len(results)

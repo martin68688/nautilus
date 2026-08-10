@@ -94,6 +94,7 @@ def _spooky_case() -> dict[str, Any]:
         "task_description": "Predict one of three authors from short text; metric is multiclass log-loss.",
         "data_preview": "Approximately 19.5k short English passages, three author labels, raw text and ID columns.",
         "stage": "improve",
+        "atomic_actuation_enabled": False,
         "cutoff": {"order": 34, "meaning": "same-run journal step <= 34"},
         "parent": _journal_node_payload(parent_raw, task_id="spooky-author-identification"),
         "metrics": {"branch_best_metric": 0.30252106930036915},
@@ -110,8 +111,20 @@ def _spooky_case() -> dict[str, Any]:
             "method_summary": str(hidden.get("code_summary") or ""),
             "evaluator_only": True,
         },
-        "expected_future_pattern_groups": [
+        # The first score is deliberately structural. RoBERTa-base had not
+        # appeared in a successful implementation before this cutoff, so an
+        # exact-name match is a harder, separately reported criterion rather
+        # than something leaked into the Agent context.
+        "expected_structural_pattern_groups": [
             [r"three.*(transformer|backbone|model)", r"multi[- ]?(transformer|backbone)"],
+            [r"frozen.*embedding", r"embedding.*frozen", r"feature extractor"],
+            [r"(five|5)[- ]fold", r"stratified.*fold"],
+            [r"xgboost", r"xgb"],
+        ],
+        "expected_exact_future_pattern_groups": [
+            [r"deberta"],
+            [r"(?<!distil)roberta"],
+            [r"distilbert"],
             [r"frozen.*embedding", r"embedding.*frozen", r"feature extractor"],
             [r"(five|5)[- ]fold", r"stratified.*fold"],
             [r"xgboost", r"xgb"],
@@ -139,6 +152,98 @@ def _spooky_case() -> dict[str, Any]:
                 "pattern_groups": [[r"three.*transformer"], [r"fine[- ]tun"]],
                 "resolution_pattern": r"frozen|feature extract",
                 "reason": "fine-tuning three transformer backbones exceeds the historical budget",
+            }
+        ],
+    }
+
+
+def _spooky_repair_case() -> dict[str, Any]:
+    """Expose the failed pipeline while hiding its successful cleanup repair."""
+
+    run_id = "20260509_042918_spooky-author-identification"
+    graph = _load(ROOT / "paper-skills/hyper_memory/run_forest_graph.json")
+    journal = _load(ROOT / f"mlevolve/runs/{run_id}/logs/journal.json")
+    graph_nodes = [
+        node
+        for node in graph["nodes"]
+        if node.get("type") == "RunNode"
+        and node.get("run_id") == run_id
+        and int(node.get("step") or 0) <= 42
+    ]
+    graph_by_step = {int(node.get("step") or 0): node for node in graph_nodes}
+    journal_by_step = {
+        int(node.get("step") or 0): node for node in journal["nodes"]
+    }
+    parent_raw = journal_by_step[38]
+    hidden = graph_by_step[42]
+
+    # Put the two causal failures first so they cannot be crowded out of the
+    # bounded 24-card Strategy context by unrelated successful attempts.
+    events: list[dict[str, Any]] = []
+    for step in (38, 35):
+        graph_node = graph_by_step[step]
+        journal_node = journal_by_step[step]
+        card = _card_from_graph_node(graph_node)
+        card.update(
+            {
+                "outcome": "execution_failed",
+                "rank_eligible": False,
+                "failure_signature": str(journal_node.get("analysis") or ""),
+                "repair_action": str(journal_node.get("plan") or ""),
+                "available_order": step,
+            }
+        )
+        events.append(card)
+    for node in graph_nodes:
+        step = int(node.get("step") or 0)
+        if step > 41 or step in {35, 38}:
+            continue
+        if _metric(node) is None or node.get("is_buggy") is True:
+            continue
+        events.append(_card_from_graph_node(node))
+
+    return {
+        "case_id": "spooky-after-multibackbone-before-cleanup-repair",
+        "task_id": "spooky-author-identification",
+        "task_description": "Predict one of three authors from short text; metric is multiclass log-loss.",
+        "data_preview": "Approximately 19.5k short English passages, three author labels, raw text and ID columns.",
+        "stage": "debug",
+        "memory_strategy_debug_trigger": "always",
+        "atomic_actuation_enabled": True,
+        "cutoff": {"order": 41, "meaning": "same-run journal step <= 41"},
+        "parent": _journal_node_payload(
+            parent_raw, task_id="spooky-author-identification"
+        ),
+        "metrics": {"branch_best_metric": 0.30252106930036915},
+        "budget": {
+            "total_search_seconds": 21600,
+            "elapsed_search_seconds": 16200,
+            "remaining_search_seconds": 5400,
+        },
+        "memory_events": events,
+        "hidden_future": {
+            "id": str(hidden["id"]),
+            "memory_ids": [str(hidden["id"])],
+            "metric": _metric(hidden),
+            "method_summary": str(hidden.get("code_summary") or ""),
+            "evaluator_only": True,
+        },
+        "expected_structural_pattern_groups": [
+            [r"targeted.*repair", r"cleanup", r"nameerror"],
+            [r"preserv", r"no.*model.*change", r"forbid.*model"],
+        ],
+        "expected_exact_future_pattern_groups": [
+            [r"remove", r"delete"],
+            [r"redundant", r"already.*deleted", r"second.*cleanup"],
+            [r"models"],
+            [r"tokenizers"],
+        ],
+        "attempted_pattern_signatures": [],
+        "known_incompatibilities": [
+            {
+                "pattern_groups": [[r"replace.*(backbone|model)"]],
+                "resolution_pattern": r"preserve|no.*model.*change",
+                "reason": "the completed training and submission prove that only cleanup needs repair",
             }
         ],
     }
@@ -319,7 +424,7 @@ def main() -> int:
     )
     args = parser.parse_args()
     packet = {
-        "schema": "mlevolve_memory_strategy_history_slices_v1",
+        "schema": "mlevolve_memory_strategy_history_slices_v2",
         "policy": {
             "hidden_future_not_model_visible": True,
             "source": "existing Journal/RunForest/validated recipe evidence",
@@ -329,7 +434,12 @@ def main() -> int:
                 "new-york-city-taxi-fare-prediction",
             ],
         },
-        "cases": [_spooky_case(), _leaf_case(), _taxi_case()],
+        "cases": [
+            _spooky_case(),
+            _spooky_repair_case(),
+            _leaf_case(),
+            _taxi_case(),
+        ],
     }
     _write(args.output, packet)
     print(args.output)

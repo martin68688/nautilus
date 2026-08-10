@@ -1,0 +1,180 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-e2e-memory-strategy-shadow-smoke-v69
+  namespace: ecepxie
+  labels:
+    ecepxie.nrp/owner: haoming
+    app.kubernetes.io/managed-by: codex-nrp-training
+    mlevolve.ai/workload: mlevolve-e2e-memory-strategy-shadow-smoke-v69
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        ecepxie.nrp/owner: haoming
+        app.kubernetes.io/managed-by: codex-nrp-training
+        mlevolve.ai/workload: mlevolve-e2e-memory-strategy-shadow-smoke-v69
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: strategy-shadow-smoke
+          image: haomingwang22/mlevolve:v1
+          command:
+            - /bin/bash
+            - -lc
+            - |
+              set -euo pipefail
+              SOURCE=/workspace/nautilus-exp-end2end-agent-v69
+              OUT=/workspace/experiment-end2end-memory-agent-v69/strategy-shadow-smoke-v69
+              CASES=experiments/end2end_memory_systems_20260804/memory_strategy_shadow_history_slices_v2.json
+              mkdir -p "$OUT"
+              cd "$SOURCE"
+              sha256sum -c SOURCE_FILES.sha256 > "$OUT/source_check.log"
+              set -a
+              . /workspace/nautilus/mlevolve/.env
+              set +a
+              export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+              python -m pytest -q tests/test_memory_strategy_shadow.py tests/test_memory_strategy_history_replay.py | tee "$OUT/pytest.log"
+              python experiments/end2end_memory_systems_20260804/run_strategy_shadow_replay.py \
+                --cases "$CASES" \
+                --case-id spooky-before-frozen-multibackbone-fivefold-xgb \
+                --case-id spooky-after-multibackbone-before-cleanup-repair \
+                --actuate \
+                --output "$OUT/STRATEGY_SHADOW_REPLAY.json" | tee "$OUT/replay.log"
+              python - "$OUT" "$CASES" <<'PY'
+              import hashlib
+              import json
+              import sys
+              from pathlib import Path
+
+              out = Path(sys.argv[1])
+              cases_path = Path(sys.argv[2])
+              replay = json.loads((out / "STRATEGY_SHADOW_REPLAY.json").read_text())
+              cases_packet = json.loads(cases_path.read_text())
+              cases = {case["case_id"]: case for case in cases_packet["cases"]}
+              results = {result["case_id"]: result for result in replay["results"]}
+              discovery = results["spooky-before-frozen-multibackbone-fivefold-xgb"]
+              repair = results["spooky-after-multibackbone-before-cleanup-repair"]
+
+              def strategy_checks(result):
+                  strategy = result["strategy_trace"]
+                  evaluation = result["evaluation"]
+                  attempts = strategy.get("contract_attempts") or []
+                  return {
+                      "completed": strategy.get("status") == "completed",
+                      "model_is_v4_pro": strategy.get("model") == "deepseek-v4-pro",
+                      "thinking_enabled": strategy.get("thinking_enabled") is True,
+                      "contract_valid": bool(attempts and attempts[-1].get("valid")),
+                      "noninterference": strategy.get("production_prompt_modified") is False,
+                      "hidden_future_isolated": not result["hidden_future_leakage_ids"],
+                      "all_citations_visible": evaluation.get("all_citations_visible") is True,
+                      "at_least_three_compositions": evaluation.get("composition_count", 0) >= 3,
+                  }
+
+              discovery_strategy = discovery["strategy_trace"]
+              discovery_eval = discovery["evaluation"]
+              discovery_validation = discovery_strategy.get("validation", {})
+              required_opportunities = set(
+                  discovery_validation.get("required_opportunity_ids") or []
+              )
+              addressed_opportunities = set(
+                  discovery_validation.get("addressed_opportunity_ids") or []
+              )
+
+              repair_strategy = repair["strategy_trace"]
+              repair_eval = repair["evaluation"]
+              atomic = repair["atomic_actuation"]
+              planner = atomic.get("planner", {})
+              coder = atomic.get("coder", {})
+              verdict = coder.get("plan_diff_verdict", {})
+              selected = str(planner.get("validation", {}).get("selected_hypothesis_id", ""))
+              exact_repair_ids = set(repair_eval.get("future_strategy_exact_hit_ids") or [])
+              planner_attempts = planner.get("contract_attempts") or []
+              parent_code = cases[repair["case_id"]]["parent"]["code"]
+              candidate_code = str(coder.get("candidate_code") or "")
+              cleanup_prefix = "del models, tokenizers"
+
+              checks = {}
+              checks.update({f"discovery_{key}": value for key, value in strategy_checks(discovery).items()})
+              checks.update({f"repair_{key}": value for key, value in strategy_checks(repair).items()})
+              checks.update(
+                  {
+                      "all_diversity_opportunities_addressed": (
+                          bool(required_opportunities)
+                          and required_opportunities == addressed_opportunities
+                      ),
+                      "discovery_structural_future_hit": (
+                          discovery_eval.get("future_strategy_structural_hit") is True
+                      ),
+                      # The blind exact hit is reported, not required: RoBERTa was
+                      # not visible before the cutoff. Passing this check would be
+                      # independent frontier inference, not memory reproduction.
+                      "repair_structural_future_hit": (
+                          repair_eval.get("future_strategy_structural_hit") is True
+                      ),
+                      "repair_exact_future_hit": (
+                          repair_eval.get("future_strategy_exact_hit") is True
+                      ),
+                      "atomic_pipeline_accepted": atomic.get("status") == "accepted",
+                      "atomic_planner_accepted": planner.get("status") == "accepted",
+                      "planner_contract_valid": bool(
+                          planner_attempts and planner_attempts[-1].get("valid")
+                      ),
+                      "planner_selected_exact_repair": bool(
+                          selected and selected in exact_repair_ids
+                      ),
+                      "atomic_coder_accepted": coder.get("status") == "accepted",
+                      "plan_diff_valid": verdict.get("valid") is True,
+                      "cleanup_nameerror_removed": bool(
+                          candidate_code
+                          and candidate_code.count(cleanup_prefix)
+                          < parent_code.count(cleanup_prefix)
+                      ),
+                  }
+              )
+              receipt = {
+                  "schema": "mlevolve_memory_strategy_shadow_smoke_receipt_v5",
+                  "status": "passed" if all(checks.values()) else "failed",
+                  "checks": checks,
+                  "required_opportunity_ids": sorted(required_opportunities),
+                  "addressed_opportunity_ids": sorted(addressed_opportunities),
+                  "discovery_structural_hit_ids": discovery_eval.get(
+                      "future_strategy_structural_hit_ids", []
+                  ),
+                  "discovery_exact_hit_ids": discovery_eval.get(
+                      "future_strategy_exact_hit_ids", []
+                  ),
+                  "repair_structural_hit_ids": repair_eval.get(
+                      "future_strategy_structural_hit_ids", []
+                  ),
+                  "repair_exact_hit_ids": repair_eval.get(
+                      "future_strategy_exact_hit_ids", []
+                  ),
+                  "selected_hypothesis_id": selected,
+                  "changed_symbols": verdict.get("changed_symbols", []),
+              }
+              receipt["replay_sha256"] = hashlib.sha256(
+                  (out / "STRATEGY_SHADOW_REPLAY.json").read_bytes()
+              ).hexdigest()
+              (out / "SMOKE_RECEIPT.json").write_text(
+                  json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+              )
+              print(json.dumps(receipt, sort_keys=True))
+              if receipt["status"] != "passed":
+                  raise SystemExit(1)
+              PY
+          resources:
+            requests:
+              cpu: "4"
+              memory: 16Gi
+            limits:
+              cpu: "4"
+              memory: 16Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage

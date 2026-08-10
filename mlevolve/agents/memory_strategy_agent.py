@@ -757,6 +757,14 @@ def _strategy_prompt(
         "as proposed_experiment, experiment, changes, or memory_ids. This is SHADOW MODE: your "
         "memo has no authority to change the live plan.\n\nRESPONSE_SCHEMA:\n" + exact_contract
     )
+    if str(context.get("stage") or "") == "debug":
+        system += (
+            "\n\nDEBUG_STAGE_RULE: Treat the execution output as causal evidence. Include at "
+            "least one targeted_repair hypothesis that fixes the narrowest demonstrated "
+            "exception while explicitly preserving model, data, validation, and submission "
+            "behavior that already completed. Do not turn a terminal cleanup exception into "
+            "an architecture rewrite."
+        )
     user = (
         "Analyze this frozen point-in-time context. A natural composition is useful only if "
         "the supplied evidence supports its parts or supplies a concrete failure-mode argument "
