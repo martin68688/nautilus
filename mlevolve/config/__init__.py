@@ -483,6 +483,14 @@ class ExternalSkillMemoryConfig:
     )
     memory_strategy_debug_trigger: str = "causal_gap_or_repeated_failure"
     memory_strategy_debug_failure_threshold: int = 2
+    # Strategy v2 uses one shared attention budget across current branches,
+    # causal failure evidence, and history.  The wider candidate pool is
+    # ranked and lineage-deduplicated before any card reaches the model.
+    memory_strategy_evidence_limit: int = 8
+    memory_strategy_current_frontier_slots: int = 3
+    memory_strategy_causal_failure_slots: int = 1
+    memory_strategy_candidate_pool_limit: int = 48
+    # Deprecated compatibility aliases for v1 replay packets.
     memory_strategy_max_cards: int = 24
     memory_strategy_card_max_chars: int = 6000
     # Zero means no additional host-side character truncation.  The structured

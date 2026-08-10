@@ -100,16 +100,26 @@ def _node_from_payload(payload: Mapping[str, Any], *, stage: str) -> SearchNode:
         plan=str(payload.get("plan") or ""),
         stage=stage,
         id=str(payload.get("node_id") or payload.get("id") or "historical-parent"),
+        branch_id=payload.get("branch_id"),
+        draft_role=str(payload.get("draft_role") or "") or None,
     )
     metric = payload.get("metric")
     if metric is not None:
         node.metric = MetricValue(float(metric), maximize=bool(payload.get("maximize", False)))
     node.is_buggy = bool(payload.get("is_buggy", False))
-    node.is_valid = not node.is_buggy
+    node.is_valid = (
+        not node.is_buggy
+        if payload.get("is_valid") is None
+        else bool(payload.get("is_valid"))
+    )
     node.code_summary = str(payload.get("code_summary") or "")
     node._term_out = [str(payload.get("execution_output") or "")]
     node.official_submission_receipt = copy.deepcopy(
         dict(payload.get("official_submission_receipt") or {})
+    )
+    node.leakage_audit = copy.deepcopy(dict(payload.get("leakage_audit") or {}))
+    node.metric_protocol = str(
+        payload.get("metric_protocol") or payload.get("validation_protocol") or ""
     )
     return node
 
@@ -120,6 +130,16 @@ def _build_agent(case: Mapping[str, Any], config_path: Path):
     ext = cfg.external_skill_memory
     ext.memory_strategy_shadow_enabled = True
     ext.memory_strategy_shadow_stages = [str(case.get("stage") or "improve")]
+    ext.memory_strategy_evidence_limit = int(case.get("evidence_limit") or 8)
+    ext.memory_strategy_current_frontier_slots = int(
+        case.get("current_frontier_slots") or 3
+    )
+    ext.memory_strategy_causal_failure_slots = int(
+        case.get("causal_failure_slots") or 1
+    )
+    ext.memory_strategy_candidate_pool_limit = int(
+        case.get("candidate_pool_limit") or 48
+    )
     ext.memory_strategy_max_cards = int(case.get("max_cards") or 24)
     ext.memory_strategy_max_input_chars = int(case.get("max_input_chars") or 0)
     ext.memory_strategy_max_output_tokens = int(case.get("max_output_tokens") or 6000)
@@ -135,7 +155,28 @@ def _build_agent(case: Mapping[str, Any], config_path: Path):
         start_time=time.time()
         - max(0.0, float((case.get("budget") or {}).get("elapsed_search_seconds") or 0.0)),
         journal=Journal(),
+        branch_all_nodes={},
+        branch_successful_nodes={},
+        metric_maximize=bool((case.get("parent") or {}).get("maximize", False)),
     )
+    for raw_node in case.get("current_branch_nodes") or []:
+        if not isinstance(raw_node, Mapping):
+            continue
+        node = _node_from_payload(
+            raw_node,
+            stage=str(raw_node.get("stage") or "improve"),
+        )
+        branch_id = node.branch_id
+        if branch_id is None:
+            continue
+        agent.branch_all_nodes.setdefault(branch_id, []).append(node)
+        if (
+            node.metric is not None
+            and node.is_buggy is not True
+            and node.is_valid is not False
+            and (node.leakage_audit or {}).get("rank_eligible") is not False
+        ):
+            agent.branch_successful_nodes.setdefault(branch_id, []).append(node)
     for attempt in case.get("attempt_history") or []:
         if not isinstance(attempt, Mapping):
             continue

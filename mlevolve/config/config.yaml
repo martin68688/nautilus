@@ -378,6 +378,13 @@ external_skill_memory:
   memory_strategy_shadow_stages: ["improve"]
   memory_strategy_debug_trigger: "causal_gap_or_repeated_failure"
   memory_strategy_debug_failure_threshold: 2
+  # One shared Strategy attention budget: three current role frontiers, one
+  # causal failure, then same-task diverse historical evidence.
+  memory_strategy_evidence_limit: 8
+  memory_strategy_current_frontier_slots: 3
+  memory_strategy_causal_failure_slots: 1
+  memory_strategy_candidate_pool_limit: 48
+  # Deprecated v1 compatibility aliases.
   memory_strategy_max_cards: 24
   memory_strategy_card_max_chars: 6000
   memory_strategy_max_input_chars: 0

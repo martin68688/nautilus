@@ -14,6 +14,7 @@ import copy
 import hashlib
 import json
 import logging
+import math
 import re
 import time
 from typing import Any, Iterable, Mapping
@@ -255,6 +256,21 @@ _CARD_FIELDS = (
     "compute_profile",
     "risk_warnings",
     "supporting_transition_ids",
+    "run_id",
+    "branch_id",
+    "draft_role",
+    "code_summary",
+    "official_submission_receipt",
+    "submission_aligned",
+    "metric_protocol",
+    "validation_protocol",
+    "validation_protocol_evidence",
+    "evidence_tier",
+    "metric_provenance",
+    "metric_disposition",
+    "method_fingerprint",
+    "code_sha256",
+    "original_node_id",
 )
 
 
@@ -578,33 +594,502 @@ def _metric_payload(node: Any) -> dict[str, Any]:
     }
 
 
-def _attempt_history(agent: Any, *, limit: int) -> list[dict[str, Any]]:
-    journal = getattr(agent, "journal", None)
-    nodes = list(getattr(journal, "nodes", []) or [])[-max(0, int(limit)) :]
-    attempts = []
-    for node in nodes:
-        if str(getattr(node, "stage", "")) == "root":
+def _metric_number(value: Any) -> float | None:
+    if isinstance(value, Mapping):
+        value = value.get("value")
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _strategy_metric_maximize(agent: Any, parent_node: Any) -> bool:
+    explicit = getattr(agent, "metric_maximize", None)
+    if explicit is not None:
+        return bool(explicit)
+    metric = getattr(parent_node, "metric", None)
+    return bool(getattr(metric, "maximize", False))
+
+
+def _node_strategy_eligible(node: Any) -> bool:
+    metric = getattr(node, "metric", None)
+    leakage_audit = getattr(node, "leakage_audit", None) or {}
+    strategy_alignment = getattr(node, "strategy_alignment", None) or {}
+    return bool(
+        _metric_number(getattr(metric, "value", None)) is not None
+        and getattr(node, "is_buggy", None) is not True
+        and getattr(node, "is_valid", None) is not False
+        and leakage_audit.get("rank_eligible") is not False
+        and strategy_alignment.get("rank_eligible") is not False
+    )
+
+
+def _node_metric_protocol(node: Any) -> str:
+    for value in (
+        getattr(node, "metric_protocol", None),
+        getattr(node, "validation_protocol", None),
+    ):
+        if value:
+            return str(value)
+    receipt = getattr(node, "official_submission_receipt", None) or {}
+    for key in ("metric_protocol", "validation_protocol"):
+        if receipt.get(key):
+            return str(receipt[key])
+    observation = getattr(node, "protocol_observation", None) or {}
+    for key in ("metric_protocol", "validation_protocol"):
+        if observation.get(key):
+            return str(observation[key])
+    if receipt:
+        return "submission_aligned_internal_unspecified"
+    return ""
+
+
+def _node_evidence_card(
+    agent: Any,
+    node: Any,
+    *,
+    visibility: str,
+    selection_reason: str,
+    branch_id: Any = None,
+) -> dict[str, Any]:
+    node_id = str(getattr(node, "id", "") or "")
+    plan = str(getattr(node, "plan", "") or "")
+    summary = str(getattr(node, "code_summary", "") or "")
+    receipt = copy.deepcopy(
+        getattr(node, "official_submission_receipt", {}) or {}
+    )
+    return {
+        "memory_id": f"current::{node_id}",
+        "source": "current_run",
+        "type": "SearchNode",
+        "source_stage": str(getattr(node, "stage", "") or ""),
+        "source_task_id": str(getattr(getattr(agent, "cfg", None), "exp_id", "") or ""),
+        "branch_id": (
+            getattr(node, "branch_id", None)
+            if getattr(node, "branch_id", None) is not None
+            else branch_id
+        ),
+        "draft_role": str(getattr(node, "draft_role", "") or ""),
+        "metric": _metric_number(getattr(getattr(node, "metric", None), "value", None)),
+        "submission_metric": _metric_payload(node),
+        "official_submission_receipt": receipt,
+        "submission_aligned": bool(receipt),
+        "metric_protocol": _node_metric_protocol(node),
+        "outcome": (
+            "execution_failed"
+            if getattr(node, "is_buggy", None) is True
+            or getattr(node, "is_valid", None) is False
+            else "valid"
+        ),
+        "rank_eligible": _node_strategy_eligible(node),
+        "plan": _clean_text(plan, 4000),
+        "text": _clean_text(summary or plan, 6000),
+        "failure_signature": _clean_text(
+            str(getattr(node, "analysis", "") or getattr(node, "term_out", "") or ""),
+            3000,
+        ),
+        "execution_seconds": getattr(node, "exec_time", None),
+        "memory_ids": list(
+            (getattr(node, "memory_routing_trace", {}) or {}).get(
+                "final_prompt_candidate_ids", []
+            )
+        ),
+        "router_visibility": visibility,
+        "selection_reason": selection_reason,
+    }
+
+
+def _configured_draft_roles(agent: Any) -> list[str]:
+    policy = getattr(getattr(agent, "acfg", None), "draft_role_policy", None)
+    if not bool(getattr(policy, "enabled", False)):
+        return []
+    return [str(value) for value in (getattr(policy, "roles", []) or []) if value]
+
+
+def _select_current_branch_frontier(
+    agent: Any,
+    parent_node: Any,
+    *,
+    limit: int,
+) -> tuple[list[dict[str, Any]], list[str]]:
+    maximize = _strategy_metric_maximize(agent, parent_node)
+    branch_map = dict(getattr(agent, "branch_successful_nodes", {}) or {})
+    branch_best: list[tuple[Any, Any]] = []
+    for branch_id, raw_nodes in sorted(
+        branch_map.items(), key=lambda item: str(item[0])
+    ):
+        nodes = [node for node in (raw_nodes or []) if _node_strategy_eligible(node)]
+        if not nodes:
             continue
-        attempts.append(
-            {
-                "node_id": str(getattr(node, "id", "")),
-                "parent_node_id": str(getattr(getattr(node, "parent", None), "id", "")),
-                "stage": str(getattr(node, "stage", "")),
-                "plan": _clean_text(str(getattr(node, "plan", "") or ""), 4000),
-                "metric": _metric_payload(node),
-                "is_buggy": getattr(node, "is_buggy", None),
-                "is_valid": getattr(node, "is_valid", None),
-                "execution_seconds": getattr(node, "exec_time", None),
-                "error_type": str(getattr(node, "exc_type", "") or ""),
-                "error_summary": _clean_text(str(getattr(node, "term_out", "") or ""), 2000),
-                "memory_ids": list(
-                    (getattr(node, "memory_routing_trace", {}) or {}).get(
-                        "final_prompt_candidate_ids", []
-                    )
-                ),
-            }
+        best = sorted(
+            nodes,
+            key=lambda node: _metric_number(
+                getattr(getattr(node, "metric", None), "value", None)
+            ),
+            reverse=maximize,
+        )[0]
+        branch_best.append((branch_id, best))
+
+    # Historical replay fixtures and very early live calls may not have the
+    # branch registry populated yet.  The current parent remains useful, but it
+    # is explicitly labelled as a fallback rather than pretending to represent
+    # all branches.
+    if not branch_best and _node_strategy_eligible(parent_node):
+        branch_best = [(getattr(parent_node, "branch_id", None), parent_node)]
+
+    configured_roles = _configured_draft_roles(agent)
+    selected_nodes: list[tuple[Any, Any]] = []
+    selected_ids: set[str] = set()
+    for role in configured_roles:
+        candidates = [
+            (branch_id, node)
+            for branch_id, node in branch_best
+            if str(getattr(node, "draft_role", "") or "") == role
+        ]
+        if not candidates:
+            continue
+        best = sorted(
+            candidates,
+            key=lambda item: _metric_number(
+                getattr(getattr(item[1], "metric", None), "value", None)
+            ),
+            reverse=maximize,
+        )[0]
+        selected_nodes.append(best)
+        selected_ids.add(str(getattr(best[1], "id", "") or ""))
+        if len(selected_nodes) >= limit:
+            break
+
+    remaining = [
+        (branch_id, node)
+        for branch_id, node in branch_best
+        if str(getattr(node, "id", "") or "") not in selected_ids
+    ]
+    remaining.sort(
+        key=lambda item: _metric_number(
+            getattr(getattr(item[1], "metric", None), "value", None)
+        ),
+        reverse=maximize,
+    )
+    selected_nodes.extend(remaining[: max(0, limit - len(selected_nodes))])
+    missing_roles = [
+        role
+        for role in configured_roles
+        if not any(
+            str(getattr(node, "draft_role", "") or "") == role
+            for _, node in selected_nodes
         )
-    return attempts
+    ]
+    cards = [
+        _node_evidence_card(
+            agent,
+            node,
+            visibility="current_branch_frontier",
+            selection_reason=(
+                "best_rank_eligible_node_for_draft_role"
+                if str(getattr(node, "draft_role", "") or "")
+                else "best_available_current_parent_fallback"
+            ),
+            branch_id=branch_id,
+        )
+        for branch_id, node in selected_nodes[:limit]
+    ]
+    return cards, missing_roles
+
+
+def _select_causal_failure_cards(
+    agent: Any,
+    parent_node: Any,
+    *,
+    exclude_node_ids: set[str],
+    limit: int,
+) -> list[dict[str, Any]]:
+    if limit <= 0:
+        return []
+    journal = getattr(agent, "journal", None)
+    nodes = [parent_node] + list(reversed(list(getattr(journal, "nodes", []) or [])))
+    selected: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for node in nodes:
+        node_id = str(getattr(node, "id", "") or "")
+        if not node_id or node_id in seen or node_id in exclude_node_ids:
+            continue
+        seen.add(node_id)
+        failed = bool(
+            getattr(node, "is_buggy", None) is True
+            or getattr(node, "is_valid", None) is False
+            or str(getattr(node, "exc_type", "") or "")
+        )
+        if not failed:
+            continue
+        selected.append(
+            _node_evidence_card(
+                agent,
+                node,
+                visibility="causal_failure_evidence",
+                selection_reason="most_recent_causal_execution_failure",
+            )
+        )
+        if len(selected) >= limit:
+            break
+    return selected
+
+
+def _historical_card_signature(card: Mapping[str, Any]) -> str:
+    method_fingerprint = str(card.get("method_fingerprint") or "").strip()
+    if method_fingerprint:
+        return f"fingerprint={method_fingerprint}"
+    portfolio = build_component_portfolio([card])
+    rows = list(portfolio.get("card_components") or [])
+    components = (rows[0].get("components") or {}) if rows else {}
+    normalized = [
+        f"{axis}={'+'.join(sorted(str(value) for value in values))}"
+        for axis, values in sorted(components.items())
+        if values
+    ]
+    method_family = str(card.get("method_family") or "").strip().lower()
+    if method_family:
+        normalized.append(f"method={method_family}")
+    if normalized:
+        return "|".join(normalized)
+    title = re.sub(r"[^a-z0-9]+", " ", str(card.get("title") or "").lower()).strip()
+    if title:
+        return "title=" + " ".join(title.split()[:12])
+    return "id=" + str(card.get("memory_id") or "")
+
+
+def _historical_metric_protocol(card: Mapping[str, Any]) -> str:
+    for key in ("metric_protocol", "validation_protocol"):
+        if card.get(key):
+            return str(card[key])
+    receipt = card.get("official_submission_receipt") or {}
+    if isinstance(receipt, Mapping):
+        for key in ("metric_protocol", "validation_protocol"):
+            if receipt.get(key):
+                return str(receipt[key])
+    return ""
+
+
+def _node_identity_tokens(*values: Any) -> set[str]:
+    tokens: set[str] = set()
+    for value in values:
+        text = str(value or "").strip()
+        if not text:
+            continue
+        tokens.add(text.removeprefix("current::"))
+        if "::node::" in text:
+            tokens.add(text.rsplit("::node::", 1)[-1])
+    return tokens
+
+
+def _select_historical_frontier(
+    agent: Any,
+    parent_node: Any,
+    cards: Iterable[Mapping[str, Any]],
+    *,
+    limit: int,
+    exclude_node_ids: set[str] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    maximize = _strategy_metric_maximize(agent, parent_node)
+    task_id = str(getattr(getattr(agent, "cfg", None), "exp_id", "") or "")
+    current_protocol = _node_metric_protocol(parent_node)
+    eligible: list[dict[str, Any]] = []
+    rejected = {
+        "task_mismatch": 0,
+        "rank_ineligible": 0,
+        "missing_metric": 0,
+        "current_node_duplicate": 0,
+        "duplicate_lineage": 0,
+    }
+    excluded_tokens = _node_identity_tokens(*(exclude_node_ids or set()))
+    for raw in cards:
+        card = copy.deepcopy(dict(raw))
+        card_tokens = _node_identity_tokens(
+            card.get("memory_id"),
+            card.get("node_id"),
+            card.get("original_node_id"),
+        )
+        if card_tokens & excluded_tokens:
+            rejected["current_node_duplicate"] += 1
+            continue
+        source_task = str(
+            card.get("source_task_id") or card.get("task_id") or card.get("task") or ""
+        )
+        if source_task and task_id and source_task != task_id:
+            rejected["task_mismatch"] += 1
+            continue
+        if card.get("rank_eligible") is False:
+            rejected["rank_ineligible"] += 1
+            continue
+        metric_value = card.get("metric")
+        if metric_value is None:
+            metric_value = card.get("historical_metric")
+        metric = _metric_number(metric_value)
+        if metric is None:
+            rejected["missing_metric"] += 1
+            continue
+        card["metric"] = metric
+        receipt = card.get("official_submission_receipt") or {}
+        card["submission_aligned_receipt_present"] = bool(
+            receipt or card.get("submission_aligned") is True
+        )
+        protocol = _historical_metric_protocol(card)
+        card["metric_protocol"] = protocol
+        card["metric_comparable_to_current"] = bool(
+            protocol and current_protocol and protocol == current_protocol
+        )
+        if card["metric_comparable_to_current"]:
+            card["metric_claim_status"] = "same_task_same_protocol_comparable"
+        elif protocol:
+            card["metric_claim_status"] = "same_task_within_protocol_only"
+        else:
+            card["metric_claim_status"] = "unverified_method_evidence_only"
+        eligible.append(card)
+
+    # Never use raw scores to order different validation protocols.  Protocol
+    # groups are ordered by evidence confidence; scores only rank cards inside
+    # one same-task, same-protocol group.
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for card in eligible:
+        protocol = str(card.get("metric_protocol") or "")
+        group_key = protocol or "__unverified_protocol__"
+        grouped.setdefault(group_key, []).append(card)
+    for group in grouped.values():
+        group.sort(
+            key=lambda card: (
+                -float(card["metric"]) if maximize else float(card["metric"]),
+                int(card.get("router_rank") or 10**9),
+            )
+        )
+
+    def group_key(item: tuple[str, list[dict[str, Any]]]) -> tuple[Any, ...]:
+        protocol, group = item
+        same_as_current = bool(current_protocol and protocol == current_protocol)
+        has_receipt = any(
+            bool(card.get("submission_aligned_receipt_present")) for card in group
+        )
+        known_protocol = protocol != "__unverified_protocol__"
+        return (
+            not same_as_current,
+            not has_receipt,
+            not known_protocol,
+            protocol,
+        )
+
+    ordered_eligible = [
+        card
+        for _, group in sorted(grouped.items(), key=group_key)
+        for card in group
+    ]
+    selected: list[dict[str, Any]] = []
+    signatures: set[str] = set()
+    for card in ordered_eligible:
+        signature = _historical_card_signature(card)
+        if signature in signatures:
+            rejected["duplicate_lineage"] += 1
+            continue
+        signatures.add(signature)
+        card["router_visibility"] = "historical_diverse_frontier"
+        card["selection_reason"] = (
+            "same_task_same_protocol_metric_then_component_diversity"
+            if card.get("metric_comparable_to_current")
+            else "same_task_within_protocol_metric_then_component_diversity"
+            if card.get("metric_protocol")
+            else "same_task_unverified_metric_as_method_evidence_then_component_diversity"
+        )
+        card["component_lineage_signature"] = signature
+        selected.append(card)
+        if len(selected) >= limit:
+            break
+    return selected, rejected
+
+
+def build_strategy_evidence_view(
+    agent: Any,
+    parent_node: Any,
+    *,
+    stage: str,
+    router_pack: Mapping[str, Any] | None,
+    max_items: int = 8,
+    current_frontier_slots: int = 3,
+    causal_failure_slots: int = 1,
+    candidate_pool_limit: int = 48,
+    card_max_chars: int = 6000,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Build one auditable, role-balanced Strategy evidence set.
+
+    The eight-item cap applies to everything the Strategy Agent may cite:
+    current branch frontiers, one causal failure, and historical memory.  Raw
+    Router candidates remain in the Router trace but do not silently bypass
+    this attention budget.
+    """
+
+    max_items = max(1, int(max_items))
+    current_cards, missing_roles = _select_current_branch_frontier(
+        agent,
+        parent_node,
+        limit=min(max_items, max(0, int(current_frontier_slots))),
+    )
+    selected_node_ids = {
+        str(card.get("memory_id") or "").removeprefix("current::")
+        for card in current_cards
+    }
+    failure_cards = _select_causal_failure_cards(
+        agent,
+        parent_node,
+        exclude_node_ids=selected_node_ids,
+        limit=min(
+            max(0, max_items - len(current_cards)),
+            max(0, int(causal_failure_slots)),
+        ),
+    )
+    raw_historical = build_memory_cards(
+        router_pack,
+        max_cards=max(max_items, int(candidate_pool_limit)),
+        card_max_chars=card_max_chars,
+    )
+    historical_limit = max(0, max_items - len(current_cards) - len(failure_cards))
+    historical_cards, rejected = _select_historical_frontier(
+        agent,
+        parent_node,
+        raw_historical,
+        limit=historical_limit,
+        exclude_node_ids=selected_node_ids,
+    )
+    cards = current_cards + failure_cards + historical_cards
+    for rank, card in enumerate(cards, start=1):
+        card["strategy_evidence_rank"] = rank
+    selection = {
+        "schema": "mlevolve_memory_strategy_evidence_selection_v1",
+        "stage": str(stage),
+        "max_items": max_items,
+        "selected_count": len(cards),
+        "selected_memory_ids": [str(card.get("memory_id") or "") for card in cards],
+        "current_branch_frontier_ids": [
+            str(card.get("memory_id") or "") for card in current_cards
+        ],
+        "causal_failure_ids": [
+            str(card.get("memory_id") or "") for card in failure_cards
+        ],
+        "historical_diverse_frontier_ids": [
+            str(card.get("memory_id") or "") for card in historical_cards
+        ],
+        "missing_configured_draft_roles": missing_roles,
+        "historical_candidate_count": len(raw_historical),
+        "historical_rejections": rejected,
+        "current_metric_protocol": _node_metric_protocol(parent_node),
+        "historical_metric_comparison_policy": (
+            "scores rank only inside the same task and validation protocol; "
+            "cross-protocol and protocol-unknown cards are method evidence only"
+        ),
+        "policy": (
+            "one best valid node per configured draft role, then one recent causal "
+            "failure, then same-task metric-ranked historical nodes deduplicated by "
+            "component lineage; no cross-protocol numeric blending"
+        ),
+    }
+    return cards, selection
 
 
 def build_strategy_context(
@@ -616,16 +1101,35 @@ def build_strategy_context(
     branch_best_metric: float | None = None,
 ) -> dict[str, Any]:
     ext_cfg = getattr(getattr(agent, "cfg", None), "external_skill_memory", None)
-    max_cards = int(getattr(ext_cfg, "memory_strategy_max_cards", 24) or 24)
+    evidence_limit = int(
+        getattr(ext_cfg, "memory_strategy_evidence_limit", 8) or 8
+    )
+    current_frontier_slots = int(
+        getattr(ext_cfg, "memory_strategy_current_frontier_slots", 3) or 3
+    )
+    causal_failure_slots = int(
+        getattr(ext_cfg, "memory_strategy_causal_failure_slots", 1) or 1
+    )
+    candidate_pool_limit = int(
+        getattr(
+            ext_cfg,
+            "memory_strategy_candidate_pool_limit",
+            getattr(ext_cfg, "memory_strategy_max_cards", 48),
+        )
+        or 48
+    )
     card_max_chars = int(
         getattr(ext_cfg, "memory_strategy_card_max_chars", 6000) or 6000
     )
-    history_limit = int(
-        getattr(ext_cfg, "memory_strategy_history_limit", 16) or 16
-    )
-    cards = build_memory_cards(
-        router_pack,
-        max_cards=max_cards,
+    cards, evidence_selection = build_strategy_evidence_view(
+        agent,
+        parent_node,
+        stage=stage,
+        router_pack=router_pack,
+        max_items=evidence_limit,
+        current_frontier_slots=current_frontier_slots,
+        causal_failure_slots=causal_failure_slots,
+        candidate_pool_limit=candidate_pool_limit,
         card_max_chars=card_max_chars,
     )
     total_seconds = int(getattr(getattr(agent, "acfg", None), "time_limit", 0) or 0)
@@ -634,7 +1138,7 @@ def build_strategy_context(
     remaining = max(0.0, total_seconds - elapsed) if total_seconds else None
     current_code = str(getattr(parent_node, "code", "") or "")
     context = {
-        "schema": "mlevolve_memory_strategy_context_v1",
+        "schema": "mlevolve_memory_strategy_context_v2",
         "mode": "shadow_read_only",
         "stage": str(stage),
         "task": {
@@ -677,7 +1181,7 @@ def build_strategy_context(
                 or 0
             ),
         },
-        "attempt_history": _attempt_history(agent, limit=history_limit),
+        "strategy_evidence_selection": evidence_selection,
         "router": {
             "pack_schema": str((router_pack or {}).get("schema") or ""),
             "stage_route": copy.deepcopy((router_pack or {}).get("stage_route") or {}),
@@ -728,6 +1232,11 @@ def _strategy_prompt(
         "Do not write code and do not merely repeat the highest-ranked memory. Decompose each "
         "memory into representation, adaptation mode, downstream estimator, validation, feature, "
         "calibration, compute, and failure components. A full-pipeline score is not an ablation: "
+        "The memory_cards list is the complete citable evidence set and is capped across all "
+        "sources. Treat current_branch_frontier, causal_failure_evidence, and "
+        "historical_diverse_frontier as distinct evidence classes. Compare numeric metrics only "
+        "when their task and validation protocol are compatible; an unverified historical score "
+        "is evidence about a method, not proof that it beats a current branch. "
         "do not discard one component solely because the pipeline containing it scored poorly. "
         "Instead ask whether the failure came from another component or an incompatible interface. "
         "Build a map of the current system, identify missing crossings in the component portfolio, "
@@ -1019,7 +1528,7 @@ def run_memory_strategy_shadow(
         router_pack=router_pack,
     )
     base_trace = {
-        "schema": "mlevolve_memory_strategy_shadow_trace_v1",
+        "schema": "mlevolve_memory_strategy_shadow_trace_v2",
         "mode": "shadow_read_only",
         "stage": str(stage),
         "parent_node_id": str(getattr(parent_node, "id", "")),
@@ -1040,6 +1549,23 @@ def run_memory_strategy_shadow(
         branch_best_metric=branch_best_metric,
     )
     cards = list(context.get("memory_cards") or [])
+    evidence_selection = copy.deepcopy(
+        context.get("strategy_evidence_selection") or {}
+    )
+    evidence_limit = int(evidence_selection.get("max_items") or 8)
+    if len(cards) > evidence_limit:
+        return {
+            **base_trace,
+            "status": "failed",
+            "error_type": "StrategyEvidenceLimitViolation",
+            "error": (
+                f"strategy evidence count {len(cards)} exceeds configured limit "
+                f"{evidence_limit}"
+            ),
+            "strategy_evidence_selection": evidence_selection,
+            "memory_card_ids": [card.get("memory_id", "") for card in cards],
+            "memory_card_count": len(cards),
+        }
     required_opportunity_ids = [
         str(item.get("opportunity_id") or "")
         for item in (
@@ -1159,6 +1685,7 @@ def run_memory_strategy_shadow(
             "context_char_count": len(_canonical_json(context)),
             "memory_card_ids": [card["memory_id"] for card in cards],
             "memory_card_count": len(cards),
+            "strategy_evidence_selection": evidence_selection,
             "router_final_prompt_candidate_ids": list(
                 (router_pack or {}).get("final_prompt_candidate_ids") or []
             ),
@@ -1182,6 +1709,7 @@ def run_memory_strategy_shadow(
             "context_char_count": len(_canonical_json(context)),
             "memory_card_ids": [card["memory_id"] for card in cards],
             "memory_card_count": len(cards),
+            "strategy_evidence_selection": evidence_selection,
         }
 
 
@@ -1190,6 +1718,7 @@ __all__ = [
     "build_component_portfolio",
     "build_memory_cards",
     "build_strategy_context",
+    "build_strategy_evidence_view",
     "code_component_fingerprint",
     "payload_sha256",
     "run_memory_strategy_shadow",

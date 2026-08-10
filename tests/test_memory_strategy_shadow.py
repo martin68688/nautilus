@@ -19,6 +19,7 @@ from agents.memory_strategy_agent import (
     build_component_portfolio,
     build_memory_cards,
     build_strategy_context,
+    build_strategy_evidence_view,
     payload_sha256,
     run_memory_strategy_shadow,
     should_run_memory_strategy_shadow,
@@ -34,6 +35,10 @@ def _config(*, shadow_enabled=True, stages=None):
         memory_strategy_shadow_stages=stages or ["improve"],
         memory_strategy_debug_trigger="causal_gap_or_repeated_failure",
         memory_strategy_debug_failure_threshold=2,
+        memory_strategy_evidence_limit=8,
+        memory_strategy_current_frontier_slots=3,
+        memory_strategy_causal_failure_slots=1,
+        memory_strategy_candidate_pool_limit=48,
         memory_strategy_max_cards=24,
         memory_strategy_card_max_chars=6000,
         memory_strategy_max_input_chars=0,
@@ -53,7 +58,12 @@ def _config(*, shadow_enabled=True, stages=None):
     )
     code = SimpleNamespace(model="deepseek-v4-flash", temp=0.0)
     search = SimpleNamespace(num_gpus=1)
-    acfg = SimpleNamespace(code=code, search=search, time_limit=21600)
+    acfg = SimpleNamespace(
+        code=code,
+        search=search,
+        time_limit=21600,
+        draft_role_policy=SimpleNamespace(enabled=False, roles=[]),
+    )
     return SimpleNamespace(
         external_skill_memory=ext,
         agent=acfg,
@@ -71,6 +81,9 @@ def _agent(*, shadow_enabled=True, stages=None):
         data_preview="text train rows with author label",
         start_time=time.time() - 300,
         journal=Journal(),
+        branch_successful_nodes={},
+        branch_all_nodes={},
+        metric_maximize=False,
     )
 
 
@@ -192,6 +205,148 @@ def _strategy_memo():
     }
 
 
+def _successful_node(
+    node_id: str,
+    *,
+    metric: float,
+    role: str,
+    branch_id: int,
+    text: str,
+) -> SearchNode:
+    node = SearchNode(
+        code="def train():\n    return 1\n",
+        plan=text,
+        stage="improve",
+        id=node_id,
+        branch_id=branch_id,
+        draft_role=role,
+        code_summary=text,
+    )
+    node.metric = MetricValue(metric, maximize=False)
+    node.is_buggy = False
+    node.is_valid = True
+    node.validation_protocol = "full_oof_submission_aligned_internal"
+    node.official_submission_receipt = {
+        "submission_variant": node_id,
+        "submission_sha256": node_id[0] * 64,
+        "validation_protocol": "full_oof_submission_aligned_internal",
+    }
+    return node
+
+
+def _failed_node(node_id: str) -> SearchNode:
+    node = SearchNode(
+        code="def train():\n    raise IndexError('shape')\n",
+        plan="add one feature block",
+        stage="improve",
+        id=node_id,
+    )
+    node.metric = None
+    node.is_buggy = True
+    node.is_valid = False
+    node.exc_type = "IndexError"
+    node.analysis = "feature matrix and estimator input dimensions disagree"
+    node._term_out = ["IndexError: shape mismatch"]
+    return node
+
+
+def _portfolio_router_pack() -> dict:
+    rows = [
+        {
+            "candidate_id": "history::tfidf-best",
+            "source": "runforest",
+            "source_task_id": "spooky-author-identification",
+            "metric": 0.280,
+            "rank_eligible": True,
+            "validation_protocol": "full_oof_submission_aligned_internal",
+            "submission_aligned": True,
+            "text": "word and character TF-IDF with logistic regression",
+        },
+        {
+            "candidate_id": "history::tfidf-duplicate",
+            "source": "runforest",
+            "source_task_id": "spooky-author-identification",
+            "metric": 0.290,
+            "rank_eligible": True,
+            "validation_protocol": "full_oof_submission_aligned_internal",
+            "submission_aligned": True,
+            "text": "word and character TF-IDF with logistic regression",
+        },
+        {
+            "candidate_id": "history::xgb",
+            "source": "runforest",
+            "source_task_id": "spooky-author-identification",
+            "metric": 0.310,
+            "rank_eligible": True,
+            "validation_protocol": "full_oof_submission_aligned_internal",
+            "submission_aligned": True,
+            "text": "frozen DeBERTa embedding with XGBoost",
+        },
+        {
+            "candidate_id": "history::five-fold-blend",
+            "source": "runforest",
+            "source_task_id": "spooky-author-identification",
+            "metric": 0.320,
+            "rank_eligible": True,
+            "validation_protocol": "full_oof_submission_aligned_internal",
+            "submission_aligned": True,
+            "text": "five-fold three-model probability blend",
+        },
+        {
+            "candidate_id": "history::holdout-stylometry",
+            "source": "runforest",
+            "source_task_id": "spooky-author-identification",
+            "metric": 0.100,
+            "rank_eligible": True,
+            "validation_protocol": "single_holdout_submission_aligned_internal",
+            "submission_aligned": True,
+            "text": "stylometric punctuation density with a linear classifier",
+        },
+        {
+            "candidate_id": "run::old-spooky::node::replay-best",
+            "original_node_id": "replay-best",
+            "source": "runforest",
+            "source_task_id": "spooky-author-identification",
+            "metric": 0.200,
+            "rank_eligible": True,
+            "validation_protocol": "full_oof_submission_aligned_internal",
+            "submission_aligned": True,
+            "text": "the same current frozen DeBERTa embedding with XGBoost node",
+        },
+        {
+            "candidate_id": "history::wrong-task",
+            "source": "runforest",
+            "source_task_id": "leaf-classification",
+            "metric": 0.001,
+            "rank_eligible": True,
+            "text": "EfficientNet image model",
+        },
+        {
+            "candidate_id": "history::rank-blocked",
+            "source": "runforest",
+            "source_task_id": "spooky-author-identification",
+            "metric": 0.002,
+            "rank_eligible": False,
+            "text": "leaky target encoding",
+        },
+        {
+            "candidate_id": "history::no-metric",
+            "source": "runforest",
+            "source_task_id": "spooky-author-identification",
+            "rank_eligible": True,
+            "text": "unscored experiment",
+        },
+    ]
+    return {
+        "schema": "experiment_r_memory_pack_v1",
+        "stage_route": {"stage": "improve"},
+        "final_prompt_candidate_ids": [row["candidate_id"] for row in rows[:3]],
+        "final_prompt_candidates": rows[:3],
+        "pre_gate_raw_candidates": rows[3:],
+        "retrieval_agent": {"agent_abstained": False},
+    }
+
+
 def test_wide_memory_cards_include_unselected_rows_and_deduplicate():
     cards = build_memory_cards(_router_pack(), max_cards=8)
     ids = [card["memory_id"] for card in cards]
@@ -203,6 +358,175 @@ def test_wide_memory_cards_include_unselected_rows_and_deduplicate():
     assert next(card for card in cards if card["memory_id"] == "run::five-fold")[
         "router_visibility"
     ] == "pre_gate"
+
+
+def test_strategy_evidence_uses_role_frontiers_failure_and_diverse_history():
+    agent = _agent()
+    roles = [
+        "coldstart_baseline",
+        "memory_reproduction",
+        "novel_exploration",
+    ]
+    agent.acfg.draft_role_policy = SimpleNamespace(enabled=True, roles=roles)
+    cold_best = _successful_node(
+        "cold-best",
+        metric=0.330,
+        role=roles[0],
+        branch_id=1,
+        text="character TF-IDF linear baseline",
+    )
+    cold_worse = _successful_node(
+        "cold-worse",
+        metric=0.410,
+        role=roles[0],
+        branch_id=1,
+        text="word TF-IDF baseline",
+    )
+    replay_best = _successful_node(
+        "replay-best",
+        metric=0.300,
+        role=roles[1],
+        branch_id=2,
+        text="frozen DeBERTa embedding with XGBoost",
+    )
+    novel_best = _successful_node(
+        "novel-best",
+        metric=0.340,
+        role=roles[2],
+        branch_id=3,
+        text="stylometric feature block",
+    )
+    cold_best.branch_id = None
+    agent.branch_successful_nodes = {
+        1: [cold_worse, cold_best],
+        2: [replay_best],
+        3: [novel_best],
+    }
+    failure = _failed_node("recent-failure")
+    agent.journal.append(cold_worse)
+    agent.journal.append(failure)
+
+    cards, selection = build_strategy_evidence_view(
+        agent,
+        replay_best,
+        stage="improve",
+        router_pack=_portfolio_router_pack(),
+        max_items=8,
+        current_frontier_slots=3,
+        causal_failure_slots=1,
+        candidate_pool_limit=48,
+    )
+
+    assert len(cards) == 8
+    assert selection["selected_count"] == 8
+    assert selection["current_branch_frontier_ids"] == [
+        "current::cold-best",
+        "current::replay-best",
+        "current::novel-best",
+    ]
+    assert selection["causal_failure_ids"] == ["current::recent-failure"]
+    assert "current::cold-worse" not in selection["selected_memory_ids"]
+    assert "history::tfidf-best" in selection["historical_diverse_frontier_ids"]
+    assert (
+        "history::tfidf-duplicate"
+        not in selection["historical_diverse_frontier_ids"]
+    )
+    assert (
+        "run::old-spooky::node::replay-best"
+        not in selection["historical_diverse_frontier_ids"]
+    )
+    assert selection["historical_rejections"] == {
+        "task_mismatch": 1,
+        "rank_ineligible": 1,
+        "missing_metric": 1,
+        "current_node_duplicate": 1,
+        "duplicate_lineage": 1,
+    }
+    # Selecting a frontier must not mutate the live SearchNode.
+    assert cold_best.branch_id is None
+    cold_card = next(card for card in cards if card["memory_id"] == "current::cold-best")
+    assert cold_card["branch_id"] == 1
+
+
+def test_historical_scores_are_ranked_only_inside_validation_protocol():
+    agent = _agent()
+    parent = _successful_node(
+        "parent-protocol",
+        metric=0.330,
+        role="memory_reproduction",
+        branch_id=2,
+        text="three-model blend",
+    )
+    agent.branch_successful_nodes = {2: [parent]}
+    pack = _portfolio_router_pack()
+    pack["pre_gate_raw_candidates"] = [
+        row
+        for row in pack["pre_gate_raw_candidates"]
+        if row["candidate_id"] != "run::old-spooky::node::replay-best"
+    ]
+
+    cards, selection = build_strategy_evidence_view(
+        agent,
+        parent,
+        stage="improve",
+        router_pack=pack,
+        max_items=8,
+        current_frontier_slots=1,
+        causal_failure_slots=0,
+        candidate_pool_limit=48,
+    )
+    historical = [
+        card
+        for card in cards
+        if card["router_visibility"] == "historical_diverse_frontier"
+    ]
+    ids = [card["memory_id"] for card in historical]
+
+    assert ids.index("history::tfidf-best") < ids.index("history::xgb")
+    # The numerically smaller holdout score is not promoted above the matching
+    # OOF protocol merely by comparing incompatible raw values.
+    assert ids.index("history::holdout-stylometry") > ids.index(
+        "history::five-fold-blend"
+    )
+    holdout = next(
+        card for card in historical if card["memory_id"] == "history::holdout-stylometry"
+    )
+    assert holdout["metric_comparable_to_current"] is False
+    assert holdout["metric_claim_status"] == "same_task_within_protocol_only"
+    assert "same task and validation protocol" in selection[
+        "historical_metric_comparison_policy"
+    ]
+
+
+def test_unverified_historical_score_is_labelled_as_method_evidence():
+    agent = _agent()
+    parent = _parent()
+    agent.branch_successful_nodes = {1: [parent]}
+    pack = {
+        "final_prompt_candidates": [
+            {
+                "candidate_id": "history::unverified",
+                "source_task_id": "spooky-author-identification",
+                "metric": 0.001,
+                "rank_eligible": True,
+                "text": "character TF-IDF with a linear classifier",
+            }
+        ]
+    }
+
+    cards, _ = build_strategy_evidence_view(
+        agent,
+        parent,
+        stage="improve",
+        router_pack=pack,
+        max_items=8,
+        current_frontier_slots=1,
+        causal_failure_slots=0,
+    )
+    card = next(item for item in cards if item["memory_id"] == "history::unverified")
+    assert card["submission_aligned_receipt_present"] is False
+    assert card["metric_claim_status"] == "unverified_method_evidence_only"
+    assert card["metric_comparable_to_current"] is False
 
 
 def test_component_portfolio_prefers_executed_summary_over_discussed_plan():
@@ -275,16 +599,48 @@ def test_shadow_agent_records_global_composition_without_mutating_router_or_prom
     )
 
     assert trace["status"] == "completed"
+    assert trace["schema"] == "mlevolve_memory_strategy_shadow_trace_v2"
     assert trace["actuation_authority"] == "none"
     assert trace["production_prompt_modified"] is False
     assert trace["memo"]["recommended_hypothesis_id"] == "h-three-model-five-fold"
     assert set(trace["memory_card_ids"]) >= {"run::three-model", "run::five-fold"}
+    assert trace["memory_card_count"] <= 8
+    assert trace["strategy_evidence_selection"]["selected_count"] == trace[
+        "memory_card_count"
+    ]
     assert observed["context"]["metrics"]["parent_submission_metric"]["value"] == 0.336
     assert observed["context"]["metrics"]["branch_best_metric"] == 0.331
     portfolio = observed["context"]["component_portfolio"]["component_axes"]
     assert "five_fold" in portfolio["validation"]
     assert pack == frozen_pack
     assert payload_sha256(production_prompt) == before
+
+
+def test_strategy_can_cite_a_current_branch_frontier_node():
+    agent = _agent()
+    parent = _parent()
+    parent.id = "parent-frontier"
+    parent.branch_id = 2
+    parent.draft_role = "memory_reproduction"
+    agent.branch_successful_nodes = {2: [parent]}
+    agent.journal.append(parent)
+    memo = _strategy_memo()
+    memo["candidate_compositions"][0]["source_memory_ids"] = [
+        "current::parent-frontier",
+        "run::five-fold",
+    ]
+    agent._memory_strategy_query_fn = lambda **_kwargs: memo
+
+    trace = run_memory_strategy_shadow(
+        agent,
+        parent,
+        stage="improve",
+        router_pack=_router_pack(),
+    )
+
+    assert trace["status"] == "completed"
+    assert "current::parent-frontier" in trace["memory_card_ids"]
+    assert trace["validation"]["valid"] is True
 
 
 def test_strategy_context_keeps_parent_metric_distinct_from_branch_best():

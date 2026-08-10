@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build three auditable point-in-time Strategy shadow replay cases."""
+"""Build auditable point-in-time Strategy shadow replay cases."""
 
 from __future__ import annotations
 
@@ -45,9 +45,61 @@ def _journal_node_payload(node: Mapping[str, Any], *, task_id: str) -> dict[str,
         else False,
         "stage": str(node.get("stage") or "improve"),
         "is_buggy": bool(node.get("is_buggy", False)),
+        "is_valid": node.get("is_valid"),
+        "branch_id": node.get("branch_id"),
+        "draft_role": str(node.get("draft_role") or ""),
+        "leakage_audit": dict(node.get("leakage_audit") or {}),
+        "official_submission_receipt": dict(
+            node.get("official_submission_receipt") or {}
+        ),
+        "metric_protocol": str(
+            node.get("metric_protocol") or node.get("validation_protocol") or ""
+        ),
         "execution_output": "".join(node.get("_term_out") or []),
         "task_id": task_id,
     }
+
+
+def _current_branch_nodes(
+    nodes: list[Mapping[str, Any]],
+    *,
+    task_id: str,
+    max_step: int | None = None,
+    max_ctime: float | None = None,
+) -> list[dict[str, Any]]:
+    """Return the best valid point-in-time node for every observed branch."""
+
+    by_branch: dict[int, list[Mapping[str, Any]]] = {}
+    for node in nodes:
+        branch_id = node.get("branch_id")
+        if branch_id is None:
+            continue
+        if max_step is not None and int(node.get("step") or 0) > max_step:
+            continue
+        if max_ctime is not None and float(node.get("ctime") or 0.0) > max_ctime:
+            continue
+        if (
+            _metric(node) is None
+            or node.get("is_buggy") is True
+            or node.get("is_valid") is False
+            or (node.get("leakage_audit") or {}).get("rank_eligible") is False
+        ):
+            continue
+        by_branch.setdefault(int(branch_id), []).append(node)
+    selected = []
+    for branch_id, candidates in sorted(by_branch.items()):
+        maximize = bool(
+            (candidates[0].get("metric") or {}).get("maximize", False)
+        ) if isinstance(candidates[0].get("metric"), Mapping) else False
+        best = sorted(
+            candidates,
+            key=lambda node: float(_metric(node)),
+            reverse=maximize,
+        )[0]
+        payload = _journal_node_payload(best, task_id=task_id)
+        payload["branch_id"] = branch_id
+        selected.append(payload)
+    return selected
 
 
 def _card_from_graph_node(node: Mapping[str, Any]) -> dict[str, Any]:
@@ -62,6 +114,14 @@ def _card_from_graph_node(node: Mapping[str, Any]) -> dict[str, Any]:
         "plan": str(node.get("plan") or ""),
         "text": str(node.get("code_summary") or node.get("text") or ""),
         "rank_eligible": bool(node.get("rank_eligible", True)),
+        "run_id": str(node.get("run_id") or ""),
+        "branch_id": node.get("branch_id"),
+        "draft_role": str(node.get("draft_role") or ""),
+        "validation_protocol": str(node.get("validation_protocol") or ""),
+        "evidence_tier": str(node.get("evidence_tier") or ""),
+        "metric_provenance": str(node.get("metric_provenance") or ""),
+        "method_fingerprint": str(node.get("method_fingerprint") or ""),
+        "original_node_id": str(node.get("original_node_id") or ""),
         "available_order": int(node.get("step") or 0),
     }
 
@@ -97,6 +157,11 @@ def _spooky_case() -> dict[str, Any]:
         "atomic_actuation_enabled": False,
         "cutoff": {"order": 34, "meaning": "same-run journal step <= 34"},
         "parent": _journal_node_payload(parent_raw, task_id="spooky-author-identification"),
+        "current_branch_nodes": _current_branch_nodes(
+            journal["nodes"],
+            task_id="spooky-author-identification",
+            max_step=34,
+        ),
         "metrics": {"branch_best_metric": 0.30252106930036915},
         "budget": {
             "total_search_seconds": 21600,
@@ -214,6 +279,11 @@ def _spooky_repair_case() -> dict[str, Any]:
         "parent": _journal_node_payload(
             parent_raw, task_id="spooky-author-identification"
         ),
+        "current_branch_nodes": _current_branch_nodes(
+            journal["nodes"],
+            task_id="spooky-author-identification",
+            max_step=41,
+        ),
         "metrics": {"branch_best_metric": 0.30252106930036915},
         "budget": {
             "total_search_seconds": 21600,
@@ -291,6 +361,11 @@ def _leaf_case() -> dict[str, Any]:
         "stage": "improve",
         "cutoff": {"timestamp": cutoff, "meaning": "global node ctime before RunForest step 30"},
         "parent": _journal_node_payload(parent_raw, task_id="leaf-classification"),
+        "current_branch_nodes": _current_branch_nodes(
+            runforest["nodes"],
+            task_id="leaf-classification",
+            max_ctime=cutoff,
+        ),
         "metrics": {"branch_best_metric": 0.04335948075990093},
         "budget": {
             "total_search_seconds": 21600,
@@ -420,13 +495,17 @@ def main() -> int:
     parser.add_argument(
         "--output",
         type=Path,
-        default=BASE / "memory_strategy_shadow_history_slices_v1.json",
+        default=BASE / "memory_strategy_shadow_history_slices_v3.json",
     )
     args = parser.parse_args()
     packet = {
-        "schema": "mlevolve_memory_strategy_history_slices_v2",
+        "schema": "mlevolve_memory_strategy_history_slices_v3",
         "policy": {
             "hidden_future_not_model_visible": True,
+            "strategy_evidence_limit": 8,
+            "current_branch_frontier_slots": 3,
+            "causal_failure_slots": 1,
+            "historical_lineage_deduplication": True,
             "source": "existing Journal/RunForest/validated recipe evidence",
             "tasks": [
                 "leaf-classification",
