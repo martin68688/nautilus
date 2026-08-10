@@ -170,6 +170,7 @@ def validate_atomic_plan(
     max_modules: int,
     max_changes: int,
     max_patches: int,
+    parent_code: str | None = None,
 ) -> dict[str, Any]:
     violations: list[str] = []
     missing_keys = [key for key in _ATOMIC_REQUIRED_KEYS if key not in plan]
@@ -203,6 +204,12 @@ def validate_atomic_plan(
     if not 1 <= len(changes) <= int(max_changes):
         violations.append(f"allowed_changes must contain 1..{int(max_changes)} changes")
     seen_change_ids: set[str] = set()
+    available_symbols: set[str] = set()
+    if parent_code is not None:
+        try:
+            available_symbols = set(_top_level_units(parent_code)[0])
+        except SyntaxError as exc:
+            violations.append(f"parent code is not parseable: {exc}")
     for index, change in enumerate(changes):
         if not isinstance(change, Mapping):
             violations.append(f"allowed_changes[{index}] is not an object")
@@ -216,6 +223,16 @@ def validate_atomic_plan(
             violations.append(f"{change_id or index} must name at least one target symbol")
         if str(change.get("operation") or "") not in {"modify", "add", "delete"}:
             violations.append(f"{change_id or index} has invalid operation")
+        if parent_code is not None and str(change.get("operation") or "") in {
+            "modify",
+            "delete",
+        }:
+            unknown_targets = sorted(set(targets) - available_symbols)
+            if unknown_targets:
+                violations.append(
+                    f"{change_id or index} targets non-top-level symbols: "
+                    f"{unknown_targets}; available symbols are {sorted(available_symbols)}"
+                )
     try:
         requested_patches = int(plan.get("max_patches", 0))
     except (TypeError, ValueError):
@@ -243,6 +260,7 @@ def validate_atomic_plan(
         "violations": violations,
         "selected_hypothesis_id": hypothesis_id,
         "available_hypothesis_ids": sorted(compositions),
+        "available_top_level_symbols": sorted(available_symbols),
     }
 
 
@@ -371,6 +389,7 @@ def run_atomic_actuation_planner(
                     max_modules=limits["max_modules"],
                     max_changes=limits["max_changes"],
                     max_patches=limits["max_patches"],
+                    parent_code=parent_code,
                 )
             except Exception as exc:
                 plan = {}
@@ -628,7 +647,9 @@ def _coder_prompt(
             "\n\n# Contract-preserving repair\n"
             "The prior diff was rejected. Repair only its mechanical contract violations; "
             "the Atomic Actuation Contract and hypothesis are unchanged. Do not reduce or "
-            "replace the experiment.\n"
+            "replace the experiment. Every SEARCH block must match the original Parent code "
+            "shown in this prompt, never the previously proposed candidate or an imagined "
+            "intermediate state.\n"
             f"Prior verdict: {_canonical_json(previous_verdict)}\n"
             f"Prior response:\n{previous_response}"
         )

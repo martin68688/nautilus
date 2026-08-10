@@ -14,7 +14,9 @@ from agents.atomic_actuation import (
     apply_atomic_diff_response,
     run_atomic_actuation_pipeline,
 )
+import agents.memory_strategy_agent as memory_strategy_module
 from agents.memory_strategy_agent import (
+    build_component_portfolio,
     build_memory_cards,
     build_strategy_context,
     payload_sha256,
@@ -34,11 +36,13 @@ def _config(*, shadow_enabled=True, stages=None):
         memory_strategy_max_cards=24,
         memory_strategy_card_max_chars=6000,
         memory_strategy_max_input_chars=0,
-        memory_strategy_max_output_tokens=6000,
+        memory_strategy_max_output_tokens=12000,
         memory_strategy_max_retries=2,
         memory_strategy_contract_retries=2,
         memory_strategy_min_candidate_compositions=1,
         memory_strategy_temperature=0.0,
+        memory_strategy_model="deepseek-v4-pro",
+        memory_strategy_thinking_enabled=True,
         memory_strategy_history_limit=16,
         memory_strategy_atomic_max_modules=2,
         memory_strategy_atomic_max_changes=3,
@@ -199,6 +203,25 @@ def test_wide_memory_cards_include_unselected_rows_and_deduplicate():
     ] == "pre_gate"
 
 
+def test_component_portfolio_prefers_executed_summary_over_discussed_plan():
+    portfolio = build_component_portfolio(
+        [
+            {
+                "memory_id": "run::deberta-actual",
+                "plan": "Replace the failed ModernBERT fine-tuning attempt.",
+                "text": "Frozen DeBERTa embeddings feed an XGBoost classifier.",
+            }
+        ]
+    )
+
+    axes = portfolio["component_axes"]
+    assert "deberta" in axes["representation"]
+    assert "modernbert" not in axes["representation"]
+    assert "frozen_embedding" in axes["adaptation_mode"]
+    assert "fine_tuning" not in axes["adaptation_mode"]
+    assert portfolio["card_components"][0]["evidence_basis"] == "text"
+
+
 def test_shadow_agent_records_global_composition_without_mutating_router_or_prompt():
     agent = _agent()
     parent = _parent()
@@ -258,6 +281,38 @@ def test_strategy_context_keeps_parent_metric_distinct_from_branch_best():
         "branch_best_metric": 0.300,
         "branch_best_is_parent": False,
     }
+
+
+def test_strategy_uses_independent_v4_pro_thinking_without_mutating_coder_cfg(
+    monkeypatch,
+):
+    agent = _agent()
+    parent = _parent()
+    observed = {}
+
+    def fake_generate(**kwargs):
+        observed["model"] = kwargs["cfg"].agent.code.model
+        observed["json_schema"] = kwargs["json_schema"]
+        observed["max_tokens"] = kwargs["max_tokens"]
+        return _strategy_memo()
+
+    monkeypatch.setattr(memory_strategy_module, "generate", fake_generate)
+    trace = run_memory_strategy_shadow(
+        agent,
+        parent,
+        stage="improve",
+        router_pack=_router_pack(),
+    )
+
+    assert trace["status"] == "completed"
+    assert trace["model"] == "deepseek-v4-pro"
+    assert trace["thinking_enabled"] is True
+    assert observed == {
+        "model": "deepseek-v4-pro",
+        "json_schema": None,
+        "max_tokens": 12000,
+    }
+    assert agent.cfg.agent.code.model == "deepseek-v4-flash"
 
 
 def test_debug_shadow_runs_only_for_causal_gap_or_repeated_failure():
@@ -486,3 +541,64 @@ def test_atomic_planner_retries_legacy_shape_without_shrinking_hypothesis():
     assert calls == [0, 1]
     assert result["planner"]["contract_attempts"][0]["valid"] is False
     assert result["planner"]["plan"]["hypothesis_id"] == "h-three-model-five-fold"
+
+
+def test_atomic_planner_retries_non_top_level_target_before_coder():
+    agent = _agent()
+    parent_code = "def train_models(x):\n    criterion = x\n    return criterion\n"
+
+    def plan(target):
+        return {
+            "hypothesis_id": "h-three-model-five-fold",
+            "objective": "cross-fit the existing model collection",
+            "source_memory_ids": ["run::three-model", "run::five-fold"],
+            "allowed_modules": ["training_evaluation"],
+            "allowed_changes": [
+                {
+                    "change_id": "cross_fit_existing_models",
+                    "operation": "modify",
+                    "target_symbols": [target],
+                    "description": "loop over five folds",
+                }
+            ],
+            "allowed_new_imports": [],
+            "forbidden_symbols": [],
+            "forbidden_code_patterns": [],
+            "preserve_invariants": ["keep output class order"],
+            "compatibility_checks": ["fold class columns match"],
+            "estimated_compute_seconds": 1200,
+            "max_patches": 1,
+            "expected_mechanism": "reduce split variance",
+            "falsification_condition": "OOF does not improve",
+        }
+
+    agent._atomic_planner_query_fn = lambda **kwargs: plan(
+        "criterion" if kwargs["contract_attempt"] == 0 else "train_models"
+    )
+    agent._atomic_coder_query_fn = lambda **_kwargs: (
+        "<<<<<<< SEARCH\n"
+        "def train_models(x):\n"
+        "    criterion = x\n"
+        "    return criterion\n"
+        "=======\n"
+        "def train_models(x):\n"
+        "    fold_predictions = [x for _ in range(5)]\n"
+        "    return sum(fold_predictions) / len(fold_predictions)\n"
+        ">>>>>>> REPLACE\n"
+    )
+
+    result = run_atomic_actuation_pipeline(
+        agent,
+        strategy_memo=_strategy_memo(),
+        parent_code=parent_code,
+        task_description="authorship classification",
+    )
+
+    assert result["status"] == "accepted"
+    assert result["planner"]["contract_attempts"][0]["valid"] is False
+    assert "non-top-level symbols" in " ".join(
+        result["planner"]["contract_attempts"][0]["violations"]
+    )
+    assert result["planner"]["plan"]["allowed_changes"][0][
+        "target_symbols"
+    ] == ["train_models"]

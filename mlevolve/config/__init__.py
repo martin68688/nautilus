@@ -489,11 +489,13 @@ class ExternalSkillMemoryConfig:
     # card count remains bounded; the provider's advertised context window is
     # probed separately by the smoke harness.
     memory_strategy_max_input_chars: int = 0
-    memory_strategy_max_output_tokens: int = 6000
+    memory_strategy_max_output_tokens: int = 12000
     memory_strategy_max_retries: int = 2
     memory_strategy_contract_retries: int = 2
     memory_strategy_min_candidate_compositions: int = 3
     memory_strategy_temperature: float = 0.0
+    memory_strategy_model: str = "deepseek-v4-pro"
+    memory_strategy_thinking_enabled: bool = True
     memory_strategy_history_limit: int = 16
     # Isolated actuation-chain defaults.  Shadow mode never consults these to
     # mutate the live Improve/Debug candidate.

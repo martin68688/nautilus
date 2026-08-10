@@ -364,22 +364,31 @@ def build_component_portfolio(
         memory_id = str(card.get("memory_id") or "")
         if not memory_id:
             continue
-        evidence_text = _canonical_json(
-            {
+        # Implementation summaries describe what actually ran.  Planning text
+        # often mentions rejected or replaced alternatives, so mixing it into
+        # the component detector creates false combinations (for example a
+        # DeBERTa implementation whose plan merely discusses ModernBERT).
+        if card.get("text") not in (None, "", [], {}):
+            evidence_basis = "text"
+            evidence_payload = {"text": card.get("text")}
+        elif card.get("prompt_text") not in (None, "", [], {}):
+            evidence_basis = "prompt_text"
+            evidence_payload = {"prompt_text": card.get("prompt_text")}
+        else:
+            evidence_basis = "plan_fallback"
+            evidence_payload = {
                 key: card.get(key)
                 for key in (
                     "title",
                     "method_family",
                     "plan",
-                    "text",
-                    "prompt_text",
                     "analysis",
                     "failure_signature",
                     "repair_action",
                 )
                 if card.get(key) not in (None, "", [], {})
             }
-        )
+        evidence_text = _canonical_json(evidence_payload)
         matched: dict[str, list[str]] = {}
         for axis, components in _PORTFOLIO_PATTERNS.items():
             for component, patterns in components.items():
@@ -395,6 +404,7 @@ def build_component_portfolio(
                 "memory_id": memory_id,
                 "metric": card.get("metric"),
                 "outcome": card.get("outcome", ""),
+                "evidence_basis": evidence_basis,
                 "components": matched,
             }
         )
@@ -649,7 +659,12 @@ def _strategy_prompt(
         "at least one conservative transfer, at least one cross-lineage composition citing two or "
         "more memory IDs, and at least one discriminating ablation or frontier alternative. At "
         "least one composition must explicitly examine a component combination not yet jointly "
-        "tested. You may combine ideas only when interfaces and compute budgets are compatible. "
+        "tested. If an axis contains three or more independently observed alternatives and they "
+        "share a budget-compatible interface (for example frozen features or prediction vectors), "
+        "include at least one diversity/set-cover hypothesis that combines alternatives within "
+        "that axis. Do not make every candidate a descendant of the current best lineage: when "
+        "the portfolio permits it, at least two candidates must use a different base lineage. "
+        "You may combine ideas only when interfaces and compute budgets are compatible. "
         "If evidence is genuinely insufficient, decision may be 'abstain', candidate_compositions "
         "must be empty, and abstention_reason must be specific. Every proposal must "
         "cite only memory IDs present in memory_cards, distinguish the parent's real "
@@ -896,6 +911,16 @@ def run_memory_strategy_shadow(
     )
     cards = list(context.get("memory_cards") or [])
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
+    inherited_model = str(getattr(agent.acfg.code, "model", "") or "")
+    strategy_model = str(
+        getattr(ext_cfg, "memory_strategy_model", inherited_model)
+        or inherited_model
+    )
+    thinking_enabled = bool(
+        getattr(ext_cfg, "memory_strategy_thinking_enabled", True)
+    )
+    strategy_cfg = copy.deepcopy(agent.cfg)
+    strategy_cfg.agent.code.model = strategy_model
     started = time.monotonic()
     try:
         contract_retries = int(
@@ -926,19 +951,24 @@ def run_memory_strategy_shadow(
                     context=copy.deepcopy(context),
                     json_schema=copy.deepcopy(STRATEGY_MEMO_SCHEMA),
                     contract_attempt=contract_attempt,
+                    model=strategy_model,
+                    thinking_enabled=thinking_enabled,
                 )
             else:
                 response = generate(
                     prompt=prompt,
-                    cfg=agent.cfg,
+                    cfg=strategy_cfg,
                     temperature=float(
                         getattr(ext_cfg, "memory_strategy_temperature", 0.0) or 0.0
                     ),
                     max_tokens=int(
-                        getattr(ext_cfg, "memory_strategy_max_output_tokens", 6000)
-                        or 6000
+                        getattr(ext_cfg, "memory_strategy_max_output_tokens", 12000)
+                        or 12000
                     ),
-                    json_schema=STRATEGY_MEMO_SCHEMA,
+                    # DeepSeek thinking and response_format=json_object are separate
+                    # modes.  In thinking mode the explicit prompt contract plus the
+                    # host validator/retry loop enforce structure after reasoning.
+                    json_schema=None if thinking_enabled else STRATEGY_MEMO_SCHEMA,
                     max_retries=int(
                         getattr(ext_cfg, "memory_strategy_max_retries", 2) or 2
                     ),
@@ -982,7 +1012,9 @@ def run_memory_strategy_shadow(
             **base_trace,
             "status": status,
             "elapsed_seconds": round(time.monotonic() - started, 6),
-            "model": str(getattr(agent.acfg.code, "model", "") or ""),
+            "model": strategy_model,
+            "inherited_model": inherited_model,
+            "thinking_enabled": thinking_enabled,
             "context_sha256": payload_sha256(context),
             "context_char_count": len(_canonical_json(context)),
             "memory_card_ids": [card["memory_id"] for card in cards],
@@ -1001,6 +1033,9 @@ def run_memory_strategy_shadow(
             **base_trace,
             "status": "failed",
             "elapsed_seconds": round(time.monotonic() - started, 6),
+            "model": strategy_model,
+            "inherited_model": inherited_model,
+            "thinking_enabled": thinking_enabled,
             "error_type": type(exc).__name__,
             "error": str(exc),
             "context_sha256": payload_sha256(context),

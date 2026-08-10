@@ -381,11 +381,13 @@ external_skill_memory:
   memory_strategy_max_cards: 24
   memory_strategy_card_max_chars: 6000
   memory_strategy_max_input_chars: 0
-  memory_strategy_max_output_tokens: 6000
+  memory_strategy_max_output_tokens: 12000
   memory_strategy_max_retries: 2
   memory_strategy_contract_retries: 2
   memory_strategy_min_candidate_compositions: 3
   memory_strategy_temperature: 0.0
+  memory_strategy_model: "deepseek-v4-pro"
+  memory_strategy_thinking_enabled: true
   memory_strategy_history_limit: 16
   memory_strategy_atomic_max_modules: 2
   memory_strategy_atomic_max_changes: 3

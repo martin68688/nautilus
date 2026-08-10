@@ -147,6 +147,22 @@ def _matches_all_groups(text: str, groups: list[list[str]]) -> bool:
     )
 
 
+def _positive_composition_text(composition: Mapping[str, Any]) -> str:
+    """Serialize asserted experiment content, excluding negated/conflict text."""
+
+    return json.dumps(
+        {
+            "hypothesis_id": composition.get("hypothesis_id"),
+            "hypothesis": composition.get("hypothesis"),
+            "minimal_change_set": composition.get("minimal_change_set"),
+            "expected_mechanism": composition.get("expected_mechanism"),
+            "novelty_kind": composition.get("novelty_kind"),
+        },
+        ensure_ascii=False,
+        sort_keys=True,
+    )
+
+
 def evaluate_memo(
     case: Mapping[str, Any],
     *,
@@ -167,19 +183,42 @@ def evaluate_memo(
     duplicate = []
     invalid_combinations = []
     remaining = (case.get("budget") or {}).get("remaining_search_seconds")
-    attempted = [
-        [[str(pattern) for pattern in group] for group in signature]
-        for signature in (case.get("attempted_pattern_signatures") or [])
-    ]
+    attempted = []
+    for raw_signature in case.get("attempted_pattern_signatures") or []:
+        if isinstance(raw_signature, Mapping):
+            required_groups = raw_signature.get("required_groups") or []
+            novelty_groups = raw_signature.get("novelty_exclusion_groups") or []
+        else:
+            required_groups = raw_signature
+            novelty_groups = []
+        attempted.append(
+            {
+                "required_groups": [
+                    [str(pattern) for pattern in group]
+                    for group in required_groups
+                ],
+                "novelty_exclusion_groups": [
+                    [str(pattern) for pattern in group]
+                    for group in novelty_groups
+                ],
+            }
+        )
     incompatibilities = list(case.get("known_incompatibilities") or [])
     for composition in compositions:
-        text = json.dumps(composition, ensure_ascii=False, sort_keys=True)
+        text = _positive_composition_text(composition)
         hypothesis_id = str(composition.get("hypothesis_id") or "")
         if expected_groups and _matches_all_groups(text, expected_groups):
             future_hits.append(hypothesis_id)
         if remaining is not None and int(composition.get("estimated_compute_seconds") or 0) > int(remaining):
             over_budget.append(hypothesis_id)
-        if any(_matches_all_groups(text, signature) for signature in attempted):
+        if any(
+            _matches_all_groups(text, signature["required_groups"])
+            and not any(
+                _matches_all_groups(text, [group])
+                for group in signature["novelty_exclusion_groups"]
+            )
+            for signature in attempted
+        ):
             duplicate.append(hypothesis_id)
         for rule in incompatibilities:
             groups = [

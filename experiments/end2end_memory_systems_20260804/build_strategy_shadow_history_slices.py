@@ -117,8 +117,22 @@ def _spooky_case() -> dict[str, Any]:
             [r"xgboost", r"xgb"],
         ],
         "attempted_pattern_signatures": [
-            [[r"modernbert"], [r"fine[- ]tun"]],
-            [[r"deberta"], [r"single.*(split|holdout)"]],
+            {
+                "required_groups": [
+                    [r"modernbert"],
+                    [r"fine[- ]tun"],
+                    [r"(five|5)[- ]fold", r"stratified.*fold"],
+                ],
+                "novelty_exclusion_groups": [
+                    [r"xgboost", r"xgb", r"blend", r"tf[- ]?idf", r"stylometric", r"deberta", r"distilbert"]
+                ],
+            },
+            {
+                "required_groups": [[r"deberta"], [r"single.*(split|holdout)"]],
+                "novelty_exclusion_groups": [
+                    [r"(five|5)[- ]fold", r"xgboost", r"xgb", r"blend"]
+                ],
+            },
         ],
         "known_incompatibilities": [
             {

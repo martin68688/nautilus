@@ -1,0 +1,119 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-e2e-memory-strategy-shadow-smoke-v67
+  namespace: ecepxie
+  labels:
+    ecepxie.nrp/owner: haoming
+    app.kubernetes.io/managed-by: codex-nrp-training
+    mlevolve.ai/workload: mlevolve-e2e-memory-strategy-shadow-smoke-v67
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        ecepxie.nrp/owner: haoming
+        app.kubernetes.io/managed-by: codex-nrp-training
+        mlevolve.ai/workload: mlevolve-e2e-memory-strategy-shadow-smoke-v67
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: strategy-shadow-smoke
+          image: haomingwang22/mlevolve:v1
+          command:
+            - /bin/bash
+            - -lc
+            - |
+              set -euo pipefail
+              SOURCE=/workspace/nautilus-exp-end2end-agent-v67
+              OUT=/workspace/experiment-end2end-memory-agent-v67/strategy-shadow-smoke-v67
+              mkdir -p "$OUT"
+              cd "$SOURCE"
+              sha256sum -c SOURCE_FILES.sha256 > "$OUT/source_check.log"
+              set -a
+              . /workspace/nautilus/mlevolve/.env
+              set +a
+              export DEEPSEEK_API_KEY DEEPSEEK_BASE_URL DEEPSEEK_MODEL
+              python -m pytest -q tests/test_memory_strategy_shadow.py | tee "$OUT/pytest.log"
+              python experiments/end2end_memory_systems_20260804/run_strategy_shadow_replay.py \
+                --cases experiments/end2end_memory_systems_20260804/memory_strategy_shadow_history_slices_v1.json \
+                --case-id spooky-before-frozen-multibackbone-fivefold-xgb \
+                --actuate \
+                --output "$OUT/STRATEGY_SHADOW_REPLAY.json" | tee "$OUT/replay.log"
+              python - "$OUT" <<'PY'
+              import hashlib
+              import json
+              import sys
+              from pathlib import Path
+
+              out = Path(sys.argv[1])
+              replay = json.loads((out / "STRATEGY_SHADOW_REPLAY.json").read_text())
+              result = replay["results"][0]
+              strategy = result["strategy_trace"]
+              evaluation = result["evaluation"]
+              atomic = result["atomic_actuation"]
+              planner = atomic.get("planner", {})
+              coder = atomic.get("coder", {})
+              verdict = coder.get("plan_diff_verdict", {})
+              strategy_contract_valid = bool(
+                  strategy.get("contract_attempts")
+                  and strategy["contract_attempts"][-1].get("valid")
+              )
+              planner_contract_valid = bool(
+                  planner.get("contract_attempts")
+                  and planner["contract_attempts"][-1].get("valid")
+              )
+              checks = {
+                  "strategy_completed": strategy.get("status") == "completed",
+                  "strategy_model_is_v4_pro": strategy.get("model") == "deepseek-v4-pro",
+                  "strategy_thinking_enabled": strategy.get("thinking_enabled") is True,
+                  "strategy_contract_valid": strategy_contract_valid,
+                  "noninterference": strategy.get("production_prompt_modified") is False,
+                  "hidden_future_isolated": not result["hidden_future_leakage_ids"],
+                  "all_citations_visible": evaluation.get("all_citations_visible") is True,
+                  "at_least_three_compositions": evaluation.get("composition_count", 0) >= 3,
+                  "future_strategy_hit": evaluation.get("future_strategy_hit") is True,
+                  "atomic_pipeline_accepted": atomic.get("status") == "accepted",
+                  "atomic_planner_accepted": planner.get("status") == "accepted",
+                  "planner_contract_valid": planner_contract_valid,
+                  "atomic_coder_accepted": coder.get("status") == "accepted",
+                  "plan_diff_valid": verdict.get("valid") is True,
+              }
+              receipt = {
+                  "schema": "mlevolve_memory_strategy_shadow_smoke_receipt_v3",
+                  "status": "passed" if all(checks.values()) else "failed",
+                  "checks": checks,
+                  "strategy_contract_attempt_count": len(strategy.get("contract_attempts") or []),
+                  "planner_contract_attempt_count": len(planner.get("contract_attempts") or []),
+                  "coder_contract_attempt_count": len(coder.get("contract_attempts") or []),
+                  "future_strategy_hit_ids": evaluation.get("future_strategy_hit_ids", []),
+                  "duplicate_ratio": evaluation.get("duplicate_ratio"),
+                  "over_budget_ratio": evaluation.get("over_budget_ratio"),
+                  "invalid_combination_ratio": evaluation.get("invalid_combination_ratio"),
+                  "selected_hypothesis_id": planner.get("validation", {}).get("selected_hypothesis_id", ""),
+                  "changed_symbols": verdict.get("changed_symbols", []),
+              }
+              receipt["replay_sha256"] = hashlib.sha256(
+                  (out / "STRATEGY_SHADOW_REPLAY.json").read_bytes()
+              ).hexdigest()
+              (out / "SMOKE_RECEIPT.json").write_text(
+                  json.dumps(receipt, indent=2, sort_keys=True) + "\n"
+              )
+              print(json.dumps(receipt, sort_keys=True))
+              if receipt["status"] != "passed":
+                  raise SystemExit(1)
+              PY
+          resources:
+            requests:
+              cpu: "4"
+              memory: 16Gi
+            limits:
+              cpu: "4"
+              memory: 16Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
