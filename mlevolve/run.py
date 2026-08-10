@@ -108,6 +108,18 @@ def _run_impl():
     cfg.run_identity.rng_state_hash = str(rng_identity["rng_state_hash"])
     cfg.run_identity.rng_state_components = dict(rng_identity)
     logger = setup_logging(cfg)
+    from official_submission import validate_runtime_config as validate_official_runtime
+
+    official_runtime = validate_official_runtime(cfg)
+    if official_runtime is not None:
+        logger.info(
+            "Native official-test contract verified before search: sample_sha=%s "
+            "id=%s targets=%s kind=%s",
+            official_runtime["sample_submission_sha256"],
+            official_runtime["id_column"],
+            official_runtime["prediction_columns"],
+            official_runtime["prediction_kind"],
+        )
     resume_checkpoint = load_search_resume_checkpoint(
         total_steps=int(cfg.agent.steps),
     )
@@ -652,6 +664,49 @@ def _run_impl():
             )
     except Exception as e:
         logger.error("Failed to write fixed-holdout evaluation request: %s", e)
+        raise
+
+    # Native official-test handoff is separate from fixed-holdout evaluation.
+    # A budget-limited partial with a certified best node is still a final
+    # experimental result, so its already-generated official submission is
+    # frozen here as well.  No external score is requested inside this GPU
+    # process.
+    try:
+        from official_submission import (
+            enabled as official_submission_enabled,
+            write_evaluation_request as write_official_evaluation_request,
+        )
+
+        official_request = None
+        if official_submission_enabled(cfg) and run_outcome["status"] in {
+            "complete",
+            "partial",
+        }:
+            official_request = write_official_evaluation_request(
+                cfg,
+                cfg.log_dir / "journal.json",
+                selected_node_id=(
+                    agent.best_node.id if agent.best_node is not None else ""
+                ),
+                selection_basis=(
+                    {
+                        "type": "solver_internal_search_metric",
+                        "metric_value": agent.best_node.metric.value,
+                        "metric_maximize": agent.best_node.metric.maximize,
+                        "stage": agent.best_node.stage,
+                        "draft_role": agent.best_node.draft_role,
+                    }
+                    if agent.best_node is not None
+                    else {}
+                ),
+            )
+        if official_request is not None:
+            logger.info(
+                "Native official-test submission frozen for external scoring: %s",
+                official_request,
+            )
+    except Exception as e:
+        logger.error("Failed to freeze native official-test submission: %s", e)
         raise
 
     # Adoption tracking: post-run analysis (side-channel, never affects the run itself).

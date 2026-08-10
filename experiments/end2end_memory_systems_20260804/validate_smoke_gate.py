@@ -612,12 +612,82 @@ def validate_measurement(
     else:
         if score is not None:
             raise ValueError(f"{row['system_id']} attempt {attempt}: failed score is not null")
+        if measurement.get("status") == "awaiting_official_terminal_score":
+            if measurement.get("failure_class") != "none":
+                raise ValueError(
+                    f"{row['system_id']} attempt {attempt}: official-pending failure class"
+                )
+            if measurement.get("candidate_set_frozen") is not True or not str(
+                measurement.get("selected_candidate_id") or ""
+            ):
+                raise ValueError(
+                    f"{row['system_id']} attempt {attempt}: official candidate not frozen"
+                )
+            require_hash(
+                measurement.get("candidate_set_hash"),
+                f"{row['system_id']} attempt {attempt} candidate-set hash",
+            )
+            return
         if measurement.get("failure_class") not in {
             "agent",
             "evaluator",
             "infrastructure",
         }:
             raise ValueError(f"{row['system_id']} attempt {attempt}: invalid failure class")
+
+
+def _official_measurement_overlay(
+    base: Mapping[str, Any],
+    *,
+    base_path: Path,
+    attempt_root: Path,
+) -> dict[str, Any] | None:
+    path = attempt_root / "OFFICIAL_MEASUREMENT.json"
+    if not path.is_file():
+        return None
+    if path.is_symlink():
+        raise ValueError(f"Official measurement may not be a symlink: {path}")
+    overlay = read_object(path)
+    verify_self_hash(overlay, "official_measurement_hash", str(path))
+    if overlay.get("schema") != "mlevolve_official_measurement_v1":
+        raise ValueError(f"Unsupported official measurement: {path}")
+    if overlay.get("base_measurement_hash") != base.get("measurement_hash"):
+        raise ValueError(f"Official/base measurement hash mismatch: {path}")
+    if overlay.get("base_measurement_sha256") != sha256_file(base_path):
+        raise ValueError(f"Official/base measurement file hash mismatch: {path}")
+    for field in ("logical_run_id", "attempt", "task_id", "system_id", "seed"):
+        if overlay.get(field) != base.get(field):
+            raise ValueError(f"Official/base measurement mismatch ({field}): {path}")
+    if overlay.get("selected_candidate_id") != base.get("selected_candidate_id"):
+        raise ValueError(f"Official/base selected candidate mismatch: {path}")
+    if overlay.get("candidate_set_hash") != base.get("candidate_set_hash"):
+        raise ValueError(f"Official/base candidate set mismatch: {path}")
+    score = overlay.get("primary_score")
+    if (
+        not isinstance(score, (int, float))
+        or isinstance(score, bool)
+        or not math.isfinite(float(score))
+    ):
+        raise ValueError(f"Official measurement has no finite primary score: {path}")
+    report_path = attempt_root / "OFFICIAL_SCORE_REPORT.json"
+    if overlay.get("official_report_sha256") != sha256_file(report_path):
+        raise ValueError(f"Official report hash mismatch: {report_path}")
+    effective = dict(base)
+    effective.update(
+        {
+            "completed": True,
+            "status": "scored_official_terminal_result",
+            "failure_class": "none",
+            "terminal_score": float(score),
+            "terminal_metric": overlay.get("official_metric"),
+            "terminal_report_sha256": overlay.get("official_report_sha256"),
+            "measurement_hash": overlay.get("official_measurement_hash"),
+            "score_authority": overlay.get("primary_score_authority"),
+            "_terminal_report_filename": "OFFICIAL_SCORE_REPORT.json",
+            "_base_measurement_hash": base.get("measurement_hash"),
+        }
+    )
+    return effective
 
 
 def resolve_attempts(
@@ -646,6 +716,11 @@ def resolve_attempts(
             smoke_manifest_hash=smoke_manifest_hash,
             attempt=attempt,
         )
+        measurement = _official_measurement_overlay(
+            measurement,
+            base_path=measurement_path,
+            attempt_root=directory,
+        ) or measurement
         indexed[attempt] = (measurement, directory)
     if not indexed:
         raise ValueError(f"No retained attempts: {row['logical_run_id']}")
@@ -750,7 +825,11 @@ def build_smoke_gate(
         )
         terminal_path = _below(
             attempt_root,
-            attempt_root / "TERMINAL_SCORE_REPORT.json",
+            attempt_root
+            / str(
+                measurement.get("_terminal_report_filename")
+                or "TERMINAL_SCORE_REPORT.json"
+            ),
             f"{row['system_id']} terminal report",
         )
         if sha256_file(terminal_path) != require_hash(

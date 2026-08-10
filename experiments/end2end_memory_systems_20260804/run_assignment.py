@@ -337,6 +337,62 @@ def terminal_evaluate(
         )
         score = report.get("selected_score")
         candidate_id = report.get("selected_node_id")
+    elif kind == "deferred_official_kaggle_v1":
+        request_path = agent_log_root / "official_evaluation_request.json"
+        request = read_object(request_path)
+        if request.get("request_schema") != "mlevolve_official_evaluation_request_v1":
+            raise ValueError("Deferred official evaluator requires a native request")
+        verify_self_hash(request, "request_hash", "Native official evaluation request")
+        if request.get("status") != "awaiting_external_evaluator":
+            raise ValueError("Native official request is not awaiting evaluation")
+        if request.get("selection_frozen_before_terminal_evaluation") is not True:
+            raise ValueError("Native official candidate was not frozen")
+        if request.get("scores_were_visible_during_search") is not False:
+            raise ValueError("Native official score was visible during search")
+        journal_path = agent_log_root / "journal.json"
+        if request.get("journal_sha256") != sha256_file(journal_path):
+            raise ValueError("Native official request/journal hash mismatch")
+        journal = read_object(journal_path)
+        candidate_id = str(request.get("selected_node_id") or "")
+        selected_nodes = [
+            node
+            for node in journal.get("nodes") or []
+            if isinstance(node, Mapping) and str(node.get("id") or "") == candidate_id
+        ]
+        if len(selected_nodes) != 1:
+            raise ValueError("Native official request selected an unknown candidate")
+        metric = selected_nodes[0].get("metric") or {}
+        score = metric.get("value")
+        if (
+            not isinstance(score, (int, float))
+            or isinstance(score, bool)
+            or not math.isfinite(float(score))
+        ):
+            raise ValueError("Native official selection lacks a finite internal metric")
+        report = {
+            "schema": "mlevolve_deferred_official_handoff_v1",
+            "task_id": request.get("task_id"),
+            "competition": request.get("competition"),
+            "selected_candidate_id": candidate_id,
+            "selected_submission_sha256": request.get(
+                "selected_submission_sha256"
+            ),
+            "candidate_set_hash": request.get("candidate_set_hash"),
+            "internal_search_metric": float(score),
+            "internal_metric_disposition": "diagnostic_only",
+            "official_score": None,
+            "status": "awaiting_official_terminal_score",
+            "evaluation_request_sha256": sha256_file(request_path),
+            "report_hash": "",
+        }
+        _write_exclusive(output_path, report, "report_hash")
+        return {
+            "deferred_official": True,
+            "internal_search_metric": float(score),
+            "selected_candidate_id": candidate_id,
+            "terminal_report_sha256": sha256_file(output_path),
+            "report": report,
+        }
     elif kind == "host_json_command_v1":
         replacements = {
             "{release_root}": str(release_root),
@@ -378,16 +434,25 @@ def terminal_evaluate(
     }
 
 
-def _fixed_holdout_overrides(runtime: Mapping[str, Any]) -> list[str]:
-    # Import only the data/evaluator surface.  A release must never reactivate
-    # Agent/Host validation gates for this effectiveness experiment.
-    allowed = ("fixed_holdout.",)
+def _evaluation_overrides(runtime: Mapping[str, Any]) -> list[str]:
+    # Import only frozen data/evaluator surfaces.  A release must never
+    # reactivate Agent/Host validation gates for this effectiveness experiment.
+    # Native official mode is provider-neutral at runtime: credentials and
+    # leaderboard access are deliberately absent from these overrides.
+    allowed = ("fixed_holdout.", "official_submission.")
     values = [
         str(value)
         for value in runtime.get("additional_overrides") or []
         if str(value).startswith(allowed)
     ]
     return values
+
+
+# Backward-compatible name for frozen older packet tests and builders.  New
+# releases should call `_evaluation_overrides` because official_submission is
+# now an equally valid label-free evaluator surface.
+def _fixed_holdout_overrides(runtime: Mapping[str, Any]) -> list[str]:
+    return _evaluation_overrides(runtime)
 
 
 def build_solver_command(
@@ -442,7 +507,7 @@ def build_solver_command(
         "run_identity.memory_current_sha256="
         f"{bundle['task']['current_file_sha256']}",
         f"run_identity.evaluator_manifest_sha256={identity['evaluators_manifest_hash']}",
-        *_fixed_holdout_overrides(evaluator_release["runtime"]),
+        *_evaluation_overrides(evaluator_release["runtime"]),
         # Last-write-wins CLI overrides make the non-blocking experiment mode
         # immune to any old release profile that carries formal audit settings.
         "fixed_holdout.preflight_validate_train_view=false",
@@ -613,7 +678,13 @@ def recover_orphaned_attempt(
         log_parent, ("RUN_OUTCOME.json", "journal.json")
     )
     outcome_path = log_root / "RUN_OUTCOME.json"
-    request_path = log_root / "fixed_holdout_evaluation_request.json"
+    native_request_path = log_root / "official_evaluation_request.json"
+    fixed_request_path = log_root / "fixed_holdout_evaluation_request.json"
+    if native_request_path.is_file() and fixed_request_path.is_file():
+        raise ValueError("Run emitted both native-official and fixed-holdout requests")
+    request_path = (
+        native_request_path if native_request_path.is_file() else fixed_request_path
+    )
     request = read_object(request_path) if request_path.is_file() else {}
     ttfv, first_valid_sha = (
         _first_valid(log_parent, started_ns) if started_ns else (None, "")
@@ -1019,7 +1090,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     )
     outcome_path = log_root / "RUN_OUTCOME.json"
     outcome = read_object(outcome_path) if outcome_path.is_file() else {}
-    request_path = log_root / "fixed_holdout_evaluation_request.json"
+    native_request_path = log_root / "official_evaluation_request.json"
+    fixed_request_path = log_root / "fixed_holdout_evaluation_request.json"
+    if native_request_path.is_file() and fixed_request_path.is_file():
+        raise ValueError("Run emitted both native-official and fixed-holdout requests")
+    request_path = (
+        native_request_path if native_request_path.is_file() else fixed_request_path
+    )
     request = read_object(request_path) if request_path.is_file() else {}
     candidate_set_frozen = bool(
         request.get("selection_frozen_before_terminal_evaluation") is True
@@ -1030,9 +1107,20 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     terminal_report_sha256 = ""
     terminal_error = ""
     completed_condition = False
+    awaiting_official_score = False
+    internal_search_metric = None
+    evaluator_kind = str(read_object(evaluator["evaluator_path"]).get("kind") or "")
     if (
-        solver_exit_code == 0
-        and outcome.get("status") == "complete"
+        (
+            solver_exit_code == 0
+            and outcome.get("status") == "complete"
+        )
+        or (
+            evaluator_kind == "deferred_official_kaggle_v1"
+            and request_path == native_request_path
+            and outcome.get("status") in {"complete", "partial"}
+            and outcome.get("certified_solution_available") is True
+        )
     ):
         try:
             with termination_guard():
@@ -1050,10 +1138,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                         or 3600
                     ),
                 )
-            terminal_score = terminal["terminal_score"]
             selected_candidate_id = terminal["selected_candidate_id"]
             terminal_report_sha256 = terminal["terminal_report_sha256"]
-            completed_condition = True
+            if terminal.get("deferred_official") is True:
+                awaiting_official_score = True
+                internal_search_metric = terminal["internal_search_metric"]
+            else:
+                terminal_score = terminal["terminal_score"]
+                completed_condition = True
         except RunnerInterrupted as error:
             termination_signal = error.signum
             solver_error = f"runner_received_signal_{error.signum}"
@@ -1062,13 +1154,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     ttfv, first_valid_sha = _first_valid(run_root / "logs", started_ns)
     wall_seconds = (agent_finished_ns - started_ns) / 1_000_000_000.0
-    status, failure_class = condition_disposition(
-        completed_condition=completed_condition,
-        terminal_error=terminal_error,
-        solver_exit_code=solver_exit_code,
-        solver_error=solver_error,
-        outcome=outcome,
-    )
+    if awaiting_official_score and not terminal_error:
+        status, failure_class = "awaiting_official_terminal_score", "none"
+    else:
+        status, failure_class = condition_disposition(
+            completed_condition=completed_condition,
+            terminal_error=terminal_error,
+            solver_exit_code=solver_exit_code,
+            solver_error=solver_error,
+            outcome=outcome,
+        )
     prior_wall_seconds = float(
         (prior_measurement or {}).get(
             "cumulative_agent_wall_seconds",
@@ -1109,6 +1204,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "terminal_metric": task["terminal_metric"],
         "direction": task["direction"],
         "terminal_score": terminal_score,
+        "internal_search_metric": internal_search_metric,
+        "internal_metric_disposition": (
+            "diagnostic_only" if awaiting_official_score else None
+        ),
         "selected_candidate_id": selected_candidate_id,
         "solver_exit_code": solver_exit_code,
         "solver_error": solver_error,
@@ -1116,6 +1215,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "terminal_evaluator_error": terminal_error,
         "candidate_set_frozen": candidate_set_frozen,
         "candidate_set_hash": str(request.get("candidate_set_hash") or ""),
+        "official_evaluation_request_sha256": (
+            sha256_file(native_request_path)
+            if native_request_path.is_file()
+            else ""
+        ),
         "time_to_first_valid_seconds": ttfv,
         "cumulative_time_to_first_valid_seconds": (
             prior_ttfv
@@ -1214,7 +1318,11 @@ def main() -> int:
             parser.error("--resume-source-attempt must be non-negative")
     result = run(args)
     print(json.dumps(result, sort_keys=True, ensure_ascii=False))
-    return 0 if args.dry_run or result.get("completed") else 1
+    return 0 if (
+        args.dry_run
+        or result.get("completed")
+        or result.get("status") == "awaiting_official_terminal_score"
+    ) else 1
 
 
 if __name__ == "__main__":

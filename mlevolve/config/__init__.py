@@ -290,6 +290,20 @@ class FixedHoldoutConfig:
 
 
 @dataclass
+class OfficialSubmissionConfig:
+    enabled: bool = False
+    provider: str = "kaggle"
+    competition: str = ""
+    metric: str = ""
+    maximize: bool = False
+    sample_submission_path: str = ""
+    id_column: str = ""
+    prediction_kind: str = "auto"
+    probability_row_sum_tolerance: float = 1e-4
+    submission_subdir: str = "submission"
+
+
+@dataclass
 class AdoptionTrackingConfig:
     enable: bool = False          # 默认关：记账与分析全 no-op，run 行为与今天一致
     enable_analysis: bool = True  # enable=True 时是否在 run 末尾跑分析
@@ -538,6 +552,9 @@ class Config(Hashable):
     use_grading_server: bool = True
     init_solution: InitSolutionConfig = field(default_factory=InitSolutionConfig)
     fixed_holdout: FixedHoldoutConfig = field(default_factory=FixedHoldoutConfig)
+    official_submission: OfficialSubmissionConfig = field(
+        default_factory=OfficialSubmissionConfig
+    )
     adoption_tracking: AdoptionTrackingConfig = field(default_factory=AdoptionTrackingConfig)
     adoption_verifier: AdoptionVerifierConfig = field(default_factory=AdoptionVerifierConfig)
     prospective_audit: ProspectiveAuditConfig = field(default_factory=ProspectiveAuditConfig)
@@ -923,6 +940,11 @@ def prep_cfg(cfg: Config):
         if cfg.fixed_holdout.preflight_validate_train_view:
             validate_train_view(train_manifest_path(cfg), Path(cfg.data_dir))
 
+    if cfg.official_submission.enabled:
+        from official_submission import validate_runtime_config
+
+        validate_runtime_config(cfg)
+
     return cast(Config, cfg)
 
 
@@ -944,6 +966,8 @@ def load_task_desc(cfg: Config):
             task_desc = f.read()
         if cfg.fixed_holdout.enabled:
             task_desc += _fixed_holdout_task_note()
+        if cfg.official_submission.enabled:
+            task_desc += _official_submission_task_note()
         if cfg.agent.protocol_preflight.enabled:
             task_desc += "\n\n# Host Candidate Lifecycle\n" + _candidate_runtime_guidance(
                 str(cfg.exp_id or "")
@@ -962,6 +986,10 @@ def load_task_desc(cfg: Config):
 
     if cfg.fixed_holdout.enabled:
         task_desc["Fixed holdout evaluation"] = _fixed_holdout_task_note().strip()
+    if cfg.official_submission.enabled:
+        task_desc["Native official submission"] = (
+            _official_submission_task_note().strip()
+        )
 
     return task_desc
 
@@ -975,6 +1003,20 @@ def _fixed_holdout_task_note() -> str:
         "every test ID in sample_submission.csv. Internal validation scores guide "
         "search only; a separate evaluator scores all completed submissions once "
         "after the run.\n"
+    )
+
+
+def _official_submission_task_note() -> str:
+    return (
+        "\n\n## Native Official-Test Submission Contract\n"
+        "The mounted test rows are the task's complete official unlabeled test "
+        "set. During this same candidate execution, train the model, compute an "
+        "internal OOF/validation score for search, run real inference for every "
+        "ID in sample_submission.csv, and write ./submission/submission.csv. "
+        "The submission and reported metric must use the same selected model and "
+        "prediction variant. Do not defer inference or require post-search "
+        "retraining. The external official score is terminal-only and invisible "
+        "during search.\n"
     )
 
 

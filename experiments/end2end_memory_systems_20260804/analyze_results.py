@@ -46,15 +46,82 @@ def verify(payload: Mapping[str, Any], field: str, label: str) -> None:
         raise ValueError(f"{label} hash mismatch")
 
 
-def load_measurements(output_root: Path, *, formal_only: bool) -> list[dict[str, Any]]:
+def _official_overlay(
+    path: Path,
+    base: Mapping[str, Any],
+    *,
+    base_path: Path,
+) -> dict[str, Any]:
+    overlay = read_object(path)
+    verify(overlay, "official_measurement_hash", str(path))
+    if overlay.get("schema") != "mlevolve_official_measurement_v1":
+        raise ValueError(f"Unsupported official measurement: {path}")
+    if overlay.get("base_measurement_hash") != base.get("measurement_hash"):
+        raise ValueError(f"Official/base measurement hash mismatch: {path}")
+    if overlay.get("base_measurement_sha256") != hashlib.sha256(
+        base_path.read_bytes()
+    ).hexdigest():
+        raise ValueError(f"Official/base measurement file hash mismatch: {path}")
+    for field in ("logical_run_id", "attempt", "task_id", "system_id", "seed"):
+        if overlay.get(field) != base.get(field):
+            raise ValueError(f"Official/base measurement mismatch ({field}): {path}")
+    row = dict(base)
+    row["internal_terminal_score"] = overlay.get("internal_terminal_score")
+    row["terminal_score"] = overlay.get("primary_score")
+    row["terminal_metric"] = overlay.get("official_metric")
+    row["selected_candidate_id"] = overlay.get("selected_candidate_id")
+    row["score_authority"] = overlay.get("primary_score_authority")
+    row["completed"] = True
+    row["status"] = "scored_official_terminal_result"
+    row["failure_class"] = "none"
+    row["official_measurement_hash"] = overlay.get("official_measurement_hash")
+    row["official_measurement_path"] = str(path)
+    return row
+
+
+def load_measurements(
+    output_root: Path,
+    *,
+    formal_only: bool,
+    score_authority: str = "terminal",
+) -> list[dict[str, Any]]:
+    if score_authority not in {"terminal", "official", "prefer-official"}:
+        raise ValueError(f"Unsupported score authority: {score_authority}")
     rows = []
     for path in sorted(output_root.rglob("MEASUREMENT.json")):
         row = read_object(path)
         verify(row, "measurement_hash", str(path))
         if formal_only and row.get("formal_result_eligible") is not True:
             continue
+        official_path = path.with_name("OFFICIAL_MEASUREMENT.json")
+        if score_authority != "terminal" and official_path.is_file():
+            row = _official_overlay(official_path, row, base_path=path)
+        elif score_authority == "official":
+            row = dict(row)
+            row["internal_terminal_score"] = (
+                row.get("internal_search_metric")
+                if row.get("internal_search_metric") is not None
+                else row.get("terminal_score")
+            )
+            row["terminal_score"] = None
+            row["completed"] = False
+            row["status"] = "awaiting_official_terminal_score"
+            row["score_authority"] = "official_score_missing"
+        else:
+            row["score_authority"] = "sealed_fixed_holdout_terminal"
         row["_path"] = str(path)
         rows.append(row)
+    if score_authority == "prefer-official":
+        observed = {
+            str(row.get("score_authority") or "")
+            for row in rows
+            if row.get("completed") is True
+        }
+        if "official_kaggle_terminal" in observed and len(observed) > 1:
+            raise ValueError(
+                "prefer-official would mix official and internal terminal scores; "
+                "finish official scoring or choose one authority explicitly"
+            )
     return rows
 
 
@@ -148,6 +215,7 @@ def terminal_summary(
                     "task_id": task_id,
                     "completed": bool(row and row.get("completed")),
                     "terminal_score": row.get("terminal_score") if row else None,
+                    "score_authority": row.get("score_authority") if row else None,
                     "status": row.get("status") if row else "missing",
                     "normalized_delta_vs_no_memory": delta,
                     "negative_transfer": negative,
@@ -614,7 +682,7 @@ def write_json(path: Path, payload: dict[str, Any], field: str) -> None:
 
 def write_terminal_csv(path: Path, summary: Mapping[str, Any]) -> None:
     fields = [
-        "system_id", "task_id", "completed", "terminal_score", "status",
+        "system_id", "task_id", "completed", "terminal_score", "score_authority", "status",
         "normalized_delta_vs_no_memory", "negative_transfer",
         "time_to_first_valid_seconds", "allocated_gpu_hours", "llm_token_usage",
         "llm_cost_usd", "task_rank",
@@ -633,6 +701,15 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--analysis-root", type=Path, required=True)
     parser.add_argument("--include-smoke", action="store_true")
+    parser.add_argument(
+        "--score-authority",
+        choices=("terminal", "official", "prefer-official"),
+        default="terminal",
+        help=(
+            "terminal keeps the sealed fixed-holdout score; official requires "
+            "OFFICIAL_MEASUREMENT.json; prefer-official uses it when present"
+        ),
+    )
     args = parser.parse_args()
     manifest = read_object(args.manifest)
     verify(manifest, "manifest_hash", "execution manifest")
@@ -640,11 +717,14 @@ def main() -> int:
     task_ids = list(manifest["task_ids"])
     system_ids = list(manifest["system_ids"])
     measurements = load_measurements(
-        args.output_root, formal_only=not args.include_smoke
+        args.output_root,
+        formal_only=not args.include_smoke,
+        score_authority=args.score_authority,
     )
     outcomes, attempts = select_logical_outcomes(measurements, expected)
     args.analysis_root.mkdir(parents=True, exist_ok=True)
     terminal = terminal_summary(outcomes, task_ids, system_ids)
+    terminal["score_authority_policy"] = args.score_authority
     write_json(args.analysis_root / "terminal_summary.json", terminal, "summary_hash")
     write_terminal_csv(args.analysis_root / "terminal_cells.csv", terminal)
     attempt_inventory = {

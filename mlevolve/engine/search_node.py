@@ -91,6 +91,11 @@ class SearchNode(DataClassJsonMixin):
     replay_status: Optional[str] = field(default=None, kw_only=True)
     skip_code_review: bool = field(default=False, kw_only=True)
     leakage_audit: dict = field(default_factory=dict, kw_only=True)
+    # Host-generated receipt proving that this exact candidate execution wrote
+    # a complete prediction file for the frozen official test ID set.  The
+    # receipt contains hashes and shape/schema metadata, never an official
+    # score, so it is safe to serialize into the search journal.
+    official_submission_receipt: dict = field(default_factory=dict, kw_only=True)
     leakage_repair_context: dict = field(default_factory=dict, kw_only=True)
     leakage_repair_attempt: int = field(default=0, kw_only=True)
     resolved_issue_codes: list[str] = field(default_factory=list, kw_only=True)

@@ -31,6 +31,35 @@ def validate_executed_node(agent, node: SearchNode):
         logger.info(f"Node {node.id} did not produce a submission.csv")
         return
 
+    try:
+        from official_submission import (
+            enabled as official_submission_enabled,
+            validate_candidate_submission,
+        )
+
+        if official_submission_enabled(agent.cfg):
+            node.official_submission_receipt = (
+                validate_candidate_submission(agent.cfg, node) or {}
+            )
+            logger.info(
+                "Node %s produced a validated native official submission (%s rows)",
+                node.id,
+                node.official_submission_receipt.get("row_count"),
+            )
+    except Exception as error:
+        node.is_buggy = True
+        node.metric = WorstMetricValue()
+        node.analysis = (
+            "Native official-test submission validation failed: "
+            f"{type(error).__name__}: {error}"
+        )
+        logger.warning(
+            "Node %s is not rank-eligible because its official submission failed: %s",
+            node.id,
+            error,
+        )
+        return
+
     if node.metric.maximize and node.metric.value == 0.0:
         node.is_buggy = True
         node.metric = WorstMetricValue()

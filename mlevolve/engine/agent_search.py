@@ -788,6 +788,18 @@ class AgentSearch:
         - The column names in these files are the FINAL AUTHORITY for submission format
         - Always use the column names from the actual sample submission files
         """
+        official_cfg = getattr(self.cfg, "official_submission", None)
+        if bool(getattr(official_cfg, "enabled", False)):
+            submission_format_warning += """
+
+        ⚠️  NATIVE OFFICIAL-TEST OUTPUT CONTRACT:
+        - This run already contains the task's COMPLETE official unlabeled test set
+        - During THIS SAME training execution, run real inference for every ID in sample_submission.csv
+        - Write the complete result to ./submission/submission.csv; the Host will isolate it by node ID
+        - Do not defer official inference, require a later retraining pass, drop/reorder IDs, or use a different prediction variant
+        - The reported internal validation/OOF metric and submission must correspond to the same selected model/prediction variant
+        - The external leaderboard score is terminal-only and will not be visible during search
+        """
         self.data_preview = base_preview + submission_format_warning
 
     def is_root(self, node: SearchNode):

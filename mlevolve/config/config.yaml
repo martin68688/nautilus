@@ -30,6 +30,25 @@ fixed_holdout:
   preflight_validate_train_view: True
   internal_metric_disposition: search_only
 
+# Optional native official-test mode.  The task release supplies the complete
+# public train/test files plus a frozen sample_submission.csv.  Every candidate
+# must generate its official-test predictions during its original execution;
+# the Host validates and hashes them, then freezes only the internally selected
+# candidate for a separate post-search scorer.  External scores never enter the
+# search process.  This mode is mutually exclusive with fixed_holdout because
+# the two modes give `submission_<node>.csv` different test-ID contracts.
+official_submission:
+  enabled: False
+  provider: kaggle
+  competition: ""
+  metric: ""
+  maximize: False
+  sample_submission_path: ""
+  id_column: ""
+  prediction_kind: auto
+  probability_row_sum_tolerance: 0.0001
+  submission_subdir: submission
+
 # Resource
 start_cpu_id: 0
 cpu_number: 16
