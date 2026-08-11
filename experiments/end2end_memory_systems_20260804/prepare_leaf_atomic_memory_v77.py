@@ -32,6 +32,7 @@ def _update_memory_manifest(
     bundle_manifest: dict[str, Any],
     published_bundle_root: str,
     release_version: int,
+    ranking_policy: str,
 ) -> dict[str, Any]:
     payload = read_object(path)
     task = dict(payload["task_bundles"]["leaf-classification"])
@@ -97,7 +98,7 @@ def _update_memory_manifest(
             "formal_debug_clause_count": int(
                 bundle_manifest.get("formal_debug_clause_count") or 0
             ),
-            "ranking_policy": "task_first_structured_debug_signature_v3",
+            "ranking_policy": ranking_policy,
             "task_bundles": {"leaf-classification": task},
         }
     )
@@ -117,6 +118,12 @@ def main() -> int:
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--release-version", type=int, default=77)
     parser.add_argument("--agent-steps", type=int, default=8)
+    parser.add_argument(
+        "--ranking-policy",
+        default="task_first_structured_debug_signature_v3",
+    )
+    parser.add_argument("--experimental-axis", default="")
+    parser.add_argument("--system-description", default="")
     args = parser.parse_args()
 
     if args.release_version < 77:
@@ -168,23 +175,24 @@ def main() -> int:
         bundle_manifest=bundle_manifest,
         published_bundle_root=args.published_memory_root,
         release_version=args.release_version,
+        ranking_policy=str(args.ranking_policy),
     )
 
     config_path = exp_root / f"systems_{release_tag}/dynamic_hybrid.yaml"
     systems_path = manifests / "systems.json"
     systems = read_object(systems_path)
-    systems["experimental_axis"] = (
+    systems["experimental_axis"] = str(args.experimental_axis or (
         "Leaf full-transition claim-level Debug memory plus task-first structured "
         "causal ranking under the v76 active Strategy/Atomic harness"
-    )
+    ))
     systems["systems"] = [
         {
             "config_path": f"systems_{release_tag}/dynamic_hybrid.yaml",
             "config_sha256": sha256_file(config_path),
-            "description": (
+            "description": str(args.system_description or (
                 "Dynamic Router with atomic claim visibility and structured "
                 "exception/model/operand/symbol Debug ranking"
-            ),
+            )),
             "kind": "internal_exploratory",
             "label": f"S5-{release_tag}-leaf-atomic-debug-memory",
             "limitation": "single exploratory six-hour Leaf Smoke",
@@ -230,6 +238,9 @@ def main() -> int:
     source_lock = read_object(source_lock_path)
     source_lock.update(
         {
+            "release_id": f"end2end-leaf-atomic-memory-{release_tag}",
+            "source_parent": str(base),
+            "worktree_patch": str(args.ranking_policy),
             "git_head": args.git_head,
             "git_dirty": False,
             "files": [],
@@ -315,7 +326,7 @@ def main() -> int:
         "smoke_manifest": str(smoke_path),
         "memory_bundle_manifest_sha256": publication["bundle_manifest_sha256"],
         "atomic_claim_bundle_sha256": publication["atomic_claim_bundle_sha256"],
-        "ranking_policy": "task_first_structured_debug_signature_v3",
+        "ranking_policy": str(args.ranking_policy),
         "agent_steps": int(args.agent_steps),
         "agent_time_limit_seconds": 21600,
     }
