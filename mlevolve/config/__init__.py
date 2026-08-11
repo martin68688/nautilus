@@ -423,6 +423,10 @@ class ExternalSkillMemoryConfig:
     # retrieval/scoring text.
     recipe_implementation_path: str = ""
     visibility_token_budget: int = 4096
+    # Stage-scoped visibility override for retrieval canaries. This avoids
+    # enabling global Experiment-R protocol attestation just to enforce the
+    # Debug memory boundary.
+    visibility_mode_override: str = ""
     stage_quotas: dict = field(default_factory=dict)
     rrf_weights: dict = field(default_factory=dict)
     blocked_run_prefixes: list[str] = field(default_factory=list)
@@ -549,6 +553,7 @@ class ExternalSkillMemoryConfig:
     # consulted on this path.
     experiment_r_l3_agent_match_enabled: bool = False
     experiment_r_l3_agent_match_candidate_limit: int = 8
+    experiment_r_l3_semantic_shortlist_enabled: bool = False
     experiment_r_l3_agent_match_max_attempts: int = 2
     experiment_r_l3_agent_match_min_confidence: float = 0.50
     experiment_r_l3_agent_match_max_tokens: int = 1800

@@ -294,7 +294,10 @@ class AgentSearch:
 
                     memory_layer_cls = StageAwareHybridMemoryLayer
                     visibility_kwargs = {
-                        "visibility_mode": self.evaluation_authority.mode,
+                        "visibility_mode": str(
+                            getattr(ext_cfg, "visibility_mode_override", "")
+                            or self.evaluation_authority.mode
+                        ),
                         "visibility_enforce_operations": sorted(
                             getattr(
                                 getattr(self.evaluation_authority, "rollout", None),
@@ -332,6 +335,20 @@ class AgentSearch:
                         "prospective_audit_logger": self.prospective_audit,
                         "excluded_run_ids": list(
                             getattr(ext_cfg, "excluded_run_ids", None) or []
+                        ),
+                        # Reuse the already-loaded run-scoped sentence encoder.
+                        # Both L3 shortlist routes operate only after visibility
+                        # and evidence authorization, so no hidden text reaches
+                        # this callable.
+                        "experiment_r_l3_semantic_encode_fn": (
+                            self.global_memory.embedding_model.encode
+                            if self.global_memory is not None
+                            else None
+                        ),
+                        "experiment_r_l3_semantic_model_id": (
+                            str(self.acfg.memory_embedding_model_path or "")
+                            if self.global_memory is not None
+                            else ""
                         ),
                     }
                 else:

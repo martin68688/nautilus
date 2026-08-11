@@ -426,10 +426,11 @@ external_skill_memory:
   # mechanical_only = accept parseable Planner JSON, then enforce only
   # parseable/applicable SEARCH/REPLACE, Python syntax, and patch count.
   memory_strategy_atomic_verifier_mode: strict
-  # Bound the already-visible L3 repair set before the root-cause Agent must
-  # assess every card.  The generic structured Debug signature supplies rank;
-  # no task-specific synonym or model rule is introduced here.
+  # Each enabled pre-L3 route contributes this many already-authorized repair
+  # cards. Structured causal rank is always present; dense semantic rank is an
+  # opt-in second route. The union is deduplicated before the L3 Agent.
   experiment_r_l3_agent_match_candidate_limit: 8
+  experiment_r_l3_semantic_shortlist_enabled: false
 
 # ============================================================
 #  Persisted run identity (baseline vs memory-system experiments)

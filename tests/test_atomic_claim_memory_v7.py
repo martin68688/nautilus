@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -25,6 +26,8 @@ from agents.memory.external_skill_memory import (  # noqa: E402
 )
 from agents.memory.experiment_r_router import (  # noqa: E402
     _debug_repair_evidence,
+    _hard_gated_l3_candidates,
+    _l3_policy_authorized_sop_ids,
     _shortlist_l3_candidates_for_agent,
 )
 from agents.memory.stage_aware_hybrid_memory import (  # noqa: E402
@@ -167,6 +170,108 @@ def test_l3_agent_shortlist_promotes_exact_repair_before_large_decoy_pool() -> N
     assert selected[0]["sop_id"] == exact["sop_id"]
     assert selected[0]["agent_shortlist_rank"] == 1
     assert selected[0]["agent_shortlist_score"] > selected[1]["agent_shortlist_score"]
+
+
+def test_l3_agent_shortlist_unions_structured_and_dense_top_eight() -> None:
+    candidates = [
+        {
+            "sop_id": f"repair::decoy-{index:02d}",
+            "transition_id": f"transition::decoy-{index:02d}",
+            "supporting_transition_ids": [f"transition::decoy-{index:02d}"],
+            "failure_signature": {},
+            "repair_action": {"summary": "unrelated parser repair"},
+            "historical_failure": "generic parser failure",
+            "historical_code_change": "change parser",
+        }
+        for index in range(12)
+    ]
+    semantic_target = {
+        "sop_id": "repair::semantic-target",
+        "transition_id": "transition::semantic-target",
+        "supporting_transition_ids": ["transition::semantic-target"],
+        "failure_signature": {},
+        "repair_action": {"summary": "reduce CUDA batch memory pressure"},
+        "historical_failure": "CUDA out of memory while allocating a tensor",
+        "historical_code_change": "reduce the batch size",
+    }
+    candidates.append(semantic_target)
+
+    def semantic_encoder(texts: list[str]) -> np.ndarray:
+        rows = []
+        for text in texts:
+            lowered = text.lower()
+            equivalent_oom = (
+                "accelerator workspace depleted" in lowered
+                or "cuda out of memory" in lowered
+            )
+            rows.append([1.0, 0.0] if equivalent_oom else [0.0, 1.0])
+        return np.asarray(rows, dtype=np.float32)
+
+    selected, receipt = _shortlist_l3_candidates_for_agent(
+        "RuntimeError: accelerator workspace depleted during tensor allocation",
+        candidates,
+        limit=8,
+        semantic_encode_fn=semantic_encoder,
+        semantic_limit=8,
+        semantic_model_id="test-semantic-encoder",
+    )
+    by_id = {row["sop_id"]: row for row in selected}
+    assert semantic_target["sop_id"] in by_id
+    assert by_id[semantic_target["sop_id"]]["agent_shortlist_semantic_rank"] == 1
+    assert by_id[semantic_target["sop_id"]]["agent_shortlist_structured_rank"] is None
+    assert receipt["semantic"]["status"] == "ok"
+    assert receipt["semantic"]["model_id"] == "test-semantic-encoder"
+    assert 8 <= receipt["output_candidate_count"] <= 16
+    assert len({row["sop_id"] for row in selected}) == len(selected)
+
+
+def test_l3_agent_shortlist_records_semantic_degradation_without_losing_structured_route() -> None:
+    claim = _atomic_claim()
+    candidate = {
+        "sop_id": "repair::structured-only",
+        "transition_id": "transition::structured-only",
+        "supporting_transition_ids": ["transition::structured-only"],
+        "failure_signature": claim["failure_signature"],
+        "repair_action": {
+            "summary": claim["repair_action"],
+            "before_after": claim["before_after"],
+        },
+        "historical_failure": claim["failure_text"],
+        "historical_code_change": claim["repair_action"],
+    }
+    selected, receipt = _shortlist_l3_candidates_for_agent(
+        claim["failure_text"],
+        [candidate],
+        limit=8,
+        semantic_limit=8,
+    )
+    assert [row["sop_id"] for row in selected] == [candidate["sop_id"]]
+    assert receipt["semantic"]["status"] == "encoder_unavailable"
+    assert selected[0]["agent_shortlist_routes"] == ["structured_causal"]
+
+
+def test_l3_permission_pool_uses_all_policy_authorized_cards_before_prompt_budget() -> None:
+    layer = SimpleNamespace(
+        _visibility_is_enforced=lambda: True,
+        _trace_local=SimpleNamespace(
+            visibility_pack=SimpleNamespace(
+                visibility_trace={
+                    "full_policy_visible_clause_ids": ["clause::authorized"]
+                }
+            )
+        ),
+        visibility_gateway=SimpleNamespace(
+            clauses={
+                "clause::authorized": SimpleNamespace(
+                    sop_id="repair::policy-authorized"
+                )
+            }
+        ),
+    )
+    result = _l3_policy_authorized_sop_ids(
+        layer, {"repair::prompt-budget-survivor"}
+    )
+    assert result == {"repair::policy-authorized"}
 
 
 def test_atomic_claim_gate_separates_program_metric_and_local_repair() -> None:
@@ -375,6 +480,23 @@ def test_generated_release_runtime_rank_when_artifacts_are_present() -> None:
             rows[0]["ranking_backend"]
             == "task_first_structured_debug_signature_v3"
         )
+
+    authorized = _hard_gated_l3_candidates(
+        layer,
+        task_id="leaf-classification",
+        task_desc="multimodal leaf image classification",
+        visible_sop_ids=None,
+        task_scope="exact_task",
+    )
+    selected, receipt = _shortlist_l3_candidates_for_agent(
+        "AssertionError: Input height (224) does not match model (518) "
+        "for vit_small_patch14_dinov2.lvd142m",
+        authorized,
+        limit=8,
+    )
+    assert len(authorized) == 296
+    assert selected[0]["sop_id"] == "repair-claim::leaf-classification::eb08c01baf682841c035"
+    assert receipt["structured_top_ids"][0] == selected[0]["sop_id"]
 
     cleanup_rows = layer._rank_debug_transition_rows(
         query_text="NameError: name cleanup is not defined",

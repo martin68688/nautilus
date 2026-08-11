@@ -1,0 +1,26 @@
+# v86 keeps v85's mechanical Planner/Coder path and replaces the single L3
+# shortlist with an authorized structured-Top-8 plus dense-semantic-Top-8 union.
+extends: ../systems_v85/dynamic_hybrid.yaml
+
+external_skill_memory:
+  experiment_r_l3_agent_match_candidate_limit: 8
+  experiment_r_l3_semantic_shortlist_enabled: true
+  visibility_mode_override: enforce
+
+# v84/v85 observed Authority decisions in shadow mode. The external-memory
+# gateway above now enforces only the pre-ranking Debug-retrieval boundary;
+# global Authority stays shadow so unrelated protocol-bound Experiment-R
+# candidate-pool attestation is not accidentally enabled.
+evaluation_authority:
+  mode: shadow
+  rollout_id: authority-l3-debug-retrieval-v86
+  enforce_operations: [debug_hypothesis]
+  enforce_generation_stages: [debug]
+  enforce_governance_stages: [retrieval]
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v86/experiments/end2end_memory_systems_20260804/manifests_v86/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v7_l3_hybrid_retrieval_v86

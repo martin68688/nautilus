@@ -487,6 +487,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         experiment_r_agentic_retrieval_enabled: bool | None = None,
         experiment_r_agentic_query_fn: Callable[..., dict[str, Any]] | None = None,
         experiment_r_l3_agent_match_enabled: bool | None = None,
+        experiment_r_l3_semantic_encode_fn: Callable[[list[str]], Any] | None = None,
+        experiment_r_l3_semantic_model_id: str | None = None,
         recipe_sop_path: str | None = None,
         recipe_sop_file_sha256: str | None = None,
         recipe_sop_bundle_sha256: str | None = None,
@@ -622,6 +624,23 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else False
         )
+        self.experiment_r_l3_agent_match_candidate_limit = int(
+            getattr(ext_cfg, "experiment_r_l3_agent_match_candidate_limit", 8)
+            if ext_cfg is not None
+            else 8
+        )
+        self.experiment_r_l3_semantic_shortlist_enabled = bool(
+            getattr(ext_cfg, "experiment_r_l3_semantic_shortlist_enabled", False)
+            if ext_cfg is not None
+            else False
+        )
+        self._experiment_r_l3_semantic_encode_fn = (
+            experiment_r_l3_semantic_encode_fn
+        )
+        self.experiment_r_l3_semantic_model_id = str(
+            experiment_r_l3_semantic_model_id or ""
+        )
+        self._experiment_r_l3_semantic_lock = threading.RLock()
         self.experiment_r_l3_agent_match_max_attempts = int(
             getattr(ext_cfg, "experiment_r_l3_agent_match_max_attempts", 2)
             if ext_cfg is not None
@@ -742,6 +761,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 raise ValueError("Agentic retrieval observation budget is too small")
             if self.experiment_r_l3_agent_match_max_attempts not in range(1, 4):
                 raise ValueError("L3 Agent match attempts must be in [1, 3]")
+            if self.experiment_r_l3_agent_match_candidate_limit not in range(1, 33):
+                raise ValueError("L3 Agent per-route candidate limit must be in [1, 32]")
             if not 0.0 <= self.experiment_r_l3_agent_match_min_confidence <= 1.0:
                 raise ValueError("L3 Agent match confidence must be in [0, 1]")
             if self.experiment_r_l3_agent_match_max_tokens not in range(800, 4001):
@@ -5053,8 +5074,17 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     if self.experiment_r_l3_agent_match_enabled:
                         from agents.memory.experiment_r_router import (
                             _agentic_l3_debug_match,
+                            _l3_policy_authorized_sop_ids,
                         )
 
+                        policy_visible_l3_ids = _l3_policy_authorized_sop_ids(
+                            self, visibility_ids
+                        )
+                        layered_debug_sop_ids = (
+                            frozen_l3_ids
+                            if policy_visible_l3_ids is None
+                            else frozen_l3_ids & set(policy_visible_l3_ids)
+                        )
                         l3_agent_match = _agentic_l3_debug_match(
                             self,
                             task_id=task_id,

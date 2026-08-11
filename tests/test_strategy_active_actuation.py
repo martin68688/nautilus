@@ -1362,3 +1362,28 @@ def test_v85_config_removes_planner_gate_and_bounds_l3_agent_shortlist():
     assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
         "/workspace/nautilus-exp-end2end-agent-v85/"
     )
+
+
+def test_v86_config_enables_authorized_structured_plus_dense_l3_union():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v86"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v86-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    ext = cfg.external_skill_memory
+    assert ext.memory_strategy_atomic_verifier_mode == "mechanical_only"
+    assert ext.experiment_r_l3_agent_match_candidate_limit == 8
+    assert ext.experiment_r_l3_semantic_shortlist_enabled is True
+    assert cfg.evaluation_authority.mode == "shadow"
+    assert ext.visibility_mode_override == "enforce"
+    assert cfg.evaluation_authority.enforce_operations == ["debug_hypothesis"]
+    assert cfg.evaluation_authority.enforce_generation_stages == ["debug"]
+    assert cfg.evaluation_authority.enforce_governance_stages == ["retrieval"]
+    assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
+        "/workspace/nautilus-exp-end2end-agent-v86/"
+    )

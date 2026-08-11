@@ -18,6 +18,8 @@ import time
 from pathlib import Path
 from typing import Any, Mapping
 
+import numpy as np
+
 from agents.memory.atomic_claim_memory import structured_debug_relevance
 
 
@@ -750,19 +752,58 @@ def _hard_gated_l3_candidates(
     return candidates
 
 
+def _l3_policy_authorized_sop_ids(
+    layer: Any,
+    fallback_ids: set[str] | None,
+) -> set[str] | None:
+    """Return every policy-authorized SOP before Prompt token budgeting.
+
+    The visibility gateway's token budget controls rendered Prompt size. It is
+    not an authorization rule and must not alphabetically discard repair cards
+    before structured/dense retrieval has a chance to rank them. In shadow/off
+    mode there is no effective authorization filter, so callers retain their
+    legacy candidate universe.
+    """
+
+    if not bool(getattr(layer, "_visibility_is_enforced", lambda: False)()):
+        return fallback_ids
+    pack = getattr(getattr(layer, "_trace_local", None), "visibility_pack", None)
+    if pack is None:
+        return set()
+    clause_ids = set(
+        map(
+            str,
+            (getattr(pack, "visibility_trace", {}) or {}).get(
+                "full_policy_visible_clause_ids", []
+            ),
+        )
+    )
+    clauses = getattr(getattr(layer, "visibility_gateway", None), "clauses", {})
+    return {
+        str(getattr(clauses[clause_id], "sop_id", "") or "")
+        for clause_id in clause_ids
+        if clause_id in clauses and getattr(clauses[clause_id], "sop_id", "")
+    }
+
+
 def _shortlist_l3_candidates_for_agent(
     query_text: str,
     candidates: list[dict[str, Any]],
     *,
     limit: int,
+    semantic_encode_fn: Any | None = None,
+    semantic_limit: int = 0,
+    semantic_model_id: str = "",
+    semantic_lock: Any | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Bound the L3 Agent input with task-agnostic causal-anchor ranking.
+    """Union structured and dense retrieval over one authorized L3 pool.
 
     Visibility and evidence authorization are completed before this function is
-    called.  The shortlist therefore never grants access to a hidden repair; it
-    only prevents hundreds of already-authorized cards from overflowing one
-    structured Agent response.  Ranking uses the generic exception/model/API/
-    operand/shape/symbol signature shared with atomic-claim Debug retrieval.
+    called. Neither route can grant access to a hidden repair. Structured rank
+    preserves exact exception/model/API/operand/shape/symbol anchors, while the
+    dense route recovers paraphrases and implicit root-cause equivalence. Each
+    contributes its own Top-K; their SOP-ID union is deduplicated before the L3
+    Agent performs the final causal judgment.
     """
 
     bounded_limit = max(1, int(limit))
@@ -800,7 +841,6 @@ def _shortlist_l3_candidates_for_agent(
             )
         )
     scored.sort(key=lambda item: (-item[0], item[1]))
-    selected: list[dict[str, Any]] = []
     ranking_rows: list[dict[str, Any]] = []
     for rank, (score, sop_id, candidate, receipt) in enumerate(scored, start=1):
         ranking_rows.append(
@@ -819,18 +859,191 @@ def _shortlist_l3_candidates_for_agent(
                 ),
             }
         )
-        if rank <= bounded_limit:
-            candidate["agent_shortlist_rank"] = rank
-            candidate["agent_shortlist_score"] = score
-            candidate["agent_shortlist_receipt"] = receipt
-            selected.append(candidate)
+    structured_top = scored[:bounded_limit]
+    structured_rank = {
+        sop_id: rank
+        for rank, (_score, sop_id, _candidate, _receipt) in enumerate(
+            structured_top, start=1
+        )
+    }
+    structured_score = {sop_id: score for score, sop_id, *_rest in scored}
+    structured_receipt = {sop_id: receipt for _score, sop_id, _candidate, receipt in scored}
+
+    requested_semantic_limit = max(0, int(semantic_limit or 0))
+    semantic_rows: list[dict[str, Any]] = []
+    semantic_rank: dict[str, int] = {}
+    semantic_score: dict[str, float] = {}
+    semantic_status = "disabled"
+    semantic_error = ""
+    semantic_text_hashes: dict[str, str] = {}
+    if requested_semantic_limit > 0:
+        if not callable(semantic_encode_fn):
+            semantic_status = "encoder_unavailable"
+        elif candidates:
+            try:
+                query_document = (
+                    "Represent this runtime failure for retrieving an equivalent "
+                    "historical root-cause repair: "
+                    + str(query_text or "")[-8000:]
+                )
+                candidate_documents: list[str] = []
+                for candidate in candidates:
+                    repair_action = candidate.get("repair_action")
+                    repair_action = (
+                        repair_action if isinstance(repair_action, Mapping) else {}
+                    )
+                    document = "\n".join(
+                        value
+                        for value in (
+                            "Historical runtime failure and verified repair:",
+                            str(candidate.get("historical_failure") or ""),
+                            json.dumps(
+                                candidate.get("failure_signature") or {},
+                                sort_keys=True,
+                                ensure_ascii=False,
+                            ),
+                            str(candidate.get("title") or ""),
+                            str(candidate.get("when_to_use") or ""),
+                            json.dumps(
+                                repair_action,
+                                sort_keys=True,
+                                ensure_ascii=False,
+                            ),
+                            str(candidate.get("historical_code_change") or ""),
+                            str(candidate.get("historical_success_result") or ""),
+                        )
+                        if value
+                    )[:12000]
+                    candidate_documents.append(document)
+                    semantic_text_hashes[str(candidate.get("sop_id") or "")] = (
+                        hashlib.sha256(document.encode("utf-8")).hexdigest()
+                    )
+                texts = [query_document, *candidate_documents]
+                if semantic_lock is None:
+                    encoded = semantic_encode_fn(texts)
+                else:
+                    with semantic_lock:
+                        encoded = semantic_encode_fn(texts)
+                vectors = np.asarray(encoded, dtype=np.float32)
+                if vectors.ndim != 2 or vectors.shape[0] != len(texts):
+                    raise ValueError(
+                        "semantic encoder returned an invalid batch shape"
+                    )
+                if vectors.shape[1] <= 0 or not np.isfinite(vectors).all():
+                    raise ValueError("semantic encoder returned invalid vectors")
+                norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+                if np.any(norms <= 0.0):
+                    raise ValueError("semantic encoder returned a zero vector")
+                vectors = vectors / norms
+                similarities = vectors[1:] @ vectors[0]
+                dense = sorted(
+                    (
+                        float(similarities[index]),
+                        str(candidate.get("sop_id") or ""),
+                    )
+                    for index, candidate in enumerate(candidates)
+                )
+                dense.sort(key=lambda item: (-item[0], item[1]))
+                semantic_score = {sop_id: score for score, sop_id in dense}
+                semantic_top = dense[:requested_semantic_limit]
+                semantic_rank = {
+                    sop_id: rank
+                    for rank, (_score, sop_id) in enumerate(semantic_top, start=1)
+                }
+                semantic_rows = [
+                    {"rank": rank, "sop_id": sop_id, "cosine_similarity": score}
+                    for rank, (score, sop_id) in enumerate(dense, start=1)
+                ]
+                semantic_status = "ok"
+            except Exception as exc:
+                semantic_status = "encoder_error"
+                semantic_error = f"{type(exc).__name__}: {exc}"
+
+    # RRF is used only to order the union presented to the Agent. Membership is
+    # the exact union of both Top-K sets; a route cannot evict the other route's
+    # candidates.
+    candidate_by_id = {
+        str(candidate.get("sop_id") or ""): copy.deepcopy(candidate)
+        for candidate in candidates
+    }
+    union_ids = set(structured_rank) | set(semantic_rank)
+    union_order = sorted(
+        union_ids,
+        key=lambda sop_id: (
+            -(
+                (1.0 / (RRF_K + structured_rank[sop_id]) if sop_id in structured_rank else 0.0)
+                + (1.0 / (RRF_K + semantic_rank[sop_id]) if sop_id in semantic_rank else 0.0)
+            ),
+            -structured_score.get(sop_id, -1.0),
+            -semantic_score.get(sop_id, -1.0),
+            sop_id,
+        ),
+    )
+    selected: list[dict[str, Any]] = []
+    union_rows: list[dict[str, Any]] = []
+    for union_rank, sop_id in enumerate(union_order, start=1):
+        candidate = candidate_by_id[sop_id]
+        routes = [
+            route
+            for route, ranks in (
+                ("structured_causal", structured_rank),
+                ("dense_semantic", semantic_rank),
+            )
+            if sop_id in ranks
+        ]
+        rrf_score = (
+            (1.0 / (RRF_K + structured_rank[sop_id]) if sop_id in structured_rank else 0.0)
+            + (1.0 / (RRF_K + semantic_rank[sop_id]) if sop_id in semantic_rank else 0.0)
+        )
+        candidate["agent_shortlist_rank"] = union_rank
+        candidate["agent_shortlist_routes"] = routes
+        candidate["agent_shortlist_rrf_score"] = rrf_score
+        candidate["agent_shortlist_score"] = structured_score.get(
+            sop_id, semantic_score.get(sop_id, 0.0)
+        )
+        candidate["agent_shortlist_structured_rank"] = structured_rank.get(sop_id)
+        candidate["agent_shortlist_structured_score"] = structured_score.get(sop_id)
+        candidate["agent_shortlist_semantic_rank"] = semantic_rank.get(sop_id)
+        candidate["agent_shortlist_semantic_score"] = semantic_score.get(sop_id)
+        candidate["agent_shortlist_receipt"] = structured_receipt.get(sop_id, {})
+        selected.append(candidate)
+        union_rows.append(
+            {
+                "rank": union_rank,
+                "sop_id": sop_id,
+                "routes": routes,
+                "structured_rank": structured_rank.get(sop_id),
+                "structured_score": structured_score.get(sop_id),
+                "semantic_rank": semantic_rank.get(sop_id),
+                "semantic_score": semantic_score.get(sop_id),
+                "rrf_score": rrf_score,
+            }
+        )
     return selected, {
-        "schema": "experiment_r_l3_agent_shortlist_v1",
-        "algorithm": "task_gated_structured_debug_signature_v3",
+        "schema": "experiment_r_l3_agent_shortlist_v2",
+        "algorithm": "visibility_gated_structured_plus_dense_union_v1",
         "input_candidate_count": len(candidates),
         "output_candidate_count": len(selected),
         "limit": bounded_limit,
+        "structured_limit": bounded_limit,
+        "semantic_limit": requested_semantic_limit,
+        "deduplicated_count": len(selected),
+        "duplicate_overlap_count": (
+            len(structured_rank) + len(semantic_rank) - len(selected)
+        ),
         "ranked_candidates": ranking_rows,
+        "structured_top_ids": [sop_id for _score, sop_id, *_rest in structured_top],
+        "semantic": {
+            "status": semantic_status,
+            "model_id": str(semantic_model_id or ""),
+            "query_sha256": hashlib.sha256(
+                str(query_text or "").encode("utf-8")
+            ).hexdigest(),
+            "error": semantic_error,
+            "ranked_candidates": semantic_rows,
+            "candidate_text_sha256": semantic_text_hashes,
+        },
+        "union_candidates": union_rows,
     }
 
 
@@ -1013,17 +1226,35 @@ def _agentic_l3_debug_match(
         candidates, shortlist_receipt = _shortlist_l3_candidates_for_agent(
             query_text,
             authorized_candidates,
-            limit=int(
-                getattr(
-                    layer,
-                    "experiment_r_l3_agent_match_candidate_limit",
-                    8,
+            limit=int(layer.experiment_r_l3_agent_match_candidate_limit or 8),
+            semantic_encode_fn=getattr(
+                layer, "_experiment_r_l3_semantic_encode_fn", None
+            ),
+            semantic_limit=(
+                int(layer.experiment_r_l3_agent_match_candidate_limit or 8)
+                if bool(
+                    getattr(
+                        layer,
+                        "experiment_r_l3_semantic_shortlist_enabled",
+                        False,
+                    )
                 )
-                or 8
+                else 0
+            ),
+            semantic_model_id=str(
+                getattr(layer, "experiment_r_l3_semantic_model_id", "") or ""
+            ),
+            semantic_lock=getattr(
+                layer, "_experiment_r_l3_semantic_lock", None
             ),
         )
         tier_record: dict[str, Any] = {
             "task_scope": task_scope,
+            "visibility_pool_basis": (
+                "policy_authorized_pre_prompt_budget"
+                if bool(getattr(layer, "_visibility_is_enforced", lambda: False)())
+                else "host_hard_gate_only"
+            ),
             "authorized_candidate_count": len(authorized_candidates),
             "candidate_ids": [row["sop_id"] for row in candidates],
             "candidate_count": len(candidates),
@@ -2535,12 +2766,15 @@ def _agentic_candidate_pool(
     if stage == "debug" and bool(
         getattr(layer, "experiment_r_l3_agent_match_enabled", False)
     ):
+        l3_visible_sop_ids = _l3_policy_authorized_sop_ids(
+            layer, visible_sop_ids
+        )
         l3_agent_match = _agentic_l3_debug_match(
             layer,
             task_id=task_id,
             task_desc=task_desc,
             query_text=query_text,
-            visible_sop_ids=visible_sop_ids,
+            visible_sop_ids=l3_visible_sop_ids,
         )
         # Retain a completed semantic decision even if the later general
         # Retrieval Agent fails and the candidate-pool harness falls back.
