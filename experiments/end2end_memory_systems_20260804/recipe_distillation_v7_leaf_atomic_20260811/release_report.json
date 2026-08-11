@@ -1,0 +1,49 @@
+{
+  "atomic_claim_bundle_sha256": "fdfe4cd8d061b5155175786ceb8042af57bce777655fe8d5b0d92f31967f08df",
+  "atomic_debug_authorized_count": 266,
+  "bundle_version": "leaf-atomic-memory-v7-20260811",
+  "covered_transition_count": 1516,
+  "created_at": "2026-08-11T10:00:00+08:00",
+  "deterministic_repair_sop_count": 266,
+  "files": {
+    "atomic_claims.json": "382de65d8dd5a765610db571a15a32968e6e730fb2c9723b2b076149b42109ad",
+    "debug_retrieval_replay_report.json": "8accd010259fd96db35e59f8b0b2e9c0d35cd0569517e43df9a445e69f4aa66f",
+    "evidence_manifest.json": "27d3141312d9a685bcdcd4cf867f837d89272316ba023d02666e8c6710604e3b",
+    "implementation_capsules.json": "b0fa7ca61af83749ae2ef2cf4c9ebd14a6a3006dd077f0ef87ee2879602f5cf9",
+    "recipe_sops.json": "00c0e38db808aa2879460731d2b02fbc75843f103e2297dfd5b7fe50f861093a",
+    "runforest/TASK_AUDIT_REPORT.json": "271c275e67d1a502b63afdaf0e624091bf989b2c3f95518934d51dffc1d97368",
+    "runforest/graph.json": "96aa185a17109e8f44f2ebd85c12128ef5c64dcff8bd3a56979e9145738ed2b9",
+    "runforest/index.npz": "a676cbdd37fc6e55ddff1e29dea2cb3f715cf8072c8d99b53243fea5dbbce370",
+    "teacher_claim_id_aliases_v1.json": "bb81dced5a02f64a7cb0bf0473e6bec8082fe653905f7626dfd2be50989ad96f",
+    "teacher_output_schema.json": "26b16b75f8b24238f04bdb9edbe8e6adf7c641bc2f41449c57326fd8c3d96dce",
+    "teacher_packet.json": "15750a1be2bb61a87cefc8c8196b885d56e561d1c8d28d868757ca6a84b442d6",
+    "teacher_response_gpt56sol.json": "3345c514714c9e2f8f2f8a4cb9526b4d2cdd433efccdf83dd92674a835182601",
+    "teacher_response_gpt56sol.raw.json": "f0965010d9d447c3ec8237e07cd87b6b22747b93e63314965e121a7bed47fdc9"
+  },
+  "quality_gates": {
+    "all_atomic_repairs_debug_only": true,
+    "all_leaf_transitions_covered": true,
+    "no_atomic_claim_authorizes_metric": true,
+    "source_program_and_claim_taint_separated": true,
+    "teacher_cites_only_authorized_claims": true,
+    "teacher_claim_id_aliases_resolve_to_authorized_claims": true
+  },
+  "release_sha256": "95ff7788758074cbccafcb1cad526eb920fb53e4ad63c1e5e6b86697fa83311b",
+  "schema": "mlevolve_leaf_atomic_memory_release_v1",
+  "source_graph_sha256": "d78f997c5e180591705dd3bce6572a9404e3a44fb249f38773ebb3505951181b",
+  "source_transition_count": 1516,
+  "teacher_claim_id_alias_receipt": {
+    "aliases": {
+      "claim::leaf-classification::implementation_claim::564780f60f63320fb9a5": "claim::leaf-classification::compatibility_claim::6d102b727ad7d1ed6438"
+    },
+    "reason": "The deterministic v7 tokenizer added the LGBM alias after the teacher call, reclassifying the same source transition from implementation_claim to compatibility_claim without changing its failure or repair evidence.",
+    "schema": "mlevolve_teacher_claim_id_alias_receipt_v1",
+    "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__no_memory__seed-1::attempt-000::transition::429cfa7c8df6::a979ee64f7ef"
+  },
+  "teacher_claim_id_aliases": {
+    "claim::leaf-classification::implementation_claim::564780f60f63320fb9a5": "claim::leaf-classification::compatibility_claim::6d102b727ad7d1ed6438"
+  },
+  "teacher_generalized_repair_sop_count": 30,
+  "teacher_model": "gpt-5.6-sol",
+  "teacher_rejected_outputs": []
+}

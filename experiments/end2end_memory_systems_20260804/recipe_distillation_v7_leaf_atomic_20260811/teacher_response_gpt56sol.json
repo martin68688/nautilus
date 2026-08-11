@@ -1,0 +1,640 @@
+{
+  "generalized_repairs": [
+    {
+      "failure_pattern": "`TypeError` from `torch.set_autocast_enabled`: `enabled` must be `bool`, not `str`, after `torch.cuda.amp.autocast(\"cuda\")`; or failure after constructing `torch.cuda.amp.GradScaler(\"cuda\")`.",
+      "method_family": "PyTorch AMP API compatibility",
+      "repair_steps": [
+        "Identify whether the imported context/scaler comes from `torch.cuda.amp` or `torch.amp`.",
+        "With `torch.cuda.amp.autocast`, do not pass `\"cuda\"` positionally; use the boolean `enabled` contract.",
+        "When supplying a device string, consistently use `torch.amp.autocast(\"cuda\")` and `torch.amp.GradScaler(\"cuda\")`.",
+        "Keep the CPU/non-CUDA path explicitly disabled instead of passing a device string to the legacy API."
+      ],
+      "root_cause": "The legacy CUDA AMP namespace interprets the first positional argument as an enable flag, while the modern AMP namespace accepts the device type; mixing the two contracts converts `\"cuda\"` into an invalid boolean argument.",
+      "runtime_stage": "model_forward",
+      "signature_id": "leaf-debug-amp-namespace-001",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::a9fbfa6c6f03cd9bc756",
+        "claim::leaf-classification::compatibility_claim::2194959c0d9d2901d5e7",
+        "claim::leaf-classification::compatibility_claim::278c7e72babec2e4af7a"
+      ],
+      "title": "Keep autocast and GradScaler namespace contracts consistent",
+      "when_to_use": "Use when AMP fails before the first backward pass and the traceback contains `set_autocast_enabled`, `enabled`, `GradScaler`, or a positional `\"cuda\"` argument."
+    },
+    {
+      "failure_pattern": "`RuntimeError` or `_pickle.UnpicklingError` while loading a locally saved checkpoint under PyTorch 2.6; the checkpoint dictionary includes non-tensor values such as NumPy scalar validation scores.",
+      "method_family": "PyTorch checkpoint compatibility",
+      "repair_steps": [
+        "Confirm the checkpoint was created by the same trusted pipeline.",
+        "Load that trusted checkpoint with `torch.load(..., weights_only=False)`.",
+        "Preserve the existing device mapping and then load the contained model state into the matching model definition.",
+        "Do not apply this option to an untrusted checkpoint."
+      ],
+      "root_cause": "PyTorch 2.6 defaults `torch.load` to `weights_only=True`, whose restricted unpickler rejects NumPy scalars stored alongside the model state.",
+      "runtime_stage": "checkpoint_loading",
+      "signature_id": "leaf-debug-torch-load-002",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::4d72d5abf404c1671b86",
+        "claim::leaf-classification::compatibility_claim::839af4d354f2c7300f50",
+        "claim::leaf-classification::compatibility_claim::f3bc8576492511fdbe15",
+        "claim::leaf-classification::compatibility_claim::2479aef92ad88ab50e20",
+        "claim::leaf-classification::compatibility_claim::7e5a55e52a85f899f1c8",
+        "claim::leaf-classification::compatibility_claim::7feca96630b851d0d625"
+      ],
+      "title": "Load trusted mixed-content checkpoints explicitly under PyTorch 2.6",
+      "when_to_use": "Use only when a trusted, locally generated checkpoint fails to unpickle after training and the error mentions the `weights_only` default."
+    },
+    {
+      "failure_pattern": "`TypeError: ReduceLROnPlateau.__init__() got an unexpected keyword argument 'verbose'` at scheduler construction.",
+      "method_family": "PyTorch scheduler signature compatibility",
+      "repair_steps": [
+        "Remove only the unsupported `verbose` keyword from `ReduceLROnPlateau`.",
+        "Retain supported operands such as `mode`, `factor`, and `patience`.",
+        "If learning-rate logging is needed, read it from the optimizer or scheduler state outside the constructor."
+      ],
+      "root_cause": "The installed PyTorch scheduler signature does not accept `verbose`, regardless of whether another PyTorch release did.",
+      "runtime_stage": "training",
+      "signature_id": "leaf-debug-plateau-verbose-003",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::0c4eb9b16498c312a964",
+        "claim::leaf-classification::compatibility_claim::644be98a00ae82c48863",
+        "claim::leaf-classification::compatibility_claim::1aacf78c2d1705de2b42"
+      ],
+      "title": "Remove unsupported ReduceLROnPlateau verbosity",
+      "when_to_use": "Use when model construction reaches `ReduceLROnPlateau` but training never starts because `verbose` is rejected."
+    },
+    {
+      "failure_pattern": "`LGBMClassifier.fit()` rejects `verbose`, or native `lgb.train()` rejects `verbose_eval`.",
+      "method_family": "LightGBM logging API compatibility",
+      "repair_steps": [
+        "For the sklearn wrapper, remove `verbose` from `.fit()` and control verbosity through supported constructor parameters or callbacks.",
+        "For native `lgb.train`, replace `verbose_eval` with a supported callback such as `lgb.log_evaluation(0)` when silence is required.",
+        "Keep early-stopping callbacks separate from logging callbacks.",
+        "Apply the branch matching the exact callable in the traceback."
+      ],
+      "root_cause": "The installed LightGBM version exposes verbosity through different interfaces for the sklearn wrapper and native training API; unsupported legacy keywords were passed to the wrong callable.",
+      "runtime_stage": "training",
+      "signature_id": "leaf-debug-lightgbm-verbosity-004",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::7e5cd51c89b68068d030",
+        "claim::leaf-classification::compatibility_claim::1b426988a3c0596355e7",
+        "claim::leaf-classification::compatibility_claim::32276e1b0e1af5029f6f",
+        "claim::leaf-classification::implementation_claim::564780f60f63320fb9a5"
+      ],
+      "title": "Route LightGBM verbosity through the supported interface",
+      "when_to_use": "Use when LightGBM stops at method dispatch with an unexpected `verbose` or `verbose_eval` keyword."
+    },
+    {
+      "failure_pattern": "`XGBClassifier.fit()` rejects `early_stopping_rounds`; or full-data refitting raises `Must have at least 1 validation dataset for early stopping`.",
+      "method_family": "XGBoost early-stopping lifecycle",
+      "repair_steps": [
+        "For the affected sklearn wrapper, place `early_stopping_rounds` in `XGBClassifier(...)`, not in `.fit()`.",
+        "During fold training, supply the genuine validation partition through `eval_set`.",
+        "For a final full-data fit with no separate evaluation set, instantiate a model without early stopping rather than retaining the constructor setting.",
+        "Do not reuse the training data as a nominal validation set merely to satisfy the API."
+      ],
+      "root_cause": "Early stopping is estimator configuration in the installed wrapper and also requires an evaluation dataset; moving between fold training and full-data refitting without changing that configuration violates one of those contracts.",
+      "runtime_stage": "training",
+      "signature_id": "leaf-debug-xgb-early-stop-005",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::6f5c7bedd8fd362e716b",
+        "claim::leaf-classification::compatibility_claim::2345807e3aac308a3110",
+        "claim::leaf-classification::compatibility_claim::8e386ab2f3b3d9e460de",
+        "claim::leaf-classification::compatibility_claim::e6a90a06326e8faec0c1",
+        "claim::leaf-classification::compatibility_claim::d57ce9f77d2c377b84eb",
+        "claim::leaf-classification::compatibility_claim::31c122c2a976ac73378a"
+      ],
+      "title": "Configure XGBoost early stopping at construction and only with an eval set",
+      "when_to_use": "Use when the installed `XGBClassifier` rejects the fit keyword or when a final refit inherits early stopping but has no `eval_set`."
+    },
+    {
+      "failure_pattern": "`TypeError: Booster.predict() got an unexpected keyword argument 'ntree_limit'` after successful XGBoost training.",
+      "method_family": "XGBoost prediction API compatibility",
+      "repair_steps": [
+        "Read the trained booster’s `best_iteration`.",
+        "Replace `ntree_limit=best_iteration` with the supplied compatible form `iteration_range=(0, best_iteration)`.",
+        "Apply the same prediction contract to validation and test calls."
+      ],
+      "root_cause": "The installed XGBoost booster removed the legacy `ntree_limit` prediction keyword in favor of `iteration_range`.",
+      "runtime_stage": "inference",
+      "signature_id": "leaf-debug-xgb-iteration-range-006",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::df313636709504338ad7"
+      ],
+      "title": "Replace deprecated XGBoost ntree_limit prediction",
+      "when_to_use": "Use when boosting completes but post-training prediction alone fails on `ntree_limit`."
+    },
+    {
+      "failure_pattern": "Immediate `SyntaxError` or `IndentationError` from notebook magic (`!pip`), raw Markdown fences, replacement markers, bare prose, or unexpectedly indented model/training statements.",
+      "method_family": "Generated Python source validation",
+      "repair_steps": [
+        "Remove notebook-only shell magic from standard `.py` files and provision dependencies outside Python source.",
+        "Remove raw Markdown fences, replacement directives, and un-commented explanatory prose.",
+        "Normalize each affected block so its indentation matches the enclosing function, class, or loop.",
+        "Perform a parse-only validation before starting data loading or training."
+      ],
+      "root_cause": "Non-Python artifacts or malformed block indentation were inserted into executable source, so the parser failed before runtime semantics could be evaluated.",
+      "runtime_stage": "parsing",
+      "signature_id": "leaf-debug-source-parse-007",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::46e931ab235bf5139f23",
+        "claim::leaf-classification::repair_claim::399893d5f328e8a83de3",
+        "claim::leaf-classification::repair_claim::264dbe161cb4e9dd4d58",
+        "claim::leaf-classification::repair_claim::6173be3a169d6778fc37"
+      ],
+      "title": "Strip notebook and editing artifacts before executing generated scripts",
+      "when_to_use": "Use when execution stops at parsing and the offending line is not a valid Python statement."
+    },
+    {
+      "failure_pattern": "`KeyError` for `margin_1`, `shape_1`, or `texture_1` when the CSV contains `margin1`, `shape1`, and `texture1`; or `IndexError` from sorting names with `x.split('_')[1]`.",
+      "method_family": "Dataset schema discovery",
+      "repair_steps": [
+        "Inspect the actual DataFrame columns before constructing feature lists.",
+        "Select the observed prefixes and parse trailing numeric suffixes without assuming an underscore.",
+        "Verify the same ordered feature columns exist in train and test.",
+        "Use `sample_submission.csv` columns excluding `id` as the final class-probability order."
+      ],
+      "root_cause": "The code hardcoded a different naming convention and suffix grammar from the supplied dataset, then propagated that assumption into selection, sorting, and submission construction.",
+      "runtime_stage": "data_loading",
+      "signature_id": "leaf-debug-schema-names-008",
+      "source_claim_ids": [
+        "claim::leaf-classification::implementation_claim::8e645e3f231a5f3217e9",
+        "claim::leaf-classification::implementation_claim::c6937629d3d3a9e470db",
+        "claim::leaf-classification::repair_claim::faa2eadee065a98faa13",
+        "claim::leaf-classification::implementation_claim::fc6db7429b6f63b6da2f"
+      ],
+      "title": "Derive feature and class ordering from the actual files",
+      "when_to_use": "Use when column selection or natural sorting fails before preprocessing, especially for the leaf `margin`, `shape`, and `texture` families."
+    },
+    {
+      "failure_pattern": "`NameError` for a variable, loader, function, constant, or alias that is defined later or under another name, including `X_train_fold` versus `X_train`, undefined loaders, `train_ids`, `batch_size`, or a default-argument constant.",
+      "method_family": "Symbol lifecycle and alias control",
+      "repair_steps": [
+        "Define constants used in default arguments before the function definition because defaults are evaluated immediately.",
+        "Define IDs, split indices, loaders, and transformed arrays before their first top-level call site.",
+        "Choose one canonical name for each artifact and replace stale aliases rather than defining duplicate near-equivalents.",
+        "Order helper function definitions before top-level calls that execute them."
+      ],
+      "root_cause": "Execution order or alias drift left the referenced symbol absent from the active scope at the moment Python evaluated it.",
+      "runtime_stage": "preprocessing",
+      "signature_id": "leaf-debug-symbol-order-009",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::2618a8a607d3f7ebac81",
+        "claim::leaf-classification::compatibility_claim::4e05161290e935162c49",
+        "claim::leaf-classification::implementation_claim::30ca70c0463ce5877031",
+        "claim::leaf-classification::implementation_claim::8e9cbc6458291477bff1",
+        "claim::leaf-classification::implementation_claim::05d2db970eccb826bc43",
+        "claim::leaf-classification::compatibility_claim::e7d52c636b8c17061e41"
+      ],
+      "title": "Resolve use-before-definition and stale aliases before training",
+      "when_to_use": "Use when a `NameError` identifies a symbol that visibly exists elsewhere in the file but only later, locally, or under a different name."
+    },
+    {
+      "failure_pattern": "`UnboundLocalError` when `combined_features` is created only under `if fit_new:` but used for validation; or `NameError: self is not defined` when a standalone preprocessing function references `self.pca_objects`.",
+      "method_family": "Explicit preprocessing state transfer",
+      "repair_steps": [
+        "Compute input-derived arrays such as `combined_features` on every fit and transform call before conditional estimator logic.",
+        "Fit scalers or PCA objects only on the authorized training partition.",
+        "Return the fitted objects explicitly or pass them into later transform calls.",
+        "Do not reference `self` from a standalone function unless the function is made an actual bound method."
+      ],
+      "root_cause": "Required transform inputs or fitted state were hidden inside a branch or nonexistent object scope, so validation/test execution could not access them.",
+      "runtime_stage": "preprocessing",
+      "signature_id": "leaf-debug-transform-state-010",
+      "source_claim_ids": [
+        "claim::leaf-classification::repair_claim::2ab4086cd2733365b9c1",
+        "claim::leaf-classification::implementation_claim::edd18941e423f7c94fd3",
+        "claim::leaf-classification::implementation_claim::b2762274a602685f81a4",
+        "claim::leaf-classification::implementation_claim::37e48ac2d62d9258a60f"
+      ],
+      "title": "Carry fitted preprocessing state explicitly across fit and transform",
+      "when_to_use": "Use when training preprocessing works but the same function fails for validation or test because a branch-local variable or object state is unavailable."
+    },
+    {
+      "failure_pattern": "A model `forward()` references an initializer-local dimension such as `tabular_dim` or creates `nn.Linear`/parameters dynamically behind `hasattr` checks.",
+      "method_family": "PyTorch module registration",
+      "repair_steps": [
+        "Store required dimensions as instance attributes during `__init__`.",
+        "Construct projection, gate, and bias parameters in `__init__`, not on the first forward pass.",
+        "Use `forward()` only to apply already registered modules to tensors.",
+        "Recreate the optimizer after correcting module construction so every trainable parameter is registered."
+      ],
+      "root_cause": "Initializer-local symbols do not exist in `forward`, and layers created dynamically after optimizer construction are not reliably registered or optimized.",
+      "runtime_stage": "model_forward",
+      "signature_id": "leaf-debug-module-registration-011",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::5f28d617c88d800c83b8",
+        "claim::leaf-classification::compatibility_claim::a117dfae29dfd4fec79e"
+      ],
+      "title": "Register all trainable layers and parameters in __init__",
+      "when_to_use": "Use when the first forward pass raises a dimension-variable `NameError` or when the model conditionally creates trainable objects during `forward()`."
+    },
+    {
+      "failure_pattern": "`state_dict` loading reports spectral-normalization keys such as `_orig`, `_u`, `_v` versus plain `in_proj_weight`, or reports an `AveragedModel` `module.` prefix mismatch.",
+      "method_family": "Checkpoint topology parity",
+      "repair_steps": [
+        "Instantiate the destination model with the same parametrizations and wrappers used when the checkpoint was saved.",
+        "For spectral normalization, apply the same parametrization before loading.",
+        "For `AveragedModel`, load the wrapped module state or map the exact `module.` namespace deliberately.",
+        "Check missing and unexpected keys rather than hiding structural mismatches with a blanket permissive load."
+      ],
+      "root_cause": "Wrappers and parametrizations change checkpoint key topology; the destination model was structurally different even though its conceptual architecture was similar.",
+      "runtime_stage": "checkpoint_loading",
+      "signature_id": "leaf-debug-state-dict-topology-012",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::b873147d929c89f1bc11",
+        "claim::leaf-classification::repair_claim::3cfcebcf4256d430fae4"
+      ],
+      "title": "Match wrapper and parametrization topology before loading state",
+      "when_to_use": "Use when checkpoint keys differ systematically by `module.` or parametrization suffixes rather than by isolated missing layers."
+    },
+    {
+      "failure_pattern": "Checkpoint or SWA averaging fails with `mean(): ... Got: Long`, commonly on BatchNorm `num_batches_tracked` or another non-floating state entry.",
+      "method_family": "State-dictionary averaging",
+      "repair_steps": [
+        "Inspect the dtype of each state-dictionary value before averaging.",
+        "Average only floating-point or complex tensors.",
+        "For integer or boolean buffers, copy a consistent value from one selected checkpoint instead of taking a mean.",
+        "Load the reconstructed state only after every key has the expected dtype and shape."
+      ],
+      "root_cause": "Model state dictionaries include non-trainable integer buffers, but the averaging loop treated every entry as a floating parameter.",
+      "runtime_stage": "checkpoint_averaging",
+      "signature_id": "leaf-debug-state-average-dtype-013",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::4545dce509b03bafaf63",
+        "claim::leaf-classification::compatibility_claim::d505a7eed7235f32fcde"
+      ],
+      "title": "Average only floating checkpoint tensors",
+      "when_to_use": "Use when SWA or manual checkpoint averaging succeeds for most keys but fails on a `Long` tensor."
+    },
+    {
+      "failure_pattern": "`RuntimeError: grad can be implicitly created only for scalar outputs` at `loss.backward()` when mixup combines per-sample criterion outputs.",
+      "method_family": "Loss reduction contract",
+      "repair_steps": [
+        "Inspect the criterion reduction and the shape returned by the mixup loss.",
+        "Combine the two target losses with `lam` while preserving per-sample semantics.",
+        "Apply `.mean()` after the weighted combination so the value passed to `backward()` is scalar.",
+        "Assert `loss.ndim == 0` before backpropagation."
+      ],
+      "root_cause": "The criterion produced one or more losses per sample, and the mixup wrapper returned that tensor without a final reduction.",
+      "runtime_stage": "training",
+      "signature_id": "leaf-debug-scalar-loss-014",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::3719234154e36d13763f",
+        "claim::leaf-classification::compatibility_claim::e48a403043624fb69100"
+      ],
+      "title": "Reduce mixup loss to a scalar before backward",
+      "when_to_use": "Use when forward computation succeeds but backward rejects a non-scalar loss."
+    },
+    {
+      "failure_pattern": "`sklearn.metrics.log_loss` raises a class-count mismatch because a validation fold contains 90 or 98 classes while predictions contain all 99 probability columns.",
+      "method_family": "Multiclass metric class-universe alignment",
+      "repair_steps": [
+        "Confirm labels are encoded contiguously from `0` through `n_classes-1`.",
+        "Call `log_loss` with `labels=np.arange(n_classes)`.",
+        "Keep prediction columns in that same encoded class order.",
+        "Do not drop probability columns merely because a particular fold lacks those classes."
+      ],
+      "root_cause": "`log_loss` inferred its class universe from the fold’s `y_true`, which omitted classes still represented in the fixed-width prediction matrix.",
+      "runtime_stage": "validation",
+      "signature_id": "leaf-debug-logloss-labels-015",
+      "source_claim_ids": [
+        "claim::leaf-classification::repair_claim::cfc0f618810c34c36d79",
+        "claim::leaf-classification::repair_claim::c59d04dec31d30115784",
+        "claim::leaf-classification::repair_claim::19e6ad982e199c299e4b",
+        "claim::leaf-classification::repair_claim::9303ed1e26dc3259bc24"
+      ],
+      "title": "Pass the full encoded class universe to log_loss",
+      "when_to_use": "Use when prediction width is correct but a fold omits one or more classes from `y_true`."
+    },
+    {
+      "failure_pattern": "A stratified holdout with `test_size=72` cannot cover 99 classes, or nested `StratifiedKFold(n_splits=5)` exceeds the smallest class membership.",
+      "method_family": "Stratified split feasibility",
+      "repair_steps": [
+        "Count members per class before selecting a split strategy.",
+        "For a holdout expected to contain every class, require at least one row per class on both sides; in the supplied failure, 72 validation rows cannot represent 99 classes.",
+        "Require `n_splits` not to exceed the minimum class count for stratified K-fold.",
+        "Reduce folds or enlarge the holdout only when those arithmetic constraints are satisfied."
+      ],
+      "root_cause": "The requested stratification geometry was mathematically impossible for the class counts and partition sizes.",
+      "runtime_stage": "validation_split",
+      "signature_id": "leaf-debug-stratification-016",
+      "source_claim_ids": [
+        "claim::leaf-classification::repair_claim::bcb5b15e4b7ae7a98909",
+        "claim::leaf-classification::compatibility_claim::263d01a0330686619371"
+      ],
+      "title": "Preflight class counts before stratified splitting",
+      "when_to_use": "Use before constructing a stratified holdout or nested fold on a many-class, low-sample dataset."
+    },
+    {
+      "failure_pattern": "SMOTE raises `Expected n_neighbors <= n_samples_fit`, specifically `n_neighbors=6` with a class containing only 5 training samples when `k_neighbors=5`.",
+      "method_family": "SMOTE neighborhood feasibility",
+      "repair_steps": [
+        "Compute the minimum post-split class count before constructing SMOTE.",
+        "Choose `k_neighbors <= min_class_count - 1`; the supplied repair uses `k_neighbors=1` when at least two samples exist.",
+        "If any class has fewer than two samples, do not apply ordinary SMOTE to that class.",
+        "Run oversampling only on the training partition."
+      ],
+      "root_cause": "SMOTE internally requires the selected neighbors plus the sample itself, so `k_neighbors=5` requires at least six class members.",
+      "runtime_stage": "preprocessing",
+      "signature_id": "leaf-debug-smote-neighbors-017",
+      "source_claim_ids": [
+        "claim::leaf-classification::repair_claim::bb54207253e18f40099a"
+      ],
+      "title": "Bound SMOTE neighbors by the smallest training class",
+      "when_to_use": "Use when oversampling follows a split and rare classes may have fewer than six members."
+    },
+    {
+      "failure_pattern": "`BatchNorm1d` raises `Expected more than 1 value per channel when training`, with input such as `torch.Size([1, 256])` from a final partial training batch.",
+      "method_family": "BatchNorm batch construction",
+      "repair_steps": [
+        "Check the remainder of training-set size divided by batch size.",
+        "Set `drop_last=True` on the training DataLoader when the remainder would produce a singleton batch.",
+        "Keep validation and test evaluation in `model.eval()` and do not discard their rows for this training-only condition.",
+        "Assert training batches contain at least two samples before calling a BatchNorm model."
+      ],
+      "root_cause": "BatchNorm in training mode cannot estimate batch statistics from one sample, and the DataLoader emitted a singleton final batch.",
+      "runtime_stage": "training",
+      "signature_id": "leaf-debug-batchnorm-singleton-018",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::38e27b16cd7f253a9da0"
+      ],
+      "title": "Prevent singleton training batches for BatchNorm models",
+      "when_to_use": "Use when failure occurs only on the last training batch and the reported BatchNorm input begins with dimension one."
+    },
+    {
+      "failure_pattern": "Cached image features have 704 rows while training indices address 712 rows because extraction used `drop_last=True` with batches of 16.",
+      "method_family": "Feature-extraction row preservation",
+      "repair_steps": [
+        "Use a dedicated deterministic extraction DataLoader with `drop_last=False`.",
+        "Disable shuffling or retain explicit sample IDs so output order is recoverable.",
+        "Assert extracted row count equals the source dataset count before caching.",
+        "Store IDs beside cached features and verify them before indexed training."
+      ],
+      "root_cause": "A training-oriented loader policy silently discarded the incomplete extraction batch, breaking row alignment with labels and indices.",
+      "runtime_stage": "feature_extraction",
+      "signature_id": "leaf-debug-extraction-drop-last-019",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::023e066576e7d8a81d15"
+      ],
+      "title": "Never drop rows during deterministic feature extraction",
+      "when_to_use": "Use when an extracted or cached feature matrix is shorter than the dataset by one partial batch."
+    },
+    {
+      "failure_pattern": "CUDA initialization or shared-memory worker failure with `num_workers>0`, or `cannot pin 'torch.cuda.FloatTensor'` when CUDA tensors are supplied to a pinning DataLoader.",
+      "method_family": "DataLoader process and device ownership",
+      "repair_steps": [
+        "Keep dataset tensors on CPU and move each batch to the target device inside the training or inference loop.",
+        "Use `num_workers=0` in the constrained runtime when worker CUDA initialization or shared-memory errors occur.",
+        "Use `pin_memory` only for dense CPU tensors; otherwise set it to `False`.",
+        "Do not configure `persistent_workers` or `prefetch_factor` when no worker processes are used."
+      ],
+      "root_cause": "CUDA tensors or CUDA-dependent work crossed DataLoader worker/pinning boundaries that support CPU-owned tensors and available shared memory only.",
+      "runtime_stage": "data_loading",
+      "signature_id": "leaf-debug-dataloader-device-020",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::d5b2718283efad7dbb24",
+        "claim::leaf-classification::compatibility_claim::60ff39627e65e256a6c3",
+        "claim::leaf-classification::compatibility_claim::7016150d5dff88dd1ac6"
+      ],
+      "title": "Keep DataLoader storage on CPU and device transfer in the loop",
+      "when_to_use": "Use when worker processes report CUDA initialization, bus errors, or pinning errors before the model forward pass."
+    },
+    {
+      "failure_pattern": "A loader returns a singleton list/tuple, a label-bearing 4- or 5-item tuple, or a dictionary, but consumer code calls `.to()`/`.size()` on the container or unpacks the wrong arity.",
+      "method_family": "DataLoader batch-schema contracts",
+      "repair_steps": [
+        "Define the exact batch schema for training, validation, and test datasets.",
+        "Unpack singleton `TensorDataset` batches before calling tensor methods.",
+        "Allow prediction code to distinguish feature-only batches from batches that also include labels.",
+        "For dictionary batches, move each tensor value separately and obtain batch size from a designated tensor.",
+        "Do not index `batch[0]` when the DataLoader already returns a batched feature tensor rather than a tuple."
+      ],
+      "root_cause": "Dataset return types differed by phase, while shared consumer code assumed one fixed tensor/tuple representation.",
+      "runtime_stage": "data_loading",
+      "signature_id": "leaf-debug-loader-schema-021",
+      "source_claim_ids": [
+        "claim::leaf-classification::repair_claim::d606fd13e0b51a5df04f",
+        "claim::leaf-classification::repair_claim::3c593bd75c0675b66fe4",
+        "claim::leaf-classification::repair_claim::d6dd26e486c74ededfdb",
+        "claim::leaf-classification::compatibility_claim::a36f41d9e4964c22ff12",
+        "claim::leaf-classification::repair_claim::97c89ceaa7380832c359"
+      ],
+      "title": "Make loader batch structure explicit for every phase",
+      "when_to_use": "Use for `list has no attribute to`, `dict has no attribute size`, or `too many/not enough values to unpack` failures."
+    },
+    {
+      "failure_pattern": "Two feature streams are combined batchwise but one test loader uses batch size 32 and the paired CNN loader uses 16, producing a tensor mismatch at dimension zero.",
+      "method_family": "Synchronized multimodal loading",
+      "repair_steps": [
+        "Give synchronized loaders identical batch size, row order, shuffle policy, and final-batch policy.",
+        "Verify the two batch lengths before combining their tensors.",
+        "Prefer storing aligned modalities in one dataset when possible so one sampler controls both streams.",
+        "Retain sample IDs to verify alignment through the final partial batch."
+      ],
+      "root_cause": "Independently batched modalities no longer represented the same rows in the same batch, so fusion combined tensors with different leading dimensions.",
+      "runtime_stage": "inference",
+      "signature_id": "leaf-debug-synchronized-loaders-022",
+      "source_claim_ids": [
+        "claim::leaf-classification::repair_claim::f322c284576359e25aba"
+      ],
+      "title": "Synchronize batch geometry across paired feature loaders",
+      "when_to_use": "Use when separately loaded modalities have matching total rows but fail only during batchwise fusion."
+    },
+    {
+      "failure_pattern": "A model assumes three 64-column groups or another hardcoded layout, but preprocessing produces 439 total features, group widths 84/84/80, 237 rather than 231 columns, or 513 rather than the declared 512 image features.",
+      "method_family": "Feature-layout contracts",
+      "repair_steps": [
+        "After preprocessing, construct an explicit ordered layout containing each group’s start, end, and width.",
+        "Initialize every branch from the measured width in that layout rather than assuming 64 columns or divisibility by three.",
+        "Apply the same ordered transform and layout to train, validation, and test.",
+        "Assert every slice width and total width immediately before model construction and again in `forward()`."
+      ],
+      "root_cause": "Feature engineering, PCA, or concatenation changed widths and ordering, while model slicing and layer construction retained raw-schema constants.",
+      "runtime_stage": "preprocessing",
+      "signature_id": "leaf-debug-feature-layout-023",
+      "source_claim_ids": [
+        "claim::leaf-classification::repair_claim::16863f3848c4ba839d69",
+        "claim::leaf-classification::repair_claim::49e9ae12179d64a5ba8d",
+        "claim::leaf-classification::repair_claim::cb317d5b04ab828b6c7f",
+        "claim::leaf-classification::repair_claim::497ef1fbffbc53aafc5f",
+        "claim::leaf-classification::compatibility_claim::b6d1767e1e17894c9e51"
+      ],
+      "title": "Generate a feature-layout manifest after every transformation",
+      "when_to_use": "Use for branch-level matrix multiplication failures after feature engineering or dimensionality reduction."
+    },
+    {
+      "failure_pattern": "A concatenated tensor has width 1536 but the classifier expects 1024, width 2048 but the fusion layer expects 1024, or another `mat1 and mat2` mismatch whose input width equals the sum of multiple embeddings.",
+      "method_family": "Concatenation shape algebra",
+      "repair_steps": [
+        "Record the output width of every concatenated operand.",
+        "Set the following `Linear.in_features` to the exact sum of those widths.",
+        "If a representation is unintentionally duplicated, remove that operand instead of merely enlarging the layer.",
+        "Assert the concatenated tensor’s last dimension before invoking the linear layer."
+      ],
+      "root_cause": "The architecture concatenated more representations than the downstream layer’s declared input width accounted for.",
+      "runtime_stage": "model_forward",
+      "signature_id": "leaf-debug-concat-dimension-024",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::e7c757f3dd982b7aa7ae",
+        "claim::leaf-classification::compatibility_claim::3f50de5081f9945edb90",
+        "claim::leaf-classification::repair_claim::5959514d418a61b4bf81"
+      ],
+      "title": "Set post-concatenation layers from the sum of operand widths",
+      "when_to_use": "Use when the runtime input width is an exact sum such as `1024+512=1536` or `1024+1024=2048`."
+    },
+    {
+      "failure_pattern": "Elementwise addition or `torch.stack` receives widths such as 384 versus 192 or 512 versus 256; or attention expects embedding dimension 384 while tokens have 128, or query/key dimensions differ 32 versus 128.",
+      "method_family": "Common-latent projection and attention shape contracts",
+      "repair_steps": [
+        "Before addition or stacking, project every participating modality to one shared latent width.",
+        "Configure `MultiheadAttention.embed_dim` to equal the token tensor’s final dimension.",
+        "Ensure query, key, and value head dimensions agree before `einsum` or attention scoring.",
+        "Use concatenation with a correctly sized downstream projection when equal-width elementwise fusion is not intended."
+      ],
+      "root_cause": "Fusion operators requiring equal dimensions were applied to modality outputs or attention tensors with incompatible latent widths.",
+      "runtime_stage": "model_forward",
+      "signature_id": "leaf-debug-fusion-projection-025",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::05e6b0dbf4e078d902b9",
+        "claim::leaf-classification::compatibility_claim::859b19f9a6ff58d746bb",
+        "claim::leaf-classification::compatibility_claim::03a1be4b17d0b1bfc80d",
+        "claim::leaf-classification::repair_claim::119c3c29ded0b6893fa6"
+      ],
+      "title": "Project modalities and attention tokens to compatible dimensions",
+      "when_to_use": "Use when failure occurs at `+`, `stack`, `MultiheadAttention`, or `einsum` rather than at raw feature slicing."
+    },
+    {
+      "failure_pattern": "A full SigLIP/SigLIP2 model is called with only `pixel_values` and raises `ValueError: You have to specify input_ids`.",
+      "method_family": "SigLIP image-only interface selection",
+      "repair_steps": [
+        "Determine whether the task needs joint image-text inference or image-only embeddings.",
+        "For image-only extraction, call the model’s `vision_model` subcomponent with image inputs.",
+        "If joint inference is genuinely intended, supply the required text `input_ids` through the processor.",
+        "Do not call the full multimodal forward with only `pixel_values`."
+      ],
+      "root_cause": "The full SigLIP forward contract includes the text tower, while the code intended to use only the vision tower.",
+      "runtime_stage": "feature_extraction",
+      "signature_id": "leaf-debug-siglip-image-only-026",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::01d3bb549e63fbc43834",
+        "claim::leaf-classification::compatibility_claim::1d1eabe501985d801757",
+        "claim::leaf-classification::compatibility_claim::6090c3ef3b3db8abb0b0"
+      ],
+      "title": "Use the SigLIP vision submodel for image-only embeddings",
+      "when_to_use": "Use when SigLIP receives valid images but explicitly demands `input_ids`."
+    },
+    {
+      "failure_pattern": "Backbone loading fails because `{TORCH_HUB_DIR}` is literal, `hubconf.py` is missing or unreadable, a cache directory is unwritable, a model tag is unknown, or a remote weight download returns HTTP 403.",
+      "method_family": "Pretrained-backbone artifact preflight",
+      "repair_steps": [
+        "Resolve placeholders to real paths before calling `torch.hub.load`.",
+        "For local hub loading, verify `hubconf.py` exists and is readable.",
+        "Place writable caches outside read-only input directories.",
+        "Validate model identifiers against the installed library before requesting pretrained weights.",
+        "If the artifact is unavailable, fail or disable only the optional component; do not claim results from an unexecuted replacement."
+      ],
+      "root_cause": "The code treated an unavailable, invalid, unreadable, or inaccessible model artifact as guaranteed runtime infrastructure.",
+      "runtime_stage": "model_loading",
+      "signature_id": "leaf-debug-backbone-artifact-027",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::c5222498fa0dff550ee0",
+        "claim::leaf-classification::compatibility_claim::26cdfa591731a7f3ac84",
+        "claim::leaf-classification::compatibility_claim::1a2dc85f009bcab3c0da",
+        "claim::leaf-classification::compatibility_claim::801fafe9a2d5f9442bfa",
+        "claim::leaf-classification::compatibility_claim::4587e3421d297907dbba",
+        "claim::leaf-classification::compatibility_claim::ccd418d77ad5d3ca6ee9"
+      ],
+      "title": "Preflight model identifiers, hub paths, permissions, and access",
+      "when_to_use": "Use when failure occurs before feature extraction in `torch.hub`, `timm.create_model`, or cache-directory setup."
+    },
+    {
+      "failure_pattern": "OOF predictions for 179 rows are assigned to 712 training indices; fold arrays of 179 and 178 rows are added directly; or internal OOF predictions for 712 rows are blended against a separate 179-row holdout.",
+      "method_family": "Prediction provenance and row-index alignment",
+      "repair_steps": [
+        "Allocate one full OOF matrix with one row per training sample.",
+        "Scatter each fold’s validation predictions into that matrix using `val_idx`, never `train_idx`.",
+        "Keep internal OOF, external holdout, and test predictions as distinct artifacts with row IDs and shapes.",
+        "When evaluating an external holdout, use predictions explicitly produced for that holdout, not internal OOF output.",
+        "Do not elementwise average validation arrays from folds with different row counts."
+      ],
+      "root_cause": "Prediction arrays from different row domains were treated as interchangeable because their class dimension matched, while their sample identities and lengths did not.",
+      "runtime_stage": "validation",
+      "signature_id": "leaf-debug-oof-provenance-028",
+      "source_claim_ids": [
+        "claim::leaf-classification::repair_claim::c09fa539a56393556581",
+        "claim::leaf-classification::repair_claim::e9769998003f1c5db4ad",
+        "claim::leaf-classification::repair_claim::9adb9497893f668a31c2",
+        "claim::leaf-classification::compatibility_claim::9565eebe78abb2f6f90a",
+        "claim::leaf-classification::compatibility_claim::51ea683f7b36e2158eee"
+      ],
+      "title": "Track OOF, holdout, and test predictions by row provenance",
+      "when_to_use": "Use for broadcasting, assignment, or ensemble failures where class width matches but sample counts differ."
+    },
+    {
+      "failure_pattern": "Engineered skew, kurtosis, ratios, scaling, logits, or probabilities contain NaN/Inf; training begins with NaN loss, `log_loss` rejects NaN, or submission validation reports NaN probabilities.",
+      "method_family": "Finite-value stage boundaries",
+      "repair_steps": [
+        "Guard every denominator and undefined statistic during feature construction.",
+        "For deterministic engineered features, replace only documented undefined values with finite defaults after the guarded computation.",
+        "Assert finiteness after feature engineering, scaling, model output, softmax, and fold averaging.",
+        "If logits or probabilities are non-finite, stop and trace the producing model rather than silently ranking it.",
+        "For finite probabilities, enforce nonnegative values and renormalize each row before submission."
+      ],
+      "root_cause": "Undefined statistics or numerically unstable model outputs propagated across stage boundaries without finite-value validation.",
+      "runtime_stage": "preprocessing",
+      "signature_id": "leaf-debug-finite-values-029",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::97b5ccf8567bdae48c25",
+        "claim::leaf-classification::compatibility_claim::a752c30f69d488a5975d",
+        "claim::leaf-classification::compatibility_claim::8002fbc80930c69d98c7"
+      ],
+      "title": "Validate finite features and probabilities at every boundary",
+      "when_to_use": "Use when NaN appears in the first epoch, metric computation, fold averaging, or submission assertions."
+    },
+    {
+      "failure_pattern": "Importing `skimage` fails with `ModuleNotFoundError: No module named 'lazy_loader'`, preventing startup or optional morphology/LBP extraction.",
+      "method_family": "Optional image-dependency isolation",
+      "repair_steps": [
+        "Do not import the unavailable `skimage` dependency at module startup when its features are optional.",
+        "Remove the optional morphology branch or implement the required simple operation with available PIL/NumPy primitives.",
+        "Keep train and test feature construction identical after removing the dependency.",
+        "If class-column ordering is affected, continue to derive it from `sample_submission.csv`."
+      ],
+      "root_cause": "An optional image feature path made the entire pipeline depend on an incomplete scikit-image installation.",
+      "runtime_stage": "import",
+      "signature_id": "leaf-debug-skimage-dependency-030",
+      "source_claim_ids": [
+        "claim::leaf-classification::compatibility_claim::8cae3c538d1d7ff0ad51",
+        "claim::leaf-classification::implementation_claim::fc6db7429b6f63b6da2f",
+        "claim::leaf-classification::implementation_claim::63017ad24197eb01b38d"
+      ],
+      "title": "Isolate optional skimage features from the core pipeline",
+      "when_to_use": "Use when the supplied tabular pipeline is otherwise usable but `skimage` fails through its missing `lazy_loader` dependency."
+    }
+  ],
+  "synthesis_assessment": {
+    "coverage_risks": [
+      "Many supplied entries are repeated observations across attempts; source IDs above are representative evidence sets rather than an exhaustive duplicate listing.",
+      "Most entries provide a diagnosed failure and proposed local repair, but not a recorded successful post-repair rerun. Treat unverified one-off repairs as candidates until reproduced.",
+      "Some failure narratives and repair rationales diverge. This distillation retains only directly evidenced exception/API/operand/shape relationships.",
+      "Library signatures are environment-specific; apply a family only after matching the exact callable and exception in the active runtime.",
+      "Lower-frequency mechanisms such as negative-stride arrays after flips, CUDA tensors passed to sklearn, processor attribute differences, and individual SciPy/NumPy helper availability remain outside the top 30 families."
+    ],
+    "do_not_generalize": [
+      "Do not promote validation metrics, ensemble weights, backbones, feature strategies, pseudo-labeling, or model rankings from quarantined, protocol-biased, blocked, warning, or failed programs.",
+      "Do not generalize methods carrying `TRANSFORM_FIT_BEFORE_SPLIT`, `TRANSFORM_FIT_ON_HOLDOUT`, `GROUP_SPLIT_LEAKAGE`, `TEMPORAL_SPLIT_LEAKAGE`, `VALIDATION_REUSED_FOR_EARLY_STOPPING_AND_REPORT`, `REPORT_SET_REUSED_FOR_ENSEMBLE_SELECTION`, or `LLM_SELECTION_BIAS`.",
+      "Do not fit PCA, scalers, selectors, or ensemble weights on validation/report data merely to stabilize dimensions or remove an exception.",
+      "Do not use `strict=False`, zero-image fallbacks, NaN replacement, or model disabling as silent ways to conceal an unresolved structural failure.",
+      "Do not use `weights_only=False` for checkpoints that are not locally produced and trusted.",
+      "Do not treat observed constants such as 99 classes, 64 raw features per group, or a particular backbone input size as universal unless the active artifacts reproduce those preconditions.",
+      "Do not infer successful submission generation from a strong intermediate metric when the recorded process exited abnormally."
+    ],
+    "ranking_recommendations": [
+      "Rank exact exception, API namespace, symbol, operand, and tensor-shape matches above broad category similarity.",
+      "Prefer families supported by repeated `positive_eligible` clean claims, especially checkpoint loading, XGBoost compatibility, class-universe metrics, feature-layout contracts, and DataLoader contracts.",
+      "Use quarantined or protocol-biased claims only as evidence for the isolated local runtime repair; exclude their model choices and metrics from ranking.",
+      "Before expensive execution, rank parse/import, schema, split-feasibility, row-count, shape, and finite-value preflights as mandatory gates.",
+      "Promote a repair to durable positive memory only after a post-repair run verifies the affected stage and preserves leakage-safe train/validation boundaries."
+    ]
+  }
+}

@@ -1,0 +1,1796 @@
+{
+  "atomic_claims_file_sha256": "382de65d8dd5a765610db571a15a32968e6e730fb2c9723b2b076149b42109ad",
+  "authorized_debug_claim_count": 266,
+  "legacy_v76_dino_observation": {
+    "gate_reason": "quarantine",
+    "operation_authorized": false,
+    "rank": 41,
+    "score": 2.2440558677880724
+  },
+  "quality_gates": {
+    "all_debug_replays_pass": true,
+    "legacy_v76_dino_was_rank_41": true,
+    "unseen_error_abstains": true,
+    "v7_dino_is_rank_1": true
+  },
+  "release_dir": "/Users/haoming/Downloads/nautilus-exp-end2end/experiments/end2end_memory_systems_20260804/recipe_distillation_v7_leaf_atomic_20260811",
+  "report_sha256": "7e9ebe43309b9674b3981cef08cf61a01a55c451deadb8204df088ca3407f9e7",
+  "schema": "mlevolve_leaf_atomic_debug_retrieval_replay_v1",
+  "unseen_cleanup_nameerror_abstention": {
+    "maximum_score": 0.27,
+    "passed": true,
+    "query": "NameError: name cleanup is not defined",
+    "threshold": 0.5
+  },
+  "v7_cases": {
+    "dataloader_shared_memory_bus_error": {
+      "best_expected_rank": 1,
+      "minimum_score": 0.35,
+      "passed": true,
+      "query": "RuntimeError: DataLoader worker exited unexpectedly with a bus error from insufficient shared memory and num_workers=4",
+      "top_candidate": {
+        "claim_id": "claim::leaf-classification::compatibility_claim::b641ae425e1f6d750317",
+        "claim_type": "compatibility_claim",
+        "expected_match": true,
+        "failure_excerpt": "The execution failed due to a shared memory (shm) error when running the DataLoader with multiple workers (num_workers=4) on CUDA. The bus error indicates that the dataloader's workers ran out of shared memory, causing a RuntimeError. No validation metric was computed because the script crashed during image feature extraction. Using device: cuda ERROR: Unexpected bus error encountered in worker. This might be caused by insufficient shared memory (shm). \u0000Traceback (most recent call last): File \"/",
+        "rank_receipt": {
+          "components": {
+            "exception": 1.0,
+            "failure_keyword": 1.0,
+            "model_api": 0.0,
+            "operand": 0.2,
+            "path": 0.0,
+            "shape": 0.0,
+            "symbol": 0.2886751345948129
+          },
+          "exact_compatibility_match": false,
+          "expected_values": [],
+          "schema": "mlevolve_structured_debug_rank_receipt_v1",
+          "shared_anchors": {
+            "exception_names": [
+              "runtimeerror"
+            ],
+            "failure_keywords": [
+              "expected"
+            ],
+            "model_api_ids": [],
+            "numeric_literals": [
+              "4"
+            ],
+            "path_literals": [],
+            "quoted_identifiers": [],
+            "shape_literals": [],
+            "symbol_names": [
+              "num_workers"
+            ]
+          },
+          "shared_expected_values": []
+        },
+        "repair_excerpt": "The bug is caused by insufficient shared memory when using `DataLoader` with multiple workers (`num_workers=4`) and `pin_memory=True`. This leads to bus errors that kill worker processes. The minimal fix is to set `num_workers=0` and `pin_memory=False` to avoid shared memory contention.",
+        "score": 0.39309401076758504,
+        "source_transition_id": "run::20260717_122321_leaf-classification::transition::183a01292c::7c9ad55049"
+      },
+      "top_five": [
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::b641ae425e1f6d750317",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The execution failed due to a shared memory (shm) error when running the DataLoader with multiple workers (num_workers=4) on CUDA. The bus error indicates that the dataloader's workers ran out of shared memory, causing a RuntimeError. No validation metric was computed because the script crashed during image feature extraction. Using device: cuda ERROR: Unexpected bus error encountered in worker. This might be caused by insufficient shared memory (shm). \u0000Traceback (most recent call last): File \"/",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.0,
+              "operand": 0.2,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.2886751345948129
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "runtimeerror"
+              ],
+              "failure_keywords": [
+                "expected"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [
+                "4"
+              ],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "num_workers"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "The bug is caused by insufficient shared memory when using `DataLoader` with multiple workers (`num_workers=4`) and `pin_memory=True`. This leads to bus errors that kill worker processes. The minimal fix is to set `num_workers=0` and `pin_memory=False` to avoid shared memory contention.",
+          "score": 0.39309401076758504,
+          "source_transition_id": "run::20260717_122321_leaf-classification::transition::183a01292c::7c9ad55049"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::247fa6ee617277f6c71d",
+          "claim_type": "compatibility_claim",
+          "expected_match": false,
+          "failure_excerpt": "The training script crashed with a RuntimeError during the first neural network fold. The error \"mat1 and mat2 shapes cannot be multiplied (32x2048 and 1024x512)\" indicates a dimensionality mismatch in the fusion layer, caused by concatenating the four branch embeddings (4x256=1024) with flattened attention outputs (4x256=1024) to produce a 2048-dim input, which does not match the expected 1024-dim input of the fusion layer. No validation metric or submission file was produced. Train: (891, 192)",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.7071067811865475,
+              "model_api": 0.0,
+              "operand": 0.2,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "runtimeerror"
+              ],
+              "failure_keywords": [
+                "expected"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [
+                "4"
+              ],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is a dimension mismatch in `MultiBranchClassifier.forward()`. The `combined` tensor has shape `[batch, 2048]` (4 branches × 256 + 4 attended branches × 256), but `fusion_layer` expects `1024` (hidden_dim × 4). The fix is to adjust the fusion layer input dimension to match the actual combined size of `2048` (or remove the duplicate concatenation of attended embeddings). Let me apply the minimal fix:",
+          "score": 0.35535533905932737,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__flat_retrieval__seed-1::attempt-001::transition::6ec60d657667::eb3b853c7873"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::3f50de5081f9945edb90",
+          "claim_type": "compatibility_claim",
+          "expected_match": false,
+          "failure_excerpt": "The training script crashed with a RuntimeError during the first neural network fold. The error \"mat1 and mat2 shapes cannot be multiplied (32x2048 and 1024x512)\" indicates a dimensionality mismatch in the fusion layer, caused by concatenating the four branch embeddings (4x256=1024) with flattened attention outputs (4x256=1024) to produce a 2048-dim input, which does not match the expected 1024-dim input of the fusion layer. No validation metric or submission file was produced. Train: (891, 192)",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.7071067811865475,
+              "model_api": 0.0,
+              "operand": 0.2,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "runtimeerror"
+              ],
+              "failure_keywords": [
+                "expected"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [
+                "4"
+              ],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is a dimension mismatch in `MultiBranchClassifier.forward()`. The `combined` tensor has shape `[batch, 2048]` (4 branches × 256 + 4 attended branches × 256), but `fusion_layer` expects `1024` (hidden_dim × 4). The fix is to adjust the fusion layer input dimension to match the actual combined size of `2048` (or remove the duplicate concatenation of attended embeddings). Let me apply the minimal fix:",
+          "score": 0.35535533905932737,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__flat_retrieval__seed-1::attempt-000::transition::6ec60d657667::eb3b853c7873"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::732a03222ecb72145f04",
+          "claim_type": "compatibility_claim",
+          "expected_match": false,
+          "failure_excerpt": "The training script crashed with a RuntimeError during the first neural network fold. The error \"mat1 and mat2 shapes cannot be multiplied (32x2048 and 1024x512)\" indicates a dimensionality mismatch in the fusion layer, caused by concatenating the four branch embeddings (4x256=1024) with flattened attention outputs (4x256=1024) to produce a 2048-dim input, which does not match the expected 1024-dim input of the fusion layer. No validation metric or submission file was produced. Train: (891, 192)",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.7071067811865475,
+              "model_api": 0.0,
+              "operand": 0.2,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "runtimeerror"
+              ],
+              "failure_keywords": [
+                "expected"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [
+                "4"
+              ],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is a dimension mismatch in `MultiBranchClassifier.forward()`. The `combined` tensor has shape `[batch, 2048]` (4 branches × 256 + 4 attended branches × 256), but `fusion_layer` expects `1024` (hidden_dim × 4). The fix is to adjust the fusion layer input dimension to match the actual combined size of `2048` (or remove the duplicate concatenation of attended embeddings). Let me apply the minimal fix:",
+          "score": 0.35535533905932737,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__flat_retrieval__seed-1::attempt-002::transition::6ec60d657667::eb3b853c7873"
+        },
+        {
+          "claim_id": "claim::leaf-classification::repair_claim::a7c1366cfda886e5927a",
+          "claim_type": "repair_claim",
+          "expected_match": false,
+          "failure_excerpt": "The script failed with a RuntimeError during neural network training due to a tensor dimension mismatch in the fusion layer. The forward pass produced a fused tensor with 640 features (128 hidden × 5 concatenated embeddings), but the fusion layer's first Linear layer expected 512 input features (128 × 4), causing mat1 and mat2 shapes to be incompatible. Execution terminated at epoch 1 before any validation metric was computed, and no submission file was generated. Using device: cuda Train shape:",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.7071067811865475,
+              "model_api": 0.0,
+              "operand": 0.2,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "runtimeerror"
+              ],
+              "failure_keywords": [
+                "expected"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [
+                "4"
+              ],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error trace, the root cause is clear: in the `forward` method, we concatenate 5 tensors of dimension `hidden_dim=128` each: `[fused_attention, m, s, t, e]`, which gives `5 × 128 = 640` features. But the `fusion` layer's first linear layer expects `fusion_dim = hidden_dim * 4 = 512` features. This mismatch causes the `mat1 and mat2 shapes cannot be multiplied (32x640 and 512x256)` error. The fix is simple: update `fusion_dim` to `hidden_dim * 5` since we're concatenating 5 branch e",
+          "score": 0.35535533905932737,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__static_hybrid__seed-1::attempt-002::transition::12cf5247b9f1::0fad654550bc"
+        }
+      ]
+    },
+    "dinov3_missing_hubconf_path": {
+      "best_expected_rank": 1,
+      "minimum_score": 0.4,
+      "passed": true,
+      "query": "FileNotFoundError: ./working/dinov3-main/hubconf.py not found while torch.hub.load loads DINOv3",
+      "top_candidate": {
+        "claim_id": "claim::leaf-classification::compatibility_claim::6859d6429218ff09955b",
+        "claim_type": "compatibility_claim",
+        "expected_match": true,
+        "failure_excerpt": "The execution failed during model loading due to a FileNotFoundError. The script attempted to load a DINOv3 ViT model from a local torch hub directory, but the required hubconf.py file was not found at the specified path. No metrics were produced as training was never initiated. Train features shape: (712, 486) Val features shape: (179, 486) Test features shape: (99, 486) Train samples: 712, Val samples: 179 Number of classes: 99 Feature engineering completed successfully Using device: cuda Load",
+        "rank_receipt": {
+          "components": {
+            "exception": 1.0,
+            "failure_keyword": 0.7071067811865475,
+            "model_api": 0.6708203932499369,
+            "operand": 0.0,
+            "path": 0.0,
+            "shape": 0.0,
+            "symbol": 0.4082482904638631
+          },
+          "exact_compatibility_match": false,
+          "expected_values": [],
+          "schema": "mlevolve_structured_debug_rank_receipt_v1",
+          "shared_anchors": {
+            "exception_names": [
+              "filenotfounderror"
+            ],
+            "failure_keywords": [
+              "not found"
+            ],
+            "model_api_ids": [
+              "dinov3",
+              "torch.hub.load"
+            ],
+            "numeric_literals": [],
+            "path_literals": [],
+            "quoted_identifiers": [],
+            "shape_literals": [],
+            "symbol_names": [
+              "dinov3"
+            ]
+          },
+          "shared_expected_values": []
+        },
+        "repair_excerpt": "Looking at the error, the issue is clear: the DINOv3 model loading fails because the local hub directory doesn't exist. Since we're using tabular features (margin, shape, texture) which already have 486 dimensions, we don't need image features at all. The simplest fix is to remove the image model dependency and use only tabular features. I'll replace the complex multi-modal classifier with a simpler but effective tabular-only model.",
+        "score": 0.49230389274392194,
+        "source_transition_id": "run::20260717_034437_full-leaf-classification::transition::8c736e1e44::9cb4fe7c6a"
+      },
+      "top_five": [
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::6859d6429218ff09955b",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The execution failed during model loading due to a FileNotFoundError. The script attempted to load a DINOv3 ViT model from a local torch hub directory, but the required hubconf.py file was not found at the specified path. No metrics were produced as training was never initiated. Train features shape: (712, 486) Val features shape: (179, 486) Test features shape: (99, 486) Train samples: 712, Val samples: 179 Number of classes: 99 Feature engineering completed successfully Using device: cuda Load",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.7071067811865475,
+              "model_api": 0.6708203932499369,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.4082482904638631
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "filenotfounderror"
+              ],
+              "failure_keywords": [
+                "not found"
+              ],
+              "model_api_ids": [
+                "dinov3",
+                "torch.hub.load"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "dinov3"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is clear: the DINOv3 model loading fails because the local hub directory doesn't exist. Since we're using tabular features (margin, shape, texture) which already have 486 dimensions, we don't need image features at all. The simplest fix is to remove the image model dependency and use only tabular features. I'll replace the complex multi-modal classifier with a simpler but effective tabular-only model.",
+          "score": 0.49230389274392194,
+          "source_transition_id": "run::20260717_034437_full-leaf-classification::transition::8c736e1e44::9cb4fe7c6a"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::24f4646241e958bceffd",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The code failed during execution due to a FileNotFoundError when trying to load the DINOv3 model via torch.hub.load. The path '{TORCH_HUB_DIR}/dinov3-main/hubconf.py' is an unexpanded placeholder, not a valid file path, causing the execution to crash before any model training or evaluation could take place. No metric was computed. Using device: cuda Traceback (most recent call last): File \"/haoming/mlevolve-original-runs/be034ec/3h120/20260717_183734_leaf-classification/workspace/runfile_0.py\", ",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.0,
+              "model_api": 0.8164965809277261,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.30151134457776363
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "filenotfounderror"
+              ],
+              "failure_keywords": [],
+              "model_api_ids": [
+                "dinov3",
+                "dinov3-main/hubconf.py",
+                "torch.hub.load"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "dinov3"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Parent error: FileNotFoundError | Parent analysis: The code failed during execution due to a FileNotFoundError when trying to load the DINOv3 model via torch.hub.load. The path '{TORCH_HUB_DIR}/dinov3-main/hubconf.py' is an unexpanded placeholder, not a valid file path, causing the execution to crash before any model training or evaluation could take place. No metric was computed.",
+          "score": 0.4819151211795981,
+          "source_transition_id": "run::20260717_183734_leaf-classification::transition::b688782ec4::e7b4460861"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::c5222498fa0dff550ee0",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The execution failed because the DINOv3 model could not be loaded. The path `{TORCH_HUB_DIR}` was used as a literal string placeholder in the `torch.hub.load()` call, causing a `FileNotFoundError` when trying to locate the hubconf.py file. Training stopped before the neural network could be trained, though the XGBoost baseline was completed successfully with a validation log loss of 0.693050. Loading data... Number of classes: 99 Number of feature columns: 192 Train missing: 0, Test missing: 0 M",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.0,
+              "model_api": 0.6123724356957946,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.4082482904638631
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "filenotfounderror"
+              ],
+              "failure_keywords": [],
+              "model_api_ids": [
+                "dinov3",
+                "torch.hub.load"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "dinov3"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "The issue is clear: the DINOv3 model path `{TORCH_HUB_DIR}` is a literal placeholder string that wasn't replaced with an actual path, causing a `FileNotFoundError`. Since we can't load the specific DINOv3 pre-trained model, I'll replace the multimodal neural network with a simpler yet effective approach: a standard MLP that takes only the extracted features (no image loading needed), which is more robust and avoids the broken image pipeline. This also eliminates the need for image loading, which",
+          "score": 0.44350552344714184,
+          "source_transition_id": "run::20260717_050506_full-leaf-classification::transition::ad5db3e804::f0b5c668c6"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::276fa3f0291129759774",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The execution failed with a FileNotFoundError when attempting to load the DINOv3 model via torch.hub. The error indicates a missing hubconf.py file in the expected cache directory path, causing the script to crash before any training or metrics could be produced. No submission file was generated. Using device: cuda Loading data... Train shape: (891, 194), Test shape: (99, 193) Created 5 folds Engineering tabular features... Tabular features: train=(891, 304), test=(99, 304) Extracting DINOv3 ima",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.0,
+              "model_api": 0.5669467095138409,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.2886751345948129
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "filenotfounderror"
+              ],
+              "failure_keywords": [],
+              "model_api_ids": [
+                "dinov3",
+                "torch.hub.load"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "dinov3"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the root cause is clear: the code attempts to load a DINOv3 model via `torch.hub.load()` with a local path, but the cache directory structure doesn't exist / isn't accessible. The runtime environment is hermetic (no downloads allowed), so I need to replace the DINOv3 image feature extraction with a robust feature extraction using `torchvision.models` with random weights. The fix: Replace the DINOv3 extraction with a straightforward image feature extraction using a pre-defin",
+          "score": 0.4234917539557685,
+          "source_transition_id": "run::e2e-pilot-leaf-tiered-debug-router-v45__leaf-classification__dynamic_hybrid__seed-1::attempt-000::transition::be5b1722da65::6a27c0c05969"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::4393bd1d34d27c506b78",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The script failed to execute due to a FileNotFoundError when loading the DINOv3 backbone via torch.hub. The hubconf.py file was not found in the expected cache directory path, causing the execution to crash before training could begin. No submission or validation metric was produced. Using device: cuda Loading data... Creating stratified split... /workspace/experiment-end2end-memory-agent-v45/runs/e2e-pilot-leaf-tiered-debug-router-v45__leaf-classification__dynamic_hybrid__seed-1/attempt-000/age",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.5773502691896258,
+              "model_api": 0.43301270189221935,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.22360679774997896
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "filenotfounderror"
+              ],
+              "failure_keywords": [
+                "not found"
+              ],
+              "model_api_ids": [
+                "dinov3",
+                "torch.hub.load"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "dinov3"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the root cause is clear: the previous solution tries to load a DINOv3 model via `torch.hub.load()`, but the DINOv3 repository/checkpoints are not available in the hermetic environment (no network downloads, missing local cache). The memory from the retrieved experiment shows this exact pattern fails. The fix is to replace the DINOv3-based image extractor with a standard ResNet-18 backbone from `torchvision.models` with `weights=None` (no download needed), which is available",
+          "score": 0.4163489787146901,
+          "source_transition_id": "run::e2e-pilot-leaf-tiered-debug-router-v45__leaf-classification__dynamic_hybrid__seed-1::attempt-000::source-72bdeafd::transition::2309a00aa7d9::8438f412dab3"
+        }
+      ]
+    },
+    "lightgbm_fit_verbose_api": {
+      "best_expected_rank": 1,
+      "minimum_score": 0.5,
+      "passed": true,
+      "query": "TypeError: LGBMClassifier.fit() got an unexpected keyword argument verbose",
+      "top_candidate": {
+        "claim_id": "claim::leaf-classification::compatibility_claim::32276e1b0e1af5029f6f",
+        "claim_type": "compatibility_claim",
+        "expected_match": true,
+        "failure_excerpt": "The execution failed due to a TypeError: LGBMClassifier.fit() got an unexpected keyword argument 'verbose'. The verbose parameter was passed to the fit method instead of being set in the model constructor or using the callbacks parameter properly. No metric was computed as a result. Traceback (most recent call last): File \"/haoming/mlevolve-original-runs/be034ec/3h120/20260717_183734_leaf-classification/workspace/runfile_0.py\", line 109, in <module> model.fit( TypeError: LGBMClassifier.fit() got",
+        "rank_receipt": {
+          "components": {
+            "exception": 1.0,
+            "failure_keyword": 1.0,
+            "model_api": 0.8164965809277261,
+            "operand": 0.0,
+            "path": 0.0,
+            "shape": 0.0,
+            "symbol": 0.0
+          },
+          "exact_compatibility_match": false,
+          "expected_values": [],
+          "schema": "mlevolve_structured_debug_rank_receipt_v1",
+          "shared_anchors": {
+            "exception_names": [
+              "typeerror"
+            ],
+            "failure_keywords": [
+              "expected",
+              "unexpected keyword"
+            ],
+            "model_api_ids": [
+              "lgbmclassifier.fit"
+            ],
+            "numeric_literals": [],
+            "path_literals": [],
+            "quoted_identifiers": [],
+            "shape_literals": [],
+            "symbol_names": []
+          },
+          "shared_expected_values": []
+        },
+        "repair_excerpt": "The error is `TypeError: LGBMClassifier.fit() got an unexpected keyword argument 'verbose'`. In newer versions of LightGBM, the `verbose` parameter should not be passed to `fit()`. It is already set in the constructor (`verbose=-1`). The `verbose=50` in `fit()` is invalid and causes the crash. **Fix**: Remove `verbose=50` from the `model.fit()` call. The early stopping callback already controls iteration printing. The validation metric will still be printed via the callback.",
+        "score": 0.5077942136133771,
+        "source_transition_id": "run::20260717_183734_leaf-classification::transition::e2909e73ac::5a11881fbf"
+      },
+      "top_five": [
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::32276e1b0e1af5029f6f",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The execution failed due to a TypeError: LGBMClassifier.fit() got an unexpected keyword argument 'verbose'. The verbose parameter was passed to the fit method instead of being set in the model constructor or using the callbacks parameter properly. No metric was computed as a result. Traceback (most recent call last): File \"/haoming/mlevolve-original-runs/be034ec/3h120/20260717_183734_leaf-classification/workspace/runfile_0.py\", line 109, in <module> model.fit( TypeError: LGBMClassifier.fit() got",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.8164965809277261,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "typeerror"
+              ],
+              "failure_keywords": [
+                "expected",
+                "unexpected keyword"
+              ],
+              "model_api_ids": [
+                "lgbmclassifier.fit"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "The error is `TypeError: LGBMClassifier.fit() got an unexpected keyword argument 'verbose'`. In newer versions of LightGBM, the `verbose` parameter should not be passed to `fit()`. It is already set in the constructor (`verbose=-1`). The `verbose=50` in `fit()` is invalid and causes the crash. **Fix**: Remove `verbose=50` from the `model.fit()` call. The early stopping callback already controls iteration printing. The validation metric will still be printed via the callback.",
+          "score": 0.5077942136133771,
+          "source_transition_id": "run::20260717_183734_leaf-classification::transition::e2909e73ac::5a11881fbf"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::7e5cd51c89b68068d030",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The execution failed on Fold 1/5 due to a TypeError: LGBMClassifier.fit() received an unexpected keyword argument 'verbose'. The code passed verbose=False to the fit method, but in this version of LightGBM, verbose should be passed to the LGBMClassifier constructor or controlled via callbacks. This prevented any validation metrics from being computed. ================================================== Fold 1/5 ================================================== Traceback (most recent call last): ",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.7071067811865475,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "typeerror"
+              ],
+              "failure_keywords": [
+                "expected",
+                "unexpected keyword"
+              ],
+              "model_api_ids": [
+                "lgbmclassifier.fit"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is clear: `LGBMClassifier.fit()` doesn't accept a `verbose` argument. In newer versions of LightGBM, verbosity should be set in the constructor via `verbosity=-1`, not passed to `.fit()`. Here's the fix:",
+          "score": 0.4826345596729059,
+          "source_transition_id": "run::20260701_145136_leaf-classification::transition::ce7d9e932b::88675102fd"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::1b426988a3c0596355e7",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The execution failed during Fold 1 training when calling LightGBM's fit method with an unexpected keyword argument 'verbose'. The XGBoost model trained successfully, but the LightGBM model encountered a TypeError and the script crashed before completing any fold, so no validation metric was obtained. Total training samples: 891 Test samples: 99 Number of classes: 99 Feature dimension: 216 Training with 5-fold stratified cross-validation... Fold 1/5 Training XGBoost... Training LightGBM... Traceb",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.6324555320336759,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "typeerror"
+              ],
+              "failure_keywords": [
+                "expected",
+                "unexpected keyword"
+              ],
+              "model_api_ids": [
+                "lgbmclassifier.fit"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is clear: `lgb_model.fit()` doesn't accept `verbose` as a keyword argument. The fix is to remove `verbose=False` from the `lgb_model.fit()` call since we already have `verbose=-1` in the model constructor and `lgb.early_stopping(50)` callback.",
+          "score": 0.46546477236774547,
+          "source_transition_id": "run::20260701_180146_leaf-classification::transition::7eece6fd9a::b1e62f3320"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::6d102b727ad7d1ed6438",
+          "claim_type": "compatibility_claim",
+          "expected_match": false,
+          "failure_excerpt": "The script crashed during the pseudo-labeling enhancement phase with a TypeError: lgb.train() got an unexpected keyword argument 'verbose_eval'. The model successfully completed CV training (fold log losses ~0.55-0.63) and weight optimization (ensemble validation log loss 0.473678), but crashed before generating a submission. No submission file was produced. Loading datasets... Train shape: (891, 194), Test shape: (99, 193) Engineering features... Top 20 features selected by mutual information: ",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.31622776601683794,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "typeerror"
+              ],
+              "failure_keywords": [
+                "expected",
+                "unexpected keyword"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "The issue is clear: `lgb.train()` does not accept `verbose_eval` as a keyword argument. I need to replace it with `callbacks=[lgb.log_evaluation(0)]` to suppress training output during the pseudo-labeling phase. Let me provide the fix:",
+          "score": 0.39273238618387274,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__no_memory__seed-1::attempt-000::transition::429cfa7c8df6::a979ee64f7ef"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::0c4eb9b16498c312a964",
+          "claim_type": "compatibility_claim",
+          "expected_match": false,
+          "failure_excerpt": "The execution failed due to a TypeError: ReduceLROnPlateau.__init__() got an unexpected keyword argument 'verbose'. This is because the torch version in the environment does not support the 'verbose' parameter for ReduceLROnPlateau (the 'verbose' argument was introduced in a later version). The code crashed at the scheduler initialization line, preventing model training and evaluation. Using device: cuda Number of classes: 99 Train feature shape: (712, 114) Val feature shape: (179, 114) Test fea",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.0,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "typeerror"
+              ],
+              "failure_keywords": [
+                "expected",
+                "unexpected keyword"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Parent error: TypeError | Parent analysis: The execution failed due to a TypeError: ReduceLROnPlateau.__init__() got an unexpected keyword argument 'verbose'. This is because the torch version in the environment does not support the 'verbose' parameter for ReduceLROnPlateau (the 'verbose' argument was introduced in a later version). The code crashed at the scheduler initialization line, preventing model training and evaluation.",
+          "score": 0.32,
+          "source_transition_id": "run::20260701_145136_leaf-classification::transition::7a6a9a0de0::13503c9bcf"
+        }
+      ]
+    },
+    "nan_probability_log_loss": {
+      "best_expected_rank": 1,
+      "minimum_score": 0.3,
+      "passed": true,
+      "query": "ValueError: Input contains NaN when sklearn.metrics.log_loss evaluates probabilities",
+      "top_candidate": {
+        "claim_id": "claim::leaf-classification::compatibility_claim::8002fbc80930c69d98c7",
+        "claim_type": "compatibility_claim",
+        "expected_match": true,
+        "failure_excerpt": "The training script executed but crashed during the first validation step with a ValueError: \"Input contains NaN.\" in the log_loss computation. The code used a fallback ViT backbone since siglip2_base_patch16_224 was unavailable, but the validation predictions contained NaN values, causing the sklearn log_loss call to fail. No completion, checkpoint, or submission file was generated. Using device: cuda Loading raw data... Engineering features... Extracting image features... Scaling features... C",
+        "rank_receipt": {
+          "components": {
+            "exception": 1.0,
+            "failure_keyword": 0.7071067811865475,
+            "model_api": 0.0,
+            "operand": 0.0,
+            "path": 0.0,
+            "shape": 0.0,
+            "symbol": 0.35355339059327373
+          },
+          "exact_compatibility_match": false,
+          "expected_values": [],
+          "schema": "mlevolve_structured_debug_rank_receipt_v1",
+          "shared_anchors": {
+            "exception_names": [
+              "valueerror"
+            ],
+            "failure_keywords": [
+              "nan"
+            ],
+            "model_api_ids": [],
+            "numeric_literals": [],
+            "path_literals": [],
+            "quoted_identifiers": [],
+            "shape_literals": [],
+            "symbol_names": [
+              "log_loss"
+            ]
+          },
+          "shared_expected_values": []
+        },
+        "repair_excerpt": "Looking at the traceback, the issue is clear: the validation predictions contain NaN values, causing `log_loss` to fail. This happens because the fallback ViT model (from `timm`) doesn't export `forward_features` in the expected way, or the feature dimensions don't match between the vision backbone output and the fusion layers. The root cause is in the `build_dinov3_model` function — when falling back to `vit_base_patch16_224` (or the simple CNN), the output dimension might not be 768, or `forwa",
+        "score": 0.3336396103067893,
+        "source_transition_id": "run::e2e-pilot-leaf-metric-reconcile-router-v38__leaf-classification__dynamic_hybrid__seed-1::attempt-000::transition::931e3ae4ed1a::9efd1fe541e8"
+      },
+      "top_five": [
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::8002fbc80930c69d98c7",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The training script executed but crashed during the first validation step with a ValueError: \"Input contains NaN.\" in the log_loss computation. The code used a fallback ViT backbone since siglip2_base_patch16_224 was unavailable, but the validation predictions contained NaN values, causing the sklearn log_loss call to fail. No completion, checkpoint, or submission file was generated. Using device: cuda Loading raw data... Engineering features... Extracting image features... Scaling features... C",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.7071067811865475,
+              "model_api": 0.0,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.35355339059327373
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "valueerror"
+              ],
+              "failure_keywords": [
+                "nan"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "log_loss"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the traceback, the issue is clear: the validation predictions contain NaN values, causing `log_loss` to fail. This happens because the fallback ViT model (from `timm`) doesn't export `forward_features` in the expected way, or the feature dimensions don't match between the vision backbone output and the fusion layers. The root cause is in the `build_dinov3_model` function — when falling back to `vit_base_patch16_224` (or the simple CNN), the output dimension might not be 768, or `forwa",
+          "score": 0.3336396103067893,
+          "source_transition_id": "run::e2e-pilot-leaf-metric-reconcile-router-v38__leaf-classification__dynamic_hybrid__seed-1::attempt-000::transition::931e3ae4ed1a::9efd1fe541e8"
+        },
+        {
+          "claim_id": "claim::leaf-classification::repair_claim::2daf1e79a79185e8434a",
+          "claim_type": "repair_claim",
+          "expected_match": false,
+          "failure_excerpt": "The script crashed with a ValueError during fold 1 of the 10-fold cross-validation when computing log_loss. The error occurred because some classes are absent from the training fold (90 classes in the validation fold) while the prediction array always contains all 99 columns, requiring explicit labels to be passed to log_loss. No submission file was generated. Train: 712, Val: 179, Test: 99, Features: 255, Classes: 99 Using device: cuda ===========================================================",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.0,
+              "model_api": 0.0,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.5773502691896258
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "valueerror"
+              ],
+              "failure_keywords": [],
+              "model_api_ids": [],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "log_loss"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is clear: `log_loss` in fold 1 fails because the validation fold doesn't contain all 99 classes (only 90 classes appear in `y_va`), so the true labels array is missing 9 classes. The fix is to pass the `labels` parameter explicitly to `log_loss` so it knows the full set of 99 classes. Let me apply the minimal fix:",
+          "score": 0.3161880215351701,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__flat_retrieval__seed-1::attempt-001::transition::7fe66b73ee06::18bbc5a278da"
+        },
+        {
+          "claim_id": "claim::leaf-classification::repair_claim::c59d04dec31d30115784",
+          "claim_type": "repair_claim",
+          "expected_match": false,
+          "failure_excerpt": "The script crashed with a ValueError during fold 1 of the 10-fold cross-validation when computing log_loss. The error occurred because some classes are absent from the training fold (90 classes in the validation fold) while the prediction array always contains all 99 columns, requiring explicit labels to be passed to log_loss. No submission file was generated. Train: 712, Val: 179, Test: 99, Features: 255, Classes: 99 Using device: cuda ===========================================================",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.0,
+              "model_api": 0.0,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.5773502691896258
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "valueerror"
+              ],
+              "failure_keywords": [],
+              "model_api_ids": [],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "log_loss"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is clear: `log_loss` in fold 1 fails because the validation fold doesn't contain all 99 classes (only 90 classes appear in `y_va`), so the true labels array is missing 9 classes. The fix is to pass the `labels` parameter explicitly to `log_loss` so it knows the full set of 99 classes. Let me apply the minimal fix:",
+          "score": 0.3161880215351701,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__flat_retrieval__seed-1::attempt-000::transition::7fe66b73ee06::18bbc5a278da"
+        },
+        {
+          "claim_id": "claim::leaf-classification::repair_claim::d302842cae9bcf4420ad",
+          "claim_type": "repair_claim",
+          "expected_match": false,
+          "failure_excerpt": "The script crashed with a ValueError during fold 1 of the 10-fold cross-validation when computing log_loss. The error occurred because some classes are absent from the training fold (90 classes in the validation fold) while the prediction array always contains all 99 columns, requiring explicit labels to be passed to log_loss. No submission file was generated. Train: 712, Val: 179, Test: 99, Features: 255, Classes: 99 Using device: cuda ===========================================================",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.0,
+              "model_api": 0.0,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.5773502691896258
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "valueerror"
+              ],
+              "failure_keywords": [],
+              "model_api_ids": [],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "log_loss"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is clear: `log_loss` in fold 1 fails because the validation fold doesn't contain all 99 classes (only 90 classes appear in `y_va`), so the true labels array is missing 9 classes. The fix is to pass the `labels` parameter explicitly to `log_loss` so it knows the full set of 99 classes. Let me apply the minimal fix:",
+          "score": 0.3161880215351701,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__flat_retrieval__seed-1::attempt-002::transition::7fe66b73ee06::18bbc5a278da"
+        },
+        {
+          "claim_id": "claim::leaf-classification::repair_claim::cfc0f618810c34c36d79",
+          "claim_type": "repair_claim",
+          "expected_match": false,
+          "failure_excerpt": "The execution failed during the first fold of cross-validation due to a ValueError in log_loss calculation. The error occurred because the validation fold contained 98 unique classes while the model predicted probabilities for all 99 classes, causing a mismatch in the number of classes between y_true and y_pred. This is a data distribution issue where some species class (class 27) was absent from the validation fold. Using device: cuda Number of classes: 99 Full training samples: 891, Features: ",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.0,
+              "model_api": 0.0,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.4082482904638631
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "valueerror"
+              ],
+              "failure_keywords": [],
+              "model_api_ids": [],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "log_loss"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is clear: In the first fold, the validation set doesn't contain all 99 classes (it's missing class 27), but the model predictions have 99 columns. The `log_loss` function from sklearn requires matching number of classes. The fix is to pass `labels=np.arange(n_classes)` to `log_loss` to ensure it knows about all possible classes.",
+          "score": 0.3026598632371091,
+          "source_transition_id": "run::20260726_021857_leaf-classification-host-shadow-r7::transition::42398337a0::9820d593b1"
+        }
+      ]
+    },
+    "odd_width_symmetry_broadcast_31_32": {
+      "best_expected_rank": 1,
+      "minimum_score": 0.4,
+      "passed": true,
+      "query": "ValueError: operands could not be broadcast together with shapes (891,31) (891,32) in create_hierarchical_features symmetry_2",
+      "top_candidate": {
+        "claim_id": "claim::leaf-classification::repair_claim::05fbe1ee964f08a9fe07",
+        "claim_type": "repair_claim",
+        "expected_match": true,
+        "failure_excerpt": "The script crashed during feature engineering with a ValueError. The slice `family_data[:, :half:-1]` produced 31 columns instead of 32, causing a broadcasting mismatch when multiplying `fh_centered` (32 cols) by `sh_centered` (31 cols) in the symmetry computation. No model training completed and no submission file was generated. Loading data... Train shape: (891, 194), Test shape: (99, 193) Engineering features... Traceback (most recent call last): File \"/workspace/experiment-end2end-memory-age",
+        "rank_receipt": {
+          "components": {
+            "exception": 1.0,
+            "failure_keyword": 1.0,
+            "model_api": 0.0,
+            "operand": 0.2,
+            "path": 0.0,
+            "shape": 0.7071067811865475,
+            "symbol": 0.0
+          },
+          "exact_compatibility_match": false,
+          "expected_values": [],
+          "schema": "mlevolve_structured_debug_rank_receipt_v1",
+          "shared_anchors": {
+            "exception_names": [
+              "valueerror"
+            ],
+            "failure_keywords": [
+              "broadcast"
+            ],
+            "model_api_ids": [],
+            "numeric_literals": [
+              "31",
+              "32",
+              "891"
+            ],
+            "path_literals": [],
+            "quoted_identifiers": [],
+            "shape_literals": [
+              "(891,31)",
+              "(891,32)"
+            ],
+            "symbol_names": []
+          },
+          "shared_expected_values": []
+        },
+        "repair_excerpt": "Looking at the error, the root cause is clear: in the symmetry calculation within `engineer_features`, the slice `family_data[:, :half:-1]` produces 31 columns instead of 32 because the step `-1` starting from index `-1` (inclusive) goes down to index `half` (exclusive), yielding only `half` elements (31 in this case since half=32). Meanwhile `first_half = family_data[:, :half]` produces 32 columns. This causes a shape mismatch (891,32) vs (891,31) in the multiplication. The fix is to use `famil",
+        "score": 0.42656854249492376,
+        "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__macla_style_port__seed-1::attempt-001::transition::e41c0db70a73::a8ff82284a89"
+      },
+      "top_five": [
+        {
+          "claim_id": "claim::leaf-classification::repair_claim::05fbe1ee964f08a9fe07",
+          "claim_type": "repair_claim",
+          "expected_match": true,
+          "failure_excerpt": "The script crashed during feature engineering with a ValueError. The slice `family_data[:, :half:-1]` produced 31 columns instead of 32, causing a broadcasting mismatch when multiplying `fh_centered` (32 cols) by `sh_centered` (31 cols) in the symmetry computation. No model training completed and no submission file was generated. Loading data... Train shape: (891, 194), Test shape: (99, 193) Engineering features... Traceback (most recent call last): File \"/workspace/experiment-end2end-memory-age",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.0,
+              "operand": 0.2,
+              "path": 0.0,
+              "shape": 0.7071067811865475,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "valueerror"
+              ],
+              "failure_keywords": [
+                "broadcast"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [
+                "31",
+                "32",
+                "891"
+              ],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [
+                "(891,31)",
+                "(891,32)"
+              ],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the root cause is clear: in the symmetry calculation within `engineer_features`, the slice `family_data[:, :half:-1]` produces 31 columns instead of 32 because the step `-1` starting from index `-1` (inclusive) goes down to index `half` (exclusive), yielding only `half` elements (31 in this case since half=32). Meanwhile `first_half = family_data[:, :half]` produces 32 columns. This causes a shape mismatch (891,32) vs (891,31) in the multiplication. The fix is to use `famil",
+          "score": 0.42656854249492376,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__macla_style_port__seed-1::attempt-001::transition::e41c0db70a73::a8ff82284a89"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::0b61051e6f718ec63b8a",
+          "claim_type": "compatibility_claim",
+          "expected_match": false,
+          "failure_excerpt": "The execution failed with a ValueError during LightGBM meta-learner training: attempting to broadcast predictions of shape (99,99) with OOF predictions of shape (891,99). The bug is that meta_test_pred is predicted on the validation meta features (X_meta[meta_val_idx], 89 samples) instead of on the full test data, causing a shape mismatch when accumulating. No submission file was generated. Train shape: (891, 194), Test shape: (99, 193) Species count: 99 Extracting SigLIP2 image features... Usin",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.0,
+              "operand": 0.2,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "valueerror"
+              ],
+              "failure_keywords": [
+                "broadcast"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [
+                "891"
+              ],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "The core issue is in the LightGBM meta-learner section: `meta_test_pred` is being computed on `X_meta` (which is the OOF predictions for all training samples, shape `(891, n_classes)`) instead of on the actual test features. Since we don't have OOF predictions for the test set, we need to use the neural network's test predictions as meta-features for the LightGBM meta-learner. Here's my fix:",
+          "score": 0.37,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__gome_style_port__seed-1::attempt-000::transition::a371f50be61b::76307efaee21"
+        },
+        {
+          "claim_id": "claim::leaf-classification::repair_claim::3a74d44df783136d2ffb",
+          "claim_type": "repair_claim",
+          "expected_match": false,
+          "failure_excerpt": "The script crashed with a ValueError during feature engineering. The wavelet-like transform attempted to broadcast a segment array of shape (990,3) against a filter coefficient array of shape (4,), causing a shape mismatch in the Level 1 decomposition loop. The process exited abnormally, feature extraction and training never completed, and no submission file was produced. Device: cuda Loading data... Train: (891, 194), Test: (99, 193) Margin features: 64, Shape: 64, Texture: 64 Number of species",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.0,
+              "operand": 0.2,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "valueerror"
+              ],
+              "failure_keywords": [
+                "broadcast"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [
+                "891"
+              ],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the root cause is clear: in the wavelet-like transform section, the padding logic creates segments of length 3, but the filter coefficients `filt_coeffs` have length 4. The padded data isn't wide enough for the filter convolution. The fix is to ensure proper padding so that each segment matches the filter size. The wavelet transform section needs to be corrected to properly handle the filter convolution with appropriate padding:",
+          "score": 0.37,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__static_hybrid__seed-1::attempt-000::transition::f02cee5f5bd8::064acf4104af"
+        },
+        {
+          "claim_id": "claim::leaf-classification::repair_claim::9adb9497893f668a31c2",
+          "claim_type": "repair_claim",
+          "expected_match": false,
+          "failure_excerpt": "The training script crashed during the SLSQP weight optimization step with a ValueError due to a shape mismatch when computing the weighted ensemble log loss. The `fold_val_probs[i]` array has shape (179, 99) while `all_val_probs` has shape (891, 99), so the in-place broadcast addition fails. Since the execution failed with an exception and no submission file was created, no final metric is available. Using device: cuda Found 64 margin, 64 shape, 64 texture features Number of classes: 99 Using o",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.0,
+              "operand": 0.2,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "valueerror"
+              ],
+              "failure_keywords": [
+                "broadcast"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [
+                "891"
+              ],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is in `weighted_ensemble_log_loss`: the function tries to add each fold's validation probabilities to the ensemble_probs matrix, but each fold has a different number of samples. The function should use the concatenated `all_val_probs` instead of individual fold predictions, weighting each row appropriately. Let me fix this by using the combined OOF predictions and creating a membership indicator to properly weight each sample:",
+          "score": 0.37,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__reversed_router__seed-1::attempt-000::transition::c07d136e864b::6530894c8af2"
+        },
+        {
+          "claim_id": "claim::leaf-classification::repair_claim::cc3ce2759aea4d7ae851",
+          "claim_type": "repair_claim",
+          "expected_match": false,
+          "failure_excerpt": "The script crashed during feature engineering with a ValueError when computing the aggregate difference PCA: it attempted to broadcast X_margin_raw (891,64) against an array of shape (891,128) from concatenating shape and texture features. Execution exited abnormally and no submission file was created. Using device: cuda Loading data... Train shape: (891, 194), Test shape: (99, 193) Number of classes: 99 Engineered features shape: (891, 53), dim: 53 PCA margin: 64 -> 8 components PCA shape: 64 -",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.0,
+              "operand": 0.2,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "valueerror"
+              ],
+              "failure_keywords": [
+                "broadcast"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [
+                "891"
+              ],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is clear:",
+          "score": 0.37,
+          "source_transition_id": "run::e2e-smoke-leaf-metric-reconcile-router-v38__leaf-classification__dynamic_hybrid__seed-1::attempt-000::transition::89fbdc6f8ac6::9105f96ffde0"
+        }
+      ]
+    },
+    "v76_dinov2_input_224_requires_518": {
+      "best_expected_rank": 1,
+      "minimum_score": 0.9,
+      "passed": true,
+      "query": "AssertionError: Input height (224) doesn't match model (518) for vit_small_patch14_dinov2.lvd142m",
+      "top_candidate": {
+        "claim_id": "claim::leaf-classification::compatibility_claim::eb08c01baf682841c035",
+        "claim_type": "compatibility_claim",
+        "expected_match": true,
+        "failure_excerpt": "The script failed during DINOv2 feature extraction. The DINOv2 ViT-S/14 model expects input images of size 518x518, but the image transform resizes images to 256x256, causing an AssertionError in the patch embed layer. No validation metric was computed and no submission file was generated due to this crash. Using device: cuda Train shape: (891, 194), Test shape: (99, 193) Engineered features: 480 Loading DINOv2 feature extractor... DINOv2 loaded. Extracting DINOv2 features... Traceback (most rec",
+        "rank_receipt": {
+          "components": {
+            "exception": 1.0,
+            "failure_keyword": 0.8164965809277261,
+            "model_api": 0.5,
+            "operand": 0.95,
+            "path": 0.0,
+            "shape": 0.0,
+            "symbol": 0.0
+          },
+          "exact_compatibility_match": true,
+          "expected_values": [
+            "518"
+          ],
+          "schema": "mlevolve_structured_debug_rank_receipt_v1",
+          "shared_anchors": {
+            "exception_names": [
+              "assertionerror"
+            ],
+            "failure_keywords": [
+              "doesn't match",
+              "input height"
+            ],
+            "model_api_ids": [],
+            "numeric_literals": [
+              "518"
+            ],
+            "path_literals": [],
+            "quoted_identifiers": [],
+            "shape_literals": [],
+            "symbol_names": []
+          },
+          "shared_expected_values": [
+            "518"
+          ]
+        },
+        "repair_excerpt": "## Bug Analysis The error is clear: **DINOv2 ViT-S/14 requires input images of 518×518 pixels**, but the code resizes images to 256×256. This causes `AssertionError: Input height (256) doesn't match model (518)` when passing images through the pretrained DINOv2 model. The fix is straightforward: change `IMG_SIZE` from 256 to 518 to match DINOv2's expected input resolution. This preserves the entire solution architecture — only the image size constant needs to change.",
+        "score": 0.92,
+        "source_transition_id": "run::e2e-pilot-leaf-tiered-debug-router-v45__leaf-classification__dynamic_hybrid__seed-1::attempt-000::source-72bdeafd::transition::8e77146c99c9::c18a69664d3c"
+      },
+      "top_five": [
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::eb08c01baf682841c035",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The script failed during DINOv2 feature extraction. The DINOv2 ViT-S/14 model expects input images of size 518x518, but the image transform resizes images to 256x256, causing an AssertionError in the patch embed layer. No validation metric was computed and no submission file was generated due to this crash. Using device: cuda Train shape: (891, 194), Test shape: (99, 193) Engineered features: 480 Loading DINOv2 feature extractor... DINOv2 loaded. Extracting DINOv2 features... Traceback (most rec",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.8164965809277261,
+              "model_api": 0.5,
+              "operand": 0.95,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": true,
+            "expected_values": [
+              "518"
+            ],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "assertionerror"
+              ],
+              "failure_keywords": [
+                "doesn't match",
+                "input height"
+              ],
+              "model_api_ids": [],
+              "numeric_literals": [
+                "518"
+              ],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": [
+              "518"
+            ]
+          },
+          "repair_excerpt": "## Bug Analysis The error is clear: **DINOv2 ViT-S/14 requires input images of 518×518 pixels**, but the code resizes images to 256×256. This causes `AssertionError: Input height (256) doesn't match model (518)` when passing images through the pretrained DINOv2 model. The fix is straightforward: change `IMG_SIZE` from 256 to 518 to match DINOv2's expected input resolution. This preserves the entire solution architecture — only the image size constant needs to change.",
+          "score": 0.92,
+          "source_transition_id": "run::e2e-pilot-leaf-tiered-debug-router-v45__leaf-classification__dynamic_hybrid__seed-1::attempt-000::source-72bdeafd::transition::8e77146c99c9::c18a69664d3c"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::841af46a78c796c8985d",
+          "claim_type": "compatibility_claim",
+          "expected_match": false,
+          "failure_excerpt": "The script crashed during the first training fold with an AssertionError inside nn.MultiheadAttention in the CrossModalAttentionLayer. When the query tensor is 2-D (batch_size=1 in a batch), the key/value tensors are 3-D, causing an unbatched/batched shape mismatch. No model training, OOF validation, or submission was completed. Using device: cuda Loading data... Train shape: (891, 194), Test shape: (99, 193) Number of classes: 99 Creating engineered features... Engineered features shape: (891, ",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.0,
+              "model_api": 0.0,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "assertionerror"
+              ],
+              "failure_keywords": [],
+              "model_api_ids": [],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "I need to analyze this bug carefully. The error occurs in `CrossModalAttentionLayer.forward`:",
+          "score": 0.27,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__dynamic_hybrid__seed-1::attempt-002::transition::109e3a058921::b7b74a86e725"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::a752c30f69d488a5975d",
+          "claim_type": "compatibility_claim",
+          "expected_match": false,
+          "failure_excerpt": "The training completed the NN and LightGBM ensemble, but the script crashed with an AssertionError (\"NaN values in submission\") during the submission validation check. The submission file was written but contained NaN probabilities, and the process did not exit normally. The NN OOF log loss was 0.052432 with best ensemble weight of 1.00 (NN-only). Using device: cuda Loading data... Train shape: (891, 194), Test shape: (99, 193) Number of classes: 99 Expanded engineered features shape: (891, 116)",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.0,
+              "model_api": 0.0,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "assertionerror"
+              ],
+              "failure_keywords": [],
+              "model_api_ids": [],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the script crashed with `AssertionError: NaN values in submission` after saving to `submission/submission_e6585779d11c44fd850473ac470adfee.csv`. The issue is that the test predictions contain NaN values, likely stemming from the fold averaging process or numerical instability in the model outputs. The root cause is that when dividing test predictions across folds, some folds may produce NaN probabilities if the model predictions become unstable. The critical fix is to ensur",
+          "score": 0.27,
+          "source_transition_id": "run::e2e-pilot-leaf-tiered-debug-router-v45__leaf-classification__dynamic_hybrid__seed-1::attempt-000::transition::e6585779d11c::65b56b414028"
+        },
+        {
+          "claim_id": "claim::leaf-classification::repair_claim::119c3c29ded0b6893fa6",
+          "claim_type": "repair_claim",
+          "expected_match": false,
+          "failure_excerpt": "Execution failed during Fold 1 training due to an AssertionError in the fusion self-attention layer. The MultiheadAttention layer expects an embedding dimension of 384, but the input tokens only have dimension 128, because the sequence is reshaped to [B, 3, 128] rather than being split into embedding dim 384. No submission file was generated and no validation metric was produced. Train shape: (891, 194), Test shape: (99, 193) Margin: 64, Shape: 64, Texture: 64 Engineered features: 273 features N",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.0,
+              "model_api": 0.0,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "assertionerror"
+              ],
+              "failure_keywords": [],
+              "model_api_ids": [],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the issue is in the `MultiViewTransformer.forward` method. The `MultiheadAttention` layer expects an embedding dimension of 384 (which is `hidden_dim * 3`), but the input sequence is reshaped to have dimension 128 per token. The attention layer needs each token in the sequence to have the full embedding dimension. The fix is to properly structure the sequence for multi-head attention. We should treat each modality as a token with dimension 384, or use a combined representat",
+          "score": 0.27,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__macla_style_port__seed-1::attempt-001::transition::617cce782e84::9c0f5085eb3c"
+        },
+        {
+          "claim_id": "claim::leaf-classification::repair_claim::497ef1fbffbc53aafc5f",
+          "claim_type": "repair_claim",
+          "expected_match": false,
+          "failure_excerpt": "The training script crashed with an AssertionError during Fold 1. The assertion `X_train.shape[1] == s_interaction` failed because the feature matrix had 237 columns while the training function expected 231 columns, indicating a mismatch in feature dimension bookkeeping between the data preparation and model training code. Using device: cuda ============================================================ STEP 1: Data Processing and Feature Engineering ===============================================",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 0.0,
+              "model_api": 0.0,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.0
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "assertionerror"
+              ],
+              "failure_keywords": [],
+              "model_api_ids": [],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": []
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, I can see the issue clearly. The feature engineering code produces 237 features per fold (as shown by \"Final feature dimension per fold: 237\"), but the `train_fold` function has a hardcoded expectation of 231 features (64+64+64+18+3+9+9=231). The actual breakdown is: - margin_raw: 64 - shape_raw: 64 - texture_raw: 64 - stats (mean, std, max, min, median, q25, q75, range) = 8 per group × 3 = 24 - entropy: 3 - extra (kurtosis, skewness, pairwise_corr) = 3 per group × 3 = 9 - ",
+          "score": 0.27,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v22__leaf-classification__dynamic_hybrid__seed-1::attempt-000::transition::bbf6df8d23db::8ea1c0db4ce8"
+        }
+      ]
+    },
+    "xgboost_early_stopping_api": {
+      "best_expected_rank": 1,
+      "minimum_score": 0.35,
+      "passed": true,
+      "query": "TypeError: XGBClassifier.fit() got an unexpected keyword argument early_stopping_rounds",
+      "top_candidate": {
+        "claim_id": "claim::leaf-classification::compatibility_claim::d6601bc890a2d5d867d1",
+        "claim_type": "compatibility_claim",
+        "expected_match": true,
+        "failure_excerpt": "The execution failed with a TypeError because the `early_stopping_rounds` parameter was passed as a keyword argument to `XGBClassifier.fit()`, which is not supported in the installed version of XGBoost. The error occurred during model training before any evaluation could be performed. Traceback (most recent call last): File \"/haoming/mlevolve-original-runs/be034ec/3h120/20260717_183734_leaf-classification/workspace/runfile_0.py\", line 101, in <module> model.fit( File \"/usr/local/lib/python3.11/s",
+        "rank_receipt": {
+          "components": {
+            "exception": 1.0,
+            "failure_keyword": 1.0,
+            "model_api": 0.7071067811865475,
+            "operand": 0.0,
+            "path": 0.0,
+            "shape": 0.0,
+            "symbol": 0.3779644730092272
+          },
+          "exact_compatibility_match": false,
+          "expected_values": [],
+          "schema": "mlevolve_structured_debug_rank_receipt_v1",
+          "shared_anchors": {
+            "exception_names": [
+              "typeerror"
+            ],
+            "failure_keywords": [
+              "expected",
+              "unexpected keyword"
+            ],
+            "model_api_ids": [
+              "xgbclassifier.fit"
+            ],
+            "numeric_literals": [],
+            "path_literals": [],
+            "quoted_identifiers": [],
+            "shape_literals": [],
+            "symbol_names": [
+              "early_stopping_rounds"
+            ]
+          },
+          "shared_expected_values": []
+        },
+        "repair_excerpt": "We need to fix the XGBoost early stopping API. The `early_stopping_rounds` must be passed during model initialization, not in `fit()`. Also, `verbose` should remain False.",
+        "score": 0.5128717175136441,
+        "source_transition_id": "run::20260717_183734_leaf-classification::transition::9797c09f04::5da17c4756"
+      },
+      "top_five": [
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::d6601bc890a2d5d867d1",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The execution failed with a TypeError because the `early_stopping_rounds` parameter was passed as a keyword argument to `XGBClassifier.fit()`, which is not supported in the installed version of XGBoost. The error occurred during model training before any evaluation could be performed. Traceback (most recent call last): File \"/haoming/mlevolve-original-runs/be034ec/3h120/20260717_183734_leaf-classification/workspace/runfile_0.py\", line 101, in <module> model.fit( File \"/usr/local/lib/python3.11/s",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.7071067811865475,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.3779644730092272
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "typeerror"
+              ],
+              "failure_keywords": [
+                "expected",
+                "unexpected keyword"
+              ],
+              "model_api_ids": [
+                "xgbclassifier.fit"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "early_stopping_rounds"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "We need to fix the XGBoost early stopping API. The `early_stopping_rounds` must be passed during model initialization, not in `fit()`. Also, `verbose` should remain False.",
+          "score": 0.5128717175136441,
+          "source_transition_id": "run::20260717_183734_leaf-classification::transition::9797c09f04::5da17c4756"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::6f5c7bedd8fd362e716b",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The execution failed with a TypeError because `XGBClassifier.fit()` received the unexpected keyword argument `early_stopping_rounds`. In newer versions of XGBoost, `early_stopping_rounds` is not a valid parameter for `fit()` and should either be passed via `eval_set` callback or omitted. No validation metric was obtained due to the crash. Using device: cuda Number of classes: 99 Training samples: 891, Test samples: 99 Train fold size: 712, Val fold size: 179 Engineered tabular features - Train: ",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.6324555320336759,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.5773502691896258
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "typeerror"
+              ],
+              "failure_keywords": [
+                "expected",
+                "unexpected keyword"
+              ],
+              "model_api_ids": [
+                "xgbclassifier.fit"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "early_stopping_rounds"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Parent error: TypeError | Parent analysis: The execution failed with a TypeError because `XGBClassifier.fit()` received the unexpected keyword argument `early_stopping_rounds`. In newer versions of XGBoost, `early_stopping_rounds` is not a valid parameter for `fit()` and should either be passed via `eval_set` callback or omitted. No validation metric was obtained due to the crash.",
+          "score": 0.5116527939029156,
+          "source_transition_id": "run::20260701_155016_leaf-classification::transition::00289652a0::1bfa55b7b3"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::e6a90a06326e8faec0c1",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The script crashed during XGBoost fold 1 training with a TypeError: XGBClassifier.fit() got an unexpected keyword argument 'early_stopping_rounds'. The LightGBM portion completed with an OOF log loss of 0.4790, but execution terminated before XGBoost, logistic regression, ensemble optimization, or submission generation, so no submission file was produced. Feature dimensions: train=(891, 279), test=(99, 279) Number of samples: train=891, test=99 ===================================================",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.6324555320336759,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.4472135954999579
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "typeerror"
+              ],
+              "failure_keywords": [
+                "expected",
+                "unexpected keyword"
+              ],
+              "model_api_ids": [
+                "xgbclassifier.fit"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "early_stopping_rounds"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "Looking at the error, the root cause is that `early_stopping_rounds` was passed to `fit()` instead of being set in the XGBClassifier constructor. According to the API compatibility guidelines, the correct approach is to pass `early_stopping_rounds` in the `XGBClassifier(...)` constructor, not in the `fit()` method. Here's my fix to the XGBoost training sections:",
+          "score": 0.5012418600077422,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__rcr_router_style_port__seed-1::attempt-001::transition::8385117f5fc8::bc2a242a71be"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::a2d1fbd7d3b972b55e78",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The training script failed with a TypeError during XGBoost fitting. The `XGBClassifier.fit()` method received an unexpected keyword argument `callbacks`, which is not supported in the installed xgboost version, causing the execution to terminate. No submission file was generated. Train shape: (891, 194), Test shape: (99, 193) Building enhanced features... Engineered train features: (891, 408) Engineered test features: (99, 408) Creating stratified train/validation split... Train size: 712, Val s",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.6324555320336759,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.3779644730092272
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "typeerror"
+              ],
+              "failure_keywords": [
+                "expected",
+                "unexpected keyword"
+              ],
+              "model_api_ids": [
+                "xgbclassifier.fit"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "early_stopping_rounds"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "I'll fix the XGBoost `callbacks` API compatibility issue by using the correct `early_stopping_rounds` parameter in the `XGBClassifier` constructor.",
+          "score": 0.49570193020848363,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__no_memory__seed-1::attempt-000::transition::e88cec302b54::6d91f5f36ce7"
+        },
+        {
+          "claim_id": "claim::leaf-classification::compatibility_claim::8e386ab2f3b3d9e460de",
+          "claim_type": "compatibility_claim",
+          "expected_match": true,
+          "failure_excerpt": "The script crashed during Fold 1 cross-validation training with a TypeError in xgboost. The XGBClassifier.fit() call passed 'early_stopping_rounds' as a keyword argument, which is not supported in this version of xgboost, causing execution to fail before any validation metric could be computed. No submission file was generated. Loading datasets... Train shape: (891, 194), Test shape: (99, 193) Engineering features... Feature dimensions: 291 === Starting cross-validation training === Fold 1/5 Tra",
+          "rank_receipt": {
+            "components": {
+              "exception": 1.0,
+              "failure_keyword": 1.0,
+              "model_api": 0.6324555320336759,
+              "operand": 0.0,
+              "path": 0.0,
+              "shape": 0.0,
+              "symbol": 0.2886751345948129
+            },
+            "exact_compatibility_match": false,
+            "expected_values": [],
+            "schema": "mlevolve_structured_debug_rank_receipt_v1",
+            "shared_anchors": {
+              "exception_names": [
+                "typeerror"
+              ],
+              "failure_keywords": [
+                "expected",
+                "unexpected keyword"
+              ],
+              "model_api_ids": [
+                "xgbclassifier.fit"
+              ],
+              "numeric_literals": [],
+              "path_literals": [],
+              "quoted_identifiers": [],
+              "shape_literals": [],
+              "symbol_names": [
+                "early_stopping_rounds"
+              ]
+            },
+            "shared_expected_values": []
+          },
+          "repair_excerpt": "The root cause is that `XGBClassifier.fit()` in the installed xgboost version does not accept `early_stopping_rounds` as a keyword argument directly in `fit()`. According to the API compatibility note in the instructions, XGBoost should use `XGBClassifier(early_stopping_rounds=...)` in the constructor, not in `fit()`. I'll also need to ensure the `eval_set` parameter is handled correctly. Here's the fix:",
+          "score": 0.4885587831353305,
+          "source_transition_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__no_memory__seed-1::attempt-000::transition::f500567c604c::351b9e56baec"
+        }
+      ]
+    }
+  }
+}

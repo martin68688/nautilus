@@ -23,6 +23,10 @@ from agents.memory.external_skill_memory import (
     _tokenize,
     bounded_selector_max_tokens,
 )
+from agents.memory.atomic_claim_memory import (
+    structured_debug_relevance,
+    verified_atomic_debug_claim,
+)
 from agents.memory.sop_visibility_gateway import SOPVisibilityGateway
 from authority.domain_scope import (
     DOMAIN_GENERAL,
@@ -3200,6 +3204,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         transition = self.nodes.get(transition_id, {})
         if transition.get("type") != "Transition":
             return False, "not_transition"
+        # Atomic Debug claims have their own local evidence and taint gate.
+        # They never authorize the source program or its metric, so evaluating
+        # the whole child program here would recreate the all-or-nothing bug
+        # that v7 is designed to remove.
+        if transition.get("atomic_repair_claim") is not None:
+            return verified_atomic_debug_claim(transition)
         run_id = str(transition.get("run_short_id") or transition.get("run_id") or "")
         if run_id in self.excluded_run_ids:
             return False, "held_out_run"
@@ -3625,6 +3635,10 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
     def _execution_candidate_eligibility(self, node_id: str) -> tuple[bool, str]:
         node = self.nodes.get(node_id, {})
         if node.get("type") == "Transition":
+            if node.get("atomic_repair_claim") is not None:
+                # The claim is a Debug hypothesis/repair source, never a
+                # replayable whole-program execution candidate.
+                return False, "atomic_claim_debug_only"
             return self._positive_transition(node_id)
         if node.get("type") == "RunNode":
             if self._successful_run_node(node_id):
@@ -3826,6 +3840,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         return super()._task_score(canonical_node, canonical_task_id(task_id), task_desc)
 
     def _debug_parent_failure_text(self, transition: dict[str, Any]) -> str:
+        claim = transition.get("atomic_repair_claim")
+        if isinstance(claim, Mapping):
+            return str(claim.get("failure_text") or "")
         parent = self.nodes.get(str(transition.get("parent_node_id") or ""), {})
         return " ".join(
             str(parent.get(key) or "")
@@ -3833,6 +3850,30 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         )
 
     def _debug_transition_evidence(self, transition: dict[str, Any]) -> dict[str, str]:
+        claim = transition.get("atomic_repair_claim")
+        if isinstance(claim, Mapping):
+            verification = (
+                claim.get("verification")
+                if isinstance(claim.get("verification"), Mapping)
+                else {}
+            )
+            return {
+                "parent_failure": str(claim.get("failure_text") or ""),
+                "code_change": str(claim.get("repair_action") or ""),
+                "child_result": (
+                    "Atomic repair action was followed by an observed successful "
+                    "execution; the source program and metric remain separately gated."
+                ),
+                "before_code": "",
+                "after_code": "",
+                "before_code_sha256": str(
+                    verification.get("before_code_sha256") or ""
+                ),
+                "after_code_sha256": str(
+                    verification.get("after_code_sha256") or ""
+                ),
+                "unified_diff": "",
+            }
         parent = self.nodes.get(str(transition.get("parent_node_id") or ""), {})
         child = self.nodes.get(str(transition.get("child_node_id") or ""), {})
         parent_failure = str(parent.get("analysis") or parent.get("terminal_excerpt") or "").strip()
@@ -3856,7 +3897,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         text = str(query_text or "").lower()
         stage = str(runtime_stage or "")
         markers = {
+            "checkpoint_averaging": ("checkpoint", "average", "state_dict"),
+            "checkpoint_loading": ("checkpoint", "torch.load", "unpickling"),
             "data_loading": ("dataloader", "dataset", "collate", "batch"),
+            "import": ("importerror", "modulenotfounderror", "import"),
+            "model_loading": ("torch.hub", "from_pretrained", "checkpoint", "weights"),
+            "parsing": ("syntaxerror", "indentationerror", "parse"),
             "preprocessing": ("scaler", "pca", "vectorizer", "transform"),
             "split_validation": ("split", "fold", "leakage", "validation"),
             "feature_extraction": ("embedding", "feature", "backbone"),
@@ -3864,6 +3910,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             "training": ("backward", "optimizer", "epoch", "loss"),
             "training_metric": ("train auc", "training auc", "mixed label", "metric"),
             "validation": ("validation", "roc_auc", "log loss", "evaluate"),
+            "validation_split": ("split", "stratified", "validation size"),
             "oof": ("oof", "out of fold", "cross validation"),
             "inference": ("inference", "predict", "test prediction"),
             "submission": ("submission", "sample_submission"),
@@ -3960,7 +4007,15 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if self._positive_transition(transition_id)[0]
             and (allowed_transition_ids is None or transition_id in allowed_transition_ids)
         ]
-        anchor = self._query_anchor(query_text, eligible_transition_ids)
+        exact_task_transition_ids = [
+            transition_id
+            for transition_id in eligible_transition_ids
+            if canonical_task_id(self.nodes[transition_id].get("task"))
+            == canonical_task_id(task_id)
+        ]
+        anchor = self._query_anchor(
+            query_text, exact_task_transition_ids or eligible_transition_ids
+        )
         rows: list[dict[str, Any]] = []
         for transition_id in eligible_transition_ids:
             transition = self.nodes[transition_id]
@@ -4027,11 +4082,21 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             )
             card_semantic = self._bounded_token_similarity(query_text, card_text)
             parent_semantic = self._bounded_token_similarity(query_text, failure_text)
+            atomic_claim = transition.get("atomic_repair_claim")
+            atomic_claim = atomic_claim if isinstance(atomic_claim, Mapping) else {}
+            repair_text = str(atomic_claim.get("repair_action") or "")
+            structured_match, structured_receipt = structured_debug_relevance(
+                query_text,
+                failure_text,
+                repair_text,
+                atomic_claim,
+            )
             if (
                 has_explicit_l3_signature
                 and specific_signature_overlap
                 < L3_SPECIFIC_SIGNATURE_MIN_OVERLAP
                 and card_semantic < 0.50
+                and structured_match < L3_FAILURE_SIGNATURE_MIN_MATCH
             ):
                 continue
             if has_explicit_l3_signature:
@@ -4044,6 +4109,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     min(0.75, 1.25 * parent_semantic)
                     if specific_signature_overlap > 0.0
                     else 0.0,
+                    structured_match,
                 )
             else:
                 # Preserve the legacy RunForest L3 path for old bundles.  New
@@ -4053,6 +4119,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     structural_match,
                     min(0.90, 1.6 * card_semantic),
                     min(0.75, 1.25 * parent_semantic),
+                    structured_match,
                 )
             if failure_match < L3_FAILURE_SIGNATURE_MIN_MATCH:
                 continue
@@ -4098,7 +4165,14 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                         "causal_attachment": attachment_quality,
                         "semantic_diagnostic": semantic,
                         "specific_signature_overlap": specific_signature_overlap,
+                        "structured_debug_match": structured_match,
                     },
+                    "structured_debug_rank_receipt": structured_receipt,
+                    "ranking_backend": (
+                        "task_first_structured_debug_signature_v3"
+                        if atomic_claim
+                        else "stage_task_causal_signature_v2"
+                    ),
                     "dynamic_confidence_weights": dict(
                         L3_DYNAMIC_CONFIDENCE_WEIGHTS
                     ),

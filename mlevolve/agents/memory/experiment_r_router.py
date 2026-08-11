@@ -16,7 +16,9 @@ import os
 import re
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
+
+from agents.memory.atomic_claim_memory import structured_debug_relevance
 
 
 PACK_SCHEMA = "experiment_r_memory_pack_v1"
@@ -639,7 +641,10 @@ def _hard_gated_l3_candidates(
         node = layer.nodes.get(sop_id, {})
         if node.get("abstraction_level") != "L3_repair":
             continue
-        if node.get("evidence_status") != "accepted_clean_repair":
+        if node.get("evidence_status") not in {
+            "accepted_clean_repair",
+            "accepted_atomic_repair_claim",
+        }:
             continue
         if node.get("infrastructure_failure") is True:
             continue
@@ -1487,6 +1492,28 @@ def _debug_repair_evidence(
     if transition.get("one_off_code_failure") is True:
         return None, "one_off_code_failure"
 
+    atomic_claim = transition.get("atomic_repair_claim")
+    if isinstance(atomic_claim, Mapping):
+        verification = atomic_claim.get("verification")
+        verification = verification if isinstance(verification, Mapping) else {}
+        before_hash = str(verification.get("before_code_sha256") or "")
+        after_hash = str(verification.get("after_code_sha256") or "")
+        if len(before_hash) != 64 or len(after_hash) != 64:
+            return None, "atomic_claim_missing_hash_bound_before_after_code"
+        evidence = copy.deepcopy(layer._debug_transition_evidence(transition))
+        evidence["before_code_sha256"] = before_hash
+        evidence["after_code_sha256"] = after_hash
+        evidence["atomic_claim_id"] = str(atomic_claim.get("id") or "")
+        evidence["metric_authorized"] = False
+        return {
+            "frozen": {},
+            "atomic_claim": copy.deepcopy(dict(atomic_claim)),
+            "transition_evidence": evidence,
+            "evidence_mode": "verified_atomic_claim_no_program_or_metric",
+            "before_code_sha256": before_hash,
+            "after_code_sha256": after_hash,
+        }, "safe_verified_atomic_debug_claim"
+
     frozen = copy.deepcopy(
         getattr(layer, "_recipe_repair_evidence_by_transition", {}).get(
             str(transition_id)
@@ -1658,6 +1685,15 @@ def _tiered_debug_runforest_rows(
                 query_text, f"{failure_text}\n{repair_text}"
             )
         )
+        atomic_claim = transition.get("atomic_repair_claim")
+        atomic_claim = atomic_claim if isinstance(atomic_claim, Mapping) else {}
+        structured, structured_receipt = structured_debug_relevance(
+            query_text,
+            failure_text,
+            repair_text,
+            atomic_claim,
+        )
+        relevance = max(semantic, structured)
         common = {
             "id": transition_id,
             "source": "runforest",
@@ -1678,8 +1714,9 @@ def _tiered_debug_runforest_rows(
                 "infrastructure_excluded": True,
                 "one_off_excluded": True,
             },
-            "debug_relevance_score": semantic,
-            "flat_score": semantic,
+            "debug_relevance_score": relevance,
+            "flat_score": relevance,
+            "structured_debug_rank_receipt": structured_receipt,
         }
         if source_task == target:
             # L3 cards already received a dedicated root-cause assessment.  An
@@ -1693,11 +1730,15 @@ def _tiered_debug_runforest_rows(
             task_local.append(
                 {
                     **common,
-                    "score": 0.55 + 0.45 * semantic,
+                    "score": 0.55 + 0.45 * relevance,
                     "debug_tier": "task_local_clean_transition",
                     "task_scope": "exact_task",
                     "portable_runtime_authorized": False,
-                    "ranking_backend": "debug_task_local_clean_transition_v1",
+                    "ranking_backend": (
+                        "task_first_structured_debug_signature_v3"
+                        if atomic_claim
+                        else "debug_task_local_clean_transition_v1"
+                    ),
                 }
             )
             continue
@@ -1865,6 +1906,10 @@ def _agentic_pre_gate_audit(
         task_desc=task_desc,
         top_k=min(max_rows, len(execution_ids)),
         stage_bonus={},
+        # Audit ranking must retain candidates that the live exact-task gate
+        # rejects; otherwise the trace records a gate count without any
+        # inspectable near-miss row explaining it.
+        task_hard_filter=False,
     )
     score_by_id = {str(node_id): float(score) for score, node_id in ranked_execution}
     for node_id in execution_ids:
@@ -3496,6 +3541,7 @@ def _candidate_pool(
         task_desc=task_desc,
         top_k=layer.experiment_r_candidate_limit,
         stage_bonus={},
+        task_hard_filter=False,
     )
     pre_gate_raw_candidates = []
     for rank, (score, node_id) in enumerate(raw_observer_ranked, 1):

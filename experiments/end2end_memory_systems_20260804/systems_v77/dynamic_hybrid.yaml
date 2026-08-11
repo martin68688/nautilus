@@ -1,0 +1,10 @@
+# v77: replace document-level Debug retrieval with task-first, claim-level
+# causal ranking while preserving the v76 active Strategy/Atomic contracts.
+extends: ../systems_v76/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v77/experiments/end2end_memory_systems_20260804/manifests_v77/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v7_strategy_active_v77

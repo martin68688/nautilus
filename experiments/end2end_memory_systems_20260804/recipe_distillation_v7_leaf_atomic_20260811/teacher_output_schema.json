@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "generalized_repairs": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "failure_pattern": {
+            "type": "string"
+          },
+          "method_family": {
+            "type": "string"
+          },
+          "repair_steps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "root_cause": {
+            "type": "string"
+          },
+          "runtime_stage": {
+            "type": "string"
+          },
+          "signature_id": {
+            "type": "string"
+          },
+          "source_claim_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          },
+          "when_to_use": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "signature_id",
+          "failure_pattern",
+          "root_cause",
+          "repair_steps",
+          "when_to_use",
+          "method_family",
+          "runtime_stage",
+          "source_claim_ids"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "synthesis_assessment": {
+      "additionalProperties": false,
+      "properties": {
+        "coverage_risks": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "do_not_generalize": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "ranking_recommendations": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "coverage_risks",
+        "ranking_recommendations",
+        "do_not_generalize"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "generalized_repairs",
+    "synthesis_assessment"
+  ],
+  "type": "object"
+}

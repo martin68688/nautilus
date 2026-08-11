@@ -39,7 +39,13 @@ def bounded_selector_max_tokens(cfg: Any) -> int:
     )
 
 
-_TOKEN_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9_+-]{2,}")
+# Runtime retrieval must retain numeric operands (224, 518), dotted versions,
+# model identifiers, and symbols.  The previous leading-letter-only tokenizer
+# silently erased the most discriminative part of many Debug failures.
+_TOKEN_RE = re.compile(
+    r"[a-zA-Z][a-zA-Z0-9_.+:/-]{1,}|"
+    r"(?<![a-zA-Z0-9_])\d+(?:\.\d+)*(?:[xX]\d+(?:\.\d+)*)?(?![a-zA-Z0-9_])"
+)
 _OPPOSING_TERMS = (
     ("large", "small"),
     ("larger", "smaller"),
@@ -145,6 +151,13 @@ def external_memory_section_intro(source_name: str, context: str) -> str:
 
 def _tokenize(text: str) -> set[str]:
     return {m.group(0).lower() for m in _TOKEN_RE.finditer(text or "")}
+
+
+def _canonical_task_for_ranking(value: object) -> str:
+    task = str(value or "").strip()
+    while task.startswith("full-"):
+        task = task[len("full-") :]
+    return task
 
 
 def _node_text_for_scoring(node: dict[str, Any]) -> str:
@@ -1959,14 +1972,28 @@ class RunForestMemoryLayer:
         top_k: int,
         stage_bonus: dict[str, float] | None = None,
         outcome_bonus: dict[str, float] | None = None,
+        task_hard_filter: bool = True,
     ) -> list[tuple[float, str]]:
         """Return the normal ranking together with its pre-gate raw scores."""
 
         coords = self._coords()
-        anchor = self._query_anchor(query_text, candidate_ids)
+        target_task = _canonical_task_for_ranking(task_id)
+        exact_task_ids = [
+            nid
+            for nid in candidate_ids
+            if nid in self.nodes
+            and _canonical_task_for_ranking(self.nodes[nid].get("task"))
+            == target_task
+        ]
+        ranked_candidate_ids = (
+            exact_task_ids
+            if task_hard_filter and exact_task_ids
+            else candidate_ids
+        )
+        anchor = self._query_anchor(query_text, ranked_candidate_ids)
         q_tokens = _tokenize(query_text)
         scored: list[tuple[float, str]] = []
-        for nid in candidate_ids:
+        for nid in ranked_candidate_ids:
             if nid not in self.nodes:
                 continue
             node = self.nodes[nid]
