@@ -734,6 +734,29 @@ def test_staged_planner_retries_oversized_phase_as_complete_roadmap():
     assert "split that phase" in calls[1]["prompt"]["user"]
 
 
+def test_staged_plan_rejects_one_change_that_hides_too_many_symbols():
+    phase = _atomic_phase(
+        "oversized-symbol-set",
+        1,
+        target_symbols=["first", "second", "third", "fourth", "fifth"],
+    )
+    verdict = validate_staged_atomic_plan(
+        _staged_roadmap([phase]),
+        strategy_memo=_strategy_trace()["memo"],
+        max_modules=2,
+        max_changes=4,
+        max_patches=8,
+        max_phases=3,
+        max_symbols=4,
+        parent_code=("first = 1\nsecond = 1\nthird = 1\nfourth = 1\nfifth = 1\n"),
+        stage="improve",
+    )
+    assert verdict["valid"] is False
+    assert "at most 4 distinct symbols per phase; found 5" in " ".join(
+        verdict["violations"]
+    )
+
+
 def test_staged_pipeline_carries_each_phase_code_forward():
     agent = _agent()
     ext = agent.cfg.external_skill_memory
@@ -954,3 +977,24 @@ def test_v80_config_enables_strict_complete_cumulative_staging():
     assert ext.memory_strategy_atomic_strict_coder_enabled is True
     assert ext.memory_strategy_atomic_require_complete_roadmap is True
     assert ext.memory_strategy_atomic_max_phases == 3
+
+
+def test_v81_config_caps_symbols_without_blocking_coupled_debug_repair():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v81"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v81-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    ext = cfg.external_skill_memory
+    assert ext.memory_strategy_atomic_staged_enabled is True
+    assert ext.memory_strategy_atomic_strict_coder_enabled is True
+    assert ext.memory_strategy_atomic_max_symbols_per_phase == 4
+    assert ext.memory_strategy_atomic_debug_max_symbols_per_phase == 4
+    assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
+        "/workspace/nautilus-exp-end2end-agent-v81/"
+    )

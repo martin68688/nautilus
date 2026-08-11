@@ -1,0 +1,15 @@
+# v81 closes the single-change/many-symbol loophole found while preparing the
+# first online staged-actuation smoke. Coupled Debug repairs may still touch up
+# to four top-level symbols in one phase.
+extends: ../systems_v80/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v81/experiments/end2end_memory_systems_20260804/manifests_v81/leaf_official_replay_targets.json
+
+external_skill_memory:
+  memory_strategy_atomic_max_symbols_per_phase: 4
+  memory_strategy_atomic_debug_max_symbols_per_phase: 4
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v7_strict_staged_symbol_cap_v81

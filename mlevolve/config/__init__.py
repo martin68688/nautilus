@@ -525,8 +525,10 @@ class ExternalSkillMemoryConfig:
     memory_strategy_atomic_max_modules: int = 2
     memory_strategy_atomic_max_changes: int = 3
     memory_strategy_atomic_max_patches: int = 6
+    memory_strategy_atomic_max_symbols_per_phase: int = 64
     memory_strategy_atomic_debug_max_modules: int = 1
     memory_strategy_atomic_debug_max_changes: int = 2
+    memory_strategy_atomic_debug_max_symbols_per_phase: int = 4
     memory_strategy_atomic_debug_targeted_repair_only: bool = True
     memory_strategy_atomic_planner_contract_retries: int = 2
     memory_strategy_atomic_coder_contract_retries: int = 1

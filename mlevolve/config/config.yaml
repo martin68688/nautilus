@@ -407,8 +407,10 @@ external_skill_memory:
   memory_strategy_atomic_max_modules: 2
   memory_strategy_atomic_max_changes: 3
   memory_strategy_atomic_max_patches: 6
+  memory_strategy_atomic_max_symbols_per_phase: 64
   memory_strategy_atomic_debug_max_modules: 1
   memory_strategy_atomic_debug_max_changes: 2
+  memory_strategy_atomic_debug_max_symbols_per_phase: 4
   memory_strategy_atomic_debug_targeted_repair_only: true
   memory_strategy_atomic_planner_contract_retries: 2
   memory_strategy_atomic_coder_contract_retries: 1

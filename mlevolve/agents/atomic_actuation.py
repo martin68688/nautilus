@@ -217,6 +217,7 @@ def validate_atomic_plan(
     max_modules: int,
     max_changes: int,
     max_patches: int,
+    max_symbols: int | None = None,
     parent_code: str | None = None,
     stage: str = "",
     debug_targeted_repair_only: bool = False,
@@ -305,6 +306,12 @@ def validate_atomic_plan(
                     f"{change_id or index} targets non-top-level symbols: "
                     f"{unknown_targets}; available symbols are {sorted(available_symbols)}"
                 )
+    if max_symbols is not None and int(max_symbols) > 0:
+        if len(seen_target_symbols) > int(max_symbols):
+            violations.append(
+                f"target_symbols must contain at most {int(max_symbols)} distinct "
+                f"symbols per phase; found {len(seen_target_symbols)}"
+            )
     try:
         requested_patches = int(plan.get("max_patches", 0))
     except (TypeError, ValueError):
@@ -370,6 +377,7 @@ def validate_staged_atomic_plan(
     max_changes: int,
     max_patches: int,
     max_phases: int,
+    max_symbols: int | None = None,
     parent_code: str | None = None,
     stage: str = "",
     debug_targeted_repair_only: bool = False,
@@ -443,6 +451,7 @@ def validate_staged_atomic_plan(
             max_modules=max_modules,
             max_changes=max_changes,
             max_patches=max_patches,
+            max_symbols=max_symbols,
             parent_code=parent_code,
             stage=stage,
             debug_targeted_repair_only=debug_targeted_repair_only,
@@ -468,6 +477,7 @@ def validate_staged_atomic_plan(
         "violations": violations,
         "phase_count": len(phases),
         "max_phases": int(max_phases),
+        "max_symbols_per_phase": int(max_symbols or 0),
         "phase_validations": phase_validations,
     }
 
@@ -483,6 +493,9 @@ def _atomic_limits(agent: Any, stage: str) -> dict[str, int]:
         ),
         "max_patches": int(
             getattr(ext_cfg, "memory_strategy_atomic_max_patches", 6) or 6
+        ),
+        "max_symbols": int(
+            getattr(ext_cfg, "memory_strategy_atomic_max_symbols_per_phase", 64) or 64
         ),
     }
     if str(stage) == "improve":
@@ -502,6 +515,17 @@ def _atomic_limits(agent: Any, stage: str) -> dict[str, int]:
         limits["max_changes"] = min(
             limits["max_changes"],
             int(getattr(ext_cfg, "memory_strategy_atomic_debug_max_changes", 2) or 2),
+        )
+        limits["max_symbols"] = min(
+            limits["max_symbols"],
+            int(
+                getattr(
+                    ext_cfg,
+                    "memory_strategy_atomic_debug_max_symbols_per_phase",
+                    4,
+                )
+                or 4
+            ),
         )
         limits["max_patches"] = min(
             limits["max_patches"],
@@ -694,6 +718,7 @@ def run_atomic_actuation_planner(
                     max_modules=limits["max_modules"],
                     max_changes=limits["max_changes"],
                     max_patches=limits["max_patches"],
+                    max_symbols=limits["max_symbols"],
                     parent_code=parent_code,
                     stage=stage,
                     debug_targeted_repair_only=bool(
@@ -963,6 +988,7 @@ def run_atomic_staged_actuation_planner(
                     max_changes=limits["max_changes"],
                     max_patches=limits["max_patches"],
                     max_phases=max_phases,
+                    max_symbols=limits["max_symbols"],
                     parent_code=parent_code,
                     stage=stage,
                     debug_targeted_repair_only=bool(
