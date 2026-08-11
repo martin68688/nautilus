@@ -50,6 +50,10 @@ def main() -> int:
     parser.add_argument("--release-version", type=int, default=74)
     parser.add_argument("--source-manifest-version", type=int, default=None)
     parser.add_argument(
+        "--source-smoke-manifest-name",
+        default="leaf_official_smoke_manifest.json",
+    )
+    parser.add_argument(
         "--release-slug", default="leaf-strategy-active-runtimefix"
     )
     parser.add_argument(
@@ -143,7 +147,7 @@ def main() -> int:
     source_lock["manifest_hash"] = payload_hash(source_lock, "manifest_hash")
     write_object(source_lock_path, source_lock)
 
-    smoke_source = source_manifests / "leaf_official_smoke_manifest.json"
+    smoke_source = source_manifests / str(args.source_smoke_manifest_name)
     smoke_path = manifests / "leaf_strategy_active_smoke_manifest.json"
     smoke = read_object(smoke_source)
     logical_id = (
@@ -189,6 +193,7 @@ def main() -> int:
         "schema": "mlevolve_leaf_strategy_active_source_release_v3",
         "release_version": args.release_version,
         "source_manifest_version": source_manifest_version,
+        "source_smoke_manifest": str(smoke_source),
         "release_slug": args.release_slug,
         "git_head": args.git_head,
         "base_source": str(base),

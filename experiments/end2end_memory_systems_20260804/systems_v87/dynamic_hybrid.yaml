@@ -1,0 +1,11 @@
+# v87 is the immutable-release retry of v86 after the pre-training publisher
+# discovered that the v84 source uses leaf_atomic_memory_smoke_manifest.json.
+# No retrieval or actuation semantics differ from v86.
+extends: ../systems_v86/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v87/experiments/end2end_memory_systems_20260804/manifests_v87/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v7_l3_hybrid_retrieval_v87
