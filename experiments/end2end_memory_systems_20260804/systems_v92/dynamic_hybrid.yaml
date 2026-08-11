@@ -1,0 +1,12 @@
+# v92 preserves the v91 Grep/L3 implementation after the v91 A100 node
+# reported an unhealthy device and terminated the DevPod at 12/16 steps.
+# Runtime behavior is unchanged; source, manifest, output, and workload
+# identities advance so the interrupted v91 attempt remains immutable.
+extends: ../systems_v91/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v92/experiments/end2end_memory_systems_20260804/manifests_v92/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v8_formal_visibility_grep_v92
