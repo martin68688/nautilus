@@ -665,6 +665,95 @@ def test_atomic_verifier_tracks_bindings_inside_top_level_try_block():
     assert verdict["changed_symbols"] == ["dinov3_model"]
 
 
+def test_atomic_verifier_attributes_top_level_autocast_header_to_module_only():
+    parent = (
+        "model = build_model()\n"
+        "for epoch in range(2):\n"
+        "    train_loss = 0.0\n"
+        "    for images, labels in loader:\n"
+        '        with torch.cuda.amp.autocast("cuda", enabled=True):\n'
+        "            logits = model(images)\n"
+        "            loss = criterion(logits, labels)\n"
+        "        train_loss += loss.item()\n"
+    )
+    candidate = parent.replace(
+        'torch.cuda.amp.autocast("cuda", enabled=True)',
+        "torch.cuda.amp.autocast(enabled=True)",
+    )
+    phase = _atomic_phase("amp", 1, target_symbols=["__module__"])
+    verdict = verify_atomic_code_change(
+        original_code=parent,
+        candidate_code=candidate,
+        atomic_plan=phase,
+        patch_count=1,
+        require_all_planned_changes=True,
+    )
+    assert verdict["valid"] is True
+    assert verdict["changed_symbols"] == ["__module__"]
+
+
+def test_atomic_verifier_reattributes_wrong_model_target_from_observed_diff():
+    parent = (
+        "model = build_model()\n"
+        "for images, labels in loader:\n"
+        '    with torch.cuda.amp.autocast("cuda", enabled=True):\n'
+        "        logits = model(images)\n"
+    )
+    candidate = parent.replace(
+        'torch.cuda.amp.autocast("cuda", enabled=True)',
+        "torch.cuda.amp.autocast(enabled=True)",
+    )
+    wrong_phase = _atomic_phase("amp", 1, target_symbols=["model"])
+    verdict = verify_atomic_code_change(
+        original_code=parent,
+        candidate_code=candidate,
+        atomic_plan=wrong_phase,
+        patch_count=1,
+        require_all_planned_changes=True,
+    )
+    assert verdict["valid"] is False
+    assert verdict["changed_symbols"] == ["__module__"]
+    assert verdict["unauthorized_changed_symbols"] == ["__module__"]
+    assert verdict["missing_required_symbols"] == ["model"]
+    assert atomic_actuation._coder_replan_mode(wrong_phase, verdict) == (
+        "scope_reconciliation"
+    )
+
+    corrected_phase = _atomic_phase("amp", 1, target_symbols=["__module__"])
+    assert (
+        validate_scope_reconciliation(
+            corrected_phase,
+            previous_plan=wrong_phase,
+            coder_verdict=verdict,
+        )
+        == []
+    )
+
+
+def test_mechanical_only_verifier_does_not_reject_semantic_symbol_mismatch():
+    parent = (
+        "model = build_model()\n"
+        "for images, labels in loader:\n"
+        '    with torch.cuda.amp.autocast("cuda", enabled=True):\n'
+        "        logits = model(images)\n"
+    )
+    candidate = parent.replace(
+        'torch.cuda.amp.autocast("cuda", enabled=True)',
+        "torch.cuda.amp.autocast(enabled=True)",
+    )
+    verdict = verify_atomic_code_change(
+        original_code=parent,
+        candidate_code=candidate,
+        atomic_plan=_atomic_phase("amp", 1, target_symbols=["model"]),
+        patch_count=1,
+        require_all_planned_changes=True,
+        verification_mode="mechanical_only",
+    )
+    assert verdict["valid"] is True
+    assert verdict["verification_mode"] == "mechanical_only"
+    assert verdict["changed_symbols"] == []
+
+
 def test_staged_pipeline_reconciles_observed_scope_and_retries(monkeypatch):
     agent = _agent()
     ext = agent.cfg.external_skill_memory
@@ -1103,4 +1192,24 @@ def test_v82_config_keeps_strict_staging_and_enables_bounded_reconciliation():
     assert ext.memory_strategy_atomic_max_symbols_per_phase == 4
     assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
         "/workspace/nautilus-exp-end2end-agent-v82/"
+    )
+
+
+def test_v83_config_disables_semantic_verifier_but_keeps_staged_planner():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v83"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v83-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    ext = cfg.external_skill_memory
+    assert ext.memory_strategy_atomic_staged_enabled is True
+    assert ext.memory_strategy_atomic_strict_coder_enabled is True
+    assert ext.memory_strategy_atomic_verifier_mode == "mechanical_only"
+    assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
+        "/workspace/nautilus-exp-end2end-agent-v83/"
     )

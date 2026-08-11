@@ -743,8 +743,9 @@ def _planner_prompt(
                 else (
                     "The prior Coder stayed inside the patch cap but touched undeclared "
                     "top-level symbols. Reconcile only the machine-observed boundary: keep "
-                    "the same hypothesis, objective, and modules; add only exact "
-                    "unauthorized_changed_symbols or new_imports from the Coder verdict. "
+                    "the same hypothesis, objective, and modules; replace only targets in "
+                    "missing_required_symbols with exact unauthorized_changed_symbols, and "
+                    "add only exact new_imports from the Coder verdict. "
                     "Do not authorize any unobserved symbol or widen the experiment."
                     if replan_mode == "scope_reconciliation"
                     else "The Coder could not implement the previous plan inside its verified boundary. "
@@ -1025,10 +1026,11 @@ def _staged_planner_prompt(
         if replan_mode == "scope_reconciliation":
             instruction = (
                 "The strict Coder implemented the selected phase within the patch cap, but "
-                "the deterministic verifier observed undeclared top-level dependencies. Keep "
+                "the deterministic verifier observed a different exact top-level boundary. Keep "
                 "the complete roadmap, hypothesis, citations, phase count, and every other "
-                "phase unchanged. In the rejected phase, retain every previous target and add "
-                "only the exact unauthorized_changed_symbols/new_imports reported below. Use "
+                "phase unchanged. In the rejected phase, replace only targets listed in "
+                "missing_required_symbols with exact unauthorized_changed_symbols, and add "
+                "only exact new_imports reported below; retain all other previous targets. Use "
                 "operation=add for a symbol absent from the parent code and modify/delete only "
                 "for an existing symbol. Do not authorize any unobserved dependency."
             )
@@ -1236,14 +1238,11 @@ def run_atomic_staged_actuation_planner(
 
 def _top_level_units(code: str) -> tuple[dict[str, str], set[str]]:
     tree = ast.parse(code)
-    lines = code.splitlines(keepends=True)
     units: dict[str, list[str]] = {}
     imports: set[str] = set()
 
-    def segment(node: ast.AST) -> str:
-        start = max(0, int(getattr(node, "lineno", 1)) - 1)
-        end = int(getattr(node, "end_lineno", start + 1))
-        return "".join(lines[start:end])
+    def canonical(node: ast.AST) -> str:
+        return ast.dump(node, annotate_fields=True, include_attributes=False)
 
     def assigned_names(target: ast.AST) -> set[str]:
         if isinstance(target, ast.Name):
@@ -1252,127 +1251,152 @@ def _top_level_units(code: str) -> tuple[dict[str, str], set[str]]:
             return {name for child in target.elts for name in assigned_names(child)}
         return set()
 
-    def compound_bindings(
-        node: ast.AST,
-    ) -> tuple[set[str], set[str], list[str]]:
-        """Return names/imports bound by one module-scope compound statement.
+    def record(names: Iterable[str], node: ast.AST) -> None:
+        payload = canonical(node)
+        for name in sorted(set(names)):
+            units.setdefault(name, []).append(payload)
 
-        The previous verifier treated an entire top-level ``try``/``if``/``with``
-        block as ``__module__``.  That made real module bindings such as a model
-        initialized inside ``try/except`` invisible to the Planner and turned a
-        narrow backbone repair into an apparently unrelated module rewrite.
-        Walk only the current module scope: definitions inside the compound
-        statement bind their name, but their local bodies are intentionally not
-        inspected.
-        """
+    class BindingCollector(ast.NodeVisitor):
+        """Collect exact module-scope binding statements, not enclosing blocks."""
 
-        names: set[str] = set()
-        nested_imports: set[str] = set()
-        nested_import_segments: list[str] = []
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            record([node.name], node)
 
-        class BindingVisitor(ast.NodeVisitor):
-            def visit_FunctionDef(self, child: ast.FunctionDef) -> None:
-                names.add(child.name)
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+            record([node.name], node)
 
-            def visit_AsyncFunctionDef(self, child: ast.AsyncFunctionDef) -> None:
-                names.add(child.name)
+        def visit_ClassDef(self, node: ast.ClassDef) -> None:
+            record([node.name], node)
 
-            def visit_ClassDef(self, child: ast.ClassDef) -> None:
-                names.add(child.name)
+        def visit_Lambda(self, node: ast.Lambda) -> None:
+            return
 
-            def visit_Lambda(self, child: ast.Lambda) -> None:
-                return
+        def visit_Assign(self, node: ast.Assign) -> None:
+            record(
+                (name for target in node.targets for name in assigned_names(target)),
+                node,
+            )
+            self.visit(node.value)
 
-            def visit_Assign(self, child: ast.Assign) -> None:
-                for target in child.targets:
-                    names.update(assigned_names(target))
-                self.generic_visit(child.value)
+        def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+            record(assigned_names(node.target), node)
+            if node.value is not None:
+                self.visit(node.value)
 
-            def visit_AnnAssign(self, child: ast.AnnAssign) -> None:
-                names.update(assigned_names(child.target))
-                if child.value is not None:
-                    self.generic_visit(child.value)
+        def visit_AugAssign(self, node: ast.AugAssign) -> None:
+            record(assigned_names(node.target), node)
+            self.visit(node.value)
 
-            def visit_AugAssign(self, child: ast.AugAssign) -> None:
-                names.update(assigned_names(child.target))
-                self.generic_visit(child.value)
+        def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
+            record(assigned_names(node.target), node)
+            self.visit(node.value)
 
-            def visit_NamedExpr(self, child: ast.NamedExpr) -> None:
-                names.update(assigned_names(child.target))
-                self.generic_visit(child.value)
+        def visit_For(self, node: ast.For) -> None:
+            record(assigned_names(node.target), node.target)
+            self.visit(node.iter)
+            for child in [*node.body, *node.orelse]:
+                self.visit(child)
 
-            def visit_For(self, child: ast.For) -> None:
-                names.update(assigned_names(child.target))
-                self.generic_visit(child)
+        def visit_AsyncFor(self, node: ast.AsyncFor) -> None:
+            self.visit_For(node)
 
-            def visit_AsyncFor(self, child: ast.AsyncFor) -> None:
-                names.update(assigned_names(child.target))
-                self.generic_visit(child)
+        def visit_With(self, node: ast.With) -> None:
+            for item in node.items:
+                self.visit(item.context_expr)
+                if item.optional_vars is not None:
+                    record(assigned_names(item.optional_vars), item.optional_vars)
+            for child in node.body:
+                self.visit(child)
 
-            def visit_With(self, child: ast.With) -> None:
-                for item in child.items:
-                    if item.optional_vars is not None:
-                        names.update(assigned_names(item.optional_vars))
-                self.generic_visit(child)
+        def visit_AsyncWith(self, node: ast.AsyncWith) -> None:
+            self.visit_With(node)
 
-            def visit_AsyncWith(self, child: ast.AsyncWith) -> None:
-                for item in child.items:
-                    if item.optional_vars is not None:
-                        names.update(assigned_names(item.optional_vars))
-                self.generic_visit(child)
+        def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+            if node.name:
+                units.setdefault(str(node.name), []).append("except-handler-binding")
+            if node.type is not None:
+                self.visit(node.type)
+            for child in node.body:
+                self.visit(child)
 
-            def visit_ExceptHandler(self, child: ast.ExceptHandler) -> None:
-                if child.name:
-                    names.add(str(child.name))
-                self.generic_visit(child)
-
-            def visit_Import(self, child: ast.Import) -> None:
-                for alias in child.names:
-                    nested_imports.add(alias.name)
-                nested_import_segments.append(segment(child))
-
-            def visit_ImportFrom(self, child: ast.ImportFrom) -> None:
-                if child.module:
-                    nested_imports.update(
-                        f"{child.module}.{alias.name}" for alias in child.names
-                    )
-                nested_import_segments.append(segment(child))
-
-        BindingVisitor().visit(node)
-        return names, nested_imports, nested_import_segments
-
-    for node in tree.body:
-        if isinstance(node, ast.Import):
+        def visit_Import(self, node: ast.Import) -> None:
             imports.update(alias.name for alias in node.names)
-            units.setdefault("__imports__", []).append(segment(node))
-        elif isinstance(node, ast.ImportFrom):
+            units.setdefault("__imports__", []).append(canonical(node))
+
+        def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
             if node.module:
                 imports.update(f"{node.module}.{alias.name}" for alias in node.names)
-            units.setdefault("__imports__", []).append(segment(node))
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            units.setdefault(node.name, []).append(segment(node))
-        elif isinstance(node, ast.Assign):
-            names = {name for target in node.targets for name in assigned_names(target)}
-            for name in sorted(names):
-                units.setdefault(name, []).append(segment(node))
-            if not names:
-                units.setdefault("__module__", []).append(segment(node))
-        elif isinstance(node, (ast.AnnAssign, ast.AugAssign)):
-            names = assigned_names(node.target)
-            for name in sorted(names):
-                units.setdefault(name, []).append(segment(node))
-            if not names:
-                units.setdefault("__module__", []).append(segment(node))
-        else:
-            names, nested_imports, nested_import_segments = compound_bindings(node)
-            block = segment(node)
-            for name in sorted(names):
-                units.setdefault(name, []).append(block)
-            if nested_imports:
-                imports.update(nested_imports)
-                units.setdefault("__imports__", []).extend(nested_import_segments)
-            if not names and not nested_imports:
-                units.setdefault("__module__", []).append(block)
+            units.setdefault("__imports__", []).append(canonical(node))
+
+    class ModuleSkeleton(ast.NodeTransformer):
+        """Remove binding payloads while retaining executable control structure."""
+
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            return None
+
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+            return None
+
+        def visit_ClassDef(self, node: ast.ClassDef) -> None:
+            return None
+
+        def visit_Import(self, node: ast.Import) -> None:
+            return None
+
+        def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+            return None
+
+        def visit_Assign(self, node: ast.Assign) -> ast.AST | None:
+            if any(assigned_names(target) for target in node.targets):
+                return None
+            return self.generic_visit(node)
+
+        def visit_AnnAssign(self, node: ast.AnnAssign) -> ast.AST | None:
+            if assigned_names(node.target):
+                return None
+            return self.generic_visit(node)
+
+        def visit_AugAssign(self, node: ast.AugAssign) -> ast.AST | None:
+            if assigned_names(node.target):
+                return None
+            return self.generic_visit(node)
+
+        def visit_NamedExpr(self, node: ast.NamedExpr) -> ast.AST:
+            return ast.copy_location(ast.Constant(value="__module_binding__"), node)
+
+        def visit_For(self, node: ast.For) -> ast.AST:
+            node.target = ast.copy_location(
+                ast.Name(id="__module_binding__", ctx=ast.Store()), node.target
+            )
+            return self.generic_visit(node)
+
+        def visit_AsyncFor(self, node: ast.AsyncFor) -> ast.AST:
+            return self.visit_For(node)
+
+        def visit_With(self, node: ast.With) -> ast.AST:
+            for item in node.items:
+                if item.optional_vars is not None:
+                    item.optional_vars = ast.copy_location(
+                        ast.Name(id="__module_binding__", ctx=ast.Store()),
+                        item.optional_vars,
+                    )
+            return self.generic_visit(node)
+
+        def visit_AsyncWith(self, node: ast.AsyncWith) -> ast.AST:
+            return self.visit_With(node)
+
+        def visit_ExceptHandler(self, node: ast.ExceptHandler) -> ast.AST:
+            if node.name:
+                node.name = "__module_binding__"
+            return self.generic_visit(node)
+
+    BindingCollector().visit(tree)
+    skeleton = ModuleSkeleton().visit(copy.deepcopy(tree))
+    assert isinstance(skeleton, ast.Module)
+    for node in skeleton.body:
+        units.setdefault("__module__", []).append(canonical(node))
+    if not units.get("__module__"):
+        units.pop("__module__", None)
     return (
         {
             name: hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
@@ -1507,6 +1531,8 @@ def _coder_replan_mode(
         "changed symbols outside allowed set:",
         "imports changed without __imports__ permission",
         "unauthorized new imports:",
+        "planned target symbols were not changed:",
+        "planned symbol operations were not followed:",
     )
     try:
         patch_count = int(coder_verdict.get("patch_count") or 0)
@@ -1517,11 +1543,22 @@ def _coder_replan_mode(
         str(value)
         for value in (coder_verdict.get("unauthorized_changed_symbols") or [])
     }
+    missing = {
+        str(value) for value in (coder_verdict.get("missing_required_symbols") or [])
+    }
+    operation_violations = [
+        str(value) for value in (coder_verdict.get("operation_violations") or [])
+    ]
+    operations_only_describe_missing = all(
+        any(value.startswith(f"{symbol}:") for symbol in missing)
+        for value in operation_violations
+    )
     if (
         violations
         and unauthorized
         and 1 <= patch_count <= max_patches
         and all(value.startswith(allowed_prefixes) for value in violations)
+        and operations_only_describe_missing
     ):
         return "scope_reconciliation"
     return "decompose"
@@ -1557,7 +1594,12 @@ def validate_scope_reconciliation(
         str(value)
         for value in (coder_verdict.get("unauthorized_changed_symbols") or [])
     }
+    observed_missing_symbols = {
+        str(value)
+        for value in (coder_verdict.get("missing_required_symbols") or [])
+    }
     added_symbols = current_symbols - previous_symbols
+    removed_symbols = previous_symbols - current_symbols
     if not added_symbols:
         violations.append(
             "scope reconciliation must authorize an observed missing symbol"
@@ -1569,6 +1611,10 @@ def validate_scope_reconciliation(
     if not observed_symbols.issubset(current_symbols):
         violations.append(
             "scope reconciliation must account for every observed unauthorized symbol"
+        )
+    if not removed_symbols.issubset(observed_missing_symbols):
+        violations.append(
+            "scope reconciliation removed targets not reported as missing by the Coder verifier"
         )
 
     previous_imports = {
@@ -1599,7 +1645,62 @@ def verify_atomic_code_change(
     atomic_plan: Mapping[str, Any],
     patch_count: int,
     require_all_planned_changes: bool = False,
+    verification_mode: str = "strict",
 ) -> dict[str, Any]:
+    verification_mode = str(verification_mode or "strict").lower()
+    if verification_mode not in {"strict", "mechanical_only"}:
+        raise ValueError(f"Unsupported atomic verification mode: {verification_mode}")
+    if verification_mode == "mechanical_only":
+        violations: list[str] = []
+        try:
+            ast.parse(candidate_code)
+            syntax_valid = True
+            syntax_error = ""
+        except SyntaxError as exc:
+            syntax_valid = False
+            syntax_error = str(exc)
+            violations.append(f"candidate syntax error: {exc}")
+        try:
+            max_patches = int(atomic_plan.get("max_patches", 0))
+        except (TypeError, ValueError):
+            max_patches = 0
+        if patch_count < 1 or patch_count > max_patches:
+            violations.append(
+                f"patch count {patch_count} is outside atomic limit 1..{max_patches}"
+            )
+        if original_code == candidate_code:
+            violations.append("candidate code is unchanged")
+        return {
+            "schema": "mlevolve_plan_diff_verdict_v1",
+            "verification_mode": "mechanical_only",
+            "valid": not violations,
+            "violations": violations,
+            "syntax_valid": syntax_valid,
+            "syntax_error": syntax_error,
+            "patch_count": int(patch_count),
+            "max_patches": max_patches,
+            "allowed_symbols": sorted(_allowed_target_symbols(atomic_plan)),
+            "changed_symbols": [],
+            "unauthorized_changed_symbols": [],
+            "missing_required_symbols": [],
+            "operation_violations": [],
+            "require_all_planned_changes": False,
+            "coder_allowlist": build_atomic_coder_allowlist(atomic_plan),
+            "new_imports": [],
+            "removed_imports": [],
+            "allowed_new_imports": sorted(
+                str(value) for value in (atomic_plan.get("allowed_new_imports") or [])
+            ),
+            "forbidden_symbols_touched": [],
+            "forbidden_code_patterns_introduced": [],
+            "original_code_sha256": hashlib.sha256(
+                original_code.encode("utf-8")
+            ).hexdigest(),
+            "candidate_code_sha256": hashlib.sha256(
+                candidate_code.encode("utf-8")
+            ).hexdigest(),
+        }
+
     violations: list[str] = []
     try:
         before_units, before_imports = _top_level_units(original_code)
@@ -1713,6 +1814,7 @@ def verify_atomic_code_change(
         violations.append("candidate code is unchanged")
     return {
         "schema": "mlevolve_plan_diff_verdict_v1",
+        "verification_mode": "strict",
         "valid": not violations,
         "violations": violations,
         "syntax_valid": syntax_valid,
@@ -1746,6 +1848,7 @@ def apply_atomic_diff_response(
     original_code: str,
     atomic_plan: Mapping[str, Any],
     require_all_planned_changes: bool = False,
+    verification_mode: str = "strict",
 ) -> tuple[str | None, dict[str, Any]]:
     response = str(response or "")
     patcher = SearchReplacePatcher()
@@ -1782,6 +1885,7 @@ def apply_atomic_diff_response(
         atomic_plan=atomic_plan,
         patch_count=count,
         require_all_planned_changes=require_all_planned_changes,
+        verification_mode=verification_mode,
     )
     return (candidate_code if verdict["valid"] else None), verdict
 
@@ -1872,6 +1976,18 @@ def run_atomic_coder(
                 False,
             )
         )
+        verification_mode = str(
+            getattr(
+                ext_cfg,
+                "memory_strategy_atomic_verifier_mode",
+                "strict",
+            )
+            or "strict"
+        ).lower()
+        if verification_mode not in {"strict", "mechanical_only"}:
+            raise ValueError(
+                f"Unsupported memory_strategy_atomic_verifier_mode: {verification_mode}"
+            )
         candidate_code: str | None = None
         response: Any = ""
         verdict: dict[str, Any] = {
@@ -1909,6 +2025,7 @@ def run_atomic_coder(
                 original_code=parent_code,
                 atomic_plan=plan,
                 require_all_planned_changes=strict_coder,
+                verification_mode=verification_mode,
             )
             contract_attempts.append(
                 {
@@ -1938,6 +2055,7 @@ def run_atomic_coder(
             ),
             "plan_diff_verdict": verdict,
             "strict_coder_enabled": strict_coder,
+            "verification_mode": verification_mode,
             "coder_allowlist": build_atomic_coder_allowlist(plan),
             "contract_attempts": contract_attempts,
         }

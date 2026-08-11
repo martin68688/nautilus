@@ -998,6 +998,15 @@ class AgentSearch:
                         getattr(result_node, "atomic_actuation_trace", None) or {}
                     )
                     if atomic_trace.get("status") == "accepted":
+                        ext_cfg = getattr(self.cfg, "external_skill_memory", None)
+                        verification_mode = str(
+                            getattr(
+                                ext_cfg,
+                                "memory_strategy_atomic_verifier_mode",
+                                "strict",
+                            )
+                            or "strict"
+                        ).lower()
                         atomic_plan = dict(
                             (atomic_trace.get("planner") or {}).get("plan") or {}
                         )
@@ -1007,11 +1016,23 @@ class AgentSearch:
                             )
                             or {}
                         )
+                        post_review_patch_count = int(
+                            initial_verdict.get("patch_count") or 0
+                        )
+                        if verification_mode == "mechanical_only":
+                            # Every staged phase already passed its frozen patch
+                            # budget before code review.  The post-review gate now
+                            # checks only that the final candidate remains valid
+                            # Python; it does not reconstruct semantic ownership
+                            # from a roadmap object (which has no phase max_patches).
+                            post_review_patch_count = max(1, post_review_patch_count)
+                            atomic_plan = {"max_patches": post_review_patch_count}
                         post_review_verdict = verify_atomic_code_change(
                             original_code=parent_node.code,
                             candidate_code=result_node.code,
                             atomic_plan=atomic_plan,
-                            patch_count=int(initial_verdict.get("patch_count") or 0),
+                            patch_count=post_review_patch_count,
+                            verification_mode=verification_mode,
                         )
                         result_node.atomic_actuation_trace[
                             "post_review_plan_diff_verdict"

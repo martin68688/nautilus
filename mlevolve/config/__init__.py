@@ -542,6 +542,7 @@ class ExternalSkillMemoryConfig:
     memory_strategy_atomic_max_phases: int = 3
     memory_strategy_atomic_require_complete_roadmap: bool = True
     memory_strategy_atomic_strict_coder_enabled: bool = False
+    memory_strategy_atomic_verifier_mode: str = "strict"
     # Dynamic Hybrid may delegate L3 failure/root-cause matching to the
     # Retrieval Agent.  The Host keeps only objective task/evidence gates and
     # literal traceback-anchor extraction; no maintained synonym table is

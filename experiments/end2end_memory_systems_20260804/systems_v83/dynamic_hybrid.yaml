@@ -1,0 +1,16 @@
+# v83 keeps Strategy -> staged Planner -> Coder, but disables semantic symbol
+# adjudication after repeated false rejections of valid one-line repairs.  The
+# remaining mechanical gate checks diff application, Python syntax, and the
+# frozen per-phase patch budget.  Runs from this system are not strict-verifier
+# causal evidence and must be labeled accordingly.
+extends: ../systems_v82/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v83/experiments/end2end_memory_systems_20260804/manifests_v83/leaf_official_replay_targets.json
+
+external_skill_memory:
+  memory_strategy_atomic_verifier_mode: mechanical_only
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v7_staged_mechanical_v83
