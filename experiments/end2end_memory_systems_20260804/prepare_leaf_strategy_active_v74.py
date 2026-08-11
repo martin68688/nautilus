@@ -48,12 +48,34 @@ def main() -> int:
     parser.add_argument("--git-head", required=True)
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--release-version", type=int, default=74)
+    parser.add_argument("--source-manifest-version", type=int, default=None)
+    parser.add_argument(
+        "--release-slug", default="leaf-strategy-active-runtimefix"
+    )
+    parser.add_argument(
+        "--experimental-axis",
+        default=(
+            "Leaf required Strategy with method-complete evidence, staged Atomic "
+            "actuation, and in-flight-safe search finalization"
+        ),
+    )
+    parser.add_argument(
+        "--system-description",
+        default=(
+            "Dynamic Router plus required active Strategy with verified Planner "
+            "decomposition and alternate atomic fallback for Improve and Debug"
+        ),
+    )
     args = parser.parse_args()
 
     if args.release_version < 74:
         raise ValueError("release-version must be at least 74")
     release_tag = f"v{args.release_version}"
-    source_manifest_version = 61 if args.release_version == 74 else args.release_version - 1
+    source_manifest_version = (
+        int(args.source_manifest_version)
+        if args.source_manifest_version is not None
+        else 61 if args.release_version == 74 else args.release_version - 1
+    )
 
     base = args.base.resolve(strict=True)
     destination = args.destination.resolve()
@@ -75,20 +97,14 @@ def main() -> int:
     config_path = exp_root / f"systems_{release_tag}/dynamic_hybrid.yaml"
     systems_path = manifests / "systems.json"
     systems = read_object(systems_path)
-    systems["experimental_axis"] = (
-        "Leaf required Strategy with method-complete evidence, staged Atomic actuation, "
-        "and in-flight-safe search finalization"
-    )
+    systems["experimental_axis"] = str(args.experimental_axis)
     systems["systems"] = [
         {
             "config_path": f"systems_{release_tag}/dynamic_hybrid.yaml",
             "config_sha256": sha256_file(config_path),
-            "description": (
-                "Dynamic Router plus required active Strategy with verified Planner "
-                "decomposition and alternate atomic fallback for Improve and Debug"
-            ),
+            "description": str(args.system_description),
             "kind": "internal_exploratory",
-            "label": f"S5-{release_tag}-active-runtimefix",
+            "label": f"S5-{release_tag}-{args.release_slug}",
             "limitation": "single exploratory six-hour Leaf Smoke",
             "primary_reference": None,
             "system_id": "dynamic_hybrid",
@@ -131,7 +147,7 @@ def main() -> int:
     smoke_path = manifests / "leaf_strategy_active_smoke_manifest.json"
     smoke = read_object(smoke_source)
     logical_id = (
-        f"e2e-smoke-leaf-strategy-active-runtimefix-{release_tag}__leaf-classification__"
+        f"e2e-smoke-{args.release_slug}-{release_tag}__leaf-classification__"
         "dynamic_hybrid__seed-1"
     )
     row = dict(smoke["runs"][0])
@@ -152,7 +168,7 @@ def main() -> int:
     row["row_hash"] = payload_hash(row, "row_hash")
     smoke.update(
         {
-            "release_id": f"end2end-leaf-strategy-active-runtimefix-{release_tag}-smoke",
+            "release_id": f"end2end-{args.release_slug}-{release_tag}-smoke",
             "kind": "smoke",
             "run_count": 1,
             "runs": [row],
@@ -172,6 +188,8 @@ def main() -> int:
     receipt = {
         "schema": "mlevolve_leaf_strategy_active_source_release_v3",
         "release_version": args.release_version,
+        "source_manifest_version": source_manifest_version,
+        "release_slug": args.release_slug,
         "git_head": args.git_head,
         "base_source": str(base),
         "frozen_source": str(destination),
