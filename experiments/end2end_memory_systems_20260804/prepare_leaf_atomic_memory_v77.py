@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build immutable v77 Leaf source bound to the atomic Debug memory release."""
+"""Build an immutable v77+ Leaf source bound to atomic Debug memory."""
 
 from __future__ import annotations
 
@@ -20,11 +20,6 @@ from prepare_leaf_strategy_active_v73 import (
 )
 
 
-RELEASE_VERSION = 77
-BUNDLE_ROOT = (
-    "/workspace/experiment-end2end-memory-agent-v77/"
-    "memory-leaf-atomic-v7/leaf-classification"
-)
 OFFICIAL_LEDGER_SHA256 = (
     "e15176956e4161e45348ab382438e19ce2bad0cdd98134b54e7a8de0b277dc66"
 )
@@ -35,6 +30,8 @@ def _update_memory_manifest(
     *,
     publication: dict[str, Any],
     bundle_manifest: dict[str, Any],
+    published_bundle_root: str,
+    release_version: int,
 ) -> dict[str, Any]:
     payload = read_object(path)
     task = dict(payload["task_bundles"]["leaf-classification"])
@@ -45,7 +42,7 @@ def _update_memory_manifest(
                 "bundle_manifest_file_sha256"
             ],
             "bundle_manifest_sha256": publication["bundle_manifest_sha256"],
-            "bundle_root": BUNDLE_ROOT,
+            "bundle_root": published_bundle_root,
             "bundle_version": publication["bundle_version"],
             "current_file_sha256": publication["current_file_sha256"],
             "formal_child_publication": False,
@@ -55,7 +52,9 @@ def _update_memory_manifest(
                 "leaf_official_recipe_v6_plus_full_transition_atomic_debug_v7"
             ),
             "official_ledger_sha256": OFFICIAL_LEDGER_SHA256,
-            "protocol_ref": "leaf-atomic-debug-memory@20260811#v77",
+            "protocol_ref": (
+                f"leaf-atomic-debug-memory@20260811#v{release_version}"
+            ),
             "recipe_evidence_manifest_sha256": publication[
                 "recipe_evidence_manifest_sha256"
             ],
@@ -101,8 +100,15 @@ def main() -> int:
     parser.add_argument("--overlay", type=Path, required=True)
     parser.add_argument("--git-head", required=True)
     parser.add_argument("--memory-bundle-root", type=Path, required=True)
+    parser.add_argument("--published-memory-root", required=True)
     parser.add_argument("--receipt", type=Path, required=True)
+    parser.add_argument("--release-version", type=int, default=77)
     args = parser.parse_args()
+
+    if args.release_version < 77:
+        raise ValueError("release-version must be at least 77")
+    release_tag = f"v{args.release_version}"
+    source_release_tag = f"v{args.release_version - 1}"
 
     base = args.base.resolve(strict=True)
     destination = args.destination.resolve()
@@ -115,8 +121,8 @@ def main() -> int:
     extract_overlay(overlay, destination)
 
     exp_root = destination / "experiments/end2end_memory_systems_20260804"
-    source_manifests = exp_root / "manifests_v76"
-    manifests = exp_root / "manifests_v77"
+    source_manifests = exp_root / f"manifests_{source_release_tag}"
+    manifests = exp_root / f"manifests_{release_tag}"
     if manifests.exists():
         raise FileExistsError(f"overlay unexpectedly created {manifests}")
     shutil.copytree(source_manifests, manifests)
@@ -134,9 +140,11 @@ def main() -> int:
         memory_path,
         publication=publication,
         bundle_manifest=bundle_manifest,
+        published_bundle_root=args.published_memory_root,
+        release_version=args.release_version,
     )
 
-    config_path = exp_root / "systems_v77/dynamic_hybrid.yaml"
+    config_path = exp_root / f"systems_{release_tag}/dynamic_hybrid.yaml"
     systems_path = manifests / "systems.json"
     systems = read_object(systems_path)
     systems["experimental_axis"] = (
@@ -145,14 +153,14 @@ def main() -> int:
     )
     systems["systems"] = [
         {
-            "config_path": "systems_v77/dynamic_hybrid.yaml",
+            "config_path": f"systems_{release_tag}/dynamic_hybrid.yaml",
             "config_sha256": sha256_file(config_path),
             "description": (
                 "Dynamic Router with atomic claim visibility and structured "
                 "exception/model/operand/symbol Debug ranking"
             ),
             "kind": "internal_exploratory",
-            "label": "S5-v77-leaf-atomic-debug-memory",
+            "label": f"S5-{release_tag}-leaf-atomic-debug-memory",
             "limitation": "single exploratory six-hour Leaf Smoke",
             "primary_reference": None,
             "system_id": "dynamic_hybrid",
@@ -168,7 +176,10 @@ def main() -> int:
     write_object(budget_path, budget)
 
     smoke_path = manifests / "leaf_atomic_memory_smoke_manifest.json"
-    source_smoke = read_object(source_manifests / "leaf_strategy_active_smoke_manifest.json")
+    source_smoke_path = source_manifests / "leaf_atomic_memory_smoke_manifest.json"
+    if not source_smoke_path.exists():
+        source_smoke_path = source_manifests / "leaf_strategy_active_smoke_manifest.json"
+    source_smoke = read_object(source_smoke_path)
 
     # The execution manifest binds the source-lock hash, so including that
     # manifest inside the source lock would create an impossible hash cycle.
@@ -203,7 +214,7 @@ def main() -> int:
 
     smoke = dict(source_smoke)
     logical_id = (
-        "e2e-smoke-leaf-atomic-memory-v77__leaf-classification__"
+        f"e2e-smoke-leaf-atomic-memory-{release_tag}__leaf-classification__"
         "dynamic_hybrid__seed-1"
     )
     bindings = dict(smoke["bindings"])
@@ -229,7 +240,7 @@ def main() -> int:
     row["row_hash"] = payload_hash(row, "row_hash")
     smoke.update(
         {
-            "release_id": "end2end-leaf-atomic-memory-v77-smoke",
+            "release_id": f"end2end-leaf-atomic-memory-{release_tag}-smoke",
             "kind": "smoke",
             "run_count": 1,
             "runs": [row],
@@ -248,7 +259,7 @@ def main() -> int:
     file_count, source_manifest_sha = freeze(destination)
     receipt = {
         "schema": "mlevolve_leaf_atomic_memory_source_release_v1",
-        "release_version": RELEASE_VERSION,
+        "release_version": args.release_version,
         "git_head": args.git_head,
         "base_source": str(base),
         "frozen_source": str(destination),

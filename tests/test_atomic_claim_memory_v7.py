@@ -225,3 +225,24 @@ def test_generated_release_covers_v45_claim_when_present() -> None:
     assert matches[0]["claim_status"] == AUTHORIZED_DEBUG_STATUS
     assert matches[0]["taint"]["code"] == "quarantine"
     assert matches[0]["taint"]["claim"] == "clean"
+
+
+def test_v77_and_v78_configs_bind_atomic_recipe_overlays() -> None:
+    systems_root = (
+        ROOT / "experiments" / "end2end_memory_systems_20260804"
+    )
+    for version in (77, 78):
+        text = (
+            systems_root / f"systems_v{version}" / "dynamic_hybrid.yaml"
+        ).read_text(encoding="utf-8")
+        memory_root = (
+            f"/workspace/experiment-end2end-memory-agent-v{version}/"
+            "memory-leaf-atomic-v7/leaf-classification/"
+            "bundles/v7-leaf-atomic-20260811/recipe"
+        )
+        assert f"recipe_sop_path: {memory_root}/recipe_sops.json" in text
+        assert f"recipe_evidence_path: {memory_root}/evidence_manifest.json" in text
+        assert (
+            f"recipe_implementation_path: {memory_root}/implementation_capsules.json"
+            in text
+        )
