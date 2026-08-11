@@ -1436,3 +1436,24 @@ def test_v90_config_enables_authority_gated_grep_then_independent_l3_judge():
     assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
         "/workspace/nautilus-exp-end2end-agent-v90/"
     )
+
+
+def test_v91_config_is_an_immutable_release_retry_of_v90():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v91"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v91-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    ext = cfg.external_skill_memory
+    assert ext.visibility_mode_override == "enforce"
+    assert ext.experiment_r_l3_grep_agent_enabled is True
+    assert ext.experiment_r_l3_semantic_shortlist_enabled is False
+    assert ext.experiment_r_l3_agent_match_max_tokens == 7000
+    assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
+        "/workspace/nautilus-exp-end2end-agent-v91/"
+    )

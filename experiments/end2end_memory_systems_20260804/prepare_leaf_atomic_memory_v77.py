@@ -117,6 +117,7 @@ def main() -> int:
     parser.add_argument("--published-memory-root", required=True)
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--release-version", type=int, default=77)
+    parser.add_argument("--source-manifest-version", type=int, default=None)
     parser.add_argument("--agent-steps", type=int, default=8)
     parser.add_argument(
         "--ranking-policy",
@@ -131,7 +132,14 @@ def main() -> int:
     if args.agent_steps < 1:
         raise ValueError("agent-steps must be positive")
     release_tag = f"v{args.release_version}"
-    source_release_tag = f"v{args.release_version - 1}"
+    source_manifest_version = (
+        int(args.source_manifest_version)
+        if args.source_manifest_version is not None
+        else args.release_version - 1
+    )
+    if source_manifest_version < 1:
+        raise ValueError("source-manifest-version must be positive")
+    source_release_tag = f"v{source_manifest_version}"
 
     base = args.base.resolve(strict=True)
     destination = args.destination.resolve()
@@ -313,6 +321,7 @@ def main() -> int:
     receipt = {
         "schema": "mlevolve_leaf_atomic_memory_source_release_v1",
         "release_version": args.release_version,
+        "source_manifest_version": source_manifest_version,
         "git_head": args.git_head,
         "base_source": str(base),
         "frozen_source": str(destination),

@@ -1,0 +1,11 @@
+# v91 is the immutable release retry after the v90 source build connection
+# expired before the source lock and receipt were completed. Runtime behavior
+# is unchanged from v90; only source, manifest, and output identities advance.
+extends: ../systems_v90/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v91/experiments/end2end_memory_systems_20260804/manifests_v91/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v8_formal_visibility_grep_v91
