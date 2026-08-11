@@ -674,6 +674,54 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else 1800
         )
+        self.experiment_r_l3_grep_agent_enabled = bool(
+            getattr(ext_cfg, "experiment_r_l3_grep_agent_enabled", False)
+            if ext_cfg is not None
+            else False
+        )
+        self.experiment_r_l3_grep_max_steps = int(
+            getattr(ext_cfg, "experiment_r_l3_grep_max_steps", 6)
+            if ext_cfg is not None
+            else 6
+        )
+        self.experiment_r_l3_grep_per_query_limit = int(
+            getattr(ext_cfg, "experiment_r_l3_grep_per_query_limit", 8)
+            if ext_cfg is not None
+            else 8
+        )
+        self.experiment_r_l3_grep_min_candidates = int(
+            getattr(ext_cfg, "experiment_r_l3_grep_min_candidates", 8)
+            if ext_cfg is not None
+            else 8
+        )
+        self.experiment_r_l3_grep_max_candidates = int(
+            getattr(ext_cfg, "experiment_r_l3_grep_max_candidates", 20)
+            if ext_cfg is not None
+            else 20
+        )
+        self.experiment_r_l3_grep_max_attempts = int(
+            getattr(ext_cfg, "experiment_r_l3_grep_max_attempts", 2)
+            if ext_cfg is not None
+            else 2
+        )
+        self.experiment_r_l3_grep_max_tokens = int(
+            getattr(ext_cfg, "experiment_r_l3_grep_max_tokens", 1600)
+            if ext_cfg is not None
+            else 1600
+        )
+        if not 1 <= self.experiment_r_l3_grep_per_query_limit <= 12:
+            raise ValueError("experiment_r_l3_grep_per_query_limit must be in [1, 12]")
+        if not 1 <= self.experiment_r_l3_grep_min_candidates <= 20:
+            raise ValueError("experiment_r_l3_grep_min_candidates must be in [1, 20]")
+        if not (
+            self.experiment_r_l3_grep_min_candidates
+            <= self.experiment_r_l3_grep_max_candidates
+            <= 20
+        ):
+            raise ValueError(
+                "experiment_r_l3_grep_max_candidates must be between the "
+                "configured minimum and 20"
+            )
         self.experiment_r_flexible_selection_enabled = bool(
             getattr(ext_cfg, "experiment_r_flexible_selection_enabled", False)
             if ext_cfg is not None
@@ -783,8 +831,14 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 raise ValueError("L3 Agent per-route candidate limit must be in [1, 32]")
             if not 0.0 <= self.experiment_r_l3_agent_match_min_confidence <= 1.0:
                 raise ValueError("L3 Agent match confidence must be in [0, 1]")
-            if self.experiment_r_l3_agent_match_max_tokens not in range(800, 4001):
-                raise ValueError("L3 Agent match token budget must be in [800, 4000]")
+            if self.experiment_r_l3_agent_match_max_tokens not in range(800, 100001):
+                raise ValueError("L3 Agent match token budget must be in [800, 100000]")
+            if self.experiment_r_l3_grep_max_steps not in range(1, 13):
+                raise ValueError("L3 Grep Agent max steps must be in [1, 12]")
+            if self.experiment_r_l3_grep_max_attempts not in range(1, 4):
+                raise ValueError("L3 Grep Agent attempts must be in [1, 3]")
+            if self.experiment_r_l3_grep_max_tokens not in range(800, 100001):
+                raise ValueError("L3 Grep Agent token budget must be in [800, 100000]")
             for stage, cap in self.experiment_r_stage_selection_caps.items():
                 if stage not in {"draft", "improve", "debug"}:
                     raise ValueError(f"Unknown Experiment R selection-cap stage: {stage}")

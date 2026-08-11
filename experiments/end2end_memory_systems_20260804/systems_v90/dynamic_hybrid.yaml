@@ -1,0 +1,27 @@
+# v90 replaces the fixed structured/BGE L3 shortlist with an Authority-gated
+# Grep Search Agent.  The search Agent must cover exception, symbol, and
+# numeric axes over the complete authorized L3 pool, may rewrite the query,
+# and passes an accumulated 8-20 card set to the independent root-cause L3
+# judge.  Strategy/Planner/Coder and the mechanical actuation policy are
+# inherited unchanged from the provenance-correct v89 release.
+extends: ../systems_v89/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v90/experiments/end2end_memory_systems_20260804/manifests_v90/leaf_official_replay_targets.json
+
+external_skill_memory:
+  experiment_r_l3_grep_agent_enabled: true
+  experiment_r_l3_grep_max_steps: 7
+  experiment_r_l3_grep_per_query_limit: 8
+  experiment_r_l3_grep_min_candidates: 8
+  experiment_r_l3_grep_max_candidates: 20
+  experiment_r_l3_grep_max_attempts: 2
+  experiment_r_l3_grep_max_tokens: 2000
+  # The fixed structured+dense Top-K path remains available for historical
+  # configurations but is deliberately not used by this causal smoke.
+  experiment_r_l3_semantic_shortlist_enabled: false
+  experiment_r_l3_agent_match_max_tokens: 7000
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v8_formal_visibility_grep_v90

@@ -557,6 +557,16 @@ class ExternalSkillMemoryConfig:
     experiment_r_l3_agent_match_max_attempts: int = 2
     experiment_r_l3_agent_match_min_confidence: float = 0.50
     experiment_r_l3_agent_match_max_tokens: int = 1800
+    # Optional two-agent Debug retrieval. A read-only Grep Search Agent first
+    # searches the complete Authority-authorized L3 pool; the independent L3
+    # Agent then judges the accumulated candidates by root cause.
+    experiment_r_l3_grep_agent_enabled: bool = False
+    experiment_r_l3_grep_max_steps: int = 6
+    experiment_r_l3_grep_per_query_limit: int = 8
+    experiment_r_l3_grep_min_candidates: int = 8
+    experiment_r_l3_grep_max_candidates: int = 20
+    experiment_r_l3_grep_max_attempts: int = 2
+    experiment_r_l3_grep_max_tokens: int = 1600
     excluded_run_ids: list[str] = field(default_factory=list)
 
 

@@ -431,6 +431,13 @@ external_skill_memory:
   # opt-in second route. The union is deduplicated before the L3 Agent.
   experiment_r_l3_agent_match_candidate_limit: 8
   experiment_r_l3_semantic_shortlist_enabled: false
+  experiment_r_l3_grep_agent_enabled: false
+  experiment_r_l3_grep_max_steps: 6
+  experiment_r_l3_grep_per_query_limit: 8
+  experiment_r_l3_grep_min_candidates: 8
+  experiment_r_l3_grep_max_candidates: 20
+  experiment_r_l3_grep_max_attempts: 2
+  experiment_r_l3_grep_max_tokens: 1600
 
 # ============================================================
 #  Persisted run identity (baseline vs memory-system experiments)
