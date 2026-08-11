@@ -116,7 +116,17 @@ def main() -> int:
     memory_root = args.memory_bundle_root.resolve(strict=True)
     if destination.exists():
         raise FileExistsError(f"refusing to replace immutable source: {destination}")
-    shutil.copytree(base, destination, symlinks=False)
+    shutil.copytree(
+        base,
+        destination,
+        symlinks=False,
+        ignore=shutil.ignore_patterns(
+            ".pytest_cache",
+            "__pycache__",
+            "*.pyc",
+            "*.pyo",
+        ),
+    )
     make_writable(destination)
     extract_overlay(overlay, destination)
 

@@ -1213,3 +1213,23 @@ def test_v83_config_disables_semantic_verifier_but_keeps_staged_planner():
     assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
         "/workspace/nautilus-exp-end2end-agent-v83/"
     )
+
+
+def test_v84_config_preserves_mechanical_mode_with_new_immutable_paths():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v84"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v84-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    assert (
+        cfg.external_skill_memory.memory_strategy_atomic_verifier_mode
+        == "mechanical_only"
+    )
+    assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
+        "/workspace/nautilus-exp-end2end-agent-v84/"
+    )

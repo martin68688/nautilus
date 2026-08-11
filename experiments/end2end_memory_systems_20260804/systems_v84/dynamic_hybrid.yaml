@@ -1,0 +1,10 @@
+# v84 is the clean immutable release of v83's mechanical-only Atomic gate.
+# It also excludes test/cache byproducts from the frozen source publication.
+extends: ../systems_v83/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v84/experiments/end2end_memory_systems_20260804/manifests_v84/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v7_staged_mechanical_v84
