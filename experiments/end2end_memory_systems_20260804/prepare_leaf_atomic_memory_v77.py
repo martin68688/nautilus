@@ -49,11 +49,12 @@ def _update_memory_manifest(
             "graph_sha256": publication["graph_sha256"],
             "index_sha256": publication["index_sha256"],
             "memory_scope": (
-                "leaf_official_recipe_v6_plus_full_transition_atomic_debug_v7"
+                "leaf_recipe_plus_claim_bound_atomic_debug_visibility"
             ),
             "official_ledger_sha256": OFFICIAL_LEDGER_SHA256,
             "protocol_ref": (
-                f"leaf-atomic-debug-memory@20260811#v{release_version}"
+                publication.get("active_protocol_ref")
+                or f"leaf-atomic-debug-memory@20260811#v{release_version}"
             ),
             "recipe_evidence_manifest_sha256": publication[
                 "recipe_evidence_manifest_sha256"
@@ -66,6 +67,15 @@ def _update_memory_manifest(
             ],
             "atomic_debug_authorized_count": int(
                 bundle_manifest["atomic_debug_authorized_count"]
+            ),
+            "formal_debug_clause_count": int(
+                bundle_manifest.get("formal_debug_clause_count") or 0
+            ),
+            "formal_clause_file_sha256": str(
+                publication.get("formal_clause_file_sha256") or ""
+            ),
+            "declared_scope_masks_file_sha256": str(
+                publication.get("declared_scope_masks_file_sha256") or ""
             ),
             "authority_policy_version": bundle_manifest[
                 "authority_policy_version"
@@ -83,6 +93,9 @@ def _update_memory_manifest(
             ],
             "atomic_debug_authorized_count": int(
                 bundle_manifest["atomic_debug_authorized_count"]
+            ),
+            "formal_debug_clause_count": int(
+                bundle_manifest.get("formal_debug_clause_count") or 0
             ),
             "ranking_policy": "task_first_structured_debug_signature_v3",
             "task_bundles": {"leaf-classification": task},
@@ -103,10 +116,13 @@ def main() -> int:
     parser.add_argument("--published-memory-root", required=True)
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--release-version", type=int, default=77)
+    parser.add_argument("--agent-steps", type=int, default=8)
     args = parser.parse_args()
 
     if args.release_version < 77:
         raise ValueError("release-version must be at least 77")
+    if args.agent_steps < 1:
+        raise ValueError("agent-steps must be positive")
     release_tag = f"v{args.release_version}"
     source_release_tag = f"v{args.release_version - 1}"
 
@@ -182,6 +198,22 @@ def main() -> int:
 
     budget_path = manifests / "budget.json"
     budget = read_object(budget_path)
+    smoke_budget = dict(budget["smoke"])
+    smoke_budget.update(
+        {
+            "agent_steps": int(args.agent_steps),
+            "agent_time_limit_seconds": 21600,
+            "cpu_count": 16,
+            "execution_timeout_seconds": 3600,
+            "finalize_reserve_seconds": 600,
+            "gpu_count": 1,
+            "initial_drafts": 3,
+            "max_replacement_drafts": 0,
+            "memory_gib": 64,
+            "parallel_search_num": 1,
+        }
+    )
+    budget["smoke"] = smoke_budget
     budget["manifest_hash"] = payload_hash(budget, "manifest_hash")
     write_object(budget_path, budget)
 
@@ -284,6 +316,7 @@ def main() -> int:
         "memory_bundle_manifest_sha256": publication["bundle_manifest_sha256"],
         "atomic_claim_bundle_sha256": publication["atomic_claim_bundle_sha256"],
         "ranking_policy": "task_first_structured_debug_signature_v3",
+        "agent_steps": int(args.agent_steps),
         "agent_time_limit_seconds": 21600,
     }
     args.receipt.parent.mkdir(parents=True, exist_ok=True)

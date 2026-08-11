@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import shutil
 import sys
 from types import SimpleNamespace
 
@@ -32,6 +33,23 @@ from agents.memory.experiment_r_router import (  # noqa: E402
 )
 from agents.memory.stage_aware_hybrid_memory import (  # noqa: E402
     StageAwareHybridMemoryLayer,
+)
+from authority.memory_snapshot import (  # noqa: E402
+    MemorySnapshotLoader,
+    make_current_pointer,
+    sha256_file,
+    sha256_json,
+    write_json_atomic,
+)
+from authority.models import Operation, ProtocolRef  # noqa: E402
+from authority.recipe_visibility_publication import (  # noqa: E402
+    compile_recipe_debug_visibility,
+)
+
+
+ACTIVE_PROTOCOL = (
+    "mlevolve-default@1#"
+    "cdb8439fa96b3add95788d9c1462811e5319ef73bca1cb4cc606ce07cd7a3a29"
 )
 
 
@@ -377,6 +395,253 @@ def test_general_rank_hard_filters_task_before_anchor() -> None:
         "leaf-exact",
         "leaf-generic",
     ]
+
+
+def test_recipe_visibility_compiler_is_claim_bound_and_debug_only() -> None:
+    recipe = {
+        "schema": "recipe-test-v1",
+        "bundle_sha256": "a" * 64,
+        "nodes": [
+            {
+                "id": "repair::task-a::claim-backed",
+                "type": "SOP",
+                "abstraction_level": "L3_repair",
+                "title": "Repair an exact runtime mismatch",
+                "task_id": "task-a",
+                "task_family": "multimodal_classification",
+                "failure_node_ids": ["artifact::failed"],
+                "source_claim_ids": ["claim::debug-repair"],
+                "supporting_transition_ids": ["transition::repair"],
+                "distinct_run_ids": ["run::historical"],
+                "failure_signature": {
+                    "pattern": "AssertionError: input 256 expected 518"
+                },
+                "repair_action": {"summary": "Change input size to 518."},
+                "when_to_use": "Only for the matching model assertion.",
+            },
+            {
+                "id": "repair::task-a::legacy",
+                "type": "SOP",
+                "abstraction_level": "L3_repair",
+                "task_id": "task-a",
+                "failure_signature": {"pattern": "legacy failure"},
+                "repair_action": {"summary": "legacy repair"},
+            },
+            {
+                "id": "method::task-a",
+                "type": "SOP",
+                "abstraction_level": "L1_recipe",
+            },
+        ],
+    }
+    publication = compile_recipe_debug_visibility(
+        recipe,
+        active_protocol_ref=ACTIVE_PROTOCOL,
+    )
+    assert publication["report"]["l3_recipe_count"] == 2
+    assert publication["report"]["published_clause_count"] == 1
+    assert publication["report"]["skipped_reason_counts"] == {
+        "missing_source_claim_ids": 1
+    }
+    clause = publication["clauses"][0]
+    assert clause["claim_refs"] == ["claim::debug-repair"]
+    assert clause["claim_types"] == ["debug_repair"]
+    assert clause["permitted_operations"] == ["debug_hypothesis"]
+    assert clause["permitted_generation_stages"] == ["debug"]
+    assert clause["permitted_governance_stages"] == ["retrieval"]
+    assert clause["publication_class"] == "diagnostic"
+    assert clause["transfer_scope"] == ""
+    mask_ids = next(iter(publication["masks"]["masks"].values()))
+    assert mask_ids == [clause["clause_id"]]
+
+
+def _build_real_v8_visibility_bundle(
+    tmp_path: Path,
+    release: Path,
+) -> tuple[Path, Path, dict]:
+    root = tmp_path / "memory-leaf-atomic-v8"
+    bundle = root / "bundles" / "v8-test"
+    recipe_dir = bundle / "recipe"
+    runforest_dir = bundle / "runforest"
+    recipe_dir.mkdir(parents=True)
+    runforest_dir.mkdir(parents=True)
+    for name in (
+        "recipe_sops.json",
+        "evidence_manifest.json",
+        "implementation_capsules.json",
+    ):
+        shutil.copy2(release / name, recipe_dir / name)
+    for name in ("graph.json", "index.npz"):
+        shutil.copy2(release / "runforest" / name, runforest_dir / name)
+
+    recipe = json.loads((recipe_dir / "recipe_sops.json").read_text())
+    publication = compile_recipe_debug_visibility(
+        recipe,
+        active_protocol_ref=ACTIVE_PROTOCOL,
+    )
+    clauses_path = bundle / "sop" / "clauses.jsonl"
+    clauses_path.parent.mkdir(parents=True)
+    clauses_path.write_text(
+        "".join(
+            json.dumps(row, sort_keys=True, ensure_ascii=False) + "\n"
+            for row in publication["clauses"]
+        ),
+        encoding="utf-8",
+    )
+    masks_path = (
+        bundle
+        / "visibility"
+        / "precompiled_masks"
+        / "declared_scope_masks.json"
+    )
+    write_json_atomic(masks_path, publication["masks"])
+    artifact_hashes = {
+        str(path.relative_to(bundle)): sha256_file(path)
+        for path in sorted(bundle.rglob("*"))
+        if path.is_file()
+    }
+    manifest = {
+        "schema": "memory_bundle_manifest_v1",
+        "bundle_id": "leaf-atomic-v8-test",
+        "bundle_version": "v8-test",
+        "parent_bundle": "v7-test",
+        "authority_policy_version": "claim-level-test-v1",
+        "certification_level": "atomic_debug_visibility_exploratory_smoke",
+        "artifact_hashes": artifact_hashes,
+        "manifest_sha256": "",
+    }
+    manifest["manifest_sha256"] = sha256_json(
+        {key: value for key, value in manifest.items() if key != "manifest_sha256"}
+    )
+    write_json_atomic(bundle / "manifest.json", manifest)
+    write_json_atomic(
+        root / "CURRENT.json",
+        make_current_pointer(
+            bundle_path=str(bundle.relative_to(root)),
+            manifest=manifest,
+            parent_bundle=manifest["parent_bundle"],
+            published_at="2026-08-12T00:00:00Z",
+        ),
+    )
+    return root, bundle, publication
+
+
+def test_real_bundle_scoped_enforce_reaches_hybrid_l3_shortlist(
+    tmp_path: Path,
+) -> None:
+    release = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "recipe_distillation_v7_leaf_atomic_20260811"
+    )
+    if not (release / "release_report.json").exists():
+        return
+    root, bundle, publication = _build_real_v8_visibility_bundle(
+        tmp_path,
+        release,
+    )
+    snapshot = MemorySnapshotLoader(root).load(
+        session_overlay_path=tmp_path / "session-overlay",
+        active_protocol_ref=ACTIVE_PROTOCOL,
+        authority_policy_version="claim-level-test-v1",
+    )
+    recipe = json.loads((bundle / "recipe" / "recipe_sops.json").read_text())
+    evidence = json.loads(
+        (bundle / "recipe" / "evidence_manifest.json").read_text()
+    )
+    layer = StageAwareHybridMemoryLayer(
+        graph_path=str(bundle / "runforest" / "graph.json"),
+        index_path=str(bundle / "runforest" / "index.npz"),
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        retrieval_control="dynamic_hybrid",
+        enable_agentic=False,
+        top_k=6,
+        experiment_r_enabled=True,
+        recipe_sop_path=str(bundle / "recipe" / "recipe_sops.json"),
+        recipe_sop_file_sha256=sha256_file(
+            bundle / "recipe" / "recipe_sops.json"
+        ),
+        recipe_sop_bundle_sha256=recipe["bundle_sha256"],
+        recipe_evidence_path=str(bundle / "recipe" / "evidence_manifest.json"),
+        recipe_evidence_file_sha256=sha256_file(
+            bundle / "recipe" / "evidence_manifest.json"
+        ),
+        recipe_evidence_manifest_sha256=evidence["manifest_sha256"],
+        recipe_implementation_path=str(
+            bundle / "recipe" / "implementation_capsules.json"
+        ),
+        visibility_mode="enforce",
+        visibility_active_protocol=ProtocolRef(
+            "mlevolve-default",
+            "1",
+            ACTIVE_PROTOCOL.split("#", 1)[1],
+        ),
+        visibility_policy_version="claim-level-test-v1",
+        visibility_task_id="leaf-classification",
+        visibility_bundle_version="v8-test",
+        visibility_enforce_operations=["debug_hypothesis"],
+        visibility_enforce_generation_stages=["debug"],
+        visibility_enforce_governance_stages=["retrieval"],
+        memory_snapshot=snapshot,
+    )
+    assert layer.base_clause_receipt["status"] == "loaded"
+    assert layer.base_clause_receipt["clause_count"] == 296
+    assert publication["report"]["published_clause_count"] == 296
+
+    request = layer._visibility_request(
+        stage="debug",
+        task_id="leaf-classification",
+        task_desc="multimodal leaf image classification",
+        operation=Operation.DEBUG_HYPOTHESIS,
+    )
+    pack = layer._prepare_visibility(
+        stage="debug",
+        task_id="leaf-classification",
+        task_desc="multimodal leaf image classification",
+        request=request,
+    )
+    assert pack.visibility_trace["request_enforced"] is True
+    assert len(pack.visibility_trace["precompiled_candidate_clause_ids"]) == 296
+    assert len(pack.visibility_trace["full_policy_visible_clause_ids"]) == 296
+    authorized_sop_ids = _l3_policy_authorized_sop_ids(
+        layer,
+        set(layer._recipe_sop_ids),
+    )
+    assert len(authorized_sop_ids) == 296
+    authorized = _hard_gated_l3_candidates(
+        layer,
+        task_id="leaf-classification",
+        task_desc="multimodal leaf image classification",
+        visible_sop_ids=authorized_sop_ids,
+        task_scope="exact_task",
+    )
+    assert len(authorized) == 296
+
+    def semantic_encoder(texts: list[str]) -> np.ndarray:
+        return np.ones((len(texts), 4), dtype=np.float32)
+
+    selected, receipt = _shortlist_l3_candidates_for_agent(
+        "AssertionError: Input height (256) doesn't match model (518) "
+        "for DINOv2 ViT-S/14",
+        authorized,
+        limit=8,
+        semantic_encode_fn=semantic_encoder,
+        semantic_limit=8,
+        semantic_model_id="BAAI/bge-base-en-v1.5",
+    )
+    assert receipt["schema"] == "experiment_r_l3_agent_shortlist_v2"
+    assert receipt["input_candidate_count"] == 296
+    assert receipt["semantic"]["status"] == "ok"
+    assert receipt["semantic"]["model_id"] == "BAAI/bge-base-en-v1.5"
+    assert 8 <= receipt["output_candidate_count"] <= 16
+    assert receipt["structured_top_ids"][0] == (
+        "repair-claim::leaf-classification::eb08c01baf682841c035"
+    )
+    assert selected[0]["sop_id"] == (
+        "repair-claim::leaf-classification::eb08c01baf682841c035"
+    )
 
 
 def test_generated_release_covers_v45_claim_when_present() -> None:

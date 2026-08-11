@@ -954,6 +954,14 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         self.recipe_sop_receipt: dict[str, Any] = {}
         if self.recipe_sop_path:
             self._load_recipe_sop_overlay()
+        self.base_clause_receipt: dict[str, Any] = {
+            "schema": "base_sop_clause_runtime_load_receipt_v1",
+            "status": "not_bound",
+            "clause_count": 0,
+            "sop_count": 0,
+        }
+        if self.memory_snapshot is not None:
+            self._load_base_bundle_clauses()
         self.visibility_mode = str(visibility_mode or "shadow").lower()
         self.visibility_authority_engine = visibility_authority_engine
         self.visibility_active_protocol = self._coerce_protocol_ref(
@@ -1063,6 +1071,110 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             existing["clauses"] = raw_clauses
             self._node_tokens[sop_id] = _tokenize(self._node_text(existing))
         self._sops = sorted(set(self._sops))
+
+    def _load_base_bundle_clauses(self) -> None:
+        """Materialize manifest-bound Base clauses before Gateway creation.
+
+        Recipe SOPs are runtime overlays rather than RunForest graph nodes, so
+        their formal clauses cannot be discovered by ``SOPVisibilityGateway``
+        until both layers have been loaded.  This method joins the immutable
+        Bundle publication to the already verified Recipe containers without
+        mutating either artifact on disk.
+        """
+
+        base = self.memory_snapshot.base_bundle
+        artifact_hashes = {
+            str(key): str(value)
+            for key, value in (
+                (getattr(base, "manifest", {}) or {}).get("artifact_hashes")
+                or {}
+            ).items()
+        }
+        clause_artifact = "sop/clauses.jsonl"
+        mask_artifact = (
+            "visibility/precompiled_masks/declared_scope_masks.json"
+        )
+        has_clauses = clause_artifact in artifact_hashes
+        has_masks = mask_artifact in artifact_hashes
+        if not has_clauses and not has_masks:
+            self.base_clause_receipt = {
+                "schema": "base_sop_clause_runtime_load_receipt_v1",
+                "status": "legacy_bundle_without_formal_clauses",
+                "clause_count": 0,
+                "sop_count": 0,
+            }
+            return
+        if has_clauses != has_masks:
+            raise ValueError(
+                "Base Bundle must publish SOP clauses and declared-scope masks together"
+            )
+
+        rows = base.read_jsonl(clause_artifact)
+        if not rows:
+            raise ValueError("Base Bundle formal SOP clause artifact is empty")
+        seen_clause_ids: set[str] = set()
+        clause_ids_by_sop: dict[str, list[str]] = collections.defaultdict(list)
+        for raw in rows:
+            clause = copy.deepcopy(raw)
+            clause_id = str(clause.get("clause_id") or "").strip()
+            sop_id = str(clause.get("sop_id") or "").strip()
+            if not clause_id or not sop_id:
+                raise ValueError("Base Bundle SOP clause lacks stable IDs")
+            if clause_id in seen_clause_ids:
+                raise ValueError(f"Duplicate Base Bundle SOP clause: {clause_id}")
+            seen_clause_ids.add(clause_id)
+            if clause_id in self.nodes:
+                raise ValueError(
+                    f"Base Bundle SOP clause collides with runtime node: {clause_id}"
+                )
+            container = self.nodes.get(sop_id)
+            if container is None or container.get("type") != "SOP":
+                raise ValueError(
+                    f"Base Bundle SOP clause references missing container: {sop_id}"
+                )
+            if not clause.get("protocol_scope"):
+                raise ValueError(
+                    f"Base Bundle SOP clause lacks protocol scope: {clause_id}"
+                )
+            if not clause.get("permitted_operations"):
+                raise ValueError(
+                    f"Base Bundle SOP clause lacks operation scope: {clause_id}"
+                )
+            clause.update(
+                {
+                    "id": clause_id,
+                    "type": "SOPClause",
+                    "origin": "immutable_base_bundle",
+                    "base_bundle_id": base.bundle_id,
+                    "base_bundle_version": base.bundle_version,
+                }
+            )
+            self.nodes[clause_id] = clause
+            self._node_tokens[clause_id] = _tokenize(self._node_text(clause))
+            clause_ids_by_sop[sop_id].append(clause_id)
+
+        for sop_id, clause_ids in sorted(clause_ids_by_sop.items()):
+            container = self.nodes[sop_id]
+            existing_ids = [
+                str(value) for value in container.get("clause_ids") or []
+            ]
+            if existing_ids:
+                raise ValueError(
+                    f"Runtime SOP already declares formal clauses: {sop_id}"
+                )
+            container["clause_ids"] = sorted(clause_ids)
+            self._node_tokens[sop_id] = _tokenize(self._node_text(container))
+
+        self.base_clause_receipt = {
+            "schema": "base_sop_clause_runtime_load_receipt_v1",
+            "status": "loaded",
+            "base_bundle_id": base.bundle_id,
+            "base_bundle_version": base.bundle_version,
+            "clause_count": len(seen_clause_ids),
+            "sop_count": len(clause_ids_by_sop),
+            "clause_artifact_sha256": artifact_hashes[clause_artifact],
+            "mask_artifact_sha256": artifact_hashes[mask_artifact],
+        }
 
     def _encode_l3_semantic_texts(self, texts: list[str]) -> Any:
         """Lazily load the configured encoder when Global Memory is disabled."""
