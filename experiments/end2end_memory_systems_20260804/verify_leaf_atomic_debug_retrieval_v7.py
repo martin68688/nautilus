@@ -20,6 +20,10 @@ from agents.memory.atomic_claim_memory import (  # noqa: E402
     AUTHORIZED_DEBUG_STATUS,
     structured_debug_relevance,
 )
+from agents.memory.stage_aware_hybrid_memory import (  # noqa: E402
+    StageAwareHybridMemoryLayer,
+)
+from config import _load_cfg  # noqa: E402
 
 
 DINO_V45_TRANSITION = (
@@ -195,12 +199,98 @@ def rank_case(
     }
 
 
+def runtime_replay(
+    *,
+    bundle_path: Path,
+    config_path: Path,
+) -> dict[str, Any]:
+    cfg = _load_cfg(config_path, use_cli_args=False)
+    layer = StageAwareHybridMemoryLayer(
+        graph_path=str(bundle_path / "runforest" / "graph.json"),
+        index_path=str(bundle_path / "runforest" / "index.npz"),
+        source_name="run_forest_stage_hybrid_memory",
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        enable_agentic=False,
+        top_k=6,
+        cfg=cfg,
+    )
+    results: dict[str, Any] = {}
+    for case in CASES:
+        rows = layer._rank_debug_transition_rows(
+            query_text=case["query"],
+            task_id="leaf-classification",
+            task_desc="multimodal leaf image classification",
+            limit=8,
+        )
+        top_claim: dict[str, Any] = {}
+        if rows:
+            raw_claim = layer.nodes[rows[0]["id"]].get("atomic_repair_claim")
+            if isinstance(raw_claim, dict):
+                top_claim = dict(raw_claim)
+        results[case["name"]] = {
+            "candidate_count": len(rows),
+            "top_candidate_id": rows[0]["id"] if rows else "",
+            "top_claim_id": str(top_claim.get("id") or ""),
+            "top_source_transition_id": str(
+                top_claim.get("source_transition_id") or ""
+            ),
+            "top_score": float(rows[0]["score"]) if rows else 0.0,
+            "top_structured_score": float(
+                ((rows[0].get("score_components") or {}).get(
+                    "structured_debug_match"
+                ) or 0.0)
+            )
+            if rows
+            else 0.0,
+            "ranking_backend": str(rows[0].get("ranking_backend") or "")
+            if rows
+            else "",
+            "passed": bool(
+                rows
+                and case["expected"](top_claim)
+                and rows[0].get("ranking_backend")
+                == "task_first_structured_debug_signature_v3"
+            ),
+        }
+    cleanup_rows = layer._rank_debug_transition_rows(
+        query_text="NameError: name cleanup is not defined",
+        task_id="leaf-classification",
+        task_desc="multimodal leaf image classification",
+        limit=8,
+    )
+    cleanup_atomic = [
+        row
+        for row in cleanup_rows
+        if row.get("ranking_backend")
+        == "task_first_structured_debug_signature_v3"
+    ]
+    return {
+        "config_path": str(config_path),
+        "bundle_path": str(bundle_path),
+        "loaded_node_count": len(layer.nodes),
+        "loaded_sop_count": len(layer._sops),
+        "loaded_transition_count": len(layer._transitions),
+        "cases": results,
+        "unseen_cleanup_atomic_candidate_count": len(cleanup_atomic),
+        "unseen_cleanup_legacy_fallback_count": len(cleanup_rows),
+        "all_cases_pass": all(row["passed"] for row in results.values()),
+        "unseen_cleanup_atomic_abstains": not cleanup_atomic,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release-dir", type=Path, required=True)
     parser.add_argument("--v76-checkpoint", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--runtime-bundle-path", type=Path)
+    parser.add_argument("--runtime-config", type=Path)
     args = parser.parse_args()
+    if bool(args.runtime_bundle_path) != bool(args.runtime_config):
+        raise ValueError(
+            "--runtime-bundle-path and --runtime-config must be supplied together"
+        )
 
     release_dir = args.release_dir.resolve(strict=True)
     claim_path = release_dir / "atomic_claims.json"
@@ -257,6 +347,20 @@ def main() -> int:
         },
         "report_sha256": "",
     }
+    if args.runtime_bundle_path is not None:
+        runtime = runtime_replay(
+            bundle_path=args.runtime_bundle_path.resolve(strict=True),
+            config_path=args.runtime_config.resolve(strict=True),
+        )
+        report["runtime_replay"] = runtime
+        report["quality_gates"].update(
+            {
+                "all_runtime_debug_replays_pass": runtime["all_cases_pass"],
+                "runtime_unseen_atomic_error_abstains": runtime[
+                    "unseen_cleanup_atomic_abstains"
+                ],
+            }
+        )
     report["report_sha256"] = hashlib.sha256(
         json.dumps(
             {key: value for key, value in report.items() if key != "report_sha256"},

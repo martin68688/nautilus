@@ -225,6 +225,22 @@ L3_DYNAMIC_CONFIDENCE_WEIGHTS = {
 L3_FAILURE_SIGNATURE_MIN_MATCH = 0.50
 L3_SPECIFIC_SIGNATURE_MIN_OVERLAP = 1.0 / 3.0
 
+# Atomic claims have already passed exact-task, local before/after execution,
+# and claim-level taint gates. Their live rank should therefore be dominated
+# by the current causal signature rather than by the broad task prior that was
+# designed for whole-program RunForest transitions. A 0.30 floor admits
+# concrete shape/path/NaN/runtime matches while still rejecting a NameError
+# that shares only the exception class (0.27 at most).
+ATOMIC_L3_FAILURE_SIGNATURE_MIN_MATCH = 0.30
+ATOMIC_L3_DYNAMIC_CONFIDENCE_WEIGHTS = {
+    "task_match": 0.10,
+    "failure_signature_match": 0.65,
+    "runtime_stage_match": 0.08,
+    "method_family_match": 0.05,
+    "clean_transition_quality": 0.10,
+    "successful_repair_frequency": 0.02,
+}
+
 # Small deterministic concept groups bridge routine paraphrases before the
 # LLM gateway selector sees the already task-gated candidates.  They do not
 # create candidates, relax the 0.50 failure gate, or permit cross-task-type
@@ -4091,7 +4107,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 repair_text,
                 atomic_claim,
             )
-            if (
+            if atomic_claim:
+                # The claim-specific ranker is the causal gate. Do not let a
+                # long, semantically broad L3 card rescue a weak signature.
+                failure_match = structured_match
+                minimum_failure_match = ATOMIC_L3_FAILURE_SIGNATURE_MIN_MATCH
+            elif (
                 has_explicit_l3_signature
                 and specific_signature_overlap
                 < L3_SPECIFIC_SIGNATURE_MIN_OVERLAP
@@ -4099,7 +4120,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 and structured_match < L3_FAILURE_SIGNATURE_MIN_MATCH
             ):
                 continue
-            if has_explicit_l3_signature:
+            elif has_explicit_l3_signature:
                 failure_match = max(
                     structural_match
                     if specific_signature_overlap > 0.0
@@ -4111,6 +4132,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     else 0.0,
                     structured_match,
                 )
+                minimum_failure_match = L3_FAILURE_SIGNATURE_MIN_MATCH
             else:
                 # Preserve the legacy RunForest L3 path for old bundles.  New
                 # evidence-bound L3 cards always take the stricter branch
@@ -4121,7 +4143,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     min(0.75, 1.25 * parent_semantic),
                     structured_match,
                 )
-            if failure_match < L3_FAILURE_SIGNATURE_MIN_MATCH:
+                minimum_failure_match = L3_FAILURE_SIGNATURE_MIN_MATCH
+            if failure_match < minimum_failure_match:
                 continue
             semantic = max(card_semantic, parent_semantic)
             attachment_quality = max(item["quality_score"] for item in attachments)
@@ -4146,8 +4169,13 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 "clean_transition_quality": min(1.0, attachment_quality),
                 "successful_repair_frequency": success_frequency,
             }
+            confidence_weights = (
+                ATOMIC_L3_DYNAMIC_CONFIDENCE_WEIGHTS
+                if atomic_claim
+                else L3_DYNAMIC_CONFIDENCE_WEIGHTS
+            )
             confidence = sum(
-                L3_DYNAMIC_CONFIDENCE_WEIGHTS[key] * value
+                confidence_weights[key] * value
                 for key, value in confidence_components.items()
             )
             score = confidence
@@ -4173,9 +4201,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                         if atomic_claim
                         else "stage_task_causal_signature_v2"
                     ),
-                    "dynamic_confidence_weights": dict(
-                        L3_DYNAMIC_CONFIDENCE_WEIGHTS
-                    ),
+                    "dynamic_confidence_weights": dict(confidence_weights),
+                    "minimum_failure_signature_match": minimum_failure_match,
                     "task_scope": task_scope,
                     "query_failure_signature": sorted(query_signature),
                     "candidate_failure_signature": sorted(candidate_signature),
@@ -4197,7 +4224,34 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         exact_task_rows = [row for row in rows if row["task_scope"] == "exact_task"]
         if exact_task_rows:
             rows = exact_task_rows
-        rows.sort(key=lambda item: (-float(item["score"]), str(item["id"])))
+        # Claim-level repair evidence is the primary Debug index. A broad
+        # legacy L3 card may have a high historical confidence score while
+        # sharing only an exception class with the current failure. Once at
+        # least one verified atomic claim passes the causal floor, keep this
+        # candidate set pure; legacy rows remain the fallback when no atomic
+        # claim matches.
+        atomic_rows = [
+            row
+            for row in rows
+            if row.get("ranking_backend")
+            == "task_first_structured_debug_signature_v3"
+        ]
+        if atomic_rows:
+            rows = atomic_rows
+            rows.sort(
+                key=lambda item: (
+                    -float(
+                        (item.get("score_components") or {}).get(
+                            "structured_debug_match"
+                        )
+                        or 0.0
+                    ),
+                    -float(item["score"]),
+                    str(item["id"]),
+                )
+            )
+        else:
+            rows.sort(key=lambda item: (-float(item["score"]), str(item["id"])))
         return rows[:limit]
 
     def _project_debug_transitions_to_sops(

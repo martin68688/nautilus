@@ -231,7 +231,7 @@ def test_v77_and_v78_configs_bind_atomic_recipe_overlays() -> None:
     systems_root = (
         ROOT / "experiments" / "end2end_memory_systems_20260804"
     )
-    for version in (77, 78):
+    for version in (77, 78, 79):
         text = (
             systems_root / f"systems_v{version}" / "dynamic_hybrid.yaml"
         ).read_text(encoding="utf-8")
@@ -246,3 +246,100 @@ def test_v77_and_v78_configs_bind_atomic_recipe_overlays() -> None:
             f"recipe_implementation_path: {memory_root}/implementation_capsules.json"
             in text
         )
+
+
+def test_generated_release_runtime_rank_when_artifacts_are_present() -> None:
+    release = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "recipe_distillation_v7_leaf_atomic_20260811"
+    )
+    if not (release / "runforest" / "graph.json").exists():
+        return
+    report = json.loads((release / "release_report.json").read_text())
+    recipe = json.loads((release / "recipe_sops.json").read_text())
+    evidence = json.loads((release / "evidence_manifest.json").read_text())
+    layer = StageAwareHybridMemoryLayer(
+        graph_path=str(release / "runforest" / "graph.json"),
+        index_path=str(release / "runforest" / "index.npz"),
+        mode="run_forest_stage_hybrid",
+        scoring_mode="flat_twin",
+        retrieval_control="dynamic_hybrid",
+        enable_agentic=False,
+        top_k=6,
+        experiment_r_enabled=True,
+        recipe_sop_path=str(release / "recipe_sops.json"),
+        recipe_sop_file_sha256=report["files"]["recipe_sops.json"],
+        recipe_sop_bundle_sha256=recipe["bundle_sha256"],
+        recipe_evidence_path=str(release / "evidence_manifest.json"),
+        recipe_evidence_file_sha256=report["files"]["evidence_manifest.json"],
+        recipe_evidence_manifest_sha256=evidence["manifest_sha256"],
+        recipe_implementation_path=str(release / "implementation_capsules.json"),
+    )
+    cases = (
+        (
+            "AssertionError: Input height (224) does not match model (518) "
+            "for vit_small_patch14_dinov2.lvd142m",
+            ("dinov2", "518"),
+        ),
+        (
+            "FileNotFoundError: ./working/dinov3-main/hubconf.py not found "
+            "while torch.hub.load loads DINOv3",
+            ("dinov3", "hubconf.py"),
+        ),
+        (
+            "ValueError: operands could not be broadcast together with shapes "
+            "(891,31) (891,32) in create_hierarchical_features symmetry_2",
+            ("broadcast", "31", "32"),
+        ),
+        (
+            "TypeError: LGBMClassifier.fit() got an unexpected keyword "
+            "argument verbose",
+            ("lgbmclassifier.fit", "verbose"),
+        ),
+        (
+            "ValueError: Input contains NaN when sklearn.metrics.log_loss "
+            "evaluates probabilities",
+            ("input contains nan", "log_loss"),
+        ),
+        (
+            "RuntimeError: DataLoader worker exited unexpectedly with a bus "
+            "error from insufficient shared memory and num_workers=4",
+            ("shared memory", "num_workers=4"),
+        ),
+        (
+            "TypeError: XGBClassifier.fit() got an unexpected keyword "
+            "argument early_stopping_rounds",
+            ("xgbclassifier.fit", "early_stopping_rounds"),
+        ),
+    )
+    for query, needles in cases:
+        rows = layer._rank_debug_transition_rows(
+            query_text=query,
+            task_id="leaf-classification",
+            task_desc="multimodal leaf image classification",
+            limit=8,
+        )
+        assert rows
+        claim = layer.nodes[rows[0]["id"]]["atomic_repair_claim"]
+        claim_text = (
+            f"{claim.get('failure_text', '')}\n{claim.get('repair_action', '')}"
+        ).lower()
+        assert all(needle in claim_text for needle in needles)
+        assert (
+            rows[0]["ranking_backend"]
+            == "task_first_structured_debug_signature_v3"
+        )
+
+    cleanup_rows = layer._rank_debug_transition_rows(
+        query_text="NameError: name cleanup is not defined",
+        task_id="leaf-classification",
+        task_desc="multimodal leaf image classification",
+        limit=8,
+    )
+    assert not any(
+        row.get("ranking_backend")
+        == "task_first_structured_debug_signature_v3"
+        for row in cleanup_rows
+    )

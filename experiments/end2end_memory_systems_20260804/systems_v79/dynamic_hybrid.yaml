@@ -1,0 +1,15 @@
+# v79: atomic candidates use their structured causal signature as the live
+# gate and dominant rank term; legacy whole-program L3 scoring is unchanged.
+extends: ../systems_v78/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v79/experiments/end2end_memory_systems_20260804/manifests_v79/leaf_official_replay_targets.json
+
+external_skill_memory:
+  recipe_sop_path: /workspace/experiment-end2end-memory-agent-v79/memory-leaf-atomic-v7/leaf-classification/bundles/v7-leaf-atomic-20260811/recipe/recipe_sops.json
+  recipe_evidence_path: /workspace/experiment-end2end-memory-agent-v79/memory-leaf-atomic-v7/leaf-classification/bundles/v7-leaf-atomic-20260811/recipe/evidence_manifest.json
+  recipe_implementation_path: /workspace/experiment-end2end-memory-agent-v79/memory-leaf-atomic-v7/leaf-classification/bundles/v7-leaf-atomic-20260811/recipe/implementation_capsules.json
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v7_causal_rank_v79
