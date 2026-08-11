@@ -1,0 +1,16 @@
+# v89 is the provenance-correct immutable release of v88.  It preserves the
+# exact formal Clause/mask and hybrid L3 semantics while binding the real full
+# source commit and a unique Memory/output root.
+extends: ../systems_v88/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v89/experiments/end2end_memory_systems_20260804/manifests_v89/leaf_official_replay_targets.json
+
+external_skill_memory:
+  recipe_sop_path: /workspace/experiment-end2end-memory-agent-v89/memory-leaf-atomic-v8/leaf-classification/bundles/v8-leaf-atomic-visibility-20260812/recipe/recipe_sops.json
+  recipe_evidence_path: /workspace/experiment-end2end-memory-agent-v89/memory-leaf-atomic-v8/leaf-classification/bundles/v8-leaf-atomic-visibility-20260812/recipe/evidence_manifest.json
+  recipe_implementation_path: /workspace/experiment-end2end-memory-agent-v89/memory-leaf-atomic-v8/leaf-classification/bundles/v8-leaf-atomic-visibility-20260812/recipe/implementation_capsules.json
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v8_formal_visibility_v89
