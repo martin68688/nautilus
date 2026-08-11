@@ -533,6 +533,13 @@ class ExternalSkillMemoryConfig:
     memory_strategy_atomic_coder_replan_attempts: int = 1
     memory_strategy_atomic_alternate_hypothesis_attempts: int = 0
     memory_strategy_atomic_alternate_replan_attempts: int = 0
+    # v80 staged actuation compiles one Strategy hypothesis into a complete,
+    # ordered series of independently verified Coder contracts.  It is opt-in
+    # so historical experiment configurations preserve their original path.
+    memory_strategy_atomic_staged_enabled: bool = False
+    memory_strategy_atomic_max_phases: int = 3
+    memory_strategy_atomic_require_complete_roadmap: bool = True
+    memory_strategy_atomic_strict_coder_enabled: bool = False
     # Dynamic Hybrid may delegate L3 failure/root-cause matching to the
     # Retrieval Agent.  The Host keeps only objective task/evidence gates and
     # literal traceback-anchor extraction; no maintained synonym table is

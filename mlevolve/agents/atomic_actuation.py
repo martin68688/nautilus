@@ -120,7 +120,54 @@ ATOMIC_ACTUATION_PLAN_SCHEMA: dict[str, Any] = {
 }
 
 
+ATOMIC_STAGED_ACTUATION_PLAN_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "roadmap_id": {"type": "string"},
+        "hypothesis_id": {"type": "string"},
+        "objective": {"type": "string"},
+        "source_memory_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+        "roadmap_complete": {"type": "boolean"},
+        "phases": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    **copy.deepcopy(ATOMIC_ACTUATION_PLAN_SCHEMA["properties"]),
+                    "phase_id": {"type": "string"},
+                    "phase_index": {"type": "integer"},
+                    "depends_on_phase_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                },
+                "required": [
+                    *ATOMIC_ACTUATION_PLAN_SCHEMA["required"],
+                    "phase_id",
+                    "phase_index",
+                    "depends_on_phase_ids",
+                ],
+                "additionalProperties": True,
+            },
+        },
+    },
+    "required": [
+        "roadmap_id",
+        "hypothesis_id",
+        "objective",
+        "source_memory_ids",
+        "roadmap_complete",
+        "phases",
+    ],
+    "additionalProperties": True,
+}
+
+
 _ATOMIC_REQUIRED_KEYS = tuple(ATOMIC_ACTUATION_PLAN_SCHEMA["required"])
+_STAGED_REQUIRED_KEYS = tuple(ATOMIC_STAGED_ACTUATION_PLAN_SCHEMA["required"])
 _ALLOWED_MODULES = {
     "data_processing_and_feature_engineering",
     "model_design",
@@ -217,6 +264,7 @@ def validate_atomic_plan(
     if not 1 <= len(changes) <= int(max_changes):
         violations.append(f"allowed_changes must contain 1..{int(max_changes)} changes")
     seen_change_ids: set[str] = set()
+    seen_target_symbols: set[str] = set()
     available_symbols: set[str] = set()
     if parent_code is not None:
         try:
@@ -229,11 +277,22 @@ def validate_atomic_plan(
             continue
         change_id = str(change.get("change_id") or "")
         if not change_id or change_id in seen_change_ids:
-            violations.append(f"allowed_changes[{index}] has missing/duplicate change_id")
+            violations.append(
+                f"allowed_changes[{index}] has missing/duplicate change_id"
+            )
         seen_change_ids.add(change_id)
         targets = [str(value) for value in (change.get("target_symbols") or [])]
         if not targets:
-            violations.append(f"{change_id or index} must name at least one target symbol")
+            violations.append(
+                f"{change_id or index} must name at least one target symbol"
+            )
+        duplicate_targets = sorted(set(targets) & seen_target_symbols)
+        if duplicate_targets:
+            violations.append(
+                f"{change_id or index} repeats target symbols already assigned to another "
+                f"change: {duplicate_targets}"
+            )
+        seen_target_symbols.update(targets)
         if str(change.get("operation") or "") not in {"modify", "add", "delete"}:
             violations.append(f"{change_id or index} has invalid operation")
         if parent_code is not None and str(change.get("operation") or "") in {
@@ -301,6 +360,154 @@ def validate_atomic_plan(
         "available_hypothesis_ids": sorted(compositions),
         "available_top_level_symbols": sorted(available_symbols),
     }
+
+
+def validate_staged_atomic_plan(
+    roadmap: Mapping[str, Any],
+    *,
+    strategy_memo: Mapping[str, Any],
+    max_modules: int,
+    max_changes: int,
+    max_patches: int,
+    max_phases: int,
+    parent_code: str | None = None,
+    stage: str = "",
+    debug_targeted_repair_only: bool = False,
+    require_complete_roadmap: bool = True,
+) -> dict[str, Any]:
+    """Validate a complete roadmap made of independently bounded Coder phases."""
+
+    violations: list[str] = []
+    missing_keys = [key for key in _STAGED_REQUIRED_KEYS if key not in roadmap]
+    if missing_keys:
+        violations.append(f"missing required roadmap keys: {missing_keys}")
+    roadmap_id = str(roadmap.get("roadmap_id") or "").strip()
+    if not roadmap_id:
+        violations.append("roadmap_id must not be empty")
+    if not str(roadmap.get("objective") or "").strip():
+        violations.append("roadmap objective must not be empty")
+    if require_complete_roadmap and roadmap.get("roadmap_complete") is not True:
+        violations.append(
+            "roadmap_complete must be true; split oversized work into phases instead of "
+            "returning a partial candidate"
+        )
+
+    phases = list(roadmap.get("phases") or [])
+    if not 1 <= len(phases) <= int(max_phases):
+        violations.append(f"phases must contain 1..{int(max_phases)} bounded phases")
+    roadmap_hypothesis = str(roadmap.get("hypothesis_id") or "")
+    roadmap_sources = {str(value) for value in (roadmap.get("source_memory_ids") or [])}
+    seen_phase_ids: set[str] = set()
+    seen_change_ids: set[str] = set()
+    phase_validations: list[dict[str, Any]] = []
+    for index, raw_phase in enumerate(phases):
+        if not isinstance(raw_phase, Mapping):
+            violations.append(f"phases[{index}] is not an object")
+            continue
+        phase = dict(raw_phase)
+        phase_id = str(phase.get("phase_id") or "")
+        if not phase_id or phase_id in seen_phase_ids:
+            violations.append(f"phases[{index}] has missing/duplicate phase_id")
+        previous_phase = phases[index - 1] if index else None
+        previous_phase_id = (
+            str(previous_phase.get("phase_id") or "")
+            if isinstance(previous_phase, Mapping)
+            else ""
+        )
+        expected_dependencies = [] if index == 0 else [previous_phase_id]
+        dependencies = [
+            str(value) for value in (phase.get("depends_on_phase_ids") or [])
+        ]
+        if dependencies != expected_dependencies:
+            violations.append(
+                f"phases[{index}].depends_on_phase_ids must be exactly "
+                f"{expected_dependencies}"
+            )
+        try:
+            phase_index = int(phase.get("phase_index"))
+        except (TypeError, ValueError):
+            phase_index = -1
+        if phase_index != index + 1:
+            violations.append(f"phases[{index}].phase_index must be {index + 1}")
+        if str(phase.get("hypothesis_id") or "") != roadmap_hypothesis:
+            violations.append(f"phases[{index}] must keep roadmap hypothesis_id")
+        if {
+            str(value) for value in (phase.get("source_memory_ids") or [])
+        } != roadmap_sources:
+            violations.append(
+                f"phases[{index}] must keep the exact roadmap source_memory_ids"
+            )
+        phase_validation = validate_atomic_plan(
+            phase,
+            strategy_memo=strategy_memo,
+            max_modules=max_modules,
+            max_changes=max_changes,
+            max_patches=max_patches,
+            parent_code=parent_code,
+            stage=stage,
+            debug_targeted_repair_only=debug_targeted_repair_only,
+        )
+        phase_validations.append(phase_validation)
+        violations.extend(
+            f"phases[{index}]: {value}"
+            for value in (phase_validation.get("violations") or [])
+        )
+        for change in phase.get("allowed_changes") or []:
+            if not isinstance(change, Mapping):
+                continue
+            change_id = str(change.get("change_id") or "")
+            if change_id and change_id in seen_change_ids:
+                violations.append(
+                    f"phases[{index}] repeats change_id from an earlier phase: {change_id}"
+                )
+            seen_change_ids.add(change_id)
+        seen_phase_ids.add(phase_id)
+    return {
+        "schema": "mlevolve_staged_atomic_plan_validation_v1",
+        "valid": not violations,
+        "violations": violations,
+        "phase_count": len(phases),
+        "max_phases": int(max_phases),
+        "phase_validations": phase_validations,
+    }
+
+
+def _atomic_limits(agent: Any, stage: str) -> dict[str, int]:
+    ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
+    limits = {
+        "max_modules": int(
+            getattr(ext_cfg, "memory_strategy_atomic_max_modules", 2) or 2
+        ),
+        "max_changes": int(
+            getattr(ext_cfg, "memory_strategy_atomic_max_changes", 3) or 3
+        ),
+        "max_patches": int(
+            getattr(ext_cfg, "memory_strategy_atomic_max_patches", 6) or 6
+        ),
+    }
+    if str(stage) == "improve":
+        limits["max_modules"] = min(
+            limits["max_modules"],
+            int(getattr(ext_cfg, "experiment_r_improve_max_modules", 2) or 2),
+        )
+        limits["max_patches"] = min(
+            limits["max_patches"],
+            int(getattr(ext_cfg, "experiment_r_improve_max_patches", 6) or 6),
+        )
+    elif str(stage) == "debug":
+        limits["max_modules"] = min(
+            limits["max_modules"],
+            int(getattr(ext_cfg, "memory_strategy_atomic_debug_max_modules", 1) or 1),
+        )
+        limits["max_changes"] = min(
+            limits["max_changes"],
+            int(getattr(ext_cfg, "memory_strategy_atomic_debug_max_changes", 2) or 2),
+        )
+        limits["max_patches"] = min(
+            limits["max_patches"],
+            int(getattr(ext_cfg, "experiment_r_debug_max_patches", 3) or 3),
+        )
+    return limits
 
 
 def _planner_prompt(
@@ -394,8 +601,7 @@ def _planner_prompt(
                     "unauthorized_changed_symbols or new_imports from the Coder verdict. "
                     "Do not authorize any unobserved symbol or widen the experiment."
                     if replan_mode == "scope_reconciliation"
-                    else
-                    "The Coder could not implement the previous plan inside its verified boundary. "
+                    else "The Coder could not implement the previous plan inside its verified boundary. "
                     "Keep the same hypothesis_id and source_memory_ids, but decompose the roadmap: "
                     "return a strictly smaller first phase that independently runs and tests one "
                     "mechanism. Remove or defer every change, symbol, and import not required for "
@@ -420,45 +626,7 @@ def run_atomic_actuation_planner(
     coder_replan_feedback: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
-    limits = {
-        "max_modules": int(
-            getattr(ext_cfg, "memory_strategy_atomic_max_modules", 2) or 2
-        ),
-        "max_changes": int(
-            getattr(ext_cfg, "memory_strategy_atomic_max_changes", 3) or 3
-        ),
-        "max_patches": int(
-            getattr(ext_cfg, "memory_strategy_atomic_max_patches", 6) or 6
-        ),
-    }
-    if str(stage) == "improve":
-        limits["max_modules"] = min(
-            limits["max_modules"],
-            int(getattr(ext_cfg, "experiment_r_improve_max_modules", 2) or 2),
-        )
-        limits["max_patches"] = min(
-            limits["max_patches"],
-            int(getattr(ext_cfg, "experiment_r_improve_max_patches", 6) or 6),
-        )
-    elif str(stage) == "debug":
-        limits["max_modules"] = min(
-            limits["max_modules"],
-            int(
-                getattr(ext_cfg, "memory_strategy_atomic_debug_max_modules", 1)
-                or 1
-            ),
-        )
-        limits["max_changes"] = min(
-            limits["max_changes"],
-            int(
-                getattr(ext_cfg, "memory_strategy_atomic_debug_max_changes", 2)
-                or 2
-            ),
-        )
-        limits["max_patches"] = min(
-            limits["max_patches"],
-            int(getattr(ext_cfg, "experiment_r_debug_max_patches", 3) or 3),
-        )
+    limits = _atomic_limits(agent, stage)
     started = time.monotonic()
     if not _composition_by_id(strategy_memo):
         return {
@@ -466,7 +634,9 @@ def run_atomic_actuation_planner(
             "status": "rejected",
             "elapsed_seconds": round(time.monotonic() - started, 6),
             "strategy_memo_sha256": payload_sha256(strategy_memo),
-            "parent_code_sha256": hashlib.sha256(parent_code.encode("utf-8")).hexdigest(),
+            "parent_code_sha256": hashlib.sha256(
+                parent_code.encode("utf-8")
+            ).hexdigest(),
             "reason": "Strategy Memo has no candidate_compositions",
             "limits": limits,
             "contract_attempts": [],
@@ -557,27 +727,27 @@ def run_atomic_actuation_planner(
                             if str(plan.get("hypothesis_id") or "") in rejected_ids
                             else []
                         )
-                    elif str(
-                        (coder_replan_feedback or {}).get("replan_mode")
-                        or "decompose"
-                    ) == "scope_reconciliation":
+                    elif (
+                        str(
+                            (coder_replan_feedback or {}).get("replan_mode")
+                            or "decompose"
+                        )
+                        == "scope_reconciliation"
+                    ):
                         decomposition_violations = validate_scope_reconciliation(
                             plan,
                             previous_plan=dict(
-                                (coder_replan_feedback or {}).get("previous_plan")
-                                or {}
+                                (coder_replan_feedback or {}).get("previous_plan") or {}
                             ),
                             coder_verdict=dict(
-                                (coder_replan_feedback or {}).get("coder_verdict")
-                                or {}
+                                (coder_replan_feedback or {}).get("coder_verdict") or {}
                             ),
                         )
                     else:
                         decomposition_violations = validate_decomposed_replan(
                             plan,
                             previous_plan=dict(
-                                (coder_replan_feedback or {}).get("previous_plan")
-                                or {}
+                                (coder_replan_feedback or {}).get("previous_plan") or {}
                             ),
                         )
                     if decomposition_violations:
@@ -617,7 +787,9 @@ def run_atomic_actuation_planner(
             "status": "accepted" if validation["valid"] else "rejected",
             "elapsed_seconds": round(time.monotonic() - started, 6),
             "strategy_memo_sha256": payload_sha256(strategy_memo),
-            "parent_code_sha256": hashlib.sha256(parent_code.encode("utf-8")).hexdigest(),
+            "parent_code_sha256": hashlib.sha256(
+                parent_code.encode("utf-8")
+            ).hexdigest(),
             "plan": plan,
             "plan_sha256": payload_sha256(plan),
             "validation": validation,
@@ -630,10 +802,228 @@ def run_atomic_actuation_planner(
             "status": "failed",
             "elapsed_seconds": round(time.monotonic() - started, 6),
             "strategy_memo_sha256": payload_sha256(strategy_memo),
-            "parent_code_sha256": hashlib.sha256(parent_code.encode("utf-8")).hexdigest(),
+            "parent_code_sha256": hashlib.sha256(
+                parent_code.encode("utf-8")
+            ).hexdigest(),
             "error_type": type(exc).__name__,
             "error": str(exc),
             "limits": limits,
+        }
+
+
+def _staged_planner_prompt(
+    strategy_memo: Mapping[str, Any],
+    *,
+    parent_code: str,
+    budget: Mapping[str, Any] | None,
+    limits: Mapping[str, int],
+    max_phases: int,
+    stage: str,
+    previous_roadmap: Mapping[str, Any] | None = None,
+    contract_violations: Iterable[str] = (),
+) -> dict[str, str]:
+    debug_contract = ""
+    if str(stage) == "debug":
+        debug_contract = (
+            " Debug phases must implement only the narrow causal repair for the observed "
+            "failure. Do not include model upgrades, OOF, calibration, ensembling, or feature "
+            "expansion unless it is itself required to remove that exact exception. A single "
+            "logical repair may name several coupled top-level symbols inside one allowed_change; "
+            "do not drop a required symbol merely to reduce the allowed_changes count."
+        )
+    system = (
+        "You are the Staged Atomic Actuation Planner. Select exactly one existing Strategy "
+        "hypothesis and compile its COMPLETE executable modification into an ordered roadmap. "
+        "Every phase is a strict machine contract for a Coder. If the modification is too large "
+        "for one phase, split it across sequential phases; never omit required work, silently "
+        "widen a phase, or return an incomplete candidate. A monolithic top-level symbol may "
+        "appear in more than one phase only when each phase performs a distinct necessary step. "
+        "Phase 2 will receive Phase 1's verified code, and so on. Every phase "
+        "must keep the same hypothesis_id and exact source_memory_ids as the roadmap. Use "
+        "depends_on_phase_ids to form one linear chain. The first phase has no dependency; each "
+        "later phase depends only on the immediately preceding phase. Per-phase hard limits are "
+        f"{_canonical_json(limits)} and the roadmap may contain at most {int(max_phases)} phases. "
+        "Planner target_symbols are exact requirements, not suggestions: the Coder must perform "
+        "the declared add/modify/delete operation on every target and is forbidden to touch any "
+        "other symbol. Set roadmap_complete=true only after listing every phase needed to realize "
+        "the selected hypothesis. Preserve evaluation and submission invariants. Output one JSON "
+        f"object matching RESPONSE_SCHEMA and no prose.{debug_contract}\n\nRESPONSE_SCHEMA:\n"
+        + _canonical_json(ATOMIC_STAGED_ACTUATION_PLAN_SCHEMA)
+    )
+    payload: dict[str, Any] = {
+        "strategy_memo": strategy_memo,
+        "budget": dict(budget or {}),
+        "stage": str(stage),
+        "per_phase_hard_limits": dict(limits),
+        "max_phases": int(max_phases),
+        "parent_code": parent_code,
+    }
+    violations = [str(value) for value in contract_violations]
+    if previous_roadmap is not None or violations:
+        payload["contract_repair_required"] = {
+            "previous_response": dict(previous_roadmap or {}),
+            "violations": violations,
+            "instruction": (
+                "Return a corrected complete roadmap for the same Strategy hypothesis. If one "
+                "phase exceeded a module/change/patch boundary, split that phase into two smaller "
+                "ordered phases rather than deleting any required change. If a logical Debug "
+                "repair spans several coupled symbols, keep them together as target_symbols under "
+                "one allowed_change. Do not change citations or introduce a new experiment."
+            ),
+        }
+    return {"system": system, "user": _canonical_json(payload), "assistant": "{"}
+
+
+def run_atomic_staged_actuation_planner(
+    agent: Any,
+    *,
+    strategy_memo: Mapping[str, Any],
+    parent_code: str,
+    budget: Mapping[str, Any] | None = None,
+    stage: str = "",
+) -> dict[str, Any]:
+    ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
+    limits = _atomic_limits(agent, stage)
+    max_phases = max(
+        1,
+        int(getattr(ext_cfg, "memory_strategy_atomic_max_phases", 3) or 3),
+    )
+    require_complete = bool(
+        getattr(
+            ext_cfg,
+            "memory_strategy_atomic_require_complete_roadmap",
+            True,
+        )
+    )
+    started = time.monotonic()
+    if not _composition_by_id(strategy_memo):
+        return {
+            "schema": "mlevolve_staged_atomic_planner_trace_v1",
+            "status": "rejected",
+            "elapsed_seconds": round(time.monotonic() - started, 6),
+            "reason": "Strategy Memo has no candidate_compositions",
+            "limits": limits,
+            "max_phases": max_phases,
+            "contract_attempts": [],
+        }
+    try:
+        contract_retries = max(
+            0,
+            int(
+                getattr(
+                    ext_cfg,
+                    "memory_strategy_atomic_planner_contract_retries",
+                    2,
+                )
+                or 0
+            ),
+        )
+        roadmap: dict[str, Any] = {}
+        validation: dict[str, Any] = {
+            "valid": False,
+            "violations": ["planner did not produce a staged roadmap"],
+        }
+        contract_attempts: list[dict[str, Any]] = []
+        query_fn = getattr(agent, "_atomic_planner_query_fn", None)
+        for contract_attempt in range(contract_retries + 1):
+            prompt = _staged_planner_prompt(
+                strategy_memo,
+                parent_code=parent_code,
+                budget=budget,
+                limits=limits,
+                max_phases=max_phases,
+                stage=stage,
+                previous_roadmap=roadmap if contract_attempt else None,
+                contract_violations=(validation.get("violations") or [])
+                if contract_attempt
+                else (),
+            )
+            if callable(query_fn):
+                response = query_fn(
+                    prompt=copy.deepcopy(prompt),
+                    strategy_memo=copy.deepcopy(dict(strategy_memo)),
+                    json_schema=copy.deepcopy(ATOMIC_STAGED_ACTUATION_PLAN_SCHEMA),
+                    contract_attempt=contract_attempt,
+                )
+            else:
+                response = generate(
+                    prompt=prompt,
+                    cfg=agent.cfg,
+                    temperature=0.0,
+                    max_tokens=8000,
+                    json_schema=ATOMIC_STAGED_ACTUATION_PLAN_SCHEMA,
+                    max_retries=2,
+                )
+            try:
+                roadmap = _parse_json_object(response)
+                validation = validate_staged_atomic_plan(
+                    roadmap,
+                    strategy_memo=strategy_memo,
+                    max_modules=limits["max_modules"],
+                    max_changes=limits["max_changes"],
+                    max_patches=limits["max_patches"],
+                    max_phases=max_phases,
+                    parent_code=parent_code,
+                    stage=stage,
+                    debug_targeted_repair_only=bool(
+                        getattr(
+                            ext_cfg,
+                            "memory_strategy_atomic_debug_targeted_repair_only",
+                            True,
+                        )
+                    ),
+                    require_complete_roadmap=require_complete,
+                )
+            except Exception as exc:
+                roadmap = {}
+                validation = {
+                    "schema": "mlevolve_staged_atomic_plan_validation_v1",
+                    "valid": False,
+                    "violations": [
+                        f"response parse failed: {type(exc).__name__}: {exc}"
+                    ],
+                }
+            contract_attempts.append(
+                {
+                    "attempt": contract_attempt + 1,
+                    "response_sha256": hashlib.sha256(
+                        _canonical_json(response).encode("utf-8")
+                    ).hexdigest(),
+                    "valid": bool(validation.get("valid")),
+                    "violations": list(validation.get("violations") or []),
+                }
+            )
+            if validation.get("valid"):
+                break
+        return {
+            "schema": "mlevolve_staged_atomic_planner_trace_v1",
+            "status": "accepted" if validation.get("valid") else "rejected",
+            "elapsed_seconds": round(time.monotonic() - started, 6),
+            "strategy_memo_sha256": payload_sha256(strategy_memo),
+            "parent_code_sha256": hashlib.sha256(
+                parent_code.encode("utf-8")
+            ).hexdigest(),
+            "plan": roadmap,
+            "plan_sha256": payload_sha256(roadmap),
+            "validation": validation,
+            "limits": limits,
+            "max_phases": max_phases,
+            "contract_attempts": contract_attempts,
+        }
+    except Exception as exc:
+        logger.exception("Staged Atomic Planner failed")
+        return {
+            "schema": "mlevolve_staged_atomic_planner_trace_v1",
+            "status": "failed",
+            "elapsed_seconds": round(time.monotonic() - started, 6),
+            "strategy_memo_sha256": payload_sha256(strategy_memo),
+            "parent_code_sha256": hashlib.sha256(
+                parent_code.encode("utf-8")
+            ).hexdigest(),
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+            "limits": limits,
+            "max_phases": max_phases,
         }
 
 
@@ -652,11 +1042,7 @@ def _top_level_units(code: str) -> tuple[dict[str, str], set[str]]:
         if isinstance(target, ast.Name):
             return {target.id}
         if isinstance(target, (ast.Tuple, ast.List)):
-            return {
-                name
-                for child in target.elts
-                for name in assigned_names(child)
-            }
+            return {name for child in target.elts for name in assigned_names(child)}
         return set()
 
     for node in tree.body:
@@ -665,18 +1051,12 @@ def _top_level_units(code: str) -> tuple[dict[str, str], set[str]]:
             units.setdefault("__imports__", []).append(segment(node))
         elif isinstance(node, ast.ImportFrom):
             if node.module:
-                imports.update(
-                    f"{node.module}.{alias.name}" for alias in node.names
-                )
+                imports.update(f"{node.module}.{alias.name}" for alias in node.names)
             units.setdefault("__imports__", []).append(segment(node))
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             units.setdefault(node.name, []).append(segment(node))
         elif isinstance(node, ast.Assign):
-            names = {
-                name
-                for target in node.targets
-                for name in assigned_names(target)
-            }
+            names = {name for target in node.targets for name in assigned_names(target)}
             for name in sorted(names):
                 units.setdefault(name, []).append(segment(node))
             if not names:
@@ -706,6 +1086,42 @@ def _allowed_target_symbols(plan: Mapping[str, Any]) -> set[str]:
     return symbols
 
 
+def build_atomic_coder_allowlist(plan: Mapping[str, Any]) -> dict[str, Any]:
+    """Compile Planner prose into the exact packet enforced by the host verifier."""
+
+    operations: dict[str, str] = {}
+    descriptions: dict[str, str] = {}
+    for change in plan.get("allowed_changes") or []:
+        if not isinstance(change, Mapping):
+            continue
+        operation = str(change.get("operation") or "")
+        description = str(change.get("description") or "")
+        for symbol in change.get("target_symbols") or []:
+            operations[str(symbol)] = operation
+            descriptions[str(symbol)] = description
+    return {
+        "schema": "mlevolve_atomic_coder_allowlist_v1",
+        "phase_id": str(plan.get("phase_id") or "single"),
+        "objective": str(plan.get("objective") or ""),
+        "required_symbol_operations": operations,
+        "required_symbol_descriptions": descriptions,
+        "allowed_new_imports": sorted(
+            str(value) for value in (plan.get("allowed_new_imports") or [])
+        ),
+        "forbidden_symbols": sorted(
+            str(value) for value in (plan.get("forbidden_symbols") or [])
+        ),
+        "forbidden_code_patterns": [
+            str(value) for value in (plan.get("forbidden_code_patterns") or [])
+        ],
+        "max_patches": int(plan.get("max_patches") or 0),
+        "authority_rule": (
+            "Every required symbol operation must be implemented exactly once in this phase; "
+            "all undeclared top-level changes and undeclared imports are forbidden."
+        ),
+    }
+
+
 def validate_decomposed_replan(
     plan: Mapping[str, Any],
     *,
@@ -718,9 +1134,7 @@ def validate_decomposed_replan(
         previous_plan.get("hypothesis_id") or ""
     ):
         violations.append("decomposed replan must keep the same hypothesis_id")
-    if {
-        str(value) for value in (plan.get("source_memory_ids") or [])
-    } != {
+    if {str(value) for value in (plan.get("source_memory_ids") or [])} != {
         str(value) for value in (previous_plan.get("source_memory_ids") or [])
     }:
         violations.append("decomposed replan must keep the same source_memory_ids")
@@ -731,9 +1145,7 @@ def validate_decomposed_replan(
     }
     current_symbols = _allowed_target_symbols(plan)
     previous_symbols = _allowed_target_symbols(previous_plan)
-    current_imports = {
-        str(value) for value in (plan.get("allowed_new_imports") or [])
-    }
+    current_imports = {str(value) for value in (plan.get("allowed_new_imports") or [])}
     previous_imports = {
         str(value) for value in (previous_plan.get("allowed_new_imports") or [])
     }
@@ -824,9 +1236,7 @@ def validate_scope_reconciliation(
         previous_plan.get("hypothesis_id") or ""
     ):
         violations.append("scope reconciliation must keep the same hypothesis_id")
-    if {
-        str(value) for value in (plan.get("source_memory_ids") or [])
-    } != {
+    if {str(value) for value in (plan.get("source_memory_ids") or [])} != {
         str(value) for value in (previous_plan.get("source_memory_ids") or [])
     }:
         violations.append("scope reconciliation must keep the same source_memory_ids")
@@ -845,7 +1255,9 @@ def validate_scope_reconciliation(
     }
     added_symbols = current_symbols - previous_symbols
     if not added_symbols:
-        violations.append("scope reconciliation must authorize an observed missing symbol")
+        violations.append(
+            "scope reconciliation must authorize an observed missing symbol"
+        )
     if not added_symbols.issubset(observed_symbols):
         violations.append(
             "scope reconciliation added symbols not observed by the Coder verifier"
@@ -858,9 +1270,7 @@ def validate_scope_reconciliation(
     previous_imports = {
         str(value) for value in (previous_plan.get("allowed_new_imports") or [])
     }
-    current_imports = {
-        str(value) for value in (plan.get("allowed_new_imports") or [])
-    }
+    current_imports = {str(value) for value in (plan.get("allowed_new_imports") or [])}
     observed_imports = {
         str(value) for value in (coder_verdict.get("new_imports") or [])
     }
@@ -884,6 +1294,7 @@ def verify_atomic_code_change(
     candidate_code: str,
     atomic_plan: Mapping[str, Any],
     patch_count: int,
+    require_all_planned_changes: bool = False,
 ) -> dict[str, Any]:
     violations: list[str] = []
     try:
@@ -904,6 +1315,8 @@ def verify_atomic_code_change(
         if before_units.get(name) != after_units.get(name)
     )
     allowed_symbols = _allowed_target_symbols(atomic_plan)
+    allowlist = build_atomic_coder_allowlist(atomic_plan)
+    required_operations = dict(allowlist["required_symbol_operations"])
     new_imports = sorted(after_imports - before_imports)
     removed_imports = sorted(before_imports - after_imports)
     allowed_new_imports = {
@@ -920,7 +1333,11 @@ def verify_atomic_code_change(
 
     symbol_changes_to_check = set(changed_symbols)
     if "__imports__" in symbol_changes_to_check:
-        if new_imports and all(import_is_allowed(value) for value in new_imports) and not removed_imports:
+        if (
+            new_imports
+            and all(import_is_allowed(value) for value in new_imports)
+            and not removed_imports
+        ):
             symbol_changes_to_check.remove("__imports__")
         elif "__imports__" not in allowed_symbols:
             violations.append(
@@ -940,6 +1357,36 @@ def verify_atomic_code_change(
     )
     if unauthorized_imports:
         violations.append(f"unauthorized new imports: {unauthorized_imports}")
+
+    missing_required_symbols: list[str] = []
+    operation_violations: list[str] = []
+    if require_all_planned_changes and syntax_valid:
+        missing_required_symbols = sorted(allowed_symbols - set(changed_symbols))
+        if missing_required_symbols:
+            violations.append(
+                f"planned target symbols were not changed: {missing_required_symbols}"
+            )
+        for symbol, operation in sorted(required_operations.items()):
+            existed_before = symbol in before_units
+            exists_after = symbol in after_units
+            if operation == "add" and (existed_before or not exists_after):
+                operation_violations.append(
+                    f"{symbol}: add requires absent-before and present-after"
+                )
+            elif operation == "modify" and (
+                not existed_before or not exists_after or symbol not in changed_symbols
+            ):
+                operation_violations.append(
+                    f"{symbol}: modify requires present-before, present-after, and changed"
+                )
+            elif operation == "delete" and (not existed_before or exists_after):
+                operation_violations.append(
+                    f"{symbol}: delete requires present-before and absent-after"
+                )
+        if operation_violations:
+            violations.append(
+                f"planned symbol operations were not followed: {operation_violations}"
+            )
 
     newly_introduced_patterns: list[str] = []
     for pattern in atomic_plan.get("forbidden_code_patterns") or []:
@@ -971,13 +1418,21 @@ def verify_atomic_code_change(
         "allowed_symbols": sorted(allowed_symbols),
         "changed_symbols": changed_symbols,
         "unauthorized_changed_symbols": unauthorized,
+        "missing_required_symbols": missing_required_symbols,
+        "operation_violations": operation_violations,
+        "require_all_planned_changes": bool(require_all_planned_changes),
+        "coder_allowlist": allowlist,
         "new_imports": new_imports,
         "removed_imports": removed_imports,
         "allowed_new_imports": sorted(allowed_new_imports),
         "forbidden_symbols_touched": forbidden_touched,
         "forbidden_code_patterns_introduced": newly_introduced_patterns,
-        "original_code_sha256": hashlib.sha256(original_code.encode("utf-8")).hexdigest(),
-        "candidate_code_sha256": hashlib.sha256(candidate_code.encode("utf-8")).hexdigest(),
+        "original_code_sha256": hashlib.sha256(
+            original_code.encode("utf-8")
+        ).hexdigest(),
+        "candidate_code_sha256": hashlib.sha256(
+            candidate_code.encode("utf-8")
+        ).hexdigest(),
     }
 
 
@@ -986,6 +1441,7 @@ def apply_atomic_diff_response(
     response: str,
     original_code: str,
     atomic_plan: Mapping[str, Any],
+    require_all_planned_changes: bool = False,
 ) -> tuple[str | None, dict[str, Any]]:
     response = str(response or "")
     patcher = SearchReplacePatcher()
@@ -996,14 +1452,18 @@ def apply_atomic_diff_response(
         verdict = {
             "schema": "mlevolve_plan_diff_verdict_v1",
             "valid": False,
-            "violations": ["diff contains missing, incomplete, or unparseable SEARCH/REPLACE blocks"],
+            "violations": [
+                "diff contains missing, incomplete, or unparseable SEARCH/REPLACE blocks"
+            ],
             "patch_count": len(blocks),
             "search_markers": search_markers,
             "replace_markers": replace_markers,
         }
         return None, verdict
     try:
-        candidate_code, count = patcher.apply_patch(response, original_code, strict=True)
+        candidate_code, count = patcher.apply_patch(
+            response, original_code, strict=True
+        )
     except Exception as exc:
         return None, {
             "schema": "mlevolve_plan_diff_verdict_v1",
@@ -1017,6 +1477,7 @@ def apply_atomic_diff_response(
         candidate_code=candidate_code,
         atomic_plan=atomic_plan,
         patch_count=count,
+        require_all_planned_changes=require_all_planned_changes,
     )
     return (candidate_code if verdict["valid"] else None), verdict
 
@@ -1031,12 +1492,15 @@ def _coder_prompt(
     previous_verdict: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     contract = _canonical_json(atomic_plan)
+    allowlist = _canonical_json(build_atomic_coder_allowlist(atomic_plan))
     system = (
         "You are the Atomic Coder. Implement exactly the supplied Atomic Actuation Contract. "
         "Do not improve, reinterpret, compress, or replace the hypothesis. Do not touch a "
         "top-level symbol absent from allowed_changes.target_symbols. Do not add imports absent "
-        "from allowed_new_imports. If the contract is impossible, return no patch rather than a "
-        "different experiment. Output complete SEARCH/REPLACE blocks only."
+        "from allowed_new_imports. Every declared target is REQUIRED: perform its exact "
+        "add/modify/delete operation and do not silently omit part of the Planner's phase. "
+        "If the contract is impossible, return no patch rather than a different experiment. "
+        "Output complete SEARCH/REPLACE blocks only."
     )
     instructions = build_base_diff_instructions(
         "The machine-verifiable Atomic Actuation Contract is the complete authority boundary."
@@ -1044,6 +1508,7 @@ def _coder_prompt(
     user = (
         f"# Task\n{task_description}\n\n"
         f"# Atomic Actuation Contract\n{contract}\n\n"
+        f"# Host-enforced exact allowlist\n{allowlist}\n\n"
         f"# Parent execution output\n{execution_output}\n\n"
         f"{instructions}\n\n{build_diff_format_suffix()}\n\n"
         f"Response format: {DIFF_SYS_FORMAT}"
@@ -1053,7 +1518,9 @@ def _coder_prompt(
             "\n\n# Contract-preserving repair\n"
             "The prior diff was rejected. Repair only its mechanical contract violations; "
             "the Atomic Actuation Contract and hypothesis are unchanged. Do not reduce or "
-            "replace the experiment. Every SEARCH block must match the original Parent code "
+            "replace the experiment. Remove every unauthorized_changed_symbol, implement every "
+            "missing_required_symbol, and correct every operation_violation named below. Never "
+            "ask to widen the allowlist. Every SEARCH block must match the current Parent code "
             "shown in this prompt, never the previously proposed candidate or an imagined "
             "intermediate state.\n"
             f"Prior verdict: {_canonical_json(previous_verdict)}\n"
@@ -1094,6 +1561,13 @@ def run_atomic_coder(
             )
             or 0
         )
+        strict_coder = bool(
+            getattr(
+                ext_cfg,
+                "memory_strategy_atomic_strict_coder_enabled",
+                False,
+            )
+        )
         candidate_code: str | None = None
         response: Any = ""
         verdict: dict[str, Any] = {
@@ -1130,6 +1604,7 @@ def run_atomic_coder(
                 response=str(response or ""),
                 original_code=parent_code,
                 atomic_plan=plan,
+                require_all_planned_changes=strict_coder,
             )
             contract_attempts.append(
                 {
@@ -1148,7 +1623,9 @@ def run_atomic_coder(
             "status": "accepted" if candidate_code is not None else "rejected",
             "elapsed_seconds": round(time.monotonic() - started, 6),
             "atomic_plan_sha256": payload_sha256(plan),
-            "response_sha256": hashlib.sha256(str(response or "").encode("utf-8")).hexdigest(),
+            "response_sha256": hashlib.sha256(
+                str(response or "").encode("utf-8")
+            ).hexdigest(),
             "candidate_code": candidate_code or "",
             "candidate_code_sha256": (
                 hashlib.sha256(candidate_code.encode("utf-8")).hexdigest()
@@ -1156,6 +1633,8 @@ def run_atomic_coder(
                 else ""
             ),
             "plan_diff_verdict": verdict,
+            "strict_coder_enabled": strict_coder,
+            "coder_allowlist": build_atomic_coder_allowlist(plan),
             "contract_attempts": contract_attempts,
         }
     except Exception as exc:
@@ -1170,6 +1649,128 @@ def run_atomic_coder(
         }
 
 
+def _run_staged_atomic_actuation_pipeline(
+    agent: Any,
+    *,
+    strategy_memo: Mapping[str, Any],
+    parent_code: str,
+    task_description: str,
+    execution_output: str,
+    budget: Mapping[str, Any] | None,
+    stage: str,
+) -> dict[str, Any]:
+    """Apply every verified phase cumulatively and expose only a complete roadmap."""
+
+    planner_trace = run_atomic_staged_actuation_planner(
+        agent,
+        strategy_memo=strategy_memo,
+        parent_code=parent_code,
+        budget=budget,
+        stage=stage,
+    )
+    roadmap = dict(planner_trace.get("plan") or {})
+    phases = list(roadmap.get("phases") or [])
+    phase_traces: list[dict[str, Any]] = []
+    cumulative_code = parent_code
+    final_coder: dict[str, Any] = {
+        "schema": "mlevolve_atomic_coder_trace_v1",
+        "status": "not_run",
+        "reason": "staged planner was not accepted",
+        "candidate_code": "",
+        "plan_diff_verdict": {"valid": False},
+    }
+    if planner_trace.get("status") == "accepted":
+        for index, raw_phase in enumerate(phases):
+            phase = copy.deepcopy(dict(raw_phase))
+            before_sha = hashlib.sha256(cumulative_code.encode("utf-8")).hexdigest()
+            phase_planner_trace = {
+                "schema": "mlevolve_atomic_phase_planner_trace_v1",
+                "status": "accepted",
+                "roadmap_id": str(roadmap.get("roadmap_id") or ""),
+                "roadmap_sha256": payload_sha256(roadmap),
+                "phase_index": index + 1,
+                "phase_count": len(phases),
+                "parent_code_sha256": before_sha,
+                "plan": phase,
+                "plan_sha256": payload_sha256(phase),
+            }
+            final_coder = run_atomic_coder(
+                agent,
+                planner_trace=phase_planner_trace,
+                parent_code=cumulative_code,
+                task_description=task_description,
+                execution_output=execution_output,
+            )
+            accepted = final_coder.get("status") == "accepted"
+            if accepted:
+                cumulative_code = str(final_coder.get("candidate_code") or "")
+            after_sha = hashlib.sha256(cumulative_code.encode("utf-8")).hexdigest()
+            phase_traces.append(
+                {
+                    "phase_index": index + 1,
+                    "phase_id": str(phase.get("phase_id") or ""),
+                    "status": "accepted" if accepted else "rejected",
+                    "hypothesis_id": str(phase.get("hypothesis_id") or ""),
+                    "source_memory_ids": list(phase.get("source_memory_ids") or []),
+                    "input_code_sha256": before_sha,
+                    "output_code_sha256": after_sha if accepted else "",
+                    "planner": phase_planner_trace,
+                    "coder": copy.deepcopy(final_coder),
+                }
+            )
+            if not accepted:
+                break
+    full_roadmap_applied = bool(
+        planner_trace.get("status") == "accepted"
+        and roadmap.get("roadmap_complete") is True
+        and len(phase_traces) == len(phases)
+        and phases
+        and all(item.get("status") == "accepted" for item in phase_traces)
+    )
+    if full_roadmap_applied:
+        final_coder = copy.deepcopy(final_coder)
+        final_coder["candidate_code"] = cumulative_code
+        final_coder["candidate_code_sha256"] = hashlib.sha256(
+            cumulative_code.encode("utf-8")
+        ).hexdigest()
+        final_coder["cumulative_phase_count"] = len(phases)
+        final_coder["phase_plan_diff_verdicts"] = [
+            copy.deepcopy((item.get("coder") or {}).get("plan_diff_verdict") or {})
+            for item in phase_traces
+        ]
+    else:
+        # Never leak a partially applied roadmap to Improve/Debug execution.
+        final_coder = copy.deepcopy(final_coder)
+        final_coder["candidate_code"] = ""
+        final_coder["candidate_code_sha256"] = ""
+    return {
+        "schema": "mlevolve_atomic_actuation_pipeline_v2",
+        "status": "accepted" if full_roadmap_applied else "rejected",
+        "strategy_memo_sha256": payload_sha256(strategy_memo),
+        "stage": str(stage),
+        "planner": planner_trace,
+        "coder": final_coder,
+        "staged_actuation_enabled": True,
+        "strict_coder_enabled": bool(
+            getattr(
+                getattr(agent.cfg, "external_skill_memory", None),
+                "memory_strategy_atomic_strict_coder_enabled",
+                False,
+            )
+        ),
+        "decomposition_used": len(phases) > 1,
+        "full_roadmap_applied": full_roadmap_applied,
+        "completed_phase_count": sum(
+            item.get("status") == "accepted" for item in phase_traces
+        ),
+        "phase_count": len(phases),
+        "phase_traces": phase_traces,
+        "actuation_attempts": phase_traces,
+        "alternate_hypothesis_used": False,
+        "scope_reconciliation_used": False,
+    }
+
+
 def run_atomic_actuation_pipeline(
     agent: Any,
     *,
@@ -1181,6 +1782,22 @@ def run_atomic_actuation_pipeline(
     stage: str = "",
 ) -> dict[str, Any]:
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
+    if bool(
+        getattr(
+            ext_cfg,
+            "memory_strategy_atomic_staged_enabled",
+            False,
+        )
+    ):
+        return _run_staged_atomic_actuation_pipeline(
+            agent,
+            strategy_memo=strategy_memo,
+            parent_code=parent_code,
+            task_description=task_description,
+            execution_output=execution_output,
+            budget=budget,
+            stage=stage,
+        )
     replan_attempts = max(
         0,
         int(
@@ -1237,9 +1854,7 @@ def run_atomic_actuation_pipeline(
         attempt_trace = {
             "attempt": actuation_attempt + 1,
             "kind": "initial" if actuation_attempt == 0 else "decomposed_replan",
-            "replan_mode": str(
-                (coder_replan_feedback or {}).get("replan_mode") or ""
-            ),
+            "replan_mode": str((coder_replan_feedback or {}).get("replan_mode") or ""),
             "planner": planner_trace,
             "coder": coder_trace,
         }
@@ -1266,7 +1881,9 @@ def run_atomic_actuation_pipeline(
     rejected_hypothesis_ids = {
         str((attempt.get("planner") or {}).get("plan", {}).get("hypothesis_id") or "")
         for attempt in actuation_attempts
-        if str((attempt.get("planner") or {}).get("plan", {}).get("hypothesis_id") or "")
+        if str(
+            (attempt.get("planner") or {}).get("plan", {}).get("hypothesis_id") or ""
+        )
     }
     alternate_hypothesis_used = False
     if coder_trace.get("status") != "accepted":
@@ -1386,12 +2003,16 @@ def run_atomic_actuation_pipeline(
 
 __all__ = [
     "ATOMIC_ACTUATION_PLAN_SCHEMA",
+    "ATOMIC_STAGED_ACTUATION_PLAN_SCHEMA",
     "apply_atomic_diff_response",
+    "build_atomic_coder_allowlist",
     "run_atomic_actuation_pipeline",
     "run_atomic_actuation_planner",
+    "run_atomic_staged_actuation_planner",
     "run_atomic_coder",
     "validate_atomic_plan",
     "validate_decomposed_replan",
     "validate_scope_reconciliation",
+    "validate_staged_atomic_plan",
     "verify_atomic_code_change",
 ]

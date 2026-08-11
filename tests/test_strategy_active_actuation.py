@@ -15,9 +15,11 @@ import agents.strategy_actuation as strategy_actuation
 import agents.atomic_actuation as atomic_actuation
 import agents.memory_strategy_agent as memory_strategy_agent
 from agents.atomic_actuation import (
+    build_atomic_coder_allowlist,
     validate_atomic_plan,
     validate_decomposed_replan,
     validate_scope_reconciliation,
+    validate_staged_atomic_plan,
     verify_atomic_code_change,
 )
 from agents.memory_strategy_agent import validate_strategy_memo
@@ -62,6 +64,53 @@ def _strategy_trace() -> dict:
                 }
             ],
         },
+    }
+
+
+def _atomic_phase(
+    phase_id: str,
+    phase_index: int,
+    *,
+    target_symbols: list[str],
+    operation: str = "modify",
+    depends_on: list[str] | None = None,
+) -> dict:
+    return {
+        "phase_id": phase_id,
+        "phase_index": phase_index,
+        "depends_on_phase_ids": list(depends_on or []),
+        "hypothesis_id": "h1",
+        "objective": f"apply {phase_id}",
+        "source_memory_ids": ["current::parent"],
+        "allowed_modules": ["model_design"],
+        "allowed_changes": [
+            {
+                "change_id": f"change-{phase_id}",
+                "operation": operation,
+                "target_symbols": target_symbols,
+                "description": f"apply {phase_id} exactly",
+            }
+        ],
+        "allowed_new_imports": [],
+        "forbidden_symbols": [],
+        "forbidden_code_patterns": [],
+        "preserve_invariants": ["evaluation and submission protocol"],
+        "compatibility_checks": ["module remains parseable"],
+        "estimated_compute_seconds": 30,
+        "max_patches": 2,
+        "expected_mechanism": f"{phase_id} changes the declared component",
+        "falsification_condition": f"{phase_id} does not change behavior",
+    }
+
+
+def _staged_roadmap(phases: list[dict]) -> dict:
+    return {
+        "roadmap_id": "roadmap-h1",
+        "hypothesis_id": "h1",
+        "objective": "apply the complete h1 modification",
+        "source_memory_ids": ["current::parent"],
+        "roadmap_complete": True,
+        "phases": phases,
     }
 
 
@@ -147,7 +196,9 @@ def test_active_strategy_actuation_fails_closed_before_atomic_on_bad_contract(
     )
 
     def unexpected_atomic(*_args, **_kwargs):
-        raise AssertionError("Atomic pipeline must not run for an invalid Strategy memo")
+        raise AssertionError(
+            "Atomic pipeline must not run for an invalid Strategy memo"
+        )
 
     monkeypatch.setattr(
         strategy_actuation, "run_atomic_actuation_pipeline", unexpected_atomic
@@ -280,9 +331,10 @@ def test_required_active_strategy_rejects_abstention_contract():
         abstention_allowed=False,
     )
     assert verdict["valid"] is False
-    assert "abstention is disabled for required active Strategy actuation" in verdict[
-        "violations"
-    ]
+    assert (
+        "abstention is disabled for required active Strategy actuation"
+        in verdict["violations"]
+    )
 
 
 def test_atomic_pipeline_replans_smaller_phase_after_coder_rejection(monkeypatch):
@@ -498,9 +550,7 @@ def test_decomposed_replan_must_strictly_reduce_verified_boundary():
     first_phase = {
         **broad,
         "allowed_modules": ["data"],
-        "allowed_changes": [
-            {"target_symbols": ["load_images", "train_transform"]}
-        ],
+        "allowed_changes": [{"target_symbols": ["load_images", "train_transform"]}],
         "max_patches": 4,
     }
     assert validate_decomposed_replan(first_phase, previous_plan=broad) == []
@@ -526,15 +576,16 @@ def test_scope_reconciliation_only_authorizes_observed_symbols():
     )
     reconciled = {
         **previous,
-        "allowed_changes": [
-            {"target_symbols": ["extract_features", "__module__"]}
-        ],
+        "allowed_changes": [{"target_symbols": ["extract_features", "__module__"]}],
     }
-    assert validate_scope_reconciliation(
-        reconciled,
-        previous_plan=previous,
-        coder_verdict=verdict,
-    ) == []
+    assert (
+        validate_scope_reconciliation(
+            reconciled,
+            previous_plan=previous,
+            coder_verdict=verdict,
+        )
+        == []
+    )
 
     widened = {
         **reconciled,
@@ -578,6 +629,248 @@ def test_atomic_verifier_tracks_top_level_assignments_as_named_symbols():
     assert verdict["valid"] is True
     assert verdict["changed_symbols"] == ["test_transform", "train_transform"]
     assert "__module__" not in verdict["changed_symbols"]
+
+
+def test_strict_coder_requires_every_planned_symbol_and_forbids_extra_symbol():
+    plan = _atomic_phase(
+        "p1",
+        1,
+        target_symbols=["first", "second"],
+    )
+    original = "first = 1\nsecond = 1\nextra = 1\n"
+    candidate = "first = 2\nsecond = 1\nextra = 2\n"
+    verdict = verify_atomic_code_change(
+        original_code=original,
+        candidate_code=candidate,
+        atomic_plan=plan,
+        patch_count=1,
+        require_all_planned_changes=True,
+    )
+    assert verdict["valid"] is False
+    assert verdict["unauthorized_changed_symbols"] == ["extra"]
+    assert verdict["missing_required_symbols"] == ["second"]
+    packet = build_atomic_coder_allowlist(plan)
+    assert packet["required_symbol_operations"] == {
+        "first": "modify",
+        "second": "modify",
+    }
+
+
+def test_strict_coder_retry_removes_unauthorized_change(monkeypatch):
+    agent = _agent()
+    ext = agent.cfg.external_skill_memory
+    ext.memory_strategy_atomic_strict_coder_enabled = True
+    ext.memory_strategy_atomic_coder_contract_retries = 1
+    plan = _atomic_phase("p1", 1, target_symbols=["first"])
+    planner_trace = {"status": "accepted", "plan": plan}
+    prompts = []
+
+    def coder_query(**kwargs):
+        prompts.append(kwargs["prompt"])
+        if kwargs["contract_attempt"] == 0:
+            return (
+                "<<<<<<< SEARCH\nfirst = 1\nsecond = 1\n=======\n"
+                "first = 2\nsecond = 2\n>>>>>>> REPLACE\n"
+            )
+        return "<<<<<<< SEARCH\nfirst = 1\n=======\n" "first = 2\n>>>>>>> REPLACE\n"
+
+    agent._atomic_coder_query_fn = coder_query
+    trace = atomic_actuation.run_atomic_coder(
+        agent,
+        planner_trace=planner_trace,
+        parent_code="first = 1\nsecond = 1\n",
+        task_description="strict coder test",
+    )
+    assert trace["status"] == "accepted"
+    assert len(trace["contract_attempts"]) == 2
+    assert trace["contract_attempts"][0]["valid"] is False
+    assert trace["plan_diff_verdict"]["changed_symbols"] == ["first"]
+    assert "unauthorized_changed_symbol" in prompts[1]["user"]
+
+
+def test_staged_planner_retries_oversized_phase_as_complete_roadmap():
+    agent = _agent()
+    ext = agent.cfg.external_skill_memory
+    ext.memory_strategy_atomic_max_changes = 1
+    ext.memory_strategy_atomic_max_phases = 3
+    ext.memory_strategy_atomic_planner_contract_retries = 1
+    first = _atomic_phase("p1", 1, target_symbols=["first"])
+    second = _atomic_phase(
+        "p2",
+        2,
+        target_symbols=["second"],
+        depends_on=["p1"],
+    )
+    oversized = _atomic_phase("too-large", 1, target_symbols=["first"])
+    oversized["allowed_changes"].append(
+        {
+            "change_id": "second-change",
+            "operation": "modify",
+            "target_symbols": ["second"],
+            "description": "second part of the same roadmap",
+        }
+    )
+    calls = []
+
+    def planner_query(**kwargs):
+        calls.append(kwargs)
+        if kwargs["contract_attempt"] == 0:
+            return _staged_roadmap([oversized])
+        return _staged_roadmap([first, second])
+
+    agent._atomic_planner_query_fn = planner_query
+    trace = atomic_actuation.run_atomic_staged_actuation_planner(
+        agent,
+        strategy_memo=_strategy_trace()["memo"],
+        parent_code="first = 1\nsecond = 1\n",
+        stage="improve",
+    )
+    assert trace["status"] == "accepted"
+    assert trace["validation"]["phase_count"] == 2
+    assert trace["contract_attempts"][0]["valid"] is False
+    assert "allowed_changes must contain 1..1" in " ".join(
+        trace["contract_attempts"][0]["violations"]
+    )
+    assert "split that phase" in calls[1]["prompt"]["user"]
+
+
+def test_staged_pipeline_carries_each_phase_code_forward():
+    agent = _agent()
+    ext = agent.cfg.external_skill_memory
+    ext.memory_strategy_atomic_staged_enabled = True
+    ext.memory_strategy_atomic_strict_coder_enabled = True
+    first = _atomic_phase("p1", 1, target_symbols=["first"])
+    second = _atomic_phase(
+        "p2",
+        2,
+        target_symbols=["second"],
+        depends_on=["p1"],
+    )
+    roadmap = _staged_roadmap([first, second])
+    inputs = []
+    agent._atomic_planner_query_fn = lambda **_kwargs: roadmap
+
+    def coder_query(**kwargs):
+        parent = kwargs["parent_code"]
+        inputs.append(parent)
+        if kwargs["atomic_plan"]["phase_id"] == "p1":
+            return "<<<<<<< SEARCH\nfirst = 1\n=======\n" "first = 2\n>>>>>>> REPLACE\n"
+        assert "first = 2" in parent
+        return "<<<<<<< SEARCH\nsecond = 1\n=======\n" "second = 2\n>>>>>>> REPLACE\n"
+
+    agent._atomic_coder_query_fn = coder_query
+    trace = atomic_actuation.run_atomic_actuation_pipeline(
+        agent,
+        strategy_memo=_strategy_trace()["memo"],
+        parent_code="first = 1\nsecond = 1\n",
+        task_description="cumulative staging test",
+        stage="improve",
+    )
+    assert trace["status"] == "accepted"
+    assert trace["full_roadmap_applied"] is True
+    assert trace["completed_phase_count"] == 2
+    assert "first = 2" in inputs[1]
+    assert "first = 2" in trace["coder"]["candidate_code"]
+    assert "second = 2" in trace["coder"]["candidate_code"]
+    assert (
+        trace["phase_traces"][1]["input_code_sha256"]
+        == trace["phase_traces"][0]["output_code_sha256"]
+    )
+
+
+def test_staged_pipeline_can_modify_one_monolithic_symbol_in_two_phases():
+    agent = _agent()
+    ext = agent.cfg.external_skill_memory
+    ext.memory_strategy_atomic_staged_enabled = True
+    ext.memory_strategy_atomic_strict_coder_enabled = True
+    first = _atomic_phase("p1", 1, target_symbols=["pipeline"])
+    second = _atomic_phase(
+        "p2",
+        2,
+        target_symbols=["pipeline"],
+        depends_on=["p1"],
+    )
+    agent._atomic_planner_query_fn = lambda **_kwargs: _staged_roadmap([first, second])
+
+    def coder_query(**kwargs):
+        if kwargs["atomic_plan"]["phase_id"] == "p1":
+            return (
+                "<<<<<<< SEARCH\npipeline = 1\n=======\n"
+                "pipeline = 2\n>>>>>>> REPLACE\n"
+            )
+        assert "pipeline = 2" in kwargs["parent_code"]
+        return (
+            "<<<<<<< SEARCH\npipeline = 2\n=======\n" "pipeline = 3\n>>>>>>> REPLACE\n"
+        )
+
+    agent._atomic_coder_query_fn = coder_query
+    trace = atomic_actuation.run_atomic_actuation_pipeline(
+        agent,
+        strategy_memo=_strategy_trace()["memo"],
+        parent_code="pipeline = 1\n",
+        task_description="monolithic cumulative staging test",
+        stage="improve",
+    )
+    assert trace["status"] == "accepted"
+    assert trace["coder"]["candidate_code"] == "pipeline = 3\n"
+
+
+def test_staged_pipeline_never_returns_partial_candidate():
+    agent = _agent()
+    ext = agent.cfg.external_skill_memory
+    ext.memory_strategy_atomic_staged_enabled = True
+    ext.memory_strategy_atomic_strict_coder_enabled = True
+    first = _atomic_phase("p1", 1, target_symbols=["first"])
+    second = _atomic_phase(
+        "p2",
+        2,
+        target_symbols=["second"],
+        depends_on=["p1"],
+    )
+    agent._atomic_planner_query_fn = lambda **_kwargs: _staged_roadmap([first, second])
+
+    def coder_query(**kwargs):
+        if kwargs["atomic_plan"]["phase_id"] == "p1":
+            return "<<<<<<< SEARCH\nfirst = 1\n=======\n" "first = 2\n>>>>>>> REPLACE\n"
+        return "no valid patch"
+
+    agent._atomic_coder_query_fn = coder_query
+    trace = atomic_actuation.run_atomic_actuation_pipeline(
+        agent,
+        strategy_memo=_strategy_trace()["memo"],
+        parent_code="first = 1\nsecond = 1\n",
+        task_description="partial staging rejection test",
+        stage="improve",
+    )
+    assert trace["status"] == "rejected"
+    assert trace["completed_phase_count"] == 1
+    assert trace["full_roadmap_applied"] is False
+    assert trace["coder"]["candidate_code"] == ""
+
+
+def test_debug_coupled_three_symbol_repair_is_one_logical_change():
+    phase = _atomic_phase(
+        "repair-width",
+        1,
+        target_symbols=["GROUP_FEAT_DIM", "extract_groups", "LeafClassifier"],
+    )
+    roadmap = _staged_roadmap([phase])
+    verdict = validate_staged_atomic_plan(
+        roadmap,
+        strategy_memo=_strategy_trace()["memo"],
+        max_modules=1,
+        max_changes=2,
+        max_patches=4,
+        max_phases=3,
+        parent_code=(
+            "GROUP_FEAT_DIM = 30\n"
+            "def extract_groups():\n    return []\n"
+            "class LeafClassifier:\n    pass\n"
+        ),
+        stage="debug",
+        debug_targeted_repair_only=True,
+    )
+    assert verdict["valid"] is True
 
 
 def test_v74_config_enables_required_staged_actuation_with_modest_limits():
@@ -643,3 +936,21 @@ def test_v76_config_replans_one_alternate_scope_reconciliation():
     assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
         "/workspace/nautilus-exp-end2end-agent-v76/"
     )
+
+
+def test_v80_config_enables_strict_complete_cumulative_staging():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v80"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v80-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    ext = cfg.external_skill_memory
+    assert ext.memory_strategy_atomic_staged_enabled is True
+    assert ext.memory_strategy_atomic_strict_coder_enabled is True
+    assert ext.memory_strategy_atomic_require_complete_roadmap is True
+    assert ext.memory_strategy_atomic_max_phases == 3

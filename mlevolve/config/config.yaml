@@ -415,6 +415,10 @@ external_skill_memory:
   memory_strategy_atomic_coder_replan_attempts: 1
   memory_strategy_atomic_alternate_hypothesis_attempts: 0
   memory_strategy_atomic_alternate_replan_attempts: 0
+  memory_strategy_atomic_staged_enabled: false
+  memory_strategy_atomic_max_phases: 3
+  memory_strategy_atomic_require_complete_roadmap: true
+  memory_strategy_atomic_strict_coder_enabled: false
 
 # ============================================================
 #  Persisted run identity (baseline vs memory-system experiments)

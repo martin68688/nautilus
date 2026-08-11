@@ -1,0 +1,13 @@
+# v80: strict Planner-bound Coder execution plus complete cumulative staging.
+# Every phase is verified separately; only the code produced after the full
+# roadmap is accepted may enter Improve/Debug execution.
+extends: ../systems_v79/dynamic_hybrid.yaml
+
+external_skill_memory:
+  memory_strategy_atomic_staged_enabled: true
+  memory_strategy_atomic_max_phases: 3
+  memory_strategy_atomic_require_complete_roadmap: true
+  memory_strategy_atomic_strict_coder_enabled: true
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v7_strict_staged_v80
