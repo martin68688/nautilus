@@ -274,6 +274,33 @@ def test_l3_permission_pool_uses_all_policy_authorized_cards_before_prompt_budge
     assert result == {"repair::policy-authorized"}
 
 
+def test_l3_semantic_encoder_loads_lazily_when_global_memory_is_off(monkeypatch) -> None:
+    import agents.memory.embedding_models as embedding_models
+
+    observed: dict[str, object] = {}
+
+    class FakeEmbeddingModel:
+        def __init__(self, **kwargs):
+            observed.update(kwargs)
+
+        def encode(self, texts, show_progress_bar=False):
+            observed["texts"] = list(texts)
+            observed["show_progress_bar"] = show_progress_bar
+            return np.ones((len(texts), 3), dtype=np.float32)
+
+    monkeypatch.setattr(embedding_models, "EmbeddingModel", FakeEmbeddingModel)
+    layer = StageAwareHybridMemoryLayer.__new__(StageAwareHybridMemoryLayer)
+    layer._experiment_r_l3_semantic_model = None
+    layer._experiment_r_l3_semantic_model_path = "BAAI/bge-base-en-v1.5"
+    layer._experiment_r_l3_semantic_device = "cpu"
+    vectors = layer._encode_l3_semantic_texts(["query", "repair"])
+    assert vectors.shape == (2, 3)
+    assert observed["model_name"] == "BAAI/bge-base-en-v1.5"
+    assert observed["device"] == "cpu"
+    assert observed["texts"] == ["query", "repair"]
+    assert observed["show_progress_bar"] is False
+
+
 def test_atomic_claim_gate_separates_program_metric_and_local_repair() -> None:
     transition = _atomic_transition()
     eligible, reason = verified_atomic_debug_claim(transition)

@@ -20,6 +20,9 @@ evaluation_authority:
   enforce_governance_stages: [retrieval]
 
 agent:
+  # Global Memory remains disabled by the inherited experiment config. The L3
+  # retriever still loads this encoder lazily, kept off the 11GB training GPU.
+  memory_embedding_device: cpu
   draft_role_policy:
     replay_targets_path: /workspace/nautilus-exp-end2end-agent-v86/experiments/end2end_memory_systems_20260804/manifests_v86/leaf_official_replay_targets.json
 

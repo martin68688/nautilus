@@ -637,10 +637,28 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         self._experiment_r_l3_semantic_encode_fn = (
             experiment_r_l3_semantic_encode_fn
         )
-        self.experiment_r_l3_semantic_model_id = str(
-            experiment_r_l3_semantic_model_id or ""
+        agent_cfg = getattr(cfg, "agent", None) if cfg is not None else None
+        self._experiment_r_l3_semantic_model_path = str(
+            experiment_r_l3_semantic_model_id
+            or getattr(agent_cfg, "memory_embedding_model_path", "")
+            or ""
+        )
+        self._experiment_r_l3_semantic_device = str(
+            getattr(agent_cfg, "memory_embedding_device", "cpu") or "cpu"
+        )
+        self._experiment_r_l3_semantic_model = None
+        self.experiment_r_l3_semantic_model_id = (
+            self._experiment_r_l3_semantic_model_path
         )
         self._experiment_r_l3_semantic_lock = threading.RLock()
+        if (
+            self._experiment_r_l3_semantic_encode_fn is None
+            and self.experiment_r_l3_semantic_shortlist_enabled
+            and self._experiment_r_l3_semantic_model_path
+        ):
+            self._experiment_r_l3_semantic_encode_fn = (
+                self._encode_l3_semantic_texts
+            )
         self.experiment_r_l3_agent_match_max_attempts = int(
             getattr(ext_cfg, "experiment_r_l3_agent_match_max_attempts", 2)
             if ext_cfg is not None
@@ -1045,6 +1063,21 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             existing["clauses"] = raw_clauses
             self._node_tokens[sop_id] = _tokenize(self._node_text(existing))
         self._sops = sorted(set(self._sops))
+
+    def _encode_l3_semantic_texts(self, texts: list[str]) -> Any:
+        """Lazily load the configured encoder when Global Memory is disabled."""
+
+        if self._experiment_r_l3_semantic_model is None:
+            from agents.memory.embedding_models import EmbeddingModel
+
+            self._experiment_r_l3_semantic_model = EmbeddingModel(
+                model_type="local",
+                model_name=self._experiment_r_l3_semantic_model_path,
+                device=self._experiment_r_l3_semantic_device,
+            )
+        return self._experiment_r_l3_semantic_model.encode(
+            texts, show_progress_bar=False
+        )
 
     @staticmethod
     def _coerce_protocol_ref(value: ProtocolRef | str | None) -> ProtocolRef:

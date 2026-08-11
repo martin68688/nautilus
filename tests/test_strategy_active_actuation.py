@@ -1388,3 +1388,4 @@ def test_v86_config_enables_authorized_structured_plus_dense_l3_union():
     assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
         "/workspace/nautilus-exp-end2end-agent-v86/"
     )
+    assert cfg.agent.memory_embedding_device == "cpu"
