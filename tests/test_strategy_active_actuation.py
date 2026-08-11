@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sys
 import time
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -631,6 +632,90 @@ def test_atomic_verifier_tracks_top_level_assignments_as_named_symbols():
     assert "__module__" not in verdict["changed_symbols"]
 
 
+def test_atomic_verifier_tracks_bindings_inside_top_level_try_block():
+    parent = (
+        "try:\n"
+        "    dinov3_model = load_backbone()\n"
+        "except Exception:\n"
+        "    dinov3_model = fallback_backbone()\n"
+    )
+    phase = _atomic_phase("backbone", 1, target_symbols=["dinov3_model"])
+    validation = validate_staged_atomic_plan(
+        _staged_roadmap([phase]),
+        strategy_memo=_strategy_trace()["memo"],
+        max_modules=1,
+        max_changes=2,
+        max_patches=4,
+        max_phases=3,
+        max_symbols=4,
+        parent_code=parent,
+        stage="debug",
+        debug_targeted_repair_only=True,
+    )
+    assert validation["valid"] is True
+    candidate = parent.replace("load_backbone()", "load_efficientnet()")
+    verdict = verify_atomic_code_change(
+        original_code=parent,
+        candidate_code=candidate,
+        atomic_plan=phase,
+        patch_count=1,
+        require_all_planned_changes=True,
+    )
+    assert verdict["valid"] is True
+    assert verdict["changed_symbols"] == ["dinov3_model"]
+
+
+def test_staged_pipeline_reconciles_observed_scope_and_retries(monkeypatch):
+    agent = _agent()
+    ext = agent.cfg.external_skill_memory
+    ext.memory_strategy_atomic_staged_enabled = True
+    ext.memory_strategy_atomic_strict_coder_enabled = True
+    ext.memory_strategy_atomic_coder_replan_attempts = 1
+    initial = _atomic_phase("repair", 1, target_symbols=["extract_features"])
+    reconciled = _atomic_phase(
+        "repair",
+        1,
+        target_symbols=["extract_features", "helper"],
+    )
+    planner_calls = []
+
+    def planner_query(**kwargs):
+        planner_calls.append(kwargs)
+        payload = json.loads(kwargs["prompt"]["user"])
+        return _staged_roadmap(
+            [reconciled if "coder_replan_required" in payload else initial]
+        )
+
+    agent._atomic_planner_query_fn = planner_query
+
+    def coder_query(**kwargs):
+        return (
+            "<<<<<<< SEARCH\n"
+            "helper = 1\n\n"
+            "def extract_features():\n"
+            "    return helper\n"
+            "=======\n"
+            "helper = 2\n\n"
+            "def extract_features():\n"
+            "    return helper + 1\n"
+            ">>>>>>> REPLACE\n"
+        )
+
+    agent._atomic_coder_query_fn = coder_query
+    trace = atomic_actuation.run_atomic_actuation_pipeline(
+        agent,
+        strategy_memo=_strategy_trace()["memo"],
+        parent_code="helper = 1\n\ndef extract_features():\n    return helper\n",
+        task_description="scope reconciliation test",
+        stage="improve",
+    )
+    assert trace["status"] == "accepted"
+    assert trace["replan_used"] is True
+    assert trace["scope_reconciliation_used"] is True
+    assert trace["coder"]["candidate_code"].count("helper = 2") == 1
+    assert len(planner_calls) >= 2
+
+
 def test_strict_coder_requires_every_planned_symbol_and_forbids_extra_symbol():
     plan = _atomic_phase(
         "p1",
@@ -997,4 +1082,25 @@ def test_v81_config_caps_symbols_without_blocking_coupled_debug_repair():
     assert ext.memory_strategy_atomic_debug_max_symbols_per_phase == 4
     assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
         "/workspace/nautilus-exp-end2end-agent-v81/"
+    )
+
+
+def test_v82_config_keeps_strict_staging_and_enables_bounded_reconciliation():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v82"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v82-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    ext = cfg.external_skill_memory
+    assert ext.memory_strategy_atomic_staged_enabled is True
+    assert ext.memory_strategy_atomic_strict_coder_enabled is True
+    assert ext.memory_strategy_atomic_coder_replan_attempts == 2
+    assert ext.memory_strategy_atomic_max_symbols_per_phase == 4
+    assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
+        "/workspace/nautilus-exp-end2end-agent-v82/"
     )

@@ -1,0 +1,16 @@
+# v82 preserves v81's strict Coder boundary while restoring bounded
+# Coder-feedback reconciliation to the staged roadmap path.  Module-scope
+# bindings inside try/except/if/with blocks are now exposed as named symbols,
+# so the Planner can declare the real causal dependency instead of falling back
+# to an opaque __module__ rewrite.
+extends: ../systems_v81/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v82/experiments/end2end_memory_systems_20260804/manifests_v82/leaf_official_replay_targets.json
+
+external_skill_memory:
+  memory_strategy_atomic_coder_replan_attempts: 2
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v7_strict_staged_reconcile_v82
