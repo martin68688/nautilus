@@ -338,6 +338,24 @@ def test_required_active_strategy_rejects_abstention_contract():
     )
 
 
+def test_active_debug_strategy_requires_selected_repair_and_full_interface_audit():
+    prompt = memory_strategy_agent._strategy_prompt(
+        {
+            "mode": "active_atomic",
+            "stage": "debug",
+            "strategy_contract": {
+                "abstention_allowed": False,
+                "min_candidate_compositions": 1,
+            },
+        }
+    )
+    system = prompt["system"]
+    assert "prompt-visible Router L3 repair is the primary causal evidence" in system
+    assert "exact before/after repair" in system
+    assert "output type/key/token selection" in system
+    assert "same staged roadmap" in system
+
+
 def test_atomic_pipeline_replans_smaller_phase_after_coder_rejection(monkeypatch):
     agent = _agent()
     agent.cfg.external_skill_memory.memory_strategy_atomic_coder_replan_attempts = 1
@@ -752,6 +770,98 @@ def test_mechanical_only_verifier_does_not_reject_semantic_symbol_mismatch():
     assert verdict["valid"] is True
     assert verdict["verification_mode"] == "mechanical_only"
     assert verdict["changed_symbols"] == []
+
+
+def test_mechanical_only_staged_pipeline_bypasses_planner_contract_gate():
+    agent = _agent()
+    ext = agent.cfg.external_skill_memory
+    ext.memory_strategy_atomic_staged_enabled = True
+    ext.memory_strategy_atomic_strict_coder_enabled = True
+    ext.memory_strategy_atomic_verifier_mode = "mechanical_only"
+    ext.memory_strategy_atomic_coder_replan_attempts = 0
+    ext.memory_strategy_atomic_planner_contract_retries = 2
+
+    phase = _atomic_phase(
+        "wide-interface-change",
+        1,
+        target_symbols=[
+            "Model.forward",
+            "local_model",
+            "test_features",
+            "extra_one",
+            "extra_two",
+        ],
+    )
+    roadmap = _staged_roadmap([phase])
+    # Mechanical mode must not require the semantic complete-roadmap flag.
+    roadmap["roadmap_complete"] = False
+    planner_calls = []
+
+    def planner_query(**kwargs):
+        planner_calls.append(kwargs)
+        return roadmap
+
+    agent._atomic_planner_query_fn = planner_query
+    agent._atomic_coder_query_fn = lambda **_kwargs: (
+        "<<<<<<< SEARCH\n"
+        "    return 1\n"
+        "=======\n"
+        "    return 2\n"
+        ">>>>>>> REPLACE\n"
+    )
+    result = atomic_actuation.run_atomic_actuation_pipeline(
+        agent,
+        strategy_memo=_strategy_trace()["memo"],
+        parent_code="class Model:\n    def forward(self):\n        return 1\n",
+        task_description="leaf classification",
+        execution_output="runtime failure",
+        stage="improve",
+    )
+    assert result["status"] == "accepted"
+    assert result["full_roadmap_applied"] is True
+    assert result["planner"]["semantic_contract_bypassed"] is True
+    assert result["planner"]["validation"] == {
+        "schema": "mlevolve_staged_atomic_plan_validation_v1",
+        "verification_mode": "mechanical_only",
+        "valid": True,
+        "violations": [],
+        "semantic_contract_bypassed": True,
+        "acceptance_basis": "parseable_planner_json_only",
+    }
+    assert len(planner_calls) == 1
+    assert result["coder"]["verification_mode"] == "mechanical_only"
+    assert "return 2" in result["coder"]["candidate_code"]
+
+
+def test_strict_staged_planner_still_rejects_same_invalid_contract():
+    agent = _agent()
+    ext = agent.cfg.external_skill_memory
+    ext.memory_strategy_atomic_verifier_mode = "strict"
+    ext.memory_strategy_atomic_planner_contract_retries = 0
+    phase = _atomic_phase(
+        "wide-interface-change",
+        1,
+        target_symbols=[
+            "Model.forward",
+            "local_model",
+            "test_features",
+            "extra_one",
+            "extra_two",
+        ],
+    )
+    agent._atomic_planner_query_fn = lambda **_kwargs: _staged_roadmap([phase])
+    result = atomic_actuation.run_atomic_staged_actuation_planner(
+        agent,
+        strategy_memo=_strategy_trace()["memo"],
+        parent_code="class Model:\n    def forward(self):\n        return 1\n",
+        stage="improve",
+    )
+    assert result["status"] == "rejected"
+    assert result["semantic_contract_bypassed"] is False
+    assert any(
+        "targets non-top-level symbols" in violation
+        for violation in result["validation"]["violations"]
+    )
 
 
 def test_staged_pipeline_reconciles_observed_scope_and_retries(monkeypatch):
@@ -1232,4 +1342,23 @@ def test_v84_config_preserves_mechanical_mode_with_new_immutable_paths():
     )
     assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
         "/workspace/nautilus-exp-end2end-agent-v84/"
+    )
+
+
+def test_v85_config_removes_planner_gate_and_bounds_l3_agent_shortlist():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v85"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v85-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    ext = cfg.external_skill_memory
+    assert ext.memory_strategy_atomic_verifier_mode == "mechanical_only"
+    assert ext.experiment_r_l3_agent_match_candidate_limit == 8
+    assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
+        "/workspace/nautilus-exp-end2end-agent-v85/"
     )

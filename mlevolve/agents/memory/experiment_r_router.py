@@ -750,6 +750,90 @@ def _hard_gated_l3_candidates(
     return candidates
 
 
+def _shortlist_l3_candidates_for_agent(
+    query_text: str,
+    candidates: list[dict[str, Any]],
+    *,
+    limit: int,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Bound the L3 Agent input with task-agnostic causal-anchor ranking.
+
+    Visibility and evidence authorization are completed before this function is
+    called.  The shortlist therefore never grants access to a hidden repair; it
+    only prevents hundreds of already-authorized cards from overflowing one
+    structured Agent response.  Ranking uses the generic exception/model/API/
+    operand/shape/symbol signature shared with atomic-claim Debug retrieval.
+    """
+
+    bounded_limit = max(1, int(limit))
+    scored: list[tuple[float, str, dict[str, Any], dict[str, Any]]] = []
+    for raw in candidates:
+        candidate = copy.deepcopy(raw)
+        repair_action = candidate.get("repair_action")
+        repair_payload = repair_action if isinstance(repair_action, dict) else {}
+        claim = {
+            "failure_signature": copy.deepcopy(
+                candidate.get("failure_signature") or {}
+            ),
+            "before_after": copy.deepcopy(
+                repair_payload.get("before_after") or []
+            ),
+        }
+        repair_text = (
+            repair_payload.get("summary")
+            or repair_payload.get("steps")
+            or candidate.get("historical_code_change")
+            or ""
+        )
+        score, receipt = structured_debug_relevance(
+            query_text,
+            candidate.get("historical_failure") or "",
+            repair_text,
+            claim,
+        )
+        scored.append(
+            (
+                float(score),
+                str(candidate.get("sop_id") or ""),
+                candidate,
+                receipt,
+            )
+        )
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    selected: list[dict[str, Any]] = []
+    ranking_rows: list[dict[str, Any]] = []
+    for rank, (score, sop_id, candidate, receipt) in enumerate(scored, start=1):
+        ranking_rows.append(
+            {
+                "rank": rank,
+                "sop_id": sop_id,
+                "score": score,
+                "exact_compatibility_match": bool(
+                    receipt.get("exact_compatibility_match")
+                ),
+                "shared_anchors": copy.deepcopy(
+                    receipt.get("shared_anchors") or {}
+                ),
+                "shared_expected_values": list(
+                    receipt.get("shared_expected_values") or []
+                ),
+            }
+        )
+        if rank <= bounded_limit:
+            candidate["agent_shortlist_rank"] = rank
+            candidate["agent_shortlist_score"] = score
+            candidate["agent_shortlist_receipt"] = receipt
+            selected.append(candidate)
+    return selected, {
+        "schema": "experiment_r_l3_agent_shortlist_v1",
+        "algorithm": "task_gated_structured_debug_signature_v3",
+        "input_candidate_count": len(candidates),
+        "output_candidate_count": len(selected),
+        "limit": bounded_limit,
+        "ranked_candidates": ranking_rows,
+    }
+
+
 def _call_l3_match_agent(
     layer: Any,
     *,
@@ -919,18 +1003,32 @@ def _agentic_l3_debug_match(
     trace: list[dict[str, Any]] = []
     total_calls = 0
     for task_scope in ("exact_task", "same_task_type"):
-        candidates = _hard_gated_l3_candidates(
+        authorized_candidates = _hard_gated_l3_candidates(
             layer,
             task_id=task_id,
             task_desc=task_desc,
             visible_sop_ids=visible_sop_ids,
             task_scope=task_scope,
         )
+        candidates, shortlist_receipt = _shortlist_l3_candidates_for_agent(
+            query_text,
+            authorized_candidates,
+            limit=int(
+                getattr(
+                    layer,
+                    "experiment_r_l3_agent_match_candidate_limit",
+                    8,
+                )
+                or 8
+            ),
+        )
         tier_record: dict[str, Any] = {
             "task_scope": task_scope,
+            "authorized_candidate_count": len(authorized_candidates),
             "candidate_ids": [row["sop_id"] for row in candidates],
             "candidate_count": len(candidates),
             "candidate_set_sha256": _sha(candidates),
+            "shortlist": shortlist_receipt,
             "attempts": [],
         }
         trace.append(tier_record)

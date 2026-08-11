@@ -421,10 +421,15 @@ external_skill_memory:
   memory_strategy_atomic_max_phases: 3
   memory_strategy_atomic_require_complete_roadmap: true
   memory_strategy_atomic_strict_coder_enabled: false
-  # strict = enforce exact top-level symbol/import/operation ownership;
-  # mechanical_only = enforce only parseable SEARCH/REPLACE, Python syntax,
-  # and the Planner's per-phase patch-count budget.
+  # strict = enforce Planner schema, exact top-level symbol/import/operation
+  # ownership, and complete-roadmap semantics;
+  # mechanical_only = accept parseable Planner JSON, then enforce only
+  # parseable/applicable SEARCH/REPLACE, Python syntax, and patch count.
   memory_strategy_atomic_verifier_mode: strict
+  # Bound the already-visible L3 repair set before the root-cause Agent must
+  # assess every card.  The generic structured Debug signature supplies rank;
+  # no task-specific synonym or model rule is introduced here.
+  experiment_r_l3_agent_match_candidate_limit: 8
 
 # ============================================================
 #  Persisted run identity (baseline vs memory-system experiments)

@@ -548,6 +548,7 @@ class ExternalSkillMemoryConfig:
     # literal traceback-anchor extraction; no maintained synonym table is
     # consulted on this path.
     experiment_r_l3_agent_match_enabled: bool = False
+    experiment_r_l3_agent_match_candidate_limit: int = 8
     experiment_r_l3_agent_match_max_attempts: int = 2
     experiment_r_l3_agent_match_min_confidence: float = 0.50
     experiment_r_l3_agent_match_max_tokens: int = 1800

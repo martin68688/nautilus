@@ -23,7 +23,10 @@ from agents.memory.external_skill_memory import (  # noqa: E402
     RunForestMemoryLayer,
     _tokenize,
 )
-from agents.memory.experiment_r_router import _debug_repair_evidence  # noqa: E402
+from agents.memory.experiment_r_router import (  # noqa: E402
+    _debug_repair_evidence,
+    _shortlist_l3_candidates_for_agent,
+)
 from agents.memory.stage_aware_hybrid_memory import (  # noqa: E402
     StageAwareHybridMemoryLayer,
 )
@@ -123,6 +126,47 @@ def test_structured_rank_matches_v76_224_to_historical_256_to_518() -> None:
     assert score > generic_score
     assert receipt["exact_compatibility_match"] is True
     assert receipt["shared_expected_values"] == ["518"]
+
+
+def test_l3_agent_shortlist_promotes_exact_repair_before_large_decoy_pool() -> None:
+    claim = _atomic_claim()
+    exact = {
+        "sop_id": "repair-claim::leaf-classification::dino518",
+        "transition_id": "atomic-transition::dino518",
+        "supporting_transition_ids": ["atomic-transition::dino518"],
+        "failure_signature": claim["failure_signature"],
+        "repair_action": {
+            "summary": claim["repair_action"],
+            "before_after": claim["before_after"],
+        },
+        "historical_failure": claim["failure_text"],
+        "historical_code_change": claim["repair_action"],
+    }
+    decoys = [
+        {
+            "sop_id": f"repair-claim::leaf-classification::decoy-{index:03d}",
+            "transition_id": f"atomic-transition::decoy-{index:03d}",
+            "supporting_transition_ids": [f"atomic-transition::decoy-{index:03d}"],
+            "failure_signature": extract_debug_signature(
+                f"ValueError: unrelated tabular feature failure {index}"
+            ),
+            "repair_action": {"summary": "change an unrelated table feature"},
+            "historical_failure": f"ValueError in tabular feature {index}",
+            "historical_code_change": "change an unrelated table feature",
+        }
+        for index in range(295)
+    ]
+    selected, receipt = _shortlist_l3_candidates_for_agent(
+        "AssertionError: Input image height 256 is not a multiple of patch "
+        "height 14 while dinov2_vitl14 extracts frozen features",
+        [*decoys, exact],
+        limit=8,
+    )
+    assert receipt["input_candidate_count"] == 296
+    assert receipt["output_candidate_count"] == 8
+    assert selected[0]["sop_id"] == exact["sop_id"]
+    assert selected[0]["agent_shortlist_rank"] == 1
+    assert selected[0]["agent_shortlist_score"] > selected[1]["agent_shortlist_score"]
 
 
 def test_atomic_claim_gate_separates_program_metric_and_local_repair() -> None:

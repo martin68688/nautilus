@@ -1315,6 +1315,20 @@ def _strategy_prompt(
                 "Abstention is forbidden for this required transaction; use current and "
                 "historical method evidence to propose a falsifiable next step."
             )
+        if str(context.get("stage") or "") == "debug":
+            mode_contract += (
+                " For Debug, a prompt-visible Router L3 repair is the primary causal "
+                "evidence: the recommended hypothesis must cite it and carry out its "
+                "exact before/after repair unless the current code proves a concrete API "
+                "contradiction, which must be named explicitly. Do not stop at the first "
+                "exception line when the repair changes or substitutes a model/library "
+                "interface. Audit the complete coupled interface in the current source: "
+                "artifact/provider and model identifier, input preprocessing and resolution, "
+                "invocation API, output type/key/token selection, feature width, and cache "
+                "format. Put every necessary compatibility edit for that selected repair in "
+                "the same staged roadmap so the Coder does not discover predictable interface "
+                "errors one execution at a time."
+            )
     else:
         mode_contract = (
             "This is SHADOW MODE: the memo has no authority to change the live plan."

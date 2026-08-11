@@ -1,9 +1,10 @@
-"""Production bridge from Memory Strategy analysis to bounded candidate code.
+"""Production bridge from Memory Strategy analysis to candidate code.
 
 The Strategy model never edits the legacy Improve/Debug prompt.  When active
-mode is enabled, this module instead requires a valid Strategy Memo, converts
-one hypothesis into an Atomic Actuation Contract, and accepts code only after
-the deterministic symbol/import/diff verifier passes.
+mode is enabled, this module instead requires a valid Strategy Memo and
+converts one hypothesis into an Atomic Actuation Contract.  Strict mode keeps
+the deterministic symbol/import/diff verifier; mechanical-only mode accepts
+parseable Planner JSON and checks only patch application, syntax, and count.
 """
 
 from __future__ import annotations

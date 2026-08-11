@@ -656,6 +656,45 @@ def _atomic_limits(agent: Any, stage: str) -> dict[str, int]:
     return limits
 
 
+def _atomic_verification_mode(agent: Any) -> str:
+    ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
+    mode = str(
+        getattr(
+            ext_cfg,
+            "memory_strategy_atomic_verifier_mode",
+            "strict",
+        )
+        or "strict"
+    ).lower()
+    if mode not in {"strict", "mechanical_only"}:
+        raise ValueError(f"Unsupported memory_strategy_atomic_verifier_mode: {mode}")
+    return mode
+
+
+def _mechanical_planner_acceptance(*, staged: bool) -> dict[str, Any]:
+    """Record that parseable Planner output proceeds without semantic gates.
+
+    JSON parsing is performed before this receipt is created.  In
+    ``mechanical_only`` mode the Planner's symbol ownership, operation,
+    per-phase count, complete-roadmap, and source-layout rules are advisory and
+    cannot reject the transaction.  Executability is decided later only by
+    SEARCH/REPLACE application, Python syntax, and patch count.
+    """
+
+    return {
+        "schema": (
+            "mlevolve_staged_atomic_plan_validation_v1"
+            if staged
+            else "mlevolve_atomic_actuation_plan_validation_v1"
+        ),
+        "verification_mode": "mechanical_only",
+        "valid": True,
+        "violations": [],
+        "semantic_contract_bypassed": True,
+        "acceptance_basis": "parseable_planner_json_only",
+    }
+
+
 def _planner_prompt(
     strategy_memo: Mapping[str, Any],
     *,
@@ -773,6 +812,7 @@ def run_atomic_actuation_planner(
     coder_replan_feedback: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
+    verification_mode = _atomic_verification_mode(agent)
     limits = _atomic_limits(agent, stage)
     started = time.monotonic()
     if not _composition_by_id(strategy_memo):
@@ -835,24 +875,31 @@ def run_atomic_actuation_planner(
                 )
             try:
                 plan = _parse_json_object(response)
-                validation = validate_atomic_plan(
-                    plan,
-                    strategy_memo=strategy_memo,
-                    max_modules=limits["max_modules"],
-                    max_changes=limits["max_changes"],
-                    max_patches=limits["max_patches"],
-                    max_symbols=limits["max_symbols"],
-                    parent_code=parent_code,
-                    stage=stage,
-                    debug_targeted_repair_only=bool(
-                        getattr(
-                            ext_cfg,
-                            "memory_strategy_atomic_debug_targeted_repair_only",
-                            True,
-                        )
-                    ),
-                )
-                if validation.get("valid") and coder_replan_feedback:
+                if verification_mode == "mechanical_only":
+                    validation = _mechanical_planner_acceptance(staged=False)
+                else:
+                    validation = validate_atomic_plan(
+                        plan,
+                        strategy_memo=strategy_memo,
+                        max_modules=limits["max_modules"],
+                        max_changes=limits["max_changes"],
+                        max_patches=limits["max_patches"],
+                        max_symbols=limits["max_symbols"],
+                        parent_code=parent_code,
+                        stage=stage,
+                        debug_targeted_repair_only=bool(
+                            getattr(
+                                ext_cfg,
+                                "memory_strategy_atomic_debug_targeted_repair_only",
+                                True,
+                            )
+                        ),
+                    )
+                if (
+                    verification_mode == "strict"
+                    and validation.get("valid")
+                    and coder_replan_feedback
+                ):
                     if bool(
                         (coder_replan_feedback or {}).get(
                             "allow_hypothesis_switch", False
@@ -942,6 +989,8 @@ def run_atomic_actuation_planner(
             "plan_sha256": payload_sha256(plan),
             "validation": validation,
             "limits": limits,
+            "verification_mode": verification_mode,
+            "semantic_contract_bypassed": verification_mode == "mechanical_only",
             "contract_attempts": contract_attempts,
         }
     except Exception as exc:
@@ -1062,6 +1111,7 @@ def run_atomic_staged_actuation_planner(
     coder_replan_feedback: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
+    verification_mode = _atomic_verification_mode(agent)
     limits = _atomic_limits(agent, stage)
     max_phases = max(
         1,
@@ -1136,26 +1186,33 @@ def run_atomic_staged_actuation_planner(
                 )
             try:
                 roadmap = _parse_json_object(response)
-                validation = validate_staged_atomic_plan(
-                    roadmap,
-                    strategy_memo=strategy_memo,
-                    max_modules=limits["max_modules"],
-                    max_changes=limits["max_changes"],
-                    max_patches=limits["max_patches"],
-                    max_phases=max_phases,
-                    max_symbols=limits["max_symbols"],
-                    parent_code=parent_code,
-                    stage=stage,
-                    debug_targeted_repair_only=bool(
-                        getattr(
-                            ext_cfg,
-                            "memory_strategy_atomic_debug_targeted_repair_only",
-                            True,
-                        )
-                    ),
-                    require_complete_roadmap=require_complete,
-                )
-                if validation.get("valid") and coder_replan_feedback:
+                if verification_mode == "mechanical_only":
+                    validation = _mechanical_planner_acceptance(staged=True)
+                else:
+                    validation = validate_staged_atomic_plan(
+                        roadmap,
+                        strategy_memo=strategy_memo,
+                        max_modules=limits["max_modules"],
+                        max_changes=limits["max_changes"],
+                        max_patches=limits["max_patches"],
+                        max_phases=max_phases,
+                        max_symbols=limits["max_symbols"],
+                        parent_code=parent_code,
+                        stage=stage,
+                        debug_targeted_repair_only=bool(
+                            getattr(
+                                ext_cfg,
+                                "memory_strategy_atomic_debug_targeted_repair_only",
+                                True,
+                            )
+                        ),
+                        require_complete_roadmap=require_complete,
+                    )
+                if (
+                    verification_mode == "strict"
+                    and validation.get("valid")
+                    and coder_replan_feedback
+                ):
                     replan_violations = validate_staged_replan(
                         roadmap,
                         previous_roadmap=dict(
@@ -1217,6 +1274,8 @@ def run_atomic_staged_actuation_planner(
             "validation": validation,
             "limits": limits,
             "max_phases": max_phases,
+            "verification_mode": verification_mode,
+            "semantic_contract_bypassed": verification_mode == "mechanical_only",
             "contract_attempts": contract_attempts,
         }
     except Exception as exc:
@@ -2084,6 +2143,7 @@ def _run_staged_atomic_actuation_pipeline(
     """Apply every verified phase cumulatively and expose only a complete roadmap."""
 
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
+    verification_mode = _atomic_verification_mode(agent)
     replan_attempts = max(
         0,
         int(
@@ -2182,7 +2242,10 @@ def _run_staged_atomic_actuation_pipeline(
                     break
         full_roadmap_applied = bool(
             planner_trace.get("status") == "accepted"
-            and roadmap.get("roadmap_complete") is True
+            and (
+                roadmap.get("roadmap_complete") is True
+                or verification_mode == "mechanical_only"
+            )
             and len(phase_traces) == len(phases)
             and phases
             and all(item.get("status") == "accepted" for item in phase_traces)

@@ -1,0 +1,14 @@
+# v85 removes the remaining Planner semantic-contract gate in mechanical mode
+# and bounds the L3 root-cause Agent to a causally ranked eight-card shortlist.
+extends: ../systems_v84/dynamic_hybrid.yaml
+
+external_skill_memory:
+  memory_strategy_atomic_verifier_mode: mechanical_only
+  experiment_r_l3_agent_match_candidate_limit: 8
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v85/experiments/end2end_memory_systems_20260804/manifests_v85/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v7_staged_mechanical_no_planner_gate_v85
