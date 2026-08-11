@@ -1,0 +1,126 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-e2e-leaf-atomic-memory-smoke-v79
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-memory-agent-v79
+    mlevolve.ai/workload: mlevolve-e2e-leaf-atomic-memory-smoke-v79
+    task: leaf-classification
+  annotations:
+    mlevolve.ai/purpose: six-hour-online-atomic-debug-memory-smoke
+    mlevolve.ai/actuation: required-strategy-atomic-improve-debug-with-causal-claim-ranking
+    mlevolve.ai/manifest-sha256: 92dd91c6c04f07f86957235723ed8cc6e1a481a571e06fcb388ba4eddad0ae9d
+    mlevolve.ai/source-manifest-sha256: 9d067fd0f691c8269ba6df9e4beb6dd280e93d164ce92a186f8d45c63e18bee1
+    mlevolve.ai/source-lock-manifest-sha256: a66f93b49f39a6c12b6d3e2d32ed47a2d94b60aa7392c3c09ff601706ab27873
+    mlevolve.ai/systems-manifest-sha256: d7ef1e00e708e8c1105ad9ec55b2bfff9d1c6da8a7c5bf74d522fda183466537
+    mlevolve.ai/memory-bundles-manifest-sha256: 0e8cb09d8d2ad1ae2d1d420d2c4c3f2ced87bd77799ad405d2ec9950a8d4e925
+    mlevolve.ai/memory-bundle-manifest-sha256: 43400d1e1941f44df325fad5d49ba031907e217e17bf0e5a7531699b7f9bc610
+    mlevolve.ai/atomic-claim-bundle-sha256: fdfe4cd8d061b5155175786ceb8042af57bce777655fe8d5b0d92f31967f08df
+    mlevolve.ai/source-git-head: 3d4af619
+    mlevolve.ai/per-index-search-budget-seconds: "21600"
+    mlevolve.ai/preserve-failed-index-artifacts: "true"
+spec:
+  activeDeadlineSeconds: 25200
+  backoffLimitPerIndex: 0
+  completionMode: Indexed
+  completions: 1
+  maxFailedIndexes: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        app: mlevolve-end2end
+        app.kubernetes.io/managed-by: codex-nrp-training
+        ecepxie.nrp/owner: haoming
+        experiment: experiment-end2end-memory-agent-v79
+        mlevolve.ai/workload: mlevolve-e2e-leaf-atomic-memory-smoke-v79
+        task: leaf-classification
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 120
+      containers:
+        - name: end2end-runner
+          image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+          imagePullPolicy: IfNotPresent
+          command:
+            - /usr/local/bin/python
+            - -u
+          args:
+            - /workspace/nautilus-exp-end2end-agent-v79/experiments/end2end_memory_systems_20260804/run_assignment.py
+            - --manifest
+            - /workspace/nautilus-exp-end2end-agent-v79/experiments/end2end_memory_systems_20260804/manifests_v79/leaf_atomic_memory_smoke_manifest.json
+            - --output-root
+            - /workspace/experiment-end2end-memory-agent-v79/smoke/runs
+          envFrom:
+            - secretRef:
+                name: prevalence-audit-deepseek-r1
+          env:
+            - name: JOB_COMPLETION_INDEX
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.annotations['batch.kubernetes.io/job-completion-index']
+            - name: KUBERNETES_JOB_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['batch.kubernetes.io/job-name']
+            - name: KUBERNETES_JOB_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['batch.kubernetes.io/controller-uid']
+            - name: KUBERNETES_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: KUBERNETES_POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: KUBERNETES_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: TOKENIZERS_PARALLELISM
+              value: "false"
+            - name: PYTHONPATH
+              value: /workspace/nautilus-exp-end2end-agent-v79/mlevolve:/workspace/nautilus-exp-end2end-agent-v79
+            - name: MLEVOLVE_CONTAINER_IMAGE_REFERENCE
+              value: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+            - name: MLEVOLVE_SOLVER_BINDING_ID
+              value: deepseek-production-solver
+            - name: MLEVOLVE_SOLVER_MODEL_REVISION
+              value: sha256:6c72890187efc83ef04ac6527c8f22f823708d99c83b7f7b3393dfe27fe4efc6
+          resources:
+            requests:
+              cpu: "16"
+              memory: 64Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/a100: "1"
+            limits:
+              cpu: "16"
+              memory: 64Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/a100: "1"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: shm
+              mountPath: /dev/shm
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Gi
