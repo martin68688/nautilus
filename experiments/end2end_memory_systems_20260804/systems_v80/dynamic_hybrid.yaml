@@ -3,6 +3,10 @@
 # roadmap is accepted may enter Improve/Debug execution.
 extends: ../systems_v79/dynamic_hybrid.yaml
 
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v80/experiments/end2end_memory_systems_20260804/manifests_v80/leaf_official_replay_targets.json
+
 external_skill_memory:
   memory_strategy_atomic_staged_enabled: true
   memory_strategy_atomic_max_phases: 3
