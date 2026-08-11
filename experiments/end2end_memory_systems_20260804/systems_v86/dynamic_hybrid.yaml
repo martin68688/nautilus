@@ -5,6 +5,7 @@ extends: ../systems_v85/dynamic_hybrid.yaml
 external_skill_memory:
   experiment_r_l3_agent_match_candidate_limit: 8
   experiment_r_l3_semantic_shortlist_enabled: true
+  experiment_r_l3_agent_match_max_tokens: 3000
   visibility_mode_override: enforce
 
 # v84/v85 observed Authority decisions in shadow mode. The external-memory

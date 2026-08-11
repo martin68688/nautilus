@@ -1379,6 +1379,7 @@ def test_v86_config_enables_authorized_structured_plus_dense_l3_union():
     assert ext.memory_strategy_atomic_verifier_mode == "mechanical_only"
     assert ext.experiment_r_l3_agent_match_candidate_limit == 8
     assert ext.experiment_r_l3_semantic_shortlist_enabled is True
+    assert ext.experiment_r_l3_agent_match_max_tokens == 3000
     assert cfg.evaluation_authority.mode == "shadow"
     assert ext.visibility_mode_override == "enforce"
     assert cfg.evaluation_authority.enforce_operations == ["debug_hypothesis"]
