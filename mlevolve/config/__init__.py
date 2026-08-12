@@ -469,9 +469,6 @@ class ExternalSkillMemoryConfig:
     # Debug rejects repairs that introduce runtime network downloads.
     experiment_r_offline_runtime_only: bool = False
     runtime_network_policy: str = ""
-    experiment_r_same_task_best_pin_stages: list[str] = field(
-        default_factory=lambda: ["draft", "improve", "debug"]
-    )
     # Bound each retrieved hypothesis to a local code edit.
     experiment_r_atomic_actuation_enabled: bool = False
     experiment_r_improve_max_modules: int = 2

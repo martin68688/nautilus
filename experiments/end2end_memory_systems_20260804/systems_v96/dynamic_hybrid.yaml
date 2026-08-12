@@ -1,0 +1,11 @@
+# v96 removes the mandatory same-task-best prompt pin from Draft, Improve,
+# and Debug. Historical best runs remain searchable evidence; Replay remains
+# the dedicated path for directly reusing the best eligible run.
+extends: ../systems_v95/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v96/experiments/end2end_memory_systems_20260804/manifests_v96/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_multigranular_grep_no_best_pin_v96

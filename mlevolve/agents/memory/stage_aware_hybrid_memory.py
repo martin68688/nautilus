@@ -892,19 +892,6 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else 2
         )
-        configured_pin_stages = (
-            getattr(ext_cfg, "experiment_r_same_task_best_pin_stages", None)
-            if ext_cfg is not None
-            else None
-        )
-        self.experiment_r_same_task_best_pin_stages = {
-            str(stage)
-            for stage in (
-                configured_pin_stages
-                if configured_pin_stages is not None
-                else ("draft", "improve", "debug")
-            )
-        }
         self.experiment_r_atomic_actuation_enabled = bool(
             getattr(ext_cfg, "experiment_r_atomic_actuation_enabled", False)
             if ext_cfg is not None
@@ -967,12 +954,6 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                     raise ValueError(
                         "Experiment R stage selection caps must be between 0 and Top-K"
                     )
-            if not self.experiment_r_same_task_best_pin_stages <= {
-                "draft",
-                "improve",
-                "debug",
-            }:
-                raise ValueError("Experiment R same-task pin stages are invalid")
             if self.experiment_r_improve_max_modules not in range(1, 4):
                 raise ValueError("Experiment R Improve module cap must be in [1, 3]")
             if self.experiment_r_improve_max_patches not in range(1, 21):

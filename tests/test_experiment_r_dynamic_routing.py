@@ -13,7 +13,6 @@ sys.path.insert(0, str(ROOT / "mlevolve"))
 
 from agents.memory.experiment_r_router import (
     _experiment_r_clean_sop_support,
-    _pin_same_task_best_for_dynamic,
     _prompt_marker_visible,
     _same_task_best_rows,
     _truncate_prompt,
@@ -567,9 +566,7 @@ def test_agentic_router_searches_same_task_best_first_without_role_policy(tmp_pa
     agent = pack["retrieval_agent"]
     assert text and refs
     assert pack["candidate_pool_source"] == "live_agentic_retrieval"
-    assert pack["ranking_contract"] == (
-        "authority_tool_agentic_final_selection_v2" "+same_task_best_prompt_pin_v1"
-    )
+    assert pack["ranking_contract"] == "authority_tool_agentic_final_selection_v2"
     assert pack["algorithm_version"] == "experiment_r_agentic_final_selection_v2"
     assert agent["fallback_used"] is False
     assert agent["trace"][0]["action"] == "search_same_task_best"
@@ -587,14 +584,6 @@ def test_agentic_router_searches_same_task_best_first_without_role_policy(tmp_pa
         "best_runforest_id": "n1",
         "best_sop_id": "s1",
         "ranking_contract": "same_task_best_protocol_tier_v4",
-        "prompt_pin": {
-            "required": True,
-            "candidate_id": "n1",
-            "source": "runforest",
-            "quota_preserving": True,
-            "applied": True,
-            "prompt_visible": True,
-        },
     }
     assert agent["agent_selected_ids"] == ["n1", "s1", "t1", "n0"]
     assert agent["effective_selected_ids"] == ["n1", "s1", "t1", "n0"]
@@ -800,9 +789,6 @@ def test_fast_experiment_accepts_successful_history_without_paper_grade_markers(
         draft_role="memory_transfer",
     )
     pack = layer.current_navigation_pack()
-    same_task = pack["retrieval_agent"]["same_task_best_first"]
-    assert same_task["best_runforest_id"] == "n1"
-    assert same_task["prompt_pin"]["prompt_visible"] is True
     assert "n1" in refs
     assert pack["stage_route"]["realized_slots"] == {
         "sop": 2,
@@ -846,7 +832,7 @@ def test_fast_experiment_respects_modern_positive_admission_labels(tmp_path):
     assert runforest_ids == ["n1", "t1"]
 
 
-def test_dynamic_prompt_pins_same_task_best_when_retrieval_agent_declines_it(
+def test_dynamic_prompt_does_not_insert_best_when_retrieval_agent_declines_it(
     tmp_path,
 ):
     layer = _layer(tmp_path, "dynamic_hybrid")
@@ -867,125 +853,19 @@ def test_dynamic_prompt_pins_same_task_best_when_retrieval_agent_declines_it(
         draft_role=None,
     )
     pack = layer.current_navigation_pack()
-    pin = pack["retrieval_agent"]["same_task_best_first"]["prompt_pin"]
-    assert pin == {
-        "required": True,
-        "candidate_id": "n1",
-        "source": "runforest",
-        "quota_preserving": True,
-        "applied": True,
-        "prompt_visible": True,
-    }
-    assert "n1" in refs
-    assert "n1" in pack["final_prompt_candidate_ids"]
+    assert "n1" not in refs
+    assert "n1" not in pack["final_prompt_candidate_ids"]
     assert pack["retrieval_agent"]["agent_selected_ids"] == ["t1", "n0", "s1"]
-    assert pack["retrieval_agent"]["effective_selected_ids"] == [
-        "t1",
-        "n1",
-        "s1",
-    ]
-    assert pack["retrieval_agent"]["selection_overrides"] == [
-        {
-            "reason": "mandatory_same_task_best",
-            "inserted_id": "n1",
-            "replaced_id": "n0",
-            "source": "runforest",
-            "quota_preserving": True,
-        }
-    ]
+    assert pack["retrieval_agent"]["effective_selected_ids"] == ["t1", "n0", "s1"]
+    assert "selection_overrides" not in pack["retrieval_agent"]
     assert pack["stage_route"]["requested_slots"] == {
         "sop": 5,
         "runforest": 1,
     }
-    # The tiny fixture has only one eligible SOP. The Agent chooses the full
-    # realizable three-item set, then the mandatory best-history invariant
-    # replaces one RunForest choice without changing its source count.
     assert pack["stage_route"]["realized_slots"] == {
         "sop": 1,
         "runforest": 2,
     }
-
-
-def test_dynamic_flexible_debug_reallocates_a_sop_slot_for_same_task_best(
-    tmp_path,
-):
-    layer = _layer(tmp_path, "dynamic_hybrid")
-    layer.experiment_r_agentic_retrieval_enabled = True
-    layer.experiment_r_flexible_selection_enabled = True
-    layer.experiment_r_stage_selection_caps = {"debug": 2}
-    pool = {
-        "raw_runforest_candidates": [dict(id="n1"), dict(id="n0")],
-        "runforest_candidates": [dict(id="n1"), dict(id="n0")],
-        "pool_identity": {"runforest_ids": ["n1", "n0"]},
-        "pool_counts": {"raw_runforest": 2, "ranked_runforest": 2},
-        "ranking_contract": "test_agent_selection",
-        "retrieval_agent": {
-            "selection_complete": True,
-            "agent_selected_ids": ["s1", "s2"],
-            "effective_selected_ids": ["s1", "s2"],
-        },
-    }
-
-    result = _pin_same_task_best_for_dynamic(
-        layer,
-        pool=pool,
-        stage="debug",
-        task_id="task",
-        visible_sop_ids=None,
-    )
-    agent = result["retrieval_agent"]
-    assert agent["agent_selected_ids"] == ["s1", "s2"]
-    assert agent["effective_selected_ids"] == ["s1", "n1"]
-    assert agent["selection_overrides"][-1] == {
-        "reason": "mandatory_same_task_best",
-        "inserted_id": "n1",
-        "replaced_id": "s2",
-        "source": "runforest",
-        "quota_preserving": False,
-    }
-    pin = agent["same_task_best_first"]["prompt_pin"]
-    assert pin["applied"] is True
-    assert pin["prompt_visible"] is False
-    assert pin["quota_preserving"] is False
-
-
-def test_mandatory_same_task_pin_preserves_explicit_agent_abstention(tmp_path):
-    layer = _layer(tmp_path, "dynamic_hybrid")
-    layer.experiment_r_agentic_retrieval_enabled = True
-    layer.experiment_r_flexible_selection_enabled = True
-    layer.experiment_r_stage_selection_caps = {"debug": 2}
-    pool = {
-        "raw_runforest_candidates": [],
-        "runforest_candidates": [],
-        "pool_identity": {"runforest_ids": []},
-        "pool_counts": {"raw_runforest": 0, "ranked_runforest": 0},
-        "ranking_contract": "debug_causal_only_agent_abstention_v1",
-        "retrieval_agent": {
-            "selection_complete": True,
-            "agent_selected_ids": [],
-            "effective_selected_ids": [],
-            "agent_abstained": True,
-            "finish_reason": "no causally matched L3 repair",
-            "final_selection_authority": "l3_root_cause_agent_abstention",
-        },
-    }
-
-    result = _pin_same_task_best_for_dynamic(
-        layer,
-        pool=pool,
-        stage="debug",
-        task_id="task",
-        visible_sop_ids=None,
-    )
-    agent = result["retrieval_agent"]
-    assert agent["agent_selected_ids"] == []
-    assert agent["effective_selected_ids"] == ["n1"]
-    assert agent["agent_abstained"] is True
-    assert agent["effective_prompt_abstained"] is False
-    assert agent["final_selection_authority"] == (
-        "mandatory_same_task_pin_after_retrieval_agent_abstention"
-    )
-    assert agent["same_task_best_first"]["prompt_pin"]["applied"] is True
 
 
 def test_agentic_router_invalid_id_falls_back_and_retains_failure(tmp_path):
@@ -999,9 +879,7 @@ def test_agentic_router_invalid_id_falls_back_and_retains_failure(tmp_path):
     }
     _text, _refs, pack = _retrieve(layer)
     assert pack["candidate_pool_source"] == "live_retrieval_deterministic_fallback"
-    assert pack["ranking_contract"] == (
-        "agentic_invalid_deterministic_fallback_v1" "+same_task_best_prompt_pin_v1"
-    )
+    assert pack["ranking_contract"] == "agentic_invalid_deterministic_fallback_v1"
     assert pack["retrieval_agent"]["fallback_used"] is True
     assert "unobserved candidate" in pack["retrieval_agent"]["fallback_reason"]
 

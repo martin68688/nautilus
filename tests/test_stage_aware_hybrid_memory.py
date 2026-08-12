@@ -1517,7 +1517,7 @@ def test_dynamic_experiment_r_prompt_is_pinned_to_agent_selected_l3():
     assert pack["l3_agent_match"]["manual_synonym_table_used"] is False
     assert pack["stage_route"]["l3_agent_prompt_pin"]["prompt_visible"] is True
     assert pack["candidate_pool"]["ranking_contract"].endswith(
-        "+l3_agent_root_cause_match_v1+same_task_best_prompt_pin_v1"
+        "+l3_agent_root_cause_match_v1"
     )
 
 

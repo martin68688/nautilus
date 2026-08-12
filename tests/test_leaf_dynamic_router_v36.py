@@ -42,7 +42,6 @@ def _enable_sparse_v36(layer) -> None:
         "debug": 2,
     }
     layer.experiment_r_debug_causal_only = True
-    layer.experiment_r_same_task_best_pin_stages = {"draft"}
 
 
 def _enable_tiered_v41(layer) -> None:
@@ -167,7 +166,6 @@ def test_v36_config_freezes_sparse_causal_atomic_leaf_policy():
         "debug": 2,
     }
     assert ext.experiment_r_debug_causal_only is True
-    assert list(ext.experiment_r_same_task_best_pin_stages) == ["draft"]
     assert ext.experiment_r_l3_agent_match_enabled is True
     assert ext.experiment_r_atomic_actuation_enabled is True
     assert ext.experiment_r_improve_max_modules == 2
@@ -218,7 +216,7 @@ def test_v36_improve_agent_may_select_one_without_source_quota_or_pin(tmp_path):
     assert pack["retrieval_agent"]["selection_contract"][
         "selection_semantics"
     ] == "agent_variable_cardinality_with_explicit_abstention_v1"
-    assert pack["retrieval_agent"]["same_task_best_first"]["enforced"] is False
+    assert pack["retrieval_agent"]["effective_selected_ids"] == ["n1"]
     assert pack["pre_gate_raw_candidates"]
     assert pack["pre_gate_summary"]["stored_near_miss_count"] > 0
     assert any(
@@ -288,11 +286,10 @@ def test_v36_debug_without_causal_l3_match_abstains_without_generic_backfill(
     assert pack["pre_gate_raw_candidates"]
 
 
-def test_debug_abstention_remains_explicit_when_same_task_best_is_pinned(tmp_path):
+def test_debug_abstention_is_not_overridden_by_same_task_history(tmp_path):
     layer = _layer(tmp_path, "dynamic_hybrid")
     _enable_sparse_v36(layer)
     layer.experiment_r_l3_agent_match_enabled = True
-    layer.experiment_r_same_task_best_pin_stages = {"draft", "improve", "debug"}
 
     def unexpected_general_agent_call(**_kwargs):
         raise AssertionError("general Retrieval Agent must not fill an empty Debug repair pool")
@@ -307,23 +304,17 @@ def test_debug_abstention_remains_explicit_when_same_task_best_is_pinned(tmp_pat
     )
     pack = layer.current_navigation_pack()
 
-    assert text and refs == ["n1"]
+    assert text == "" and refs == []
     assert pack["retrieval_agent"]["agent_calls"] == 0
     assert pack["retrieval_agent"]["agent_abstained"] is True
-    assert pack["retrieval_agent"]["effective_selected_ids"] == ["n1"]
-    assert pack["retrieval_agent"]["effective_prompt_abstained"] is False
+    assert pack["retrieval_agent"]["effective_selected_ids"] == []
     assert pack["retrieval_agent"]["finish_reason"] == (
         "no causally matched L3 repair; explicit Debug abstention"
     )
     assert pack["stage_route"]["agent_abstained"] is True
-    assert pack["stage_route"]["effective_prompt_abstained"] is False
-    assert pack["stage_route"]["route"] == (
-        "dynamic_hybrid_mandatory_pin_after_agent_abstention"
-    )
-    assert pack["stage_route"]["same_task_best_prompt_pin"]["prompt_visible"] is True
-    assert pack["router_activation"]["status"] == (
-        "mandatory_prompt_pin_after_agent_abstention"
-    )
+    assert pack["stage_route"]["effective_prompt_abstained"] is True
+    assert pack["stage_route"]["route"] == "dynamic_hybrid_agent_abstention"
+    assert pack["router_activation"]["status"] == "abstain"
     assert pack["stage_route"]["stage"] == "debug"
 
 

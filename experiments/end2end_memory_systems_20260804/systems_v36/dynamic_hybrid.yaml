@@ -50,8 +50,6 @@ external_skill_memory:
     improve: 3
     debug: 2
   experiment_r_debug_causal_only: true
-  experiment_r_same_task_best_pin_stages:
-    - draft
 
   # One memory hypothesis per child and bounded local repair diffs.
   experiment_r_atomic_actuation_enabled: true

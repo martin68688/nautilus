@@ -50,8 +50,6 @@ external_skill_memory:
     improve: 3
     debug: 2
   experiment_r_debug_causal_only: true
-  experiment_r_same_task_best_pin_stages:
-    - draft
 
   experiment_r_atomic_actuation_enabled: true
   experiment_r_improve_max_modules: 2

@@ -1524,3 +1524,24 @@ def test_v94_config_enables_multigranular_grep_and_independent_judge():
     assert cfg.run_identity.memory_version == (
         "leaf_atomic_multigranular_grep_judge_v94"
     )
+
+
+def test_v96_config_removes_same_task_best_pin_from_live_retrieval():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v96"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v96-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    ext = cfg.external_skill_memory
+    assert "experiment_r_same_task_best_pin_stages" not in ext
+    assert ext.experiment_r_multigranular_grep_enabled is True
+    assert ext.experiment_r_l3_grep_agent_enabled is True
+    assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
+        "/workspace/nautilus-exp-end2end-agent-v96/"
+    )
+    assert cfg.run_identity.memory_version.endswith("_no_best_pin_v96")

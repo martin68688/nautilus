@@ -3950,179 +3950,6 @@ def _agentic_candidate_pool(
     }
 
 
-def _pin_same_task_best_for_dynamic(
-    layer: Any,
-    *,
-    pool: dict[str, Any],
-    stage: str,
-    task_id: str,
-    visible_sop_ids: set[str] | None,
-) -> dict[str, Any]:
-    """Reserve one Dynamic-Hybrid RunForest slot for clean target-task best.
-
-    The Retrieval Agent still decides what else to prioritize, but it cannot
-    accidentally hide the best eligible target-task execution after observing
-    it.  The pin changes only Dynamic Hybrid and preserves its frozen source
-    quota: one existing RunForest slot is occupied, never added.
-    """
-
-    if str(getattr(layer, "retrieval_control", "")) != "dynamic_hybrid" or not bool(
-        getattr(layer, "experiment_r_agentic_retrieval_enabled", False)
-    ):
-        return pool
-    if stage not in set(
-        getattr(
-            layer,
-            "experiment_r_same_task_best_pin_stages",
-            {"draft", "improve", "debug"},
-        )
-    ):
-        retrieval = pool.setdefault("retrieval_agent", {})
-        same_task = retrieval.setdefault("same_task_best_first", {})
-        same_task["enforced"] = False
-        same_task["pin_disabled_reason"] = f"same-task pin disabled for {stage}"
-        same_task["prompt_pin"] = {
-            "required": False,
-            "candidate_id": "",
-            "source": "runforest",
-            "quota_preserving": False,
-            "applied": False,
-            "prompt_visible": False,
-        }
-        return pool
-    rows = _same_task_best_rows(
-        layer,
-        task_id=task_id,
-        visible_sop_ids=visible_sop_ids,
-        limit=int(layer.experiment_r_candidate_limit),
-    )
-    best = next((row for row in rows if row["source"] == "runforest"), None)
-    if best is None:
-        return pool
-
-    candidate_id = str(best["id"])
-    original_runforest_ids = {
-        str(row.get("id") or "") for row in pool.get("runforest_candidates") or []
-    }
-    limit = int(layer.experiment_r_candidate_limit)
-    for key in ("raw_runforest_candidates", "runforest_candidates"):
-        remainder = [
-            copy.deepcopy(row)
-            for row in pool.get(key) or []
-            if str(row.get("id") or "") != candidate_id
-        ]
-        pinned = copy.deepcopy(best)
-        pinned["source"] = "runforest"
-        pinned["same_task_best_prompt_pin"] = True
-        pool[key] = [pinned, *remainder][:limit]
-        for rank, row in enumerate(pool[key], 1):
-            row["source_rank"] = rank
-            row.setdefault("same_task_best_prompt_pin", False)
-
-    identity = pool["pool_identity"]
-    identity["runforest_ids"] = [row["id"] for row in pool["raw_runforest_candidates"]]
-    identity["same_task_best_prompt_pin_id"] = candidate_id
-    pool["candidate_pool_hash"] = _sha(identity)
-    pool["pool_counts"]["raw_runforest"] = len(pool["raw_runforest_candidates"])
-    pool["pool_counts"]["ranked_runforest"] = len(pool["runforest_candidates"])
-    pool["ranking_contract"] = (
-        f"{pool.get('ranking_contract', 'live_stage_ranking_v1')}"
-        "+same_task_best_prompt_pin_v1"
-    )
-    retrieval = pool.setdefault("retrieval_agent", {})
-    same_task = retrieval.setdefault("same_task_best_first", {})
-    same_task.setdefault("enforced", True)
-    same_task.setdefault("independent_of_draft_role_policy", True)
-    same_task.setdefault("target_task_id", task_id)
-    same_task.setdefault("eligible_history_found", True)
-    same_task.setdefault("best_runforest_id", candidate_id)
-    same_task.setdefault("ranking_contract", "same_task_best_protocol_tier_v4")
-    same_task["prompt_pin"] = {
-        "required": True,
-        "candidate_id": candidate_id,
-        "source": "runforest",
-        "quota_preserving": True,
-        "applied": False,
-        "prompt_visible": False,
-    }
-    effective = list(retrieval.get("effective_selected_ids") or [])
-    if retrieval.get("selection_complete") and candidate_id not in effective:
-        agent_abstained_before_pin = retrieval.get("agent_abstained") is True
-        quota_preserving = True
-        victim_index = next(
-            (
-                index
-                for index in range(len(effective) - 1, -1, -1)
-                if effective[index] in original_runforest_ids
-            ),
-            None,
-        )
-        if victim_index is None:
-            flexible = bool(
-                getattr(layer, "experiment_r_flexible_selection_enabled", False)
-            )
-            stage_caps = getattr(layer, "experiment_r_stage_selection_caps", {})
-            stage_cap = int(stage_caps.get(stage, int(layer.experiment_r_top_k)))
-            protected_ids = {
-                str((pool.get("l3_agent_match") or {}).get("selected_sop_id") or "")
-            }
-            protected_ids.discard("")
-            if flexible and len(effective) < stage_cap:
-                effective.append(candidate_id)
-                replaced_id = ""
-                quota_preserving = False
-            elif flexible:
-                victim_index = next(
-                    (
-                        index
-                        for index in range(len(effective) - 1, -1, -1)
-                        if effective[index] not in protected_ids
-                    ),
-                    None,
-                )
-                if victim_index is None:
-                    raise RuntimeError(
-                        "Dynamic Agent final selection has no capacity for both "
-                        "mandatory same-task best and the selected L3 repair"
-                    )
-                replaced_id = effective[victim_index]
-                effective[victim_index] = candidate_id
-                quota_preserving = False
-            else:
-                raise RuntimeError(
-                    "Dynamic Agent final selection has no RunForest slot for the "
-                    "mandatory same-task best"
-                )
-        else:
-            replaced_id = effective[victim_index]
-            effective[victim_index] = candidate_id
-        retrieval["effective_selected_ids"] = effective
-        # A mandatory safety/quality pin changes what reaches the Prompt; it
-        # must not rewrite the Retrieval Agent's own decision.  In particular,
-        # Debug can explicitly abstain after finding no causal L3 repair while
-        # the independent same-task-best invariant still exposes one landmark.
-        # Keep those two facts separately observable in the Journal.
-        retrieval["agent_abstained"] = agent_abstained_before_pin
-        retrieval["effective_prompt_abstained"] = False
-        retrieval["final_selection_authority"] = (
-            "mandatory_same_task_pin_after_retrieval_agent_abstention"
-            if agent_abstained_before_pin
-            else "retrieval_agent_plus_mandatory_same_task_pin"
-        )
-        retrieval.setdefault("selection_overrides", []).append(
-            {
-                "reason": "mandatory_same_task_best",
-                "inserted_id": candidate_id,
-                "replaced_id": replaced_id,
-                "source": "runforest",
-                "quota_preserving": quota_preserving,
-            }
-        )
-        same_task["prompt_pin"]["quota_preserving"] = quota_preserving
-        same_task["prompt_pin"]["applied"] = True
-    return pool
-
-
 def _pin_agent_selected_l3_for_dynamic(
     layer: Any,
     *,
@@ -4259,16 +4086,7 @@ def _candidate_pool(
             )
             if not tiered_debug:
                 pool = _pin_agent_selected_l3_for_dynamic(layer, pool=pool)
-            return (
-                _pin_same_task_best_for_dynamic(
-                    layer,
-                    pool=pool,
-                    stage=stage,
-                    task_id=task_id,
-                    visible_sop_ids=visible_sop_ids,
-                ),
-                visibility_pack,
-            )
+            return pool, visibility_pack
         except Exception as exc:
             # Invalid Agent actions never escape the harness. The exact error
             # is retained while the deterministic Exp-R router provides the
@@ -4773,16 +4591,7 @@ def _candidate_pool(
         )
     if not tiered_debug:
         pool = _pin_agent_selected_l3_for_dynamic(layer, pool=pool)
-    return (
-        _pin_same_task_best_for_dynamic(
-            layer,
-            pool=pool,
-            stage=stage,
-            task_id=task_id,
-            visible_sop_ids=visible_sop_ids,
-        ),
-        visibility_pack,
-    )
+    return pool, visibility_pack
 
 
 def _weighted_order(
@@ -4871,8 +4680,6 @@ def _select(
             "route": (
                 "dynamic_hybrid_agent_abstention"
                 if effective_prompt_abstained
-                else "dynamic_hybrid_mandatory_pin_after_agent_abstention"
-                if agent_abstained
                 else "dynamic_hybrid_agent_final_selection"
             ),
             "decision_authority": retrieval.get(
@@ -5031,18 +4838,6 @@ def build_experiment_r_pack(
             f"Experiment R Authority/eligibility escape: {sorted(unsafe)}"
         )
     selected_ids = [row["id"] for row in selected]
-    prompt_pin = (
-        (pool.get("retrieval_agent") or {})
-        .get("same_task_best_first", {})
-        .get("prompt_pin", {})
-    )
-    if prompt_pin.get("required"):
-        prompt_pin["applied"] = prompt_pin.get("candidate_id") in selected_ids
-        if not prompt_pin["applied"]:
-            raise RuntimeError(
-                "Dynamic same-task best did not occupy its frozen RunForest slot"
-            )
-        route["same_task_best_prompt_pin"] = copy.deepcopy(prompt_pin)
     l3_match = pool.get("l3_agent_match") or {}
     l3_prompt_pin = l3_match.get("prompt_pin") or {}
     if l3_prompt_pin.get("required"):
@@ -5093,8 +4888,6 @@ def build_experiment_r_pack(
         activation_status = (
             "deterministic_fallback"
             if retrieval.get("fallback_used")
-            else "mandatory_prompt_pin_after_agent_abstention"
-            if retrieval.get("agent_abstained") is True
             else "retrieval_agent_selected"
             if route.get("decision_authority")
             else "deterministic_router_selected"
@@ -5431,18 +5224,6 @@ def format_experiment_r_pack(layer: Any, pack: dict[str, Any]) -> str:
         raise RuntimeError(
             "Dynamic Router selected a non-empty shortlist but exposed an empty Prompt"
         )
-    prompt_pin = (
-        (pack.get("retrieval_agent") or {})
-        .get("same_task_best_first", {})
-        .get("prompt_pin", {})
-    )
-    if prompt_pin.get("required"):
-        prompt_pin["prompt_visible"] = prompt_pin.get("candidate_id") in visible_ids
-        pack["stage_route"]["same_task_best_prompt_pin"] = copy.deepcopy(prompt_pin)
-        if not prompt_pin["prompt_visible"]:
-            raise RuntimeError(
-                "Dynamic same-task best was selected but not visible in the final Prompt"
-            )
     pack["prompt_text"] = text
     pack["prompt_token_count"] = token_count
     pack["prompt_truncated"] = truncated
