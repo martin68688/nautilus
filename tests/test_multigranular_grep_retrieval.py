@@ -90,6 +90,7 @@ def test_host_field_grep_records_exact_field_hits_and_discard_count() -> None:
         candidates,
         granularity="l2_tactic",
         terms=["dino", "morphology"],
+        fields=["identity"],
         limit=8,
     )
     assert len(selected) == 8
@@ -119,6 +120,11 @@ def test_initial_search_requires_all_granularities_with_weighted_coverage() -> N
                 "granularity": granularity,
                 "query": "DINO leaf",
                 "terms": ["DINO", "leaf"],
+                "fields": (
+                    ["identity", "task", "authorized_content"]
+                    if granularity.startswith("l")
+                    else ["identity", "task", "method", "change_and_result"]
+                ),
                 "top_k": 8,
                 "reason": "first-pass coverage",
             }
@@ -191,6 +197,13 @@ def test_complete_search_then_independent_judge_pool(monkeypatch) -> None:
                         "granularity": granularity,
                         "query": "DINO leaf",
                         "terms": ["DINO", "leaf"],
+                        "fields": (
+                            ["identity", "task", "authorized_content"]
+                            if granularity.startswith("l")
+                            else [
+                                "identity", "task", "method", "change_and_result"
+                            ]
+                        ),
                         "top_k": 8,
                         "reason": "cover every granularity",
                     }

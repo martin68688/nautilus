@@ -34,6 +34,15 @@ SOP_LEVELS = {
     "l2_tactic": "L2_tactic",
     "l3_repair": "L3_repair",
 }
+GRANULARITY_FIELDS = {
+    "l1_recipe": {"identity", "task", "authorized_content"},
+    "l2_tactic": {"identity", "task", "authorized_content"},
+    "l3_repair": {"identity", "task", "authorized_content"},
+    "runforest_run": {"identity", "task", "method", "change_and_result"},
+    "runforest_transition": {
+        "identity", "task", "method", "change_and_result"
+    },
+}
 STAGE_REQUIRED = {
     "draft": {"l1_recipe", "l2_tactic", "runforest_run"},
     "improve": {"l2_tactic", "runforest_run", "runforest_transition"},
@@ -119,10 +128,25 @@ def _search_spec() -> Any:
                 "maxItems": 12,
                 "items": {"type": "string", "maxLength": 120},
             },
+            "fields": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 4,
+                "uniqueItems": True,
+                "items": {
+                    "type": "string",
+                    "enum": [
+                        "identity", "task", "authorized_content", "method",
+                        "change_and_result",
+                    ],
+                },
+            },
             "top_k": {"type": "integer", "minimum": 1, "maximum": 12},
             "reason": {"type": "string", "maxLength": 500},
         },
-        "required": ["granularity", "query", "terms", "top_k", "reason"],
+        "required": [
+            "granularity", "query", "terms", "fields", "top_k", "reason"
+        ],
     }
     return FunctionSpec(
         name="plan_multigranular_memory_grep",
@@ -411,22 +435,25 @@ def _host_grep(
     *,
     granularity: str,
     terms: list[str],
+    fields: list[str],
     limit: int,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     scored: list[tuple[tuple[int, int, int, int], str, dict, dict]] = []
     for candidate in candidates:
         if candidate["granularity"] != granularity:
             continue
-        fields = {
-            key: _normalize(value) for key, value in candidate["fields"].items()
+        candidate_fields = {
+            key: _normalize(value)
+            for key, value in candidate["fields"].items()
+            if key in set(fields)
         }
-        all_text = " ".join(fields.values())
+        all_text = " ".join(candidate_fields.values())
         hits = [term for term in terms if term in all_text]
         if not hits:
             continue
         field_hits = {
             key: [term for term in terms if term in text]
-            for key, text in fields.items()
+            for key, text in candidate_fields.items()
         }
         field_hits = {key: value for key, value in field_hits.items() if value}
         phrase = " ".join(terms)
@@ -467,10 +494,14 @@ def _host_grep(
     return selected, {
         "schema": "experiment_r_multigranular_host_grep_result_v1",
         "granularity": granularity,
+        "searched_fields": list(fields),
         "matched_candidate_count": len(scored),
         "returned_candidate_count": len(selected),
+        "returned_candidate_ids": [row["id"] for row in selected],
         "discarded_by_query_limit": max(0, len(scored) - len(selected)),
-        "ranking": ranking,
+        "ranking": ranking[:64],
+        "ranking_total_count": len(ranking),
+        "ranking_truncated": len(ranking) > 64,
     }
 
 
@@ -584,6 +615,56 @@ def _compact(candidate: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _compact_trace_for_prompt(trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Expose search outcomes without replaying full Host ranking receipts."""
+
+    output = []
+    for record in trace:
+        compact = {
+            key: copy.deepcopy(record.get(key))
+            for key in (
+                "round", "status", "information_need", "reason", "allocation",
+                "new_candidate_count", "accumulated_candidate_count",
+                "accumulated_counts",
+            )
+            if record.get(key) not in (None, "", [], {})
+        }
+        queries = []
+        for query in record.get("queries") or []:
+            grep = query.get("host_grep") or {}
+            queries.append(
+                {
+                    "query_index": query.get("query_index"),
+                    "granularity": query.get("granularity"),
+                    "query": query.get("query"),
+                    "terms": list(query.get("terms") or []),
+                    "fields": list(query.get("fields") or []),
+                    "reason": query.get("reason"),
+                    "host_grep": {
+                        "matched_candidate_count": int(
+                            grep.get("matched_candidate_count") or 0
+                        ),
+                        "returned_candidate_count": int(
+                            grep.get("returned_candidate_count") or 0
+                        ),
+                        "returned_candidate_ids": list(
+                            grep.get("returned_candidate_ids") or []
+                        ),
+                        "discarded_by_query_limit": int(
+                            grep.get("discarded_by_query_limit") or 0
+                        ),
+                    },
+                    "semantic_supplement_ids": list(
+                        query.get("semantic_supplement_ids") or []
+                    ),
+                }
+            )
+        if queries:
+            compact["queries"] = queries
+        output.append(compact)
+    return output
+
+
 def _call_search_agent(
     layer: Any,
     *,
@@ -622,7 +703,9 @@ def _call_search_agent(
             sort_keys=True,
         ),
         "recent_search_trace": json.dumps(
-            trace[-int(layer.experiment_r_multigranular_trace_history):],
+            _compact_trace_for_prompt(
+                trace[-int(layer.experiment_r_multigranular_trace_history):]
+            ),
             sort_keys=True,
             ensure_ascii=False,
             indent=2,
@@ -635,6 +718,8 @@ def _call_search_agent(
         ),
         "policy": [
             "The first round must allocate positive weight and submit at least one query for every granularity; this is broad coverage, not equal weighting.",
+            "Allocation contains every granularity and its five weights must sum to 1.0.",
+            "Each query must select only fields valid for its granularity: SOP uses identity/task/authorized_content; RunForest uses identity/task/method/change_and_result.",
             "Later rounds may reallocate toward evidence gaps but should preserve cross-granularity verification.",
             "Draft emphasizes recipes, tactics, and successful runs; Improve emphasizes tactics, transitions, and compatible runs.",
             "Use exact model/API/component/validation/code/metric terms when known; rewrite terminology across rounds when literal wording may differ.",
@@ -672,6 +757,14 @@ def _validate_search_action(
         granularity = str(row.get("granularity") or "")
         if granularity not in GRANULARITIES:
             raise ValueError("Search query has unknown granularity")
+        fields = list(map(str, row.get("fields") or []))
+        if (
+            not fields
+            or len(fields) != len(set(fields))
+            or not set(fields) <= GRANULARITY_FIELDS[granularity]
+        ):
+            raise ValueError("Search query selected invalid fields for its granularity")
+        row["fields"] = fields
         row["terms"] = _terms(row.get("terms"), query=str(row.get("query") or ""))
         if not row["terms"]:
             raise ValueError("Search query has no high-signal literal terms")
@@ -891,6 +984,7 @@ def build_multigranular_candidate_pool(
                 authorized,
                 granularity=granularity,
                 terms=list(query["terms"]),
+                fields=list(query["fields"]),
                 limit=top_k,
             )
             semantic = _hybrid_supplement(
@@ -936,6 +1030,7 @@ def build_multigranular_candidate_pool(
                     "granularity": granularity,
                     "query": str(query.get("query") or ""),
                     "terms": list(query["terms"]),
+                    "fields": list(query["fields"]),
                     "reason": str(query.get("reason") or ""),
                     "host_grep": grep_receipt,
                     "semantic_supplement_ids": [row["id"] for row in semantic],
