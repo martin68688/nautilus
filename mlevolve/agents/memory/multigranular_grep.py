@@ -117,36 +117,51 @@ def _search_spec() -> Any:
         },
         "required": list(GRANULARITIES),
     }
-    query = {
-        "type": "object",
-        "additionalProperties": False,
-        "properties": {
-            "granularity": {"type": "string", "enum": list(GRANULARITIES)},
-            "query": {"type": "string", "maxLength": 1200},
-            "terms": {
-                "type": "array",
-                "maxItems": 12,
-                "items": {"type": "string", "maxLength": 120},
-            },
-            "fields": {
-                "type": "array",
-                "minItems": 1,
-                "maxItems": 4,
-                "uniqueItems": True,
-                "items": {
-                    "type": "string",
-                    "enum": [
-                        "identity", "task", "authorized_content", "method",
-                        "change_and_result",
-                    ],
+    common_query_properties = {
+        "query": {"type": "string", "maxLength": 1200},
+        "terms": {
+            "type": "array",
+            "maxItems": 12,
+            "items": {"type": "string", "maxLength": 120},
+        },
+        "top_k": {"type": "integer", "minimum": 1, "maximum": 12},
+        "reason": {"type": "string", "maxLength": 500},
+    }
+
+    def query_contract(granularity: str) -> dict[str, Any]:
+        fields = sorted(GRANULARITY_FIELDS[granularity])
+        return {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "granularity": {"type": "string", "const": granularity},
+                **common_query_properties,
+                "fields": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": len(fields),
+                    "uniqueItems": True,
+                    "items": {"type": "string", "enum": fields},
+                    "description": (
+                        f"Fields valid only for {granularity}: "
+                        f"{', '.join(fields)}."
+                    ),
                 },
             },
-            "top_k": {"type": "integer", "minimum": 1, "maximum": 12},
-            "reason": {"type": "string", "maxLength": 500},
-        },
-        "required": [
-            "granularity", "query", "terms", "fields", "top_k", "reason"
-        ],
+            "required": [
+                "granularity", "query", "terms", "fields", "top_k", "reason"
+            ],
+        }
+
+    query = {
+        "oneOf": [query_contract(granularity) for granularity in GRANULARITIES],
+        "description": (
+            "Choose exactly one granularity-specific query contract. SOP "
+            "granularities l1_recipe/l2_tactic/l3_repair can search only "
+            "identity, task, authorized_content. RunForest granularities "
+            "runforest_run/runforest_transition can search only identity, task, "
+            "method, change_and_result."
+        ),
     }
     return FunctionSpec(
         name="plan_multigranular_memory_grep",
@@ -725,6 +740,13 @@ def _call_search_agent(
             "Use exact model/API/component/validation/code/metric terms when known; rewrite terminology across rounds when literal wording may differ.",
             "Do not select final candidates. Finish only after the initial broad round and when further search is unlikely to add useful evidence.",
         ],
+        "field_contract": json.dumps(
+            {
+                granularity: sorted(fields)
+                for granularity, fields in GRANULARITY_FIELDS.items()
+            },
+            sort_keys=True,
+        ),
         "retry_feedback": str(retry_feedback or "")[:1600],
     }
     return _query_fn(layer)(
@@ -758,12 +780,24 @@ def _validate_search_action(
         if granularity not in GRANULARITIES:
             raise ValueError("Search query has unknown granularity")
         fields = list(map(str, row.get("fields") or []))
-        if (
-            not fields
-            or len(fields) != len(set(fields))
-            or not set(fields) <= GRANULARITY_FIELDS[granularity]
-        ):
-            raise ValueError("Search query selected invalid fields for its granularity")
+        allowed_fields = GRANULARITY_FIELDS[granularity]
+        if not fields:
+            raise ValueError(
+                f"Search query for {granularity} selected no fields; allowed "
+                f"fields are {sorted(allowed_fields)}"
+            )
+        if len(fields) != len(set(fields)):
+            raise ValueError(
+                f"Search query for {granularity} repeated fields {fields}; allowed "
+                f"unique fields are {sorted(allowed_fields)}"
+            )
+        invalid_fields = sorted(set(fields) - allowed_fields)
+        if invalid_fields:
+            raise ValueError(
+                f"Search query for {granularity} selected invalid fields "
+                f"{invalid_fields}; allowed fields are {sorted(allowed_fields)}; "
+                f"received fields were {fields}"
+            )
         row["fields"] = fields
         row["terms"] = _terms(row.get("terms"), query=str(row.get("query") or ""))
         if not row["terms"]:

@@ -144,6 +144,155 @@ def test_initial_search_requires_all_granularities_with_weighted_coverage() -> N
         retrieval._validate_search_action(broken, first_round=True)
 
 
+def test_search_schema_binds_fields_to_each_granularity() -> None:
+    schema = retrieval._search_spec().json_schema
+    base = {
+        "action": "search",
+        "reason": "field contract",
+        "information_need": "field-scoped search",
+        "allocation": {
+            granularity: 1.0 / len(retrieval.GRANULARITIES)
+            for granularity in retrieval.GRANULARITIES
+        },
+    }
+    valid_queries = []
+    for granularity in retrieval.GRANULARITIES:
+        valid_queries.append(
+            {
+                "granularity": granularity,
+                "query": "DINO leaf",
+                "terms": ["DINO", "leaf"],
+                "fields": sorted(retrieval.GRANULARITY_FIELDS[granularity]),
+                "top_k": 8,
+                "reason": "valid field set",
+            }
+        )
+    jsonschema.Draft7Validator(schema).validate(
+        {**base, "queries": valid_queries}
+    )
+
+    invalid_sop = json.loads(json.dumps(valid_queries))
+    invalid_sop[1]["fields"] = ["method"]
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft7Validator(schema).validate(
+            {**base, "queries": invalid_sop}
+        )
+
+    invalid_runforest = json.loads(json.dumps(valid_queries))
+    invalid_runforest[3]["fields"] = ["authorized_content"]
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft7Validator(schema).validate(
+            {**base, "queries": invalid_runforest}
+        )
+
+
+def test_invalid_sop_fields_get_specific_retry_then_search_and_judge(
+    monkeypatch,
+) -> None:
+    universe = _universe()
+    search_calls = 0
+    judge_calls = 0
+
+    def search_action(*, illegal: bool) -> dict:
+        return {
+            "action": "search",
+            "reason": "broad multi-granularity search",
+            "information_need": "DINO leaf evidence",
+            "allocation": {
+                "l1_recipe": 0.25,
+                "l2_tactic": 0.25,
+                "l3_repair": 0.10,
+                "runforest_run": 0.20,
+                "runforest_transition": 0.20,
+            },
+            "queries": [
+                {
+                    "granularity": granularity,
+                    "query": "DINO leaf",
+                    "terms": ["DINO", "leaf"],
+                    "fields": (
+                        ["method"]
+                        if illegal and granularity in {"l2_tactic", "l3_repair"}
+                        else ["identity", "task", "authorized_content"]
+                        if granularity.startswith("l")
+                        else ["identity", "task", "method", "change_and_result"]
+                    ),
+                    "top_k": 8,
+                    "reason": "cover every granularity",
+                }
+                for granularity in retrieval.GRANULARITIES
+            ],
+        }
+
+    def query_fn(**kwargs):
+        nonlocal search_calls, judge_calls
+        if kwargs["func_spec"].name == "plan_multigranular_memory_grep":
+            search_calls += 1
+            prompt = kwargs["system_message"]
+            if search_calls == 1:
+                assert prompt["retry_feedback"] == ""
+                return search_action(illegal=True)
+            assert "l2_tactic" in prompt["retry_feedback"]
+            assert "method" in prompt["retry_feedback"]
+            assert "authorized_content" in prompt["retry_feedback"]
+            field_contract = json.loads(prompt["field_contract"])
+            assert field_contract["l2_tactic"] == [
+                "authorized_content", "identity", "task"
+            ]
+            return search_action(illegal=False)
+
+        judge_calls += 1
+        candidates = json.loads(kwargs["system_message"]["authorized_candidates"])
+        return {
+            "decision": "select",
+            "selected_ids": ["tactic::fusion", "transition::fusion"],
+            "reason": "recovered search reached independent judge",
+            "assessments": [
+                {
+                    "candidate_id": row["candidate_id"],
+                    "applicability": 0.95,
+                    "stage_fit": 0.95,
+                    "implementation_support": 0.95,
+                    "contradiction": False,
+                    "confidence": 0.95,
+                    "reason": "compatible",
+                }
+                for row in candidates
+            ],
+        }
+
+    layer = _layer(query_fn)
+    layer.experiment_r_multigranular_search_rounds = 1
+    monkeypatch.setattr(
+        retrieval, "_authorized_candidates", lambda *args, **kwargs: universe
+    )
+    pool = retrieval.build_multigranular_candidate_pool(
+        layer,
+        stage="draft",
+        task_id="leaf-classification",
+        task_desc="multimodal leaf classification",
+        query_text="Draft DINO and morphology fusion",
+        visible_sop_ids={row["id"] for row in universe if row["source"] == "sop"},
+        pre_gate_raw_candidates=[],
+        pre_gate_summary={},
+    )
+    agent = pool["retrieval_agent"]
+    assert search_calls == 2
+    assert judge_calls == 1
+    assert agent["multigranular_search_agent_calls"] == 2
+    assert agent["independent_retrieval_judge_calls"] == 1
+    assert agent["effective_selected_ids"] == [
+        "tactic::fusion", "transition::fusion"
+    ]
+    first_round = agent["multigranular_search"]["trace"][0]
+    assert first_round["attempts"][0]["status"] == "invalid"
+    assert first_round["attempts"][1]["status"] == "valid"
+    assert first_round["accumulated_counts"] == {
+        granularity: 1 for granularity in retrieval.GRANULARITIES
+    }
+    assert pool["candidate_pool_source"] == "live_multigranular_grep_search"
+
+
 def test_independent_judge_schema_and_validator_accept_cross_granularity_set() -> None:
     candidates = _universe()
     spec = retrieval._judge_spec(max_candidates=5, max_selected=3)
