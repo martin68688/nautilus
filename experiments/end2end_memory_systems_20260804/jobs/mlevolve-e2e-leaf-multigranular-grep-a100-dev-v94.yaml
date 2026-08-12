@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-e2e-leaf-multigranular-grep-a100-dev-v94
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-memory-agent-v94
+    mlevolve.ai/workload: mlevolve-e2e-leaf-multigranular-grep-a100-dev-v94
+    task: leaf-classification
+  annotations:
+    mlevolve.ai/purpose: leaf-authority-multigranular-grep-independent-judge-full-online-a100-dev-smoke
+    mlevolve.ai/source-git-head: 223e948d2c60cb15b639247902eaec05b04394df
+    mlevolve.ai/source-files-sha256: 92eb604212c5ea7a26cfd74f5fd699355f9db4774b3add021799a5f53d5164fe
+    mlevolve.ai/source-lock-sha256: 491c0ea658e7fc26af9510ee572d82b2e237b7d58124e5db5406ca37d16b7a85
+    mlevolve.ai/smoke-manifest-sha256: f0f56181a832d48106fe6733204839a9532dc477e25d8f4cb4cf5476e41f37f4
+    mlevolve.ai/memory-bundle-manifest-sha256: fa697bbd5fc47eb728ba13a63d693bc4777b47c6b5c984f653e89041871aa0bb
+spec:
+  activeDeadlineSeconds: 21600
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 120
+  containers:
+    - name: leaf-multigranular-grep-a100-dev
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-lc", "exec sleep infinity"]
+      envFrom:
+        - secretRef:
+            name: prevalence-audit-deepseek-r1
+      env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: TOKENIZERS_PARALLELISM
+          value: "false"
+        - name: KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      resources:
+        requests:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+        limits:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: shm
+          mountPath: /dev/shm
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 16Gi
