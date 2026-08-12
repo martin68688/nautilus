@@ -1,0 +1,12 @@
+# v95 keeps the v94 Authority-bounded five-granularity retrieval design and
+# strengthens the Search Agent tool contract so each granularity can emit only
+# fields that its Host Grep channel actually exposes. Debug remains on the
+# independent Grep Search -> L3 root-cause Judge path.
+extends: ../systems_v94/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v95/experiments/end2end_memory_systems_20260804/manifests_v95/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_multigranular_grep_field_contract_v95
