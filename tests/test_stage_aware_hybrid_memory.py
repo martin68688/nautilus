@@ -577,6 +577,45 @@ def test_invalid_config_fails_closed(tmp_path):
         _layer(tmp_path / "weights", rrf_weights={"draft": {"sop": 0.9, "tree": 0.9}})
 
 
+def test_v93_l3_prompt_budgets_pass_runtime_validation(tmp_path):
+    ext = SimpleNamespace(
+        experiment_r_l3_grep_min_candidates=8,
+        experiment_r_l3_grep_max_candidates=28,
+        experiment_r_l3_failure_context_chars=12000,
+        experiment_r_l3_grep_trace_history=6,
+    )
+    layer = _layer(
+        tmp_path,
+        cfg=SimpleNamespace(external_skill_memory=ext),
+    )
+    assert layer.experiment_r_l3_grep_max_candidates == 28
+    assert layer.experiment_r_l3_failure_context_chars == 12000
+    assert layer.experiment_r_l3_grep_trace_history == 6
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("experiment_r_l3_grep_max_candidates", 33),
+        ("experiment_r_l3_failure_context_chars", 16001),
+        ("experiment_r_l3_grep_trace_history", 9),
+    ],
+)
+def test_l3_prompt_budget_safety_caps_fail_closed(tmp_path, field, value):
+    ext = SimpleNamespace(
+        experiment_r_l3_grep_min_candidates=8,
+        experiment_r_l3_grep_max_candidates=28,
+        experiment_r_l3_failure_context_chars=12000,
+        experiment_r_l3_grep_trace_history=6,
+    )
+    setattr(ext, field, value)
+    with pytest.raises(ValueError, match=field):
+        _layer(
+            tmp_path / field,
+            cfg=SimpleNamespace(external_skill_memory=ext),
+        )
+
+
 def test_empty_config_does_not_clear_graph_blocked_prefixes(tmp_path):
     cfg = SimpleNamespace(external_skill_memory=SimpleNamespace(blocked_run_prefixes=[]))
     layer = _layer(tmp_path, blocked=True, cfg=cfg)

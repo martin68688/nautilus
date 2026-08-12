@@ -1452,8 +1452,43 @@ def test_v91_config_is_an_immutable_release_retry_of_v90():
     ext = cfg.external_skill_memory
     assert ext.visibility_mode_override == "enforce"
     assert ext.experiment_r_l3_grep_agent_enabled is True
+    assert ext.experiment_r_l3_failure_context_chars == 6000
+    assert ext.experiment_r_l3_grep_trace_history == 4
+    assert ext.experiment_r_l3_grep_max_candidates == 20
+    assert ext.memory_strategy_evidence_limit == 8
     assert ext.experiment_r_l3_semantic_shortlist_enabled is False
     assert ext.experiment_r_l3_agent_match_max_tokens == 7000
     assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
         "/workspace/nautilus-exp-end2end-agent-v91/"
     )
+
+
+def test_v92_config_remains_immutable_and_v93_widens_only_audit_budgets():
+    v92_path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v92"
+        / "dynamic_hybrid.yaml"
+    )
+    v92_raw = _load_cfg(v92_path, use_cli_args=False)
+    v92_raw.exp_name = "leaf-strategy-v92-config-test"
+    v92 = OmegaConf.merge(OmegaConf.structured(Config), v92_raw)
+    v92_ext = v92.external_skill_memory
+    assert v92_ext.experiment_r_l3_failure_context_chars == 6000
+    assert v92_ext.experiment_r_l3_grep_trace_history == 4
+    assert v92_ext.experiment_r_l3_grep_max_candidates == 20
+    assert v92_ext.memory_strategy_evidence_limit == 8
+
+    v93_path = v92_path.parents[1] / "systems_v93" / "dynamic_hybrid.yaml"
+    v93_raw = _load_cfg(v93_path, use_cli_args=False)
+    v93_raw.exp_name = "leaf-strategy-v93-config-test"
+    v93 = OmegaConf.merge(OmegaConf.structured(Config), v93_raw)
+    v93_ext = v93.external_skill_memory
+    assert v93_ext.experiment_r_l3_failure_context_chars == 12000
+    assert v93_ext.experiment_r_l3_grep_trace_history == 6
+    assert v93_ext.experiment_r_l3_grep_max_candidates == 28
+    assert v93_ext.memory_strategy_evidence_limit == 12
+    assert v93_ext.experiment_r_l3_grep_max_tokens == 2000
+    assert v93_ext.experiment_r_l3_agent_match_max_tokens == 7000
+    assert v93.run_identity.memory_version.endswith("_grep_v93")

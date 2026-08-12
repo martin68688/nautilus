@@ -515,11 +515,12 @@ def _agentic_action_spec(
     )
 
 
-def _l3_agent_match_action_spec() -> Any:
+def _l3_agent_match_action_spec(*, max_candidates: int = 20) -> Any:
     """Structured one-shot root-cause decision for hard-gated L3 cards."""
 
     from llm import FunctionSpec
 
+    bounded_max_candidates = max(1, min(32, int(max_candidates)))
     score = {"type": "number", "minimum": 0.0, "maximum": 1.0}
     return FunctionSpec(
         name="choose_l3_debug_repair_by_root_cause",
@@ -544,7 +545,7 @@ def _l3_agent_match_action_spec() -> Any:
                 "reason": {"type": "string", "maxLength": 1200},
                 "assessments": {
                     "type": "array",
-                    "maxItems": 20,
+                    "maxItems": bounded_max_candidates,
                     "items": {
                         "type": "object",
                         "additionalProperties": False,
@@ -901,7 +902,9 @@ def _call_l3_grep_agent(
         "target_task_id": task_id,
         "task_description": str(task_desc or "")[:1600],
         "task_scope_already_enforced_by_host": task_scope,
-        "observed_runtime_failure": str(query_text or "")[-6000:],
+        "observed_runtime_failure": str(query_text or "")[
+            -int(getattr(layer, "experiment_r_l3_failure_context_chars", 6000)):
+        ],
         "host_extracted_anchor_suggestions": json.dumps(
             suggestions, sort_keys=True, ensure_ascii=False, indent=2
         ),
@@ -923,7 +926,12 @@ def _call_l3_grep_agent(
             indent=2,
         ),
         "recent_search_trace": json.dumps(
-            trace[-4:], sort_keys=True, ensure_ascii=False, indent=2
+            trace[
+                -int(getattr(layer, "experiment_r_l3_grep_trace_history", 4)):
+            ],
+            sort_keys=True,
+            ensure_ascii=False,
+            indent=2,
         ),
         "accumulated_candidates": json.dumps(
             [_compact_l3_grep_row(row) for row in accumulated_candidates],
@@ -1635,7 +1643,9 @@ def _call_l3_match_agent(
         "target_task_id": task_id,
         "task_description": str(task_desc or "")[:1600],
         "task_scope_already_enforced_by_host": task_scope,
-        "observed_runtime_failure": str(query_text or "")[-6000:],
+        "observed_runtime_failure": str(query_text or "")[
+            -int(getattr(layer, "experiment_r_l3_failure_context_chars", 6000)):
+        ],
         "literal_failure_anchors": json.dumps(
             _raw_failure_anchors(query_text),
             sort_keys=True,
@@ -1669,7 +1679,7 @@ def _call_l3_match_agent(
         model=model,
         temperature=0.0,
         max_tokens=int(layer.experiment_r_l3_agent_match_max_tokens),
-        func_spec=_l3_agent_match_action_spec(),
+        func_spec=_l3_agent_match_action_spec(max_candidates=len(candidates)),
         cfg=cfg,
     )
 

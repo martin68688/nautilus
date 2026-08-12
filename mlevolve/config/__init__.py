@@ -565,6 +565,11 @@ class ExternalSkillMemoryConfig:
     experiment_r_l3_grep_per_query_limit: int = 8
     experiment_r_l3_grep_min_candidates: int = 8
     experiment_r_l3_grep_max_candidates: int = 20
+    # Prompt-side context budgets for the Grep Search Agent and independent L3
+    # root-cause judge.  Historical configurations retain the original values;
+    # newer releases may raise them within the runtime validator's safety caps.
+    experiment_r_l3_failure_context_chars: int = 6000
+    experiment_r_l3_grep_trace_history: int = 4
     experiment_r_l3_grep_max_attempts: int = 2
     experiment_r_l3_grep_max_tokens: int = 1600
     excluded_run_ids: list[str] = field(default_factory=list)

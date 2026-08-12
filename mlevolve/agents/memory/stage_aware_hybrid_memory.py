@@ -699,6 +699,16 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else 20
         )
+        self.experiment_r_l3_failure_context_chars = int(
+            getattr(ext_cfg, "experiment_r_l3_failure_context_chars", 6000)
+            if ext_cfg is not None
+            else 6000
+        )
+        self.experiment_r_l3_grep_trace_history = int(
+            getattr(ext_cfg, "experiment_r_l3_grep_trace_history", 4)
+            if ext_cfg is not None
+            else 4
+        )
         self.experiment_r_l3_grep_max_attempts = int(
             getattr(ext_cfg, "experiment_r_l3_grep_max_attempts", 2)
             if ext_cfg is not None
@@ -711,16 +721,24 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         )
         if not 1 <= self.experiment_r_l3_grep_per_query_limit <= 12:
             raise ValueError("experiment_r_l3_grep_per_query_limit must be in [1, 12]")
-        if not 1 <= self.experiment_r_l3_grep_min_candidates <= 20:
-            raise ValueError("experiment_r_l3_grep_min_candidates must be in [1, 20]")
+        if not 1 <= self.experiment_r_l3_grep_min_candidates <= 32:
+            raise ValueError("experiment_r_l3_grep_min_candidates must be in [1, 32]")
         if not (
             self.experiment_r_l3_grep_min_candidates
             <= self.experiment_r_l3_grep_max_candidates
-            <= 20
+            <= 32
         ):
             raise ValueError(
                 "experiment_r_l3_grep_max_candidates must be between the "
-                "configured minimum and 20"
+                "configured minimum and 32"
+            )
+        if not 1000 <= self.experiment_r_l3_failure_context_chars <= 16000:
+            raise ValueError(
+                "experiment_r_l3_failure_context_chars must be in [1000, 16000]"
+            )
+        if not 1 <= self.experiment_r_l3_grep_trace_history <= 8:
+            raise ValueError(
+                "experiment_r_l3_grep_trace_history must be in [1, 8]"
             )
         self.experiment_r_flexible_selection_enabled = bool(
             getattr(ext_cfg, "experiment_r_flexible_selection_enabled", False)

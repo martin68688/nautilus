@@ -1,0 +1,13 @@
+# v93 moderately widens the Grep/L3 and Strategy evidence budgets after the
+# immutable v91/v92 smoke audit found real prompt and candidate truncation.
+# Agent output-token budgets remain unchanged and within the v4-flash route.
+extends: ../systems_v92/dynamic_hybrid.yaml
+
+external_skill_memory:
+  experiment_r_l3_failure_context_chars: 12000
+  experiment_r_l3_grep_trace_history: 6
+  experiment_r_l3_grep_max_candidates: 28
+  memory_strategy_evidence_limit: 12
+
+run_identity:
+  memory_version: leaf_atomic_recipe_runforest_v8_formal_visibility_grep_v93

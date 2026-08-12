@@ -5,6 +5,8 @@ from pathlib import Path
 import sys
 from types import SimpleNamespace
 
+import jsonschema
+
 
 ROOT = Path(__file__).resolve().parents[1]
 MLEVOLVE_ROOT = ROOT / "mlevolve"
@@ -146,6 +148,8 @@ def _grep_layer(query_fn) -> SimpleNamespace:
         experiment_r_l3_grep_per_query_limit=8,
         experiment_r_l3_grep_min_candidates=8,
         experiment_r_l3_grep_max_candidates=20,
+        experiment_r_l3_failure_context_chars=6000,
+        experiment_r_l3_grep_trace_history=4,
         experiment_r_l3_grep_max_attempts=2,
         experiment_r_l3_grep_max_tokens=1600,
     )
@@ -173,6 +177,160 @@ def test_grep_agent_searches_exception_symbol_numeric_and_rewrites() -> None:
     assert 8 <= receipt["candidate_count"] <= 20
     assert exact_id in {row["sop_id"] for row in selected}
     assert all(name == "search_authorized_l3_repairs" for name in calls)
+
+
+def test_v93_grep_keeps_28_globally_ranked_candidates(monkeypatch) -> None:
+    candidates = []
+    groups = (
+        ("exception", 10, {"exception_names": ["AlphaError"]}),
+        ("symbol", 10, {"symbol_names": ["beta_symbol"]}),
+        ("numeric", 8, {"numeric_literals": ["314159"]}),
+    )
+    for group, count, signature in groups:
+        for index in range(count):
+            row = _candidate(
+                f"repair::{group}-{index:02d}",
+                "placeholder historical failure",
+                "placeholder bounded repair",
+            )
+            row["failure_signature"] = signature
+            candidates.append(row)
+
+    monkeypatch.setattr(
+        router,
+        "_l3_grep_anchor_suggestions",
+        lambda _query: {
+            "exception": ["alphaerror"],
+            "symbol": ["beta_symbol"],
+            "numeric": ["314159"],
+            "text": ["alphaerror", "beta_symbol", "314159"],
+        },
+    )
+
+    def query_fn(**kwargs):
+        budget = json.loads(kwargs["system_message"]["search_budget"])
+        remaining = budget["required_axes_remaining"]
+        if remaining:
+            axis = remaining[0]
+            return {
+                "action": f"grep_{axis}",
+                "reason": f"cover {axis}",
+                "terms": {
+                    "exception": ["AlphaError"],
+                    "symbol": ["beta_symbol"],
+                    "numeric": ["314159"],
+                }[axis],
+                "top_k": 12,
+            }
+        return {"action": "finish", "reason": "all causal axes covered"}
+
+    layer = _grep_layer(query_fn)
+    layer.experiment_r_l3_grep_per_query_limit = 12
+    layer.experiment_r_l3_grep_max_candidates = 28
+    selected, receipt = router._agentic_l3_grep_search(
+        layer,
+        task_id="leaf-classification",
+        task_desc="multimodal leaf classification",
+        query_text="AlphaError in beta_symbol with observed value 314159",
+        task_scope="exact_task",
+        authorized_candidates=candidates,
+    )
+    assert receipt["status"] == "completed"
+    assert receipt["candidate_count"] == 28
+    assert len(selected) == 28
+    assert {row["sop_id"] for row in selected} == {
+        row["sop_id"] for row in candidates
+    }
+
+
+def test_v93_grep_and_l3_prompt_budgets_are_widened() -> None:
+    captured = {}
+
+    def query_fn(**kwargs):
+        captured[kwargs["func_spec"].name] = kwargs
+        if kwargs["func_spec"].name == "search_authorized_l3_repairs":
+            return {"action": "finish", "reason": "prompt inspection"}
+        return {
+            "decision": "abstain",
+            "selected_sop_id": "",
+            "selected_transition_id": "",
+            "final_confidence": 0.0,
+            "reason": "prompt inspection",
+            "assessments": [],
+        }
+
+    layer = _grep_layer(query_fn)
+    layer.experiment_r_l3_failure_context_chars = 12000
+    layer.experiment_r_l3_grep_trace_history = 6
+    layer.experiment_r_l3_agent_match_min_confidence = 0.50
+    layer.experiment_r_l3_agent_match_max_tokens = 7000
+    failure = "discarded-prefix" + "x" * 12000
+    trace = [{"step": index} for index in range(8)]
+    router._call_l3_grep_agent(
+        layer,
+        task_id="leaf-classification",
+        task_desc="multimodal leaf classification",
+        query_text=failure,
+        task_scope="exact_task",
+        suggestions={},
+        trace=trace,
+        accumulated_candidates=[],
+        step_index=0,
+        max_steps=7,
+        required_axes_remaining=[],
+        allowed_actions=["finish"],
+    )
+    grep_call = captured["search_authorized_l3_repairs"]
+    assert grep_call["system_message"]["observed_runtime_failure"] == "x" * 12000
+    assert json.loads(grep_call["system_message"]["recent_search_trace"]) == trace[-6:]
+
+    candidates = [
+        _candidate(
+            f"repair::schema-{index:02d}",
+            "placeholder failure",
+            "placeholder repair",
+        )
+        for index in range(28)
+    ]
+    router._call_l3_match_agent(
+        layer,
+        task_id="leaf-classification",
+        task_desc="multimodal leaf classification",
+        query_text=failure,
+        task_scope="exact_task",
+        candidates=candidates,
+    )
+    l3_call = captured["choose_l3_debug_repair_by_root_cause"]
+    assert l3_call["system_message"]["observed_runtime_failure"] == "x" * 12000
+    assert l3_call["func_spec"].json_schema["properties"]["assessments"][
+        "maxItems"
+    ] == 28
+    action = {
+        "decision": "abstain",
+        "selected_sop_id": "",
+        "selected_transition_id": "",
+        "final_confidence": 0.0,
+        "reason": "none is causally equivalent",
+        "assessments": [
+            {
+                "sop_id": row["sop_id"],
+                "keyword_correspondence": 0.1,
+                "root_cause_equivalence": 0.1,
+                "runtime_stage_match": 0.5,
+                "contradiction": True,
+                "confidence": 0.1,
+                "reason": "different root cause",
+            }
+            for row in candidates
+        ],
+    }
+    jsonschema.Draft7Validator(l3_call["func_spec"].json_schema).validate(action)
+    validated = router._validate_l3_match_action(
+        action,
+        candidates=candidates,
+        min_confidence=0.50,
+    )
+    assert len(validated["assessments"]) == 28
 
 
 def test_grep_agent_and_independent_l3_judge_form_one_debug_chain(
