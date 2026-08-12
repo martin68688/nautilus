@@ -719,6 +719,72 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else 1600
         )
+        self.experiment_r_multigranular_grep_enabled = bool(
+            getattr(ext_cfg, "experiment_r_multigranular_grep_enabled", False)
+            if ext_cfg is not None
+            else False
+        )
+        self.experiment_r_multigranular_grep_stages = {
+            str(value)
+            for value in (
+                getattr(
+                    ext_cfg,
+                    "experiment_r_multigranular_grep_stages",
+                    ["draft", "improve"],
+                )
+                if ext_cfg is not None
+                else ["draft", "improve"]
+            )
+        }
+        self.experiment_r_multigranular_search_rounds = int(
+            getattr(ext_cfg, "experiment_r_multigranular_search_rounds", 3)
+            if ext_cfg is not None
+            else 3
+        )
+        self.experiment_r_multigranular_per_query_limit = int(
+            getattr(ext_cfg, "experiment_r_multigranular_per_query_limit", 8)
+            if ext_cfg is not None
+            else 8
+        )
+        self.experiment_r_multigranular_max_candidates = int(
+            getattr(ext_cfg, "experiment_r_multigranular_max_candidates", 48)
+            if ext_cfg is not None
+            else 48
+        )
+        self.experiment_r_multigranular_judge_candidate_limit = int(
+            getattr(
+                ext_cfg,
+                "experiment_r_multigranular_judge_candidate_limit",
+                16,
+            )
+            if ext_cfg is not None
+            else 16
+        )
+        self.experiment_r_multigranular_semantic_per_query = int(
+            getattr(ext_cfg, "experiment_r_multigranular_semantic_per_query", 2)
+            if ext_cfg is not None
+            else 2
+        )
+        self.experiment_r_multigranular_context_chars = int(
+            getattr(ext_cfg, "experiment_r_multigranular_context_chars", 12000)
+            if ext_cfg is not None
+            else 12000
+        )
+        self.experiment_r_multigranular_trace_history = int(
+            getattr(ext_cfg, "experiment_r_multigranular_trace_history", 6)
+            if ext_cfg is not None
+            else 6
+        )
+        self.experiment_r_multigranular_search_max_tokens = int(
+            getattr(ext_cfg, "experiment_r_multigranular_search_max_tokens", 3000)
+            if ext_cfg is not None
+            else 3000
+        )
+        self.experiment_r_multigranular_judge_max_tokens = int(
+            getattr(ext_cfg, "experiment_r_multigranular_judge_max_tokens", 7000)
+            if ext_cfg is not None
+            else 7000
+        )
         if not 1 <= self.experiment_r_l3_grep_per_query_limit <= 12:
             raise ValueError("experiment_r_l3_grep_per_query_limit must be in [1, 12]")
         if not 1 <= self.experiment_r_l3_grep_min_candidates <= 32:
@@ -739,6 +805,43 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if not 1 <= self.experiment_r_l3_grep_trace_history <= 8:
             raise ValueError(
                 "experiment_r_l3_grep_trace_history must be in [1, 8]"
+            )
+        if not self.experiment_r_multigranular_grep_stages <= {"draft", "improve"}:
+            raise ValueError(
+                "experiment_r_multigranular_grep_stages may contain only draft/improve"
+            )
+        if not 1 <= self.experiment_r_multigranular_search_rounds <= 5:
+            raise ValueError(
+                "experiment_r_multigranular_search_rounds must be in [1, 5]"
+            )
+        if not 1 <= self.experiment_r_multigranular_per_query_limit <= 12:
+            raise ValueError(
+                "experiment_r_multigranular_per_query_limit must be in [1, 12]"
+            )
+        if not 16 <= self.experiment_r_multigranular_max_candidates <= 64:
+            raise ValueError(
+                "experiment_r_multigranular_max_candidates must be in [16, 64]"
+            )
+        if not (
+            5
+            <= self.experiment_r_multigranular_judge_candidate_limit
+            <= min(24, self.experiment_r_multigranular_max_candidates)
+        ):
+            raise ValueError(
+                "experiment_r_multigranular_judge_candidate_limit must be in "
+                "[5, min(24, max_candidates)]"
+            )
+        if not 0 <= self.experiment_r_multigranular_semantic_per_query <= 4:
+            raise ValueError(
+                "experiment_r_multigranular_semantic_per_query must be in [0, 4]"
+            )
+        if not 4000 <= self.experiment_r_multigranular_context_chars <= 16000:
+            raise ValueError(
+                "experiment_r_multigranular_context_chars must be in [4000, 16000]"
+            )
+        if not 1 <= self.experiment_r_multigranular_trace_history <= 8:
+            raise ValueError(
+                "experiment_r_multigranular_trace_history must be in [1, 8]"
             )
         self.experiment_r_flexible_selection_enabled = bool(
             getattr(ext_cfg, "experiment_r_flexible_selection_enabled", False)

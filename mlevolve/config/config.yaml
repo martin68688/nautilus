@@ -440,6 +440,17 @@ external_skill_memory:
   experiment_r_l3_grep_trace_history: 4
   experiment_r_l3_grep_max_attempts: 2
   experiment_r_l3_grep_max_tokens: 1600
+  experiment_r_multigranular_grep_enabled: false
+  experiment_r_multigranular_grep_stages: [draft, improve]
+  experiment_r_multigranular_search_rounds: 3
+  experiment_r_multigranular_per_query_limit: 8
+  experiment_r_multigranular_max_candidates: 48
+  experiment_r_multigranular_judge_candidate_limit: 16
+  experiment_r_multigranular_semantic_per_query: 2
+  experiment_r_multigranular_context_chars: 12000
+  experiment_r_multigranular_trace_history: 6
+  experiment_r_multigranular_search_max_tokens: 3000
+  experiment_r_multigranular_judge_max_tokens: 7000
 
 # ============================================================
 #  Persisted run identity (baseline vs memory-system experiments)

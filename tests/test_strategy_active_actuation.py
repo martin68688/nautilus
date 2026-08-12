@@ -1492,3 +1492,35 @@ def test_v92_config_remains_immutable_and_v93_widens_only_audit_budgets():
     assert v93_ext.experiment_r_l3_grep_max_tokens == 2000
     assert v93_ext.experiment_r_l3_agent_match_max_tokens == 7000
     assert v93.run_identity.memory_version.endswith("_grep_v93")
+
+
+def test_v94_config_enables_multigranular_grep_and_independent_judge():
+    path = (
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v94"
+        / "dynamic_hybrid.yaml"
+    )
+    raw = _load_cfg(path, use_cli_args=False)
+    raw.exp_name = "leaf-strategy-v94-config-test"
+    cfg = OmegaConf.merge(OmegaConf.structured(Config), raw)
+    ext = cfg.external_skill_memory
+    assert ext.experiment_r_multigranular_grep_enabled is True
+    assert set(ext.experiment_r_multigranular_grep_stages) == {"draft", "improve"}
+    assert ext.experiment_r_multigranular_search_rounds == 3
+    assert ext.experiment_r_multigranular_per_query_limit == 8
+    assert ext.experiment_r_multigranular_max_candidates == 48
+    assert ext.experiment_r_multigranular_judge_candidate_limit == 16
+    assert ext.experiment_r_multigranular_semantic_per_query == 2
+    assert ext.experiment_r_multigranular_search_max_tokens == 3000
+    assert ext.experiment_r_multigranular_judge_max_tokens == 7000
+    # Debug's independent Grep -> L3 root-cause Judge remains enabled.
+    assert ext.experiment_r_l3_grep_agent_enabled is True
+    assert ext.experiment_r_l3_grep_max_candidates == 28
+    assert cfg.agent.draft_role_policy.replay_targets_path.startswith(
+        "/workspace/nautilus-exp-end2end-agent-v94/"
+    )
+    assert cfg.run_identity.memory_version == (
+        "leaf_atomic_multigranular_grep_judge_v94"
+    )

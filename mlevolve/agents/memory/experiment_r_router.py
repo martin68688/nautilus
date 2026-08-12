@@ -3352,6 +3352,25 @@ def _agentic_candidate_pool(
         query_text=query_text,
         visible_sop_ids=visible_sop_ids,
     )
+    if bool(
+        getattr(layer, "experiment_r_multigranular_grep_enabled", False)
+        and stage
+        in set(getattr(layer, "experiment_r_multigranular_grep_stages", set()))
+    ):
+        from agents.memory.multigranular_grep import (
+            build_multigranular_candidate_pool,
+        )
+
+        return build_multigranular_candidate_pool(
+            layer,
+            stage=stage,
+            task_id=task_id,
+            task_desc=task_desc,
+            query_text=query_text,
+            visible_sop_ids=visible_sop_ids,
+            pre_gate_raw_candidates=pre_gate_raw_candidates,
+            pre_gate_summary=pre_gate_summary,
+        )
     l3_agent_match: dict[str, Any] | None = None
     if stage == "debug" and bool(
         getattr(layer, "experiment_r_l3_agent_match_enabled", False)

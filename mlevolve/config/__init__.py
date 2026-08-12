@@ -572,6 +572,23 @@ class ExternalSkillMemoryConfig:
     experiment_r_l3_grep_trace_history: int = 4
     experiment_r_l3_grep_max_attempts: int = 2
     experiment_r_l3_grep_max_tokens: int = 1600
+    # Draft/Improve multi-granularity retrieval.  A Search Agent plans field
+    # grep over every authorized memory granularity; an independent Judge
+    # chooses the final cross-granularity evidence set.  Debug keeps its
+    # specialized Grep -> L3 root-cause Judge path.
+    experiment_r_multigranular_grep_enabled: bool = False
+    experiment_r_multigranular_grep_stages: list[str] = field(
+        default_factory=lambda: ["draft", "improve"]
+    )
+    experiment_r_multigranular_search_rounds: int = 3
+    experiment_r_multigranular_per_query_limit: int = 8
+    experiment_r_multigranular_max_candidates: int = 48
+    experiment_r_multigranular_judge_candidate_limit: int = 16
+    experiment_r_multigranular_semantic_per_query: int = 2
+    experiment_r_multigranular_context_chars: int = 12000
+    experiment_r_multigranular_trace_history: int = 6
+    experiment_r_multigranular_search_max_tokens: int = 3000
+    experiment_r_multigranular_judge_max_tokens: int = 7000
     excluded_run_ids: list[str] = field(default_factory=list)
 
 

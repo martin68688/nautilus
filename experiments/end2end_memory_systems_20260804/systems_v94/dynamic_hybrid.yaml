@@ -1,0 +1,27 @@
+# v94 upgrades Draft and Improve retrieval to an Authority-bounded,
+# multi-granularity Grep Search Agent followed by an independent Retrieval
+# Judge.  Debug preserves the v93 Grep Search -> independent L3 root-cause
+# Judge chain.  Strategy -> staged Planner -> Coder remains unchanged.
+extends: ../systems_v93/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v94/experiments/end2end_memory_systems_20260804/manifests_v94/leaf_official_replay_targets.json
+
+external_skill_memory:
+  experiment_r_multigranular_grep_enabled: true
+  experiment_r_multigranular_grep_stages:
+    - draft
+    - improve
+  experiment_r_multigranular_search_rounds: 3
+  experiment_r_multigranular_per_query_limit: 8
+  experiment_r_multigranular_max_candidates: 48
+  experiment_r_multigranular_judge_candidate_limit: 16
+  experiment_r_multigranular_semantic_per_query: 2
+  experiment_r_multigranular_context_chars: 12000
+  experiment_r_multigranular_trace_history: 6
+  experiment_r_multigranular_search_max_tokens: 3000
+  experiment_r_multigranular_judge_max_tokens: 7000
+
+run_identity:
+  memory_version: leaf_atomic_multigranular_grep_judge_v94
