@@ -12,7 +12,6 @@ metadata:
     task: leaf-classification
   annotations:
     mlevolve.ai/purpose: leaf-v94-immutable-multigranular-source-staging
-    mlevolve.ai/source-git-head: 0863506f324f8183ff63b77d72991405fbf21115
 spec:
   activeDeadlineSeconds: 7200
   restartPolicy: Never
