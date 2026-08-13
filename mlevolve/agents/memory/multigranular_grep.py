@@ -129,38 +129,23 @@ def _search_spec() -> Any:
     }
 
     def query_contract(granularity: str) -> dict[str, Any]:
-        fields = sorted(GRANULARITY_FIELDS[granularity])
         return {
             "type": "object",
             "additionalProperties": False,
             "properties": {
                 "granularity": {"type": "string", "const": granularity},
                 **common_query_properties,
-                "fields": {
-                    "type": "array",
-                    "minItems": 1,
-                    "maxItems": len(fields),
-                    "uniqueItems": True,
-                    "items": {"type": "string", "enum": fields},
-                    "description": (
-                        f"Fields valid only for {granularity}: "
-                        f"{', '.join(fields)}."
-                    ),
-                },
             },
             "required": [
-                "granularity", "query", "terms", "fields", "top_k", "reason"
+                "granularity", "query", "terms", "top_k", "reason"
             ],
         }
 
     query = {
         "oneOf": [query_contract(granularity) for granularity in GRANULARITIES],
         "description": (
-            "Choose exactly one granularity-specific query contract. SOP "
-            "granularities l1_recipe/l2_tactic/l3_repair can search only "
-            "identity, task, authorized_content. RunForest granularities "
-            "runforest_run/runforest_transition can search only identity, task, "
-            "method, change_and_result."
+            "Choose exactly one granularity-specific query contract. The Host, "
+            "not the Search Agent, assigns that granularity's authorized fields."
         ),
     }
     return FunctionSpec(
@@ -734,13 +719,13 @@ def _call_search_agent(
         "policy": [
             "The first round must allocate positive weight and submit at least one query for every granularity; this is broad coverage, not equal weighting.",
             "Allocation contains every granularity and its five weights must sum to 1.0.",
-            "Each query must select only fields valid for its granularity: SOP uses identity/task/authorized_content; RunForest uses identity/task/method/change_and_result.",
+            "Do not choose fields. The Host deterministically maps each granularity to its authorized fields before grep execution.",
             "Later rounds may reallocate toward evidence gaps but should preserve cross-granularity verification.",
             "Draft emphasizes recipes, tactics, and successful runs; Improve emphasizes tactics, transitions, and compatible runs.",
             "Use exact model/API/component/validation/code/metric terms when known; rewrite terminology across rounds when literal wording may differ.",
             "Do not select final candidates. Finish only after the initial broad round and when further search is unlikely to add useful evidence.",
         ],
-        "field_contract": json.dumps(
+        "host_field_contract": json.dumps(
             {
                 granularity: sorted(fields)
                 for granularity, fields in GRANULARITY_FIELDS.items()
@@ -779,26 +764,14 @@ def _validate_search_action(
         granularity = str(row.get("granularity") or "")
         if granularity not in GRANULARITIES:
             raise ValueError("Search query has unknown granularity")
-        fields = list(map(str, row.get("fields") or []))
-        allowed_fields = GRANULARITY_FIELDS[granularity]
-        if not fields:
-            raise ValueError(
-                f"Search query for {granularity} selected no fields; allowed "
-                f"fields are {sorted(allowed_fields)}"
-            )
-        if len(fields) != len(set(fields)):
-            raise ValueError(
-                f"Search query for {granularity} repeated fields {fields}; allowed "
-                f"unique fields are {sorted(allowed_fields)}"
-            )
-        invalid_fields = sorted(set(fields) - allowed_fields)
-        if invalid_fields:
-            raise ValueError(
-                f"Search query for {granularity} selected invalid fields "
-                f"{invalid_fields}; allowed fields are {sorted(allowed_fields)}; "
-                f"received fields were {fields}"
-            )
-        row["fields"] = fields
+        # Field choice is a Host invariant rather than an Agent decision.  Some
+        # OpenAI-compatible providers flatten JSON-Schema oneOf branches, which
+        # previously exposed the union of SOP and RunForest field names to the
+        # model and caused otherwise valid searches to fail at runtime.  Ignore
+        # no legacy field input here: additionalProperties=False rejects it at
+        # the tool boundary, and every accepted query receives the sole Host
+        # mapping for its granularity.
+        row["fields"] = sorted(GRANULARITY_FIELDS[granularity])
         row["terms"] = _terms(row.get("terms"), query=str(row.get("query") or ""))
         if not row["terms"]:
             raise ValueError("Search query has no high-signal literal terms")

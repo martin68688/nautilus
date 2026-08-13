@@ -1,5 +1,6 @@
 """Code Review Agent: LLM-based code review and fix for node code."""
 
+import ast
 import logging
 import time
 from typing import cast
@@ -22,6 +23,95 @@ from agents.prompts import (
 from agents.coder.diff_coder import SearchReplacePatcher
 
 logger = logging.getLogger("MLEvolve")
+
+_METRIC_NAME_PARTS = {
+    "accuracy", "auc", "f1", "logloss", "loss", "mae", "metric", "mse",
+    "ndcg", "reward", "rmse", "score",
+}
+
+
+def _metric_names(node: ast.AST) -> set[str]:
+    names: set[str] = set()
+    for child in ast.walk(node):
+        if isinstance(child, ast.Name):
+            name = child.id.lower()
+        elif isinstance(child, ast.Attribute):
+            name = child.attr.lower()
+        else:
+            continue
+        normalized = name.replace("-", "_")
+        if any(part in normalized for part in _METRIC_NAME_PARTS):
+            names.add(normalized)
+    return names
+
+
+def _metric_comparison(node: ast.AST) -> bool:
+    """Return whether a condition compares two distinct metric values."""
+
+    return any(
+        isinstance(child, ast.Compare) and len(_metric_names(child)) >= 2
+        for child in ast.walk(node)
+    )
+
+
+def _contains_termination(statements: list[ast.stmt]) -> bool:
+    for statement in statements:
+        for child in ast.walk(statement):
+            if isinstance(child, ast.Raise):
+                return True
+            if isinstance(child, ast.Call):
+                target = child.func
+                if isinstance(target, ast.Name) and target.id in {"exit", "quit"}:
+                    return True
+                if (
+                    isinstance(target, ast.Attribute)
+                    and target.attr == "exit"
+                    and isinstance(target.value, ast.Name)
+                    and target.value.id == "sys"
+                ):
+                    return True
+    return False
+
+
+def _metric_falsification_fallback_audit(code: str) -> dict:
+    """Reject turning an empirically worse variant into a runtime failure.
+
+    Candidate improvements are hypotheses.  A worse validation metric should
+    select the already-computed baseline predictions, not abort before writing
+    a submission.  This audit intentionally targets only comparisons between
+    two named metric values so ordinary shape/finite/range assertions remain
+    valid program invariants.
+    """
+
+    violations: list[str] = []
+    try:
+        tree = ast.parse(str(code or ""))
+    except SyntaxError:
+        return {
+            "schema": "mlevolve_metric_falsification_fallback_audit_v1",
+            "valid": True,
+            "violations": [],
+        }
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assert) and _metric_comparison(node.test):
+            violations.append(
+                f"metric_improvement_assert:line={node.lineno}: empirical non-improvement "
+                "must select baseline predictions and continue to submission"
+            )
+        elif (
+            isinstance(node, ast.If)
+            and _metric_comparison(node.test)
+            and _contains_termination([*node.body, *node.orelse])
+        ):
+            violations.append(
+                f"metric_gated_termination:line={node.lineno}: empirical non-improvement "
+                "must select baseline predictions and continue to submission"
+            )
+    return {
+        "schema": "mlevolve_metric_falsification_fallback_audit_v1",
+        "valid": not violations,
+        "violations": violations,
+    }
 
 CODE_REVIEW_SPEC = FunctionSpec(
     name="submit_code_review",
@@ -74,12 +164,20 @@ def _deterministic_contract_audit(agent, code: str) -> dict | None:
     """Run the same machine-checkable Host feasibility audit before review."""
 
     try:
+        report: dict | None = None
         contract = candidate_execution_contract_from_cfg(agent.cfg)
         if contract is not None:
-            return audit_candidate_code(code, contract)
-        preflight = getattr(getattr(agent, "acfg", None), "protocol_preflight", None)
+            report = audit_candidate_code(code, contract)
+        preflight = getattr(
+            getattr(agent, "acfg", None), "protocol_preflight", None
+        )
         contract_path = str(getattr(preflight, "contract_path", "") or "")
-        if preflight is not None and getattr(preflight, "enabled", False) and contract_path:
+        if (
+            report is None
+            and preflight is not None
+            and getattr(preflight, "enabled", False)
+            and contract_path
+        ):
             static_report = static_compatibility_check(
                 code, read_contract_artifact(contract_path)
             )
@@ -90,13 +188,27 @@ def _deterministic_contract_audit(agent, code: str) -> dict | None:
                     "missing_full_runtime_coverage", []
                 )
             )
-            return {
+            report = {
                 "valid": not bool(issues),
                 "violations": issues,
                 "code_sha256": static_report.get("code_sha256"),
                 "contract_hash": static_report.get("contract_hash"),
             }
-        return None
+        if report is None:
+            report = {
+                "schema": "mlevolve_code_review_host_audit_v1",
+                "valid": True,
+                "violations": [],
+            }
+        fallback = _metric_falsification_fallback_audit(code)
+        report = dict(report)
+        report["violations"] = [
+            *list(report.get("violations") or []),
+            *list(fallback.get("violations") or []),
+        ]
+        report["metric_falsification_fallback_audit"] = fallback
+        report["valid"] = not bool(report["violations"])
+        return report
     except (AttributeError, TypeError, ValueError) as error:
         logger.warning("Deterministic Host Contract review unavailable: %s", error)
         return None
@@ -122,6 +234,7 @@ def run(agent, node: SearchNode) -> str:
             + "; ".join(deterministic_audit["violations"]),
             "Preserve the method, model family, metric, folds, ensembles, epochs, and training design. Repair only the listed leakage or Host-lifecycle violations.",
             "Do not evade the checker through variable renaming; change the actual violating operation.",
+            "For metric_improvement_assert or metric_gated_termination, preserve the baseline validation/test predictions. Select the proposed variant only when it is genuinely better under the metric direction; otherwise select the baseline predictions, report the baseline score/variant, and still write the complete submission. Do not merely delete the assertion while continuing with a worse variant.",
         ]
     if not host_protocol_preflight_enabled(agent):
         internet_clarification = get_internet_clarification(
@@ -170,22 +283,59 @@ def run(agent, node: SearchNode) -> str:
                                 revised_code, node.code, strict=False
                             )
                             if count > 0 and patched_code and patched_code != node.code:
-                                logger.info(f"Successfully applied {count} review patch(es)")
-                                return patched_code.strip()
+                                post_audit = _deterministic_contract_audit(
+                                    agent, patched_code
+                                )
+                                if not (
+                                    post_audit
+                                    and post_audit.get("violations")
+                                ):
+                                    logger.info(
+                                        f"Successfully applied {count} review patch(es)"
+                                    )
+                                    return patched_code.strip()
+                                logger.warning(
+                                    "Reviewed code still violates deterministic Host audit: %s",
+                                    "; ".join(post_audit["violations"]),
+                                )
+                                prompt["Instructions"][
+                                    "DETERMINISTIC HOST CONTRACT AUDIT - HIGHEST PRIORITY"
+                                ] = [
+                                    "The previous review patch still failed the Host static checker. Return a complete replacement diff against the original code in this prompt.",
+                                    "Exact remaining violations: "
+                                    + "; ".join(post_audit["violations"]),
+                                    "Metric non-improvement must select baseline validation/test predictions and continue through submission writing.",
+                                ]
+                                continue
                             logger.warning(
                                 f"Diff patch failed (count={count}), keeping original code to avoid writing raw diff to runfile"
                             )
+                            if deterministic_audit and deterministic_audit.get(
+                                "violations"
+                            ):
+                                continue
                             return node.code
                         except Exception as e:
                             logger.warning(
                                 f"Failed to apply diff patch in code review: {e}, keeping original code to avoid writing raw diff to runfile"
                             )
+                            if deterministic_audit and deterministic_audit.get(
+                                "violations"
+                            ):
+                                continue
                             return node.code
                     else:
                         # Full code revision (original behavior)
-                        if use_diff_for_review:
-                            return node.code
-                        else:
+                        if not use_diff_for_review:
+                            post_audit = _deterministic_contract_audit(
+                                agent, revised_code
+                            )
+                            if post_audit and post_audit.get("violations"):
+                                logger.warning(
+                                    "Full review revision still violates deterministic Host audit: %s",
+                                    "; ".join(post_audit["violations"]),
+                                )
+                                continue
                             logger.info("Using revised code from reviewer")
                             return revised_code.strip()
 
@@ -195,12 +345,29 @@ def run(agent, node: SearchNode) -> str:
                     continue
                 logger.error(f"Code review violation: needs_revision=True but revised_code is empty/None - Max retries reached, returning original code")
                 logger.info(f"Reasoning detail: {reasoning}", extra={"verbose": True})
+                if deterministic_audit and deterministic_audit.get("violations"):
+                    raise ValueError(
+                        "Code review could not repair deterministic Host violations: "
+                        + "; ".join(deterministic_audit["violations"])
+                    )
                 return node.code
 
             if revised_code is not None and revised_code.strip():
                 logger.warning(
                     "Code review warning: needs_revision=False but revised_code was provided. "
                     "Ignoring revised_code and using original code."
+                )
+            post_audit = _deterministic_contract_audit(agent, node.code)
+            if post_audit and post_audit.get("violations"):
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        "Code reviewer approved code rejected by Host audit; retrying: %s",
+                        "; ".join(post_audit["violations"]),
+                    )
+                    continue
+                raise ValueError(
+                    "Code reviewer repeatedly approved deterministic Host violations: "
+                    + "; ".join(post_audit["violations"])
                 )
             logger.info("Code approved, using original code")
             return node.code
@@ -210,8 +377,18 @@ def run(agent, node: SearchNode) -> str:
             if attempt < max_retries - 1:
                 logger.warning(f"{error_msg} - Will retry (attempt {attempt + 1}/{max_retries})")
                 continue
+            if deterministic_audit and deterministic_audit.get("violations"):
+                raise ValueError(
+                    "Code review failed while deterministic Host violations remain: "
+                    + "; ".join(deterministic_audit["violations"])
+                ) from e
             logger.error(f"{error_msg} - Max retries reached, returning original code")
             return node.code
 
+    if deterministic_audit and deterministic_audit.get("violations"):
+        raise ValueError(
+            "Code review exhausted retries while deterministic Host violations remain: "
+            + "; ".join(deterministic_audit["violations"])
+        )
     logger.error("Code review: Unexpected exit from retry loop, returning original code")
     return node.code

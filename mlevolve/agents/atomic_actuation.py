@@ -732,6 +732,10 @@ def _planner_prompt(
         "hypothesis's mechanism and citations; it must not turn it into a different experiment. "
         "Use the exact field names in "
         "RESPONSE_SCHEMA; fields such as experiment, modules, changes, or memory_ids are invalid. "
+        "When the hypothesis compares a proposed variant with an existing baseline, the plan "
+        "must preserve baseline validation and test predictions through final selection. Its "
+        "falsification path must select the baseline and continue through submission writing; "
+        "never authorize assert/raise/exit/quit merely because the proposed metric is worse. "
         f"Output one JSON object only.{stage_contract}\n\nRESPONSE_SCHEMA:\n"
         + _canonical_json(ATOMIC_ACTUATION_PLAN_SCHEMA)
     )
@@ -1044,7 +1048,10 @@ def _staged_planner_prompt(
         "Planner target_symbols are exact requirements, not suggestions: the Coder must perform "
         "the declared add/modify/delete operation on every target and is forbidden to touch any "
         "other symbol. Set roadmap_complete=true only after listing every phase needed to realize "
-        "the selected hypothesis. Preserve evaluation and submission invariants. Output one JSON "
+        "the selected hypothesis. Preserve evaluation and submission invariants. If a proposed "
+        "variant fails to beat an existing baseline, the roadmap must select the retained "
+        "baseline predictions and continue to a valid submission; metric non-improvement must "
+        "never trigger assert/raise/exit/quit. Output one JSON "
         f"object matching RESPONSE_SCHEMA and no prose.{debug_contract}\n\nRESPONSE_SCHEMA:\n"
         + _canonical_json(ATOMIC_STAGED_ACTUATION_PLAN_SCHEMA)
     )
@@ -1967,6 +1974,10 @@ def _coder_prompt(
         "from allowed_new_imports. Every declared target is REQUIRED: perform its exact "
         "add/modify/delete operation and do not silently omit part of the Planner's phase. "
         "If the contract is impossible, return no patch rather than a different experiment. "
+        "A falsified improvement is not an execution error: when the contract compares a "
+        "proposed variant with a baseline, retain both validation/test prediction paths, select "
+        "the better variant under the metric direction, and continue through submission. Never "
+        "use assert/raise/exit/quit to force the proposed metric to improve. "
         "Output complete SEARCH/REPLACE blocks only."
     )
     instructions = build_base_diff_instructions(

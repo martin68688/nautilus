@@ -287,6 +287,8 @@ def get_impl_guideline(
                 "• SUBMISSION ALIGNMENT IS REQUIRED: `score` must evaluate the exact model/ensemble, preprocessing, post-processing and blend weights used for `submission.csv`.",
                 "• If you compare NN-only, tree-only and blend variants, print them as diagnostics, select one variant, then use that same selected variant for both validation scoring and test submission.",
                 "• Set `submission_variant` to a short stable name for the actually submitted variant. A component-only best score paired with a different submitted blend is invalid.",
+                "• A proposed improvement is a falsifiable hypothesis, not a runtime invariant. Preserve the baseline validation and test predictions until selection is complete. If the proposed variant does not beat the baseline under the metric direction, select the baseline variant and still write a valid submission.",
+                "• NEVER use assert, raise, exit, or quit to require one empirical metric to beat another. Assertions may check structural invariants such as shapes, finite probabilities, row sums, IDs, and submission columns.",
             ]
             if require_submission_aligned_metric
             else []
@@ -313,6 +315,7 @@ def get_impl_guideline(
         "⚠️  **Self-Check Before Finalizing**:",
         "□ Did predictions pass through model's learned weights during inference? (If NO → INVALID)",
         "□ Did I generate submission.csv in correct path with ALL test predictions?",
+        "□ If an experimental variant failed to improve the validation metric, did I fall back to the retained baseline predictions instead of aborting?",
         (
             "□ Does the final submission-aligned metric use the exact prediction variant written to submission.csv?"
             if require_submission_aligned_metric

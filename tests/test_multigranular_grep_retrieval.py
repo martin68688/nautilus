@@ -120,11 +120,6 @@ def test_initial_search_requires_all_granularities_with_weighted_coverage() -> N
                 "granularity": granularity,
                 "query": "DINO leaf",
                 "terms": ["DINO", "leaf"],
-                "fields": (
-                    ["identity", "task", "authorized_content"]
-                    if granularity.startswith("l")
-                    else ["identity", "task", "method", "change_and_result"]
-                ),
                 "top_k": 8,
                 "reason": "first-pass coverage",
             }
@@ -138,13 +133,17 @@ def test_initial_search_requires_all_granularities_with_weighted_coverage() -> N
     assert validated["allocation"]["l1_recipe"] > validated["allocation"][
         "l3_repair"
     ]
+    for row in validated["queries"]:
+        assert row["fields"] == sorted(
+            retrieval.GRANULARITY_FIELDS[row["granularity"]]
+        )
     broken = dict(action)
     broken["queries"] = action["queries"][:-1]
     with pytest.raises(ValueError, match="every granularity"):
         retrieval._validate_search_action(broken, first_round=True)
 
 
-def test_search_schema_binds_fields_to_each_granularity() -> None:
+def test_search_schema_removes_agent_field_choice() -> None:
     schema = retrieval._search_spec().json_schema
     base = {
         "action": "search",
@@ -162,7 +161,6 @@ def test_search_schema_binds_fields_to_each_granularity() -> None:
                 "granularity": granularity,
                 "query": "DINO leaf",
                 "terms": ["DINO", "leaf"],
-                "fields": sorted(retrieval.GRANULARITY_FIELDS[granularity]),
                 "top_k": 8,
                 "reason": "valid field set",
             }
@@ -178,22 +176,23 @@ def test_search_schema_binds_fields_to_each_granularity() -> None:
             {**base, "queries": invalid_sop}
         )
 
-    invalid_runforest = json.loads(json.dumps(valid_queries))
-    invalid_runforest[3]["fields"] = ["authorized_content"]
-    with pytest.raises(jsonschema.ValidationError):
-        jsonschema.Draft7Validator(schema).validate(
-            {**base, "queries": invalid_runforest}
+    validated = retrieval._validate_search_action(
+        {**base, "queries": valid_queries}, first_round=True
+    )
+    for row in validated["queries"]:
+        assert row["fields"] == sorted(
+            retrieval.GRANULARITY_FIELDS[row["granularity"]]
         )
 
 
-def test_invalid_sop_fields_get_specific_retry_then_search_and_judge(
+def test_host_owned_fields_reach_search_and_judge_without_retry(
     monkeypatch,
 ) -> None:
     universe = _universe()
     search_calls = 0
     judge_calls = 0
 
-    def search_action(*, illegal: bool) -> dict:
+    def search_action() -> dict:
         return {
             "action": "search",
             "reason": "broad multi-granularity search",
@@ -210,13 +209,6 @@ def test_invalid_sop_fields_get_specific_retry_then_search_and_judge(
                     "granularity": granularity,
                     "query": "DINO leaf",
                     "terms": ["DINO", "leaf"],
-                    "fields": (
-                        ["method"]
-                        if illegal and granularity in {"l2_tactic", "l3_repair"}
-                        else ["identity", "task", "authorized_content"]
-                        if granularity.startswith("l")
-                        else ["identity", "task", "method", "change_and_result"]
-                    ),
                     "top_k": 8,
                     "reason": "cover every granularity",
                 }
@@ -229,17 +221,16 @@ def test_invalid_sop_fields_get_specific_retry_then_search_and_judge(
         if kwargs["func_spec"].name == "plan_multigranular_memory_grep":
             search_calls += 1
             prompt = kwargs["system_message"]
-            if search_calls == 1:
-                assert prompt["retry_feedback"] == ""
-                return search_action(illegal=True)
-            assert "l2_tactic" in prompt["retry_feedback"]
-            assert "method" in prompt["retry_feedback"]
-            assert "authorized_content" in prompt["retry_feedback"]
-            field_contract = json.loads(prompt["field_contract"])
+            assert prompt["retry_feedback"] == ""
+            field_contract = json.loads(prompt["host_field_contract"])
             assert field_contract["l2_tactic"] == [
                 "authorized_content", "identity", "task"
             ]
-            return search_action(illegal=False)
+            query_schema = kwargs["func_spec"].json_schema["properties"][
+                "queries"
+            ]
+            assert '"fields"' not in json.dumps(query_schema)
+            return search_action()
 
         judge_calls += 1
         candidates = json.loads(kwargs["system_message"]["authorized_candidates"])
@@ -277,16 +268,25 @@ def test_invalid_sop_fields_get_specific_retry_then_search_and_judge(
         pre_gate_summary={},
     )
     agent = pool["retrieval_agent"]
-    assert search_calls == 2
+    assert search_calls == 1
     assert judge_calls == 1
-    assert agent["multigranular_search_agent_calls"] == 2
+    assert agent["multigranular_search_agent_calls"] == 1
     assert agent["independent_retrieval_judge_calls"] == 1
     assert agent["effective_selected_ids"] == [
         "tactic::fusion", "transition::fusion"
     ]
     first_round = agent["multigranular_search"]["trace"][0]
-    assert first_round["attempts"][0]["status"] == "invalid"
-    assert first_round["attempts"][1]["status"] == "valid"
+    assert first_round["attempts"] == [
+        {
+            "attempt": 1,
+            "status": "valid",
+            "action": first_round["attempts"][0]["action"],
+        }
+    ]
+    for query in first_round["queries"]:
+        assert query["fields"] == sorted(
+            retrieval.GRANULARITY_FIELDS[query["granularity"]]
+        )
     assert first_round["accumulated_counts"] == {
         granularity: 1 for granularity in retrieval.GRANULARITIES
     }
@@ -346,13 +346,6 @@ def test_complete_search_then_independent_judge_pool(monkeypatch) -> None:
                         "granularity": granularity,
                         "query": "DINO leaf",
                         "terms": ["DINO", "leaf"],
-                        "fields": (
-                            ["identity", "task", "authorized_content"]
-                            if granularity.startswith("l")
-                            else [
-                                "identity", "task", "method", "change_and_result"
-                            ]
-                        ),
                         "top_k": 8,
                         "reason": "cover every granularity",
                     }
