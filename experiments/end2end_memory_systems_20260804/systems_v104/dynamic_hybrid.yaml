@@ -1,0 +1,11 @@
+# v104 keeps Replay plus two independent memory-informed Novel roots and
+# restores compatibility with inherited YAMLs that still mention the retired
+# same-task-best pin. The pin itself remains absent from live retrieval.
+extends: ../systems_v103/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v104-runtime/experiments/end2end_memory_systems_20260804/manifests_v104/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_multigranular_replay_dual_novel_v104
