@@ -6534,7 +6534,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 if self.max_chars > 0 and len(text) > self.max_chars:
                     text = text[: self.max_chars].rstrip() + "\n... (memory-transfer pack truncated)"
                 return text, self._prompt_visible_refs(text, refs)
-            if draft_role != "novel_exploration":
+            from engine.draft_roles import is_novel_draft_role
+
+            if not is_novel_draft_role(draft_role):
                 raise ValueError("Layered L1 Draft retrieval is restricted to novel_exploration")
             pack = self._layered_draft_pack(
                 task_id=task_id,

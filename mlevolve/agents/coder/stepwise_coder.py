@@ -552,8 +552,10 @@ def stepwise_plan_and_code_query(
 
     step_results: List[Dict[str, str]] = []
     layer = getattr(agent_instance, "external_skill_memory", None)
+    from engine.draft_roles import is_novel_draft_role
+
     layered_novel = bool(
-        stepwise_context.draft_role == "novel_exploration"
+        is_novel_draft_role(stepwise_context.draft_role)
         and stepwise_context.strategy_context
         and (stepwise_context.strategy_context.get("selected_strategy") or {})
         and str(getattr(layer, "retrieval_control", "")) == "layered_strategy"

@@ -625,9 +625,11 @@ def run_pre_execution_leakage_audit(agent, node: SearchNode) -> bool:
         and str(getattr(verifier_cfg, "mode", "shadow") or "shadow").lower()
         == "enforce"
     )
+    from engine.draft_roles import is_novel_draft_role
+
     if (
         not verifier_enforced
-        and node.draft_role == "novel_exploration"
+        and is_novel_draft_role(node.draft_role)
         and node.selected_strategy
     ):
         from agents.memory.stage_aware_hybrid_memory import strategy_alignment_for_code

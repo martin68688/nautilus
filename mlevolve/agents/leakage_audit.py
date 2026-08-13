@@ -956,9 +956,11 @@ def legacy_rank_eligible(agent: Any, node: Any) -> bool:
         and str(getattr(verifier_cfg, "mode", "shadow") or "shadow").lower()
         == "enforce"
     )
+    from engine.draft_roles import is_novel_draft_role
+
     if (
         not verifier_enforced
-        and getattr(node, "draft_role", None) == "novel_exploration"
+        and is_novel_draft_role(getattr(node, "draft_role", None))
         and getattr(node, "selected_strategy", None)
     ):
         alignment = getattr(node, "strategy_alignment", None) or {}

@@ -458,6 +458,11 @@ class AgentSearch:
         allowed = {
             ("coldstart_baseline", "memory_reproduction", "novel_exploration"),
             ("coldstart_baseline", "memory_transfer", "novel_exploration"),
+            (
+                "memory_reproduction",
+                "novel_exploration_a",
+                "novel_exploration_b",
+            ),
         }
         roles = [str(role) for role in list(getattr(policy, "roles", []) or [])]
         if tuple(roles) not in allowed:

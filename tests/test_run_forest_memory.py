@@ -343,6 +343,16 @@ def test_draft_role_policy_validates_fixed_three_roles():
     AgentSearch._validate_draft_role_policy(agent)
     assert AgentSearch.configured_draft_role(agent, 1) == "memory_transfer"
 
+    policy.roles = [
+        "memory_reproduction",
+        "novel_exploration_a",
+        "novel_exploration_b",
+    ]
+    AgentSearch._validate_draft_role_policy(agent)
+    assert AgentSearch.configured_draft_role(agent, 0) == "memory_reproduction"
+    assert AgentSearch.configured_draft_role(agent, 1) == "novel_exploration_a"
+    assert AgentSearch.configured_draft_role(agent, 2) == "novel_exploration_b"
+
 
 def test_seven_workers_atomically_claim_only_three_root_roles():
     import sys

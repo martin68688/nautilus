@@ -1,0 +1,16 @@
+# v103 replaces the no-memory Coldstart root with a second independent,
+# memory-informed exploration root. The three unique scheduling slots are
+# Replay, Novel A, and Novel B. Both Novel slots search freely and may select
+# the same memories or converge on similar implementations; metrics decide.
+extends: ../systems_v96/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    roles:
+      - memory_reproduction
+      - novel_exploration_a
+      - novel_exploration_b
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v103-runtime/experiments/end2end_memory_systems_20260804/manifests_v103/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_multigranular_replay_dual_novel_v103

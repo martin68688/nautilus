@@ -490,9 +490,11 @@ def _legacy_static_audit_receipts(
     verifier_enforced = str(
         getattr(node, "adoption_verifier_mode", "off") or "off"
     ).lower() == "enforce"
+    from engine.draft_roles import is_novel_draft_role
+
     if (
         not verifier_enforced
-        and getattr(node, "draft_role", None) == "novel_exploration"
+        and is_novel_draft_role(getattr(node, "draft_role", None))
         and getattr(node, "selected_strategy", None)
     ):
         alignment = getattr(node, "strategy_alignment", None) or {}

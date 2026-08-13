@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from llm import compile_prompt_to_md
+from engine.draft_roles import canonical_draft_role, is_novel_draft_role
 from engine.search_node import SearchNode
 from agents.coder import plan_and_code_query, stepwise_plan_and_code_query
 from agents.triggers import register_node
@@ -143,6 +144,7 @@ def run(
         "and then implement this solution in Python with the quality expected of a Kaggle Grandmaster. "
         "We will now provide a description of the task."
     )
+    behavioral_draft_role = canonical_draft_role(draft_role)
     prompt: Any = {
         "Introduction": introduction,
         "Task description": agent.task_desc,
@@ -228,19 +230,17 @@ def run(
             ),
         }
         prompt["Instructions"]["Draft role contract (MANDATORY)"] = [role_contract["requirement"]]
-    elif draft_role == "novel_exploration":
+    elif is_novel_draft_role(draft_role) and draft_role != "replacement_draft":
         role_contract = {
             "role": draft_role,
+            "behavioral_role": behavioral_draft_role,
             "requirement": (
-                "Explore a materially different hypothesis from the cold-start baseline, exact memory replay, "
-                "and previous attempts. Novelty applies to this branch only. Complex pipelines and ensembles "
-                "are allowed when justified by the task and resource budget."
+                "Independently explore and implement a competitive solution. You may select, reuse, "
+                "or recombine any Authority-approved memory that is useful. There is no requirement "
+                "to use different memories or a different code structure from another exploration slot."
             ),
         }
-        prompt["Instructions"]["Draft role contract (MANDATORY)"] = [
-            role_contract["requirement"],
-            "Minor hyperparameter-only variations do not satisfy this role.",
-        ]
+        prompt["Instructions"]["Draft role contract (MANDATORY)"] = [role_contract["requirement"]]
     elif draft_role == "replacement_draft":
         role_contract = {
             "role": draft_role,
@@ -314,11 +314,7 @@ def run(
         )
         external_skill_text, external_skill_ref_ids, external_skill_source = "", [], "run_forest_agentic_memory"
     else:
-        memory_draft_role = (
-            "novel_exploration"
-            if draft_role == "replacement_draft"
-            else draft_role
-        )
+        memory_draft_role = canonical_draft_role(draft_role)
         external_skill_text, external_skill_ref_ids, external_skill_source = fetch_external_skill_memory(
             agent,
             "draft",
@@ -329,7 +325,7 @@ def run(
             draft_role=memory_draft_role,
         )
     layered_novel = bool(
-        draft_role in {"novel_exploration", "replacement_draft"}
+        is_novel_draft_role(draft_role)
         and str(getattr(getattr(agent, "external_skill_memory", None), "retrieval_control", ""))
         == "layered_strategy"
     )
