@@ -15,6 +15,7 @@ from agents.coder.diff_coder.apply import apply_diff_with_retry
 from agents.memory.experiment_r_router import (
     _debug_repair_evidence,
     _portable_debug_anchor_match,
+    _prompt_candidate_eligibility,
     _task_match_audit,
     _tiered_debug_runforest_rows,
 )
@@ -148,6 +149,34 @@ def _add_l3_sop(layer, *, sop_id: str, transition_id: str, task: str) -> None:
     }
     layer._sops.append(sop_id)
     layer._node_tokens[sop_id] = set()
+
+
+def _authorize_atomic_debug_transition(layer, transition_id: str, task: str) -> None:
+    transition = layer.nodes[transition_id]
+    capsule = transition["implementation_repair_capsule"]
+    transition["atomic_repair_claim"] = {
+        "schema": "mlevolve_atomic_memory_claim_v1",
+        "id": f"claim::{task}::compatibility::repair",
+        "claim_status": "authorized_debug_only",
+        "claim_type": "compatibility_claim",
+        "task_id": task,
+        "failure_text": "NameError: name 'torch' is not defined",
+        "repair_action": "import torch before selecting the device",
+        "metric_authorized": False,
+        "operation_visibility": {
+            "allowed_operations": ["debug_hypothesis", "debug_repair"],
+            "task_scope": "exact_task",
+        },
+        "verification": {
+            "before_code_sha256": capsule["before_code_sha256"],
+            "after_code_sha256": capsule["after_code_sha256"],
+            "observed_parent_failure": True,
+            "observed_child_execution_success": True,
+            "repair_action_bound_to_transition": True,
+            "claim_scope_independently_audited": True,
+        },
+        "taint": {"claim": "clean"},
+    }
 
 
 def test_v36_config_freezes_sparse_causal_atomic_leaf_policy():
@@ -584,6 +613,130 @@ def test_v41_debug_evidence_distinguishes_full_diff_and_hash_bound_action(tmp_pa
     layer.nodes["hash_bound"]["infrastructure_failure"] = True
     rejected, reason = _debug_repair_evidence(layer, "hash_bound")
     assert rejected is None and reason == "infrastructure_failure"
+
+
+def test_atomic_debug_claim_is_prompt_evidence_but_not_replayable(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    _add_debug_transition(
+        layer,
+        transition_id="atomic-transition::task::repair",
+        task="task",
+        parent_id="atomic-parent",
+        child_id="atomic-child",
+        failure="NameError: name 'torch' is not defined",
+        repair="import torch before selecting the device",
+    )
+    _authorize_atomic_debug_transition(
+        layer, "atomic-transition::task::repair", "task"
+    )
+    transition = layer.nodes["atomic-transition::task::repair"]
+
+    assert layer._execution_candidate_eligibility(
+        "atomic-transition::task::repair"
+    ) == (False, "atomic_claim_debug_only")
+    assert _prompt_candidate_eligibility(
+        layer,
+        "atomic-transition::task::repair",
+        stage="debug",
+        task_id="task",
+    ) == (True, "authorized_atomic_debug_repair_prompt_evidence")
+    assert _prompt_candidate_eligibility(
+        layer,
+        "atomic-transition::task::repair",
+        stage="improve",
+        task_id="task",
+    )[0] is False
+    assert _prompt_candidate_eligibility(
+        layer,
+        "atomic-transition::task::repair",
+        stage="debug",
+        task_id="another-task",
+    )[0] is False
+
+    transition["atomic_repair_claim"]["operation_visibility"][
+        "allowed_operations"
+    ] = ["debug_repair"]
+    assert _prompt_candidate_eligibility(
+        layer,
+        "atomic-transition::task::repair",
+        stage="debug",
+        task_id="task",
+    ) == (False, "atomic_claim_not_authorized_for_debug_hypothesis")
+
+
+def test_router_accepts_judge_selected_authorized_atomic_debug_prompt_card(tmp_path):
+    layer = _layer(tmp_path, "dynamic_hybrid")
+    _enable_tiered_v41(layer)
+    transition_id = "atomic-transition::task::router-repair"
+    _add_debug_transition(
+        layer,
+        transition_id=transition_id,
+        task="task",
+        parent_id="router-atomic-parent",
+        child_id="router-atomic-child",
+        failure="NameError: name 'torch' is not defined",
+        repair="import torch before selecting the device",
+    )
+    _authorize_atomic_debug_transition(layer, transition_id, "task")
+    _add_l3_sop(
+        layer,
+        sop_id="l3-atomic-router-card",
+        transition_id=transition_id,
+        task="task",
+    )
+    layer.experiment_r_agentic_retrieval_enabled = True
+    layer.experiment_r_l3_agent_match_enabled = True
+    layer.experiment_r_agentic_max_steps = 1
+
+    def query_fn(**kwargs):
+        prompt = kwargs["system_message"]
+        if "authorized_l3_candidates" in prompt:
+            candidates = json.loads(prompt["authorized_l3_candidates"])
+            return {
+                "decision": "select",
+                "selected_sop_id": "l3-atomic-router-card",
+                "selected_transition_id": transition_id,
+                "final_confidence": 0.98,
+                "reason": "exact NameError and missing torch import root cause",
+                "assessments": [
+                    {
+                        "sop_id": row["sop_id"],
+                        "keyword_correspondence": 1.0,
+                        "root_cause_equivalence": 1.0,
+                        "runtime_stage_match": 1.0,
+                        "contradiction": False,
+                        "confidence": 0.98,
+                        "reason": "exact root cause",
+                    }
+                    for row in candidates
+                ],
+            }
+        known = json.loads(prompt["known_candidates"])
+        assert any(row["id"] == transition_id for row in known)
+        return {
+            "action": "finish",
+            "reason": "use the independently verified atomic repair evidence",
+            "selected_ids": [transition_id],
+        }
+
+    layer._experiment_r_agentic_query_fn = query_fn
+    text, refs = layer.retrieve_for_node(
+        stage="debug",
+        task_id="task",
+        task_desc="text classification",
+        query_parts=["NameError: name 'torch' is not defined"],
+        draft_role="memory_reproduction",
+    )
+    pack = layer.current_navigation_pack()
+
+    assert refs == [transition_id]
+    assert transition_id in text
+    assert pack["final_prompt_candidate_ids"] == [transition_id]
+    assert pack["candidate_pool"]["l3_agent_match"]["decision"] == "select"
+    assert layer._execution_candidate_eligibility(transition_id) == (
+        False,
+        "atomic_claim_debug_only",
+    )
 
 
 def test_atomic_diff_cap_retries_with_a_smaller_change():

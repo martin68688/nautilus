@@ -2494,6 +2494,40 @@ def _debug_repair_evidence(
     }, "safe_hash_bound_debug_repair"
 
 
+def _prompt_candidate_eligibility(
+    layer: Any,
+    candidate_id: str,
+    *,
+    stage: str,
+    task_id: str,
+) -> tuple[bool, str]:
+    """Validate a selected memory row for Prompt use without making it replayable."""
+
+    executable, reason = layer._execution_candidate_eligibility(candidate_id)
+    if executable:
+        return True, str(reason)
+    node = layer.nodes.get(str(candidate_id), {})
+    claim = node.get("atomic_repair_claim")
+    if (
+        str(stage) != "debug"
+        or node.get("type") != "Transition"
+        or not isinstance(claim, Mapping)
+        or str(claim.get("claim_status") or "") != "authorized_debug_only"
+        or _canonical_task(node.get("task")) != _canonical_task(task_id)
+    ):
+        return False, str(reason)
+    visibility = claim.get("operation_visibility")
+    visibility = visibility if isinstance(visibility, Mapping) else {}
+    if str(visibility.get("task_scope") or "") != "exact_task":
+        return False, "atomic_claim_not_exact_task_scoped"
+    if "debug_hypothesis" not in set(visibility.get("allowed_operations") or []):
+        return False, "atomic_claim_not_authorized_for_debug_hypothesis"
+    evidence, evidence_reason = _debug_repair_evidence(layer, candidate_id)
+    if evidence is None:
+        return False, f"atomic_debug_repair_gate:{evidence_reason}"
+    return True, "authorized_atomic_debug_repair_prompt_evidence"
+
+
 def _distinctive_debug_anchors(text: str) -> dict[str, set[str]]:
     raw = _raw_failure_anchors(text)
     exceptions = {str(value).lower() for value in raw["exception_names"]}
@@ -4828,11 +4862,15 @@ def build_experiment_r_pack(
     for row in selected:
         if row["source"] == "sop" and row["id"] not in visible_sop_ids:
             unsafe.append(row["id"])
-        if (
-            row["source"] == "runforest"
-            and not layer._execution_candidate_eligibility(row["id"])[0]
-        ):
-            unsafe.append(row["id"])
+        if row["source"] == "runforest":
+            allowed, _reason = _prompt_candidate_eligibility(
+                layer,
+                row["id"],
+                stage=stage,
+                task_id=task_id,
+            )
+            if not allowed:
+                unsafe.append(row["id"])
     if unsafe:
         raise RuntimeError(
             f"Experiment R Authority/eligibility escape: {sorted(unsafe)}"
@@ -4856,7 +4894,12 @@ def build_experiment_r_pack(
         if item["source"] != "runforest" or item["id"] in observed_ids:
             continue
         node = layer.nodes[item["id"]]
-        allowed, reason = layer._execution_candidate_eligibility(item["id"])
+        allowed, reason = _prompt_candidate_eligibility(
+            layer,
+            item["id"],
+            stage=stage,
+            task_id=task_id,
+        )
         audit = (
             node.get("leakage_audit")
             if isinstance(node.get("leakage_audit"), dict)
