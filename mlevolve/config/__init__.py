@@ -829,6 +829,15 @@ def _load_config_tree(path: Path, seen: tuple[Path, ...] = ()):
     return OmegaConf.merge(base_cfg, cfg)
 
 
+def _drop_retired_config_keys(cfg):
+    """Ignore retired options still present in historical inherited YAMLs."""
+
+    external_memory = cfg.get("external_skill_memory")
+    if external_memory is not None:
+        external_memory.pop("experiment_r_same_task_best_pin_stages", None)
+    return cfg
+
+
 def _load_cfg(
     path: Path | None = None, use_cli_args=True
 ) -> Config:
@@ -839,7 +848,7 @@ def _load_cfg(
     cfg = _load_config_tree(path)
     if use_cli_args:
         cfg = OmegaConf.merge(cfg, OmegaConf.from_cli())
-    return cfg
+    return _drop_retired_config_keys(cfg)
 
 def load_cfg(path: Path | None = None) -> Config:
     """Load config from .yaml file and CLI args, and set up logging directory."""

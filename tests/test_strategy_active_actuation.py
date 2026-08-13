@@ -1545,3 +1545,20 @@ def test_v96_config_removes_same_task_best_pin_from_live_retrieval():
         "/workspace/nautilus-exp-end2end-agent-v96/"
     )
     assert cfg.run_identity.memory_version.endswith("_no_best_pin_v96")
+
+
+def test_retired_same_task_best_pin_is_removed_from_historical_base(tmp_path):
+    base = tmp_path / "base.yaml"
+    base.write_text(
+        "external_skill_memory:\n"
+        "  experiment_r_same_task_best_pin_stages: [draft, improve, debug]\n"
+        "  experiment_r_multigranular_grep_enabled: true\n",
+        encoding="utf-8",
+    )
+    child = tmp_path / "child.yaml"
+    child.write_text("extends: base.yaml\n", encoding="utf-8")
+
+    cfg = _load_cfg(child, use_cli_args=False)
+
+    assert "experiment_r_same_task_best_pin_stages" not in cfg.external_skill_memory
+    assert cfg.external_skill_memory.experiment_r_multigranular_grep_enabled is True
