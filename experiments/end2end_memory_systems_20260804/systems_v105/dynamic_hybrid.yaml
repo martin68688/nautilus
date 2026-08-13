@@ -1,0 +1,11 @@
+# v105 fixes two general execution contracts without changing the v104 search
+# architecture: Host-owned field mapping for multi-granularity Grep and
+# baseline fallback when a proposed metric variant is empirically worse.
+extends: ../systems_v104/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v105-runtime/experiments/end2end_memory_systems_20260804/manifests_v105/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_host_fields_metric_fallback_v105
