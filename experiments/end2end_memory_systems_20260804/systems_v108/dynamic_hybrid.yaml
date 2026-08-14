@@ -1,0 +1,15 @@
+# v108 keeps every v106 Agent/Host/runtime fix and changes only the three
+# initial Draft scheduling roles back to Cold Start, exact Replay, and Novel.
+extends: ../systems_v106/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    enabled: true
+    roles:
+      - coldstart_baseline
+      - memory_reproduction
+      - novel_exploration
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v108-runtime/experiments/end2end_memory_systems_20260804/manifests_v108/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_latest_coldstart_replay_novel_v108
