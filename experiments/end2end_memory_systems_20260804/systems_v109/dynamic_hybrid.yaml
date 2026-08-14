@@ -1,0 +1,10 @@
+# v109 is a packaging-only retry of v108.  It inherits the exact latest-code
+# Cold Start / Replay / Novel role overlay and binds a fresh immutable runtime.
+extends: ../systems_v108/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v109-runtime/experiments/end2end_memory_systems_20260804/manifests_v109/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_latest_coldstart_replay_novel_v109
