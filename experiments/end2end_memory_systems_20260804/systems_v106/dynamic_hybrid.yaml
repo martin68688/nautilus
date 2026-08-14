@@ -1,0 +1,11 @@
+# v106 keeps the v105 Host-field and metric-fallback behavior unchanged.
+# Only the immutable runtime identity moves forward after the v105 DevPod
+# deadline interrupted its fresh attempt.
+extends: ../systems_v105/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v106-runtime/experiments/end2end_memory_systems_20260804/manifests_v106/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_host_fields_metric_fallback_v106
