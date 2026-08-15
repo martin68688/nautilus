@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-e2e-leaf-resolver-alias-identity-a100-dev-v117
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-memory-agent-v117
+    mlevolve.ai/workload: leaf-resolver-alias-identity-v117
+    task: leaf-classification
+  annotations:
+    mlevolve.ai/purpose: leaf-resolver-unavailable-alias-identity-16-step-smoke
+    mlevolve.ai/source-git-head: 963fee69c18b4458f2b2336d4a4e6e5e7fd2bcf6
+    mlevolve.ai/source-release-sha256: cf1363ab8380f6a2ede292644d51ffe62bf04226f5afcb9913fb2730666145a9
+    mlevolve.ai/source-role-policy: coldstart-replay-novel
+    mlevolve.ai/required-memory-bundle: end2end-leaf-atomic-recipe-runforest-v8
+    mlevolve.ai/required-formal-debug-clauses: "296"
+    mlevolve.ai/transition-capsule-sha256: ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559
+    mlevolve.ai/transition-pair-count: "218"
+    mlevolve.ai/candidate-alias-count: "410"
+    mlevolve.ai/materialized-candidate-alias-count: "366"
+    mlevolve.ai/resolver-receipt: durable
+    mlevolve.ai/resolved-strategy-priority: enforced
+    mlevolve.ai/unavailable-alias-identity: preserved
+    mlevolve.ai/compatibility-preflight: disabled
+    mlevolve.ai/excluded-unhealthy-node: node-1-3.sdsc.optiputer.net
+spec:
+  activeDeadlineSeconds: 43200
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 120
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - node-1-3.sdsc.optiputer.net
+  containers:
+    - name: leaf-resolver-alias-identity
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-lc", "exec sleep infinity"]
+      envFrom:
+        - secretRef:
+            name: prevalence-audit-deepseek-r1
+      env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: TOKENIZERS_PARALLELISM
+          value: "false"
+        - name: KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      resources:
+        requests:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+        limits:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: shm
+          mountPath: /dev/shm
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 16Gi
