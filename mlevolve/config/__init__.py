@@ -422,6 +422,13 @@ class ExternalSkillMemoryConfig:
     # full source and repair diffs back to those hashes without changing
     # retrieval/scoring text.
     recipe_implementation_path: str = ""
+    # Deterministic post-Judge executable evidence.  Unlike the legacy Recipe
+    # implementation overlay, this index remains separate from the retrieval
+    # graph and is opened only for final Judge-selected candidates.
+    evidence_resolver_enabled: bool = False
+    transition_evidence_capsules_path: str = ""
+    transition_evidence_capsules_sha256: str = ""
+    evidence_resolver_max_pairs: int = 3
     visibility_token_budget: int = 4096
     # Stage-scoped visibility override for retrieval canaries. This avoids
     # enabling global Experiment-R protocol attestation just to enforce the

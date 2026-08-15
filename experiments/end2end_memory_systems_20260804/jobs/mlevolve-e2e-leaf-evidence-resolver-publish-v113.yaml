@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-e2e-leaf-evidence-resolver-publish-v113
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-memory-agent-v113-resolver-publish
+    mlevolve.ai/workload: mlevolve-e2e-leaf-evidence-resolver-publish-v113
+    task: leaf-classification
+  annotations:
+    mlevolve.ai/purpose: materialize-hash-verified-transition-evidence-v113
+    mlevolve.ai/source-base-git-head: 3a72b6aa27ea3a2aac12c5553b41a8f0c2bcf1e5
+spec:
+  activeDeadlineSeconds: 7200
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 30
+  containers:
+    - name: resolver-publisher
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-lc", "exec sleep infinity"]
+      env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+      resources:
+        requests:
+          cpu: "2"
+          memory: 4Gi
+          ephemeral-storage: 8Gi
+        limits:
+          cpu: "2"
+          memory: 4Gi
+          ephemeral-storage: 8Gi
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage

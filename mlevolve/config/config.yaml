@@ -369,6 +369,10 @@ external_skill_memory:
   include_evolution: True
   include_debug: True
   include_fusion: True
+  evidence_resolver_enabled: false
+  transition_evidence_capsules_path: ""
+  transition_evidence_capsules_sha256: ""
+  evidence_resolver_max_pairs: 3
   visibility_token_budget: 4096
   # Task-level synthesis is opt-in. Shadow mode records evidence only. Active
   # mode fail-closed replaces the legacy Improve/Debug generator with Strategy

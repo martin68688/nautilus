@@ -496,6 +496,10 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         recipe_evidence_file_sha256: str | None = None,
         recipe_evidence_manifest_sha256: str | None = None,
         recipe_implementation_path: str | None = None,
+        evidence_resolver_enabled: bool | None = None,
+        transition_evidence_capsules_path: str | None = None,
+        transition_evidence_capsules_sha256: str | None = None,
+        evidence_resolver_max_pairs: int | None = None,
         **kwargs: Any,
     ) -> None:
         self._trace_local = threading.local()
@@ -1013,6 +1017,34 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else ""
         ).strip()
+        self.evidence_resolver_enabled = bool(
+            evidence_resolver_enabled
+            if evidence_resolver_enabled is not None
+            else getattr(ext_cfg, "evidence_resolver_enabled", False)
+            if ext_cfg is not None
+            else False
+        )
+        self.transition_evidence_capsules_path = str(
+            transition_evidence_capsules_path
+            if transition_evidence_capsules_path is not None
+            else getattr(ext_cfg, "transition_evidence_capsules_path", "")
+            if ext_cfg is not None
+            else ""
+        ).strip()
+        self.transition_evidence_capsules_sha256 = str(
+            transition_evidence_capsules_sha256
+            if transition_evidence_capsules_sha256 is not None
+            else getattr(ext_cfg, "transition_evidence_capsules_sha256", "")
+            if ext_cfg is not None
+            else ""
+        ).strip()
+        self.evidence_resolver_max_pairs = int(
+            evidence_resolver_max_pairs
+            if evidence_resolver_max_pairs is not None
+            else getattr(ext_cfg, "evidence_resolver_max_pairs", 3)
+            if ext_cfg is not None
+            else 3
+        )
         if end2end_memory_system is None and ext_cfg is not None:
             end2end_memory_system = getattr(
                 ext_cfg, "end2end_memory_system", ""
@@ -1106,6 +1138,30 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         self.recipe_implementation_receipt: dict[str, Any] = {}
         if self.recipe_implementation_path:
             self._load_recipe_implementation_capsules()
+        self.evidence_resolver = None
+        self.evidence_resolver_load_receipt: dict[str, Any] = {
+            "schema": "mlevolve_evidence_resolver_load_receipt_v1",
+            "status": "disabled",
+        }
+        if self.evidence_resolver_enabled:
+            if not self.transition_evidence_capsules_path:
+                raise ValueError(
+                    "Evidence Resolver is enabled without a transition capsule path"
+                )
+            from agents.memory.evidence_resolver import TransitionEvidenceResolver
+
+            self.evidence_resolver = TransitionEvidenceResolver(
+                capsule_path=self._resolve_config_path(
+                    self.transition_evidence_capsules_path
+                ),
+                expected_file_sha256=self.transition_evidence_capsules_sha256,
+                graph_path=self.graph_path,
+                graph_nodes=self.nodes,
+                max_pairs=self.evidence_resolver_max_pairs,
+            )
+            self.evidence_resolver_load_receipt = copy.deepcopy(
+                self.evidence_resolver.load_receipt
+            )
         self._recipe_sop_ids: list[str] = []
         self.recipe_sop_receipt: dict[str, Any] = {}
         if self.recipe_sop_path:

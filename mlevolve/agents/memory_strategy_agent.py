@@ -215,6 +215,7 @@ _CANDIDATE_ID_KEYS = (
 _CANDIDATE_SIGNAL_KEYS = {
     "candidate_id",
     "source",
+    "candidate_source",
     "source_stage",
     "source_task_id",
     "prompt_text",
@@ -229,6 +230,7 @@ _CANDIDATE_SIGNAL_KEYS = {
 }
 _CARD_FIELDS = (
     "source",
+    "candidate_source",
     "type",
     "source_stage",
     "stage",
@@ -271,6 +273,18 @@ _CARD_FIELDS = (
     "method_fingerprint",
     "code_sha256",
     "original_node_id",
+    "resolved_transition_id",
+    "resolution_path",
+    "evidence_class",
+    "parent_node_id",
+    "child_node_id",
+    "before_code_sha256",
+    "after_code_sha256",
+    "canonical_diff",
+    "before_code",
+    "after_code",
+    "source_journal",
+    "source_journal_sha256",
 )
 
 
@@ -353,6 +367,7 @@ def build_memory_cards(
 
     pack = dict(router_pack or {})
     sources = [
+        ("resolved_evidence", pack.get("resolved_evidence")),
         ("prompt_visible", pack.get("final_prompt_candidates")),
         ("agent_selected", pack.get("selected_candidates") or pack.get("selected_items")),
         ("pre_gate", pack.get("pre_gate_raw_candidates")),

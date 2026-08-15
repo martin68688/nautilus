@@ -5098,6 +5098,22 @@ def build_experiment_r_pack(
             "all_outputs_authorized": True,
         },
     }
+    resolver = getattr(layer, "evidence_resolver", None)
+    if resolver is not None:
+        selected_ids_before_resolution = [str(row["id"]) for row in selected]
+        resolver_receipt = resolver.resolve(
+            selected_items=selected,
+            stage=stage,
+            task_id=task_id,
+            active_transitions_for_sop=layer._active_transitions_for_sop,
+        )
+        selected_ids_after_resolution = [str(row["id"]) for row in selected]
+        if selected_ids_after_resolution != selected_ids_before_resolution:
+            raise RuntimeError("Evidence Resolver changed the Judge-selected IDs")
+        pack["evidence_resolver"] = resolver_receipt
+        pack["resolved_evidence"] = copy.deepcopy(
+            resolver_receipt.get("opened_evidence") or []
+        )
     if abstention is not None:
         pack["memory_abstention"] = abstention
     return pack

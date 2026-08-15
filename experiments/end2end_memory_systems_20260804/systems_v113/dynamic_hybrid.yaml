@@ -1,0 +1,16 @@
+# v113 adds only deterministic post-Judge executable Evidence Resolution.
+# Compatibility Preflight is intentionally out of scope for this smoke.
+extends: ../systems_v112/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v113-runtime/experiments/end2end_memory_systems_20260804/manifests_v113/leaf_official_replay_targets.json
+
+external_skill_memory:
+  evidence_resolver_enabled: true
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v113-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v113/transition_evidence_capsules.json
+  transition_evidence_capsules_sha256: a48c882524039f630571924e7586d8585331a4755478ee4485762212f49a5d75
+  evidence_resolver_max_pairs: 3
+
+run_identity:
+  memory_version: leaf_post_judge_evidence_resolver_v113
