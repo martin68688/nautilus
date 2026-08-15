@@ -1791,7 +1791,7 @@ def _agentic_l3_debug_match(
             "status": "disabled",
             "agent_calls": 0,
         }
-        if grep_enabled:
+        if grep_enabled and authorized_candidates:
             candidates, grep_receipt = _agentic_l3_grep_search(
                 layer,
                 task_id=task_id,
@@ -1807,6 +1807,29 @@ def _agentic_l3_debug_match(
                 "authorized_candidate_count": len(authorized_candidates),
                 "deduplicated_count": len(candidates),
                 "semantic": {"status": "disabled_by_grep_agent"},
+            }
+        elif grep_enabled:
+            candidates = []
+            grep_receipt = {
+                "schema": "experiment_r_l3_grep_search_v1",
+                "status": "authority_pool_empty",
+                "task_scope": task_scope,
+                "authorized_candidate_count": 0,
+                "required_axes": [],
+                "searched_axes": [],
+                "candidate_count": 0,
+                "candidate_ids": [],
+                "agent_calls": 0,
+                "trace": [],
+                "elapsed_seconds": 0.0,
+            }
+            grep_receipt["trace_sha256"] = _sha([])
+            shortlist_receipt = {
+                "schema": "experiment_r_l3_agent_shortlist_v2",
+                "status": "authority_pool_empty",
+                "authorized_candidate_count": 0,
+                "deduplicated_count": 0,
+                "semantic": {"status": "disabled_by_authority_pool_empty"},
             }
         else:
             candidates, shortlist_receipt = _shortlist_l3_candidates_for_agent(
@@ -1945,13 +1968,17 @@ def _agentic_l3_debug_match(
             return result
         # A valid exact-task abstention is the only condition that authorizes
         # the same-task-type fallback tier.
+    authority_pool_empty = bool(trace) and all(
+        int(row.get("authorized_candidate_count") or 0) == 0 for row in trace
+    ) and bool(getattr(layer, "_visibility_is_enforced", lambda: False)())
+    final_decision = "authority_pool_empty" if authority_pool_empty else "abstain"
     result = {
         "schema": "experiment_r_l3_agent_match_v1",
         "enabled": True,
         "algorithm": algorithm,
         "manual_synonym_table_used": False,
         "literal_anchor_extractor": _raw_failure_anchors(query_text),
-        "decision": "abstain",
+        "decision": final_decision,
         "selected_sop_id": "",
         "selected_transition_id": "",
         "final_confidence": 0.0,
@@ -3586,17 +3613,28 @@ def _agentic_candidate_pool(
     refresh_rrf_shortlist()
 
     if debug_causal_only and not known:
+        l3_decision = str((l3_agent_match or {}).get("decision") or "")
+        authority_pool_empty = l3_decision == "authority_pool_empty"
+        finish_reason = (
+            "Debug formal Authority pool is empty; retrieval was not attempted"
+            if authority_pool_empty
+            else (
+                str((l3_agent_match or {}).get("reason") or "")
+                or "no causally matched L3 repair; explicit Debug abstention"
+            )
+        )
         trace.append(
             {
                 "step": len(trace),
                 "action": "finish",
-                "reason": (
-                    str((l3_agent_match or {}).get("reason") or "")
-                    or "no causally matched L3 repair; explicit Debug abstention"
-                ),
+                "reason": finish_reason,
                 "selected_ids": [],
                 "force_finish": True,
-                "observation": {"tool": "finish", "abstained": True},
+                "observation": {
+                    "tool": "finish",
+                    "abstained": not authority_pool_empty,
+                    "authority_pool_empty": authority_pool_empty,
+                },
             }
         )
         return {
@@ -3613,7 +3651,11 @@ def _agentic_candidate_pool(
                     "stage": stage,
                     "task_id": task_id,
                     "query": query_text,
-                    "decision": "debug_causal_abstention",
+                    "decision": (
+                        "debug_authority_pool_empty"
+                        if authority_pool_empty
+                        else "debug_causal_abstention"
+                    ),
                 }
             ),
             "pool_identity": {
@@ -3636,12 +3678,20 @@ def _agentic_candidate_pool(
             },
             "candidate_pool_source": "live_agentic_retrieval",
             "ranking_contract": (
-                "debug_causal_only_agent_abstention_v1"
-                "+l3_agent_root_cause_match_v1"
+                (
+                    "debug_causal_only_authority_pool_empty_v1"
+                    if authority_pool_empty
+                    else "debug_causal_only_agent_abstention_v1"
+                )
+                + "+l3_agent_root_cause_match_v1"
             ),
             "live_query_used_for_candidate_pool": True,
             "tree_confidence": 0.0,
-            "fallback_reason": "no_causally_matched_debug_repair",
+            "fallback_reason": (
+                "empty_formal_debug_authority_pool"
+                if authority_pool_empty
+                else "no_causally_matched_debug_repair"
+            ),
             "pool_counts": {
                 "raw_sop": 0,
                 "raw_runforest": 0,
@@ -3673,8 +3723,13 @@ def _agentic_candidate_pool(
                 "agent_selected_ids": [],
                 "effective_selected_ids": [],
                 "selection_complete": True,
-                "agent_abstained": True,
-                "final_selection_authority": "l3_root_cause_agent_abstention",
+                "agent_abstained": not authority_pool_empty,
+                "authority_pool_empty": authority_pool_empty,
+                "final_selection_authority": (
+                    "l3_formal_authority_pool_empty"
+                    if authority_pool_empty
+                    else "l3_root_cause_agent_abstention"
+                ),
                 "selection_contract": {
                     "minimum_selection_count": 0,
                     "maximum_selection_count": 0,

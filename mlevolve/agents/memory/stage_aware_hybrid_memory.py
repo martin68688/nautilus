@@ -1166,9 +1166,78 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         )
         if visibility_gateway is not None:
             self.visibility_mode = visibility_gateway.mode
+        self._validate_enforced_l3_formal_projection()
         self._build_sop_reverse_index()
         if self.retrieval_control == "layered_strategy":
             self._validate_layered_taxonomy()
+
+    def _validate_enforced_l3_formal_projection(self) -> None:
+        """Fail startup when Debug L3 Authority would receive an empty pool.
+
+        Recipe files are runtime overlays; formal Clause authorization comes
+        from ``MemorySnapshot.base_bundle``.  Binding an older Base Bundle
+        while retaining a newer Recipe overlay otherwise looks healthy until
+        the first Debug request, where the fail-closed snapshot projection is
+        empty and every Grep call searches zero candidates.
+        """
+
+        receipt: dict[str, Any] = {
+            "schema": "enforced_l3_formal_visibility_preflight_v1",
+            "status": "not_applicable",
+            "formal_debug_clause_count": 0,
+            "authorized_l3_sop_count": 0,
+        }
+        self.enforced_l3_formal_visibility_receipt = receipt
+        if (
+            not self.experiment_r_l3_agent_match_enabled
+            or self.memory_snapshot is None
+        ):
+            return
+
+        request = self._visibility_request(
+            stage="debug",
+            task_id=self.visibility_task_id,
+            task_desc="",
+        )
+        if not self.visibility_gateway.should_enforce(request):
+            receipt["status"] = "debug_visibility_not_enforced"
+            return
+
+        formal_clauses = self.memory_snapshot.base_clauses(
+            request.operation,
+            task_id=request.task_context.task_id,
+            task_family=request.task_context.task_family,
+            generation_stage=request.generation_stage.value,
+            governance_stage=request.governance_stage.value,
+        )
+        formal_clause_ids = {
+            str(clause.get("clause_id") or "")
+            for clause in formal_clauses
+            if str(clause.get("clause_id") or "")
+        }
+        authorized_l3_sop_ids = {
+            str(clause.get("sop_id") or "")
+            for clause in formal_clauses
+            if self.nodes.get(str(clause.get("sop_id") or ""), {}).get(
+                "abstraction_level"
+            )
+            == "L3_repair"
+        }
+        receipt.update(
+            {
+                "status": "validated",
+                "base_bundle_id": self.memory_snapshot.base_bundle_id,
+                "formal_debug_clause_count": len(formal_clause_ids),
+                "authorized_l3_sop_count": len(authorized_l3_sop_ids),
+            }
+        )
+        if not formal_clause_ids or not authorized_l3_sop_ids:
+            receipt["status"] = "failed_empty_formal_l3_projection"
+            raise ValueError(
+                "Enforced Debug L3 retrieval requires a non-empty formal Base "
+                "Clause projection. Bind the formal atomic Base Bundle, not "
+                "only its Recipe overlays."
+            )
 
     def _load_session_overlay_clauses(self) -> None:
         """Materialize append-only overlay clauses for online Authority gating.

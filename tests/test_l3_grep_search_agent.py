@@ -402,3 +402,41 @@ def test_grep_agent_and_independent_l3_judge_form_one_debug_chain(
         "experiment_r_l3_grep_search_v1"
     )
     assert calls[-1] == "choose_l3_debug_repair_by_root_cause"
+
+
+def test_empty_enforced_authority_pool_skips_grep_and_judge(monkeypatch) -> None:
+    calls: list[str] = []
+
+    def query_fn(**kwargs):
+        calls.append(kwargs["func_spec"].name)
+        raise AssertionError("an empty Authority pool must not call an Agent")
+
+    layer = _grep_layer(query_fn)
+    layer.experiment_r_l3_agent_match_min_confidence = 0.50
+    layer.experiment_r_l3_agent_match_max_attempts = 2
+    layer.experiment_r_l3_agent_match_candidate_limit = 8
+    layer.experiment_r_l3_semantic_shortlist_enabled = False
+    layer.experiment_r_l3_grep_agent_enabled = True
+    layer._visibility_is_enforced = lambda: True
+    monkeypatch.setattr(
+        router,
+        "_hard_gated_l3_candidates",
+        lambda _layer, **_kwargs: [],
+    )
+
+    result = router._agentic_l3_debug_match(
+        layer,
+        task_id="leaf-classification",
+        task_desc="multimodal leaf classification",
+        query_text="RuntimeError: unseen failure",
+        visible_sop_ids=set(),
+    )
+
+    assert calls == []
+    assert result["decision"] == "authority_pool_empty"
+    assert result["grep_agent_calls"] == 0
+    assert result["agent_calls"] == 0
+    assert [row["grep_search"]["status"] for row in result["trace"]] == [
+        "authority_pool_empty",
+        "authority_pool_empty",
+    ]

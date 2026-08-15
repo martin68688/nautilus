@@ -40,6 +40,94 @@ def _six_hour_smoke_budget(budget: dict[str, Any]) -> None:
     budget["manifest_hash"] = payload_hash(budget, "manifest_hash")
 
 
+def validate_required_memory_binding(
+    memory: dict[str, Any],
+    *,
+    required_bundle_id: str = "",
+    required_bundle_manifest_sha256: str = "",
+    required_bundle_root: str = "",
+    required_formal_debug_clause_count: int = 0,
+) -> dict[str, Any]:
+    """Fail release construction when its effective memory binding regresses.
+
+    System YAML can point Recipe overlays at one release while the execution
+    manifest independently binds ``MemorySnapshot.base_bundle`` to another.
+    Debug Authority is fail-closed, so an old Base Bundle without formal
+    Clause/mask artifacts silently produces an empty authorized L3 pool.  This
+    validation is intentionally performed on the copied execution manifest,
+    which is the object the launcher actually consumes.
+    """
+
+    task = dict((memory.get("task_bundles") or {}).get("leaf-classification") or {})
+    if not task:
+        raise ValueError("Leaf release memory manifest has no task bundle")
+
+    observed_bundle_id = str(task.get("bundle_id") or "")
+    observed_manifest_sha256 = str(task.get("bundle_manifest_sha256") or "")
+    observed_bundle_root = str(task.get("bundle_root") or "")
+    observed_clause_count = int(task.get("formal_debug_clause_count") or 0)
+    formal_clause_sha256 = str(task.get("formal_clause_file_sha256") or "")
+    visibility_masks_sha256 = str(
+        task.get("declared_scope_masks_file_sha256") or ""
+    )
+
+    def is_sha256(value: str) -> bool:
+        return len(value) == 64 and all(
+            character in "0123456789abcdef" for character in value.lower()
+        )
+
+    if required_bundle_id and observed_bundle_id != required_bundle_id:
+        raise ValueError(
+            "Leaf release memory bundle mismatch: "
+            f"expected {required_bundle_id}, observed {observed_bundle_id or '<empty>'}"
+        )
+    if (
+        required_bundle_manifest_sha256
+        and observed_manifest_sha256 != required_bundle_manifest_sha256
+    ):
+        raise ValueError(
+            "Leaf release memory manifest SHA-256 mismatch: "
+            f"expected {required_bundle_manifest_sha256}, "
+            f"observed {observed_manifest_sha256 or '<empty>'}"
+        )
+    if required_bundle_root and observed_bundle_root != required_bundle_root:
+        raise ValueError(
+            "Leaf release memory bundle root mismatch: "
+            f"expected {required_bundle_root}, "
+            f"observed {observed_bundle_root or '<empty>'}"
+        )
+    if required_formal_debug_clause_count:
+        if observed_clause_count != required_formal_debug_clause_count:
+            raise ValueError(
+                "Leaf release formal Debug Clause count mismatch: "
+                f"expected {required_formal_debug_clause_count}, "
+                f"observed {observed_clause_count}"
+            )
+        if not is_sha256(formal_clause_sha256) or not is_sha256(
+            visibility_masks_sha256
+        ):
+            raise ValueError(
+                "Leaf release with enforced Debug L3 retrieval must bind both "
+                "formal Clause and declared-scope mask SHA-256 values"
+            )
+        if memory.get("claim_level_debug_memory") is not True:
+            raise ValueError(
+                "Leaf release with formal Debug Clauses must declare "
+                "claim_level_debug_memory=true"
+            )
+
+    return {
+        "schema": "leaf_release_memory_binding_validation_v1",
+        "bundle_id": observed_bundle_id,
+        "bundle_manifest_sha256": observed_manifest_sha256,
+        "bundle_root": observed_bundle_root,
+        "formal_debug_clause_count": observed_clause_count,
+        "formal_clause_file_sha256": formal_clause_sha256,
+        "declared_scope_masks_file_sha256": visibility_masks_sha256,
+        "status": "validated",
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--base", type=Path, required=True)
@@ -70,6 +158,14 @@ def main() -> int:
             "decomposition and alternate atomic fallback for Improve and Debug"
         ),
     )
+    parser.add_argument("--required-memory-bundle-id", default="")
+    parser.add_argument(
+        "--required-memory-bundle-manifest-sha256", default=""
+    )
+    parser.add_argument("--required-memory-bundle-root", default="")
+    parser.add_argument(
+        "--required-formal-debug-clause-count", type=int, default=0
+    )
     args = parser.parse_args()
 
     if args.release_version < 74:
@@ -97,6 +193,18 @@ def main() -> int:
         raise FileExistsError(f"overlay unexpectedly created {manifests}")
     shutil.copytree(source_manifests, manifests)
     make_writable(manifests)
+
+    memory_binding_validation = validate_required_memory_binding(
+        read_object(manifests / "memory_bundles.json"),
+        required_bundle_id=str(args.required_memory_bundle_id),
+        required_bundle_manifest_sha256=str(
+            args.required_memory_bundle_manifest_sha256
+        ),
+        required_bundle_root=str(args.required_memory_bundle_root),
+        required_formal_debug_clause_count=int(
+            args.required_formal_debug_clause_count
+        ),
+    )
 
     config_path = exp_root / f"systems_{release_tag}/dynamic_hybrid.yaml"
     systems_path = manifests / "systems.json"
@@ -205,6 +313,7 @@ def main() -> int:
         "source_lock_manifest_sha256": source_lock["manifest_hash"],
         "smoke_manifest_sha256": smoke["manifest_hash"],
         "smoke_manifest": str(smoke_path),
+        "memory_binding_validation": memory_binding_validation,
         "agent_time_limit_seconds": 21600,
     }
     args.receipt.parent.mkdir(parents=True, exist_ok=True)

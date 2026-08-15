@@ -1,0 +1,12 @@
+# v111 repairs the v107-v110 release-construction regression by binding the
+# formal atomic v8 Base Bundle used by v106. It preserves v110's exact
+# Cold Start / Replay / Novel roles and adds fail-closed release/runtime checks
+# for an empty formal Debug Authority projection.
+extends: ../systems_v110/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v111-runtime/experiments/end2end_memory_systems_20260804/manifests_v111/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_base_binding_guard_v111

@@ -918,6 +918,74 @@ def _real_recipe_layer():
     return layer
 
 
+def test_enforced_l3_preflight_rejects_empty_formal_debug_projection():
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    layer = object.__new__(StageAwareHybridMemoryLayer)
+    layer.experiment_r_l3_agent_match_enabled = True
+    layer.memory_snapshot = SimpleNamespace(
+        base_bundle_id="old-base-without-formal-clauses",
+        base_clauses=lambda *_args, **_kwargs: [],
+    )
+    layer.visibility_gateway = SimpleNamespace(should_enforce=lambda _request: True)
+    layer._visibility_request = lambda **_kwargs: SimpleNamespace(
+        operation="debug_hypothesis",
+        task_context=SimpleNamespace(
+            task_id="leaf-classification",
+            task_family="image_classification",
+        ),
+        generation_stage=SimpleNamespace(value="debug"),
+        governance_stage=SimpleNamespace(value="retrieval"),
+    )
+    layer.visibility_task_id = "leaf-classification"
+    layer.nodes = {}
+
+    with pytest.raises(ValueError, match="non-empty formal Base Clause projection"):
+        layer._validate_enforced_l3_formal_projection()
+    assert layer.enforced_l3_formal_visibility_receipt["status"] == (
+        "failed_empty_formal_l3_projection"
+    )
+
+
+def test_enforced_l3_preflight_accepts_296_formal_debug_clauses():
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    clauses = [
+        {"clause_id": f"clause::{index:03d}", "sop_id": f"repair::{index:03d}"}
+        for index in range(296)
+    ]
+    layer = object.__new__(StageAwareHybridMemoryLayer)
+    layer.experiment_r_l3_agent_match_enabled = True
+    layer.memory_snapshot = SimpleNamespace(
+        base_bundle_id="end2end-leaf-atomic-recipe-runforest-v8",
+        base_clauses=lambda *_args, **_kwargs: clauses,
+    )
+    layer.visibility_gateway = SimpleNamespace(should_enforce=lambda _request: True)
+    layer._visibility_request = lambda **_kwargs: SimpleNamespace(
+        operation="debug_hypothesis",
+        task_context=SimpleNamespace(
+            task_id="leaf-classification",
+            task_family="image_classification",
+        ),
+        generation_stage=SimpleNamespace(value="debug"),
+        governance_stage=SimpleNamespace(value="retrieval"),
+    )
+    layer.visibility_task_id = "leaf-classification"
+    layer.nodes = {
+        row["sop_id"]: {"abstraction_level": "L3_repair"} for row in clauses
+    }
+
+    layer._validate_enforced_l3_formal_projection()
+
+    assert layer.enforced_l3_formal_visibility_receipt == {
+        "schema": "enforced_l3_formal_visibility_preflight_v1",
+        "status": "validated",
+        "formal_debug_clause_count": 296,
+        "authorized_l3_sop_count": 296,
+        "base_bundle_id": "end2end-leaf-atomic-recipe-runforest-v8",
+    }
+
+
 def _inject_frozen_recipe_evidence(layer, *task_ids):
     evidence = json.loads(RECIPE_EVIDENCE.read_text(encoding="utf-8"))
     for task_id in task_ids:
