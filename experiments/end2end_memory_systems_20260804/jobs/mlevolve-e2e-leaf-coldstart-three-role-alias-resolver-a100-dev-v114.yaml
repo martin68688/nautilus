@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/managed-by: codex-nrp-training
     ecepxie.nrp/owner: haoming
     experiment: experiment-end2end-memory-agent-v114
-    mlevolve.ai/workload: mlevolve-e2e-leaf-coldstart-three-role-alias-resolver-a100-dev-v114
+    mlevolve.ai/workload: leaf-alias-resolver-v114
     task: leaf-classification
   annotations:
     mlevolve.ai/purpose: leaf-atomic-repair-alias-resolver-16-step-smoke
