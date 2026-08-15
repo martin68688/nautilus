@@ -507,6 +507,68 @@ def test_resolver_bridges_atomic_and_repair_claim_aliases_without_stage_leakage(
     )
 
 
+def test_resolver_preserves_unavailable_atomic_alias_identity_without_sop_fallback(
+    tmp_path,
+):
+    from agents.memory.evidence_resolver import TransitionEvidenceResolver
+    from experiments.end2end_memory_systems_20260804.build_transition_evidence_capsules import (
+        _payload_hash,
+    )
+
+    _resolver_instance, payload, _capsule, graph_path, nodes, *_ = _resolver(
+        tmp_path
+    )
+    atomic_id = "atomic-transition::leaf-classification::fixture-debug"
+    repair_id = "repair-claim::leaf-classification::fixture-debug"
+    without_aliases = copy.deepcopy(payload)
+    without_aliases["candidate_aliases"] = []
+    without_aliases["candidate_alias_count"] = 0
+    without_aliases["materialized_candidate_alias_count"] = 0
+    without_aliases["capsule_sha256"] = _payload_hash(
+        without_aliases, "capsule_sha256"
+    )
+    capsule_path = tmp_path / "transition-evidence-without-aliases.json"
+    _write(capsule_path, without_aliases)
+    resolver = TransitionEvidenceResolver(
+        capsule_path=capsule_path,
+        expected_file_sha256=_sha_file(capsule_path),
+        graph_path=graph_path,
+        graph_nodes=nodes,
+    )
+
+    atomic_receipt = resolver.resolve(
+        selected_items=[{"id": atomic_id, "source": "runforest"}],
+        stage="debug",
+        task_id="leaf-classification",
+        active_transitions_for_sop=lambda _sop_id: [],
+    )
+    assert atomic_receipt["status"] == "unresolved"
+    assert atomic_receipt["unresolved"] == [
+        {
+            "candidate_id": atomic_id,
+            "resolution_path": "selected_atomic_alias_to_source_transition",
+            "reason": "no_stage_compatible_materialized_transition",
+            "candidate_transition_ids": [atomic_id],
+        }
+    ]
+
+    repair_receipt = resolver.resolve(
+        selected_items=[{"id": repair_id, "source": "sop"}],
+        stage="improve",
+        task_id="leaf-classification",
+        active_transitions_for_sop=lambda _sop_id: [atomic_id],
+    )
+    assert repair_receipt["status"] == "unresolved"
+    assert repair_receipt["unresolved"] == [
+        {
+            "candidate_id": repair_id,
+            "resolution_path": "selected_repair_claim_alias_to_source_transition",
+            "reason": "no_stage_compatible_materialized_transition",
+            "candidate_transition_ids": [atomic_id],
+        }
+    ]
+
+
 def test_resolver_rejects_payload_or_graph_identity_mismatch(tmp_path):
     from agents.memory.evidence_resolver import TransitionEvidenceResolver
 

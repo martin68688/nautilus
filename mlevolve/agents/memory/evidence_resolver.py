@@ -433,6 +433,29 @@ class TransitionEvidenceResolver:
             )
         graph_node = self._graph_nodes.get(candidate_id) or {}
         node_type = str(graph_node.get("type") or "")
+        if candidate_id.startswith("atomic-transition::"):
+            return "selected_atomic_alias_to_source_transition", [candidate_id]
+        if candidate_id.startswith("repair-claim::"):
+            atomic_id = candidate_id.replace(
+                "repair-claim::", "atomic-transition::", 1
+            )
+            refs = [
+                str(value)
+                for value in (
+                    row.get("clean_supporting_transition_ids")
+                    or graph_node.get("supporting_transition_ids")
+                    or []
+                )
+            ]
+            refs.extend(
+                str(value) for value in active_transitions_for_sop(candidate_id)
+            )
+            if not refs and atomic_id in self._graph_nodes:
+                refs.append(atomic_id)
+            return (
+                "selected_repair_claim_alias_to_source_transition",
+                list(dict.fromkeys(refs)),
+            )
         if node_type == "Transition":
             return "selected_transition", [candidate_id]
         if node_type == "RunNode":

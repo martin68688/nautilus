@@ -1,0 +1,15 @@
+# v117 preserves atomic/repair alias identity for selected aliases that have
+# no authorized materialized source transition. Only versioned runtime paths,
+# run identity, and the deterministic Resolver classification fix change.
+extends: ../systems_v116/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v117-runtime/experiments/end2end_memory_systems_20260804/manifests_v117/leaf_official_replay_targets.json
+
+external_skill_memory:
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v117-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v117/transition_evidence_capsules.json
+  transition_evidence_capsules_sha256: ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559
+
+run_identity:
+  memory_version: leaf_atomic_repair_alias_identity_receipt_v117
