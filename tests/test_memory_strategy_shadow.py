@@ -575,6 +575,58 @@ def test_metric_free_router_memory_remains_visible_as_method_evidence():
     ] == 1
 
 
+def test_resolved_evidence_precedes_ranked_history_and_keeps_provenance():
+    agent = _agent()
+    parent = _parent()
+    agent.branch_successful_nodes = {1: [parent]}
+    resolved_id = "run::history::transition::parent::child"
+    pack = {
+        "resolved_evidence": [
+            {
+                "candidate_id": resolved_id,
+                "source_task_id": "spooky-author-identification",
+                "resolved_transition_id": resolved_id,
+                "resolution_path": "selected_transition",
+                "evidence_class": "strict_internal_observed",
+                "outcome": "metric_improved",
+                "canonical_diff": "-OLD = 1\n+NEW = 2",
+                "before_code": "OLD = 1",
+                "after_code": "NEW = 2",
+            }
+        ],
+        "final_prompt_candidates": [
+            {
+                "candidate_id": "history::lower-score",
+                "source_task_id": "spooky-author-identification",
+                "metric": 0.001,
+                "rank_eligible": True,
+                "text": "metric-ranked summary",
+            }
+        ],
+    }
+
+    cards, selection = build_strategy_evidence_view(
+        agent,
+        parent,
+        stage="improve",
+        router_pack=pack,
+        max_items=2,
+        current_frontier_slots=1,
+        causal_failure_slots=0,
+    )
+
+    resolved = next(card for card in cards if card["memory_id"] == resolved_id)
+    assert selection["historical_diverse_frontier_ids"] == [resolved_id]
+    assert resolved["router_visibility"] == "resolved_evidence"
+    assert resolved["strategy_selection_bucket"] == "historical_diverse_frontier"
+    assert resolved["selection_reason"] == (
+        "judge_selected_post_resolution_executable_evidence"
+    )
+    assert resolved["canonical_diff"] == "-OLD = 1\n+NEW = 2"
+    assert resolved["before_code"] == "OLD = 1"
+    assert resolved["after_code"] == "NEW = 2"
+
+
 def test_component_portfolio_prefers_executed_summary_over_discussed_plan():
     portfolio = build_component_portfolio(
         [

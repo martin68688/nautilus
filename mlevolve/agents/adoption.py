@@ -369,6 +369,18 @@ def log_adoption(
                     "final_prompt_candidates": copy.deepcopy(
                         pack.get("final_prompt_candidates") or []
                     ),
+                    # Evidence Resolver runs after the Retrieval Judge and may
+                    # open hash-bound parent/child code that is intentionally
+                    # absent from the first-layer prompt.  Keep both the
+                    # receipt and opened evidence in the durable Journal trace;
+                    # otherwise the live Strategy can consume the evidence but
+                    # the run cannot prove which selected IDs were resolved.
+                    "evidence_resolver": copy.deepcopy(
+                        pack.get("evidence_resolver") or {}
+                    ),
+                    "resolved_evidence": copy.deepcopy(
+                        pack.get("resolved_evidence") or []
+                    ),
                     "retrieval_agent": copy.deepcopy(
                         pack.get("retrieval_agent") or {}
                     ),

@@ -912,6 +912,71 @@ def test_draft_coldstart_adoption_alias_matches_dynamic_router_pack(tmp_path):
     assert node.memory_routing_trace["pack_stage_raw"] == "draft"
 
 
+def test_experiment_r_adoption_persists_resolver_receipt_and_opened_code():
+    from engine.search_node import SearchNode
+
+    transition_id = "run::history::transition::parent::child"
+    opened = {
+        "candidate_id": transition_id,
+        "resolved_transition_id": transition_id,
+        "resolution_path": "selected_transition",
+        "evidence_class": "strict_internal_observed",
+        "canonical_diff": "-OLD = 1\n+NEW = 2",
+        "before_code": "OLD = 1",
+        "after_code": "NEW = 2",
+    }
+    receipt = {
+        "schema": "mlevolve_evidence_resolver_receipt_v1",
+        "status": "resolved",
+        "stage": "improve",
+        "selected_candidate_ids": [transition_id],
+        "selected_ids_unchanged": True,
+        "opened_transition_ids": [transition_id],
+        "opened_pair_count": 1,
+        "fallback_used": False,
+        "opened_evidence": [opened],
+    }
+    pack = {
+        "schema": "experiment_r_memory_pack_v1",
+        "stage_route": {"stage": "improve"},
+        "target_task_id": "task",
+        "candidate_pool": {},
+        "selected_items": [{"id": transition_id, "source": "runforest"}],
+        "final_prompt_candidate_ids": [transition_id],
+        "final_prompt_candidates": [
+            {"candidate_id": transition_id, "prompt_text": "summary only"}
+        ],
+        "evidence_resolver": receipt,
+        "resolved_evidence": [opened],
+    }
+    layer = SimpleNamespace(
+        experiment_r_enabled=True,
+        memory_snapshot=None,
+        current_navigation_pack=lambda: pack,
+    )
+    agent = SimpleNamespace(
+        external_skill_memory=layer,
+        cfg=SimpleNamespace(exp_id="task", run_identity=SimpleNamespace()),
+        adoption_tracking_enabled=True,
+        evaluation_authority=None,
+    )
+    node = SearchNode(code="print('improve')", stage="improve")
+
+    log_adoption(
+        node,
+        agent,
+        "run_forest_stage_hybrid_memory",
+        [transition_id],
+        "improve",
+    )
+
+    trace = node.memory_routing_trace
+    assert trace["evidence_resolver"] == receipt
+    assert trace["resolved_evidence"] == [opened]
+    assert trace["resolved_evidence"][0]["before_code"] == "OLD = 1"
+    assert trace["resolved_evidence"][0]["after_code"] == "NEW = 2"
+
+
 def test_coldstart_role_abstention_pack_records_canonical_draft_stage(tmp_path):
     from engine.search_node import SearchNode
 

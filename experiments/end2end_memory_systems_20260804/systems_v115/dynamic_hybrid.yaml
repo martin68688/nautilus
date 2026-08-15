@@ -1,0 +1,16 @@
+# v115 preserves the v114 alias bridge and makes the post-Judge receipt and
+# full resolved code durable while guaranteeing resolved evidence reaches
+# Strategy ahead of ordinary historical summaries. Compatibility Preflight
+# remains disabled.
+extends: ../systems_v114/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v115-runtime/experiments/end2end_memory_systems_20260804/manifests_v115/leaf_official_replay_targets.json
+
+external_skill_memory:
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v115-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v115/transition_evidence_capsules.json
+  transition_evidence_capsules_sha256: ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559
+
+run_identity:
+  memory_version: leaf_atomic_repair_alias_resolver_receipt_v115

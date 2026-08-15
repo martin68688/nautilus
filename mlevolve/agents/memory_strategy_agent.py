@@ -909,6 +909,7 @@ def _select_historical_frontier(
     maximize = _strategy_metric_maximize(agent, parent_node)
     task_id = str(getattr(getattr(agent, "cfg", None), "exp_id", "") or "")
     current_protocol = _node_metric_protocol(parent_node)
+    resolved_evidence: list[dict[str, Any]] = []
     eligible: list[dict[str, Any]] = []
     method_only: list[dict[str, Any]] = []
     rejected = {
@@ -938,6 +939,18 @@ def _select_historical_frontier(
             continue
         if card.get("rank_eligible") is False:
             rejected["rank_ineligible"] += 1
+            continue
+        if str(card.get("router_visibility") or "") == "resolved_evidence":
+            # This is the deterministic post-Judge executable view.  It must
+            # reach Strategy ahead of score-ranked historical summaries; the
+            # latter can otherwise exhaust the bounded evidence frontier and
+            # silently undo Judge -> Resolver -> Strategy.
+            card["metric"] = None
+            card["submission_aligned_receipt_present"] = False
+            card["metric_protocol"] = _historical_metric_protocol(card)
+            card["metric_comparable_to_current"] = False
+            card["metric_claim_status"] = "resolved_transition_evidence"
+            resolved_evidence.append(card)
             continue
         metric_value = card.get("metric")
         if metric_value is None:
@@ -1010,12 +1023,19 @@ def _select_historical_frontier(
         for _, group in sorted(grouped.items(), key=group_key)
         for card in group
     ]
+    resolved_evidence.sort(
+        key=lambda card: (
+            int(card.get("router_rank") or 10**9),
+            str(card.get("memory_id") or ""),
+        )
+    )
     visibility_priority = {
-        "prompt_visible": 0,
-        "agent_selected": 1,
-        "pre_gate": 2,
-        "candidate_pool": 3,
-        "raw_candidates": 4,
+        "resolved_evidence": 0,
+        "prompt_visible": 1,
+        "agent_selected": 2,
+        "pre_gate": 3,
+        "candidate_pool": 4,
+        "raw_candidates": 5,
     }
     method_only.sort(
         key=lambda card: (
@@ -1024,7 +1044,7 @@ def _select_historical_frontier(
             str(card.get("memory_id") or ""),
         )
     )
-    ordered_eligible.extend(method_only)
+    ordered_eligible = resolved_evidence + ordered_eligible + method_only
     selected: list[dict[str, Any]] = []
     signatures: set[str] = set()
     for card in ordered_eligible:
@@ -1033,8 +1053,14 @@ def _select_historical_frontier(
             rejected["duplicate_lineage"] += 1
             continue
         signatures.add(signature)
-        card["router_visibility"] = "historical_diverse_frontier"
+        is_resolved = str(card.get("router_visibility") or "") == "resolved_evidence"
+        card["strategy_selection_bucket"] = "historical_diverse_frontier"
+        if not is_resolved:
+            card["router_visibility"] = "historical_diverse_frontier"
         card["selection_reason"] = (
+            "judge_selected_post_resolution_executable_evidence"
+            if is_resolved
+            else
             "same_task_router_ranked_method_evidence_then_component_diversity"
             if card.get("metric") is None
             else "same_task_same_protocol_metric_then_component_diversity"
@@ -2065,6 +2091,7 @@ def run_memory_strategy_shadow(
             "context_char_count": len(_canonical_json(context)),
             "memory_card_ids": [card["memory_id"] for card in cards],
             "memory_card_count": len(cards),
+            "memory_cards": copy.deepcopy(cards),
             "strategy_evidence_selection": evidence_selection,
             "router_final_prompt_candidate_ids": list(
                 (router_pack or {}).get("final_prompt_candidate_ids") or []
@@ -2089,6 +2116,7 @@ def run_memory_strategy_shadow(
             "context_char_count": len(_canonical_json(context)),
             "memory_card_ids": [card["memory_id"] for card in cards],
             "memory_card_count": len(cards),
+            "memory_cards": copy.deepcopy(cards),
             "strategy_evidence_selection": evidence_selection,
         }
 
