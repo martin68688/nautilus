@@ -1,0 +1,14 @@
+# v116 is a source-identical reissue of v115 after node-1-3 lost healthy A100
+# devices. Only versioned runtime paths and run identity change.
+extends: ../systems_v115/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v116-runtime/experiments/end2end_memory_systems_20260804/manifests_v116/leaf_official_replay_targets.json
+
+external_skill_memory:
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v116-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v116/transition_evidence_capsules.json
+  transition_evidence_capsules_sha256: ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559
+
+run_identity:
+  memory_version: leaf_atomic_repair_alias_resolver_receipt_v116
