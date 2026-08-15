@@ -106,6 +106,7 @@ def _materialized_fixture(tmp_path: Path):
     graph_nodes = []
     inventory_rows = []
     transition_ids = {}
+    endpoint_ids = {}
     for index, (
         logical_run,
         outcome,
@@ -126,6 +127,7 @@ def _materialized_fixture(tmp_path: Path):
         parent_id = f"run::{staged_run}::node::parent"
         child_id = f"run::{staged_run}::node::child"
         transition_ids[logical_run] = transition_id
+        endpoint_ids[logical_run] = (parent_id, child_id)
         graph_nodes.extend(
             [
                 {
@@ -158,6 +160,8 @@ def _materialized_fixture(tmp_path: Path):
                 },
             ]
         )
+        graph_nodes[-3]["original_node_id"] = parent_raw_id
+        graph_nodes[-2]["original_node_id"] = child_raw_id
         relative = (
             f"mlevolve/runs/{logical_run}/{attempt}/journal.json"
         )
@@ -190,6 +194,62 @@ def _materialized_fixture(tmp_path: Path):
                 transition_ids["internal-run"],
                 transition_ids["official-run"],
             ],
+        }
+    )
+    debug_parent_id, debug_child_id = endpoint_ids["debug-run"]
+    # Legacy formal atomic Debug evidence used "accept" before the newer
+    # rank_eligible spelling.  Its independently audited atomic claim is the
+    # authority that permits Debug-only materialization.
+    next(
+        row for row in graph_nodes if row.get("id") == debug_child_id
+    )["metric_disposition"] = "accept"
+    atomic_id = "atomic-transition::leaf-classification::fixture-debug"
+    graph_nodes.append(
+        {
+            "id": atomic_id,
+            "type": "Transition",
+            "task": "leaf-classification",
+            "parent_node_id": debug_parent_id,
+            "child_node_id": debug_child_id,
+            "outcome": "debug_fixed",
+            "stage_pair": "debug->debug",
+            "quarantined": False,
+            "protocol_biased": False,
+            "atomic_repair_claim": {
+                "schema": "mlevolve_atomic_memory_claim_v1",
+                "id": "claim::leaf-classification::repair_claim::fixture-debug",
+                "claim_status": "authorized_debug_only",
+                "task_id": "leaf-classification",
+                "outcome": "debug_fixed",
+                "source_transition_id": transition_ids["debug-run"],
+                "source_parent_node_id": debug_parent_id,
+                "source_child_node_id": debug_child_id,
+                "operation_visibility": {
+                    "allowed_operations": ["debug_hypothesis", "debug_repair"],
+                    "forbidden_operations": [
+                        "improve_method_selection",
+                        "metric_ranking",
+                    ],
+                },
+                "taint": {
+                    "claim": "clean",
+                    "code": "clean",
+                    "source_program": {
+                        "status": "clean",
+                        "rank_eligible": True,
+                        "memory_disposition": "positive_eligible",
+                    },
+                },
+                "verification": {
+                    "before_code_sha256": _sha_text(specs[0][2]),
+                    "after_code_sha256": _sha_text(specs[0][3]),
+                    "claim_scope_independently_audited": True,
+                    "full_program_clean": True,
+                    "observed_child_execution_success": True,
+                    "observed_parent_failure": True,
+                    "repair_action_bound_to_transition": True,
+                },
+            },
         }
     )
     graph_path = tmp_path / "graph.json"
@@ -240,6 +300,8 @@ def test_builder_materializes_strict_debug_and_improve_pairs_with_alias_dedup(
     assert payload["debug_unique_pair_count"] == 1
     assert payload["improve_transition_count"] == 3
     assert payload["improve_unique_pair_count"] == 2
+    assert payload["candidate_alias_count"] == 2
+    assert payload["materialized_candidate_alias_count"] == 2
     alias_pair = next(
         row for row in payload["pairs"] if len(row["alias_transition_ids"]) == 2
     )
@@ -247,6 +309,89 @@ def test_builder_materializes_strict_debug_and_improve_pairs_with_alias_dedup(
         transition_ids["internal-run"],
         transition_ids["internal-alias-run"],
     }
+
+
+def test_augment_recovers_frozen_atomic_source_program_and_aliases(tmp_path):
+    from agents.memory.evidence_resolver import TransitionEvidenceResolver
+    from experiments.end2end_memory_systems_20260804.build_transition_evidence_capsules import (
+        _pair_rows,
+        _payload_hash,
+        augment_atomic_aliases,
+    )
+
+    payload, _capsule, graph_path, nodes, transition_ids, _sop_id = (
+        _materialized_fixture(tmp_path)
+    )
+    debug_transition_id = transition_ids["debug-run"]
+    debug_row = next(
+        row
+        for row in payload["transitions"]
+        if row["transition_id"] == debug_transition_id
+    )
+    endpoint_ids = {debug_row["parent_node_id"], debug_row["child_node_id"]}
+    endpoint_shas = {
+        debug_row["before_code_sha256"],
+        debug_row["after_code_sha256"],
+    }
+    base = copy.deepcopy(payload)
+    base["transitions"] = [
+        row
+        for row in base["transitions"]
+        if row["transition_id"] != debug_transition_id
+    ]
+    base["nodes"] = [
+        row for row in base["nodes"] if row["node_id"] not in endpoint_ids
+    ]
+    base["code_blobs"] = [
+        row
+        for row in base["code_blobs"]
+        if row["code_sha256"] not in endpoint_shas
+    ]
+    base["pairs"] = _pair_rows(base["transitions"])
+    base["journal_sha256s"] = [
+        value
+        for value in base["journal_sha256s"]
+        if value != debug_row["source_journal_sha256"]
+    ]
+    base["capsule_sha256"] = _payload_hash(base, "capsule_sha256")
+    base_path = tmp_path / "base-with-missing-atomic-program.json"
+    _write(base_path, base)
+
+    journal_path = tmp_path / debug_row["source_journal"]
+    augmented = augment_atomic_aliases(
+        base_capsule_path=base_path,
+        graph_path=graph_path,
+        atomic_journal_paths=[journal_path],
+    )
+    assert debug_transition_id in augmented["atomic_alias_extension"][
+        "recovered_transition_ids"
+    ]
+    assert augmented["atomic_alias_extension"]["extension_journal_sha256s"] == [
+        debug_row["source_journal_sha256"]
+    ]
+    aliases = {
+        row["candidate_id"]: row for row in augmented["candidate_aliases"]
+    }
+    atomic_id = "atomic-transition::leaf-classification::fixture-debug"
+    repair_id = "repair-claim::leaf-classification::fixture-debug"
+    assert aliases[atomic_id]["materialized"] is True
+    assert aliases[repair_id]["materialized"] is True
+
+    augmented_path = tmp_path / "augmented.json"
+    _write(augmented_path, augmented)
+    resolver = TransitionEvidenceResolver(
+        capsule_path=augmented_path,
+        expected_file_sha256=_sha_file(augmented_path),
+        graph_path=graph_path,
+        graph_nodes=nodes,
+    )
+    receipt = resolver.resolve(
+        selected_items=[{"id": atomic_id, "source": "runforest"}],
+        stage="debug",
+        task_id="leaf-classification",
+        active_transitions_for_sop=lambda _sop_id: [],
+    )
+    assert receipt["opened_transition_ids"] == [debug_transition_id]
 
 
 def test_resolver_opens_only_selected_sop_and_prefers_official_improve(tmp_path):
@@ -310,6 +455,56 @@ def test_resolver_opens_exact_debug_transition_and_strategy_receives_code(tmp_pa
     assert "return 1 / 0" in cards[0]["before_code"]
     assert "return 1" in cards[0]["after_code"]
     assert "historical_transition_diff" not in cards[0]
+
+
+def test_resolver_bridges_atomic_and_repair_claim_aliases_without_stage_leakage(
+    tmp_path,
+):
+    resolver, _payload, _capsule, _graph, _nodes, transition_ids, _sop_id = (
+        _resolver(tmp_path)
+    )
+    source_transition_id = transition_ids["debug-run"]
+    atomic_id = "atomic-transition::leaf-classification::fixture-debug"
+    repair_id = "repair-claim::leaf-classification::fixture-debug"
+
+    atomic_receipt = resolver.resolve(
+        selected_items=[{"id": atomic_id, "source": "runforest"}],
+        stage="debug",
+        task_id="leaf-classification",
+        active_transitions_for_sop=lambda _sop_id: [],
+    )
+    assert atomic_receipt["selected_candidate_ids"] == [atomic_id]
+    assert atomic_receipt["selected_ids_unchanged"] is True
+    assert atomic_receipt["opened_transition_ids"] == [source_transition_id]
+    assert atomic_receipt["opened_evidence"][0]["resolution_path"] == (
+        "selected_atomic_alias_to_source_transition"
+    )
+
+    repair_receipt = resolver.resolve(
+        selected_items=[{"id": repair_id, "source": "sop"}],
+        stage="debug",
+        task_id="leaf-classification",
+        active_transitions_for_sop=lambda _sop_id: [],
+    )
+    assert repair_receipt["opened_transition_ids"] == [source_transition_id]
+    assert repair_receipt["opened_evidence"][0]["resolution_path"] == (
+        "selected_repair_claim_alias_to_source_transition"
+    )
+
+    improve_receipt = resolver.resolve(
+        selected_items=[{"id": repair_id, "source": "sop"}],
+        stage="improve",
+        task_id="leaf-classification",
+        active_transitions_for_sop=lambda _sop_id: [],
+    )
+    assert improve_receipt["status"] == "unresolved"
+    assert improve_receipt["opened_transition_ids"] == []
+    assert improve_receipt["unresolved"][0]["resolution_path"] == (
+        "selected_repair_claim_alias_to_source_transition"
+    )
+    assert improve_receipt["unresolved"][0]["reason"] == (
+        "no_stage_compatible_materialized_transition"
+    )
 
 
 def test_resolver_rejects_payload_or_graph_identity_mismatch(tmp_path):

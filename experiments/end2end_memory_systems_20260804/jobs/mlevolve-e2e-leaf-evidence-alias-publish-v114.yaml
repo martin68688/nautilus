@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-e2e-leaf-evidence-alias-publish-v114
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-memory-agent-v114-evidence
+    mlevolve.ai/workload: mlevolve-e2e-leaf-evidence-alias-publish-v114
+    task: leaf-classification
+  annotations:
+    mlevolve.ai/purpose: materialize-atomic-repair-alias-evidence-v114
+    mlevolve.ai/source-base-git-head: 487d9c64ab06c182bf846794da3a7efe80498b93
+spec:
+  activeDeadlineSeconds: 14400
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 30
+  containers:
+    - name: alias-publisher
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-lc", "exec sleep infinity"]
+      env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+      resources:
+        requests:
+          cpu: "2"
+          memory: 4Gi
+          ephemeral-storage: 8Gi
+        limits:
+          cpu: "2"
+          memory: 4Gi
+          ephemeral-storage: 8Gi
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage

@@ -133,6 +133,9 @@ class TransitionEvidenceResolver:
         self._node_by_id = self._validate_nodes(payload.get("nodes"))
         self._transition_by_id = self._validate_transitions(payload.get("transitions"))
         self._validate_pairs(payload.get("pairs"))
+        self._candidate_aliases = self._validate_candidate_aliases(
+            payload.get("candidate_aliases") or []
+        )
 
         self._transitions_by_child: dict[str, list[str]] = defaultdict(list)
         for transition_id, transition in self._transition_by_id.items():
@@ -152,6 +155,11 @@ class TransitionEvidenceResolver:
             "transition_count": len(self._transition_by_id),
             "node_count": len(self._node_by_id),
             "unique_code_count": len(self._code_by_sha),
+            "candidate_alias_count": len(self._candidate_aliases),
+            "materialized_candidate_alias_count": sum(
+                bool(row["materialized"])
+                for row in self._candidate_aliases.values()
+            ),
             "max_pairs": self.max_pairs,
             "status": "validated",
         }
@@ -294,6 +302,116 @@ class TransitionEvidenceResolver:
         if seen != observed:
             raise ValueError("Transition evidence unique-pair coverage mismatch")
 
+    def _validate_candidate_aliases(
+        self, rows: Any
+    ) -> dict[str, dict[str, Any]]:
+        if not isinstance(rows, list):
+            raise ValueError("Transition evidence candidate aliases are malformed")
+        output: dict[str, dict[str, Any]] = {}
+        for raw in rows:
+            if not isinstance(raw, Mapping):
+                raise ValueError("Transition evidence candidate alias is not an object")
+            row = dict(raw)
+            candidate_id = str(row.get("candidate_id") or "")
+            alias_kind = str(row.get("alias_kind") or "")
+            atomic_transition_id = str(row.get("atomic_transition_id") or "")
+            source_transition_id = str(row.get("source_transition_id") or "")
+            if not candidate_id or candidate_id in output:
+                raise ValueError(
+                    f"Duplicate or missing transition evidence alias: {candidate_id}"
+                )
+            if alias_kind not in {"atomic_transition", "repair_claim"}:
+                raise ValueError(
+                    f"Unsupported transition evidence alias kind: {candidate_id}"
+                )
+
+            atomic = self._graph_nodes.get(atomic_transition_id)
+            source = self._graph_nodes.get(source_transition_id)
+            if (
+                not isinstance(atomic, Mapping)
+                or atomic.get("type") != "Transition"
+                or not str(atomic_transition_id).startswith("atomic-transition::")
+            ):
+                raise ValueError(
+                    f"Transition evidence alias has no atomic Transition: {candidate_id}"
+                )
+            if not isinstance(source, Mapping) or source.get("type") != "Transition":
+                raise ValueError(
+                    f"Transition evidence alias has no source Transition: {candidate_id}"
+                )
+
+            claim = atomic.get("atomic_repair_claim")
+            claim = claim if isinstance(claim, Mapping) else {}
+            verification = claim.get("verification")
+            verification = (
+                verification if isinstance(verification, Mapping) else {}
+            )
+            expected_repair_id = str(atomic_transition_id).replace(
+                "atomic-transition::", "repair-claim::", 1
+            )
+            expected_candidate_id = (
+                atomic_transition_id
+                if alias_kind == "atomic_transition"
+                else expected_repair_id
+            )
+            if candidate_id != expected_candidate_id:
+                raise ValueError(
+                    f"Transition evidence alias identity mismatch: {candidate_id}"
+                )
+            if (
+                str(claim.get("source_transition_id") or "")
+                != source_transition_id
+                or str(claim.get("source_parent_node_id") or "")
+                != str(source.get("parent_node_id") or "")
+                or str(claim.get("source_child_node_id") or "")
+                != str(source.get("child_node_id") or "")
+                or str(atomic.get("parent_node_id") or "")
+                != str(source.get("parent_node_id") or "")
+                or str(atomic.get("child_node_id") or "")
+                != str(source.get("child_node_id") or "")
+                or str(atomic.get("outcome") or "")
+                != str(source.get("outcome") or "")
+                or str(row.get("outcome") or "")
+                != str(source.get("outcome") or "")
+            ):
+                raise ValueError(
+                    f"Transition evidence alias graph binding mismatch: {candidate_id}"
+                )
+            parent = self._graph_nodes.get(str(source.get("parent_node_id") or ""))
+            child = self._graph_nodes.get(str(source.get("child_node_id") or ""))
+            before_sha = str(verification.get("before_code_sha256") or "")
+            after_sha = str(verification.get("after_code_sha256") or "")
+            if (
+                not isinstance(parent, Mapping)
+                or not isinstance(child, Mapping)
+                or before_sha != str(parent.get("code_sha256") or "")
+                or after_sha != str(child.get("code_sha256") or "")
+                or before_sha != str(row.get("before_code_sha256") or "")
+                or after_sha != str(row.get("after_code_sha256") or "")
+            ):
+                raise ValueError(
+                    f"Transition evidence alias code binding mismatch: {candidate_id}"
+                )
+            materialized = source_transition_id in self._transition_by_id
+            if bool(row.get("materialized")) != materialized:
+                raise ValueError(
+                    f"Transition evidence alias materialization mismatch: {candidate_id}"
+                )
+            if materialized:
+                transition = self._transition_by_id[source_transition_id]
+                if (
+                    str(transition.get("outcome") or "")
+                    != str(row.get("outcome") or "")
+                    or str(transition.get("before_code_sha256") or "") != before_sha
+                    or str(transition.get("after_code_sha256") or "") != after_sha
+                ):
+                    raise ValueError(
+                        "Transition evidence alias/source capsule mismatch: "
+                        f"{candidate_id}"
+                    )
+            output[candidate_id] = row
+        return output
+
     @staticmethod
     def _candidate_id(row: Mapping[str, Any]) -> str:
         return str(row.get("id") or row.get("candidate_id") or "")
@@ -305,6 +423,14 @@ class TransitionEvidenceResolver:
         active_transitions_for_sop: Callable[[str], Iterable[str]],
     ) -> tuple[str, list[str]]:
         candidate_id = self._candidate_id(row)
+        alias = self._candidate_aliases.get(candidate_id)
+        if alias is not None:
+            return (
+                "selected_atomic_alias_to_source_transition"
+                if alias["alias_kind"] == "atomic_transition"
+                else "selected_repair_claim_alias_to_source_transition",
+                [str(alias["source_transition_id"])],
+            )
         graph_node = self._graph_nodes.get(candidate_id) or {}
         node_type = str(graph_node.get("type") or "")
         if node_type == "Transition":

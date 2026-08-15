@@ -1,0 +1,14 @@
+# v114 adds a stage-safe bridge from atomic/repair candidate aliases to their
+# exact source RunForest transitions. Compatibility Preflight remains disabled.
+extends: ../systems_v113/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v114-runtime/experiments/end2end_memory_systems_20260804/manifests_v114/leaf_official_replay_targets.json
+
+external_skill_memory:
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v114-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v114/transition_evidence_capsules.json
+  transition_evidence_capsules_sha256: ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559
+
+run_identity:
+  memory_version: leaf_atomic_repair_alias_resolver_v114
