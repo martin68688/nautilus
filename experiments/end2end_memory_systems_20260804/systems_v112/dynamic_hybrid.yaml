@@ -1,0 +1,10 @@
+# v112 preserves the v111 Debug Authority repair and advances every mutable
+# identity after the v111 outer launcher exited before creating attempt-000.
+extends: ../systems_v111/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v112-runtime/experiments/end2end_memory_systems_20260804/manifests_v112/leaf_official_replay_targets.json
+
+run_identity:
+  memory_version: leaf_atomic_base_binding_guard_v112

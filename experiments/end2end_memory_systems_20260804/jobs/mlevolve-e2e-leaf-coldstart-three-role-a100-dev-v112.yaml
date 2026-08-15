@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-e2e-leaf-coldstart-three-role-a100-dev-v112
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-memory-agent-v112
+    mlevolve.ai/workload: mlevolve-e2e-leaf-coldstart-three-role-a100-dev-v112
+    task: leaf-classification
+  annotations:
+    mlevolve.ai/purpose: leaf-atomic-base-binding-guard-16-step-smoke
+    mlevolve.ai/source-base-git-head: 2be88edaca0ef24164d202bb34e1fb746be0031a
+    mlevolve.ai/source-role-policy: coldstart-replay-novel
+    mlevolve.ai/required-memory-bundle: end2end-leaf-atomic-recipe-runforest-v8
+    mlevolve.ai/required-formal-debug-clauses: "296"
+    mlevolve.ai/predecessor-disposition: v111-wrapper-exited-before-attempt
+spec:
+  activeDeadlineSeconds: 43200
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 120
+  containers:
+    - name: leaf-coldstart-three-role
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-lc", "exec sleep infinity"]
+      envFrom:
+        - secretRef:
+            name: prevalence-audit-deepseek-r1
+      env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: TOKENIZERS_PARALLELISM
+          value: "false"
+        - name: KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      resources:
+        requests:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+        limits:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: shm
+          mountPath: /dev/shm
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 16Gi
