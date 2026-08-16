@@ -243,3 +243,24 @@ def test_v120_release_and_system_request_six_hours_without_sixteen_step_cap() ->
     assert "replay_research_exact_budget: 2" in system_text
     assert "replay_research_strategy_slots: 4" in system_text
     assert "Compatibility Preflight" not in system_text
+
+
+def test_v121_reissue_keeps_six_hours_and_matches_standalone_pod_memory_limit() -> None:
+    build_text = (
+        REPO
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "build_leaf_replay_research_v121_release.py"
+    ).read_text(encoding="utf-8")
+    system_text = (
+        REPO
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v121"
+        / "dynamic_hybrid.yaml"
+    ).read_text(encoding="utf-8")
+    assert '"agent_steps": 80' in build_text
+    assert '"agent_time_limit_seconds": 21600' in build_text
+    assert '"memory_gib": 32' in build_text
+    assert '"--source-manifest-version": "120"' in build_text
+    assert "agent-v121-runtime" in system_text

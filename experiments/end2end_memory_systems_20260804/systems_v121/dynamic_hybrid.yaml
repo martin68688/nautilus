@@ -1,0 +1,13 @@
+# v121 is feature-identical to v120 and changes only isolated runtime identity.
+extends: ../systems_v120/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v121-runtime/experiments/end2end_memory_systems_20260804/manifests_v121/leaf_official_replay_targets.json
+
+external_skill_memory:
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v121-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v121/transition_evidence_capsules.json
+  transition_evidence_capsules_sha256: ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559
+
+run_identity:
+  memory_version: leaf_replay_research_top5_v121_pod32
