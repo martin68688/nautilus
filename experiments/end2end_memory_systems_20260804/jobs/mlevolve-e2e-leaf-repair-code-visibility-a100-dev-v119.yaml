@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-e2e-leaf-repair-code-visibility-a100-dev-v119
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-memory-agent-v119
+    mlevolve.ai/workload: leaf-repair-code-visibility-v119
+    task: leaf-classification
+  annotations:
+    mlevolve.ai/purpose: leaf-exact-repair-code-visibility-16-step-smoke
+    mlevolve.ai/source-git-head: 578ed985e2fcdfec685437a710ff5fd4323d9ffe
+    mlevolve.ai/source-release-sha256: e4f97269c56bf67756431dd132ba83b15285cf4c5499134a854c015f116d50ad
+    mlevolve.ai/runtime-transport-sha256: 880b6570373c97b92b4afa324ef29d5c98a91b379ad2b1c17f61a4ea106cf83a
+    mlevolve.ai/source-role-policy: coldstart-replay-novel
+    mlevolve.ai/required-memory-bundle: end2end-leaf-atomic-recipe-runforest-v8
+    mlevolve.ai/required-formal-debug-clauses: "296"
+    mlevolve.ai/transition-capsule-sha256: ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559
+    mlevolve.ai/repair-code-visibility: exact-id-full-code-or-verified-diff
+    mlevolve.ai/debug-evidence-authority: reference-only
+    mlevolve.ai/compatibility-preflight: disabled
+    mlevolve.ai/excluded-unhealthy-nodes: node-1-3.sdsc.optiputer.net,node-2-3.sdsc.optiputer.net
+spec:
+  activeDeadlineSeconds: 43200
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 120
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - node-1-3.sdsc.optiputer.net
+                  - node-2-3.sdsc.optiputer.net
+  containers:
+    - name: leaf-repair-code-visibility
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-lc", "exec sleep infinity"]
+      envFrom:
+        - secretRef:
+            name: prevalence-audit-deepseek-r1
+      env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: TOKENIZERS_PARALLELISM
+          value: "false"
+        - name: KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      resources:
+        requests:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+        limits:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: shm
+          mountPath: /dev/shm
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 16Gi
