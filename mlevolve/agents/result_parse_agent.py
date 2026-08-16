@@ -1180,10 +1180,13 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                     response, parser_facts
                 )
             aligned_metric = parser_facts.get("submission_aligned_metric")
-            legacy_exact_replay = bool(
-                node.stage == "draft"
-                and node.draft_role == "memory_reproduction"
+            historical_exact_replay = bool(
+                node.draft_role == "memory_reproduction"
                 and node.replay_source
+                and (
+                    node.stage == "draft"
+                    or node.replay_source.get("exact_replay_execution") is True
+                )
             )
             if (
                 aligned_metric is not None
@@ -1192,7 +1195,7 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
             ):
                 response["metric"] = float(aligned_metric)
                 submission_alignment_status = "verified_marker"
-            elif submission_alignment_required and not legacy_exact_replay:
+            elif submission_alignment_required and not historical_exact_replay:
                 if (
                     parser_facts.get("high_confidence_metric_ambiguous")
                     and parser_facts.get("process_exited_normally")

@@ -124,6 +124,15 @@ class DraftRolePolicyConfig:
     # so exact replay must not assume that the journal lives inside the
     # currently executing checkout.
     replay_runs_root: str = ""
+    # Replay Research v2 keeps the immutable three-Draft origin policy, then
+    # schedules a bounded number of independently verified historical
+    # implementations after the exact anchor has completed.  The remaining
+    # portfolio is exposed to Strategy as method evidence rather than being
+    # silently executed.
+    replay_research_enabled: bool = False
+    replay_research_exact_budget: int = 0
+    replay_research_strategy_slots: int = 0
+    replay_research_card_max_chars: int = 12000
 
 
 @dataclass

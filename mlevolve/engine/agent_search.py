@@ -19,7 +19,7 @@ from agents import (
     draft_agent, improve_agent, debug_agent,
     evolution_agent, fusion_agent, aggregation_agent,
     code_review_agent, protocol_repair_agent,
-    result_parse_agent, agent_protocol_review_agent,
+    result_parse_agent, agent_protocol_review_agent, replay_research_agent,
 )
 from agents import protocol_repair
 from agents.atomic_actuation import verify_atomic_code_change
@@ -154,6 +154,7 @@ class AgentSearch:
         self._active_search_work = 0
         self._validate_draft_role_policy()
         self._init_mandatory_repair_scheduler()
+        self._init_replay_research_scheduler()
 
         self.next_branch_id = 1
         self.branch_all_nodes: Dict[int, List[SearchNode]] = {}
@@ -572,6 +573,103 @@ class AgentSearch:
         self._mandatory_repair_queued_ids: set[str] = set()
         self._mandatory_repair_inflight_ids: set[str] = set()
 
+    def _init_replay_research_scheduler(self) -> None:
+        """Initialize the bounded post-anchor exact-replay research queue."""
+
+        self._replay_research_lock = threading.Lock()
+        self._replay_research_queue = deque()
+        self._replay_research_results: dict[str, dict] = {}
+        self._replay_research_strategy_target_ids: list[str] = []
+        self._replay_research_portfolio_receipt: dict = {}
+        self._replay_research_claimed_ids: set[str] = set()
+
+    def register_replay_research_portfolio(self, portfolio: dict) -> None:
+        """Register verified v2 results without changing the three root Drafts."""
+
+        policy = getattr(self.acfg, "draft_role_policy", None)
+        if not bool(getattr(policy, "replay_research_enabled", False)):
+            raise ValueError(
+                "A Replay Research v2 manifest requires replay_research_enabled=true"
+            )
+        results = {
+            str(target_id): dict(replay)
+            for target_id, replay in dict(portfolio.get("results") or {}).items()
+        }
+        exact_ids = [
+            str(value) for value in (portfolio.get("exact_research_target_ids") or [])
+        ]
+        budget = max(
+            0,
+            int(getattr(policy, "replay_research_exact_budget", 0) or 0),
+        )
+        selected_exact_ids = exact_ids[:budget]
+        with self._replay_research_lock:
+            self._replay_research_results = results
+            self._replay_research_strategy_target_ids = [
+                str(value) for value in (portfolio.get("strategy_target_ids") or [])
+            ]
+            self._replay_research_portfolio_receipt = dict(
+                portfolio.get("receipt") or {}
+            )
+            self._replay_research_queue = deque(selected_exact_ids)
+            self._replay_research_claimed_ids.clear()
+        logger.info(
+            "[replay-research] registered targets=%s exact_queue=%s strategy_targets=%s",
+            len(results),
+            selected_exact_ids,
+            self._replay_research_strategy_target_ids,
+        )
+        self._notify_search_state()
+
+    def _successful_replay_anchor(self) -> SearchNode | None:
+        candidates = [
+            node
+            for node in getattr(self.journal, "nodes", [])
+            if (getattr(node, "replay_source", {}) or {}).get("target_role")
+            == "anchor"
+            and (getattr(node, "replay_source", {}) or {}).get(
+                "exact_replay_execution"
+            )
+            is True
+            and getattr(node, "pending_execution", False) is not True
+            and node.is_buggy is False
+            and node.is_valid is True
+        ]
+        return candidates[-1] if candidates else None
+
+    def _claim_replay_research_target(
+        self,
+    ) -> tuple[SearchNode, str] | None:
+        """Claim one exact target only after the historical anchor succeeds."""
+
+        anchor = self._successful_replay_anchor()
+        if anchor is None:
+            return None
+        lock = getattr(self, "_replay_research_lock", None)
+        if lock is None:
+            return None
+        with lock:
+            while self._replay_research_queue:
+                target_id = str(self._replay_research_queue.popleft())
+                if target_id in self._replay_research_claimed_ids:
+                    continue
+                if target_id not in self._replay_research_results:
+                    raise ValueError(
+                        f"Replay Research queue references unloaded target {target_id}"
+                    )
+                self._replay_research_claimed_ids.add(target_id)
+                return anchor, target_id
+        return None
+
+    def _requeue_replay_research_target(self, target_id: str) -> None:
+        lock = getattr(self, "_replay_research_lock", None)
+        if lock is None:
+            return
+        with lock:
+            self._replay_research_claimed_ids.discard(target_id)
+            self._replay_research_queue.appendleft(target_id)
+        self._notify_search_state()
+
     @staticmethod
     def _is_mandatory_repair_parent(node: SearchNode | None) -> bool:
         if node is None or node.stage == "root" or node.is_terminal:
@@ -796,6 +894,13 @@ class AgentSearch:
                 if self._mandatory_repair_queue or self._mandatory_repair_inflight_ids:
                     return True
 
+        replay_lock = getattr(self, "_replay_research_lock", None)
+        if replay_lock is not None:
+            with replay_lock:
+                replay_queue_pending = bool(self._replay_research_queue)
+            if replay_queue_pending and self._successful_replay_anchor() is not None:
+                return True
+
         active_lock = getattr(self, "_active_search_work_lock", None)
         if active_lock is None:
             return False
@@ -853,6 +958,7 @@ class AgentSearch:
         init_solution_path: Optional[str] = None,
         draft_role: Optional[str] = None,
         replacement_draft: bool = False,
+        replay_research_target_id: str | None = None,
     ):
         """Run one search step: select action (draft/debug/improve), execute, parse, validate."""
         result_node = None
@@ -860,7 +966,13 @@ class AgentSearch:
 
         if not parent_node.is_terminal:
             try:
-                if self.is_root(parent_node):
+                if replay_research_target_id:
+                    result_node = replay_research_agent.run(
+                        self,
+                        parent_node,
+                        replay_research_target_id,
+                    )
+                elif self.is_root(parent_node):
                     if replacement_draft:
                         result_node = draft_agent.run(
                             self,
@@ -1229,6 +1341,7 @@ class AgentSearch:
 
         claimed_repair_parent = None
         duplicate_repair_request = False
+        claimed_replay_research: tuple[SearchNode, str] | None = None
         # Phase 1 must still create the three declared draft roles in order.
         # Mandatory repairs take priority only once normal execution/search begins.
         preserve_explicit_runtime_debug = self._is_explicit_runtime_debug_parent(node)
@@ -1257,6 +1370,22 @@ class AgentSearch:
                 "[step] Preserving explicit runtime-debug node %s; mandatory repairs remain queued",
                 node.id,
             )
+
+        if (
+            claimed_repair_parent is None
+            and not duplicate_repair_request
+            and execute_immediately
+            and draft_role is None
+            and init_solution_path is None
+            and not preserve_explicit_runtime_debug
+        ):
+            claimed_replay_research = self._claim_replay_research_target()
+            if claimed_replay_research is not None:
+                node, target_id = claimed_replay_research
+                logger.info(
+                    "[step] Claimed post-anchor Replay Research target %s",
+                    target_id,
+                )
 
         replacement_draft = False
         if not node or node.stage == "root":
@@ -1295,12 +1424,21 @@ class AgentSearch:
                     init_solution_path=init_solution_path,
                     draft_role=draft_role,
                     replacement_draft=replacement_draft,
+                    replay_research_target_id=(
+                        claimed_replay_research[1]
+                        if claimed_replay_research is not None
+                        else None
+                    ),
                 )
             except Exception:
                 if claimed_repair_parent is not None:
                     self._release_mandatory_repair_parent(
                         claimed_repair_parent,
                         retry=not claimed_repair_parent.is_terminal,
+                    )
+                if claimed_replay_research is not None:
+                    self._requeue_replay_research_target(
+                        claimed_replay_research[1]
                     )
                 raise
             else:

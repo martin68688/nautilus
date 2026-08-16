@@ -1103,10 +1103,18 @@ def build_strategy_evidence_view(
     """
 
     max_items = max(1, int(max_items))
+    from agents.memory.run_forest_replay import replay_research_strategy_cards
+
+    replay_cards = replay_research_strategy_cards(agent)
+    if len(replay_cards) > max_items:
+        replay_cards = replay_cards[:max_items]
     current_cards, missing_roles = _select_current_branch_frontier(
         agent,
         parent_node,
-        limit=min(max_items, max(0, int(current_frontier_slots))),
+        limit=min(
+            max(0, max_items - len(replay_cards)),
+            max(0, int(current_frontier_slots)),
+        ),
     )
     selected_node_ids = {
         str(card.get("memory_id") or "").removeprefix("current::")
@@ -1117,7 +1125,7 @@ def build_strategy_evidence_view(
         parent_node,
         exclude_node_ids=selected_node_ids,
         limit=min(
-            max(0, max_items - len(current_cards)),
+            max(0, max_items - len(current_cards) - len(replay_cards)),
             max(0, int(causal_failure_slots)),
         ),
     )
@@ -1126,7 +1134,10 @@ def build_strategy_evidence_view(
         max_cards=max(max_items, int(candidate_pool_limit)),
         card_max_chars=card_max_chars,
     )
-    historical_limit = max(0, max_items - len(current_cards) - len(failure_cards))
+    historical_limit = max(
+        0,
+        max_items - len(current_cards) - len(replay_cards) - len(failure_cards),
+    )
     historical_cards, rejected = _select_historical_frontier(
         agent,
         parent_node,
@@ -1134,7 +1145,7 @@ def build_strategy_evidence_view(
         limit=historical_limit,
         exclude_node_ids=selected_node_ids,
     )
-    cards = current_cards + failure_cards + historical_cards
+    cards = current_cards + replay_cards + failure_cards + historical_cards
     for rank, card in enumerate(cards, start=1):
         card["strategy_evidence_rank"] = rank
     selection = {
@@ -1145,6 +1156,9 @@ def build_strategy_evidence_view(
         "selected_memory_ids": [str(card.get("memory_id") or "") for card in cards],
         "current_branch_frontier_ids": [
             str(card.get("memory_id") or "") for card in current_cards
+        ],
+        "replay_research_portfolio_ids": [
+            str(card.get("memory_id") or "") for card in replay_cards
         ],
         "causal_failure_ids": [
             str(card.get("memory_id") or "") for card in failure_cards
@@ -1171,10 +1185,9 @@ def build_strategy_evidence_view(
             "cross-protocol, protocol-unknown, and metric-free cards are method evidence only"
         ),
         "policy": (
-            "one best valid node per configured draft role, then one recent causal "
-            "failure, then same-task metric-ranked historical nodes followed by "
-            "Router-ranked metric-free method evidence, all deduplicated by component "
-            "lineage; no cross-protocol numeric blending"
+            "one best valid node per configured draft role, then a bounded verified "
+            "Replay Research portfolio, one recent causal failure, and same-task "
+            "Router evidence; no cross-protocol numeric blending"
         ),
     }
     return cards, selection
@@ -1296,6 +1309,26 @@ def build_strategy_context(
             ),
         },
         "strategy_evidence_selection": evidence_selection,
+        "replay_research": {
+            "enabled": bool(
+                evidence_selection.get("replay_research_portfolio_ids")
+            ),
+            "portfolio_receipt": copy.deepcopy(
+                getattr(agent, "_replay_research_portfolio_receipt", {}) or {}
+            ),
+            "allowed_actions": [
+                "replay_exact_diverse",
+                "replay_prediction_fusion",
+                "replay_component_transplant",
+                "replay_ablation",
+            ],
+            "fusion_weight_policy": (
+                "fixed weights or training-only OOF weights; hidden terminal labels forbidden"
+            ),
+            "component_transplant_policy": (
+                "one bounded component/interface change with all other parent components frozen"
+            ),
+        },
         "router": {
             "pack_schema": str((router_pack or {}).get("schema") or ""),
             "stage_route": copy.deepcopy((router_pack or {}).get("stage_route") or {}),
@@ -1387,7 +1420,14 @@ def _strategy_prompt(
         "calibration, compute, and failure components. A full-pipeline score is not an ablation: "
         "The memory_cards list is the complete citable evidence set and is capped across all "
         "sources. Treat current_branch_frontier, causal_failure_evidence, and "
-        "historical_diverse_frontier as distinct evidence classes. Compare numeric metrics only "
+        "historical_diverse_frontier as distinct evidence classes. Cards marked "
+        "replay_research_portfolio are hash-bound Top-K method sources: exact replay may use "
+        "only exact_replay_eligible cards; reference-only cards may inform a repair or component "
+        "hypothesis but cannot be silently executed as clean code. For Replay Research, include "
+        "an individually reproducible frontier alternative, a prediction-level fusion or other "
+        "cross-lineage composition citing at least two portfolio IDs, and a one-component "
+        "transplant or ablation. Fusion weights must be fixed or learned from training-only OOF "
+        "predictions; hidden terminal labels are forbidden. Compare numeric metrics only "
         "when their task and validation protocol are compatible; an unverified historical score "
         "is evidence about a method, not proof that it beats a current branch. "
         "do not discard one component solely because the pipeline containing it scored poorly. "

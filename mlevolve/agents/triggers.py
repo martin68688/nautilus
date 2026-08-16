@@ -13,6 +13,8 @@ logger = logging.getLogger("MLEvolve")
 _EXACT_REPLAY_STATUSES = {
     "exact_source_loaded",
     "exact_source_loaded_fixed_holdout",
+    "historical_exact_anchor_loaded",
+    "historical_exact_research_loaded",
 }
 
 

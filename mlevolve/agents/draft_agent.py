@@ -58,14 +58,27 @@ def run(
 
     if draft_role == "memory_reproduction":
         from agents.adoption import log_adoption
-        from agents.memory.run_forest_replay import load_exact_replay
+        from agents.memory.run_forest_replay import load_replay_research_portfolio
 
         _record_draft_router_abstention(
             agent,
             draft_role,
             "draft_origin_policy_uses_exact_code_replay_not_router_prompt",
         )
-        replay = load_exact_replay(agent)
+        replay_portfolio = load_replay_research_portfolio(agent)
+        replay = replay_portfolio["anchor"]
+        if replay_portfolio.get("schema") != "run-forest-replay-targets-v1":
+            replay["replay_source"]["research_portfolio"] = replay_portfolio[
+                "receipt"
+            ]
+            register_portfolio = getattr(
+                agent, "register_replay_research_portfolio", None
+            )
+            if not callable(register_portfolio):
+                raise ValueError(
+                    "Replay Research v2 requires AgentSearch portfolio scheduling"
+                )
+            register_portfolio(replay_portfolio)
         agent.virtual_root.add_expected_child_count()
         new_node = SearchNode(
             plan=replay["plan"],

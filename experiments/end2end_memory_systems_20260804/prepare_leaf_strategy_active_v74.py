@@ -142,6 +142,14 @@ def main() -> int:
         default="leaf_official_smoke_manifest.json",
     )
     parser.add_argument(
+        "--replay-targets-source",
+        default="",
+        help=(
+            "Optional path below experiments/end2end_memory_systems_20260804 "
+            "to a replacement replay manifest embedded by the release overlay"
+        ),
+    )
+    parser.add_argument(
         "--release-slug", default="leaf-strategy-active-runtimefix"
     )
     parser.add_argument(
@@ -231,7 +239,14 @@ def main() -> int:
     _six_hour_smoke_budget(budget)
     write_object(budget_path, budget)
 
-    replay_source = source_manifests / "leaf_official_replay_targets.json"
+    replay_source = (
+        exp_root / str(args.replay_targets_source)
+        if str(args.replay_targets_source or "").strip()
+        else source_manifests / "leaf_official_replay_targets.json"
+    )
+    replay_source = replay_source.resolve(strict=True)
+    if not replay_source.is_relative_to(exp_root.resolve()):
+        raise ValueError("replay-targets-source must remain inside the release experiment root")
     replay_target = manifests / "leaf_official_replay_targets.json"
     shutil.copy2(replay_source, replay_target)
 
