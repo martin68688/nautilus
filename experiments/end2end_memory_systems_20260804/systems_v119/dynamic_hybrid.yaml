@@ -1,0 +1,13 @@
+# v119 separates exact repair-code visibility from metric evidence authority.
+extends: ../systems_v118/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v119-runtime/experiments/end2end_memory_systems_20260804/manifests_v119/leaf_official_replay_targets.json
+
+external_skill_memory:
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v119-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v119/transition_evidence_capsules.json
+  transition_evidence_capsules_sha256: ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559
+
+run_identity:
+  memory_version: leaf_exact_repair_code_visibility_v119

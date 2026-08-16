@@ -439,22 +439,36 @@ class TransitionEvidenceResolver:
             atomic_id = candidate_id.replace(
                 "repair-claim::", "atomic-transition::", 1
             )
-            refs = [
-                str(value)
-                for value in (
-                    row.get("clean_supporting_transition_ids")
-                    or graph_node.get("supporting_transition_ids")
-                    or []
-                )
-            ]
-            refs.extend(
-                str(value) for value in active_transitions_for_sop(candidate_id)
+            atomic = self._graph_nodes.get(atomic_id)
+            atomic = atomic if isinstance(atomic, Mapping) else {}
+            claim = atomic.get("atomic_repair_claim")
+            claim = claim if isinstance(claim, Mapping) else {}
+            source_transition_id = str(claim.get("source_transition_id") or "")
+            source = self._graph_nodes.get(source_transition_id)
+            exact_binding = bool(
+                atomic.get("type") == "Transition"
+                and str(atomic.get("task") or "") == self.task_id
+                and str(claim.get("task_id") or "") == self.task_id
+                and isinstance(source, Mapping)
+                and source.get("type") == "Transition"
+                and str(source.get("task") or "") == self.task_id
+                and str(claim.get("source_parent_node_id") or "")
+                == str(source.get("parent_node_id") or "")
+                and str(claim.get("source_child_node_id") or "")
+                == str(source.get("child_node_id") or "")
+                and str(atomic.get("parent_node_id") or "")
+                == str(source.get("parent_node_id") or "")
+                and str(atomic.get("child_node_id") or "")
+                == str(source.get("child_node_id") or "")
             )
-            if not refs and atomic_id in self._graph_nodes:
-                refs.append(atomic_id)
+            # A repair-claim is a compact alias.  Its exact atomic node already
+            # carries the authoritative pointer to the historical executable
+            # transition.  Follow that pointer before considering the atomic
+            # metadata node itself; no semantic or title matching is involved.
+            refs = [source_transition_id] if exact_binding else [atomic_id]
             return (
                 "selected_repair_claim_alias_to_source_transition",
-                list(dict.fromkeys(refs)),
+                refs,
             )
         if node_type == "Transition":
             return "selected_transition", [candidate_id]
@@ -510,12 +524,18 @@ class TransitionEvidenceResolver:
         after_sha = str(transition["after_code_sha256"])
         before_code = self._code_by_sha[before_sha]
         after_code = self._code_by_sha[after_sha]
+        evidence_class = str(transition["evidence_class"])
         return {
             "candidate_id": candidate_id,
             "candidate_source": candidate_source,
             "resolved_transition_id": str(transition["transition_id"]),
             "resolution_path": resolution_path,
-            "evidence_class": str(transition["evidence_class"]),
+            "evidence_class": evidence_class,
+            "source_evidence_class": evidence_class,
+            "metric_authority": evidence_class,
+            "metric_authorized": evidence_class
+            in {"official_observed", "strict_internal_observed"},
+            "code_visibility": "full_transition_code",
             "outcome": str(transition["outcome"]),
             "parent_node_id": parent_id,
             "child_node_id": child_id,
@@ -535,6 +555,133 @@ class TransitionEvidenceResolver:
             ),
             "before_code": before_code,
             "after_code": after_code,
+        }
+
+    @staticmethod
+    def _as_debug_repair_reference(opened: Mapping[str, Any]) -> dict[str, Any]:
+        """Expose Debug code in Improve without upgrading its metric claim."""
+
+        result = dict(opened)
+        result["source_evidence_class"] = str(
+            result.get("source_evidence_class")
+            or result.get("evidence_class")
+            or ""
+        )
+        result["evidence_class"] = "debug_repair_reference"
+        result["metric_authority"] = "reference_only"
+        result["metric_authorized"] = False
+        result["metric_improvement"] = None
+        return result
+
+    def _open_structured_repair_reference(
+        self,
+        *,
+        candidate_id: str,
+        candidate_source: str,
+        resolution_path: str,
+    ) -> dict[str, Any] | None:
+        """Open an exact atomic repair diff when its full program is unavailable.
+
+        This is deliberately narrower than opening the historical program.  It
+        exposes only the independently bound repair action and before/after
+        symbols from the hash-bound graph, so a quarantined surrounding program
+        cannot leak into Strategy.  It never carries metric authority.
+        """
+
+        if not candidate_id.startswith("repair-claim::"):
+            return None
+        atomic_id = candidate_id.replace(
+            "repair-claim::", "atomic-transition::", 1
+        )
+        atomic = self._graph_nodes.get(atomic_id)
+        if not isinstance(atomic, Mapping) or atomic.get("type") != "Transition":
+            return None
+        if str(atomic.get("task") or "") != self.task_id:
+            return None
+        claim = atomic.get("atomic_repair_claim")
+        if not isinstance(claim, Mapping):
+            return None
+        verification = claim.get("verification")
+        verification = verification if isinstance(verification, Mapping) else {}
+        source_transition_id = str(claim.get("source_transition_id") or "")
+        source = self._graph_nodes.get(source_transition_id)
+        if not isinstance(source, Mapping) or source.get("type") != "Transition":
+            return None
+        parent_id = str(source.get("parent_node_id") or "")
+        child_id = str(source.get("child_node_id") or "")
+        parent = self._graph_nodes.get(parent_id)
+        child = self._graph_nodes.get(child_id)
+        before_sha = str(verification.get("before_code_sha256") or "")
+        after_sha = str(verification.get("after_code_sha256") or "")
+        required_flags = (
+            "claim_scope_independently_audited",
+            "observed_child_execution_success",
+            "observed_parent_failure",
+            "repair_action_bound_to_transition",
+        )
+        if (
+            str(claim.get("schema") or "")
+            != "mlevolve_atomic_memory_claim_v1"
+            or str(claim.get("claim_status") or "") != "authorized_debug_only"
+            or str(claim.get("task_id") or "") != self.task_id
+            or str(claim.get("outcome") or "") != "debug_fixed"
+            or str(source.get("outcome") or "") != "debug_fixed"
+            or str(claim.get("source_parent_node_id") or "") != parent_id
+            or str(claim.get("source_child_node_id") or "") != child_id
+            or not isinstance(parent, Mapping)
+            or not isinstance(child, Mapping)
+            or before_sha != str(parent.get("code_sha256") or "")
+            or after_sha != str(child.get("code_sha256") or "")
+            or any(verification.get(flag) is not True for flag in required_flags)
+        ):
+            return None
+        before_after = [
+            dict(row)
+            for row in claim.get("before_after") or []
+            if isinstance(row, Mapping)
+            and str(row.get("before") or "")
+            and str(row.get("after") or "")
+        ]
+        repair_action = str(claim.get("repair_action") or "").strip()
+        if not before_after and not repair_action:
+            return None
+        repair_diff = "\n".join(
+            line
+            for row in before_after
+            for line in (
+                f"- {str(row.get('symbol') or 'value')}: {row['before']}",
+                f"+ {str(row.get('symbol') or 'value')}: {row['after']}",
+            )
+        )
+        if not repair_diff:
+            repair_diff = repair_action
+        return {
+            "candidate_id": candidate_id,
+            "candidate_source": candidate_source,
+            "resolved_transition_id": source_transition_id,
+            "atomic_transition_id": atomic_id,
+            "resolution_path": resolution_path,
+            "evidence_class": "debug_repair_reference",
+            "source_evidence_class": "authorized_debug_only",
+            "metric_authority": "reference_only",
+            "metric_authorized": False,
+            "code_visibility": "verified_repair_diff",
+            "outcome": "debug_fixed",
+            "parent_node_id": parent_id,
+            "child_node_id": child_id,
+            "before_code_sha256": before_sha,
+            "after_code_sha256": after_sha,
+            "parent_metric": source.get("parent_metric"),
+            "child_metric": source.get("child_metric"),
+            "metric_improvement": None,
+            "metric_provenance": None,
+            "stage_pair": source.get("stage_pair"),
+            "repair_action": repair_action,
+            "repair_diff": repair_diff,
+            "before_after": before_after,
+            "failure_signature": copy.deepcopy(
+                claim.get("failure_signature") or {}
+            ),
         }
 
     def resolve(
@@ -586,7 +733,52 @@ class TransitionEvidenceResolver:
                     ),
                     None,
                 )
+                reference_only = False
+                if chosen is None and stage == "improve" and path == (
+                    "selected_repair_claim_alias_to_source_transition"
+                ):
+                    debug_references = [
+                        self._transition_by_id[transition_id]
+                        for transition_id in transition_ids
+                        if transition_id in self._transition_by_id
+                        and self._transition_by_id[transition_id]["outcome"]
+                        == "debug_fixed"
+                    ]
+                    debug_references.sort(
+                        key=lambda item: self._priority(item, "debug")
+                    )
+                    chosen = next(
+                        (
+                            item
+                            for item in debug_references
+                            if str(item["pair_key"]) not in opened_pairs
+                        ),
+                        None,
+                    )
+                    reference_only = chosen is not None
+                structured_reference = None
+                if chosen is None and path == (
+                    "selected_repair_claim_alias_to_source_transition"
+                ):
+                    structured_reference = self._open_structured_repair_reference(
+                        candidate_id=candidate_id,
+                        candidate_source=str(row.get("source") or ""),
+                        resolution_path=path,
+                    )
                 if chosen is None:
+                    if structured_reference is not None:
+                        structured_pair = _pair_key(
+                            "debug_repair_reference",
+                            str(structured_reference["before_code_sha256"]),
+                            str(structured_reference["after_code_sha256"]),
+                        )
+                        if (
+                            len(resolved) < self.max_pairs
+                            and structured_pair not in opened_pairs
+                        ):
+                            opened_pairs.add(structured_pair)
+                            resolved.append(structured_reference)
+                            continue
                     unresolved.append(
                         {
                             "candidate_id": candidate_id,
@@ -611,14 +803,17 @@ class TransitionEvidenceResolver:
                     )
                     continue
                 opened_pairs.add(str(chosen["pair_key"]))
-                resolved.append(
-                    self._open(
-                        chosen,
-                        candidate_id=candidate_id,
-                        candidate_source=str(row.get("source") or ""),
-                        resolution_path=path,
-                    )
+                opened = self._open(
+                    chosen,
+                    candidate_id=candidate_id,
+                    candidate_source=str(row.get("source") or ""),
+                    resolution_path=path,
                 )
+                if reference_only or str(chosen.get("outcome") or "") == (
+                    "debug_fixed"
+                ):
+                    opened = self._as_debug_repair_reference(opened)
+                resolved.append(opened)
 
         receipt: dict[str, Any] = {
             "schema": RECEIPT_SCHEMA,

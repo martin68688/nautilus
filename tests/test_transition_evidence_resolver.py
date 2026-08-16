@@ -249,6 +249,11 @@ def _materialized_fixture(tmp_path: Path):
                     "observed_parent_failure": True,
                     "repair_action_bound_to_transition": True,
                 },
+                "repair_action": "Replace the crashing denominator with a safe value.",
+                "before_after": [
+                    {"symbol": "train", "before": "return 1 / 0", "after": "return 1"}
+                ],
+                "failure_signature": {"exception_names": ["ZeroDivisionError"]},
             },
         }
     )
@@ -490,6 +495,9 @@ def test_resolver_bridges_atomic_and_repair_claim_aliases_without_stage_leakage(
     assert repair_receipt["opened_evidence"][0]["resolution_path"] == (
         "selected_repair_claim_alias_to_source_transition"
     )
+    assert repair_receipt["opened_evidence"][0]["evidence_class"] == (
+        "debug_repair_reference"
+    )
 
     improve_receipt = resolver.resolve(
         selected_items=[{"id": repair_id, "source": "sop"}],
@@ -497,14 +505,15 @@ def test_resolver_bridges_atomic_and_repair_claim_aliases_without_stage_leakage(
         task_id="leaf-classification",
         active_transitions_for_sop=lambda _sop_id: [],
     )
-    assert improve_receipt["status"] == "unresolved"
-    assert improve_receipt["opened_transition_ids"] == []
-    assert improve_receipt["unresolved"][0]["resolution_path"] == (
-        "selected_repair_claim_alias_to_source_transition"
-    )
-    assert improve_receipt["unresolved"][0]["reason"] == (
-        "no_stage_compatible_materialized_transition"
-    )
+    assert improve_receipt["status"] == "resolved"
+    assert improve_receipt["opened_transition_ids"] == [source_transition_id]
+    opened = improve_receipt["opened_evidence"][0]
+    assert opened["evidence_class"] == "debug_repair_reference"
+    assert opened["source_evidence_class"] == "strict_debug_observed"
+    assert opened["metric_authority"] == "reference_only"
+    assert opened["metric_authorized"] is False
+    assert opened["code_visibility"] == "full_transition_code"
+    assert "return 1" in opened["after_code"]
 
 
 def test_resolver_preserves_unavailable_atomic_alias_identity_without_sop_fallback(
@@ -558,15 +567,96 @@ def test_resolver_preserves_unavailable_atomic_alias_identity_without_sop_fallba
         task_id="leaf-classification",
         active_transitions_for_sop=lambda _sop_id: [atomic_id],
     )
-    assert repair_receipt["status"] == "unresolved"
-    assert repair_receipt["unresolved"] == [
-        {
-            "candidate_id": repair_id,
-            "resolution_path": "selected_repair_claim_alias_to_source_transition",
-            "reason": "no_stage_compatible_materialized_transition",
-            "candidate_transition_ids": [atomic_id],
-        }
+    assert repair_receipt["status"] == "resolved"
+    assert repair_receipt["opened_transition_ids"] == [
+        next(
+            row["atomic_repair_claim"]["source_transition_id"]
+            for row in nodes.values()
+            if row.get("id") == atomic_id
+        )
     ]
+    opened = repair_receipt["opened_evidence"][0]
+    assert opened["evidence_class"] == "debug_repair_reference"
+    assert opened["metric_authority"] == "reference_only"
+    assert opened["code_visibility"] == "full_transition_code"
+
+
+def test_resolver_exposes_verified_repair_diff_when_full_program_is_unavailable(
+    tmp_path,
+):
+    from agents.memory_strategy_agent import build_memory_cards
+    from agents.memory.evidence_resolver import TransitionEvidenceResolver
+    from experiments.end2end_memory_systems_20260804.build_transition_evidence_capsules import (
+        _pair_rows,
+        _payload_hash,
+    )
+
+    _resolver_instance, payload, _capsule, graph_path, nodes, transition_ids, _ = (
+        _resolver(tmp_path)
+    )
+    source_transition_id = transition_ids["debug-run"]
+    source_row = next(
+        row for row in payload["transitions"]
+        if row["transition_id"] == source_transition_id
+    )
+    endpoint_ids = {source_row["parent_node_id"], source_row["child_node_id"]}
+    endpoint_shas = {
+        source_row["before_code_sha256"],
+        source_row["after_code_sha256"],
+    }
+    restricted = copy.deepcopy(payload)
+    restricted["candidate_aliases"] = []
+    restricted["candidate_alias_count"] = 0
+    restricted["materialized_candidate_alias_count"] = 0
+    restricted["transitions"] = [
+        row for row in restricted["transitions"]
+        if row["transition_id"] != source_transition_id
+    ]
+    restricted["nodes"] = [
+        row for row in restricted["nodes"] if row["node_id"] not in endpoint_ids
+    ]
+    restricted["code_blobs"] = [
+        row for row in restricted["code_blobs"]
+        if row["code_sha256"] not in endpoint_shas
+    ]
+    restricted["pairs"] = _pair_rows(restricted["transitions"])
+    restricted["capsule_sha256"] = _payload_hash(
+        restricted, "capsule_sha256"
+    )
+    capsule_path = tmp_path / "transition-evidence-repair-diff-only.json"
+    _write(capsule_path, restricted)
+    resolver = TransitionEvidenceResolver(
+        capsule_path=capsule_path,
+        expected_file_sha256=_sha_file(capsule_path),
+        graph_path=graph_path,
+        graph_nodes=nodes,
+    )
+    repair_id = "repair-claim::leaf-classification::fixture-debug"
+    receipt = resolver.resolve(
+        selected_items=[{"id": repair_id, "source": "sop"}],
+        stage="improve",
+        task_id="leaf-classification",
+        active_transitions_for_sop=lambda _sop_id: [],
+    )
+    assert receipt["status"] == "resolved"
+    assert receipt["opened_transition_ids"] == [source_transition_id]
+    opened = receipt["opened_evidence"][0]
+    assert opened["evidence_class"] == "debug_repair_reference"
+    assert opened["metric_authority"] == "reference_only"
+    assert opened["code_visibility"] == "verified_repair_diff"
+    assert "- train: return 1 / 0" in opened["repair_diff"]
+    assert "+ train: return 1" in opened["repair_diff"]
+    assert "before_code" not in opened
+    assert "after_code" not in opened
+    cards = build_memory_cards(
+        {"resolved_evidence": receipt["opened_evidence"]},
+        max_cards=1,
+        card_max_chars=10000,
+    )
+    assert cards[0]["router_visibility"] == "resolved_evidence"
+    assert cards[0]["evidence_class"] == "debug_repair_reference"
+    assert cards[0]["metric_authority"] == "reference_only"
+    assert "+ train: return 1" in cards[0]["repair_diff"]
 
 
 def test_resolver_rejects_payload_or_graph_identity_mismatch(tmp_path):
