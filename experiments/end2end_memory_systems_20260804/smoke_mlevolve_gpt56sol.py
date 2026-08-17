@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import time
 from pathlib import Path
 from urllib.parse import urlparse
@@ -73,7 +74,7 @@ def main() -> int:
     ).strip()
     if structured != {"ok": True}:
         raise RuntimeError(f"unexpected structured response: {structured!r}")
-    if streamed != "FRAMEWORK_STREAM_OK":
+    if re.fullmatch(r"FRAMEWORK_STREAM_OK[.!]?", streamed) is None:
         raise RuntimeError(f"unexpected streaming response: {streamed!r}")
 
     endpoint = urlparse(str(code.base_url))
