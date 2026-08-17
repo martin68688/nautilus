@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-leaf-replay-gpt56sol-a100-dev-v127
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-memory-agent-v127
+    mlevolve.ai/workload: leaf-replay-gpt56sol-v127
+    task: leaf-classification
+  annotations:
+    mlevolve.ai/purpose: leaf-replay-research-official-gpt56sol-16-step-online-smoke
+    mlevolve.ai/source-git-head: 6b9a4cba8b4b51003d55f5305d07ee8b5d291cc4
+    mlevolve.ai/base-runtime-transport-sha256: a062cb1c914b4e8ad6eb33dff5f5da711200d7bc49265e827a855437a7f8fa00
+    mlevolve.ai/runtime-overlay-sha256: f24a83b682304a0fea0d4db0d072c35febfb32da77285646bcd94bb0068c486f
+    mlevolve.ai/replay-targets-sha256: 69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4
+    mlevolve.ai/transition-capsule-sha256: ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559
+    mlevolve.ai/credential-secret: mlevolve-openai-gpt56sol-v1
+spec:
+  activeDeadlineSeconds: 21600
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 120
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - node-1-3.sdsc.optiputer.net
+                  - node-2-3.sdsc.optiputer.net
+  initContainers:
+    - name: assemble-v122-base-runtime
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command:
+        - /bin/bash
+        - -lc
+        - |
+          set -euo pipefail
+          archive=/tmp/leaf-v122-runtime-transport.tar.gz
+          find /transport -type f -name 'chunk-*' -print0 | sort -z | xargs -0 cat > "${archive}"
+          echo 'a062cb1c914b4e8ad6eb33dff5f5da711200d7bc49265e827a855437a7f8fa00  /tmp/leaf-v122-runtime-transport.tar.gz' | sha256sum -c -
+          tar -xzf "${archive}" -C /runtime
+          echo '69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4  /runtime/experiments/end2end_memory_systems_20260804/manifests_v122/leaf_official_replay_targets.json' | sha256sum -c -
+          echo 'ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559  /runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v122/transition_evidence_capsules.json' | sha256sum -c -
+      resources:
+        requests:
+          cpu: "1"
+          memory: 1Gi
+        limits:
+          cpu: "1"
+          memory: 1Gi
+      volumeMounts:
+        - name: runtime
+          mountPath: /runtime
+        - name: transport-chunks
+          mountPath: /transport
+          readOnly: true
+  containers:
+    - name: leaf-replay-gpt56sol
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-lc", "exec sleep infinity"]
+      envFrom:
+        - secretRef:
+            name: mlevolve-openai-gpt56sol-v1
+      env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: TOKENIZERS_PARALLELISM
+          value: "false"
+        - name: KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      resources:
+        requests:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+        limits:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: runtime
+          mountPath: /tmp/nautilus-exp-end2end-agent-v127-runtime
+        - name: shm
+          mountPath: /dev/shm
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: runtime
+      emptyDir: {}
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 16Gi
+    - name: transport-chunks
+      projected:
+        sources:
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-000, items: [{key: chunk, path: chunk-000}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-001, items: [{key: chunk, path: chunk-001}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-002, items: [{key: chunk, path: chunk-002}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-003, items: [{key: chunk, path: chunk-003}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-004, items: [{key: chunk, path: chunk-004}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-005, items: [{key: chunk, path: chunk-005}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-006, items: [{key: chunk, path: chunk-006}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-007, items: [{key: chunk, path: chunk-007}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-008, items: [{key: chunk, path: chunk-008}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-009, items: [{key: chunk, path: chunk-009}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-010, items: [{key: chunk, path: chunk-010}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-011, items: [{key: chunk, path: chunk-011}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-012, items: [{key: chunk, path: chunk-012}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-013, items: [{key: chunk, path: chunk-013}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-014, items: [{key: chunk, path: chunk-014}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-015, items: [{key: chunk, path: chunk-015}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-016, items: [{key: chunk, path: chunk-016}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-017, items: [{key: chunk, path: chunk-017}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-018, items: [{key: chunk, path: chunk-018}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-019, items: [{key: chunk, path: chunk-019}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-020, items: [{key: chunk, path: chunk-020}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-021, items: [{key: chunk, path: chunk-021}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-022, items: [{key: chunk, path: chunk-022}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-023, items: [{key: chunk, path: chunk-023}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-024, items: [{key: chunk, path: chunk-024}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-025, items: [{key: chunk, path: chunk-025}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-026, items: [{key: chunk, path: chunk-026}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-027, items: [{key: chunk, path: chunk-027}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-028, items: [{key: chunk, path: chunk-028}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-029, items: [{key: chunk, path: chunk-029}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-030, items: [{key: chunk, path: chunk-030}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-031, items: [{key: chunk, path: chunk-031}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-032, items: [{key: chunk, path: chunk-032}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-033, items: [{key: chunk, path: chunk-033}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-034, items: [{key: chunk, path: chunk-034}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-035, items: [{key: chunk, path: chunk-035}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-036, items: [{key: chunk, path: chunk-036}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-037, items: [{key: chunk, path: chunk-037}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-038, items: [{key: chunk, path: chunk-038}]}
+          - configMap: {name: mlevolve-e2e-leaf-v122-runtime-039, items: [{key: chunk, path: chunk-039}]}
