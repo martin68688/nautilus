@@ -30,7 +30,12 @@ fixed_holdout:
   preflight_validate_train_view: True
   internal_metric_disposition: search_only
 
-# Optional native official-test mode.  The task release supplies the complete
+# Optional native official-test mode.  Keep this project-wide default disabled:
+# task-specific releases must opt in explicitly.  Future Leaf releases merge
+# `config_leaf_official.yaml`, which disables fixed_holdout and binds the full
+# 594-row Kaggle test/sample-submission contract.
+#
+# The task release supplies the complete
 # public train/test files plus a frozen sample_submission.csv.  Every candidate
 # must generate its official-test predictions during its original execution;
 # the Host validates and hashes them, then freezes only the internally selected

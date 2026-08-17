@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-e2e-leaf-official-top10-a100-dev-v123
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-leaf-official-top10-v123
+    mlevolve.ai/workload: leaf-official-top10-v123
+    task: leaf-classification
+  annotations:
+    mlevolve.ai/purpose: inspect-latest-candidates-and-validate-official-top10-reproduction
+    mlevolve.ai/source-git-head: 7e06f846931ebb341cb7c9af53675ccce56e4be3
+    mlevolve.ai/source-branch: codex/leaf-official-top10-v123
+    mlevolve.ai/output-root: /workspace/experiment-end2end-leaf-official-top10-v123
+    mlevolve.ai/credential-boundary: kaggle-credentials-remain-local
+spec:
+  activeDeadlineSeconds: 21600
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 120
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - node-1-3.sdsc.optiputer.net
+                  - node-2-3.sdsc.optiputer.net
+  containers:
+    - name: official-top10-dev
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-lc", "exec sleep infinity"]
+      env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: TOKENIZERS_PARALLELISM
+          value: "false"
+        - name: HF_HOME
+          value: /workspace/huggingface
+        - name: HUGGINGFACE_HUB_CACHE
+          value: /workspace/huggingface/hub
+        - name: TRANSFORMERS_CACHE
+          value: /workspace/huggingface/hub
+        - name: TORCH_HOME
+          value: /workspace/huggingface/torch
+        - name: KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      resources:
+        requests:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+        limits:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: shm
+          mountPath: /dev/shm
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 16Gi
