@@ -28,6 +28,7 @@ def overlay_files(release_version: int) -> tuple[Path, ...]:
         EXPERIMENT / f"systems_v{release_version}/dynamic_hybrid.yaml",
         Path("mlevolve/analysis/adoption_tracker.py"),
         Path("mlevolve/analysis/adoption_verifier_smoke.py"),
+        Path("mlevolve/agents/atomic_actuation.py"),
         Path("mlevolve/config/__init__.py"),
         Path("mlevolve/config/config.yaml"),
         Path("mlevolve/config/config_leaf_official.yaml"),

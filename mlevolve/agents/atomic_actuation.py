@@ -2203,12 +2203,54 @@ def _run_staged_atomic_actuation_pipeline(
             "plan_diff_verdict": {"valid": False},
         }
         failed_phase_index = -1
+        structural_phase_failure = False
         if planner_trace.get("status") == "accepted":
             for index, raw_phase in enumerate(phases):
-                phase = copy.deepcopy(dict(raw_phase))
                 before_sha = hashlib.sha256(
                     cumulative_code.encode("utf-8")
                 ).hexdigest()
+                if not isinstance(raw_phase, Mapping):
+                    reason = f"staged planner phases[{index}] is not an object"
+                    final_coder = {
+                        "schema": "mlevolve_atomic_coder_trace_v1",
+                        "status": "rejected",
+                        "reason": reason,
+                        "candidate_code": "",
+                        "plan_diff_verdict": {
+                            "valid": False,
+                            "violations": [reason],
+                        },
+                    }
+                    phase_planner_trace = {
+                        "schema": "mlevolve_atomic_phase_planner_trace_v1",
+                        "status": "rejected",
+                        "roadmap_id": str(roadmap.get("roadmap_id") or ""),
+                        "roadmap_sha256": payload_sha256(roadmap),
+                        "phase_index": index + 1,
+                        "phase_count": len(phases),
+                        "parent_code_sha256": before_sha,
+                        "plan": {},
+                        "plan_sha256": "",
+                        "structural_error": reason,
+                        "raw_phase_type": type(raw_phase).__name__,
+                    }
+                    phase_traces.append(
+                        {
+                            "phase_index": index + 1,
+                            "phase_id": "",
+                            "status": "rejected",
+                            "hypothesis_id": "",
+                            "source_memory_ids": [],
+                            "input_code_sha256": before_sha,
+                            "output_code_sha256": "",
+                            "planner": phase_planner_trace,
+                            "coder": copy.deepcopy(final_coder),
+                        }
+                    )
+                    failed_phase_index = index
+                    structural_phase_failure = True
+                    break
+                phase = copy.deepcopy(dict(raw_phase))
                 phase_planner_trace = {
                     "schema": "mlevolve_atomic_phase_planner_trace_v1",
                     "status": "accepted",
@@ -2274,6 +2316,11 @@ def _run_staged_atomic_actuation_pipeline(
             }
         )
         if full_roadmap_applied:
+            break
+        if structural_phase_failure:
+            # Mechanical-only verification intentionally skips the semantic
+            # roadmap contract. A malformed phase must still fail closed, and
+            # cannot safely seed a Coder-feedback replan as a prior plan.
             break
         if planner_trace.get("status") != "accepted" or failed_phase_index < 0:
             break

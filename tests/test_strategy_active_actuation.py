@@ -833,6 +833,41 @@ def test_mechanical_only_staged_pipeline_bypasses_planner_contract_gate():
     assert "return 2" in result["coder"]["candidate_code"]
 
 
+def test_mechanical_only_staged_pipeline_rejects_non_mapping_phase():
+    agent = _agent()
+    ext = agent.cfg.external_skill_memory
+    ext.memory_strategy_atomic_staged_enabled = True
+    ext.memory_strategy_atomic_strict_coder_enabled = True
+    ext.memory_strategy_atomic_verifier_mode = "mechanical_only"
+    ext.memory_strategy_atomic_coder_replan_attempts = 1
+    ext.memory_strategy_atomic_planner_contract_retries = 0
+
+    roadmap = _staged_roadmap(["malformed-phase"])
+    agent._atomic_planner_query_fn = lambda **_kwargs: roadmap
+    agent._atomic_coder_query_fn = lambda **_kwargs: (_ for _ in ()).throw(
+        AssertionError("a malformed planner phase must not reach the Coder")
+    )
+
+    result = atomic_actuation.run_atomic_actuation_pipeline(
+        agent,
+        strategy_memo=_strategy_trace()["memo"],
+        parent_code="value = 1\n",
+        task_description="malformed staged phase test",
+        stage="improve",
+    )
+
+    assert result["status"] == "rejected"
+    assert result["full_roadmap_applied"] is False
+    assert result["completed_phase_count"] == 0
+    assert result["replan_used"] is False
+    assert result["coder"]["candidate_code"] == ""
+    assert result["phase_traces"][0]["planner"]["raw_phase_type"] == "str"
+    assert result["phase_traces"][0]["coder"]["plan_diff_verdict"] == {
+        "valid": False,
+        "violations": ["staged planner phases[0] is not an object"],
+    }
+
+
 def test_strict_staged_planner_still_rejects_same_invalid_contract():
     agent = _agent()
     ext = agent.cfg.external_skill_memory

@@ -1,0 +1,18 @@
+# v134 fails closed when a mechanical-only staged planner returns a
+# structurally malformed phase. All v133 official-mode and GPT-5.6 Sol
+# routing behavior remains unchanged.
+extends: ../systems_v128/dynamic_hybrid.yaml
+
+agent:
+  check_data_leakage: false
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v134-runtime/experiments/end2end_memory_systems_20260804/manifests_v134/leaf_official_replay_targets.json
+
+fixed_holdout:
+  bypass_protocol_gates: true
+
+external_skill_memory:
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v134-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v122/transition_evidence_capsules.json
+
+run_identity:
+  memory_version: leaf_replay_research_top5_alignment_gate_official_gpt56sol_v134
