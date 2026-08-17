@@ -137,3 +137,71 @@ def test_missing_marker_with_multiple_metrics_uses_agent_reconciliation():
     metric, status = reconcile_missing_submission_alignment(facts, 0.010162)
     assert metric == 0.010162
     assert status == "agent_reconciled_multiple_metrics"
+
+
+def test_modified_replay_without_submission_aligned_marker_blocks_ranking():
+    from agents.result_log_facts import (
+        is_immutable_exact_replay,
+        modified_replay_alignment_is_blocking,
+    )
+    from engine.search_node import SearchNode
+
+    source_code = "print('exact source')\n"
+    source_hash = __import__("hashlib").sha256(source_code.encode()).hexdigest()
+    inherited_source = {
+        "code_sha256": source_hash,
+        "current_code_sha256": __import__("hashlib").sha256(
+            b"print('modified blend')\n"
+        ).hexdigest(),
+        "exact_replay_execution": True,
+        "exact_source_match": False,
+    }
+    modified = SearchNode(
+        code="print('modified blend')\n",
+        stage="improve",
+        draft_role="memory_reproduction",
+        replay_source=inherited_source,
+        replay_status="derived_modified_from_exact_source",
+    )
+
+    assert is_immutable_exact_replay(modified) is False
+    assert modified_replay_alignment_is_blocking(
+        modified,
+        submission_alignment_required=True,
+        aligned_metric=None,
+    ) is True
+    assert modified_replay_alignment_is_blocking(
+        modified,
+        submission_alignment_required=True,
+        aligned_metric=0.011,
+    ) is False
+
+
+def test_immutable_exact_replay_keeps_missing_marker_exemption():
+    from agents.result_log_facts import (
+        is_immutable_exact_replay,
+        modified_replay_alignment_is_blocking,
+    )
+    from engine.search_node import SearchNode
+
+    source_code = "print('exact source')\n"
+    source_hash = __import__("hashlib").sha256(source_code.encode()).hexdigest()
+    exact = SearchNode(
+        code=source_code,
+        stage="improve",
+        draft_role="memory_reproduction",
+        replay_source={
+            "code_sha256": source_hash,
+            "current_code_sha256": source_hash,
+            "exact_replay_execution": True,
+            "exact_source_match": True,
+        },
+        replay_status="historical_exact_research_loaded",
+    )
+
+    assert is_immutable_exact_replay(exact) is True
+    assert modified_replay_alignment_is_blocking(
+        exact,
+        submission_alignment_required=True,
+        aligned_metric=None,
+    ) is False

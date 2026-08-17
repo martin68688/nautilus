@@ -20,9 +20,26 @@ MANIFEST = (
     / "leaf_replay_research_targets.json"
 )
 
+V122_SYSTEM = (
+    REPO
+    / "experiments"
+    / "end2end_memory_systems_20260804"
+    / "systems_v122"
+    / "dynamic_hybrid.yaml"
+)
+
 
 def _manifest() -> dict:
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+
+def test_v122_system_uses_fresh_runtime_identity() -> None:
+    text = V122_SYSTEM.read_text(encoding="utf-8")
+    assert "extends: ../systems_v121/dynamic_hybrid.yaml" in text
+    assert "/tmp/nautilus-exp-end2end-agent-v122-runtime/" in text
+    assert "manifests_v122/leaf_official_replay_targets.json" in text
+    assert "transition_evidence_v122/" in text
+    assert "leaf_replay_research_top5_v122_alignment_gate_pod32" in text
 
 
 def test_v120_portfolio_separates_score_and_diverse_frontiers() -> None:

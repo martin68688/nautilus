@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+import hashlib
 import math
 import re
 from typing import Any
@@ -47,6 +48,58 @@ _SUBMISSION_ALIGNED_METRIC_RE = re.compile(
     r"(-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)\s*\|\s*"
     r"variant\s*=\s*([^\r\n|]+?)\s*$"
 )
+
+_IMMUTABLE_EXACT_REPLAY_STATUSES = frozenset(
+    {
+        "exact_source_loaded",
+        "exact_source_loaded_fixed_holdout",
+        "historical_exact_anchor_loaded",
+        "historical_exact_research_loaded",
+    }
+)
+
+
+def is_immutable_exact_replay(node: Any) -> bool:
+    """Return whether the current artifact is still the byte-exact replay seed."""
+
+    replay_source = getattr(node, "replay_source", None)
+    if (
+        getattr(node, "draft_role", None) != "memory_reproduction"
+        or not isinstance(replay_source, dict)
+        or not replay_source
+        or getattr(node, "replay_status", None)
+        not in _IMMUTABLE_EXACT_REPLAY_STATUSES
+    ):
+        return False
+    if replay_source.get("exact_source_match") is False:
+        return False
+    source_hash = str(
+        replay_source.get("code_sha256")
+        or replay_source.get("source_code_sha256")
+        or ""
+    )
+    current_hash = str(replay_source.get("current_code_sha256") or "")
+    code = str(getattr(node, "code", None) or "")
+    if not current_hash and code:
+        current_hash = hashlib.sha256(code.encode("utf-8")).hexdigest()
+    return not (source_hash and current_hash and source_hash != current_hash)
+
+
+def modified_replay_alignment_is_blocking(
+    node: Any,
+    *,
+    submission_alignment_required: bool,
+    aligned_metric: object,
+) -> bool:
+    """Fail closed when a modified replay ranks a different submission variant."""
+
+    return bool(
+        submission_alignment_required
+        and aligned_metric is None
+        and getattr(node, "draft_role", None) == "memory_reproduction"
+        and getattr(node, "replay_source", None)
+        and not is_immutable_exact_replay(node)
+    )
 
 
 def extract_submission_aligned_metric(

@@ -16,6 +16,8 @@ from utils.response import wrap_code
 from engine.validation import call_validate, _validate_submission_with_retry, validate_submission_content_quality
 from agents import data_leakage_agent, leakage_audit, protocol_repair
 from agents.result_log_facts import (
+    is_immutable_exact_replay as _is_immutable_exact_replay,
+    modified_replay_alignment_is_blocking as _modified_replay_alignment_is_blocking,
     extract_high_confidence_metric as _extract_high_confidence_metric,
     reconcile_missing_submission_alignment,
     result_parser_conflict as _result_parser_conflict,
@@ -1180,13 +1182,11 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                     response, parser_facts
                 )
             aligned_metric = parser_facts.get("submission_aligned_metric")
-            historical_exact_replay = bool(
-                node.draft_role == "memory_reproduction"
-                and node.replay_source
-                and (
-                    node.stage == "draft"
-                    or node.replay_source.get("exact_replay_execution") is True
-                )
+            historical_exact_replay = _is_immutable_exact_replay(node)
+            alignment_blocking = _modified_replay_alignment_is_blocking(
+                node,
+                submission_alignment_required=submission_alignment_required,
+                aligned_metric=aligned_metric,
             )
             if (
                 aligned_metric is not None
@@ -1195,6 +1195,18 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
             ):
                 response["metric"] = float(aligned_metric)
                 submission_alignment_status = "verified_marker"
+            elif alignment_blocking:
+                response["metric"] = None
+                response["is_bug"] = True
+                response["summary"] = (
+                    "SUBMISSION_METRIC_ALIGNMENT_ERROR: a modified replay "
+                    "descendant wrote a submission without reporting the "
+                    "explicit metric for that exact prediction variant; the "
+                    "candidate is excluded from ranking."
+                )
+                submission_alignment_status = (
+                    "modified_replay_missing_submission_aligned_metric"
+                )
             elif submission_alignment_required and not historical_exact_replay:
                 if (
                     parser_facts.get("high_confidence_metric_ambiguous")
@@ -1248,7 +1260,7 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                 "marker_line": str(
                     parser_facts.get("submission_aligned_metric_line") or ""
                 ),
-                "blocking": False,
+                "blocking": alignment_blocking,
                 "reexecution_required": False,
             }
 
