@@ -82,6 +82,8 @@ def copy_overlay(output: Path) -> None:
         source = (REPO / relative).resolve(strict=True)
         destination = output / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
+        if destination.exists():
+            destination.unlink()
         shutil.copy2(source, destination)
 
 
