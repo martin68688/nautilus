@@ -527,11 +527,11 @@ class ExternalSkillMemoryConfig:
     memory_strategy_min_candidate_compositions: int = 3
     memory_strategy_debug_min_candidate_compositions: int = 1
     memory_strategy_temperature: float = 0.0
-    memory_strategy_model: str = "deepseek-v4-pro"
+    memory_strategy_model: str = "gpt-5.6-sol"
     memory_strategy_thinking_enabled: bool = True
-    # V4 Pro thinking is retained for synthesis.  If its text is malformed
-    # JSON, a second call to the same model runs with thinking disabled and
-    # native JSON mode, with serialization-only authority.
+    # The configured Strategy model is retained for synthesis. If its text is
+    # malformed JSON, a second call to the same model uses native JSON mode
+    # with serialization-only authority.
     memory_strategy_json_normalization_enabled: bool = True
     memory_strategy_json_normalization_model: str = ""
     memory_strategy_json_normalization_max_tokens: int = 12000
@@ -857,7 +857,7 @@ def _drop_retired_config_keys(cfg):
 def _load_cfg(
     path: Path | None = None, use_cli_args=True
 ) -> Config:
-    # Load secrets (e.g. DEEPSEEK_API_KEY) from mlevolve/.env so they stay out of git.
+    # Load secrets (e.g. OPENAI_API_KEY) from mlevolve/.env so they stay out of git.
     from dotenv import load_dotenv
     load_dotenv(Path(__file__).resolve().parent.parent / ".env")
     path = Path(path) if path is not None else _default_config_path()

@@ -26,8 +26,8 @@ def _args() -> argparse.Namespace:
     parser.add_argument(
         "--model",
         default=os.environ.get("ADOPTION_VERIFIER_MODEL")
-        or os.environ.get("DEEPSEEK_MODEL")
-        or "deepseek-v4-flash",
+        or os.environ.get("OPENAI_MODEL")
+        or "gpt-5.6-sol",
     )
     return parser.parse_args()
 
@@ -38,13 +38,13 @@ def main() -> int:
     code = code_path.read_text(encoding="utf-8")
     output = Path(args.output_dir).resolve()
     output.mkdir(parents=True, exist_ok=True)
-    api_key = os.environ.get("DEEPSEEK_API_KEY", "")
+    api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key:
-        raise ValueError("DEEPSEEK_API_KEY is required for the live verifier smoke")
+        raise ValueError("OPENAI_API_KEY is required for the live verifier smoke")
     stage = SimpleNamespace(
         model=args.model,
         api_key=api_key,
-        base_url=os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+        base_url=os.environ.get("OPENAI_BASE_URL", "https://apizh.net/v1"),
     )
     cfg = SimpleNamespace(
         log_dir=output,

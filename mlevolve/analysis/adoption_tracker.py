@@ -239,14 +239,14 @@ def _llm_judge(code: str, memory_text: str, cfg) -> bool:
     SPECIFIC technique, vs merely sharing generic ML boilerplate (torch/nn.Module/loop)?
 
     Called only on keyword hits (judge_mode=llm) to cut false positives cheaply. Uses
-    DeepSeek (OpenAI-compatible) — cheap/fast and keeps the GLM quota free for the solver.
-    Credentials come from os.environ DEEPSEEK_* (loaded from mlevolve/.env at run start);
+    the configured OpenAI-compatible endpoint and model.
+    Credentials come from os.environ OPENAI_* (loaded from mlevolve/.env at run start);
     `cfg` is accepted only for signature uniformity / fallback. Failure is non-fatal.
     """
     import os
-    api_key = os.environ.get("DEEPSEEK_API_KEY") or getattr(cfg, "api_key", "")
-    base_url = os.environ.get("DEEPSEEK_BASE_URL") or getattr(cfg, "base_url", "") or None
-    model = os.environ.get("DEEPSEEK_MODEL") or "deepseek-v4-flash"
+    api_key = os.environ.get("OPENAI_API_KEY") or getattr(cfg, "api_key", "")
+    base_url = os.environ.get("OPENAI_BASE_URL") or getattr(cfg, "base_url", "") or None
+    model = os.environ.get("OPENAI_MODEL") or "gpt-5.6-sol"
     user = (
         f"Memory entry (a distilled skill describing specific techniques/APIs/patterns):\n"
         f"```\n{memory_text[:2000]}\n```\n\n"
@@ -278,7 +278,7 @@ def _llm_judge(code: str, memory_text: str, cfg) -> bool:
 def _llm_judge_batch(memory_text: str, codes: list, cfg, max_chars: int = 4000) -> list:
     """Judge ONE memory against MANY codes in a single LLM call (judge_mode='batch').
 
-    This is the real cost saver: instead of N_pairs DeepSeek calls (one per code), it makes
+    This is the real cost saver: instead of N_pairs model calls (one per code), it makes
     one call per memory (or per small chunk), asking which codes genuinely implement the
     technique. Cross-comparing codes in one context also tends to improve precision. Returns
     a list of bool (one per code, aligned to input order). Failure → all False.
@@ -291,9 +291,9 @@ def _llm_judge_batch(memory_text: str, codes: list, cfg, max_chars: int = 4000) 
         return []
     if n == 1:
         return [_llm_judge(codes[0], memory_text, cfg)]
-    api_key = os.environ.get("DEEPSEEK_API_KEY") or getattr(cfg, "api_key", "")
-    base_url = os.environ.get("DEEPSEEK_BASE_URL") or getattr(cfg, "base_url", "") or None
-    model = os.environ.get("DEEPSEEK_MODEL") or "deepseek-v4-flash"
+    api_key = os.environ.get("OPENAI_API_KEY") or getattr(cfg, "api_key", "")
+    base_url = os.environ.get("OPENAI_BASE_URL") or getattr(cfg, "base_url", "") or None
+    model = os.environ.get("OPENAI_MODEL") or "gpt-5.6-sol"
     parts = "\n\n".join(f"=== CODE {i + 1} ===\n{c[:max_chars]}" for i, c in enumerate(codes))
     user = (
         f"Memory entry (a distilled skill describing specific techniques/APIs/patterns):\n"

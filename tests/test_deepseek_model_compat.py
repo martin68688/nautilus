@@ -102,8 +102,10 @@ def test_generate_sends_effective_model_and_legacy_thinking_mode(monkeypatch):
     assert captured["extra_body"] == {"thinking": {"type": "disabled"}}
 
 
-def test_primary_config_defaults_to_current_flash_model():
+def test_primary_config_defaults_to_gpt56sol_openai_compatible_endpoint():
     text = (REPO / "mlevolve" / "config" / "config.yaml").read_text(encoding="utf-8")
 
-    assert text.count("${oc.env:DEEPSEEK_MODEL, deepseek-v4-flash}") == 2
-    assert "${oc.env:DEEPSEEK_MODEL, deepseek-chat}" not in text
+    assert text.count("${oc.env:OPENAI_MODEL, gpt-5.6-sol}") == 3
+    assert text.count("${oc.env:OPENAI_BASE_URL, https://apizh.net/v1}") == 2
+    assert text.count("${oc.env:OPENAI_API_KEY}") == 2
+    assert "${oc.env:DEEPSEEK_MODEL" not in text

@@ -254,7 +254,7 @@ paper-skills/methodology_kb/ ──→ mlevolve coldstart ──→ agent prompt
 
 - Python 3.10+
 - CUDA-capable GPU(s)
-- DeepSeek API key (or other OpenAI-compatible LLM)
+- OpenAI-compatible API key
 
 ### Install
 
@@ -267,8 +267,9 @@ pip install -r requirements.txt  # (if available)
 
 ```bash
 # LLM API (set in config.yaml or env)
-export DEEPSEEK_API_KEY=...
-export DEEPSEEK_BASE_URL=https://api.deepseek.com
+export OPENAI_API_KEY=...
+export OPENAI_BASE_URL=https://apizh.net/v1
+export OPENAI_MODEL=gpt-5.6-sol
 
 # Optional: HuggingFace cache
 export HF_DATASETS_CACHE=/path/to/hf_cache

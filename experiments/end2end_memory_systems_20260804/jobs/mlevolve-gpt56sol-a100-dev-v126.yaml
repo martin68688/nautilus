@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-gpt56sol-a100-dev-v126
+  namespace: ecepxie
+  labels:
+    app: mlevolve
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: mlevolve-gpt56sol-v126
+    mlevolve.ai/workload: gpt56sol-provider-smoke-v126
+  annotations:
+    mlevolve.ai/purpose: gpt-5.6-sol-openai-compatible-devpod-smoke
+    mlevolve.ai/credential-secret: mlevolve-openai-gpt56sol-v1
+spec:
+  activeDeadlineSeconds: 14400
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 60
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - node-1-3.sdsc.optiputer.net
+                  - node-2-3.sdsc.optiputer.net
+  containers:
+    - name: mlevolve-gpt56sol-smoke
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-lc", "exec sleep infinity"]
+      envFrom:
+        - secretRef:
+            name: mlevolve-openai-gpt56sol-v1
+      env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: TOKENIZERS_PARALLELISM
+          value: "false"
+      resources:
+        requests:
+          cpu: "8"
+          memory: 32Gi
+          ephemeral-storage: 32Gi
+          nvidia.com/a100: "1"
+        limits:
+          cpu: "8"
+          memory: 32Gi
+          ephemeral-storage: 32Gi
+          nvidia.com/a100: "1"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: shm
+          mountPath: /dev/shm
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 16Gi
