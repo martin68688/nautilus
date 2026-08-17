@@ -395,6 +395,22 @@ def test_fixed_mode_explicitly_replaces_internal_protocol_gates():
         )
 
 
+def test_protocol_bypass_remains_explicitly_enabled_in_official_mode():
+    cfg = SimpleNamespace(
+        fixed_holdout=SimpleNamespace(
+            enabled=False,
+            evaluation_mode="terminal_only",
+            bypass_protocol_gates=True,
+            internal_metric_disposition="search_only",
+        )
+    )
+
+    assert enabled(cfg) is False
+    assert bypass_protocol_gates(cfg) is True
+    agent = SimpleNamespace(cfg=cfg)
+    assert requires_protocol_repair(agent, "candidate_replay") is False
+
+
 def test_fixed_holdout_config_resolves_nested_inheritance():
     cfg = _load_cfg(
         REPO / "mlevolve" / "config" / "config_run_forest_fixed_holdout.yaml",

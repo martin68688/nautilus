@@ -18,9 +18,11 @@ def enabled(cfg: Any) -> bool:
 
 def bypass_protocol_gates(cfg: Any) -> bool:
     fixed_cfg = _config(cfg)
-    return enabled(cfg) and bool(
-        getattr(fixed_cfg, "bypass_protocol_gates", False)
-    )
+    # This is an explicit protocol policy switch, not a derived consequence of
+    # fixed-holdout evaluation.  Official-test runs disable fixed_holdout so
+    # candidates infer the complete unlabeled submission set, while still
+    # retaining the legacy Replay audit bypass requested by the experiment.
+    return bool(getattr(fixed_cfg, "bypass_protocol_gates", False))
 
 
 def search_only_candidate_selection(cfg: Any) -> bool:

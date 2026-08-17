@@ -31,6 +31,7 @@ def overlay_files(release_version: int) -> tuple[Path, ...]:
         Path("mlevolve/config/__init__.py"),
         Path("mlevolve/config/config.yaml"),
         Path("mlevolve/config/config_leaf_official.yaml"),
+        Path("mlevolve/fixed_holdout/mode.py"),
         Path("mlevolve/llm/gemini.py"),
     )
 

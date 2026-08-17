@@ -625,6 +625,24 @@ def test_candidate_replay_fails_closed_when_runtime_audit_is_disabled():
         load_exact_replay(agent)
 
 
+def test_candidate_replay_honors_explicit_bypass_in_official_mode():
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from agents.memory.run_forest_replay import load_exact_replay
+
+    agent = _replay_agent()
+    agent.cfg.fixed_holdout = SimpleNamespace(
+        enabled=False,
+        bypass_protocol_gates=True,
+    )
+    agent.acfg.check_data_leakage = False
+
+    replay = load_exact_replay(agent)
+    assert replay["replay_source"]["target_audit_status"] == "candidate_replay"
+    assert replay["requires_repair"] is False
+
+
 def test_clean_repair_child_passes_pre_execution_gate(tmp_path):
     import sys
 

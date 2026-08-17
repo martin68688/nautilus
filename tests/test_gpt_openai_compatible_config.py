@@ -8,6 +8,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "mlevolve"))
 
 from config import Config, _load_cfg  # noqa: E402
+from fixed_holdout.mode import bypass_protocol_gates  # noqa: E402
 from llm import _provider  # noqa: E402
 from llm.gemini import FunctionSpec  # noqa: E402
 from llm.model_compat import deepseek_thinking_extra_body, resolve_model_name  # noqa: E402
@@ -61,7 +62,7 @@ def test_latest_leaf_config_resolves_every_llm_role_to_gpt56sol(monkeypatch):
         REPO
         / "experiments"
         / "end2end_memory_systems_20260804"
-        / "systems_v132"
+        / "systems_v133"
         / "dynamic_hybrid.yaml",
         use_cli_args=False,
     )
@@ -86,7 +87,7 @@ def test_latest_leaf_config_resolves_every_llm_role_to_gpt56sol(monkeypatch):
 
 
 def test_latest_runtime_overlay_contains_leaf_config_parent_chain():
-    files = set(overlay_files(132))
+    files = set(overlay_files(133))
 
     assert (
         Path("experiments/end2end_memory_systems_20260804")
@@ -95,10 +96,11 @@ def test_latest_runtime_overlay_contains_leaf_config_parent_chain():
     ) in files
     assert (
         Path("experiments/end2end_memory_systems_20260804")
-        / "systems_v132"
+        / "systems_v133"
         / "dynamic_hybrid.yaml"
     ) in files
     assert Path("mlevolve/llm/gemini.py") in files
+    assert Path("mlevolve/fixed_holdout/mode.py") in files
 
 
 def test_openai_named_tool_choice_uses_top_level_name():
@@ -129,7 +131,7 @@ def test_official_evaluator_overrides_merge_into_typed_config(monkeypatch):
 
     monkeypatch.setenv("OPENAI_API_KEY", "test-openai-compatible-key")
     cfg = _load_cfg(
-        experiment / "systems_v132" / "dynamic_hybrid.yaml",
+        experiment / "systems_v133" / "dynamic_hybrid.yaml",
         use_cli_args=False,
     )
     cfg_with_cli = OmegaConf.merge(
@@ -146,5 +148,6 @@ def test_official_evaluator_overrides_merge_into_typed_config(monkeypatch):
     )
     assert merged.fixed_holdout.enabled is False
     assert merged.fixed_holdout.bypass_protocol_gates is True
+    assert bypass_protocol_gates(merged) is True
     assert merged.fixed_holdout.train_manifest_path == ""
     assert merged.official_submission.enabled is True
