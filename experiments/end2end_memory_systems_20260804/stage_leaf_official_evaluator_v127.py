@@ -12,6 +12,24 @@ import time
 import uuid
 
 
+OFFICIAL_OVERRIDES = [
+    "fixed_holdout.enabled=false",
+    "fixed_holdout.bypass_protocol_gates=false",
+    "fixed_holdout.preflight_validate_train_view=false",
+    "fixed_holdout.internal_metric_disposition=search_only",
+    "official_submission.enabled=true",
+    "official_submission.provider=kaggle",
+    "official_submission.competition=leaf-classification",
+    "official_submission.metric=log_loss",
+    "official_submission.maximize=false",
+    "official_submission.sample_submission_path=sample_submission.csv",
+    "official_submission.id_column=id",
+    "official_submission.prediction_kind=multiclass_probability",
+    "official_submission.probability_row_sum_tolerance=0.0001",
+    "official_submission.submission_subdir=submission",
+]
+
+
 def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as handle:
@@ -65,23 +83,7 @@ def main() -> int:
             "description": "description.md",
             "terminal_evaluator_spec": "TERMINAL_EVALUATOR_SPEC.json",
             "terminal_evaluator_timeout_seconds": 600,
-            "additional_overrides": [
-                "fixed_holdout.enabled=false",
-                "fixed_holdout.train_manifest_path=",
-                "fixed_holdout.bypass_protocol_gates=false",
-                "fixed_holdout.preflight_validate_train_view=false",
-                "fixed_holdout.internal_metric_disposition=search_only",
-                "official_submission.enabled=true",
-                "official_submission.provider=kaggle",
-                "official_submission.competition=leaf-classification",
-                "official_submission.metric=log_loss",
-                "official_submission.maximize=false",
-                "official_submission.sample_submission_path=sample_submission.csv",
-                "official_submission.id_column=id",
-                "official_submission.prediction_kind=multiclass_probability",
-                "official_submission.probability_row_sum_tolerance=0.0001",
-                "official_submission.submission_subdir=submission",
-            ],
+            "additional_overrides": OFFICIAL_OVERRIDES,
             "runtime_artifact_sha256": {
                 "description": sha256_file(staging / "description.md"),
                 "terminal_evaluator_spec": sha256_file(
