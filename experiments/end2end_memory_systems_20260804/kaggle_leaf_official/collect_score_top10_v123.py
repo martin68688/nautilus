@@ -35,24 +35,40 @@ from pathlib import Path
 import sys
 import zipfile
 
-root = Path(sys.argv[1])
-bundle = Path(sys.argv[2])
-receipts = sorted(root.glob("*/attempt-000/REPRODUCTION_RECEIPT.json"))
-if len(receipts) != 7:
-    raise SystemExit(f"expected 7 receipts, found {len(receipts)}")
+bundle = Path(sys.argv[1])
+expected_ids = json.loads(sys.argv[2])
+roots = [Path(value) for value in sys.argv[3:]]
+receipts = [
+    path
+    for root in roots
+    for path in sorted(root.glob("*/attempt-000/REPRODUCTION_RECEIPT.json"))
+]
+passing = {}
 for path in receipts:
     value = json.loads(path.read_text())
-    if value.get("status") != "pass":
-        raise SystemExit(f"non-passing receipt: {path}")
+    if value.get("status") == "pass":
+        passing.setdefault(value.get("candidate_id"), []).append(path)
+selected = []
+for candidate_id in expected_ids:
+    matches = passing.get(candidate_id) or []
+    if len(matches) != 1:
+        raise SystemExit(
+            f"expected one passing receipt for {candidate_id}, found {matches}"
+        )
+    selected.append(matches[0])
 if bundle.exists():
     raise SystemExit(f"refusing to overwrite collection bundle: {bundle}")
 bundle.parent.mkdir(parents=True, exist_ok=True)
 with zipfile.ZipFile(bundle, "x", compression=zipfile.ZIP_DEFLATED) as archive:
-    for receipt in receipts:
+    for receipt in selected:
         attempt = receipt.parent
-        archive.write(receipt, receipt.relative_to(root))
+        candidate_id = json.loads(receipt.read_text())["candidate_id"]
+        archive.write(receipt, Path(candidate_id) / attempt.name / receipt.name)
         for submission in sorted((attempt / "submissions").glob("*.csv")):
-            archive.write(submission, submission.relative_to(root))
+            archive.write(
+                submission,
+                Path(candidate_id) / attempt.name / "submissions" / submission.name,
+            )
 print(bundle)
 '''.strip()
 
@@ -114,15 +130,13 @@ def main() -> int:
     parser.add_argument("--namespace", default="ecepxie")
     parser.add_argument(
         "--remote-root",
-        default=(
-            "/workspace/experiment-end2end-leaf-official-top10-v123/"
-            "reproductions-v1"
-        ),
+        action="append",
+        default=[],
     )
     parser.add_argument(
         "--remote-bundle",
         default=(
-            "/workspace/experiment-end2end-leaf-official-top10-v123/"
+            "/workspace/experiment-end2end-leaf-official-top10-v124/"
             "collection/top10-v123-preferred.zip"
         ),
     )
@@ -142,6 +156,10 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    remote_roots = args.remote_root or [
+        "/workspace/experiment-end2end-leaf-official-top10-v123/reproductions-v1",
+        "/workspace/experiment-end2end-leaf-official-top10-v124/reproductions-v1",
+    ]
     output_dir = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=False)
     bundle = output_dir / "top10-v123-preferred.zip"
@@ -161,8 +179,9 @@ def main() -> int:
             "python",
             "-c",
             REMOTE_PACK,
-            args.remote_root,
             args.remote_bundle,
+            json.dumps([candidate["candidate_id"] for candidate in CANDIDATES]),
+            *remote_roots,
         ],
         env=kube_env,
     )
