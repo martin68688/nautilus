@@ -76,7 +76,8 @@ def test_latest_leaf_config_resolves_every_llm_role_to_gpt56sol(monkeypatch):
         == "gpt-5.6-sol"
     )
     assert "deepseek" not in str(resolved).lower()
-    assert resolved["agent"]["check_data_leakage"] is True
+    assert resolved["agent"]["check_data_leakage"] is False
+    assert resolved["fixed_holdout"]["bypass_protocol_gates"] is True
 
 
 def test_official_evaluator_overrides_merge_into_typed_config(monkeypatch):
