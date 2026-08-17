@@ -39,6 +39,39 @@ def _hash(payload: dict, field: str) -> str:
     ).hexdigest()
 
 
+def test_solver_environment_keeps_openai_credentials_and_strips_host_secrets():
+    source = {
+        "OPENAI_API_KEY": "solver-key",
+        "OPENAI_BASE_URL": "https://gateway.example.test/v1",
+        "OPENAI_MODEL": "gpt-5.6-sol",
+        "GITHUB_TOKEN": "host-token",
+        "AWS_ACCESS_KEY_ID": "host-cloud-secret",
+        "PATH": "/usr/bin",
+    }
+
+    env = run_assignment.build_solver_environment(source)
+
+    assert env["OPENAI_API_KEY"] == "solver-key"
+    assert env["OPENAI_BASE_URL"] == "https://gateway.example.test/v1"
+    assert env["OPENAI_MODEL"] == "gpt-5.6-sol"
+    assert env["PATH"] == "/usr/bin"
+    assert "GITHUB_TOKEN" not in env
+    assert "AWS_ACCESS_KEY_ID" not in env
+
+
+def test_terminal_evaluator_environment_hides_and_restores_solver_secret(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "solver-key")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv("OPENAI_MODEL", "gpt-5.6-sol")
+
+    with run_assignment.terminal_evaluator_environment():
+        assert "OPENAI_API_KEY" not in os.environ
+        assert os.environ["OPENAI_BASE_URL"] == "https://gateway.example.test/v1"
+        assert os.environ["OPENAI_MODEL"] == "gpt-5.6-sol"
+
+    assert os.environ["OPENAI_API_KEY"] == "solver-key"
+
+
 def _read(path: Path) -> dict:
     value = json.loads(path.read_text(encoding="utf-8"))
     assert isinstance(value, dict)

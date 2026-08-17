@@ -29,6 +29,17 @@ if str(MLEVOLVE_ROOT) not in sys.path:
     sys.path.insert(0, str(MLEVOLVE_ROOT))
 SYSTEM_CONFIGS = ROOT / "systems"
 HOST_RESULT_SCHEMA = "mlevolve_experiment_c_host_terminal_result_v1"
+SOLVER_STRIPPED_ENV_KEYS = frozenset({"KUBECONFIG", "GITHUB_TOKEN", "GH_TOKEN"})
+TERMINAL_EVALUATOR_SECRET_ENV_KEYS = frozenset(
+    {
+        "OPENAI_API_KEY",
+        "DEEPSEEK_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "GITHUB_TOKEN",
+        "GH_TOKEN",
+        "KUBECONFIG",
+    }
+)
 
 
 class RunnerInterrupted(BaseException):
@@ -61,6 +72,35 @@ def termination_guard() -> Iterator[None]:
     finally:
         for signum, handler in previous.items():
             signal.signal(signum, handler)
+
+
+def build_solver_environment(
+    source: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Keep solver-provider credentials while removing unrelated host secrets."""
+
+    environment = os.environ if source is None else source
+    return {
+        key: value
+        for key, value in environment.items()
+        if key not in SOLVER_STRIPPED_ENV_KEYS
+        and not key.startswith(("AWS_", "AZURE_", "KUBERNETES_SERVICE_"))
+    }
+
+
+@contextmanager
+def terminal_evaluator_environment() -> Iterator[None]:
+    """Hide solver-only credentials from the post-search terminal evaluator."""
+
+    hidden = {
+        key: os.environ.pop(key)
+        for key in TERMINAL_EVALUATOR_SECRET_ENV_KEYS
+        if key in os.environ
+    }
+    try:
+        yield
+    finally:
+        os.environ.update(hidden)
 
 
 def run_solver_process(
@@ -990,12 +1030,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     }
     _write_exclusive(condition_root / "LAUNCH_RECEIPT.json", launch, "receipt_hash")
 
-    env = {
-        key: value
-        for key, value in os.environ.items()
-        if key not in {"KUBECONFIG", "GITHUB_TOKEN", "GH_TOKEN", "OPENAI_API_KEY"}
-        and not key.startswith(("AWS_", "AZURE_", "KUBERNETES_SERVICE_"))
-    }
+    env = build_solver_environment()
     env.update(
         {
             "MLEVOLVE_CONFIG": str((ROOT / system["config_path"]).resolve()),
@@ -1123,7 +1158,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
     ):
         try:
-            with termination_guard():
+            with termination_guard(), terminal_evaluator_environment():
                 terminal = terminal_evaluate(
                     evaluator_spec_path=evaluator["evaluator_path"],
                     release_root=evaluator["release_root"],

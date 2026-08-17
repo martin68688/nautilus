@@ -1,0 +1,27 @@
+# v127 keeps the v123 full-official-test Leaf Replay Research behavior while
+# routing every live LLM role through the configured GPT-5.6 Sol endpoint.
+extends: ../systems_v123/dynamic_hybrid.yaml
+
+agent:
+  code:
+    model: "${oc.env:OPENAI_MODEL, gpt-5.6-sol}"
+    base_url: "${oc.env:OPENAI_BASE_URL, https://apizh.net/v1}"
+    api_key: "${oc.env:OPENAI_API_KEY}"
+  feedback:
+    model: "${oc.env:OPENAI_MODEL, gpt-5.6-sol}"
+    base_url: "${oc.env:OPENAI_BASE_URL, https://apizh.net/v1}"
+    api_key: "${oc.env:OPENAI_API_KEY}"
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v127-runtime/experiments/end2end_memory_systems_20260804/manifests_v127/leaf_official_replay_targets.json
+    replay_runs_root: /workspace/nautilus/mlevolve/runs
+
+adoption_verifier:
+  model: "${oc.env:OPENAI_MODEL, gpt-5.6-sol}"
+
+external_skill_memory:
+  memory_strategy_model: "${oc.env:OPENAI_MODEL, gpt-5.6-sol}"
+  memory_strategy_json_normalization_model: "${oc.env:OPENAI_MODEL, gpt-5.6-sol}"
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v127-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v122/transition_evidence_capsules.json
+
+run_identity:
+  memory_version: leaf_replay_research_top5_alignment_gate_official_gpt56sol_v127

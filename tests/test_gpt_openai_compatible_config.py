@@ -46,3 +46,33 @@ def test_primary_config_resolves_all_solver_roles_to_gpt56sol(monkeypatch):
     }
     assert resolved["agent"]["feedback"] == resolved["agent"]["code"]
     assert resolved["external_skill_memory"]["memory_strategy_model"] == "gpt-5.6-sol"
+
+
+def test_latest_leaf_config_resolves_every_llm_role_to_gpt56sol(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-openai-compatible-key")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://gateway.example.test/v1")
+    monkeypatch.setenv("OPENAI_MODEL", "gpt-5.6-sol")
+    cfg = _load_cfg(
+        REPO
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v127"
+        / "dynamic_hybrid.yaml",
+        use_cli_args=False,
+    )
+    resolved = OmegaConf.to_container(cfg, resolve=True)
+
+    assert resolved["agent"]["code"]["model"] == "gpt-5.6-sol"
+    assert resolved["agent"]["feedback"]["model"] == "gpt-5.6-sol"
+    assert resolved["adoption_verifier"]["model"] == "gpt-5.6-sol"
+    assert (
+        resolved["external_skill_memory"]["memory_strategy_model"]
+        == "gpt-5.6-sol"
+    )
+    assert (
+        resolved["external_skill_memory"][
+            "memory_strategy_json_normalization_model"
+        ]
+        == "gpt-5.6-sol"
+    )
+    assert "deepseek" not in str(resolved).lower()
