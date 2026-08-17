@@ -72,6 +72,15 @@ def test_terminal_evaluator_environment_hides_and_restores_solver_secret(monkeyp
     assert os.environ["OPENAI_API_KEY"] == "solver-key"
 
 
+def test_runner_does_not_override_system_leakage_audit_setting():
+    source = Path(run_assignment.__file__).read_text(encoding="utf-8")
+    command_body = source.split("def build_solver_command(", 1)[1].split(
+        "def _first_valid(", 1
+    )[0]
+
+    assert "agent.check_data_leakage=" not in command_body
+
+
 def _read(path: Path) -> dict:
     value = json.loads(path.read_text(encoding="utf-8"))
     assert isinstance(value, dict)

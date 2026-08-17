@@ -548,10 +548,12 @@ def build_solver_command(
         f"{bundle['task']['current_file_sha256']}",
         f"run_identity.evaluator_manifest_sha256={identity['evaluators_manifest_hash']}",
         *_evaluation_overrides(evaluator_release["runtime"]),
-        # Last-write-wins CLI overrides make the non-blocking experiment mode
-        # immune to any old release profile that carries formal audit settings.
+        # Last-write-wins CLI overrides keep the expensive protocol workflow
+        # disabled for this exploratory experiment.  Candidate-level leakage
+        # auditing is intentionally left to the selected system config: Replay
+        # Research needs its deterministic audit even when these broader gates
+        # remain off.
         "fixed_holdout.preflight_validate_train_view=false",
-        "agent.check_data_leakage=false",
         "agent.protocol_repair.enabled=false",
         "agent.protocol_preflight.enabled=false",
         "evaluation_authority.emit_snapshot=false",
