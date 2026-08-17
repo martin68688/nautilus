@@ -1,19 +1,19 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: mlevolve-leaf-replay-gpt56sol-a100-dev-v131
+  name: mlevolve-leaf-replay-gpt56sol-a100-dev-v132
   namespace: ecepxie
   labels:
     app: mlevolve-end2end
     app.kubernetes.io/managed-by: codex-nrp-training
     ecepxie.nrp/owner: haoming
-    experiment: experiment-end2end-memory-agent-v131
-    mlevolve.ai/workload: leaf-replay-gpt56sol-v131
+    experiment: experiment-end2end-memory-agent-v132
+    mlevolve.ai/workload: leaf-replay-gpt56sol-v132
     task: leaf-classification
   annotations:
     mlevolve.ai/purpose: leaf-replay-research-official-gpt56sol-16-step-online-smoke
-    mlevolve.ai/source-git-head: 11e4659e0a40e1e555584cc0fd2000b7aa5ed369
-    mlevolve.ai/runtime-source-lock-sha256: 6424a376b2ee40abf14c733274e7bf5f38c4400de0866e95e7352fa72d867565
+    mlevolve.ai/source-git-head: 48f307eec466b3f4ca4b9812d2b343f3eb79c212
+    mlevolve.ai/runtime-source-lock-sha256: d12d2c7695bc743f8c32ff0f0238573ff8f827a5d51c4775c0dccdc6dbc9df67
     mlevolve.ai/base-runtime-transport-sha256: a062cb1c914b4e8ad6eb33dff5f5da711200d7bc49265e827a855437a7f8fa00
     mlevolve.ai/replay-targets-sha256: 69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4
     mlevolve.ai/transition-capsule-sha256: ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559
@@ -102,7 +102,7 @@ spec:
         - name: workspace
           mountPath: /workspace
         - name: runtime
-          mountPath: /tmp/nautilus-exp-end2end-agent-v131-runtime
+          mountPath: /tmp/nautilus-exp-end2end-agent-v132-runtime
         - name: shm
           mountPath: /dev/shm
   tolerations:
