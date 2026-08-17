@@ -1,0 +1,17 @@
+# v132 adds the GPT-5.6 Chat Completions named-tool-choice compatibility fix.
+# Replay keeps the user-selected v120-v122 audit-bypass behavior.
+extends: ../systems_v128/dynamic_hybrid.yaml
+
+agent:
+  check_data_leakage: false
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v132-runtime/experiments/end2end_memory_systems_20260804/manifests_v132/leaf_official_replay_targets.json
+
+fixed_holdout:
+  bypass_protocol_gates: true
+
+external_skill_memory:
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v132-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v122/transition_evidence_capsules.json
+
+run_identity:
+  memory_version: leaf_replay_research_top5_alignment_gate_official_gpt56sol_v132

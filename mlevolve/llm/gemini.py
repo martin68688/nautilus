@@ -85,7 +85,7 @@ class FunctionSpec(DataClassJsonMixin):
     def openai_tool_choice_dict(self):
         return {
             "type": "function",
-            "function": {"name": self.name},
+            "name": self.name,
         }
 
 # ---------------------------------------------------------------------------
