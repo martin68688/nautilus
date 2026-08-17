@@ -7,7 +7,7 @@ OUTPUT_ROOT="$ROOT/reproductions-v1"
 CONTROLLER_LOG="$ROOT/CONTROLLER_EVENTS.log"
 overall=0
 
-for index in 2 3 4; do
+for index in 2 3 4 6; do
   printf 'CONTROLLER_CANDIDATE_START index=%s time=%s\n' \
     "$index" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" | tee -a "$CONTROLLER_LOG"
   if /usr/local/bin/python -u "$RUNNER" \
@@ -51,12 +51,12 @@ for path in sorted(root.glob("*/attempt-000/REPRODUCTION_RECEIPT.json")):
     )
 payload = {
     "schema": "leaf_official_top10_v125_failed_indices_outcome_v1",
-    "candidate_indices": [2, 3, 4],
-    "expected_candidate_count": 3,
+    "candidate_indices": [2, 3, 4, 6],
+    "expected_candidate_count": 4,
     "completed_receipt_count": len(receipts),
     "status": (
         "pass"
-        if len(receipts) == 3 and all(row["status"] == "pass" for row in receipts)
+        if len(receipts) == 4 and all(row["status"] == "pass" for row in receipts)
         else "failed"
     ),
     "candidates": receipts,
