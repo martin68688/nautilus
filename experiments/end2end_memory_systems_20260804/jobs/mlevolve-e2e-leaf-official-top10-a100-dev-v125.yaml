@@ -1,0 +1,142 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-e2e-leaf-official-top10-a100-dev-v125
+  namespace: ecepxie
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-leaf-official-top10-v125
+    mlevolve.ai/workload: leaf-official-top10-v125
+    task: leaf-classification
+  annotations:
+    mlevolve.ai/purpose: rerun-failed-indices-2-through-4-with-complete-local-caches
+    mlevolve.ai/source-git-head: 52fb803698e35fd94a8786a497ad3241a7c18f85
+    mlevolve.ai/source-branch: codex/leaf-official-top10-v125
+    mlevolve.ai/output-root: /workspace/experiment-end2end-leaf-official-top10-v125
+    mlevolve.ai/credential-boundary: kaggle-credentials-remain-local
+    mlevolve.ai/predecessor-pod-uid: 31dcd11b-d682-4b71-8ce4-8d2d1d617ed1
+    mlevolve.ai/predecessor-blocker: incomplete-offline-huggingface-cache
+spec:
+  activeDeadlineSeconds: 21600
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 120
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: kubernetes.io/hostname
+                operator: NotIn
+                values:
+                  - ren-gp-argo-01.madren.org
+                  - node-1-3.sdsc.optiputer.net
+                  - node-2-3.sdsc.optiputer.net
+  initContainers:
+    - name: stage-runtime-inputs
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command:
+        - /bin/bash
+        - -lc
+        - |
+          set -euo pipefail
+          src=/workspace/huggingface
+          dst=/runtime-cache/huggingface
+          mkdir -p "$dst/hub" /runtime-cache/dataset
+          for model in \
+            models--google--siglip2-so400m-patch16-256 \
+            models--facebook--dinov2-small \
+            models--google--vit-base-patch16-224; do
+            cp -a --reflink=never "$src/hub/$model" "$dst/hub/$model"
+          done
+          cp -a --reflink=never "$src/torch" "$dst/torch"
+          cp -a --reflink=never \
+            /workspace/experiment-end2end-kaggle-leaf-validation-v1/dataset-v1-official-20260810/. \
+            /runtime-cache/dataset/
+          blob=810ddc85ac019e6b2738b9130ae3602e41eb093a848a297a0ad296ca1f39dc67
+          echo "$blob  $dst/hub/models--google--siglip2-so400m-patch16-256/blobs/$blob" \
+            | sha256sum -c -
+          test "$(python -c 'import pandas as pd; print(len(pd.read_csv("/runtime-cache/dataset/input/test.csv")))')" = 594
+      resources:
+        requests:
+          cpu: "2"
+          memory: 4Gi
+          ephemeral-storage: 8Gi
+        limits:
+          cpu: "2"
+          memory: 4Gi
+          ephemeral-storage: 8Gi
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+          readOnly: true
+        - name: runtime-cache
+          mountPath: /runtime-cache
+  containers:
+    - name: official-top10-dev
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command: ["/bin/bash", "-lc", "exec sleep infinity"]
+      env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: TOKENIZERS_PARALLELISM
+          value: "false"
+        - name: HF_HOME
+          value: /runtime-cache/huggingface
+        - name: HUGGINGFACE_HUB_CACHE
+          value: /runtime-cache/huggingface/hub
+        - name: TRANSFORMERS_CACHE
+          value: /runtime-cache/huggingface/hub
+        - name: TORCH_HOME
+          value: /runtime-cache/huggingface/torch
+        - name: LEAF_OFFICIAL_DATASET_ROOT
+          value: /runtime-cache/dataset
+        - name: KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: KUBERNETES_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      resources:
+        requests:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+        limits:
+          cpu: "16"
+          memory: 32Gi
+          ephemeral-storage: 64Gi
+          nvidia.com/a100: "1"
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: runtime-cache
+          mountPath: /runtime-cache
+        - name: shm
+          mountPath: /dev/shm
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: runtime-cache
+      emptyDir:
+        sizeLimit: 16Gi
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 16Gi

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from pathlib import Path
 
 import run_candidate as base
@@ -11,6 +12,9 @@ from top10_v123_catalog import CANDIDATES, EXPECTED_CODE_SHA256
 
 
 base.CANDIDATES = CANDIDATES
+base.DATASET_ROOT = Path(
+    os.environ.get("LEAF_OFFICIAL_DATASET_ROOT", str(base.DATASET_ROOT))
+)
 base.DEFAULT_OUTPUT_ROOT = Path(
     "/workspace/experiment-end2end-leaf-official-top10-v123/reproductions-v1"
 )
