@@ -14,7 +14,6 @@ import uuid
 
 OFFICIAL_OVERRIDES = [
     "fixed_holdout.enabled=false",
-    "fixed_holdout.bypass_protocol_gates=false",
     "fixed_holdout.preflight_validate_train_view=false",
     "fixed_holdout.internal_metric_disposition=search_only",
     "official_submission.enabled=true",

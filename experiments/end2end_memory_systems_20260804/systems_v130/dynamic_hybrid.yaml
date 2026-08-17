@@ -1,0 +1,13 @@
+# v130 is the fresh release identity for the v129 audit-bypass fix after
+# removing the official evaluator's conflicting last-write-wins override.
+extends: ../systems_v129/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v130-runtime/experiments/end2end_memory_systems_20260804/manifests_v130/leaf_official_replay_targets.json
+
+external_skill_memory:
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v130-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v122/transition_evidence_capsules.json
+
+run_identity:
+  memory_version: leaf_replay_research_top5_alignment_gate_official_gpt56sol_v130

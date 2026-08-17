@@ -56,7 +56,7 @@ def test_latest_leaf_config_resolves_every_llm_role_to_gpt56sol(monkeypatch):
         REPO
         / "experiments"
         / "end2end_memory_systems_20260804"
-        / "systems_v129"
+        / "systems_v130"
         / "dynamic_hybrid.yaml",
         use_cli_args=False,
     )
@@ -90,7 +90,7 @@ def test_official_evaluator_overrides_merge_into_typed_config(monkeypatch):
 
     monkeypatch.setenv("OPENAI_API_KEY", "test-openai-compatible-key")
     cfg = _load_cfg(
-        experiment / "systems_v129" / "dynamic_hybrid.yaml",
+        experiment / "systems_v130" / "dynamic_hybrid.yaml",
         use_cli_args=False,
     )
     cfg_with_cli = OmegaConf.merge(
@@ -101,6 +101,11 @@ def test_official_evaluator_overrides_merge_into_typed_config(monkeypatch):
     merged = OmegaConf.merge(OmegaConf.structured(Config), cfg_with_cli)
 
     assert all(not override.endswith("=") for override in OFFICIAL_OVERRIDES)
+    assert not any(
+        override.startswith("fixed_holdout.bypass_protocol_gates=")
+        for override in OFFICIAL_OVERRIDES
+    )
     assert merged.fixed_holdout.enabled is False
+    assert merged.fixed_holdout.bypass_protocol_gates is True
     assert merged.fixed_holdout.train_manifest_path == ""
     assert merged.official_submission.enabled is True
