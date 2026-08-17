@@ -59,6 +59,8 @@ def read_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, payload: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        path.unlink()
     path.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
