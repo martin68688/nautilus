@@ -1,0 +1,17 @@
+# v131 is self-contained over the shipped v128 parent. It keeps the user's
+# v120-v122 audit-bypass behavior while retaining full official-test inference.
+extends: ../systems_v128/dynamic_hybrid.yaml
+
+agent:
+  check_data_leakage: false
+  draft_role_policy:
+    replay_targets_path: /tmp/nautilus-exp-end2end-agent-v131-runtime/experiments/end2end_memory_systems_20260804/manifests_v131/leaf_official_replay_targets.json
+
+fixed_holdout:
+  bypass_protocol_gates: true
+
+external_skill_memory:
+  transition_evidence_capsules_path: /tmp/nautilus-exp-end2end-agent-v131-runtime/experiments/end2end_memory_systems_20260804/transition_evidence_v122/transition_evidence_capsules.json
+
+run_identity:
+  memory_version: leaf_replay_research_top5_alignment_gate_official_gpt56sol_v131

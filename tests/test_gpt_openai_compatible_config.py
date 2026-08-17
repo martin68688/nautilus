@@ -12,6 +12,10 @@ from llm import _provider  # noqa: E402
 from llm.model_compat import deepseek_thinking_extra_body, resolve_model_name  # noqa: E402
 from llm.model_profiles import get_profile, supports_json_schema  # noqa: E402
 
+EXPERIMENT = REPO / "experiments" / "end2end_memory_systems_20260804"
+sys.path.insert(0, str(EXPERIMENT))
+from build_leaf_replay_gpt_v127_runtime import overlay_files  # noqa: E402
+
 
 def test_gpt56sol_routes_to_openai_compatible_backend():
     assert _provider("gpt-5.6-sol") == "openai"
@@ -56,7 +60,7 @@ def test_latest_leaf_config_resolves_every_llm_role_to_gpt56sol(monkeypatch):
         REPO
         / "experiments"
         / "end2end_memory_systems_20260804"
-        / "systems_v130"
+        / "systems_v131"
         / "dynamic_hybrid.yaml",
         use_cli_args=False,
     )
@@ -80,6 +84,21 @@ def test_latest_leaf_config_resolves_every_llm_role_to_gpt56sol(monkeypatch):
     assert resolved["fixed_holdout"]["bypass_protocol_gates"] is True
 
 
+def test_latest_runtime_overlay_contains_leaf_config_parent_chain():
+    files = set(overlay_files(131))
+
+    assert (
+        Path("experiments/end2end_memory_systems_20260804")
+        / "systems_v128"
+        / "dynamic_hybrid.yaml"
+    ) in files
+    assert (
+        Path("experiments/end2end_memory_systems_20260804")
+        / "systems_v131"
+        / "dynamic_hybrid.yaml"
+    ) in files
+
+
 def test_official_evaluator_overrides_merge_into_typed_config(monkeypatch):
     experiment = REPO / "experiments" / "end2end_memory_systems_20260804"
     sys.path.insert(0, str(experiment))
@@ -90,7 +109,7 @@ def test_official_evaluator_overrides_merge_into_typed_config(monkeypatch):
 
     monkeypatch.setenv("OPENAI_API_KEY", "test-openai-compatible-key")
     cfg = _load_cfg(
-        experiment / "systems_v130" / "dynamic_hybrid.yaml",
+        experiment / "systems_v131" / "dynamic_hybrid.yaml",
         use_cli_args=False,
     )
     cfg_with_cli = OmegaConf.merge(
