@@ -11,6 +11,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
 
 import pandas as pd
@@ -100,6 +101,24 @@ def run(argv: list[str], *, env: dict[str, str] | None = None) -> str:
     return result.stdout
 
 
+def run_with_retry(
+    argv: list[str],
+    *,
+    env: dict[str, str] | None = None,
+    attempts: int = 5,
+) -> str:
+    """Retry transient external CLI failures without weakening idempotency."""
+
+    for attempt in range(1, attempts + 1):
+        try:
+            return run(argv, env=env)
+        except subprocess.CalledProcessError:
+            if attempt == attempts:
+                raise
+            time.sleep(min(2**attempt, 10))
+    raise AssertionError("unreachable")
+
+
 def safe_extract(archive: zipfile.ZipFile, destination: Path) -> None:
     destination = destination.resolve()
     for member in archive.infolist():
@@ -142,6 +161,14 @@ def main() -> int:
     )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
+        "--resume",
+        action="store_true",
+        help=(
+            "Resume an interrupted local collection using its immutable bundle, "
+            "artifacts, and idempotent Kaggle score-service ledger."
+        ),
+    )
+    parser.add_argument(
         "--sample-submission-zip",
         type=Path,
         default=Path(
@@ -162,47 +189,65 @@ def main() -> int:
         "/workspace/experiment-end2end-leaf-official-top10-v125/reproductions-v1",
     ]
     output_dir = args.output_dir.resolve()
-    output_dir.mkdir(parents=True, exist_ok=False)
+    if args.resume:
+        if not output_dir.is_dir():
+            raise FileNotFoundError(f"resume output directory absent: {output_dir}")
+    else:
+        output_dir.mkdir(parents=True, exist_ok=False)
     bundle = output_dir / "top10-v123-preferred.zip"
     extracted = output_dir / "artifacts"
-    extracted.mkdir()
     sample_path = output_dir / "sample_submission.csv"
 
-    kube_env = clean_env()
-    run(
-        [
-            "kubectl",
-            "exec",
-            "-n",
-            args.namespace,
-            args.pod,
-            "--",
-            "python",
-            "-c",
-            REMOTE_PACK,
-            args.remote_bundle,
-            json.dumps([candidate["candidate_id"] for candidate in CANDIDATES]),
-            *remote_roots,
-        ],
-        env=kube_env,
-    )
-    run(
-        [
-            "kubectl",
-            "cp",
-            "-n",
-            args.namespace,
-            f"{args.pod}:{args.remote_bundle}",
-            str(bundle),
-        ],
-        env=kube_env,
-    )
+    if args.resume:
+        if not bundle.is_file():
+            raise FileNotFoundError(f"resume collection bundle absent: {bundle}")
+        if not extracted.is_dir():
+            raise FileNotFoundError(f"resume artifacts directory absent: {extracted}")
+        if not sample_path.is_file():
+            raise FileNotFoundError(f"resume sample submission absent: {sample_path}")
+    else:
+        extracted.mkdir()
+        kube_env = clean_env()
+        run(
+            [
+                "kubectl",
+                "exec",
+                "-n",
+                args.namespace,
+                args.pod,
+                "--",
+                "python",
+                "-c",
+                REMOTE_PACK,
+                args.remote_bundle,
+                json.dumps([candidate["candidate_id"] for candidate in CANDIDATES]),
+                *remote_roots,
+            ],
+            env=kube_env,
+        )
+        run(
+            [
+                "kubectl",
+                "cp",
+                "-n",
+                args.namespace,
+                f"{args.pod}:{args.remote_bundle}",
+                str(bundle),
+            ],
+            env=kube_env,
+        )
     with zipfile.ZipFile(bundle) as archive:
         if archive.testzip() is not None:
             raise RuntimeError("collected reproduction bundle is corrupt")
-        safe_extract(archive, extracted)
+        if not args.resume:
+            safe_extract(archive, extracted)
     with zipfile.ZipFile(args.sample_submission_zip.resolve(strict=True)) as archive:
-        sample_path.write_bytes(archive.read("sample_submission.csv"))
+        expected_sample = archive.read("sample_submission.csv")
+    if args.resume:
+        if sample_path.read_bytes() != expected_sample:
+            raise ValueError("resume sample submission drift")
+    else:
+        sample_path.write_bytes(expected_sample)
     sample = pd.read_csv(sample_path)
     if sample.shape != (594, 100):
         raise ValueError(f"official sample shape mismatch: {sample.shape}")
@@ -229,7 +274,11 @@ def main() -> int:
         validate_submission(path, sample)
         submit_copy = output_dir / "submissions" / f"{candidate_id}__{variant}.csv"
         submit_copy.parent.mkdir(exist_ok=True)
-        shutil.copy2(path, submit_copy)
+        if submit_copy.exists():
+            if not args.resume or sha256_file(submit_copy) != sha256_file(path):
+                raise ValueError(f"refusing to replace submission artifact: {submit_copy}")
+        else:
+            shutil.copy2(path, submit_copy)
         selected.append(
             {
                 "candidate_id": candidate_id,
@@ -248,7 +297,7 @@ def main() -> int:
             f"official-v123-top10 {item['candidate_id']} "
             f"variant={item['variant']} node={str(item['node_id'])[-12:]}"
         )
-        output = run(
+        output = run_with_retry(
             [
                 str(args.score_service.resolve(strict=True)),
                 "submit",
@@ -292,6 +341,8 @@ def main() -> int:
         json.dumps(ledger, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
     ledger_path = output_dir / "OFFICIAL_SCORE_LEDGER.json"
+    if ledger_path.exists():
+        raise FileExistsError(f"refusing to replace score ledger: {ledger_path}")
     ledger_path.write_text(
         json.dumps(ledger, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
