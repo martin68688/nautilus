@@ -1,0 +1,54 @@
+{
+  "bindings": {
+    "budget_manifest_hash": "a1e579eb50ff6e4beb9d8c9df740321a74dbe1bfb250f2637412b7567ab24a59",
+    "evaluators_manifest_hash": "485d5ff4532fee26e0c2ce793ac98fba290ca2f9a4206c5d3cd117dfefa2fecc",
+    "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+    "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+    "source_lock_manifest_hash": "bfc4e4f80af39c0e563d7dcf772525dc89739cf3ebf918326137e00b574dbff4",
+    "systems_manifest_hash": "359da7c50b74445d14120365bf5923d7d7eab78bc9cd1b1d77309a342f6b6a03",
+    "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+  },
+  "comparison_baseline_release_id": "end2end-leaf-ten-system-official-gpt56sol-v135",
+  "exploratory_pilot": true,
+  "first_parallel_batch": [
+    "dynamic_hybrid"
+  ],
+  "formal_result_eligible": false,
+  "kind": "smoke",
+  "launch_order_randomization": "single Dynamic-only condition",
+  "manifest_hash": "9102710e8d45437eec4f7372319b0eaf34a9374e602927ee50f8e8691c5a42c5",
+  "release_id": "end2end-leaf-dynamic-retrieval-gpt56sol-v137-smoke-r3",
+  "run_count": 1,
+  "runs": [
+    {
+      "bindings": {
+        "budget_manifest_hash": "a1e579eb50ff6e4beb9d8c9df740321a74dbe1bfb250f2637412b7567ab24a59",
+        "evaluators_manifest_hash": "485d5ff4532fee26e0c2ce793ac98fba290ca2f9a4206c5d3cd117dfefa2fecc",
+        "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "bfc4e4f80af39c0e563d7dcf772525dc89739cf3ebf918326137e00b574dbff4",
+        "systems_manifest_hash": "359da7c50b74445d14120365bf5923d7d7eab78bc9cd1b1d77309a342f6b6a03",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": false,
+      "launch_position": 0,
+      "logical_run_id": "e2e-smoke-leaf-dynamic-retrieval-official-gpt56sol-v137-smoke-r3__leaf-classification__dynamic_hybrid__seed-1",
+      "row_hash": "ab0dfe08deed94dcc4db28de5522cb508c9d23bf96f0987d4aa9e7ce147732f5",
+      "seed": 1,
+      "system_id": "dynamic_hybrid",
+      "task_id": "leaf-classification",
+      "task_launch_position": 0
+    }
+  ],
+  "schema": "mlevolve_end2end_execution_manifest_v1",
+  "second_parallel_batch": [],
+  "seed": 1,
+  "statistical_significance_claim_allowed": false,
+  "system_ids": [
+    "dynamic_hybrid"
+  ],
+  "task_ids": [
+    "leaf-classification"
+  ]
+}
