@@ -196,7 +196,11 @@ def build_components(output: Path) -> dict[str, str]:
         manifests / "evaluators.json", evaluators, "manifest_hash"
     )
 
-    old_systems = read_json(output / EXPERIMENT / "manifests/systems.json")
+    # The compact v134 runtime retains the executable v23 system configs but
+    # intentionally omits the old top-level manifest directory. Read the
+    # authoritative labels/descriptions from the repository and hash only the
+    # newly overlaid v135 configs into this release.
+    old_systems = read_json(REPO / EXPERIMENT / "manifests/systems.json")
     system_rows = {
         str(row["system_id"]): dict(row) for row in old_systems["systems"]
     }
@@ -499,4 +503,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
