@@ -1,0 +1,8 @@
+# v136 repairs only the launch-time Memory Bundle binding for the four failed
+# v135 legacy controls.  The controller semantics remain byte-for-byte those
+# selected by v135: latest shared runtime, frozen v23 control configuration,
+# and the user's GPT relay.
+extends: ../systems_v135/base.yaml
+
+run_identity:
+  memory_version: leaf_v23_controls_v2_bundle_latest_runtime_gpt56sol_v136
