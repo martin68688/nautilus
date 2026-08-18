@@ -1,0 +1,9 @@
+extends: base.yaml
+
+external_skill_memory:
+  end2end_memory_system: rcr_router_style_port
+
+run_identity:
+  memory_system: rcr_router_style_port
+  system_id: rcr_router_style_port
+

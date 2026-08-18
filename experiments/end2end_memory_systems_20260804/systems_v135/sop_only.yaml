@@ -1,0 +1,9 @@
+extends: base.yaml
+
+external_skill_memory:
+  end2end_memory_system: sop_only
+
+run_identity:
+  memory_system: sop_only
+  system_id: sop_only
+

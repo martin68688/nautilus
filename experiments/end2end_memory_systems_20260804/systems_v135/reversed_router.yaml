@@ -1,0 +1,9 @@
+extends: base.yaml
+
+external_skill_memory:
+  end2end_memory_system: reversed_router
+
+run_identity:
+  memory_system: reversed_router
+  system_id: reversed_router
+

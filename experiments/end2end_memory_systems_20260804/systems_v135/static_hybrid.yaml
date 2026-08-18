@@ -1,0 +1,9 @@
+extends: base.yaml
+
+external_skill_memory:
+  end2end_memory_system: static_hybrid
+
+run_identity:
+  memory_system: static_hybrid
+  system_id: static_hybrid
+

@@ -1,0 +1,44 @@
+# v135 keeps the frozen v23 control-system semantics while moving the shared
+# engine/evaluator surface to the latest code and the user's GPT relay.
+extends: ../systems_v23/base.yaml
+
+agent:
+  check_data_leakage: false
+  code:
+    model: "${oc.env:OPENAI_MODEL, gpt-5.6-sol}"
+    base_url: "${oc.env:OPENAI_BASE_URL, https://apizh.net/v1}"
+    api_key: "${oc.env:OPENAI_API_KEY}"
+  feedback:
+    model: "${oc.env:OPENAI_MODEL, gpt-5.6-sol}"
+    base_url: "${oc.env:OPENAI_BASE_URL, https://apizh.net/v1}"
+    api_key: "${oc.env:OPENAI_API_KEY}"
+
+adoption_verifier:
+  model: "${oc.env:OPENAI_MODEL, gpt-5.6-sol}"
+
+external_skill_memory:
+  memory_strategy_model: "${oc.env:OPENAI_MODEL, gpt-5.6-sol}"
+  memory_strategy_json_normalization_model: "${oc.env:OPENAI_MODEL, gpt-5.6-sol}"
+
+fixed_holdout:
+  enabled: false
+  train_manifest_path: ""
+  bypass_protocol_gates: true
+  preflight_validate_train_view: false
+  internal_metric_disposition: search_only
+
+official_submission:
+  enabled: true
+  provider: kaggle
+  competition: leaf-classification
+  metric: log_loss
+  maximize: false
+  sample_submission_path: sample_submission.csv
+  id_column: id
+  prediction_kind: multiclass_probability
+  probability_row_sum_tolerance: 0.0001
+  submission_subdir: submission
+
+run_identity:
+  memory_version: leaf_ten_system_legacy_controls_latest_runtime_gpt56sol_v135
+
