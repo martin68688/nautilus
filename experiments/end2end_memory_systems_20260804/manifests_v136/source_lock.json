@@ -1,0 +1,2759 @@
+{
+  "complete_runtime_file_hash_lock": true,
+  "control_file_exclusions": [
+    "SOURCE_FILES.sha256",
+    "experiments/end2end_memory_systems_20260804/manifests_v136/leaf_control_repair_manifest.json",
+    "experiments/end2end_memory_systems_20260804/manifests_v136/source_lock.json"
+  ],
+  "files": [
+    {
+      "path": "experiments/end2end_memory_systems_20260804/__pycache__/stage_leaf_official_evaluator_v127.cpython-311.pyc",
+      "sha256": "ba2189c5e4fefca3882a23cd996ed81142c41b04d78fe28587a72d48daf2ed81"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/build_leaf_coldstart_v118_release.py",
+      "sha256": "257be4e8b2ec09256cd7245ded43ae57eea59ce862bac702e3cb495346981391"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/build_leaf_coldstart_v119_release.py",
+      "sha256": "44a1fe2b5d42ce79f443f6e44cbe44310de35b480ac1a856d2d0d23493e61489"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/build_leaf_replay_research_v120_release.py",
+      "sha256": "eb2c4b3b12303989b3e60050507f9f25e87a92865e1f506bd61650f0f7f569a8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/build_leaf_replay_research_v121_release.py",
+      "sha256": "7290703c3ddbfa58f34cd5f6e890267b61e59a333e640bfebfaa5e2863bab211"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/build_leaf_replay_research_v122_release.py",
+      "sha256": "1941e2c1271660c10205e868063fe4cfdf763d79c23cbb9d117e68820228468f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v117/budget.json",
+      "sha256": "59f3f484eb1181e952914a12028ab440f9fd3814716c8b2376c2ad8829e61e5f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v117/evaluators.json",
+      "sha256": "2562194d6ee4d24098d244649a00bb0715ab9a41c17ce330bceb890060ce8429"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v117/leaf_atomic_memory_smoke_manifest.json",
+      "sha256": "6708d6e27cb80408f99412e0430f1986d210954f97b6094f1314297579a26569"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v117/leaf_official_replay_targets.json",
+      "sha256": "5302f803cc85dac96972108af8bfe47672adb4ae03e1dee294531d50a114d477"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v117/leaf_strategy_active_smoke_manifest.json",
+      "sha256": "609c47157fb3d74a3cd08f5bcc2db3704b3d5f0f706b6fd6c7e7130e6e2939ab"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v117/memory_bundles.json",
+      "sha256": "bfa7255851ac79257ca7cf779ba6c4d52c54b788544862f97c8d79ce50ba62da"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v117/schemas.json",
+      "sha256": "5879c917bb8dd33dbebba77bd49a78fc15be0e1574463ee45ba1d3fb664ef4ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v117/source_lock.json",
+      "sha256": "b40e65e9dfa174c147b135caf689846df47140fc244f75cf1594b0a867792985"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v117/systems.json",
+      "sha256": "ffeac22214aff9c421ba44557e3e5d4980efa5fba4820fc719202785c4aae299"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v117/tasks.json",
+      "sha256": "d551b6f81081e33aeb8a4cdb0a105db12996ecce906c0cea9441c2e3f9890223"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v119/budget.json",
+      "sha256": "59f3f484eb1181e952914a12028ab440f9fd3814716c8b2376c2ad8829e61e5f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v119/evaluators.json",
+      "sha256": "2562194d6ee4d24098d244649a00bb0715ab9a41c17ce330bceb890060ce8429"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v119/leaf_atomic_memory_smoke_manifest.json",
+      "sha256": "6708d6e27cb80408f99412e0430f1986d210954f97b6094f1314297579a26569"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v119/leaf_official_replay_targets.json",
+      "sha256": "5302f803cc85dac96972108af8bfe47672adb4ae03e1dee294531d50a114d477"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v119/leaf_strategy_active_smoke_manifest.json",
+      "sha256": "a53c6885ac60e0d4f01f90012cd8818139ee8dfb755eeec058cef7292cdbceb2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v119/memory_bundles.json",
+      "sha256": "bfa7255851ac79257ca7cf779ba6c4d52c54b788544862f97c8d79ce50ba62da"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v119/schemas.json",
+      "sha256": "5879c917bb8dd33dbebba77bd49a78fc15be0e1574463ee45ba1d3fb664ef4ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v119/source_lock.json",
+      "sha256": "4b68a630cd7cb8bd118ae7b90ffac567781730cc72061dd23027a8333e02f940"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v119/systems.json",
+      "sha256": "50677ebadd77e94e1bbcc3ed9404e716610b83586b49e7a88e89f73c4f152f86"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v119/tasks.json",
+      "sha256": "d551b6f81081e33aeb8a4cdb0a105db12996ecce906c0cea9441c2e3f9890223"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v120/budget.json",
+      "sha256": "fceaa8645d72f69143ec5fb2338ea21b248ec84625c7aab1dcc1e2acce711d7a"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v120/evaluators.json",
+      "sha256": "2562194d6ee4d24098d244649a00bb0715ab9a41c17ce330bceb890060ce8429"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v120/leaf_atomic_memory_smoke_manifest.json",
+      "sha256": "6708d6e27cb80408f99412e0430f1986d210954f97b6094f1314297579a26569"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v120/leaf_official_replay_targets.json",
+      "sha256": "69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v120/leaf_strategy_active_smoke_manifest.json",
+      "sha256": "e777c8b497d56fc8cca715e227f4f167f15e4cefe77ece5334be0a7442c92a7c"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v120/memory_bundles.json",
+      "sha256": "bfa7255851ac79257ca7cf779ba6c4d52c54b788544862f97c8d79ce50ba62da"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v120/schemas.json",
+      "sha256": "5879c917bb8dd33dbebba77bd49a78fc15be0e1574463ee45ba1d3fb664ef4ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v120/source_lock.json",
+      "sha256": "25a1c3a6b1757451fcb74bfbc21978e77b96774b584f0ce85574768b2a7ef966"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v120/systems.json",
+      "sha256": "07fb438ae51ff502e0213286080ba87102788decf947c1225dd2930dfeb1220c"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v120/tasks.json",
+      "sha256": "d551b6f81081e33aeb8a4cdb0a105db12996ecce906c0cea9441c2e3f9890223"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v121/budget.json",
+      "sha256": "66aa0c9fd5aa2dc67a54ffbbdef76690a111571a4445000c707a3b54e2b50446"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v121/evaluators.json",
+      "sha256": "2562194d6ee4d24098d244649a00bb0715ab9a41c17ce330bceb890060ce8429"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v121/leaf_atomic_memory_smoke_manifest.json",
+      "sha256": "6708d6e27cb80408f99412e0430f1986d210954f97b6094f1314297579a26569"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v121/leaf_official_replay_targets.json",
+      "sha256": "69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v121/leaf_strategy_active_smoke_manifest.json",
+      "sha256": "b7d159b1c5709d3c3ee6202ba4069d978d42fd16966a0247ab5755025967155a"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v121/memory_bundles.json",
+      "sha256": "bfa7255851ac79257ca7cf779ba6c4d52c54b788544862f97c8d79ce50ba62da"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v121/schemas.json",
+      "sha256": "5879c917bb8dd33dbebba77bd49a78fc15be0e1574463ee45ba1d3fb664ef4ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v121/source_lock.json",
+      "sha256": "eaf6f5a5db1359f087b0850e931cdac25fa2a929e83973f45b4c8210aa072dd8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v121/systems.json",
+      "sha256": "4c8db4ba2bd375d5a4b8ccfe909ba4db3f40acc10d8a69734b9d72f6774cf91f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v121/tasks.json",
+      "sha256": "d551b6f81081e33aeb8a4cdb0a105db12996ecce906c0cea9441c2e3f9890223"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v122/budget.json",
+      "sha256": "66aa0c9fd5aa2dc67a54ffbbdef76690a111571a4445000c707a3b54e2b50446"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v122/evaluators.json",
+      "sha256": "2562194d6ee4d24098d244649a00bb0715ab9a41c17ce330bceb890060ce8429"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v122/leaf_atomic_memory_smoke_manifest.json",
+      "sha256": "6708d6e27cb80408f99412e0430f1986d210954f97b6094f1314297579a26569"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v122/leaf_official_replay_targets.json",
+      "sha256": "69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v122/leaf_strategy_active_smoke_manifest.json",
+      "sha256": "2ca5039571e3476c2e0044ed512e4f7667cb51d39031c681ee942b4a437b65f3"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v122/memory_bundles.json",
+      "sha256": "bfa7255851ac79257ca7cf779ba6c4d52c54b788544862f97c8d79ce50ba62da"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v122/schemas.json",
+      "sha256": "5879c917bb8dd33dbebba77bd49a78fc15be0e1574463ee45ba1d3fb664ef4ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v122/source_lock.json",
+      "sha256": "4c433109db9f311aa8c4e69598e34c4f843a4a2e5b8003839699606b09058a82"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v122/systems.json",
+      "sha256": "e3014d9a704e2311e8e141c6b3732c0a9a4d3656a8c7330fe6231b10bfa142aa"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v122/tasks.json",
+      "sha256": "d551b6f81081e33aeb8a4cdb0a105db12996ecce906c0cea9441c2e3f9890223"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v128/budget.json",
+      "sha256": "c89f1d6f5dffcdb17ebc348b6f847f571d71d295a1337885c6bfa26d4bb036a0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v128/evaluators.json",
+      "sha256": "0f3005dee537ad557d0bfe34bdd16df6390838ec73b5d1d62ce3644e7f1050ef"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v128/leaf_official_replay_targets.json",
+      "sha256": "69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v128/leaf_replay_gpt56sol_smoke_manifest.json",
+      "sha256": "b7b2cbfd6b4ad4f932799625a4346a70ce2646fd61cfa36b43169bca08c6a868"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v128/memory_bundles.json",
+      "sha256": "bfa7255851ac79257ca7cf779ba6c4d52c54b788544862f97c8d79ce50ba62da"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v128/schemas.json",
+      "sha256": "5879c917bb8dd33dbebba77bd49a78fc15be0e1574463ee45ba1d3fb664ef4ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v128/source_lock.json",
+      "sha256": "81d716074e4e496b47994c577646ae74b8c2245dfb1bf476ed27b48c27fe4bf6"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v128/systems.json",
+      "sha256": "c5e03d669d0069583e680cd84f3b356d2ac7c72ef8e0603932268bb771996eea"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v128/tasks.json",
+      "sha256": "d551b6f81081e33aeb8a4cdb0a105db12996ecce906c0cea9441c2e3f9890223"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v132/budget.json",
+      "sha256": "c89f1d6f5dffcdb17ebc348b6f847f571d71d295a1337885c6bfa26d4bb036a0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v132/evaluators.json",
+      "sha256": "d2e0d864dc91d0ed51af39ef60c5e106d5d9fb0cc1baf2a1c57f1af2a92d1bcc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v132/leaf_official_replay_targets.json",
+      "sha256": "69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v132/leaf_replay_gpt56sol_smoke_manifest.json",
+      "sha256": "89b70c911e2f1c2fbc1648e28c014746877b9dec558b35bf57a8f144123e4b58"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v132/memory_bundles.json",
+      "sha256": "bfa7255851ac79257ca7cf779ba6c4d52c54b788544862f97c8d79ce50ba62da"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v132/schemas.json",
+      "sha256": "5879c917bb8dd33dbebba77bd49a78fc15be0e1574463ee45ba1d3fb664ef4ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v132/source_lock.json",
+      "sha256": "21fadda2f84f44d18d3dad03d7ebffa8b5752e600fe9cb4cce02785e962210c6"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v132/systems.json",
+      "sha256": "adc8017ac808d93d7a41a74696acd46712b9e0a9bc0eea89a641cc3eb297266b"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v132/tasks.json",
+      "sha256": "d551b6f81081e33aeb8a4cdb0a105db12996ecce906c0cea9441c2e3f9890223"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v133/budget.json",
+      "sha256": "c89f1d6f5dffcdb17ebc348b6f847f571d71d295a1337885c6bfa26d4bb036a0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v133/evaluators.json",
+      "sha256": "bf060981483912dc6020a0b3fc47e8a86ed3dd34048684533bb8e14b6b9ec012"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v133/leaf_official_replay_targets.json",
+      "sha256": "69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v133/leaf_replay_gpt56sol_smoke_manifest.json",
+      "sha256": "a87bb3f06351639725781c27a1299852676811a815301bec020064ed511b834d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v133/memory_bundles.json",
+      "sha256": "bfa7255851ac79257ca7cf779ba6c4d52c54b788544862f97c8d79ce50ba62da"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v133/schemas.json",
+      "sha256": "5879c917bb8dd33dbebba77bd49a78fc15be0e1574463ee45ba1d3fb664ef4ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v133/source_lock.json",
+      "sha256": "fba2bd082d4bb8786b66c0dda8e605c2eabc7bbab7ef3932c2cf1d4db0f4fffc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v133/systems.json",
+      "sha256": "136fe0e1009b51a0e99ac16bd275d4145b008be4ff4d448d436a7679cd9e527b"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v133/tasks.json",
+      "sha256": "d551b6f81081e33aeb8a4cdb0a105db12996ecce906c0cea9441c2e3f9890223"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v134/budget.json",
+      "sha256": "c89f1d6f5dffcdb17ebc348b6f847f571d71d295a1337885c6bfa26d4bb036a0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v134/evaluators.json",
+      "sha256": "4376daaee4a0e1bf9fa76f6784d35e1060c0d187381d373b2c5d2e9b0a52920d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v134/leaf_official_replay_targets.json",
+      "sha256": "69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v134/leaf_replay_gpt56sol_smoke_manifest.json",
+      "sha256": "e9bcc1dcaf74400bd1f2be7a18b03d2b3c422900101c3c817a64f1b6f4841670"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v134/memory_bundles.json",
+      "sha256": "bfa7255851ac79257ca7cf779ba6c4d52c54b788544862f97c8d79ce50ba62da"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v134/schemas.json",
+      "sha256": "5879c917bb8dd33dbebba77bd49a78fc15be0e1574463ee45ba1d3fb664ef4ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v134/source_lock.json",
+      "sha256": "f286aaaf25f51d69987af28aa1697adee0deff39c6140807c6b6a2b2a97b1638"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v134/systems.json",
+      "sha256": "ee162154faa8b28551cb41bd2f1089640d48592dfe6b9279d86efde3dce0b00e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v134/tasks.json",
+      "sha256": "d551b6f81081e33aeb8a4cdb0a105db12996ecce906c0cea9441c2e3f9890223"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v135/budget.json",
+      "sha256": "81bcf5ec3b32b07609e7539186bfe5755495fa7a696f4098b701608266b211f7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v135/evaluators.json",
+      "sha256": "9aa2612105bcc658c7a5e1df4be73ae0733ccf56fa4cc5e8231345d987964a98"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v135/leaf_official_replay_targets.json",
+      "sha256": "69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v135/leaf_ten_system_pilot_manifest.json",
+      "sha256": "c9bb7d62958cdc534b9a396725c1764699270cb269019c1da6f3dac526860149"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v135/memory_bundles.json",
+      "sha256": "bfa7255851ac79257ca7cf779ba6c4d52c54b788544862f97c8d79ce50ba62da"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v135/schemas.json",
+      "sha256": "5879c917bb8dd33dbebba77bd49a78fc15be0e1574463ee45ba1d3fb664ef4ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v135/source_lock.json",
+      "sha256": "e6ed87009bcd3bbff9237b1cb2004505ba490aef79919488360122af5779791f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v135/systems.json",
+      "sha256": "c5d9c4ec6d857af72c1efbbd160be7ab239d910de7d3d37a57e3eef77a3616d6"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v135/tasks.json",
+      "sha256": "d551b6f81081e33aeb8a4cdb0a105db12996ecce906c0cea9441c2e3f9890223"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v136/budget.json",
+      "sha256": "81bcf5ec3b32b07609e7539186bfe5755495fa7a696f4098b701608266b211f7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v136/evaluators.json",
+      "sha256": "beac6e8ee5378243fb7cd9966744bb11e0fdeb2e428ea842b1aaed0c6fde855d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v136/leaf_official_replay_targets.json",
+      "sha256": "69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v136/memory_bundles.json",
+      "sha256": "c54b9bf50f0d0b7b8faad147601b7e1be87fb0bf0c1936d68daf306b8e0bc7b9"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v136/schemas.json",
+      "sha256": "5879c917bb8dd33dbebba77bd49a78fc15be0e1574463ee45ba1d3fb664ef4ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v136/systems.json",
+      "sha256": "3007cd089bde6625597c390a7b81139d0941e3ac03b016eb4ec41455510cf7ce"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/manifests_v136/tasks.json",
+      "sha256": "d551b6f81081e33aeb8a4cdb0a105db12996ecce906c0cea9441c2e3f9890223"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/prepare_leaf_strategy_active_v74.py",
+      "sha256": "e7ae51ada70e85b691395b3cc3bbcd708fa3e5e3473d8ed17974bd4bf5eadc4f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/replay_research_v120/leaf_replay_research_targets.json",
+      "sha256": "69019b0b3c62d8fa890a74614635c46373dd80a112543a358746eb4da822b3d4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/run_assignment.py",
+      "sha256": "e3e8e0bca83a0e961212b288552481cef740d10ace6bda110d4a887d238d69e0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/stage_leaf_official_evaluator_v127.py",
+      "sha256": "d551392eaab6f486f384f69abf3e06fd556bc06b649f4d26c9af9de8fcfb6691"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems/base.yaml",
+      "sha256": "79a97e9e5faa7282e307e673ee08b026958735bd93b54023bcc130d9f027f578"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems/dynamic_hybrid.yaml",
+      "sha256": "1f4dc5820d953aeb642111af845afedfcf0d09cd0ed3c7f92a2916655ffe52e6"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems/flat_retrieval.yaml",
+      "sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems/gome_style_port.yaml",
+      "sha256": "451abc8087cbfc2c2b8b2a5bbaefbadf0a99d539e5fcc0b22b737e5affb0ae03"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems/macla_style_port.yaml",
+      "sha256": "ade946a3e98de146c7c1bbcb654662e21f08bc76ee1db16bb74f9c3c0a522991"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems/no_memory.yaml",
+      "sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems/rcr_router_style_port.yaml",
+      "sha256": "ab23b4f6fb4de089080a9bf11a97d194e4f933eaf1faf2b0d5d9d15e4a8994f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems/reversed_router.yaml",
+      "sha256": "c25ae0075cd8cc7bad86e42a01fca3e875c558ca8d50d3646a42c9296e326076"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems/runforest_only.yaml",
+      "sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems/sop_only.yaml",
+      "sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems/static_hybrid.yaml",
+      "sha256": "2d3cfd715e42481ba749b92f0a82221b94d54cd844aa7518a8548577b599a92d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v103/dynamic_hybrid.yaml",
+      "sha256": "c3813bcfd37172095a6ff5d67b1f99eb16025b815a6698872cfa74d2a6cbe446"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v104/dynamic_hybrid.yaml",
+      "sha256": "83fd8be1d8db2aad3616c4347686151fa5128b4b9d4486483709157863e95332"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v105/dynamic_hybrid.yaml",
+      "sha256": "83fd9f04cdc6ffa1bd83f6477bd20a7f794c44448e572e814990bacebd68470a"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v106/dynamic_hybrid.yaml",
+      "sha256": "5cb48b81903651132eec913df9e7258143f5df7a84f27b577888d3d77d7a445e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v108/dynamic_hybrid.yaml",
+      "sha256": "354a230d073d44c23b6734a628b4b7caca92d635c20fe45dc8c3b5da3c6c288f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v109/dynamic_hybrid.yaml",
+      "sha256": "9d7a376afe14cd7c905cc4e943eda1d97b8a08eb001b56676d731fbaeec755be"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v110/dynamic_hybrid.yaml",
+      "sha256": "722acbd1041e1cb17c456213124d25dac9022c84e2e0a78de670a73dd23c6c1c"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v111/dynamic_hybrid.yaml",
+      "sha256": "c065bd800fcb5c9df15a1c03723a0ab92c0593d1b21ef2dcfc806fcdb3e07fbd"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v112/dynamic_hybrid.yaml",
+      "sha256": "756827d2cd8e2c3b2fc8b29bc39a2ff59010033d95c83583bfdca3d6695a2b29"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v113/dynamic_hybrid.yaml",
+      "sha256": "fdee9c4f7cf5714c83827ab1b41a4d12835b2c38dcf107054912bfe6417f0382"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v114/dynamic_hybrid.yaml",
+      "sha256": "49778b36d368cee7e6ee131cd117e58478c28adeb3ec0fddf5a69cf4f15de977"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v115/dynamic_hybrid.yaml",
+      "sha256": "bf7ca5729829aed09655f9968d425ca278e3ff5ff99e45709a2b4f707a576bab"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v116/dynamic_hybrid.yaml",
+      "sha256": "764901c6fdd92689ccf993f2311c76e2667a9ca5dbe05c0ba5463c794ae89c8b"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v117/dynamic_hybrid.yaml",
+      "sha256": "97723552f1a2fdc32886467b8933d47806c04357d315af0cb43d63dd8e0c8a5f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v118/dynamic_hybrid.yaml",
+      "sha256": "a1abfc29445bbd31835641c19a8a89a1407033b6f0da8d4a96848241e3d718f5"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v119/dynamic_hybrid.yaml",
+      "sha256": "6ad15a8227563e88b69b74a2b8cf12a4ae47022d2c5f898a2ac43231ee9ae8da"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v120/dynamic_hybrid.yaml",
+      "sha256": "c1cf2f63de49a3abb3af5ebbf0e68929e52173e083f5b648ffdd234dfb429aa0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v121/dynamic_hybrid.yaml",
+      "sha256": "3f8885f6403c52bc7def23094df8941e675306918857f530ad8dae3b0750be2f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v122/dynamic_hybrid.yaml",
+      "sha256": "4542381ffe9a797946dca02eac17fdcb64ba3ee9814d6705cb4e181308e280e0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v123/dynamic_hybrid.yaml",
+      "sha256": "a2bb19f1858741972b1d50ef83f9dea8f27c0f25314437eaaccc3dd2b6a6c041"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v127/dynamic_hybrid.yaml",
+      "sha256": "3302a8790753d879e7357775dd24d5013467c41db4e35798eab80b1e7a9650e6"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v128/dynamic_hybrid.yaml",
+      "sha256": "58f70a39b5b6374debcbe1240967eb99dceab45d2dd61b22968afc6db7b5a5b0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v132/dynamic_hybrid.yaml",
+      "sha256": "9c0b2ed89d8165526577c055df1c710851b330b412fddb454c0825648b717ece"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v133/dynamic_hybrid.yaml",
+      "sha256": "8d2a149893b916903f285121fbdaf3609eb0655871680d6442ed1972a80634f0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v134/dynamic_hybrid.yaml",
+      "sha256": "045870f5476439d42e7dccfc754398a9a19581d85cdefe2564db20cf6b364806"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v135/base.yaml",
+      "sha256": "943c9c0f5d189637ffcce211a8984f8d8dda9931410e48e0e9fd5b2508cbfb62"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v135/dynamic_hybrid.yaml",
+      "sha256": "4fa695f7c2a9ed75d1beaba9ccce0d25afa3f37152611b60b3ddd2125d74acf3"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v135/flat_retrieval.yaml",
+      "sha256": "df2a76c72ba3fd5856f965af9faab524be4a974279cd47266c356e0807e9b860"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v135/gome_style_port.yaml",
+      "sha256": "662a7a4a5e128b6b6b8a185e329e0074f628f706cd66e11a49819af76eb8f33b"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v135/macla_style_port.yaml",
+      "sha256": "61dc7f05ca0c359f2e929da9de8a1c11dd60158684faeafd31653822685d2337"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v135/no_memory.yaml",
+      "sha256": "e48989edc7b4f68a30c4b4d8f5a009757a297c8334be7e152192c36752efeb2c"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v135/rcr_router_style_port.yaml",
+      "sha256": "1a901d0aeb368fb162e3a960c4050d540231c0359290afaaf461ce8aefa5e1ad"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v135/reversed_router.yaml",
+      "sha256": "d2fdc118c8d1e555c37886d627d5523dca859fba5662e9205d9c9435e0762c8e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v135/runforest_only.yaml",
+      "sha256": "013d714e6d4550a949af58a14ab9ee542649857827bddc40999119664a50a3f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v135/sop_only.yaml",
+      "sha256": "2d425867653d9af0776729ee48a7f03c005c1eee2c99a80d3d9fa99d9ec6c65c"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v135/static_hybrid.yaml",
+      "sha256": "155a67c979beb182f6f3651a1b9d1ce3e6d3992dccff0cc2b318a9d4cd15b837"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v136/base.yaml",
+      "sha256": "db2b225e2fe00b2ca5b318e4df53deb1cd330d26e3c33abdf2df8490ee4a2160"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v136/flat_retrieval.yaml",
+      "sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v136/no_memory.yaml",
+      "sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v136/runforest_only.yaml",
+      "sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v136/sop_only.yaml",
+      "sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v23/base.yaml",
+      "sha256": "79a97e9e5faa7282e307e673ee08b026958735bd93b54023bcc130d9f027f578"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v23/dynamic_hybrid.yaml",
+      "sha256": "1f4dc5820d953aeb642111af845afedfcf0d09cd0ed3c7f92a2916655ffe52e6"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v23/flat_retrieval.yaml",
+      "sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v23/gome_style_port.yaml",
+      "sha256": "451abc8087cbfc2c2b8b2a5bbaefbadf0a99d539e5fcc0b22b737e5affb0ae03"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v23/macla_style_port.yaml",
+      "sha256": "ade946a3e98de146c7c1bbcb654662e21f08bc76ee1db16bb74f9c3c0a522991"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v23/no_memory.yaml",
+      "sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v23/rcr_router_style_port.yaml",
+      "sha256": "ab23b4f6fb4de089080a9bf11a97d194e4f933eaf1faf2b0d5d9d15e4a8994f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v23/reversed_router.yaml",
+      "sha256": "c25ae0075cd8cc7bad86e42a01fca3e875c558ca8d50d3646a42c9296e326076"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v23/runforest_only.yaml",
+      "sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v23/sop_only.yaml",
+      "sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v23/static_hybrid.yaml",
+      "sha256": "2d3cfd715e42481ba749b92f0a82221b94d54cd844aa7518a8548577b599a92d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v30/base.yaml",
+      "sha256": "79a97e9e5faa7282e307e673ee08b026958735bd93b54023bcc130d9f027f578"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v30/dynamic_hybrid.yaml",
+      "sha256": "e80fb28a8dc44ee62cbad828c322077032af0a98f032d1c057e37c8086f1440f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v30/flat_retrieval.yaml",
+      "sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v30/gome_style_port.yaml",
+      "sha256": "451abc8087cbfc2c2b8b2a5bbaefbadf0a99d539e5fcc0b22b737e5affb0ae03"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v30/macla_style_port.yaml",
+      "sha256": "ade946a3e98de146c7c1bbcb654662e21f08bc76ee1db16bb74f9c3c0a522991"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v30/no_memory.yaml",
+      "sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v30/rcr_router_style_port.yaml",
+      "sha256": "ab23b4f6fb4de089080a9bf11a97d194e4f933eaf1faf2b0d5d9d15e4a8994f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v30/reversed_router.yaml",
+      "sha256": "c25ae0075cd8cc7bad86e42a01fca3e875c558ca8d50d3646a42c9296e326076"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v30/runforest_only.yaml",
+      "sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v30/sop_only.yaml",
+      "sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v30/static_hybrid.yaml",
+      "sha256": "2d3cfd715e42481ba749b92f0a82221b94d54cd844aa7518a8548577b599a92d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v31/base.yaml",
+      "sha256": "79a97e9e5faa7282e307e673ee08b026958735bd93b54023bcc130d9f027f578"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v31/dynamic_hybrid.yaml",
+      "sha256": "a98fb9b7d4b83e5650a9074d0d0c9c5c8cce2e91d82aaf762e62ad04f435a7db"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v31/flat_retrieval.yaml",
+      "sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v31/gome_style_port.yaml",
+      "sha256": "451abc8087cbfc2c2b8b2a5bbaefbadf0a99d539e5fcc0b22b737e5affb0ae03"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v31/macla_style_port.yaml",
+      "sha256": "ade946a3e98de146c7c1bbcb654662e21f08bc76ee1db16bb74f9c3c0a522991"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v31/no_memory.yaml",
+      "sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v31/rcr_router_style_port.yaml",
+      "sha256": "ab23b4f6fb4de089080a9bf11a97d194e4f933eaf1faf2b0d5d9d15e4a8994f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v31/reversed_router.yaml",
+      "sha256": "c25ae0075cd8cc7bad86e42a01fca3e875c558ca8d50d3646a42c9296e326076"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v31/runforest_only.yaml",
+      "sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v31/sop_only.yaml",
+      "sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v31/static_hybrid.yaml",
+      "sha256": "2d3cfd715e42481ba749b92f0a82221b94d54cd844aa7518a8548577b599a92d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v32/base.yaml",
+      "sha256": "79a97e9e5faa7282e307e673ee08b026958735bd93b54023bcc130d9f027f578"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v32/dynamic_hybrid.yaml",
+      "sha256": "a98fb9b7d4b83e5650a9074d0d0c9c5c8cce2e91d82aaf762e62ad04f435a7db"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v32/flat_retrieval.yaml",
+      "sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v32/gome_style_port.yaml",
+      "sha256": "451abc8087cbfc2c2b8b2a5bbaefbadf0a99d539e5fcc0b22b737e5affb0ae03"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v32/macla_style_port.yaml",
+      "sha256": "ade946a3e98de146c7c1bbcb654662e21f08bc76ee1db16bb74f9c3c0a522991"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v32/no_memory.yaml",
+      "sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v32/rcr_router_style_port.yaml",
+      "sha256": "ab23b4f6fb4de089080a9bf11a97d194e4f933eaf1faf2b0d5d9d15e4a8994f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v32/reversed_router.yaml",
+      "sha256": "c25ae0075cd8cc7bad86e42a01fca3e875c558ca8d50d3646a42c9296e326076"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v32/runforest_only.yaml",
+      "sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v32/sop_only.yaml",
+      "sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v32/static_hybrid.yaml",
+      "sha256": "2d3cfd715e42481ba749b92f0a82221b94d54cd844aa7518a8548577b599a92d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v33/base.yaml",
+      "sha256": "79a97e9e5faa7282e307e673ee08b026958735bd93b54023bcc130d9f027f578"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v33/dynamic_hybrid.yaml",
+      "sha256": "a98fb9b7d4b83e5650a9074d0d0c9c5c8cce2e91d82aaf762e62ad04f435a7db"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v33/flat_retrieval.yaml",
+      "sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v33/gome_style_port.yaml",
+      "sha256": "451abc8087cbfc2c2b8b2a5bbaefbadf0a99d539e5fcc0b22b737e5affb0ae03"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v33/macla_style_port.yaml",
+      "sha256": "ade946a3e98de146c7c1bbcb654662e21f08bc76ee1db16bb74f9c3c0a522991"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v33/no_memory.yaml",
+      "sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v33/rcr_router_style_port.yaml",
+      "sha256": "ab23b4f6fb4de089080a9bf11a97d194e4f933eaf1faf2b0d5d9d15e4a8994f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v33/reversed_router.yaml",
+      "sha256": "c25ae0075cd8cc7bad86e42a01fca3e875c558ca8d50d3646a42c9296e326076"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v33/runforest_only.yaml",
+      "sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v33/sop_only.yaml",
+      "sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v33/static_hybrid.yaml",
+      "sha256": "2d3cfd715e42481ba749b92f0a82221b94d54cd844aa7518a8548577b599a92d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v34/base.yaml",
+      "sha256": "79a97e9e5faa7282e307e673ee08b026958735bd93b54023bcc130d9f027f578"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v34/dynamic_hybrid.yaml",
+      "sha256": "96e9f9ceb8ea2fcb97ca600bc64d0b534a5cf80a7c8a909d97f58dca384590c0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v34/flat_retrieval.yaml",
+      "sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v34/gome_style_port.yaml",
+      "sha256": "451abc8087cbfc2c2b8b2a5bbaefbadf0a99d539e5fcc0b22b737e5affb0ae03"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v34/macla_style_port.yaml",
+      "sha256": "ade946a3e98de146c7c1bbcb654662e21f08bc76ee1db16bb74f9c3c0a522991"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v34/no_memory.yaml",
+      "sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v34/rcr_router_style_port.yaml",
+      "sha256": "ab23b4f6fb4de089080a9bf11a97d194e4f933eaf1faf2b0d5d9d15e4a8994f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v34/reversed_router.yaml",
+      "sha256": "c25ae0075cd8cc7bad86e42a01fca3e875c558ca8d50d3646a42c9296e326076"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v34/runforest_only.yaml",
+      "sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v34/sop_only.yaml",
+      "sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v34/static_hybrid.yaml",
+      "sha256": "2d3cfd715e42481ba749b92f0a82221b94d54cd844aa7518a8548577b599a92d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v35/base.yaml",
+      "sha256": "79a97e9e5faa7282e307e673ee08b026958735bd93b54023bcc130d9f027f578"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v35/dynamic_hybrid.yaml",
+      "sha256": "96e9f9ceb8ea2fcb97ca600bc64d0b534a5cf80a7c8a909d97f58dca384590c0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v35/flat_retrieval.yaml",
+      "sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v35/gome_style_port.yaml",
+      "sha256": "451abc8087cbfc2c2b8b2a5bbaefbadf0a99d539e5fcc0b22b737e5affb0ae03"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v35/macla_style_port.yaml",
+      "sha256": "ade946a3e98de146c7c1bbcb654662e21f08bc76ee1db16bb74f9c3c0a522991"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v35/no_memory.yaml",
+      "sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v35/rcr_router_style_port.yaml",
+      "sha256": "ab23b4f6fb4de089080a9bf11a97d194e4f933eaf1faf2b0d5d9d15e4a8994f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v35/reversed_router.yaml",
+      "sha256": "c25ae0075cd8cc7bad86e42a01fca3e875c558ca8d50d3646a42c9296e326076"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v35/runforest_only.yaml",
+      "sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v35/sop_only.yaml",
+      "sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v35/static_hybrid.yaml",
+      "sha256": "2d3cfd715e42481ba749b92f0a82221b94d54cd844aa7518a8548577b599a92d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v36/base.yaml",
+      "sha256": "919414cb564f770e2a1902961a2064d5112502d05e11ad9a7b40cbdf544982b0"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v36/dynamic_hybrid.yaml",
+      "sha256": "daa4aae818256e9fe3aa0885a124cd70dbb56c39d912495d43958e4c25131131"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v37/base.yaml",
+      "sha256": "46bbaabc720b44035235c01a65254eb7c8b44630a1ac70f579a0399d90da4de6"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v37/dynamic_hybrid.yaml",
+      "sha256": "c89b38ccd78d5fb17792675b730758e154ae549139712bcbe5af286012ff8e0e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v38/base.yaml",
+      "sha256": "4f67ccc938a45801873c02d4dea58be74ecdace043f1519160e664c310f9b928"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v38/dynamic_hybrid.yaml",
+      "sha256": "ed4a6aa18bf30adc8d5d389e5f875f8f98ddb74a2c7d48378c8ae2a49678fd01"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v39/base.yaml",
+      "sha256": "4f67ccc938a45801873c02d4dea58be74ecdace043f1519160e664c310f9b928"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v39/dynamic_hybrid.yaml",
+      "sha256": "ed4a6aa18bf30adc8d5d389e5f875f8f98ddb74a2c7d48378c8ae2a49678fd01"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v39/gome_style_port.yaml",
+      "sha256": "451abc8087cbfc2c2b8b2a5bbaefbadf0a99d539e5fcc0b22b737e5affb0ae03"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v39/macla_style_port.yaml",
+      "sha256": "ade946a3e98de146c7c1bbcb654662e21f08bc76ee1db16bb74f9c3c0a522991"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v39/runforest_only.yaml",
+      "sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v41/dynamic_hybrid.yaml",
+      "sha256": "a428cfd858e5d6ecf826de79347dcb15962b0c796f558e7c7af42593f39dbc91"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v42/dynamic_hybrid.yaml",
+      "sha256": "08879684278145c0d71949fe675438b83cef1d575d0a71852ee9de05536bb6ab"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v43/dynamic_hybrid.yaml",
+      "sha256": "9eafe0946e6b9a99cf47905ec81d988fdbebd85f786757ab5073a3e8ed26cd81"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v44/base.yaml",
+      "sha256": "d204e9fbaf745f152ed08bd86f76bb3ef1a5910d8f47f49e644239e0e05009b4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v44/flat_retrieval.yaml",
+      "sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v44/no_memory.yaml",
+      "sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v44/sop_only.yaml",
+      "sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v44/static_hybrid.yaml",
+      "sha256": "2d3cfd715e42481ba749b92f0a82221b94d54cd844aa7518a8548577b599a92d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v51/dynamic_hybrid.yaml",
+      "sha256": "6390a5ae13d8b105887a2ef759ca033603194149132300d1cdaa8ec5f6637d2f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v52/dynamic_hybrid.yaml",
+      "sha256": "dfd79b2b86d04d5e77e925e6bd60909e075856a37dd6a151e99b9c49433b6897"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v53/dynamic_hybrid.yaml",
+      "sha256": "07593b6589b599ab605136fd24df89abc4d2d76f9d74a345cbc51bd11fc4c13d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v54/dynamic_hybrid.yaml",
+      "sha256": "5a5341ddb2a3b9eeaf30b1036ecffc740c872b5c582547a2aff54036933ddbbe"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v55/dynamic_hybrid.yaml",
+      "sha256": "7bd932640a1a3ad98033929f289c592d2b98560699944de92103706dc6b6989a"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56/dynamic_hybrid.yaml",
+      "sha256": "70bbffb8d2e19876b5ed1f65e10cb96d2e3dd76853e6fe79b64be71713d6e635"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56/flat_retrieval.yaml",
+      "sha256": "cd9a1b8cd0553df1632b2442d3d3bd7da723062c6c1ef7da96b7da5d130c7a74"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56/gome_style_port.yaml",
+      "sha256": "e219647c1513bea82fcfd66beb8494aab29eff44d586aae1b5d257701b5dd232"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56/macla_style_port.yaml",
+      "sha256": "0164190e401ee1685441aa0f823a03f0617000f93f399b41a7b46cd97a0b4d31"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56/no_memory.yaml",
+      "sha256": "54ab7abd5d1eac3cc6cc935da452d08d2a9ed78454aed8ee0cc8ae78d2865d7e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56/rcr_router_style_port.yaml",
+      "sha256": "35c479e3ccbda05b4c82282be04cfccc466ff32a9e6022eab7c8034d9f577c85"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56/reversed_router.yaml",
+      "sha256": "f1e464f1df0619102e9cdbcc6dd6d0fa7f74cbb770bcea322da1e99e50822352"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56/runforest_only.yaml",
+      "sha256": "d3f3d8ec9fe704ca825426792477f4057cbb5408f73fa3cb491fef7c5f74a6a3"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56/sop_only.yaml",
+      "sha256": "ae3b36dec9bdc72129060a21cdc772c844e52c8177b8580eda9d2c5c877bf48a"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56/static_hybrid.yaml",
+      "sha256": "5c2282d953ea22d4cdd52c2c50bdec6ae741bba0d9b005a5bfaf8a6e0c0159f4"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a002/dynamic_hybrid.yaml",
+      "sha256": "380deb8458c1627328fc93d00087b192fd7400f61dc1b1971c77bc90e3396a03"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a002/flat_retrieval.yaml",
+      "sha256": "37225aa7328c1a5a59a9e76543fb1bb430fb7f3a7de9cde150c95df1352d3cf7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a002/gome_style_port.yaml",
+      "sha256": "0972521163dd930e6468869d6a018ad34247cd1a56dd1c3bfddd86fc1e516c3a"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a002/macla_style_port.yaml",
+      "sha256": "287f042040c8162ccaffa73728d8014e110af2c94515b3081fb47bb04fff3dfc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a002/no_memory.yaml",
+      "sha256": "b6fd5fa496bd3a8648c42ad256a22dd5a3a644768c891866345a43866e4d66a3"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a002/rcr_router_style_port.yaml",
+      "sha256": "31c724fad0d4e1715585a9a39ee99b6624ba1f654d1d334a3e1a4caddef2061a"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a002/reversed_router.yaml",
+      "sha256": "7a0ea87ba927854f0ef5b85015347f5b8a35ef4b3b81f662174877fa8ebb70bb"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a002/runforest_only.yaml",
+      "sha256": "0f9ec28344923630c4c47d4ffa204e26380f5b45ed89fb6c3119da759afd9c4b"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a002/sop_only.yaml",
+      "sha256": "546ead90d527c90b57ccada74a49d27304dd0f9b5eb6ee87f2b64530b54c5ec5"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a002/static_hybrid.yaml",
+      "sha256": "79007cf031fc83df4c8769d66f995857446dc2c56b11a3edd147d80115bcd9be"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a003/dynamic_hybrid.yaml",
+      "sha256": "d136e4fefbf3c185e06f2ba0c55c8f8d0b8ff4c17707b4576869fc13e4f99929"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a003/flat_retrieval.yaml",
+      "sha256": "0dd0a06dc2ed4d99562e7ec39f7a9c2e87ddc99295b8f3f77b037c62858fc099"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a003/gome_style_port.yaml",
+      "sha256": "20c388341f406f2abef8e709dfbc032a05d3548fbbfef62afb7faf6f7f003965"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a003/macla_style_port.yaml",
+      "sha256": "6526d85b6f3764caa1a080f25b02a2c2cd546fcbd263afd42f87e8498e3b919f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a003/no_memory.yaml",
+      "sha256": "312fee8283bd820530f1c86d3cdc733d4e632816b0268245de3482eef3616951"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a003/rcr_router_style_port.yaml",
+      "sha256": "232868a7c694d80ee9edaff62f993c554cc0ee43cf67bbea73a1acad559f1a75"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a003/reversed_router.yaml",
+      "sha256": "2c7fc217da38b1d44c867338bb97734452a6dfd3f33b9afb544ce5264abe8914"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a003/runforest_only.yaml",
+      "sha256": "74ba216ba048567c1065ed9b343cd73594146a0c7515dd57a6c07eff6f731c9f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a003/sop_only.yaml",
+      "sha256": "681845ec26188da743c42a963ffe25acb2af2aa1b6607c76de38a29afe74ab61"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a003/static_hybrid.yaml",
+      "sha256": "282efde75099d5228c5243de0580f554d0873cab79bace3c2b33e78407b7f269"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a004/dynamic_hybrid.yaml",
+      "sha256": "45e5e7bc70af704ac3ae0ff38036984cde36003340f5bb759d6160aa4ebe3f73"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a004/flat_retrieval.yaml",
+      "sha256": "e9e871bc9302fe98fd736bad3428e46734e7d809e73680751e41fefddc7a5f89"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a004/gome_style_port.yaml",
+      "sha256": "1db15778591a5a3f335d9c501dfdbfa1b57030c79b6b6478c734b636d582e574"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a004/macla_style_port.yaml",
+      "sha256": "0a6aa643c9016185fd244f7c86fb28742e840789f331141540e13dc5c220bc7d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a004/no_memory.yaml",
+      "sha256": "f693442bc6193e6aced074bcea8787b7be6ca6713e185f173ac24b0c5948af73"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a004/rcr_router_style_port.yaml",
+      "sha256": "662e108f2a66cd6e26f030f108028ac2fb6c5fb4548d38c075a6147b6de08316"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a004/reversed_router.yaml",
+      "sha256": "4f085b17398265b3e382b4cfb5ca87b26becb1cab5433905b901b9dfca534d7b"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a004/runforest_only.yaml",
+      "sha256": "8b7777ccc0786b3806aa8b82d9f25ee85761aefcb7855013a166fe6e007746d9"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a004/sop_only.yaml",
+      "sha256": "f3a3021bf25b162c76567bcaac77860f778bf1d77b07a42c279426010df74f17"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a004/static_hybrid.yaml",
+      "sha256": "d5ff67f7bc63a0c50a027d77beacf5d0bd1e42d071ee2077720b26eca38729f5"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a005/dynamic_hybrid.yaml",
+      "sha256": "0d1f3a0f2d53ccfb50fb49090e2ff853b327a92095689e6ec14d3f56f03a9977"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a005/flat_retrieval.yaml",
+      "sha256": "83a6b772b64558ef9e2dac9ffcdcd69e6f59eab47a838dc2395cc17c75e5b7ef"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a005/gome_style_port.yaml",
+      "sha256": "5a1f612592bb48587a933f7f7b868a4d7c32f39fc824c71c79e6343965b10949"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a005/macla_style_port.yaml",
+      "sha256": "82c9d12e733fd537945fa99abce35c44b38487b4538ff046dbee1cc051a752b9"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a005/no_memory.yaml",
+      "sha256": "b6b972b08bc994c4b1a4d80c670303b58866ed5e13e07abb2889c04f0bc0fd9c"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a005/rcr_router_style_port.yaml",
+      "sha256": "7af55d66c9f11a0e6dc79c7fb629e9094077bb11f7695c7139b1b8c548b1d509"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a005/reversed_router.yaml",
+      "sha256": "695493d45684d13bf4b08d5f91f8272ca2f851fddeb46cbd30942e697c9415bd"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a005/runforest_only.yaml",
+      "sha256": "8793256902f38d1deb6e8d807b7cc5806e284fb6ee5ba6428c7f4a36a4a98d32"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a005/sop_only.yaml",
+      "sha256": "0fd5452ca71ec736f41362315bda939210482a9e39e07fb0c7d0e07810a3fc32"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a005/static_hybrid.yaml",
+      "sha256": "dcf0e75f1060d29084293760acea71c2e914b300d894d6210ef533635629ab9c"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a006/dynamic_hybrid.yaml",
+      "sha256": "5156dc9d8f1e0222a8622d012c2f3cd321a94b91e86540108feda9c796b4f218"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a006/flat_retrieval.yaml",
+      "sha256": "18010a98b224f199b7e33fe446cd5faaf53fcbbebf5037e06220ce0faaa3dd89"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a006/gome_style_port.yaml",
+      "sha256": "aae92d5c4a8d0f84055c0ed8b7ced62cb3198987b57b42bef75c938000960486"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a006/macla_style_port.yaml",
+      "sha256": "09859510df5d2edde408c9bf33e7df85e20a037c5f75889bb7c8efbf61aff2cd"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a006/no_memory.yaml",
+      "sha256": "0236df460fe52781e26cf4f40190e2d1f87b8c05c0f7a462cf21ec0486cec207"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a006/rcr_router_style_port.yaml",
+      "sha256": "cbaf4642eb815bfe9a854416838eb85688ebc6eaf329683fc931c4524fe27e5e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a006/reversed_router.yaml",
+      "sha256": "97d042d89110054811be9309635011f58fe7966f420059a6f333e0172473adeb"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a006/runforest_only.yaml",
+      "sha256": "b7bf984423f159607429f605ddd0125f65dfcdf088767674083350e1b817a3bb"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a006/sop_only.yaml",
+      "sha256": "f0f83c00d7c1e348e3beeb60e8827dabc8272b7781334e4f0667d6cac6f7d288"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a006/static_hybrid.yaml",
+      "sha256": "7e136977fbb329f4ce7cb1340719d6c1a88630bc6583dad257a3b80c7548ddee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a007/dynamic_hybrid.yaml",
+      "sha256": "8b663749ff843bde3d84368080064e078bfe8129c77abc81a955f0c33de8f2b8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a007/flat_retrieval.yaml",
+      "sha256": "98b74222ec307c38578752f4f58a20926d3db36c9c71775244bda1266a74cbc1"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a007/gome_style_port.yaml",
+      "sha256": "0fe7308d4ef59ea98889de15270909ef2677d1e193bd84b9be8cc7dbb8e8be80"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a007/macla_style_port.yaml",
+      "sha256": "733d090d9b051b5ddb58d32424ff82d7972a489555d044788d54bc721fd22de8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a007/no_memory.yaml",
+      "sha256": "8912b3e12152bb83fad1325bcf20fc2dc5d07ebcb2f9b7760c9afaa5600d4a8e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a007/rcr_router_style_port.yaml",
+      "sha256": "ea285bf33658442f8b7c51fdf7a92baabde275507e7d94a5b486f5470a9b35ac"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a007/reversed_router.yaml",
+      "sha256": "abfdc8fd6194b416b9c0b63c4545df4af7ce9054c29315ff5ad7391329c60433"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a007/runforest_only.yaml",
+      "sha256": "0143da2a861516bf342cc694a0af137ed0dc94a5b5791b2fc082b36f84fc3038"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a007/sop_only.yaml",
+      "sha256": "d1eedffc3c4c7ec40894923ae69c74c32e90234e7bd9047ffbae8d2d21b8680a"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a007/static_hybrid.yaml",
+      "sha256": "f8712abc05432ee81bdffc5db064cec89a2c8d0722ee54b2047d56ed998c5d14"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a008/dynamic_hybrid.yaml",
+      "sha256": "a8c53379fab86642ff2be5e0a0704775ed990ee9ffa2cd817a446d3f5421eca8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a008/flat_retrieval.yaml",
+      "sha256": "fd4d779d16e857a9b1b5754823996cbe23632d01d708ad6594e09e8a50c253fe"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a008/gome_style_port.yaml",
+      "sha256": "a61322d5d1c6a32d9387a97aa676ddb8f6a6258fbd2e79426618e25cd7e9be3d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a008/macla_style_port.yaml",
+      "sha256": "7377415149f99cabb638fddb6e25b10d9f6198a13e69bf01693399c723cb8112"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a008/no_memory.yaml",
+      "sha256": "09b4b4945d8be427e4fb2884f0268832367ed282a80f43c0285cbab307e77933"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a008/rcr_router_style_port.yaml",
+      "sha256": "fef3200f7962dfaea50d3d44fa93fcce41b94ec7974373d15b394c2c78c2af07"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a008/reversed_router.yaml",
+      "sha256": "16b553c1f2689f95b35d74d59a778a24c0f020cb8e77eb5af615a9153d4d7633"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a008/runforest_only.yaml",
+      "sha256": "3ae18d34166b471cdbd81c3ebc57658e1248160bab0d88a11d79368cd897077d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a008/sop_only.yaml",
+      "sha256": "1dc7a8956ef67dba0e19daa22d9b6bd032b042b1142c5dbb212fcdfbb9520d15"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v56-a008/static_hybrid.yaml",
+      "sha256": "0b54acfbfa95f622ec3b05434cc4cc287482ebcfe822b2ce29b523cc04a246d5"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v57/dynamic_hybrid.yaml",
+      "sha256": "14888f2da1bdba1324bbed4f3926acde115f41455fdae513593afe2bcc7e1ef3"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v57/flat_retrieval.yaml",
+      "sha256": "5c2c4b89bbf83e7e392d4de73912f5f8ea1f2d90d5d2e66d454d211cbf5e452e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v57/gome_style_port.yaml",
+      "sha256": "7e589246432c7bcc48493bce8526a3c5712c158695519300f28b6f0453fbdf31"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v57/macla_style_port.yaml",
+      "sha256": "ac428bb83419d1dd6b9a0698aba9e399dbff42ebad6c1adb1bdd4ba9ebbebc2f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v57/no_memory.yaml",
+      "sha256": "deb3e83d43dd5cf79d16d6b110cd17e627e3e7e61b3ab9070a451ed8ad6e977e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v57/rcr_router_style_port.yaml",
+      "sha256": "ebb8e1ff1571e2dfc31bab5d4caea19ebd497be326c5a3350875c432d7681588"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v57/reversed_router.yaml",
+      "sha256": "655fb352cdc5601be59be2dd4ff7f1b3eae0247b0eb0ccc119c46798ac72f9ae"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v57/runforest_only.yaml",
+      "sha256": "8896a5e10a5b5a11e6ca738deb6d4c4da4ccd82b978ddcabc3dc14d434a8cff1"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v57/sop_only.yaml",
+      "sha256": "078786e3764eb5dbdb8e59de9e76900a5ba8fc3787608e7ffaab34e38691b4ec"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v57/static_hybrid.yaml",
+      "sha256": "e824495cc97de602a027193b13d966b7d28bbc9a69966548e59dfe9b8c2e1821"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v58/dynamic_hybrid.yaml",
+      "sha256": "db95729cb55a5f9ce4283e07cb9ada18f687bcc568fd5f6847a630d42d28bb6f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v58/flat_retrieval.yaml",
+      "sha256": "50031926859262be33728d264e5a80d5f8ef647f8be91a5a21ceaac8ab9c5dad"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v58/gome_style_port.yaml",
+      "sha256": "39f3f7f88352a2ca0b278e9259152eff362f25459c8b260c98472d9d4ab77d2e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v58/macla_style_port.yaml",
+      "sha256": "1f7a0f655a437e9e8c1dd01f6f448c8b9cbb344dd83bdab888b614edfd3ced8b"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v58/no_memory.yaml",
+      "sha256": "8053247e657dfab8ce1f9e6299c65157140832a48590aa830febe13219db9e10"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v58/rcr_router_style_port.yaml",
+      "sha256": "0baf89c8ba06e2159a0bdaaf0af67f0af68742e105a62bb5ff146c11e8383784"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v58/reversed_router.yaml",
+      "sha256": "c3a77b1c800de599cbb1e3c16dc333fc1035cee58289a41daa3657a346238a85"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v58/runforest_only.yaml",
+      "sha256": "c9ce172ba6114b4c55287add6fa19427255d5568fdfde5522c04fb84dd72c57f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v58/sop_only.yaml",
+      "sha256": "48bb4bf2412f90f060222d38eacc7f167e47f487a42773540ced15b0da04c33a"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v58/static_hybrid.yaml",
+      "sha256": "8760d95d323999e304df58053207272d36f7844c57183ce189470c30412745be"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v60/dynamic_hybrid.yaml",
+      "sha256": "52cbd37da8d9c62cb35df593b66c6bdd53cbad41a056cb1ba5fe7117511bff6f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v60/flat_retrieval.yaml",
+      "sha256": "627d54d24bf49e761a7fcdda9346c1643cc294df17d6da51a7fe3c8c60ee2cb5"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v60/gome_style_port.yaml",
+      "sha256": "2674fa5c960bbaac119c12435c19b2c06f91fd0332e958960bef0db65766788c"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v60/macla_style_port.yaml",
+      "sha256": "7015a014230b9fc19dc16ab8d8f2d02578303df46cb6627e98b8ffe9577f57ee"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v60/no_memory.yaml",
+      "sha256": "29aed2bb86a9c09c0943c211d40fba3bd5966a1341d7e0ded672e0c1a359865c"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v60/rcr_router_style_port.yaml",
+      "sha256": "a24d5925a608f6c6422091375ca76cf40a531ca97997af3e57b6711d0364532f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v60/reversed_router.yaml",
+      "sha256": "a4e588847622c768e45dd3b8bc71d69bb455d9ff3615a2de698494861b97a912"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v60/runforest_only.yaml",
+      "sha256": "23cc2b7cd7134affcba4d025a58d48221785ddf55421ba4c5a3eb126eef6df1b"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v60/sop_only.yaml",
+      "sha256": "ffe6cfea5101e548610b05d81c521710d6d40d5299b7a1c4882186a54c7dfb66"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v60/static_hybrid.yaml",
+      "sha256": "0a47b14530bb06efdff31392df365dbb2398016d5c26ff158672263049827d76"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v61/dynamic_hybrid.yaml",
+      "sha256": "162378de313614aa19c892588dd6e04eb9b9625237e5aeb7fab946a00b9514ea"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v61/flat_retrieval.yaml",
+      "sha256": "fe79bdf9579ef71b5a80cfffaccc5c8f81f18beeb878d4feec2a4a4533029c7f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v61/gome_style_port.yaml",
+      "sha256": "c8051d48965e649c765d1b6b4b1606ff766ca11967ead58ee229af66eca37ab7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v61/macla_style_port.yaml",
+      "sha256": "d7dcb4649f0c553fc5cf5be66b8fc87367858e525fe7ddda303cc1bae48f807d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v61/no_memory.yaml",
+      "sha256": "9ac53c4ee776deea53416da405dafa5da6c21742923c9d5bf299f75cb1133f49"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v61/rcr_router_style_port.yaml",
+      "sha256": "a5769799b4432752f60e7263e46a176c5c6a8ca09cfacee807df2a3c569cea1c"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v61/reversed_router.yaml",
+      "sha256": "9af7fe152e8496914f6ed108e85ee35b105439595fda99744d90d060af663d41"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v61/runforest_only.yaml",
+      "sha256": "62647e2f42f9f8c0d36b10391db6409d3d6c0d2db8dd0f810aafa4cf5a8ca496"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v61/sop_only.yaml",
+      "sha256": "3b985d9c6237bdbda51f26ef63362b5e20a8ac47296440e7bdf4ae3730ba92bd"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v61/static_hybrid.yaml",
+      "sha256": "0520a097ccf7630ce1b568b1421c6dd815dc579353dfa9a850b4b38ae2bc2768"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v62/dynamic_hybrid.yaml",
+      "sha256": "25387ee451f7b83ebb717466f3c9044246c24d342c94487d59642270691862d8"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v63/dynamic_hybrid.yaml",
+      "sha256": "3d13b80d57c9502ad4121d26ad9294d5625c6fef0ae7e9a00e7e7f8fd615316d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v73/dynamic_hybrid.yaml",
+      "sha256": "810aaa5cbc813cb6e95658830673d5d473de6be8536f582d109c0e20f8f5d0ef"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v74/dynamic_hybrid.yaml",
+      "sha256": "ef58093d4cba0c93601c0e564a3373a1c5115616bb0a2a7b7cb34a36a090585b"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v75/dynamic_hybrid.yaml",
+      "sha256": "ce4cfe97d3f6a3d40dafb78d1c495691fa42c5645e32c845e061a06a426d30b9"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v76/dynamic_hybrid.yaml",
+      "sha256": "f8b3d5c549123129e5fbc9849ac5692e8b64b14fa8d1bce32cad3d11d8ef4783"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v77/dynamic_hybrid.yaml",
+      "sha256": "30eb050a76e1d4c4daf3d9a54d4e37986f5fc9ee42b5e241761e6a5095a8b366"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v78/dynamic_hybrid.yaml",
+      "sha256": "9aeeaf86d69187e16f95d94f7cb82f4b16db0856cc34a868d43b8b66ea88b960"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v79/dynamic_hybrid.yaml",
+      "sha256": "fb87fec950858b4e2e634f4c6204faf0ea937bcd038ac2f1ca542d5d2ce8eb3d"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v80/dynamic_hybrid.yaml",
+      "sha256": "87b958988c3bba4789b8f52298916d88f16fc28a2a4dcb3790096b239893e189"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v81/dynamic_hybrid.yaml",
+      "sha256": "3714c0ef37a228ae5b8004c76a99092dff984c2f4ba2f147baaf10d1111274dd"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v82/dynamic_hybrid.yaml",
+      "sha256": "fe0dddea92442994a25ea4dc090c53708122f0983bc058c8874f5dcedaaf5a11"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v83/dynamic_hybrid.yaml",
+      "sha256": "2dd897b6c25100509cb945a2c09a84309c46313f3a3b5f9135b5a916ed7fc2d2"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v84/dynamic_hybrid.yaml",
+      "sha256": "4db97b9854f4aadc6c029c32bab66ae169dea310b4f379e28ef5ae881762af03"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v85/dynamic_hybrid.yaml",
+      "sha256": "58e7241e522f28a2b1655a7c6c2a9a7f417e19ec613738a183991f8b631d058e"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v86/dynamic_hybrid.yaml",
+      "sha256": "9cfbbd0a4157ea54730088ccc3617b437e2bbb44c44945b80fa31bf3c4ac68dc"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v87/dynamic_hybrid.yaml",
+      "sha256": "865fd90f0062571376e0e29b949fea04f3546411e95b7fb559c85769cb780c3b"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v88/dynamic_hybrid.yaml",
+      "sha256": "088da4522a975f8725c71dfc927e81db028589e3cd1f0f4e69e3dd51d47cfaec"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v89/dynamic_hybrid.yaml",
+      "sha256": "70141c1a5b636280519a0a51f9b7f07dea8984859effa451d48749d7a31a4bb7"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v90/dynamic_hybrid.yaml",
+      "sha256": "c39bf060b2779a6b19839f99621aff29538054d3130fee8437e1a59d477697be"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v91/dynamic_hybrid.yaml",
+      "sha256": "1d3d7cbdd0d505b90f2fb1dc773bfcc9e93b1f073d0e3bb5c7352f7f1a2a8a12"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v92/dynamic_hybrid.yaml",
+      "sha256": "90c82d88a9662df3e0eaf3c35bb81175f51949cf77c7116d441c6244e69e0b3c"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v93/dynamic_hybrid.yaml",
+      "sha256": "24bd7fa0485ccb0256ab58eb187baa108d7d1d235362c90b26973b01c17d6b32"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v94/dynamic_hybrid.yaml",
+      "sha256": "451f4795d9f1aeee5fcc9d22d43cac8c3c42c983289b654ec1b347c20ef9cb4f"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v95/dynamic_hybrid.yaml",
+      "sha256": "2be0b8a7a7cc6d1a79820356a22c05158ad89a2b5f48400599328300869afb75"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/systems_v96/dynamic_hybrid.yaml",
+      "sha256": "1324ec775a314ffa62368bb7b85b909a1f121ede522ef48b9ed24c4702e73973"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/transition_evidence_v117/transition_evidence_capsules.json",
+      "sha256": "ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/transition_evidence_v119/transition_evidence_capsules.json",
+      "sha256": "ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/transition_evidence_v121/transition_evidence_capsules.json",
+      "sha256": "ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559"
+    },
+    {
+      "path": "experiments/end2end_memory_systems_20260804/transition_evidence_v122/transition_evidence_capsules.json",
+      "sha256": "ae8a06a6a4ef896e09516ad2d953462a601c1ea5871bf9707fdd20ff7dea8559"
+    },
+    {
+      "path": "mlevolve/.gitignore",
+      "sha256": "02a3cb703eda43761f0722c42d02054f1a23befe2125da201d58ac198154a36b"
+    },
+    {
+      "path": "mlevolve/CLAUDE.md",
+      "sha256": "e417acbf2fb6ed82b76d0e7dccdbed0d26bb61a7c95aa6d3c0e18743dc3dc8aa"
+    },
+    {
+      "path": "mlevolve/Dockerfile",
+      "sha256": "c7b7607868d1c892a2b80097fce55b8c9ba9c9f73dfc161c818e1da89aef82e0"
+    },
+    {
+      "path": "mlevolve/README.md",
+      "sha256": "5ccb9989ebbf97eefd83943bc6176226173e14b94841fd0a912f8d2c207b4a21"
+    },
+    {
+      "path": "mlevolve/__init__.py",
+      "sha256": "3091368dcacc40545e763c70b3734e1ee39de5f18919f5a57684032688d7327f"
+    },
+    {
+      "path": "mlevolve/agents/__init__.py",
+      "sha256": "a90abfee66904f4a2f6bda1b2dd1c9c04065baecb6a527bafc71c4c0572766aa"
+    },
+    {
+      "path": "mlevolve/agents/adoption.py",
+      "sha256": "12e63cdf3bf88655d78483c7bb08ff812bcec3bffe242f1ec88065a688f9bd46"
+    },
+    {
+      "path": "mlevolve/agents/adoption_verifier_agent.py",
+      "sha256": "80516589a2b33fad499a748bdb08d51511228e44d215069144c1df3b28c9a6e4"
+    },
+    {
+      "path": "mlevolve/agents/agent_protocol_review_agent.py",
+      "sha256": "0ac684bb23a9c160e3cb2e0320bb155b7a5749aec8dbc309948a23852bd2bef3"
+    },
+    {
+      "path": "mlevolve/agents/aggregation_agent.py",
+      "sha256": "141d055e081d1c4cc022c2ba26ab48710b78ef4965b83c834023610bed7a27ff"
+    },
+    {
+      "path": "mlevolve/agents/atomic_actuation.py",
+      "sha256": "49850c5c942eb3983e7e87df079c832d8f58660fc64452840a3a78bcd614296d"
+    },
+    {
+      "path": "mlevolve/agents/code_review_agent.py",
+      "sha256": "dabf5b0dc818c0464e3e2acd3076cb1b0d95f22652650e93c5f3fac40dbfa0d2"
+    },
+    {
+      "path": "mlevolve/agents/coder/__init__.py",
+      "sha256": "1ad75ea78e583e407e6f72f9db9039f40455d94e27279dd33cdc9e4796394dd4"
+    },
+    {
+      "path": "mlevolve/agents/coder/base_coder.py",
+      "sha256": "d5366fc1a9b7ccb3a86885a3bfdf3c028c9f150967657034da8f162945e687f5"
+    },
+    {
+      "path": "mlevolve/agents/coder/diff_coder/__init__.py",
+      "sha256": "88af116cff816776eb38f25b2b38df03522657042dc0bed8f066c812d5687627"
+    },
+    {
+      "path": "mlevolve/agents/coder/diff_coder/apply.py",
+      "sha256": "41e32b8b7ca5f389d5b9e760ddbc5efd829adeec87acd4f53f2743a92effa820"
+    },
+    {
+      "path": "mlevolve/agents/coder/diff_coder/diff_generate.py",
+      "sha256": "9a29c5d18dc015f60b8168adcec8a75daf953ba967cf418044f9b7344703583c"
+    },
+    {
+      "path": "mlevolve/agents/coder/diff_coder/patcher.py",
+      "sha256": "43bc42acab797a404cba70e0707f6e6dc16c1be15fa34b273cfd221e569c1ce1"
+    },
+    {
+      "path": "mlevolve/agents/coder/diff_coder/prompts.py",
+      "sha256": "cf690e478d030468fc72ae38f01e778b4b8d7a127f0a007bd29575dc8dfa14c0"
+    },
+    {
+      "path": "mlevolve/agents/coder/stepwise_coder.py",
+      "sha256": "66d5acedbc112f026bfa74efdc89f53ebbef6e635bb827b028724cfebf439ab6"
+    },
+    {
+      "path": "mlevolve/agents/data_leakage_agent.py",
+      "sha256": "c51a84b3aba42c6e4bd92821a5dffde5b9c27cbd7e72c543ee29ec169d51bcf1"
+    },
+    {
+      "path": "mlevolve/agents/debug_agent.py",
+      "sha256": "efd2807b11f27e69f4c94520635c103693b8b4e61a7d2b5f57bf46a4fc0d1a08"
+    },
+    {
+      "path": "mlevolve/agents/draft_agent.py",
+      "sha256": "9ef6e045217b0cf21d40c2434f9c3e2bf74ebf5cdc8bcc94fe15f8ff9ad8df33"
+    },
+    {
+      "path": "mlevolve/agents/evolution_agent.py",
+      "sha256": "1898c22409156dab623c3666103dac695af70631eb698bc06c36f821fc525f36"
+    },
+    {
+      "path": "mlevolve/agents/fusion_agent.py",
+      "sha256": "0d5d9f8a664d21bc576aa1fd3e15b92b32e9622df0ae081afd0e4d35f0907df7"
+    },
+    {
+      "path": "mlevolve/agents/improve_agent.py",
+      "sha256": "bfe9d2c854086b20da4d97a14ce2065f60a4bec7afb615a6f347f17632591c6c"
+    },
+    {
+      "path": "mlevolve/agents/leakage_audit.py",
+      "sha256": "4e734ba89fc45068df2a0ae32e0e08fb5fa23615e66dd66cb2a385bbfbfd90dc"
+    },
+    {
+      "path": "mlevolve/agents/memory/__init__.py",
+      "sha256": "8e0ca9eb90de5682494032489b8bcc1ca2c5e58b688d86a3da797cf5d64e294c"
+    },
+    {
+      "path": "mlevolve/agents/memory/atomic_claim_memory.py",
+      "sha256": "24481201f547d477f80fbd1103789f804476c5a06130db35c3a05de4e8a398a4"
+    },
+    {
+      "path": "mlevolve/agents/memory/embedding_models.py",
+      "sha256": "31c5a935585022e90017055b7643ae378ed1c37ef21d1f62e1208c152cc437e7"
+    },
+    {
+      "path": "mlevolve/agents/memory/end2end_memory_system.py",
+      "sha256": "7a57e0c7a43ddadeef0153d49b0d0b8d3f5471077c454591e942100d618753ac"
+    },
+    {
+      "path": "mlevolve/agents/memory/evidence_resolver.py",
+      "sha256": "ab999c497de1320f5fd305f9780d6c5937a2014276e596bfed0b3c965826a435"
+    },
+    {
+      "path": "mlevolve/agents/memory/experiment_r_router.py",
+      "sha256": "f9f97a9c0b272aa3efd79eafca77e6f731b7caa15ec25800d5c54359141722b0"
+    },
+    {
+      "path": "mlevolve/agents/memory/external_skill_memory.py",
+      "sha256": "7748693e22a7d12207415d9ae992605767c88d054398316edf02b8e54587298f"
+    },
+    {
+      "path": "mlevolve/agents/memory/global_memory.py",
+      "sha256": "18b5187bb75d1a349de012940def5f5707dd890cbed39de157a3f13ecb1c5ff2"
+    },
+    {
+      "path": "mlevolve/agents/memory/methodology_visibility.py",
+      "sha256": "6af1222e6400cfbb48264e3af2c5d7ab0623d34132a5c7295f1dd590866d20fe"
+    },
+    {
+      "path": "mlevolve/agents/memory/multigranular_grep.py",
+      "sha256": "5be8b11c4c8037cad115b789f45186b068adf69db4f40a9d0194eca4138dd0af"
+    },
+    {
+      "path": "mlevolve/agents/memory/prospective_audit.py",
+      "sha256": "f27aa4e743a5a3adcc8dda619c3517dd70f2b54663fc1342710339ad365791e5"
+    },
+    {
+      "path": "mlevolve/agents/memory/record.py",
+      "sha256": "c705bda1e0da5972435bbbb8099bb4fa4b7503568aabe71bd4a310a6f1f6b262"
+    },
+    {
+      "path": "mlevolve/agents/memory/retriever.py",
+      "sha256": "3e88fe6b8330a94121f783da192f4aa1bc6c463c6df8e758358b4a4805ed2bf7"
+    },
+    {
+      "path": "mlevolve/agents/memory/run_forest_replay.py",
+      "sha256": "c01034227b53e4f7a865a07d45e37b8fba087c0917740f7d24ec558b41d86c3f"
+    },
+    {
+      "path": "mlevolve/agents/memory/sop_visibility_gateway.py",
+      "sha256": "f3edea5b8c1bdb473d86cb8f73b747213d502f577db27cf684ea50628e470772"
+    },
+    {
+      "path": "mlevolve/agents/memory/stage_aware_hybrid_memory.py",
+      "sha256": "5e37f428903ca22655bc66d04682c0c4ed394203cbbc51c57d8f601fa9c44edd"
+    },
+    {
+      "path": "mlevolve/agents/memory_strategy_agent.py",
+      "sha256": "e8d08641568e1c1bba1e4365eb12bebd04df0afb887df1bfbcf48da5979f82a3"
+    },
+    {
+      "path": "mlevolve/agents/planner/__init__.py",
+      "sha256": "109272b9b23a168bec0170a6104f13abd6ac2940e3094b240954aa9263151d83"
+    },
+    {
+      "path": "mlevolve/agents/planner/base_planner.py",
+      "sha256": "7fa3c80f92243a5dd7696833942b43a10e566f67790501830e9f3d6d452560c0"
+    },
+    {
+      "path": "mlevolve/agents/planner/planner_with_memory.py",
+      "sha256": "7e33ee51c427c775437a3b3dc76d68448480daa1103e54f7d58a283b5b43c06b"
+    },
+    {
+      "path": "mlevolve/agents/prompts/__init__.py",
+      "sha256": "c9d52a1513df31f13897968fa28582dea8469112e0f7ef809583f8a2e79ea0d9"
+    },
+    {
+      "path": "mlevolve/agents/prompts/environment.py",
+      "sha256": "56851532aba083a3a3b0a4e5c9aab4883ef0276029e92b9941b71f3acccc2ce7"
+    },
+    {
+      "path": "mlevolve/agents/prompts/impl_guideline.py",
+      "sha256": "930281afee4f55ff090a0b1eebcbc79ab00445a5417849566a37b30d4639f68a"
+    },
+    {
+      "path": "mlevolve/agents/prompts/shared.py",
+      "sha256": "b31a2a68fe8494ca81e6f4bae4c59d34305e03d34db7aff22cc2e645a551884c"
+    },
+    {
+      "path": "mlevolve/agents/prompts/validation_template_prompts.py",
+      "sha256": "6d9e7ef74b03903a29dd9ebb9ab408329db89440e0831904ee7c325ca8863df4"
+    },
+    {
+      "path": "mlevolve/agents/protocol_repair.py",
+      "sha256": "78b4a1544a74c9ba3969c86333f88700b07e88637407727b31a554e57a10aa7a"
+    },
+    {
+      "path": "mlevolve/agents/protocol_repair_agent.py",
+      "sha256": "df7a8fe71e8def9c2e16816c2dafdb33ec5725276b9fd72ae8cda106e08aa385"
+    },
+    {
+      "path": "mlevolve/agents/protocol_repair_runtime.py",
+      "sha256": "37b07db3c94daf26cb3d371eea8c0d9f10fe88e5bb3e8fcb77e075735b157b73"
+    },
+    {
+      "path": "mlevolve/agents/replay_research_agent.py",
+      "sha256": "341df61d2228226cb73854e48b762762e9d1a28a43b678c335059729a9cf8b37"
+    },
+    {
+      "path": "mlevolve/agents/result_log_facts.py",
+      "sha256": "b543cd13ed28e6b276ff897fdf554cc73ca027f4d8101523e6246860e93878fe"
+    },
+    {
+      "path": "mlevolve/agents/result_parse_agent.py",
+      "sha256": "1f5a2cc25fe9e2b372aee9e0a91a6a4420595e50b330570d750252d13925328a"
+    },
+    {
+      "path": "mlevolve/agents/strategy_actuation.py",
+      "sha256": "6199efdbfed6edcb7cab3f6e11ae8139c2478770558007f5469ba7fbe8aa4b2f"
+    },
+    {
+      "path": "mlevolve/agents/triggers.py",
+      "sha256": "612b691e616c32d9fe484be074f47fd61db50b57726723c5265bf80ad9cd2658"
+    },
+    {
+      "path": "mlevolve/analysis/__init__.py",
+      "sha256": "2c9eb8386db2c796bff04d255edcbb0fe95ca0a38f76d6ee5a7c2d5932e7b9a5"
+    },
+    {
+      "path": "mlevolve/analysis/adoption_tracker.py",
+      "sha256": "f2965580a06708e381d4fa0051012ebd25f18863e8fb5c9ac12305071317feae"
+    },
+    {
+      "path": "mlevolve/analysis/adoption_verifier_smoke.py",
+      "sha256": "b95024a44ed88ec94cdd514b8225cab26abcd716927af51bf30bc12e55671c88"
+    },
+    {
+      "path": "mlevolve/assets/logo.svg",
+      "sha256": "599de443ca3a2dbe5edb4384af577bfff9a9f0464f62953d323cbf32eb95a2fd"
+    },
+    {
+      "path": "mlevolve/authority/__init__.py",
+      "sha256": "d7596946cf02b18297738dd8f9cc3bf3425038d3408007d029fa2dacab915e6f"
+    },
+    {
+      "path": "mlevolve/authority/actuation.py",
+      "sha256": "6e87a2eb9af4f1f97d9086e410e56a75639ad1c9124f3a07e38b8fb1caf8aca0"
+    },
+    {
+      "path": "mlevolve/authority/adapters/__init__.py",
+      "sha256": "2d9201d8621e0b8b0937faa926649cfde19d6087eee886d3bb2a3d0ed19f8f3f"
+    },
+    {
+      "path": "mlevolve/authority/adapters/mlevolve/__init__.py",
+      "sha256": "93b8e6e64a01869214486caa1fdff860ebdec99375d65fb84575966248f21c0b"
+    },
+    {
+      "path": "mlevolve/authority/adapters/mlevolve/memory_gate.py",
+      "sha256": "4d69b042ff29c81b1b28e14b3d4e450d0a50b799d21e7fc3031807123573aa44"
+    },
+    {
+      "path": "mlevolve/authority/adapters/mlevolve/node_adapter.py",
+      "sha256": "aaa8bb2f8cea2f73a985af52e3056e863ba760d12adbe1c95e672b614552c2eb"
+    },
+    {
+      "path": "mlevolve/authority/adapters/mlevolve/promotion_gate.py",
+      "sha256": "2fd90ebc2beff9d6e579e829ea07745e8e18ff8f90721739b9402accc8b50203"
+    },
+    {
+      "path": "mlevolve/authority/adapters/mlevolve/protocol_adapter.py",
+      "sha256": "53f46aada471aa11b34ef0440ab3d292a0d05f50216018cd92ee51c75540c198"
+    },
+    {
+      "path": "mlevolve/authority/adapters/mlevolve/ranking_gate.py",
+      "sha256": "009e65d23eb99a808f1cf34ace373fc18897a4ab561155cd4eae2482b94fb5e3"
+    },
+    {
+      "path": "mlevolve/authority/adapters/mlevolve/receipt_bridge.py",
+      "sha256": "a7a7c923f7fd03c1b84190b59159852f679c7939aa1413f832fcc5f593198d26"
+    },
+    {
+      "path": "mlevolve/authority/adapters/mlevolve/replay_gate.py",
+      "sha256": "2b50fac530313851089f5de47410ffcfe1e40e5499ee0067da754767bae65ddb"
+    },
+    {
+      "path": "mlevolve/authority/adapters/mlevolve/retrieval_gate.py",
+      "sha256": "c4a45d90f13143bf1bfef4019665c7b417024f12915a11e534b1f17cb31a6e83"
+    },
+    {
+      "path": "mlevolve/authority/adapters/mlevolve/runtime.py",
+      "sha256": "1238d06a68caa86b700c43e466435d9aad28387a4ef6fad882bdbfd022e53c6d"
+    },
+    {
+      "path": "mlevolve/authority/adapters/mlevolve/transition_adapter.py",
+      "sha256": "cfeba9b3f0b6e5b4e13f822a9fd9201a003caad560e0243ac9d5e82594b10da9"
+    },
+    {
+      "path": "mlevolve/authority/adoption_verification.py",
+      "sha256": "f250de9b0ed7883b8ea2d9d3e0047434bf3367ca37201e72f12f4e0850202d90"
+    },
+    {
+      "path": "mlevolve/authority/authority_engine.py",
+      "sha256": "b365d30f15ba3ef79f79ea4e46216c33878ee4574cb9cb903fd2377ce26922f7"
+    },
+    {
+      "path": "mlevolve/authority/bundle_authority.py",
+      "sha256": "a83f89bfed56319be8d019f029e476ac93b2aaacd0b67e3d1913b98556de3003"
+    },
+    {
+      "path": "mlevolve/authority/bundle_publisher.py",
+      "sha256": "22542b4c008dd62fb6621194dd343d77bfe608b6ceac963404ad07bbf979ab14"
+    },
+    {
+      "path": "mlevolve/authority/certified_bundle.py",
+      "sha256": "39309a5319a01a27ff7f543c72daf760d69122fe9d53f76e8b6a81cb8d2355eb"
+    },
+    {
+      "path": "mlevolve/authority/claim_decomposer.py",
+      "sha256": "a0fe64a1ed682d4703e4d3edb01cc09726be856abb2f21ab7fb424a7435d3028"
+    },
+    {
+      "path": "mlevolve/authority/clean_replay.py",
+      "sha256": "f3fa006bc154f97f04404bef7cdc10a905a5520b23c4b4a23bd5268dedc0966d"
+    },
+    {
+      "path": "mlevolve/authority/clean_replay_runner.py",
+      "sha256": "2bbf7f0a376d0a4658e48b4c215780ce684f6617ec7fdc5a9b0e3defa8a187e7"
+    },
+    {
+      "path": "mlevolve/authority/collectors/__init__.py",
+      "sha256": "f1b29b32d6684179ae3b92993d6e0abd4b77b8f8d1f600d9150b4ff0cfcb2432"
+    },
+    {
+      "path": "mlevolve/authority/collectors/base.py",
+      "sha256": "a4fd42c0b0687429d7ea9f0490d0699cec9a73b84d066d6a0781a21ac355834e"
+    },
+    {
+      "path": "mlevolve/authority/collectors/trusted.py",
+      "sha256": "3cced2a2e127b884fb099498fcbc4b42675deb2e8d6e1909cb56a309cb0f1c07"
+    },
+    {
+      "path": "mlevolve/authority/derivation_guard.py",
+      "sha256": "f681c26cc2b749fb286aaca4e2bca62bd46b2fe505497550b7c9749fa7bb2d6a"
+    },
+    {
+      "path": "mlevolve/authority/domain_scope.py",
+      "sha256": "ee0ca6fab8405ee89de38f5bde740ee398b6367f58486d11f77506e0851f49b0"
+    },
+    {
+      "path": "mlevolve/authority/evidence_graph.py",
+      "sha256": "e3bf3fd286d08cbacb599c8fa928820a44e002658cf1691a0cdf533a33145a92"
+    },
+    {
+      "path": "mlevolve/authority/ledger.py",
+      "sha256": "57d4ead3c4f69d6efc654e68c705087e039af1337f292375eaa09f3c8a53a63a"
+    },
+    {
+      "path": "mlevolve/authority/memory_snapshot.py",
+      "sha256": "0e08175c6a9d2bc67fc2110a2ed09ec8f32203c6dd9014d4c3c84448154e467a"
+    },
+    {
+      "path": "mlevolve/authority/models.py",
+      "sha256": "b3ebe4e86715643a11cb7abdd1475217621a7ee20ae781cd9cc5ff3c75bb2b60"
+    },
+    {
+      "path": "mlevolve/authority/paired_replay.py",
+      "sha256": "3f935b60d1fcb928a3863ef935a7e47ef2ae407a046d20fc4c0c9c37ccaa44d7"
+    },
+    {
+      "path": "mlevolve/authority/policy.py",
+      "sha256": "2fee2fbd7c96759396d0cb0ca4b38b6233b4e86cdb6bed44d1706eea19ba5d16"
+    },
+    {
+      "path": "mlevolve/authority/positive_distillation.py",
+      "sha256": "6df9f7e5b1ad550f9ea65ff711670cce122c61911298bb1af08d8b02977ab3c8"
+    },
+    {
+      "path": "mlevolve/authority/protocol_compiler.py",
+      "sha256": "a185c3648c61043242650b5d3ae14c095a149fec3b0fbec6980d6c0dbfa24b9f"
+    },
+    {
+      "path": "mlevolve/authority/protocol_execution_contract.py",
+      "sha256": "5eb142cea86690e3f77760dd4981e43dbdeeb03e5d8024f489a324ff3f00234a"
+    },
+    {
+      "path": "mlevolve/authority/protocol_registry.py",
+      "sha256": "7e1860bdb24c47e6c10dbcecea6fe9383f944c3a655471cc94deebca0f516e14"
+    },
+    {
+      "path": "mlevolve/authority/receipt_collectors.py",
+      "sha256": "ba6f92f4d0bbe55f7ed9f50b4ec07c641a570a58d077692c051a1988d1ae342b"
+    },
+    {
+      "path": "mlevolve/authority/recipe_visibility_publication.py",
+      "sha256": "17acf25b3ac4bf40054f7cbbcbd215ae6f3374440523edf278b7d5fa3216ce00"
+    },
+    {
+      "path": "mlevolve/authority/replay_certifier.py",
+      "sha256": "f79f6e59afe2b2c861a18af76baae7b204f202f6875fd8bc0238b2fa2e5ccb4e"
+    },
+    {
+      "path": "mlevolve/authority/replay_clause_publication.py",
+      "sha256": "29864d097f61624a0e118ed39f4e181fb9ea197f776de8586a5201a729cccca7"
+    },
+    {
+      "path": "mlevolve/authority/rollout.py",
+      "sha256": "d2ab9f3f96245dbd614b4662b3ca931b5d5a1845704bd24ffa2fd4a7216b3d42"
+    },
+    {
+      "path": "mlevolve/authority/runtime_protocol.py",
+      "sha256": "ecaac75afe882b4812856bab2d325a8a9278a5f8d46c7a1594a2c0177458a896"
+    },
+    {
+      "path": "mlevolve/authority/stage_ontology.py",
+      "sha256": "4758fd182f08789e5cd0d25572d68b091162dd62d3f70fb33548528d27a692b5"
+    },
+    {
+      "path": "mlevolve/authority/writeback_distillation.py",
+      "sha256": "96433f17821e7591dd050a730bcfe765766eefa6b9a97bdb33efe23abe9241d0"
+    },
+    {
+      "path": "mlevolve/config/__init__.py",
+      "sha256": "793bccae03f7084fc39b247dcfb0d4e757ecfbf1c4a2d487be0dc45d774726bf"
+    },
+    {
+      "path": "mlevolve/config/__pycache__/__init__.cpython-311.pyc",
+      "sha256": "669b6fd01934ac566c458aad7406c5606cdf935051fecf108a8a18e7e3950a59"
+    },
+    {
+      "path": "mlevolve/config/config.yaml",
+      "sha256": "298b5bc3d48f1fb12a2f980e4adcc11f8021a936531c276c96b13ff8f850986e"
+    },
+    {
+      "path": "mlevolve/config/config_authority_canary_enforce.yaml",
+      "sha256": "cdeb80531933edae18dfd973613724277b5f0a0edb82fd7d4db092866851071d"
+    },
+    {
+      "path": "mlevolve/config/config_authority_formal_enforce.yaml",
+      "sha256": "d40f746f554dbf70f442c380afb4d3ae7fc86f24bd160e9c4202444b568b33ed"
+    },
+    {
+      "path": "mlevolve/config/config_authority_host_protocol_enforce.yaml",
+      "sha256": "fa05f98a1029bc87738224dc4dc59b9ade714a2254db989005fe1de6645b1aaf"
+    },
+    {
+      "path": "mlevolve/config/config_authority_host_protocol_shadow.yaml",
+      "sha256": "516b6ef090d87f8638a9af8020e0dcb48f35c2deb37fad9ac77be95de0ea8815"
+    },
+    {
+      "path": "mlevolve/config/config_authority_off.yaml",
+      "sha256": "3f775b22822f4fd2b72ec744f131cbd80e7f2504b982758aea29d8f64d3f902a"
+    },
+    {
+      "path": "mlevolve/config/config_authority_shadow.yaml",
+      "sha256": "9919d29aab631a73000e33f0fcb91defaa238bb5538e6f73cdab87385b238374"
+    },
+    {
+      "path": "mlevolve/config/config_euclidean_agentic.yaml",
+      "sha256": "14248a670abcdf8c963813c41fe421b843f486f642aefe1f382d677329fd51ed"
+    },
+    {
+      "path": "mlevolve/config/config_experiment_r_dynamic_memory_routing.yaml",
+      "sha256": "a15ae884363e6a8c5713b437b9bd38327b77cd825af9989fd55a606b62de6904"
+    },
+    {
+      "path": "mlevolve/config/config_fourtask_graph_v2_all_features_host_shadow.yaml",
+      "sha256": "66d8f8ec0b241cfd33098f61d7e40fb0ff643c3f99681ef5db2a8550ec2b4345"
+    },
+    {
+      "path": "mlevolve/config/config_hyperbolic_agentic.yaml",
+      "sha256": "6f3ab3848b3c10e5c1db496b09e8bee98b04d924656a502e380472d6864fafc5"
+    },
+    {
+      "path": "mlevolve/config/config_leaf_official.yaml",
+      "sha256": "81b5fc66c1e1e93f84acabeaaefc403cefeebae4baed609c2c8924ac426ee8ec"
+    },
+    {
+      "path": "mlevolve/config/config_prevalence_audit_20260729_host_enforce.yaml",
+      "sha256": "8f1705410c859e8d50565618ff7ba65a87104ecab035d8800424a4a1375a7844"
+    },
+    {
+      "path": "mlevolve/config/config_run_forest_agentic.yaml",
+      "sha256": "a00e1e8abe0ca1904c3e790a45b2759954ca4e593c9083cca266eff2b3171962"
+    },
+    {
+      "path": "mlevolve/config/config_run_forest_fixed_holdout.yaml",
+      "sha256": "9d0e14e7d3a397018f3f9e073dff0e7dc8bccacb5a1c85a66934eeb19357e29f"
+    },
+    {
+      "path": "mlevolve/config/config_run_forest_stage_hybrid.yaml",
+      "sha256": "4b857eb7303e260b2506fa766c6868a2dd2c3c3d8b591a9007e052a9f52f548f"
+    },
+    {
+      "path": "mlevolve/config/protocols/chronological-regression-v1.json",
+      "sha256": "1ea53b563507402e80e6cff15df4f199a00a5046fef7d4f951964f3ce5e80255"
+    },
+    {
+      "path": "mlevolve/config/protocols/deterministic-random-regression-v1.json",
+      "sha256": "515ab45a651a394a9e79dbefe99515b51449cef038b6bc8ff0f0978a28edc4c6"
+    },
+    {
+      "path": "mlevolve/config/protocols/grouped-classification-v1.json",
+      "sha256": "b9fc98f21fce1348059973dcbbd5dc23496f9201b57a66309e148260c504da5d"
+    },
+    {
+      "path": "mlevolve/config/protocols/mlevolve-default-v1.json",
+      "sha256": "c5add1f2ebef60f77d5b7b4762d78be2b5c755368898d8300e233ee69e7b8257"
+    },
+    {
+      "path": "mlevolve/config/protocols/mlevolve-default-v2.json",
+      "sha256": "9bb82d0166629da205cbf57ec03aa6981782634b4d296d33dc59201c4644886d"
+    },
+    {
+      "path": "mlevolve/config/protocols/random-classification-v1.json",
+      "sha256": "622ce9970fe778350f9c0841d7d091a525f69fd945a60d2cc162693d9b79bd6f"
+    },
+    {
+      "path": "mlevolve/config/protocols/stratified-log-loss-classification-v1.json",
+      "sha256": "fc7609f522dffd09283b0b123fe652285b97440389ae4e956ba751c540f08de6"
+    },
+    {
+      "path": "mlevolve/config/protocols/stratified-roc-auc-classification-v1.json",
+      "sha256": "8afa63a74754469aee27e28fc8169edf78ec7e1466e436f95159eade18ea5768"
+    },
+    {
+      "path": "mlevolve/data/spooky-author-identification/prepared/private/test.csv",
+      "sha256": "2cf7dc57104a6b5467b44702e7a1ba4888f21f307b502a9707317d5c00ab636a"
+    },
+    {
+      "path": "mlevolve/data/spooky-author-identification/prepared/public/description.md",
+      "sha256": "35d7de46d74377f997bdc7f5859e36ca3311fb4ae2e37ab63491a9d7c72661bd"
+    },
+    {
+      "path": "mlevolve/data/spooky-author-identification/prepared/public/sample_submission.csv",
+      "sha256": "5a9d701524a2659476f62e30fa4e61ecfbeb754e0e9c11a8528a7486992ad1f6"
+    },
+    {
+      "path": "mlevolve/data/spooky-author-identification/prepared/public/test.csv",
+      "sha256": "3f68bfa593154a031ee549899f150ccdf2e7a5ed88083e4d9c3ea2fe2cd3dfd5"
+    },
+    {
+      "path": "mlevolve/data/spooky-author-identification/prepared/public/train.csv",
+      "sha256": "87a02befe9c415b976486e4a59b96da0cc907b8645efbb7052256307715ecdbf"
+    },
+    {
+      "path": "mlevolve/data/spooky-author-identification/spooky-author-identification.zip",
+      "sha256": "95a2f8a0c9b37a9cbe37a2847b0b353f5d722322958cf5d0a588951d463be88e"
+    },
+    {
+      "path": "mlevolve/docs/agent_adoption_verifier.md",
+      "sha256": "b9ae6b59721a53ea3cb13d4a3266a7ee88512c95255af47a2e1278d40dfc7049"
+    },
+    {
+      "path": "mlevolve/docs/assets/logo.svg",
+      "sha256": "b939c29fb2dbe9bb738c62b0dea7a6fe352f183e645ed1b12aadc5fdbd507fc6"
+    },
+    {
+      "path": "mlevolve/docs/index.html",
+      "sha256": "01ee4b5d7da959422be13ab92efd86c9abcf85ddb9c62acb002d27296428363e"
+    },
+    {
+      "path": "mlevolve/engine/__init__.py",
+      "sha256": "32eb49ec664dc5d1973b8e78cf17e4b3ba6ad4a73e9c61fad631c00fb4269a13"
+    },
+    {
+      "path": "mlevolve/engine/agent_search.py",
+      "sha256": "976d41462bae69dd40710782c707cd96414695d1010fc4e973b5f2fac6e0b012"
+    },
+    {
+      "path": "mlevolve/engine/candidate_execution_contract.py",
+      "sha256": "0442f0c98470268eef4eb2371e4071b631fca41ed1dbdd2502b4edd2d7437f5b"
+    },
+    {
+      "path": "mlevolve/engine/coldstart/__init__.py",
+      "sha256": "9d404695bd312209f36999851e96c4c1144845acdea1f1ba8f1453c3cda676a9"
+    },
+    {
+      "path": "mlevolve/engine/coldstart/classify_tasks.py",
+      "sha256": "b15e6a5d3f7ada9d4d41f1f4b639da70c4d2afcb8e8808c844aacdc11742ef99"
+    },
+    {
+      "path": "mlevolve/engine/coldstart/competition_tag_classified.json",
+      "sha256": "9c5ac059bb3bb672a4365bebd03fbb42e0b55a922c342d52ec4184b3e44a1d83"
+    },
+    {
+      "path": "mlevolve/engine/coldstart/knowledge.py",
+      "sha256": "c098164c30e18afadee0742ef5960ef414df995f0e8fe3530fc5624ae5c74188"
+    },
+    {
+      "path": "mlevolve/engine/coldstart/methodology_agent.py",
+      "sha256": "ebf8fd541c5473c7c3fba7872833c7c1f5325c3b98465c5eb240b041cdfe1d62"
+    },
+    {
+      "path": "mlevolve/engine/coldstart/methodology_map.json",
+      "sha256": "708b2c3eb4fa6426e856c716c2904b9f0492e8fda988a6f2309dc705f605484b"
+    },
+    {
+      "path": "mlevolve/engine/coldstart/models_guidance_classified.json",
+      "sha256": "5ecbdc00023227e75840f59104c9f5be58ae9efd403beb3d6c5cff894d49b0ff"
+    },
+    {
+      "path": "mlevolve/engine/conditions.py",
+      "sha256": "a48818cbc29824d532b7ca491880cc59cda413e2e5d057d3d7d8e09ee4ad7f0b"
+    },
+    {
+      "path": "mlevolve/engine/draft_roles.py",
+      "sha256": "17b4c7e1ccf5b2bd6777bf0b086b11569fbb67a294ea5e7d0fc65e341f7072c4"
+    },
+    {
+      "path": "mlevolve/engine/evaluation.py",
+      "sha256": "b352bb902c3b54975941b6ab3eb1da2798e3d80cb22642e1c9a07429d8adb039"
+    },
+    {
+      "path": "mlevolve/engine/execution.py",
+      "sha256": "5bf3a92dfc50769c1f40cae8a604379eeee4957bc85b38a3cd411aa63e67b1af"
+    },
+    {
+      "path": "mlevolve/engine/executor.py",
+      "sha256": "0bfa2017f7cf618a71ad43bc60fef4b7fd3ab4aa5b991d82fdee6ea3d7f735a0"
+    },
+    {
+      "path": "mlevolve/engine/node_selection.py",
+      "sha256": "536a454ff50e7f811d1eb64ec274e36ea65201c22a82787a2dcc2b5b20c64fa0"
+    },
+    {
+      "path": "mlevolve/engine/run_control.py",
+      "sha256": "c31e718668d37f8fd2124d2a52d2064c892aee5e93588cc209d01f12b0642bfb"
+    },
+    {
+      "path": "mlevolve/engine/run_outcome.py",
+      "sha256": "c8c5e93ce7dc2342e6c3ac5429f65eff553f02456bde533d2c44065b1d4fb710"
+    },
+    {
+      "path": "mlevolve/engine/search_node.py",
+      "sha256": "c9f387b7524e6841841a8006a817cdae946375f0ad44d1b04da6e00292a46bef"
+    },
+    {
+      "path": "mlevolve/engine/search_resume.py",
+      "sha256": "9dad34d0a8cae6c704ad97b8a9e23f3d10e1f45723eb692cad80a0c33f1d9018"
+    },
+    {
+      "path": "mlevolve/engine/solution_manager.py",
+      "sha256": "0f5c0e45dda2d42c4b80f8658fd23178f199d4d336183f21e72b5b9c9ac40b03"
+    },
+    {
+      "path": "mlevolve/engine/validation/__init__.py",
+      "sha256": "65b508e9d6efe89a689a8a593d2050c67e5a8d1ce4c87fcd37f128080145b99c"
+    },
+    {
+      "path": "mlevolve/engine/validation/format_client.py",
+      "sha256": "a41cdc5f634f5b0069e0190440c3a9b9a717cf49e4843c25ebc36727cdea9331"
+    },
+    {
+      "path": "mlevolve/engine/validation/format_server.py",
+      "sha256": "4c66c28f2c25d58f2e217613b721197a85beb8e8043d6491d6b30823f091d318"
+    },
+    {
+      "path": "mlevolve/engine/validation/quality_check.py",
+      "sha256": "b49c32ecc3eb64e06b315c4798f4515917ac68a192e63c257b813ba8b9a685d8"
+    },
+    {
+      "path": "mlevolve/experiment_freeze.py",
+      "sha256": "61804150da7e05808b56ae47c967d0d9c761e51dcc6e9c086e83b962bd8bca2b"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/README.md",
+      "sha256": "23d70b36c411d577b546818afab8b428ccddaab6ef2e13ad402768b19fe9f67c"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/__init__.py",
+      "sha256": "4e1890f284801384183a0b65c9a0e9cdd346506a9ddfdeee1d4f3beff0021471"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/catalog.py",
+      "sha256": "d63794355c7835cfd574e74204558d8b5dd6e71e0f78a47e04dda88b7608fdbe"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/common.py",
+      "sha256": "7534c3bad6a253e0225517a10b11cc329911f19db404cb1896c8e39f866f68ad"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/evaluate.py",
+      "sha256": "5bf94c7730a77e41b4ad74c18b60ae00cd91e4963743eeef0d6de3aa069a77e3"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/formal_block_evaluate.py",
+      "sha256": "bf25e0ba717b940e7046cbd4c71b8b72be6ae269f3b1b8d16321dee3cd96e304"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/formal_block_training.py",
+      "sha256": "dc643ca0c8bc8e9b889e3956f17d9bfe79feffe5c02bf37b544f3ed251304b4d"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/formal_host_receipts.py",
+      "sha256": "036161885f569f6833dddcf69b0a811fe7154844a76636d2749994fe006db505"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/formal_prepare.py",
+      "sha256": "823e545e6da8fa1acab2500c32233cc6db2d4066661758f05a46113fb0abea53"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/formal_preterminal_recovery.py",
+      "sha256": "b82cc839f1f5d96738ca9c3155da704750fa7a9bff716dd663fd51c5edac59d4"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/formal_runtime.py",
+      "sha256": "6ce6e481f61c0921a2b7b6d56ce0409685cdc7b8aed56a1e7f86fd86aeda2b2c"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/formal_verify.py",
+      "sha256": "d263d25c10559ab5a4d10e8431c8d18f1662fb936ab607cc6c622d23b3ccb8e9"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/handoff.py",
+      "sha256": "336eb0bc6fa1c537e7052880427677cd5afdd435ccea6ff12b80169d01f998ea"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/kaggle_terminal.py",
+      "sha256": "b7eac83ee7f462acc00f55a89fcd2235bac303bf1977acf4d32165629e85cb39"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/mode.py",
+      "sha256": "6d7ab469fa316b28fb683606c1479e12e1de2fcb6abc6b8568f5b9aab774acb3"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/prepare.py",
+      "sha256": "1cbb7de25791b4bd9322b5331af735ccdeefeb7875e16badad16931550d5e8bd"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/score_run.py",
+      "sha256": "d99d97219a3b6843c871e1f77777b9651e2671f2c273e9458c165cd8e3f935d4"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/validation.py",
+      "sha256": "4ea5899db29bb97a8a858b329a4666d85dd78528599f546e55f405b0d1ecaa07"
+    },
+    {
+      "path": "mlevolve/fixed_holdout/writeback.py",
+      "sha256": "994a471eb68b22e90a288b7fd7dafb6ab9077222adedde1cc2d071c21d2bf7db"
+    },
+    {
+      "path": "mlevolve/inference/experiment_report.md",
+      "sha256": "9e53e62e838dbcf2dbb93ef1c23e0b8d4089a1b43d7e88167fccd04ec9cef7f1"
+    },
+    {
+      "path": "mlevolve/inference/infer_0508_1859.py",
+      "sha256": "50feb03974218743be0df74313ffd7b3ec170b423447a79b525b624e161813a6"
+    },
+    {
+      "path": "mlevolve/inference/infer_0509_042918_0193.py",
+      "sha256": "21b282f25c4cd0794a95f63630b0d81a2594fbb48e1cc3c68b0fd843ed01bbf2"
+    },
+    {
+      "path": "mlevolve/inference/infer_0509_185008_0201.py",
+      "sha256": "ef004e9a1c3907cb9ae46080019fe10f55b087cbe74644c8695427828261a14b"
+    },
+    {
+      "path": "mlevolve/inference/infer_0515_best02646.py",
+      "sha256": "920e76bfbb124c7c6b656a1f90a0ec7fccc7b9aa8af21a1a3847c744759a2999"
+    },
+    {
+      "path": "mlevolve/inference/infer_0515_branch7_03047.py",
+      "sha256": "8a7a1bd658924ab136123bee4a8c6770a67ada37539f4a3fa6493ad5d3d0cdad"
+    },
+    {
+      "path": "mlevolve/inference/infer_171209.py",
+      "sha256": "24c7ccfb48cf95b1c785489a19a8be8f7acf83b984025a6a35fa99f0bf714916"
+    },
+    {
+      "path": "mlevolve/inference/infer_183931.py",
+      "sha256": "543f5d420e57f23ad7a532a2deca74a5c618b21cbb21125f0b7e9df8d6466557"
+    },
+    {
+      "path": "mlevolve/inference/infer_190327.py",
+      "sha256": "67296f92fd3b4933f3fabb9ec05d41b501d703d4a16b97d75b48a9f8fa61e1a2"
+    },
+    {
+      "path": "mlevolve/inference/infer_run1_logloss02953.py",
+      "sha256": "5ed466efc9a719a7934ca181f8a8e1522c04851f426a6636f9d4d35416a05fa8"
+    },
+    {
+      "path": "mlevolve/inference/infer_run2_logloss02389.py",
+      "sha256": "e889a9338ce4c9a6b9586aa229801cd30d86a79030b2f7c19dd27f25d6eaea77"
+    },
+    {
+      "path": "mlevolve/inference/infer_top2_02517_msd.py",
+      "sha256": "8298003c1b8107306c6b4a9de97f489fc00e6f3628ce575ccf506429814f3016"
+    },
+    {
+      "path": "mlevolve/inference/infer_top3_05066.py",
+      "sha256": "7ab6e01c765f31a08d1802f1ec11d52c500d52ed8badce5e666be5c08d53c512"
+    },
+    {
+      "path": "mlevolve/inference/sample_submission.csv",
+      "sha256": "f9d2727480ad6228254f6718caa73ef154e130473b8d4893a6e6e04bfffb4095"
+    },
+    {
+      "path": "mlevolve/inference/submissions/run_0508_logloss_1859_full_8392.csv",
+      "sha256": "587f663038f795664a63ddc943d11a7f8abc059b24123cd62512fce00987c99d"
+    },
+    {
+      "path": "mlevolve/inference/submissions/run_0509_042918_logloss_0193_full_8392.csv",
+      "sha256": "d0ac3ee198f7e54c4abf44b10b23207ccf604274a54637220b87edae37e2d670"
+    },
+    {
+      "path": "mlevolve/inference/submissions/run_0509_185008_logloss_0201_full_8392.csv",
+      "sha256": "835e1795b4507d1a40cdc83a5ba2f3457558d2b5a587d972e7c5057d42d126e9"
+    },
+    {
+      "path": "mlevolve/inference/submissions/run_171209_top1_full_8392.csv",
+      "sha256": "8697e67d9df3cbd96658e9414bf2b1093f47f925015c531d31add1adb62ca58b"
+    },
+    {
+      "path": "mlevolve/inference/submissions/run_183931_top1_full_8392.csv",
+      "sha256": "16240f9cf2e520a606de1d0a9b8b7716ba79fd3ac11ab7587c63448e3b71831a"
+    },
+    {
+      "path": "mlevolve/inference/submissions/run_190327_top1_full_8392.csv",
+      "sha256": "b2e693becc67dba90f1e021c1ce65fc727a391e3036c15e48971fed0f0aeed70"
+    },
+    {
+      "path": "mlevolve/inference/submissions/run_190327_top3_logloss_0.05066_full_8392.csv",
+      "sha256": "4bb726f11b987a39101b7a2285a4ab4d6712167cab0dfd49038e79ef23fc29e7"
+    },
+    {
+      "path": "mlevolve/inference/submissions/submission_0515_best02646.csv",
+      "sha256": "e02c4de51e398666de27191d7bc893c60957ff71c7b16d5a259672d2807f0829"
+    },
+    {
+      "path": "mlevolve/inference/submissions/submission_0515_branch7_03047.csv",
+      "sha256": "12cea860517541a9117c974f8c0e97c72276f1359130fa148eeb05483910cb8a"
+    },
+    {
+      "path": "mlevolve/inference/submissions/submission_run1_logloss02953_full.csv",
+      "sha256": "4798e3df08c599624ebe257607de15ab1b54543869c45421826af37933d07ef8"
+    },
+    {
+      "path": "mlevolve/inference/submissions/submission_run2_logloss02389_full.csv",
+      "sha256": "7bfdd44a832e5cd85e0f6fb5bc4bbe11f8bdcfed4c5d4aaee5356cb0fcbf0ce4"
+    },
+    {
+      "path": "mlevolve/inference/submissions/submission_top2_02517_msd_full.csv",
+      "sha256": "870b0102c724086bf1bd55910f06b451ecac2be4d60c5117ea666cf69bde93b6"
+    },
+    {
+      "path": "mlevolve/inference/test.csv",
+      "sha256": "46d670fa178a1701722b71f0c7140bdbcd36ddef4e1f36b52a2077cdedabe8b2"
+    },
+    {
+      "path": "mlevolve/launch_server.sh",
+      "sha256": "e7258f00e756f6733b51aee6ea406c11bcd9b34168f242d5ccd7078a42a31cf7"
+    },
+    {
+      "path": "mlevolve/llm/__init__.py",
+      "sha256": "52274914c64762ea5d2c7b21f97d24720b0057f9f75db9cb643f8082777a5768"
+    },
+    {
+      "path": "mlevolve/llm/__pycache__/__init__.cpython-311.pyc",
+      "sha256": "54030c71f9265ceb7261423d41a90555f8ea76683f0f50c997f14b56e4fd65bd"
+    },
+    {
+      "path": "mlevolve/llm/__pycache__/anthropic.cpython-311.pyc",
+      "sha256": "db264b3e2f71736c9630e8dd1179d7e28960efb12f83ea81d7b96df1c8907046"
+    },
+    {
+      "path": "mlevolve/llm/__pycache__/gemini.cpython-311.pyc",
+      "sha256": "611c32ff6d3f9e9fb1465e1ea330f212631c7a1293e382e4812112dcbb3d4c34"
+    },
+    {
+      "path": "mlevolve/llm/__pycache__/model_compat.cpython-311.pyc",
+      "sha256": "a0caf8781c1e782e81403d36de5c8883036ae4905db5227d22988957d071910b"
+    },
+    {
+      "path": "mlevolve/llm/__pycache__/model_profiles.cpython-311.pyc",
+      "sha256": "2d7a8986a059415325213f370dd2a19e74f4624cc12c23fb37dd491652bd5eae"
+    },
+    {
+      "path": "mlevolve/llm/__pycache__/openai.cpython-311.pyc",
+      "sha256": "550ed95c6db2c75cad926543b73106d274c77c9c16778eaeedc35bebc4cbb334"
+    },
+    {
+      "path": "mlevolve/llm/anthropic.py",
+      "sha256": "e6101aafca123a67a964198d1f6693192e648346a7bd623816795a5ac5ce8d89"
+    },
+    {
+      "path": "mlevolve/llm/gemini.py",
+      "sha256": "d0c537336bebb5a243fe67225aa05cd4dc73bc50a3d1134750a681dfe2d6501d"
+    },
+    {
+      "path": "mlevolve/llm/model_compat.py",
+      "sha256": "eb9e725ab2603f252930568eb8622d411165cb064ca185367ced237c09c6c8bb"
+    },
+    {
+      "path": "mlevolve/llm/model_profiles.py",
+      "sha256": "07e09875bc09830cf47449948f6f2c2ec64f294a0ad6c90cef17d1f8d5c3bec9"
+    },
+    {
+      "path": "mlevolve/llm/openai.py",
+      "sha256": "edd928b6ac592ea8c0d9f0c04776b100ab7b2f50e533d96f5483054c847f2e3e"
+    },
+    {
+      "path": "mlevolve/official_submission.py",
+      "sha256": "fcf926ad726d2659a96039caf25d09d95c5a78be4e094e9b787fdff9d942e2f7"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/__init__.py",
+      "sha256": "a9733ff32b31ed5deb0234d278bbd20ba8e2c68b27e8475991a05ac4794973dd"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/activation.py",
+      "sha256": "78840989f45bc8b0596c55de577ad543cae2fa04fc1f34365337f5a0b8b8923e"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/adapters/__init__.py",
+      "sha256": "b05ec992a6dd902eb8a593091d72e78474a1652283546d91408b871e101cc372"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/adapters/boosting.py",
+      "sha256": "2638744216b7b126d36e2b6342e953d57403f61c456ad7ec2ee6158906244ed6"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/adapters/sklearn.py",
+      "sha256": "05eb191e78d3827784583c86917f59e1c14bc273110b7ddc0d08d85759f03197"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/adapters/torch.py",
+      "sha256": "87ef02e35cde54fa9c89f0da3f5a8437731a9252066c73e69e4f3de560a9ab7e"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/adoption_trace.py",
+      "sha256": "0f4399dac4e960fb38077c8d7bde5adfeb769d9148ea45155253f73584022a5e"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/closure.py",
+      "sha256": "c74b91f58cd067e3ee1677e8cd79adeb888256be4b6817c199a7e4568d771cf3"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/collector.py",
+      "sha256": "e318ef6dac403319ddc5e8757c0fa9f62bd840b0e2c6d7ab2446cf00986ae095"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/collector_bridge.py",
+      "sha256": "4fc526d1d60667cfdd6b8573cf09a85ab1d04d5f89150a1bacb511fa83abc7eb"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/collector_client.py",
+      "sha256": "5bb09d13b238e9c09eb7c3d1cb0f46f8d19df05ffac0834a0871367be36b1b12"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/contract.py",
+      "sha256": "598a6bca6ffd98a70841900f87fa5289433f6448b0a3b00f65baed9a15d34f47"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/data_views.py",
+      "sha256": "c7ba656118645bd51b8d0dd2b7925c60ced65fbaad187046209f3552091a2ea9"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/errors.py",
+      "sha256": "d9df2acc8f109ecb010c69db9aaf82c628cbb1995be4235c59442defbf7db87f"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/events.py",
+      "sha256": "b035e220ae08f4c6e31eeb711ea4076da48f8eee1637e7d539f165f4b1f372ce"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/full_runtime.py",
+      "sha256": "8eedc3a69f930b42a52eae058503482521db8748ece64051ff75e0baa3d2371c"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/online_enforce_gate.py",
+      "sha256": "9c08fbea32c2e1b7f810aea1d70e07a032a07a6c17e9bcd6c22f26970887f856"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/preflight.py",
+      "sha256": "d153d335b674afb70b929f05d91739eaa6ede377359d5ebe2d0496fecb40beaa"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/reference_adapters.py",
+      "sha256": "405223a785194665eb0d6ba9e031f016d355b3c04116c8d40bca20620b557d41"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/rollout.py",
+      "sha256": "73b4261946fbce9af435c6198bce225d905e73113e32263ad6a0168d2b2cf600"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/session.py",
+      "sha256": "8ebf06194d5a931c561f5509bccfbdb234654fee4bfafcccf6f46f15c0322c15"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/task_staging.py",
+      "sha256": "30082036630c5bac8c8566c2a034ff9b632225419a58d71d598d0cfe2babee8d"
+    },
+    {
+      "path": "mlevolve/protocol_runtime/views.py",
+      "sha256": "4f749b3b80e81fe40c7c0261d8b88c6994d456d035b711ccb96f0b15fe3411b2"
+    },
+    {
+      "path": "mlevolve/requirements_base.txt",
+      "sha256": "6633ef9dd85b97f7cc97ab2d0bda4a994e5c17e1b0ad0f39c5ebfe7da9f85562"
+    },
+    {
+      "path": "mlevolve/requirements_domain.txt",
+      "sha256": "07430c50ac67ad554211730e5f50c709667ec13955158439bbe9925aa7841700"
+    },
+    {
+      "path": "mlevolve/requirements_ml.txt",
+      "sha256": "aedc14386e6c95b282f293c680f7e78b2167a062e2389d6571d52fb5fcc49d17"
+    },
+    {
+      "path": "mlevolve/run.py",
+      "sha256": "800dc104561b205db78660156af69fc1241e45cbb58077cfc02547fab750589b"
+    },
+    {
+      "path": "mlevolve/run_single_task.sh",
+      "sha256": "021b616abb1de1105d346dbe3ec2c05d46063d8c0a51ca3914cb28c3525067da"
+    },
+    {
+      "path": "mlevolve/utils/__init__.py",
+      "sha256": "3dc83c12ac6d8c1aeb37b52f90a296af7991cb95e53ca4096aae620ca9a044f1"
+    },
+    {
+      "path": "mlevolve/utils/__pycache__/__init__.cpython-311.pyc",
+      "sha256": "9fbec921f1739e7bd1fbfc0cfb0b307a77067709258c109a8e7af39895dbd6b2"
+    },
+    {
+      "path": "mlevolve/utils/__pycache__/serialize.cpython-311.pyc",
+      "sha256": "d71538e99c0f273ef2d5758d96f53be060c5e9129161cdf8c27d4e66f885ca9a"
+    },
+    {
+      "path": "mlevolve/utils/data_preview.py",
+      "sha256": "b7659195b3c4ce1a5230c0939d4c41a37b1e7145f7de0136c542cb2fec37ca19"
+    },
+    {
+      "path": "mlevolve/utils/logging_config.py",
+      "sha256": "039b045590723f4a5777fac270cac16cb687f681f2d69551aad8167b3c60d178"
+    },
+    {
+      "path": "mlevolve/utils/metric.py",
+      "sha256": "02828a29c3570613954ec87950b981db1214d00ecad30075c868b02337d718f6"
+    },
+    {
+      "path": "mlevolve/utils/response.py",
+      "sha256": "b101d6940471202fba200b01edddde9e989078ef3b28492ca7823d35ae47575b"
+    },
+    {
+      "path": "mlevolve/utils/seed.py",
+      "sha256": "2dd186a0abf24409af8ec9f093d71808c8b1d81f6ab6314e89a1866e4233aabf"
+    },
+    {
+      "path": "mlevolve/utils/serialize.py",
+      "sha256": "ce3ac89dbce3b8617ca188cad146ce2a11a5e2a4f639b57cb1a59f758f32e1db"
+    },
+    {
+      "path": "mlevolve/utils/submission_fusion_utils.py",
+      "sha256": "74d97adbbf6227e1ca822505130b211398ce4dfcd5b6b8fb131bec19a8f38ac1"
+    },
+    {
+      "path": "mlevolve/utils/visualization.py",
+      "sha256": "5d6958b885387201b0835df509eb2acff7e1bac4bbb3ada157760450f6a23402"
+    },
+    {
+      "path": "tests/test_replay_research_v120.py",
+      "sha256": "60245e7e00367bd16d675e17ad53e57a7afb9d5d5adc92e0c053b90040df6f79"
+    },
+    {
+      "path": "tests/test_result_parse_full_output.py",
+      "sha256": "638e55bb2f8685c2c982d266f6b4df09387dea42dd1285bcba85bdf7af70001e"
+    }
+  ],
+  "git_head": "dc0c957ce127edcb56a267e912bc343067354c73",
+  "git_head_is_not_sufficient_identity": true,
+  "manifest_hash": "afbab7e03ea693c68828e5728919938ac87a1f09ce42ccd976a6429a6d0c0521",
+  "release_id": "end2end-leaf-control-repair-gpt56sol-v136",
+  "schema": "mlevolve_end2end_source_lock_v1"
+}

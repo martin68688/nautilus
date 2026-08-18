@@ -1,0 +1,48 @@
+{
+  "experimental_axis": "byte-identical latest v135 MLEvolve runtime and frozen v23 control semantics; launch binding restored from v8 atomic to historical v2 bundle",
+  "manifest_hash": "c38d70292d349e0751b9357a5ddcb60ef971537f5946612064172c9d9e5e9468",
+  "schema": "mlevolve_end2end_systems_manifest_v1",
+  "system_count": 4,
+  "systems": [
+    {
+      "config_path": "systems_v136/no_memory.yaml",
+      "config_sha256": "ba9850bda26dcd23f5a820b1b1ec2a24b8396c3c6cad23a0a43120e3436b99c8",
+      "description": "Frozen v23 no_memory control with its historical v2 Memory Bundle",
+      "kind": "internal",
+      "label": "S0",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "no_memory"
+    },
+    {
+      "config_path": "systems_v136/flat_retrieval.yaml",
+      "config_sha256": "b0f4770bad9cd6596f67cd3ad207df61f7e3be92104cd2c6ede9680842359db7",
+      "description": "Frozen v23 flat_retrieval control with its historical v2 Memory Bundle",
+      "kind": "internal",
+      "label": "S1",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "flat_retrieval"
+    },
+    {
+      "config_path": "systems_v136/sop_only.yaml",
+      "config_sha256": "efbf31df6f2c88b432e0ec3ad97dd958a15d4544853d1f6cdd179f5b13c50cbc",
+      "description": "Frozen v23 sop_only control with its historical v2 Memory Bundle",
+      "kind": "internal",
+      "label": "S2",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "sop_only"
+    },
+    {
+      "config_path": "systems_v136/runforest_only.yaml",
+      "config_sha256": "693eb8ffb51fcc88430948cd2412674b49667654f69ecae3795d25a0e5bb50f2",
+      "description": "Frozen v23 runforest_only control with its historical v2 Memory Bundle",
+      "kind": "internal",
+      "label": "S3",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "runforest_only"
+    }
+  ]
+}

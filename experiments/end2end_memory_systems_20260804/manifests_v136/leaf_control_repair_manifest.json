@@ -1,0 +1,120 @@
+{
+  "bindings": {
+    "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+    "evaluators_manifest_hash": "c3fb347f6f0dd0d8c3b9606a53e0998084be03a0a3b27cf6dc789378ef704140",
+    "memory_bundles_manifest_hash": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
+    "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+    "source_lock_manifest_hash": "afbab7e03ea693c68828e5728919938ac87a1f09ce42ccd976a6429a6d0c0521",
+    "systems_manifest_hash": "c38d70292d349e0751b9357a5ddcb60ef971537f5946612064172c9d9e5e9468",
+    "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+  },
+  "comparison_baseline_release_id": "end2end-leaf-ten-system-official-gpt56sol-v135",
+  "exploratory_pilot": true,
+  "first_parallel_batch": [
+    "no_memory",
+    "flat_retrieval",
+    "sop_only",
+    "runforest_only"
+  ],
+  "formal_result_eligible": true,
+  "kind": "pilot",
+  "launch_order_randomization": "fresh repair rerun of four retained v135 failures",
+  "manifest_hash": "760334533f328ba30d44a38c47efe8808b5ac0d77d9b7a5fc3e799af067bdf40",
+  "release_id": "end2end-leaf-control-repair-official-gpt56sol-v136",
+  "run_count": 4,
+  "runs": [
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "c3fb347f6f0dd0d8c3b9606a53e0998084be03a0a3b27cf6dc789378ef704140",
+        "memory_bundles_manifest_hash": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "afbab7e03ea693c68828e5728919938ac87a1f09ce42ccd976a6429a6d0c0521",
+        "systems_manifest_hash": "c38d70292d349e0751b9357a5ddcb60ef971537f5946612064172c9d9e5e9468",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 0,
+      "logical_run_id": "e2e-pilot-leaf-control-repair-official-gpt56sol-v136__leaf-classification__no_memory__seed-1",
+      "row_hash": "56fa2fa1cdc36c64db639f3d23cf940d98b5899f66e672676aa298ad523c26e0",
+      "seed": 1,
+      "system_id": "no_memory",
+      "task_id": "leaf-classification",
+      "task_launch_position": 0
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "c3fb347f6f0dd0d8c3b9606a53e0998084be03a0a3b27cf6dc789378ef704140",
+        "memory_bundles_manifest_hash": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "afbab7e03ea693c68828e5728919938ac87a1f09ce42ccd976a6429a6d0c0521",
+        "systems_manifest_hash": "c38d70292d349e0751b9357a5ddcb60ef971537f5946612064172c9d9e5e9468",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 1,
+      "logical_run_id": "e2e-pilot-leaf-control-repair-official-gpt56sol-v136__leaf-classification__flat_retrieval__seed-1",
+      "row_hash": "de64e9ea2ac312ccd9db9165abf11fb8d5099f66af48f2267310c77a175bcaae",
+      "seed": 1,
+      "system_id": "flat_retrieval",
+      "task_id": "leaf-classification",
+      "task_launch_position": 1
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "c3fb347f6f0dd0d8c3b9606a53e0998084be03a0a3b27cf6dc789378ef704140",
+        "memory_bundles_manifest_hash": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "afbab7e03ea693c68828e5728919938ac87a1f09ce42ccd976a6429a6d0c0521",
+        "systems_manifest_hash": "c38d70292d349e0751b9357a5ddcb60ef971537f5946612064172c9d9e5e9468",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 2,
+      "logical_run_id": "e2e-pilot-leaf-control-repair-official-gpt56sol-v136__leaf-classification__sop_only__seed-1",
+      "row_hash": "ffb3e707ccb00cf4370c02766f4b148838c82b328f382175e97ea23d89d9a49f",
+      "seed": 1,
+      "system_id": "sop_only",
+      "task_id": "leaf-classification",
+      "task_launch_position": 2
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "c3fb347f6f0dd0d8c3b9606a53e0998084be03a0a3b27cf6dc789378ef704140",
+        "memory_bundles_manifest_hash": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "afbab7e03ea693c68828e5728919938ac87a1f09ce42ccd976a6429a6d0c0521",
+        "systems_manifest_hash": "c38d70292d349e0751b9357a5ddcb60ef971537f5946612064172c9d9e5e9468",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 3,
+      "logical_run_id": "e2e-pilot-leaf-control-repair-official-gpt56sol-v136__leaf-classification__runforest_only__seed-1",
+      "row_hash": "089690357445c6d642d73cbb8afa1881f64f366e8ddd79ecc8b125c00e5de6c1",
+      "seed": 1,
+      "system_id": "runforest_only",
+      "task_id": "leaf-classification",
+      "task_launch_position": 3
+    }
+  ],
+  "schema": "mlevolve_end2end_execution_manifest_v1",
+  "second_parallel_batch": [],
+  "seed": 1,
+  "statistical_significance_claim_allowed": false,
+  "system_ids": [
+    "no_memory",
+    "flat_retrieval",
+    "sop_only",
+    "runforest_only"
+  ],
+  "task_ids": [
+    "leaf-classification"
+  ]
+}

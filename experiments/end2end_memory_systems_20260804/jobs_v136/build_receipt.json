@@ -1,0 +1,28 @@
+{
+  "agent_steps_nonbinding_sentinel": 2147483647,
+  "agent_time_limit_seconds": 21600,
+  "atomic_actuation_sha256": "49850c5c942eb3983e7e87df079c832d8f58660fc64452840a3a78bcd614296d",
+  "execution_manifest_hash": "760334533f328ba30d44a38c47efe8808b5ac0d77d9b7a5fc3e799af067bdf40",
+  "git_head": "dc0c957ce127edcb56a267e912bc343067354c73",
+  "llm_base_url": "https://apizh.net/v1",
+  "llm_model": "gpt-5.6-sol",
+  "llm_secret_reference": "mlevolve-openai-gpt56sol-v1",
+  "memory_bundle_manifest_hash": "c46e1ee5e9c2a59330d1f7f44338f5a08e622ebd1715e814c06704d11ee579c6",
+  "memory_bundle_version": "v2",
+  "mlevolve_tree_file_count": 269,
+  "mlevolve_tree_unchanged_from_v135_runtime": true,
+  "release_version": 136,
+  "runtime_file_count": 688,
+  "runtime_root": "/tmp/nautilus-exp-end2end-agent-v136-runtime",
+  "schema": "mlevolve_leaf_control_bundle_binding_repair_build_v1",
+  "source_lock_file_count": 686,
+  "source_lock_hash": "afbab7e03ea693c68828e5728919938ac87a1f09ce42ccd976a6429a6d0c0521",
+  "status": "complete",
+  "system_count": 4,
+  "systems": [
+    "no_memory",
+    "flat_retrieval",
+    "sop_only",
+    "runforest_only"
+  ]
+}

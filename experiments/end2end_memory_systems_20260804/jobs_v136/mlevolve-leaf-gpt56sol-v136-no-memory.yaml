@@ -1,0 +1,179 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "annotations": {
+      "mlevolve.ai/agent-wall-seconds": "21600",
+      "mlevolve.ai/engine-code-change": "none",
+      "mlevolve.ai/launch-gate": "user-authorized",
+      "mlevolve.ai/manifest-sha256": "760334533f328ba30d44a38c47efe8808b5ac0d77d9b7a5fc3e799af067bdf40",
+      "mlevolve.ai/pending-time-excluded": "no-job-active-deadline",
+      "mlevolve.ai/repair-scope": "bundle-binding-only-v8-to-historical-v2",
+      "mlevolve.ai/runtime-source-lock-sha256": "afbab7e03ea693c68828e5728919938ac87a1f09ce42ccd976a6429a6d0c0521",
+      "mlevolve.ai/search-count-limit": "none-within-wall-clock"
+    },
+    "labels": {
+      "app": "mlevolve-end2end",
+      "app.kubernetes.io/managed-by": "codex-nrp-training",
+      "ecepxie.nrp/owner": "haoming",
+      "experiment": "experiment-end2end-memory-agent-v136",
+      "mlevolve.ai/batch": "1",
+      "mlevolve.ai/system": "no_memory"
+    },
+    "name": "mlevolve-leaf-gpt56sol-v136-no-memory",
+    "namespace": "ecepxie"
+  },
+  "spec": {
+    "backoffLimit": 0,
+    "completions": 1,
+    "parallelism": 1,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "mlevolve-end2end",
+          "app.kubernetes.io/managed-by": "codex-nrp-training",
+          "ecepxie.nrp/owner": "haoming",
+          "experiment": "experiment-end2end-memory-agent-v136",
+          "mlevolve.ai/batch": "1",
+          "mlevolve.ai/system": "no_memory"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "args": [
+              "set -euo pipefail; test \"${OPENAI_BASE_URL:-}\" = \"https://apizh.net/v1\"; test \"${OPENAI_MODEL:-}\" = \"gpt-5.6-sol\"; test -n \"${OPENAI_API_KEY:-}\"; exec /usr/local/bin/python -u /workspace/nautilus-exp-end2end-agent-v136/experiments/end2end_memory_systems_20260804/run_assignment.py --manifest /workspace/nautilus-exp-end2end-agent-v136/experiments/end2end_memory_systems_20260804/manifests_v136/leaf_control_repair_manifest.json --index 0 --attempt 0 --output-root /workspace/experiment-end2end-memory-agent-v136/runs"
+            ],
+            "command": [
+              "/bin/bash",
+              "-lc"
+            ],
+            "env": [
+              {
+                "name": "KUBERNETES_JOB_NAME",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.labels['batch.kubernetes.io/job-name']"
+                  }
+                }
+              },
+              {
+                "name": "KUBERNETES_JOB_UID",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.labels['batch.kubernetes.io/controller-uid']"
+                  }
+                }
+              },
+              {
+                "name": "KUBERNETES_POD_NAME",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.name"
+                  }
+                }
+              },
+              {
+                "name": "KUBERNETES_POD_UID",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "metadata.uid"
+                  }
+                }
+              },
+              {
+                "name": "KUBERNETES_NODE_NAME",
+                "valueFrom": {
+                  "fieldRef": {
+                    "fieldPath": "spec.nodeName"
+                  }
+                }
+              },
+              {
+                "name": "PYTHONUNBUFFERED",
+                "value": "1"
+              },
+              {
+                "name": "PYTHONDONTWRITEBYTECODE",
+                "value": "1"
+              },
+              {
+                "name": "PYTHONPATH",
+                "value": "/workspace/nautilus-exp-end2end-agent-v136/mlevolve:/workspace/nautilus-exp-end2end-agent-v136"
+              },
+              {
+                "name": "MLEVOLVE_CONTAINER_IMAGE_REFERENCE",
+                "value": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc"
+              },
+              {
+                "name": "MLEVOLVE_SOLVER_BINDING_ID",
+                "value": "gpt-5.6-sol-openai-compatible-solver"
+              },
+              {
+                "name": "MLEVOLVE_SOLVER_MODEL_REVISION",
+                "value": "sha256:c036449ea412a33d6d7de6ac1d02e668b99b866ac52567bc2f38f208cd8050a2"
+              }
+            ],
+            "envFrom": [
+              {
+                "secretRef": {
+                  "name": "mlevolve-openai-gpt56sol-v1"
+                }
+              }
+            ],
+            "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+            "imagePullPolicy": "IfNotPresent",
+            "name": "end2end-runner",
+            "resources": {
+              "limits": {
+                "cpu": "16",
+                "ephemeral-storage": "64Gi",
+                "memory": "64Gi",
+                "nvidia.com/a100": "1"
+              },
+              "requests": {
+                "cpu": "16",
+                "ephemeral-storage": "64Gi",
+                "memory": "64Gi",
+                "nvidia.com/a100": "1"
+              }
+            },
+            "volumeMounts": [
+              {
+                "mountPath": "/workspace",
+                "name": "workspace"
+              },
+              {
+                "mountPath": "/dev/shm",
+                "name": "shm"
+              }
+            ]
+          }
+        ],
+        "restartPolicy": "Never",
+        "terminationGracePeriodSeconds": 180,
+        "tolerations": [
+          {
+            "key": "nvidia.com/gpu",
+            "operator": "Exists"
+          }
+        ],
+        "volumes": [
+          {
+            "name": "workspace",
+            "persistentVolumeClaim": {
+              "claimName": "haoming-storage"
+            }
+          },
+          {
+            "emptyDir": {
+              "medium": "Memory",
+              "sizeLimit": "16Gi"
+            },
+            "name": "shm"
+          }
+        ]
+      }
+    }
+  }
+}
