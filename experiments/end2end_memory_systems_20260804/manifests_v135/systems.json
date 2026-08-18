@@ -1,0 +1,108 @@
+{
+  "experimental_axis": "shared latest v135 runtime and GPT relay; dynamic_hybrid alone uses the latest Replay Research logic, while nine controls retain v23 logic",
+  "manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+  "schema": "mlevolve_end2end_systems_manifest_v1",
+  "system_count": 10,
+  "systems": [
+    {
+      "config_path": "systems_v135/no_memory.yaml",
+      "config_sha256": "e48989edc7b4f68a30c4b4d8f5a009757a297c8334be7e152192c36752efeb2c",
+      "description": "Bundle-bound zero Prompt exposure",
+      "kind": "internal",
+      "label": "S0",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "no_memory"
+    },
+    {
+      "config_path": "systems_v135/flat_retrieval.yaml",
+      "config_sha256": "df2a76c72ba3fd5856f965af9faab524be4a974279cd47266c356e0807e9b860",
+      "description": "Mixed global relevance Top-6",
+      "kind": "internal",
+      "label": "S1",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "flat_retrieval"
+    },
+    {
+      "config_path": "systems_v135/sop_only.yaml",
+      "config_sha256": "2d425867653d9af0776729ee48a7f03c005c1eee2c99a80d3d9fa99d9ec6c65c",
+      "description": "SOP Top-6",
+      "kind": "internal",
+      "label": "S2",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "sop_only"
+    },
+    {
+      "config_path": "systems_v135/runforest_only.yaml",
+      "config_sha256": "013d714e6d4550a949af58a14ab9ee542649857827bddc40999119664a50a3f2",
+      "description": "RunForest Top-6",
+      "kind": "internal",
+      "label": "S3",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "runforest_only"
+    },
+    {
+      "config_path": "systems_v135/static_hybrid.yaml",
+      "config_sha256": "155a67c979beb182f6f3651a1b9d1ce3e6d3992dccff0cc2b318a9d4cd15b837",
+      "description": "3 SOP / 3 RunForest",
+      "kind": "internal",
+      "label": "S4",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "static_hybrid"
+    },
+    {
+      "config_path": "systems_v135/dynamic_hybrid.yaml",
+      "config_sha256": "4fa695f7c2a9ed75d1beaba9ccce0d25afa3f37152611b60b3ddd2125d74acf3",
+      "description": "Latest v134 Replay Research dynamic retrieval/controller logic",
+      "kind": "internal",
+      "label": "S5-v135-latest-dynamic",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "dynamic_hybrid"
+    },
+    {
+      "config_path": "systems_v135/reversed_router.yaml",
+      "config_sha256": "d2fdc118c8d1e555c37886d627d5523dca859fba5662e9205d9c9435e0762c8e",
+      "description": "Draft 2/4, Improve 3/3, Debug 4/2",
+      "kind": "internal",
+      "label": "S6",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "reversed_router"
+    },
+    {
+      "config_path": "systems_v135/gome_style_port.yaml",
+      "config_sha256": "662a7a4a5e128b6b6b8a185e329e0074f628f706cd66e11a49819af76eb8f33b",
+      "description": "Verified Success Memory cards",
+      "kind": "competitor_style_port",
+      "label": "C1",
+      "limitation": "Not the full GOME multi-trace optimizer",
+      "primary_reference": "https://arxiv.org/abs/2603.01692",
+      "system_id": "gome_style_port"
+    },
+    {
+      "config_path": "systems_v135/macla_style_port.yaml",
+      "config_sha256": "61dc7f05ca0c359f2e929da9de8a1c11dd60158684faeafd31653822685d2337",
+      "description": "Beta reliability utility",
+      "kind": "competitor_style_port",
+      "label": "C2",
+      "limitation": "No full online contrastive refinement",
+      "primary_reference": "https://arxiv.org/abs/2512.18950",
+      "system_id": "macla_style_port"
+    },
+    {
+      "config_path": "systems_v135/rcr_router_style_port.yaml",
+      "config_sha256": "1a901d0aeb368fb162e3a960c4050d540231c0359290afaaf461ce8aefa5e1ad",
+      "description": "Role/stage/recency token routing",
+      "kind": "competitor_style_port",
+      "label": "C3",
+      "limitation": "Not the original multi-agent QA environment",
+      "primary_reference": "https://arxiv.org/abs/2508.04903",
+      "system_id": "rcr_router_style_port"
+    }
+  ]
+}

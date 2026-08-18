@@ -1,0 +1,253 @@
+{
+  "bindings": {
+    "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+    "evaluators_manifest_hash": "5073b0b7ab3c2802b50937121e6947100b05636a1e344e95b472299f91e590ac",
+    "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+    "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+    "source_lock_manifest_hash": "7e6218fea724c9479b1fba388acb9a8d96707190b668b5788d860d44ceb52a3f",
+    "systems_manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+    "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+  },
+  "comparison_baseline_release_id": "end2end-agent-v23",
+  "exploratory_pilot": true,
+  "first_parallel_batch": [
+    "dynamic_hybrid",
+    "no_memory",
+    "flat_retrieval",
+    "sop_only",
+    "runforest_only"
+  ],
+  "formal_result_eligible": true,
+  "kind": "pilot",
+  "launch_order_randomization": "user-directed two batches of five; latest dynamic included in batch 1",
+  "manifest_hash": "2fc82e6faa88b4d242edb5ba4fbe91ced380811ab954d417615c0100b0b2f3fc",
+  "release_id": "end2end-leaf-ten-system-official-gpt56sol-v135",
+  "run_count": 10,
+  "runs": [
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "5073b0b7ab3c2802b50937121e6947100b05636a1e344e95b472299f91e590ac",
+        "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "7e6218fea724c9479b1fba388acb9a8d96707190b668b5788d860d44ceb52a3f",
+        "systems_manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 0,
+      "logical_run_id": "e2e-pilot-leaf-ten-system-official-gpt56sol-v135__leaf-classification__dynamic_hybrid__seed-1",
+      "row_hash": "3dec80681b31b2378a1bdc045b5fdeb3b8cdc99a325a091a8a1ba2ec36809cdb",
+      "seed": 1,
+      "system_id": "dynamic_hybrid",
+      "task_id": "leaf-classification",
+      "task_launch_position": 0
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "5073b0b7ab3c2802b50937121e6947100b05636a1e344e95b472299f91e590ac",
+        "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "7e6218fea724c9479b1fba388acb9a8d96707190b668b5788d860d44ceb52a3f",
+        "systems_manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 1,
+      "logical_run_id": "e2e-pilot-leaf-ten-system-official-gpt56sol-v135__leaf-classification__no_memory__seed-1",
+      "row_hash": "9ca4bda748e1b391189ddd2559540d2ae178a08e1b402ad1f6b753d4079ac549",
+      "seed": 1,
+      "system_id": "no_memory",
+      "task_id": "leaf-classification",
+      "task_launch_position": 1
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "5073b0b7ab3c2802b50937121e6947100b05636a1e344e95b472299f91e590ac",
+        "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "7e6218fea724c9479b1fba388acb9a8d96707190b668b5788d860d44ceb52a3f",
+        "systems_manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 2,
+      "logical_run_id": "e2e-pilot-leaf-ten-system-official-gpt56sol-v135__leaf-classification__flat_retrieval__seed-1",
+      "row_hash": "bb93e3250ef7844beb84a3d8e7eddd981b38d6c7535950f0894e266c32eba111",
+      "seed": 1,
+      "system_id": "flat_retrieval",
+      "task_id": "leaf-classification",
+      "task_launch_position": 2
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "5073b0b7ab3c2802b50937121e6947100b05636a1e344e95b472299f91e590ac",
+        "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "7e6218fea724c9479b1fba388acb9a8d96707190b668b5788d860d44ceb52a3f",
+        "systems_manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 3,
+      "logical_run_id": "e2e-pilot-leaf-ten-system-official-gpt56sol-v135__leaf-classification__sop_only__seed-1",
+      "row_hash": "ce7fbcbcc0f59d987c51a8e188e986445f1447c1ba0c1a5103e265d0a69d941e",
+      "seed": 1,
+      "system_id": "sop_only",
+      "task_id": "leaf-classification",
+      "task_launch_position": 3
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "5073b0b7ab3c2802b50937121e6947100b05636a1e344e95b472299f91e590ac",
+        "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "7e6218fea724c9479b1fba388acb9a8d96707190b668b5788d860d44ceb52a3f",
+        "systems_manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 4,
+      "logical_run_id": "e2e-pilot-leaf-ten-system-official-gpt56sol-v135__leaf-classification__runforest_only__seed-1",
+      "row_hash": "5657895c3e03a869ede6c9dc071f6f52889789e11bfec135b264cb03ce07c5f1",
+      "seed": 1,
+      "system_id": "runforest_only",
+      "task_id": "leaf-classification",
+      "task_launch_position": 4
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "5073b0b7ab3c2802b50937121e6947100b05636a1e344e95b472299f91e590ac",
+        "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "7e6218fea724c9479b1fba388acb9a8d96707190b668b5788d860d44ceb52a3f",
+        "systems_manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 5,
+      "logical_run_id": "e2e-pilot-leaf-ten-system-official-gpt56sol-v135__leaf-classification__static_hybrid__seed-1",
+      "row_hash": "16659274aa7d5753a26fa0c46f5a6d6a837fbaf2343f65b0de6a4460f8d2b7d4",
+      "seed": 1,
+      "system_id": "static_hybrid",
+      "task_id": "leaf-classification",
+      "task_launch_position": 5
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "5073b0b7ab3c2802b50937121e6947100b05636a1e344e95b472299f91e590ac",
+        "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "7e6218fea724c9479b1fba388acb9a8d96707190b668b5788d860d44ceb52a3f",
+        "systems_manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 6,
+      "logical_run_id": "e2e-pilot-leaf-ten-system-official-gpt56sol-v135__leaf-classification__reversed_router__seed-1",
+      "row_hash": "357a292c9c346649ca39876f395376ede26f3b72fd85be9335c9119a910f85da",
+      "seed": 1,
+      "system_id": "reversed_router",
+      "task_id": "leaf-classification",
+      "task_launch_position": 6
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "5073b0b7ab3c2802b50937121e6947100b05636a1e344e95b472299f91e590ac",
+        "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "7e6218fea724c9479b1fba388acb9a8d96707190b668b5788d860d44ceb52a3f",
+        "systems_manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 7,
+      "logical_run_id": "e2e-pilot-leaf-ten-system-official-gpt56sol-v135__leaf-classification__gome_style_port__seed-1",
+      "row_hash": "a5cab059f299024a4fcb954f4d6f969e0e0d37d0d07dcd64a5c2c0ac94c9d67a",
+      "seed": 1,
+      "system_id": "gome_style_port",
+      "task_id": "leaf-classification",
+      "task_launch_position": 7
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "5073b0b7ab3c2802b50937121e6947100b05636a1e344e95b472299f91e590ac",
+        "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "7e6218fea724c9479b1fba388acb9a8d96707190b668b5788d860d44ceb52a3f",
+        "systems_manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 8,
+      "logical_run_id": "e2e-pilot-leaf-ten-system-official-gpt56sol-v135__leaf-classification__macla_style_port__seed-1",
+      "row_hash": "703a8144485c385da58afa8678fc43326d4ee39d4bf6f971f63804b056d045b0",
+      "seed": 1,
+      "system_id": "macla_style_port",
+      "task_id": "leaf-classification",
+      "task_launch_position": 8
+    },
+    {
+      "bindings": {
+        "budget_manifest_hash": "5668fdabc4c67b6836325b33fd7686e2c8ee6b1b279bb53e253bd17aa1450d77",
+        "evaluators_manifest_hash": "5073b0b7ab3c2802b50937121e6947100b05636a1e344e95b472299f91e590ac",
+        "memory_bundles_manifest_hash": "291d4241c9be851f3f06b279e189f3144df63a531d299846bccc96ae0d95fa04",
+        "schemas_manifest_hash": "23e01991b95b2d8592cf7c30a3c69991b97174e436ffe6e9174fde2fa009ba64",
+        "source_lock_manifest_hash": "7e6218fea724c9479b1fba388acb9a8d96707190b668b5788d860d44ceb52a3f",
+        "systems_manifest_hash": "594d1668ec4061cd420bf62be4664e2ab1d96570234afd919e559af301a72559",
+        "tasks_manifest_hash": "ef335ec692a906764105aa209d562eb0693463e95e445c105d91fccff546dcc3"
+      },
+      "exploratory_pilot": true,
+      "formal_result_eligible": true,
+      "launch_position": 9,
+      "logical_run_id": "e2e-pilot-leaf-ten-system-official-gpt56sol-v135__leaf-classification__rcr_router_style_port__seed-1",
+      "row_hash": "43ff3326f8d037c7b197d2bb82ffdfe5de8517d777ea31dd741f69faae164190",
+      "seed": 1,
+      "system_id": "rcr_router_style_port",
+      "task_id": "leaf-classification",
+      "task_launch_position": 9
+    }
+  ],
+  "schema": "mlevolve_end2end_execution_manifest_v1",
+  "second_parallel_batch": [
+    "static_hybrid",
+    "reversed_router",
+    "gome_style_port",
+    "macla_style_port",
+    "rcr_router_style_port"
+  ],
+  "seed": 1,
+  "statistical_significance_claim_allowed": false,
+  "system_ids": [
+    "dynamic_hybrid",
+    "no_memory",
+    "flat_retrieval",
+    "sop_only",
+    "runforest_only",
+    "static_hybrid",
+    "reversed_router",
+    "gome_style_port",
+    "macla_style_port",
+    "rcr_router_style_port"
+  ],
+  "task_ids": [
+    "leaf-classification"
+  ]
+}
