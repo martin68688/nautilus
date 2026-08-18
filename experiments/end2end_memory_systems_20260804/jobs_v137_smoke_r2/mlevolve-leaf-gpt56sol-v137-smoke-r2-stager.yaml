@@ -1,0 +1,56 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "labels": {
+      "app": "mlevolve-end2end-stager",
+      "app.kubernetes.io/managed-by": "codex-nrp-training",
+      "ecepxie.nrp/owner": "haoming",
+      "experiment": "experiment-end2end-memory-agent-v137-smoke-r2-stager"
+    },
+    "name": "mlevolve-leaf-gpt56sol-v137-smoke-r2-stager",
+    "namespace": "ecepxie"
+  },
+  "spec": {
+    "containers": [
+      {
+        "args": [
+          "set -euo pipefail; marker=/workspace/experiment-end2end-memory-agent-v137-smoke-r2/staging/STAGING_COMPLETE; while [ ! -f \"$marker\" ]; do sleep 2; done"
+        ],
+        "command": [
+          "/bin/bash",
+          "-lc"
+        ],
+        "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+        "imagePullPolicy": "IfNotPresent",
+        "name": "stager",
+        "resources": {
+          "limits": {
+            "cpu": "1",
+            "memory": "1Gi"
+          },
+          "requests": {
+            "cpu": "100m",
+            "memory": "256Mi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "mountPath": "/workspace",
+            "name": "workspace"
+          }
+        ]
+      }
+    ],
+    "restartPolicy": "Never",
+    "terminationGracePeriodSeconds": 30,
+    "volumes": [
+      {
+        "name": "workspace",
+        "persistentVolumeClaim": {
+          "claimName": "haoming-storage"
+        }
+      }
+    ]
+  }
+}
