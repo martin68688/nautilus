@@ -21,7 +21,7 @@ from typing import Any, Callable
 
 
 SCHEMA = "experiment_r_multigranular_grep_search_v1"
-JUDGE_SCHEMA = "experiment_r_multigranular_retrieval_judge_v1"
+JUDGE_SCHEMA = "experiment_r_multigranular_retrieval_judge_v2"
 GRANULARITIES = (
     "l1_recipe",
     "l2_tactic",
@@ -46,6 +46,26 @@ GRANULARITY_FIELDS = {
 STAGE_REQUIRED = {
     "draft": {"l1_recipe", "l2_tactic", "runforest_run"},
     "improve": {"l2_tactic", "runforest_run", "runforest_transition"},
+}
+STAGE_GRANULARITY_FIT = {
+    "draft": {
+        "l1_recipe": 1.00,
+        "l2_tactic": 0.90,
+        "runforest_run": 0.85,
+        "runforest_transition": 0.55,
+        "l3_repair": 0.25,
+    },
+    "improve": {
+        "l2_tactic": 1.00,
+        "runforest_transition": 0.95,
+        "runforest_run": 0.85,
+        "l1_recipe": 0.55,
+        "l3_repair": 0.45,
+    },
+}
+STAGE_FALLBACK_PRIORITY = {
+    "draft": ("l1_recipe", "l2_tactic", "runforest_run"),
+    "improve": ("l2_tactic", "runforest_transition", "runforest_run"),
 }
 NOISE_TERMS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "current", "for",
@@ -175,10 +195,21 @@ def _search_spec() -> Any:
     )
 
 
-def _judge_spec(*, max_candidates: int, max_selected: int) -> Any:
+def _judge_handles(
+    candidates: list[dict[str, Any]],
+) -> tuple[dict[str, str], dict[str, str]]:
+    ref_to_id = {
+        f"C{index:02d}": str(candidate["id"])
+        for index, candidate in enumerate(candidates, start=1)
+    }
+    return ref_to_id, {candidate_id: ref for ref, candidate_id in ref_to_id.items()}
+
+
+def _judge_spec(*, candidate_refs: list[str], max_selected: int) -> Any:
     from llm import FunctionSpec
 
     score = {"type": "number", "minimum": 0.0, "maximum": 1.0}
+    ref = {"type": "string", "enum": list(candidate_refs)}
     return FunctionSpec(
         name="choose_multigranular_retrieval_evidence",
         description=(
@@ -190,36 +221,35 @@ def _judge_spec(*, max_candidates: int, max_selected: int) -> Any:
             "additionalProperties": False,
             "properties": {
                 "decision": {"type": "string", "enum": ["select", "abstain"]},
-                "selected_ids": {
+                "selected_refs": {
                     "type": "array",
                     "maxItems": max(0, int(max_selected)),
-                    "items": {"type": "string", "maxLength": 256},
+                    "items": ref,
                 },
                 "reason": {"type": "string", "maxLength": 1600},
                 "assessments": {
                     "type": "array",
-                    "maxItems": max(1, int(max_candidates)),
+                    "minItems": len(candidate_refs),
+                    "maxItems": len(candidate_refs),
                     "items": {
                         "type": "object",
                         "additionalProperties": False,
                         "properties": {
-                            "candidate_id": {"type": "string", "maxLength": 256},
+                            "ref": ref,
                             "applicability": score,
-                            "stage_fit": score,
                             "implementation_support": score,
                             "contradiction": {"type": "boolean"},
                             "confidence": score,
                             "reason": {"type": "string", "maxLength": 600},
                         },
                         "required": [
-                            "candidate_id", "applicability", "stage_fit",
-                            "implementation_support", "contradiction",
-                            "confidence", "reason",
+                            "ref", "applicability", "implementation_support",
+                            "contradiction", "confidence", "reason",
                         ],
                     },
                 },
             },
-            "required": ["decision", "selected_ids", "reason", "assessments"],
+            "required": ["decision", "selected_refs", "reason", "assessments"],
         },
     )
 
@@ -552,26 +582,112 @@ def _hybrid_supplement(
     ]
 
 
+def _grep_rank_key(row: Mapping[str, Any]) -> tuple[int, int, int, int]:
+    return max(
+        (
+            tuple(map(int, evidence.get("rank_key") or [0, 0, 0, 0]))
+            for evidence in row.get("grep_evidence") or []
+        ),
+        default=(0, 0, 0, 0),
+    )
+
+
 def _rank_accumulated(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    def best_key(row: Mapping[str, Any]) -> tuple[int, int, int, int]:
-        return max(
-            (
-                tuple(map(int, evidence.get("rank_key") or [0, 0, 0, 0]))
-                for evidence in row.get("grep_evidence") or []
-            ),
-            default=(0, 0, 0, 0),
-        )
 
     return sorted(
         rows,
         key=lambda row: (
-            *(-value for value in best_key(row)),
+            *(-value for value in _grep_rank_key(row)),
             -len(set(row.get("search_routes") or [])),
             -len(row.get("grep_evidence") or []),
             int(row.get("first_seen") or 0),
             str(row.get("id") or ""),
         ),
     )
+
+
+def _host_stage_fit(stage: str, candidate: Mapping[str, Any]) -> float:
+    """Return deterministic stage compatibility from Host-owned metadata."""
+
+    return float(
+        STAGE_GRANULARITY_FIT.get(stage, {}).get(
+            str(candidate.get("granularity") or ""),
+            0.0,
+        )
+    )
+
+
+def _stage_aware_host_fallback(
+    *,
+    stage: str,
+    candidates: list[dict[str, Any]],
+    max_selected: int,
+) -> tuple[list[str], list[dict[str, Any]]]:
+    """Select from the live Search pool when the independent Judge is invalid.
+
+    The Host preserves Search results, prefers the stage's recipe/tactic/run
+    support, and only then fills remaining capacity by deterministic grep
+    evidence.  This prevents a Draft fallback from collapsing into a pack of
+    high-ranked Debug repairs.
+    """
+
+    ranked = sorted(
+        candidates,
+        key=lambda row: (
+            -_host_stage_fit(stage, row),
+            *(-value for value in _grep_rank_key(row)),
+            -len(set(row.get("search_routes") or [])),
+            -len(row.get("grep_evidence") or []),
+            int(row.get("first_seen") or 0),
+            str(row.get("id") or ""),
+        ),
+    )
+    selected: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for granularity in STAGE_FALLBACK_PRIORITY.get(stage, ()):
+        candidate = next(
+            (row for row in ranked if row["granularity"] == granularity),
+            None,
+        )
+        if candidate is not None and candidate["id"] not in seen:
+            selected.append(candidate)
+            seen.add(candidate["id"])
+            if len(selected) >= int(max_selected):
+                break
+    for candidate in ranked:
+        if len(selected) >= int(max_selected):
+            break
+        if candidate["id"] not in seen:
+            selected.append(candidate)
+            seen.add(candidate["id"])
+
+    _, id_to_ref = _judge_handles(candidates)
+    assessments = []
+    for candidate in candidates:
+        evidence = list(candidate.get("grep_evidence") or [])
+        implementation_support = (
+            1.0
+            if any(bool(item.get("all_terms_match")) for item in evidence)
+            else 0.65 if evidence
+            else 0.35 if candidate.get("semantic_supplemented")
+            else 0.0
+        )
+        stage_fit = _host_stage_fit(stage, candidate)
+        assessments.append(
+            {
+                "ref": id_to_ref[str(candidate["id"])],
+                "candidate_id": str(candidate["id"]),
+                "applicability": stage_fit,
+                "implementation_support": implementation_support,
+                "contradiction": False,
+                "confidence": 0.7 * stage_fit + 0.3 * implementation_support,
+                "reason": "Deterministic stage-aware Host fallback over live Search evidence.",
+                "host_stage_fit": stage_fit,
+                "assessment_authority": "stage_aware_host_fallback",
+            }
+        )
+    selected_ids = [str(row["id"]) for row in selected]
+    return selected_ids, assessments
 
 
 def _coverage_bound(rows: list[dict[str, Any]], limit: int) -> list[dict[str, Any]]:
@@ -613,6 +729,20 @@ def _compact(candidate: Mapping[str, Any]) -> dict[str, Any]:
         "grep_evidence": copy.deepcopy(candidate.get("grep_evidence") or [])[-3:],
         "semantic_supplemented": bool(candidate.get("semantic_supplemented")),
     }
+
+
+def _judge_prompt_candidates(
+    candidates: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    ref_to_id, _ = _judge_handles(candidates)
+    id_to_candidate = {str(row["id"]): row for row in candidates}
+    cards = []
+    for ref, candidate_id in ref_to_id.items():
+        card = _compact(id_to_candidate[candidate_id])
+        card.pop("candidate_id", None)
+        card["ref"] = ref
+        cards.append(card)
+    return cards
 
 
 def _compact_trace_for_prompt(trace: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -805,6 +935,7 @@ def _call_judge(
     max_selected: int,
     retry_feedback: str = "",
 ) -> dict[str, Any]:
+    ref_to_id, _ = _judge_handles(candidates)
     prompt = {
         "role": (
             "You are the independent cross-granularity Retrieval Judge. The "
@@ -819,7 +950,7 @@ def _call_judge(
             -int(layer.experiment_r_multigranular_context_chars):
         ],
         "authorized_candidates": json.dumps(
-            [_compact(row) for row in candidates],
+            _judge_prompt_candidates(candidates),
             sort_keys=True,
             ensure_ascii=False,
             indent=2,
@@ -835,7 +966,8 @@ def _call_judge(
             sort_keys=True,
         ),
         "policy": [
-            "Assess every candidate exactly once; do not select an unassessed ID.",
+            "Assess every opaque candidate ref exactly once; do not select an unassessed ref.",
+            "Use only the supplied C01... refs. Canonical memory IDs are Host-owned and must never be reconstructed or rewritten.",
             "Do not treat lexical match or a whole-run metric as proof that one component caused improvement.",
             "Prefer mutually compatible recipe/tactic/run/transition evidence over redundant cards from one granularity.",
             "Reject candidates whose task, stage, validation protocol, implementation interface, or compute requirements contradict the current state.",
@@ -850,7 +982,7 @@ def _call_judge(
         temperature=0.0,
         max_tokens=int(layer.experiment_r_multigranular_judge_max_tokens),
         func_spec=_judge_spec(
-            max_candidates=len(candidates), max_selected=max_selected
+            candidate_refs=list(ref_to_id), max_selected=max_selected
         ),
         cfg=getattr(layer, "cfg", None),
     )
@@ -859,43 +991,65 @@ def _call_judge(
 def _validate_judge(
     action: Mapping[str, Any],
     *,
+    stage: str,
     candidates: list[dict[str, Any]],
     max_selected: int,
     abstention_allowed: bool,
 ) -> dict[str, Any]:
     normalized = copy.deepcopy(dict(action))
-    ids = {str(row["id"]) for row in candidates}
+    ref_to_id, _ = _judge_handles(candidates)
+    candidates_by_id = {str(row["id"]): row for row in candidates}
     assessments = list(normalized.get("assessments") or [])
-    assessed_ids = [str(row.get("candidate_id") or "") for row in assessments]
-    if len(assessed_ids) != len(set(assessed_ids)) or set(assessed_ids) != ids:
+    assessed_refs = [str(row.get("ref") or "") for row in assessments]
+    if (
+        len(assessed_refs) != len(set(assessed_refs))
+        or set(assessed_refs) != set(ref_to_id)
+    ):
         raise ValueError("Retrieval Judge must assess every and only supplied candidate")
     assessment_by_id = {}
     for row in assessments:
-        candidate_id = str(row.get("candidate_id") or "")
+        ref = str(row.get("ref") or "")
+        if ref not in ref_to_id:
+            raise ValueError("Retrieval Judge used an unknown candidate ref")
+        candidate_id = ref_to_id[ref]
         for key in (
-            "applicability", "stage_fit", "implementation_support", "confidence"
+            "applicability", "implementation_support", "confidence"
         ):
             value = float(row.get(key))
             if not 0.0 <= value <= 1.0:
                 raise ValueError(f"Retrieval Judge {key} is outside [0, 1]")
             row[key] = value
         row["contradiction"] = bool(row.get("contradiction"))
+        row["candidate_id"] = candidate_id
+        row["host_stage_fit"] = _host_stage_fit(
+            stage, candidates_by_id[candidate_id]
+        )
+        row["assessment_authority"] = "independent_retrieval_judge"
         assessment_by_id[candidate_id] = row
-    selected = list(map(str, normalized.get("selected_ids") or []))
-    if len(selected) != len(set(selected)) or not set(selected) <= ids:
-        raise ValueError("Retrieval Judge selected unknown or duplicate IDs")
+    selected_refs = list(map(str, normalized.get("selected_refs") or []))
+    if (
+        len(selected_refs) != len(set(selected_refs))
+        or not set(selected_refs) <= set(ref_to_id)
+    ):
+        raise ValueError("Retrieval Judge selected unknown or duplicate refs")
+    selected = [ref_to_id[ref] for ref in selected_refs]
     if len(selected) > int(max_selected):
         raise ValueError("Retrieval Judge exceeded the stage selection cap")
     if any(assessment_by_id[value]["contradiction"] for value in selected):
         raise ValueError("Retrieval Judge selected a contradicted candidate")
     decision = str(normalized.get("decision") or "")
     if decision == "abstain":
-        if selected or not abstention_allowed:
+        if selected_refs or not abstention_allowed:
             raise ValueError("Retrieval Judge returned an invalid abstention")
-    elif decision != "select" or not selected:
+    elif decision != "select" or not selected_refs:
         raise ValueError("Retrieval Judge selection is empty or malformed")
+    normalized["selected_refs"] = selected_refs
     normalized["selected_ids"] = selected
     normalized["assessments"] = assessments
+    normalized["candidate_handles"] = [
+        {"ref": ref, "candidate_id": candidate_id}
+        for ref, candidate_id in ref_to_id.items()
+    ]
     return normalized
 
 
@@ -1084,6 +1238,7 @@ def build_multigranular_candidate_pool(
     retry_feedback = ""
     for attempt in range(2):
         judge_calls += 1
+        raw = None
         try:
             raw = _call_judge(
                 layer,
@@ -1097,6 +1252,7 @@ def build_multigranular_candidate_pool(
             )
             judge = _validate_judge(
                 raw,
+                stage=stage,
                 candidates=judge_candidates,
                 max_selected=max_selected,
                 abstention_allowed=bool(layer.experiment_r_allow_agent_abstention),
@@ -1107,11 +1263,42 @@ def build_multigranular_candidate_pool(
             break
         except Exception as exc:
             retry_feedback = f"{type(exc).__name__}: {exc}"
-            judge_attempts.append(
-                {"attempt": attempt + 1, "status": "invalid", "error": retry_feedback}
-            )
+            receipt = {
+                "attempt": attempt + 1,
+                "status": "invalid",
+                "error": retry_feedback,
+            }
+            if isinstance(raw, Mapping):
+                receipt["action"] = copy.deepcopy(dict(raw))
+            judge_attempts.append(receipt)
+    fallback_used = judge is None
+    fallback_reason = retry_feedback if fallback_used else None
     if judge is None:
-        raise ValueError("Independent multi-granularity Judge failed its contract")
+        selected_ids, host_assessments = _stage_aware_host_fallback(
+            stage=stage,
+            candidates=judge_candidates,
+            max_selected=max_selected,
+        )
+        if not selected_ids:
+            raise ValueError(
+                "Independent Judge failed and stage-aware Host fallback was empty"
+            )
+        ref_to_id, id_to_ref = _judge_handles(judge_candidates)
+        judge = {
+            "decision": "select",
+            "selected_refs": [id_to_ref[value] for value in selected_ids],
+            "selected_ids": selected_ids,
+            "reason": (
+                "Independent Judge failed its contract; selected from the "
+                "preserved live multi-granular Search pool with deterministic "
+                "stage-aware Host ranking."
+            ),
+            "assessments": host_assessments,
+            "candidate_handles": [
+                {"ref": ref, "candidate_id": candidate_id}
+                for ref, candidate_id in ref_to_id.items()
+            ],
+        }
 
     selected_ids = list(judge["selected_ids"])
     selected_set = set(selected_ids)
@@ -1167,7 +1354,9 @@ def build_multigranular_candidate_pool(
                     ),
                     "multigranular_judge_selected": candidate["id"] in selected_set,
                     "ranking_backend": (
-                        "host_field_grep_plus_hybrid_supplement_then_independent_judge_v1"
+                        "stage_aware_host_fallback_over_live_multigranular_search_v1"
+                        if fallback_used
+                        else "host_field_grep_plus_hybrid_supplement_then_independent_judge_v2"
                     ),
                 }
             )
@@ -1196,13 +1385,19 @@ def build_multigranular_candidate_pool(
         "pre_gate_summary": pre_gate_summary,
         "candidate_pool_hash": _sha(pool_identity),
         "pool_identity": pool_identity,
-        "candidate_pool_source": "live_multigranular_grep_search",
+        "candidate_pool_source": (
+            "live_multigranular_grep_search_host_fallback"
+            if fallback_used
+            else "live_multigranular_grep_search"
+        ),
         "ranking_contract": (
-            "authority_multigranular_host_grep_hybrid_supplement_independent_judge_v1"
+            "authority_multigranular_search_stage_aware_host_fallback_v1"
+            if fallback_used
+            else "authority_multigranular_host_grep_hybrid_supplement_independent_judge_v2"
         ),
         "live_query_used_for_candidate_pool": True,
         "tree_confidence": None,
-        "fallback_reason": None,
+        "fallback_reason": fallback_reason,
         "pool_counts": {
             "raw_sop": len(ordered["sop"]),
             "raw_runforest": len(ordered["runforest"]),
@@ -1219,26 +1414,32 @@ def build_multigranular_candidate_pool(
             "root_cause_agent_calls": 0,
             "grep_search_agent_calls": 0,
             "observed_candidate_count": len(accumulated),
-            "agent_selected_ids": selected_ids,
+            "agent_selected_ids": [] if fallback_used else selected_ids,
             "effective_selected_ids": list(selected_ids),
             "selection_complete": True,
             "agent_abstained": not bool(selected_ids),
             "allow_abstention": bool(layer.experiment_r_allow_agent_abstention),
-            "final_selection_authority": "independent_multigranular_retrieval_judge",
+            "final_selection_authority": (
+                "stage_aware_host_fallback"
+                if fallback_used
+                else "independent_multigranular_retrieval_judge"
+            ),
             "selection_contract": {
                 "minimum_selection_count": (
                     0 if layer.experiment_r_allow_agent_abstention else 1
                 ),
                 "maximum_selection_count": max_selected,
                 "selection_semantics": (
-                    "independent_cross_granularity_judge_variable_cardinality_v1"
+                    "stage_aware_host_fallback_variable_cardinality_v1"
+                    if fallback_used
+                    else "independent_cross_granularity_judge_variable_cardinality_v2"
                 ),
             },
             "finish_reason": str(judge.get("reason") or ""),
             "elapsed_seconds": elapsed,
             "trace": trace,
             "trace_sha256": _sha(trace),
-            "fallback_used": False,
+            "fallback_used": fallback_used,
             "shortlist_rrf_applied": False,
             "multigranular_search": {
                 "schema": SCHEMA,
@@ -1258,14 +1459,20 @@ def build_multigranular_candidate_pool(
             },
             "retrieval_judge": {
                 "schema": JUDGE_SCHEMA,
-                "status": "completed",
+                "status": (
+                    "failed_host_fallback" if fallback_used else "completed"
+                ),
                 "decision": judge["decision"],
+                "selected_refs": list(judge.get("selected_refs") or []),
                 "selected_ids": selected_ids,
                 "reason": judge["reason"],
                 "assessments": judge["assessments"],
                 "attempts": judge_attempts,
                 "candidate_count": len(judge_candidates),
                 "candidate_ids": [row["id"] for row in judge_candidates],
+                "candidate_handles": list(
+                    judge.get("candidate_handles") or []
+                ),
                 "receipt_sha256": _sha(judge),
             },
         },

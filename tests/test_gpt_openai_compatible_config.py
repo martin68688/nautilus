@@ -1,7 +1,10 @@
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
+import jsonschema
 from omegaconf import OmegaConf
+import pytest
 
 
 REPO = Path(__file__).resolve().parents[1]
@@ -119,6 +122,142 @@ def test_openai_named_tool_choice_uses_top_level_name():
         "type": "function",
         "name": "emit_direction",
     }
+
+
+def _openai_cfg() -> SimpleNamespace:
+    stage = SimpleNamespace(
+        model="gpt-5.6-sol",
+        api_key="test-key",
+        base_url="https://gateway.example.test/v1",
+    )
+    return SimpleNamespace(agent=SimpleNamespace(code=stage, feedback=stage))
+
+
+def _tool_completion(name: str, arguments: str) -> SimpleNamespace:
+    message = SimpleNamespace(
+        content=None,
+        tool_calls=[
+            SimpleNamespace(
+                function=SimpleNamespace(name=name, arguments=arguments)
+            )
+        ],
+    )
+    return SimpleNamespace(
+        choices=[SimpleNamespace(message=message, finish_reason="stop")],
+        usage=SimpleNamespace(prompt_tokens=1, completion_tokens=1),
+        model="gpt-5.6-sol",
+        created=1,
+    )
+
+
+def test_explicit_zero_temperature_overrides_gpt_profile_for_tool_calls(
+    monkeypatch,
+):
+    from llm import openai as backend
+
+    captured = {}
+
+    class FakeCompletions:
+        def create(self, **params):
+            captured.update(params)
+            return _tool_completion("emit_direction", '{"lower_is_better": true}')
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            self.chat = SimpleNamespace(completions=FakeCompletions())
+
+    monkeypatch.setattr(backend, "OpenAI", FakeClient)
+    spec = FunctionSpec(
+        name="emit_direction",
+        description="Emit metric direction",
+        json_schema={
+            "type": "object",
+            "properties": {"lower_is_better": {"type": "boolean"}},
+            "required": ["lower_is_better"],
+            "additionalProperties": False,
+        },
+    )
+
+    output, *_ = backend.query(
+        system_message="judge",
+        user_message=None,
+        model="gpt-5.6-sol",
+        temperature=0.0,
+        max_tokens=100,
+        func_spec=spec,
+        cfg=_openai_cfg(),
+    )
+
+    assert output == {"lower_is_better": True}
+    assert captured["temperature"] == 0.0
+
+
+def test_openai_compatible_tool_output_is_validated_locally(monkeypatch):
+    from llm import openai as backend
+
+    class FakeCompletions:
+        def create(self, **_params):
+            return _tool_completion("emit_direction", "{}")
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            self.chat = SimpleNamespace(completions=FakeCompletions())
+
+    monkeypatch.setattr(backend, "OpenAI", FakeClient)
+    spec = FunctionSpec(
+        name="emit_direction",
+        description="Emit metric direction",
+        json_schema={
+            "type": "object",
+            "properties": {"lower_is_better": {"type": "boolean"}},
+            "required": ["lower_is_better"],
+            "additionalProperties": False,
+        },
+    )
+
+    with pytest.raises(jsonschema.ValidationError, match="lower_is_better"):
+        backend.query(
+            system_message="judge",
+            user_message=None,
+            model="gpt-5.6-sol",
+            temperature=0.0,
+            max_tokens=100,
+            func_spec=spec,
+            cfg=_openai_cfg(),
+        )
+
+
+def test_explicit_zero_temperature_overrides_gpt_profile_for_generate(
+    monkeypatch,
+):
+    from llm import openai as backend
+
+    captured = {}
+
+    class FakeCompletions:
+        def create(self, **params):
+            captured.update(params)
+            return [
+                SimpleNamespace(
+                    choices=[
+                        SimpleNamespace(delta=SimpleNamespace(content="ok"))
+                    ]
+                )
+            ]
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            self.chat = SimpleNamespace(completions=FakeCompletions())
+
+    monkeypatch.setattr(backend, "OpenAI", FakeClient)
+
+    assert backend.generate(
+        "hello",
+        _openai_cfg(),
+        temperature=0.0,
+        max_retries=1,
+    ) == "ok"
+    assert captured["temperature"] == 0.0
 
 
 def test_official_evaluator_overrides_merge_into_typed_config(monkeypatch):

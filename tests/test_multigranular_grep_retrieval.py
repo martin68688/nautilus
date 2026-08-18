@@ -234,15 +234,22 @@ def test_host_owned_fields_reach_search_and_judge_without_retry(
 
         judge_calls += 1
         candidates = json.loads(kwargs["system_message"]["authorized_candidates"])
+        assert all("candidate_id" not in row for row in candidates)
+        assert [row["ref"] for row in candidates] == [
+            f"C{index:02d}" for index in range(1, len(candidates) + 1)
+        ]
         return {
             "decision": "select",
-            "selected_ids": ["tactic::fusion", "transition::fusion"],
+            "selected_refs": [
+                row["ref"]
+                for row in candidates
+                if row["granularity"] in {"l2_tactic", "runforest_transition"}
+            ],
             "reason": "recovered search reached independent judge",
             "assessments": [
                 {
-                    "candidate_id": row["candidate_id"],
+                    "ref": row["ref"],
                     "applicability": 0.95,
-                    "stage_fit": 0.95,
                     "implementation_support": 0.95,
                     "contradiction": False,
                     "confidence": 0.95,
@@ -295,32 +302,39 @@ def test_host_owned_fields_reach_search_and_judge_without_retry(
 
 def test_independent_judge_schema_and_validator_accept_cross_granularity_set() -> None:
     candidates = _universe()
-    spec = retrieval._judge_spec(max_candidates=5, max_selected=3)
+    refs = [f"C{index:02d}" for index in range(1, len(candidates) + 1)]
+    spec = retrieval._judge_spec(candidate_refs=refs, max_selected=3)
     action = {
         "decision": "select",
-        "selected_ids": ["recipe::dino", "tactic::fusion", "run::best"],
+        "selected_refs": ["C01", "C02", "C04"],
         "reason": "recipe and tactic have successful run support",
         "assessments": [
             {
-                "candidate_id": row["id"],
+                "ref": ref,
                 "applicability": 0.9,
-                "stage_fit": 0.9,
                 "implementation_support": 0.9,
                 "contradiction": False,
                 "confidence": 0.9,
                 "reason": "compatible evidence",
             }
-            for row in candidates
+            for ref in refs
         ],
     }
     jsonschema.Draft7Validator(spec.json_schema).validate(action)
+    assert "stage_fit" not in json.dumps(spec.json_schema)
+    assert "candidate_id" not in json.dumps(spec.json_schema)
     validated = retrieval._validate_judge(
         action,
+        stage="draft",
         candidates=candidates,
         max_selected=3,
         abstention_allowed=True,
     )
-    assert validated["selected_ids"] == action["selected_ids"]
+    assert validated["selected_refs"] == action["selected_refs"]
+    assert validated["selected_ids"] == [
+        "recipe::dino", "tactic::fusion", "run::best"
+    ]
+    assert all("host_stage_fit" in row for row in validated["assessments"])
 
 
 def test_complete_search_then_independent_judge_pool(monkeypatch) -> None:
@@ -354,19 +368,18 @@ def test_complete_search_then_independent_judge_pool(monkeypatch) -> None:
             }
         candidates = json.loads(kwargs["system_message"]["authorized_candidates"])
         selected = [
-            row["candidate_id"]
+            row["ref"]
             for row in candidates
-            if row["candidate_id"] in {"tactic::fusion", "transition::fusion"}
+            if row["granularity"] in {"l2_tactic", "runforest_transition"}
         ]
         return {
             "decision": "select",
-            "selected_ids": selected,
+            "selected_refs": selected,
             "reason": "tactic plus observed improving transition",
             "assessments": [
                 {
-                    "candidate_id": row["candidate_id"],
+                    "ref": row["ref"],
                     "applicability": 0.95,
-                    "stage_fit": 0.95,
                     "implementation_support": 0.95,
                     "contradiction": False,
                     "confidence": 0.95,
@@ -402,6 +415,156 @@ def test_complete_search_then_independent_judge_pool(monkeypatch) -> None:
     }
     assert agent["retrieval_judge"]["candidate_count"] == 5
     assert pool["candidate_pool_source"] == "live_multigranular_grep_search"
+
+
+def test_v135_rewritten_canonical_ids_use_stage_aware_search_fallback(
+    monkeypatch,
+) -> None:
+    """Regression for the first real v135 Judge response.
+
+    The provider expanded a canonical transition ID instead of round-tripping
+    it byte-for-byte.  The opaque-ref contract rejects that response while the
+    Host keeps the successful Search pool and chooses Draft-appropriate cards.
+    """
+
+    universe = _universe()
+    search_calls = 0
+    judge_calls = 0
+
+    def query_fn(**kwargs):
+        nonlocal search_calls, judge_calls
+        if kwargs["func_spec"].name == "plan_multigranular_memory_grep":
+            search_calls += 1
+            return {
+                "action": "search",
+                "reason": "broad multi-granularity search",
+                "information_need": "DINO leaf evidence",
+                "allocation": {
+                    "l1_recipe": 0.25,
+                    "l2_tactic": 0.25,
+                    "l3_repair": 0.10,
+                    "runforest_run": 0.20,
+                    "runforest_transition": 0.20,
+                },
+                "queries": [
+                    {
+                        "granularity": granularity,
+                        "query": "DINO leaf",
+                        "terms": ["DINO", "leaf"],
+                        "top_k": 8,
+                        "reason": "cover every granularity",
+                    }
+                    for granularity in retrieval.GRANULARITIES
+                ],
+            }
+
+        judge_calls += 1
+        # Deliberately reproduce the failure mode: canonical IDs are returned
+        # where the new contract permits only C01... opaque handles.
+        return {
+            "decision": "select",
+            "selected_refs": ["transition::fusion::expanded-full-uuid"],
+            "reason": "semantically useful but contract-invalid",
+            "assessments": [
+                {
+                    "ref": row["id"],
+                    "applicability": 0.9,
+                    "implementation_support": 0.9,
+                    "contradiction": False,
+                    "confidence": 0.9,
+                    "reason": "compatible",
+                }
+                for row in universe
+            ],
+        }
+
+    layer = _layer(query_fn)
+    layer.experiment_r_multigranular_search_rounds = 1
+    layer.experiment_r_stage_selection_caps = {"draft": 3, "improve": 3}
+    monkeypatch.setattr(
+        retrieval, "_authorized_candidates", lambda *args, **kwargs: universe
+    )
+
+    pool = retrieval.build_multigranular_candidate_pool(
+        layer,
+        stage="draft",
+        task_id="leaf-classification",
+        task_desc="multimodal leaf classification",
+        query_text="Draft DINO and morphology fusion",
+        visible_sop_ids={row["id"] for row in universe if row["source"] == "sop"},
+        pre_gate_raw_candidates=[],
+        pre_gate_summary={},
+    )
+
+    agent = pool["retrieval_agent"]
+    assert search_calls == 1
+    assert judge_calls == 2
+    assert pool["candidate_pool_source"] == (
+        "live_multigranular_grep_search_host_fallback"
+    )
+    assert pool["ranking_contract"] == (
+        "authority_multigranular_search_stage_aware_host_fallback_v1"
+    )
+    assert agent["fallback_used"] is True
+    assert agent["final_selection_authority"] == "stage_aware_host_fallback"
+    assert agent["agent_selected_ids"] == []
+    assert agent["effective_selected_ids"] == [
+        "recipe::dino",
+        "tactic::fusion",
+        "run::best",
+    ]
+    judge = agent["retrieval_judge"]
+    assert judge["status"] == "failed_host_fallback"
+    assert len(judge["attempts"]) == 2
+    assert all(row["status"] == "invalid" for row in judge["attempts"])
+    assert {row["candidate_id"] for row in judge["assessments"]} == {
+        row["id"] for row in universe
+    }
+
+
+def test_v135_missing_stage_fit_is_no_longer_part_of_judge_contract() -> None:
+    """Regression for the second real v135 Judge response."""
+
+    candidates = _universe()
+    refs = [f"C{index:02d}" for index in range(1, len(candidates) + 1)]
+    action = {
+        "decision": "select",
+        "selected_refs": ["C01", "C02", "C04"],
+        "reason": "Draft recipe, tactic, and successful run agree",
+        "assessments": [
+            {
+                "ref": ref,
+                "applicability": 0.9,
+                "implementation_support": 0.9,
+                "contradiction": False,
+                "confidence": 0.9,
+                "reason": "compatible",
+            }
+            for ref in refs
+        ],
+    }
+
+    validated = retrieval._validate_judge(
+        action,
+        stage="draft",
+        candidates=candidates,
+        max_selected=3,
+        abstention_allowed=True,
+    )
+
+    assert validated["selected_ids"] == [
+        "recipe::dino",
+        "tactic::fusion",
+        "run::best",
+    ]
+    assert all("stage_fit" not in row for row in action["assessments"])
+    assert [row["host_stage_fit"] for row in validated["assessments"]] == [
+        1.0,
+        0.9,
+        0.25,
+        0.85,
+        0.55,
+    ]
 
 
 def test_router_uses_multigranular_path_only_for_enabled_draft_improve(monkeypatch):

@@ -7,6 +7,7 @@ import re
 import time
 from typing import Any
 
+import jsonschema
 from openai import OpenAI
 
 from config import Config
@@ -67,6 +68,29 @@ def _parse_json_args(args: str) -> dict:
     # 4. Normalized + strip markdown fences
     cleaned = _strip_markdown_fences(normalized_str)
     return json.loads(cleaned)
+
+
+def _validate_tool_output(output: Any, func_spec: FunctionSpec) -> None:
+    """Enforce the declared tool contract for OpenAI-compatible providers.
+
+    Compatible gateways do not consistently enforce ``strict`` tool schemas.
+    Treat the provider response as untrusted and validate it locally before it
+    can reach an agent-specific validator or mutate search state.
+    """
+
+    validator = jsonschema.Draft7Validator(func_spec.json_schema)
+    errors = sorted(
+        validator.iter_errors(output),
+        key=lambda error: tuple(map(str, error.absolute_path)),
+    )
+    if not errors:
+        return
+    first = errors[0]
+    location = ".".join(map(str, first.absolute_path)) or "<root>"
+    raise jsonschema.ValidationError(
+        f"Tool {func_spec.name!r} output violates its local JSON Schema at "
+        f"{location}: {first.message}"
+    )
 
 # Return type aligned with gemini.query
 OutputType = str | dict
@@ -130,7 +154,11 @@ def query(
     params: dict[str, Any] = {
         "model": model,
         "messages": messages,
-        "temperature": profile.get("temperature", filtered.get("temperature", 1.0)),
+        "temperature": (
+            filtered["temperature"]
+            if "temperature" in filtered
+            else profile.get("temperature", 1.0)
+        ),
         "max_tokens": filtered.get("max_tokens", 16384),
     }
     if "top_p" in profile:
@@ -174,6 +202,7 @@ def query(
         except json.JSONDecodeError as e:
             logger.error(f"Invalid function arguments: {tc.function.arguments}")
             raise e
+        _validate_tool_output(output, func_spec)
         logger.info(f"OpenAI function call response: {output}", extra={"verbose": True})
 
     in_tok = getattr(completion.usage, "prompt_tokens", 0) or 0
@@ -265,7 +294,11 @@ def generate(
     params: dict[str, Any] = {
         "model": model,
         "messages": messages,
-        "temperature": profile.get("temperature", temperature if temperature is not None else 1.0),
+        "temperature": (
+            temperature
+            if temperature is not None
+            else profile.get("temperature", 1.0)
+        ),
         "max_tokens": max_tokens if max_tokens is not None else 16384,
         "stream": True,
     }
