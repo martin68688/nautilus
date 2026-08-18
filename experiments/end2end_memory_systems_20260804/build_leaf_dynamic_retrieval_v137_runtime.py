@@ -78,12 +78,13 @@ def copy_release_inputs(output: Path) -> None:
         v135.copy_file(REPO / relative, output / relative)
 
 
-def remove_runtime_bytecode(output: Path) -> None:
-    """Keep mutable interpreter caches outside the immutable source lock."""
+def remove_runtime_caches(output: Path) -> None:
+    """Keep mutable interpreter/test caches outside the immutable source lock."""
 
-    for cache in sorted(output.rglob("__pycache__"), reverse=True):
-        if cache.is_dir() and not cache.is_symlink():
-            shutil.rmtree(cache)
+    for cache_name in ("__pycache__", ".pytest_cache"):
+        for cache in sorted(output.rglob(cache_name), reverse=True):
+            if cache.is_dir() and not cache.is_symlink():
+                shutil.rmtree(cache)
     for bytecode in output.rglob("*.pyc"):
         if bytecode.is_file() and not bytecode.is_symlink():
             bytecode.unlink()
@@ -181,7 +182,9 @@ def build_components(output: Path, spec: Mapping[str, Any]) -> dict[str, str]:
     config = output / spec["system_dir"] / "dynamic_hybrid.yaml"
     source_row.update(
         {
-            "config_path": f"{spec['system_dir']}/dynamic_hybrid.yaml",
+            # run_assignment.ROOT is the experiment directory, so this path is
+            # relative to that directory (not to the repository/runtime root).
+            "config_path": f"{spec['system_dir'].name}/dynamic_hybrid.yaml",
             "config_sha256": v135.sha256_file(config),
             "label": f"S5-{spec['suffix']}-dynamic-retrieval-contract-hardening",
             "description": (
@@ -486,7 +489,7 @@ def build(
         if path.exists():
             raise FileExistsError(f"fresh v137 output already exists: {path}")
     shutil.copytree(base_runtime.resolve(strict=True), output_runtime, symlinks=True)
-    remove_runtime_bytecode(output_runtime)
+    remove_runtime_caches(output_runtime)
     copy_release_inputs(output_runtime)
     dynamic = write_dynamic_config(output_runtime, spec)
     bindings = build_components(output_runtime, spec)

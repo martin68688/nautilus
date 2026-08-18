@@ -56,9 +56,13 @@ def main() -> int:
     assert budget["cpu_count"] == 16
     assert budget["memory_gib"] == 64
 
-    config = (
+    experiment_root = runtime / builder.EXPERIMENT
+    system_row = systems["systems"][0]
+    config_path = (experiment_root / system_row["config_path"]).resolve(strict=True)
+    assert config_path == (
         runtime / spec["system_dir"] / "dynamic_hybrid.yaml"
-    ).read_text(encoding="utf-8")
+    ).resolve(strict=True)
+    config = config_path.read_text(encoding="utf-8")
     assert "extends: ../systems_v135/dynamic_hybrid.yaml" in config
     assert spec["cluster_runtime"] in config
     assert "deepseek" not in config.lower()
@@ -73,8 +77,16 @@ def main() -> int:
     lock_map = {row["path"]: row["sha256"] for row in source_lock["files"]}
     assert not any("__pycache__" in relative for relative in lock_map)
     assert not any(relative.endswith(".pyc") for relative in lock_map)
+    assert not any(".pytest_cache" in relative for relative in lock_map)
     for relative, expected in lock_map.items():
         assert v135.sha256_file(runtime / relative) == expected, relative
+    actual_files = {
+        path.relative_to(runtime).as_posix()
+        for path in runtime.rglob("*")
+        if path.is_file() and not path.is_symlink()
+    }
+    allowed_extras = set(source_lock["control_file_exclusions"])
+    assert not (actual_files - set(lock_map) - allowed_extras)
     assert lock_map[builder.OVERLAY_FILES[0].as_posix()] == v135.sha256_file(
         builder.REPO / builder.OVERLAY_FILES[0]
     )
