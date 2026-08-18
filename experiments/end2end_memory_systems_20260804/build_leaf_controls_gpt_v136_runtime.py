@@ -68,13 +68,15 @@ def build_components(output: Path) -> dict[str, str]:
     """Freeze v135 runtime/evaluator surfaces with the historical v2 bundle."""
 
     base = output / BASE_MANIFESTS
-    legacy = output / LEGACY_MANIFESTS
     manifests = output / TARGET_MANIFESTS
     manifests.mkdir(parents=True, exist_ok=False)
 
     for name in ("schemas.json", "tasks.json", "leaf_official_replay_targets.json"):
         v135.copy_file(base / name, manifests / name)
-    v135.copy_file(legacy / "memory_bundles.json", manifests / "memory_bundles.json")
+    v135.copy_file(
+        REPO / LEGACY_MANIFESTS / "memory_bundles.json",
+        manifests / "memory_bundles.json",
+    )
     memory = v135.read_json(manifests / "memory_bundles.json")
     if memory.get("manifest_hash") != EXPECTED_LEGACY_MEMORY_MANIFEST_HASH:
         raise ValueError("historical v2 Memory Bundle manifest identity changed")
