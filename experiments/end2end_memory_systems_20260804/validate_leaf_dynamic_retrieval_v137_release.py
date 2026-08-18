@@ -19,10 +19,11 @@ def read(path: Path) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("smoke", "full"), required=True)
+    parser.add_argument("--generation", type=int, default=1)
     parser.add_argument("--runtime", required=True, type=Path)
     parser.add_argument("--jobs", required=True, type=Path)
     args = parser.parse_args()
-    spec = builder.identity(args.mode)
+    spec = builder.identity(args.mode, args.generation)
     runtime = args.runtime.resolve(strict=True)
     manifests = runtime / spec["manifest_dir"]
     execution = read(manifests / spec["execution_name"])
@@ -70,6 +71,8 @@ def main() -> int:
     assert "live_multigranular_grep_search_host_fallback" in grep_text
 
     lock_map = {row["path"]: row["sha256"] for row in source_lock["files"]}
+    assert not any("__pycache__" in relative for relative in lock_map)
+    assert not any(relative.endswith(".pyc") for relative in lock_map)
     for relative, expected in lock_map.items():
         assert v135.sha256_file(runtime / relative) == expected, relative
     assert lock_map[builder.OVERLAY_FILES[0].as_posix()] == v135.sha256_file(

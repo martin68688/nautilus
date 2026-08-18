@@ -43,11 +43,14 @@ TEST_SUPPORT_FILES = (
 )
 
 
-def identity(mode: str) -> dict[str, Any]:
+def identity(mode: str, generation: int = 1) -> dict[str, Any]:
     if mode not in {"smoke", "full"}:
         raise ValueError(f"unsupported mode: {mode}")
-    suffix = f"v137-{mode}"
-    manifest_suffix = f"v137_{mode}"
+    if generation < 1:
+        raise ValueError("generation must be positive")
+    revision = "" if generation == 1 else f"-r{generation}"
+    suffix = f"v137-{mode}{revision}"
+    manifest_suffix = f"v137_{mode}{revision.replace('-', '_')}"
     kind = "smoke" if mode == "smoke" else "pilot"
     return {
         "mode": mode,
@@ -73,6 +76,17 @@ def identity(mode: str) -> dict[str, Any]:
 def copy_release_inputs(output: Path) -> None:
     for relative in (*OVERLAY_FILES, *TEST_FILES, *TEST_SUPPORT_FILES):
         v135.copy_file(REPO / relative, output / relative)
+
+
+def remove_runtime_bytecode(output: Path) -> None:
+    """Keep mutable interpreter caches outside the immutable source lock."""
+
+    for cache in sorted(output.rglob("__pycache__"), reverse=True):
+        if cache.is_dir() and not cache.is_symlink():
+            shutil.rmtree(cache)
+    for bytecode in output.rglob("*.pyc"):
+        if bytecode.is_file() and not bytecode.is_symlink():
+            bytecode.unlink()
 
 
 def write_dynamic_config(output: Path, spec: Mapping[str, Any]) -> Path:
@@ -460,17 +474,19 @@ def build_stager(spec: Mapping[str, Any]) -> dict[str, Any]:
 def build(
     *,
     mode: str,
+    generation: int,
     base_runtime: Path,
     output_runtime: Path,
     manifests_out: Path,
     systems_out: Path,
     jobs_out: Path,
 ) -> dict[str, Any]:
-    spec = identity(mode)
+    spec = identity(mode, generation)
     for path in (output_runtime, manifests_out, systems_out, jobs_out):
         if path.exists():
             raise FileExistsError(f"fresh v137 output already exists: {path}")
     shutil.copytree(base_runtime.resolve(strict=True), output_runtime, symlinks=True)
+    remove_runtime_bytecode(output_runtime)
     copy_release_inputs(output_runtime)
     dynamic = write_dynamic_config(output_runtime, spec)
     bindings = build_components(output_runtime, spec)
@@ -525,6 +541,7 @@ def build(
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=("smoke", "full"), required=True)
+    parser.add_argument("--generation", type=int, default=1)
     parser.add_argument("--base-runtime", required=True, type=Path)
     parser.add_argument("--output-runtime", required=True, type=Path)
     parser.add_argument("--manifests-out", required=True, type=Path)
@@ -534,6 +551,7 @@ def main() -> int:
     args = parser.parse_args()
     receipt = build(
         mode=args.mode,
+        generation=args.generation,
         base_runtime=args.base_runtime,
         output_runtime=args.output_runtime,
         manifests_out=args.manifests_out,
