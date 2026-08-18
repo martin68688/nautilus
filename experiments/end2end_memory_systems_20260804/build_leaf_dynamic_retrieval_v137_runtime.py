@@ -35,6 +35,12 @@ TEST_FILES = (
     Path("tests/test_experiment_r_dynamic_routing.py"),
     Path("tests/test_l3_grep_search_agent.py"),
 )
+TEST_SUPPORT_FILES = (
+    Path(
+        "experiments/end2end_memory_systems_20260804/"
+        "build_leaf_replay_gpt_v127_runtime.py"
+    ),
+)
 
 
 def identity(mode: str) -> dict[str, Any]:
@@ -65,7 +71,7 @@ def identity(mode: str) -> dict[str, Any]:
 
 
 def copy_release_inputs(output: Path) -> None:
-    for relative in (*OVERLAY_FILES, *TEST_FILES):
+    for relative in (*OVERLAY_FILES, *TEST_FILES, *TEST_SUPPORT_FILES):
         v135.copy_file(REPO / relative, output / relative)
 
 
