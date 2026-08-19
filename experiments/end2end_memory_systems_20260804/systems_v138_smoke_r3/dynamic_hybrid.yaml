@@ -1,0 +1,15 @@
+# v138 changes only Dynamic: repair Host preamble composition and
+# protect equal startup resources for Cold Start, Replay, and Novel.
+extends: ../systems_v137_full/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    ensure_valid_candidate_per_role: true
+    role_balance_min_valid_candidates: 1
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v138-smoke-r3/experiments/end2end_memory_systems_20260804/manifests_v138_smoke_r3/leaf_official_replay_targets.json
+
+external_skill_memory:
+  transition_evidence_capsules_path: /workspace/nautilus-exp-end2end-agent-v138-smoke-r3/experiments/end2end_memory_systems_20260804/transition_evidence_v122/transition_evidence_capsules.json
+
+run_identity:
+  memory_version: leaf_dynamic_novel_host_fix_role_balance_gpt56sol_v138_smoke_r3

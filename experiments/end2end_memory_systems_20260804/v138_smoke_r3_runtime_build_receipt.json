@@ -1,0 +1,21 @@
+{
+  "agent_steps": 5,
+  "cluster_runtime": "/workspace/nautilus-exp-end2end-agent-v138-smoke-r3",
+  "dev_memory_gib": 32,
+  "dynamic_config_sha256": "49f9ce402e770debaa4bdac35e0d531fe4a66d97190d0b08c98be8a6aad17fdf",
+  "evaluator_root": "/workspace/experiment-end2end-leaf-official-evaluator-v138-smoke-r3",
+  "execution_manifest_hash": "ed4b2c7c93da0c547f2ba7541b490a99972cc6f48aaaae83a76398276cdfd32a",
+  "llm_base_url": "https://apizh.net/v1",
+  "llm_model": "gpt-5.6-sol",
+  "llm_secret_reference": "mlevolve-openai-gpt56sol-v1",
+  "logical_run_id": "e2e-smoke-leaf-dynamic-novel-balance-official-gpt56sol-v138-smoke-r3__leaf-classification__dynamic_hybrid__seed-1",
+  "output_root": "/workspace/experiment-end2end-memory-agent-v138-smoke-r3/runs",
+  "pod_name": "mlevolve-leaf-gpt56sol-v138-smoke-r3-dev",
+  "release_id": "end2end-leaf-dynamic-novel-balance-gpt56sol-v138-smoke-r3",
+  "role_balance_min_valid_candidates": 1,
+  "runtime_root": "/tmp/nautilus-exp-end2end-agent-v138-smoke-r3",
+  "schema": "mlevolve_leaf_dynamic_novel_balance_v138_smoke_build_v1",
+  "source_lock_file_count": 691,
+  "source_lock_hash": "dc13ba279b1a7f69e6196e881afb8a813d80417362cdaa41e579b823995b3c42",
+  "status": "complete"
+}
