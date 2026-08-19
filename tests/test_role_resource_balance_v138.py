@@ -144,4 +144,5 @@ def test_host_instrumentation_failure_does_not_count_as_completed_role_work():
     status = build_role_balance_status(agent)
 
     assert status["completed_counts"]["novel_exploration"] == 0
-    assert status["next_role"] == "coldstart_baseline"
+    assert status["host_instrumentation_failures"]["novel_exploration"] == 1
+    assert status["next_role"] == "novel_exploration"

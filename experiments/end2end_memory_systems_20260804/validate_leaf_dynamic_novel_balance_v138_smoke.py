@@ -52,7 +52,7 @@ def main() -> int:
     config_text = config.read_text(encoding="utf-8")
     assert "extends: ../systems_v137_full/dynamic_hybrid.yaml" in config_text
     assert "ensure_valid_candidate_per_role: true" in config_text
-    assert "role_balance_min_valid_candidates: 2" in config_text
+    assert "role_balance_min_valid_candidates: 1" in config_text
     assert builder.CLUSTER_RUNTIME in config_text
     assert "deepseek" not in config_text.lower()
 
@@ -116,7 +116,7 @@ def main() -> int:
                 "source_locked_files": len(lock_map),
                 "agent_steps": budget["agent_steps"],
                 "pod": builder.POD_NAME,
-                "role_balance_min_valid_candidates": 2,
+                "role_balance_min_valid_candidates": 1,
             },
             sort_keys=True,
         )

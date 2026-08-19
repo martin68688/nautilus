@@ -35,16 +35,18 @@ def build_role_balance_status(agent) -> dict:
 
     valid_counts: dict[str, int] = {role: 0 for role in roles}
     completed_counts: dict[str, int] = {role: 0 for role in roles}
+    host_instrumentation_failures: dict[str, int] = {role: 0 for role in roles}
     for nodes in dict(getattr(agent, "branch_all_nodes", {}) or {}).values():
         for node in nodes:
             role = str(getattr(node, "draft_role", "") or "")
             if role not in completed_counts:
                 continue
+            if getattr(node, "exc_type", None) == "HostSourceInstrumentationError":
+                host_instrumentation_failures[role] += 1
+                continue
             if (
                 getattr(node, "pending_execution", False) is not True
                 and getattr(node, "is_buggy", None) is not None
-                and getattr(node, "exc_type", None)
-                != "HostSourceInstrumentationError"
             ):
                 completed_counts[role] += 1
 
@@ -68,6 +70,10 @@ def build_role_balance_status(agent) -> dict:
         next_role = min(
             deficit_roles,
             key=lambda role: (
+                # A deterministic Host instrumentation failure is a system
+                # defect, not evidence that the role deserves less compute.
+                # Repair that role before normal count-based balancing.
+                0 if host_instrumentation_failures[role] else 1,
                 valid_counts[role],
                 completed_counts[role],
                 role_order[role],
@@ -80,6 +86,7 @@ def build_role_balance_status(agent) -> dict:
         "roles": roles,
         "valid_counts": valid_counts,
         "completed_counts": completed_counts,
+        "host_instrumentation_failures": host_instrumentation_failures,
         "deficit_roles": deficit_roles,
         "next_role": next_role,
     }
