@@ -11,6 +11,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "mlevolve"))
 
 from config import Config, _load_cfg  # noqa: E402
+from agents.code_review_agent import CODE_REVIEW_SPEC  # noqa: E402
 from fixed_holdout.mode import bypass_protocol_gates  # noqa: E402
 from llm import _provider  # noqa: E402
 from llm.gemini import FunctionSpec  # noqa: E402
@@ -225,6 +226,16 @@ def test_openai_compatible_tool_output_is_validated_locally(monkeypatch):
             func_spec=spec,
             cfg=_openai_cfg(),
         )
+
+
+def test_code_review_schema_accepts_contractual_null_revision():
+    jsonschema.Draft7Validator(CODE_REVIEW_SPEC.json_schema).validate(
+        {
+            "needs_revision": False,
+            "reasoning": "The candidate is valid. No code change is required.",
+            "revised_code": None,
+        }
+    )
 
 
 def test_explicit_zero_temperature_overrides_gpt_profile_for_generate(

@@ -43,6 +43,10 @@ TRANSITION_EVIDENCE_SHA256 = "951db74cc7098286fc6395c4942ad3a36765c2afd609cc0145
 
 def configure_builder() -> None:
     v143.configure_v141_builder()
+    v141.OVERLAY_FILES = (
+        *v141.OVERLAY_FILES,
+        Path("mlevolve/agents/code_review_agent.py"),
+    )
     v141.SUFFIX = SUFFIX
     v141.MANIFEST_DIR = MANIFEST_DIR
     v141.SYSTEM_DIR = SYSTEM_DIR

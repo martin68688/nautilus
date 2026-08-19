@@ -135,7 +135,11 @@ CODE_REVIEW_SPEC = FunctionSpec(
                 )
             },
             "revised_code": {
-                "type": "string",
+                # A clean review is contractually represented by JSON null or
+                # by omitting this optional field.  The local OpenAI-compatible
+                # schema validator must accept the same representation that
+                # the prompt explicitly requires.
+                "type": ["string", "null"],
                 "description": (
                     "ONLY if needs_revision=true: Provide targeted fixes using SEARCH/REPLACE diff format.\n\n"
                     "**REQUIRED FORMAT** (use this for each fix):\n"
