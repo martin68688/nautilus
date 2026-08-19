@@ -78,6 +78,12 @@ def main() -> int:
     implementation_projection = read_json(
         bundle / "reports" / "recipe_implementation_projection.json"
     )
+    replay_targets = read_json(
+        bundle / "reports" / "leaf_official_replay_targets_v139.json"
+    )
+    replay_projection = read_json(
+        bundle / "reports" / "replay_target_recipe_projection.json"
+    )
     teacher = read_json(
         args.teacher_output / "teacher_response_gpt56sol.json"
     )
@@ -323,6 +329,40 @@ def main() -> int:
     graph_sop_ids = {
         str(row["id"]) for row in graph["nodes"] if row.get("type") == "SOP"
     }
+    available_sop_ids = recipe_ids | graph_sop_ids
+    replay_target_sop_ids = {
+        str(sop_id)
+        for target in replay_targets.get("targets") or []
+        for sop_id in target.get("sop_ids") or []
+    }
+    check(
+        replay_target_sop_ids.issubset(available_sop_ids),
+        "Replay target cites a SOP absent from production memory",
+    )
+    l1_by_candidate: dict[str, set[str]] = {}
+    for row in recipe_nodes:
+        if row.get("abstraction_level") != "L1_recipe":
+            continue
+        for support in row.get("official_support") or []:
+            candidate_id = str(support.get("candidate_id") or "")
+            if candidate_id:
+                l1_by_candidate.setdefault(candidate_id, set()).add(str(row["id"]))
+    for target in replay_targets.get("targets") or []:
+        target_id = str(target.get("target_id") or "")
+        expected = sorted(l1_by_candidate.get(target_id, set()))
+        if expected:
+            check(
+                sorted(map(str, target.get("sop_ids") or [])) == expected,
+                f"Replay target lacks its canonical L1 Recipe: {target_id}",
+            )
+    check(
+        replay_projection.get("status") == "pass"
+        and replay_projection.get("invalid_projected_sop_id_count") == 0
+        and replay_projection.get("canonical_l1_binding_count") == 4
+        and payload_hash(replay_projection, "report_sha256")
+        == replay_projection.get("report_sha256"),
+        "Replay target Recipe projection report is invalid",
+    )
     clause_ids = {str(row["clause_id"]) for row in clauses}
     check(len(clauses) == 288 and len(clause_ids) == 288, "Clause count mismatch")
     check(
@@ -427,6 +467,10 @@ def main() -> int:
             required_transition_ids
         ),
         "implementation_projection_exact": True,
+        "replay_target_recipe_projection_exact": True,
+        "replay_target_canonical_l1_binding_count": replay_projection[
+            "canonical_l1_binding_count"
+        ],
         "artifact_count": len(artifact_hashes),
         "atomic_claim_bundle_unchanged": True,
         "retained_atomic_clauses_unchanged": True,
