@@ -1,0 +1,19 @@
+{
+  "schema": "mlevolve_prelaunch_failure_v1",
+  "status": "retained_prelaunch_failure",
+  "generation": "v143-smoke16-r3",
+  "cluster_runtime_staged": true,
+  "smoke_started": false,
+  "cause": "A post-freeze local pytest invocation created five tests/.pytest_cache files before the runtime archive was staged, so the production source-lock check found five extra files.",
+  "resolution": "Build a fresh r4 runtime from the clean base, run tests with the pytest cache provider disabled, and require exact source-lock inventory before and after staging.",
+  "failed_runtime": "/workspace/nautilus-exp-end2end-agent-v143-smoke16-r3",
+  "failed_source_lock_sha256": "cc9f359293653852c08cfcea27b530e4a39b5a5b6883c745fc9de0cc868604d9",
+  "failed_execution_manifest_sha256": "45b4a75cb6948d1ab3ad6f194547d6c7cd7623d89029eb38401024cc422ba4f8",
+  "extra_files": [
+    "tests/.pytest_cache/.gitignore",
+    "tests/.pytest_cache/CACHEDIR.TAG",
+    "tests/.pytest_cache/README.md",
+    "tests/.pytest_cache/v/cache/nodeids",
+    "tests/.pytest_cache/v/cache/stepwise"
+  ]
+}

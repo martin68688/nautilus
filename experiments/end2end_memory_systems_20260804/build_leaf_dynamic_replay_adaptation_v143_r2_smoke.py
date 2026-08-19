@@ -76,6 +76,10 @@ def configure_builder() -> None:
             "experiments/end2end_memory_systems_20260804/"
             "V143_SMOKE16_R2_PRELAUNCH_FAILURE.json"
         ),
+        Path(
+            "experiments/end2end_memory_systems_20260804/"
+            "V143_SMOKE16_R3_PRELAUNCH_FAILURE.json"
+        ),
     )
     v141.write_dynamic_config = write_dynamic_config
     v141.update_memory_manifest = update_memory_manifest
