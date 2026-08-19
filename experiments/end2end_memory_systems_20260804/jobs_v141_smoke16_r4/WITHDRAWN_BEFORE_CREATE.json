@@ -1,0 +1,17 @@
+{
+  "schema": "mlevolve_pre_create_workload_withdrawal_v1",
+  "recorded_at": "2026-08-19T13:30:39Z",
+  "workload_kind": "Pod",
+  "namespace": "ecepxie",
+  "name": "mlevolve-leaf-gpt56sol-v141-smoke16-r4-dev",
+  "experiment_label": "experiment-end2end-memory-agent-v141-smoke16-r4",
+  "pod_created": false,
+  "pod_uid": null,
+  "runtime_uploaded": false,
+  "solver_started": false,
+  "reason": "User reversed the requested RTX 2080 Ti switch after an A10 node became available; preserve A10 execution instead.",
+  "replacement_identity": "mlevolve-leaf-gpt56sol-v141-smoke16-r5-dev",
+  "replacement_gpu_count": 1,
+  "replacement_gpu_resource_key": "nvidia.com/gpu",
+  "replacement_gpu_product_constraint": "NVIDIA-A10"
+}

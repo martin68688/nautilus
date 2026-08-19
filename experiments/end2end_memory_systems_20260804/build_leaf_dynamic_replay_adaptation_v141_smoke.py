@@ -433,6 +433,10 @@ def configure_generation(generation: int) -> None:
         GPU_PRODUCT_CONSTRAINT = "NVIDIA-GeForce-RTX-2080-Ti"
         GPU_TYPE = "NVIDIA GeForce RTX 2080 Ti"
         GPU_COUNT = 2
+    if generation >= 5:
+        GPU_PRODUCT_CONSTRAINT = "NVIDIA-A10"
+        GPU_TYPE = "NVIDIA A10"
+        GPU_COUNT = 1
 
 
 if __name__ == "__main__":
