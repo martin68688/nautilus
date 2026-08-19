@@ -64,6 +64,8 @@ def main() -> int:
     assert 'exc_type="HostSourceInstrumentationError"' in executor
     assert "role_balance_status" in scheduler
     assert "select_role_balance_deficit" in scheduler
+    for relative in builder.TEST_SUPPORT_FILES:
+        assert (runtime / relative).is_file(), relative
 
     lock_map = {row["path"]: row["sha256"] for row in source_lock["files"]}
     assert source_lock["overlay_scope"] == [

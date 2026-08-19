@@ -41,6 +41,10 @@ TEST_FILES = (
     Path("tests/test_executor_host_preamble_v138.py"),
     Path("tests/test_role_resource_balance_v138.py"),
 )
+TEST_SUPPORT_FILES = (
+    Path("experiments/dynamic_memory_routing_injection_20260731/design.py"),
+    Path("tests/test_stage_aware_hybrid_memory.py"),
+)
 
 
 def spec() -> dict:
@@ -174,7 +178,12 @@ def build(base_runtime: Path, output_runtime: Path, pod_out: Path) -> dict:
         raise FileExistsError(f"fresh Pod manifest already exists: {pod_out}")
     shutil.copytree(base_runtime.resolve(strict=True), output_runtime, symlinks=True)
     v137.remove_runtime_caches(output_runtime)
-    for relative in (*OVERLAY_FILES, *TEST_FILES, Path(__file__).relative_to(REPO)):
+    for relative in (
+        *OVERLAY_FILES,
+        *TEST_FILES,
+        *TEST_SUPPORT_FILES,
+        Path(__file__).relative_to(REPO),
+    ):
         v135.copy_file(REPO / relative, output_runtime / relative)
 
     run_spec = spec()
