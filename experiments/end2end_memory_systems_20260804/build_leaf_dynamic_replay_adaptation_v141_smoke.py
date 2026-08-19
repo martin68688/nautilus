@@ -437,6 +437,10 @@ def configure_generation(generation: int) -> None:
         GPU_PRODUCT_CONSTRAINT = "NVIDIA-A10"
         GPU_TYPE = "NVIDIA A10"
         GPU_COUNT = 1
+    if generation >= 6:
+        GPU_RESOURCE_KEY = "nvidia.com/a100"
+        GPU_PRODUCT_CONSTRAINT = None
+        GPU_TYPE = "NVIDIA A100 family"
 
 
 if __name__ == "__main__":
