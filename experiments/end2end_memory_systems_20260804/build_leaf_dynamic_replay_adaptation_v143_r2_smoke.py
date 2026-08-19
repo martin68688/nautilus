@@ -72,6 +72,10 @@ def configure_builder() -> None:
             "experiments/end2end_memory_systems_20260804/"
             "build_leaf_dynamic_replay_adaptation_v143_r2_smoke.py"
         ),
+        Path(
+            "experiments/end2end_memory_systems_20260804/"
+            "V143_SMOKE16_R2_PRELAUNCH_FAILURE.json"
+        ),
     )
     v141.write_dynamic_config = write_dynamic_config
     v141.update_memory_manifest = update_memory_manifest
@@ -85,7 +89,7 @@ def write_dynamic_config(output: Path) -> Path:
             [
                 "# v143-r2 changes only immutable Replay artifact/Recipe bindings.",
                 "# Dynamic search, roles, alignment, and candidate code are unchanged.",
-                "extends: ../systems_v143_smoke16/dynamic_hybrid.yaml",
+                "extends: ../systems_v142_smoke16/dynamic_hybrid.yaml",
                 "",
                 "agent:",
                 "  draft_role_policy:",
@@ -105,7 +109,7 @@ def write_dynamic_config(output: Path) -> Path:
                 "",
                 "run_identity:",
                 "  memory_version: leaf_llm_redistilled_v10_r8_"
-                "replay_recipe_projection_v143_smoke16_r2",
+                f"replay_recipe_projection_{SUFFIX.replace('-', '_')}",
                 "",
             ]
         ),
@@ -162,12 +166,14 @@ def main() -> int:
     parser.add_argument("--output-runtime", required=True, type=Path)
     parser.add_argument("--pod-out", required=True, type=Path)
     parser.add_argument("--receipt", required=True, type=Path)
+    parser.add_argument("--generation", type=int, default=2)
     args = parser.parse_args()
+    configure_identity(args.generation)
     configure_builder()
     receipt = v141.build(args.base_runtime, args.output_runtime, args.pod_out)
     receipt.update(
         {
-            "schema": "mlevolve_leaf_dynamic_replay_adaptation_v143_r2_smoke_build_v1",
+            "schema": "mlevolve_leaf_dynamic_replay_adaptation_v143_smoke_build_v1",
             "memory_bundle_root": MEMORY_ROOT,
             "memory_bundle_manifest_sha256": MANIFEST_SHA256,
             "reused_existing_dev_pod": True,
@@ -177,6 +183,25 @@ def main() -> int:
     v135.write_json(args.receipt, receipt)
     print(json.dumps(receipt, sort_keys=True))
     return 0
+
+
+def configure_identity(generation: int) -> None:
+    """Advance every mutable smoke identity after a prelaunch failure."""
+
+    if generation < 2:
+        raise ValueError("v143 replay projection generations start at r2")
+    global SUFFIX, MANIFEST_DIR, SYSTEM_DIR, CLUSTER_RUNTIME
+    global OUTPUT_ROOT, EVALUATOR_ROOT, EXPERIMENT_LABEL, POD_NAME
+    SUFFIX = f"v143-smoke16-r{generation}"
+    MANIFEST_DIR = EXPERIMENT / f"manifests_v143_smoke16_r{generation}"
+    SYSTEM_DIR = EXPERIMENT / f"systems_v143_smoke16_r{generation}"
+    CLUSTER_RUNTIME = f"/workspace/nautilus-exp-end2end-agent-{SUFFIX}"
+    OUTPUT_ROOT = f"/workspace/experiment-end2end-memory-agent-{SUFFIX}/runs"
+    EVALUATOR_ROOT = (
+        f"/workspace/experiment-end2end-leaf-official-evaluator-{SUFFIX}"
+    )
+    EXPERIMENT_LABEL = f"experiment-end2end-memory-agent-{SUFFIX}"
+    POD_NAME = f"mlevolve-leaf-gpt56sol-{SUFFIX}-dev"
 
 
 if __name__ == "__main__":

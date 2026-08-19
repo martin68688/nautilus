@@ -1,0 +1,12 @@
+{
+  "schema": "mlevolve_prelaunch_failure_v1",
+  "status": "retained_prelaunch_failure",
+  "generation": "v143-smoke16-r2",
+  "cluster_runtime_staged": false,
+  "smoke_started": false,
+  "cause": "The generated r2 system config inherited systems_v143_smoke16, which was not present in the frozen base runtime.",
+  "resolution": "Use a fresh r3 identity, inherit the frozen v142 system config, and explicitly override both Replay artifact paths with the audited v10-r8 bundle.",
+  "failed_runtime": "/tmp/nautilus-exp-end2end-agent-v143-smoke16-r2",
+  "failed_source_lock_sha256": "c579a6840d76af99c46a8bd4a7f212e96d69fb9d91e2e29fce25eb27b9556701",
+  "failed_execution_manifest_sha256": "de068bed793135330596f7f6b4e8affc039c7f8162a0f1be870162e0010f9f1f"
+}
