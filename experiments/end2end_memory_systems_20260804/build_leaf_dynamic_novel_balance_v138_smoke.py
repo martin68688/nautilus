@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the isolated Dynamic v138 five-step Dev-Pod smoke release."""
+"""Build the isolated Dynamic v138 six-step Dev-Pod smoke release."""
 
 from __future__ import annotations
 
@@ -48,6 +48,7 @@ def spec() -> dict:
         "mode": "smoke",
         "suffix": SUFFIX,
         "kind": "smoke",
+        "smoke_agent_steps": 6,
         "manifest_dir": MANIFEST_DIR,
         "system_dir": SYSTEM_DIR,
         "execution_name": "leaf_dynamic_smoke_manifest.json",
@@ -204,7 +205,7 @@ def build(base_runtime: Path, output_runtime: Path, pod_out: Path) -> dict:
         "source_lock_file_count": len(source_lock["files"]),
         "execution_manifest_hash": execution_hash,
         "dynamic_config_sha256": v135.sha256_file(dynamic_config),
-        "agent_steps": 5,
+        "agent_steps": 6,
         "role_balance_min_valid_candidates": 1,
         "dev_memory_gib": DEV_MEMORY_GIB,
         "llm_model": v135.LLM_MODEL,

@@ -39,7 +39,7 @@ def main() -> int:
     assert execution["bindings"]["source_lock_manifest_hash"] == source_lock[
         "manifest_hash"
     ]
-    assert budget["agent_steps"] == 5
+    assert budget["agent_steps"] == 6
     assert budget["gpu_count"] == budget["parallel_search_num"] == 1
     assert budget["cpu_count"] == 16
     assert budget["memory_gib"] == 64

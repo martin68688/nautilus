@@ -136,7 +136,7 @@ def build_components(output: Path, spec: Mapping[str, Any]) -> dict[str, str]:
     if spec["mode"] == "smoke":
         budget["smoke"].update(
             {
-                "agent_steps": 5,
+                "agent_steps": int(spec.get("smoke_agent_steps", 5)),
                 "cpu_count": 16,
                 "gpu_count": 1,
                 "memory_gib": 64,
