@@ -1,0 +1,35 @@
+{
+  "schema": "mlevolve_smoke_generation_failure_v1",
+  "generation": "v143-smoke16-r5",
+  "status": "terminated_for_small_general_fix",
+  "reusable": false,
+  "pod": {
+    "name": "mlevolve-leaf-gpt56sol-v142-smoke16-dev",
+    "uid": "a66799df-0ba9-4d59-905c-665b7303feed",
+    "node": "gpengine-uams.areon.net"
+  },
+  "processes": {
+    "wrapper_pid": 1436,
+    "solver_pid": 1455,
+    "termination_signal": 15
+  },
+  "failure": {
+    "component": "OpenAI-compatible local JSON Schema validation",
+    "message": "submit_review returned metric=null for a failed candidate, but the local tool schema admitted only numbers",
+    "root_cause": "The prompt and field description required null when execution failed while metric.type was number-only.",
+    "fix": "Accept either number or null for metric while keeping the field required and retaining strict validation for all other fields."
+  },
+  "retained_progress": {
+    "initial_drafts_generated": 3,
+    "roles": [
+      "coldstart_baseline",
+      "memory_reproduction",
+      "novel_exploration"
+    ],
+    "code_review_null_contract_verified": true,
+    "replay_portfolio_registered": true,
+    "candidate_executions_completed": 1,
+    "steps_completed": 1
+  },
+  "next_generation": "v143-smoke16-r6"
+}

@@ -12,6 +12,7 @@ sys.path.insert(0, str(REPO / "mlevolve"))
 
 from config import Config, _load_cfg  # noqa: E402
 from agents.code_review_agent import CODE_REVIEW_SPEC  # noqa: E402
+from agents.result_parse_agent import get_review_func_spec  # noqa: E402
 from fixed_holdout.mode import bypass_protocol_gates  # noqa: E402
 from llm import _provider  # noqa: E402
 from llm.gemini import FunctionSpec  # noqa: E402
@@ -234,6 +235,17 @@ def test_code_review_schema_accepts_contractual_null_revision():
             "needs_revision": False,
             "reasoning": "The candidate is valid. No code change is required.",
             "revised_code": None,
+        }
+    )
+
+
+def test_result_review_schema_accepts_contractual_null_metric_on_failure():
+    jsonschema.Draft7Validator(get_review_func_spec(False).json_schema).validate(
+        {
+            "is_bug": True,
+            "summary": "Candidate execution failed before producing a metric.",
+            "metric": None,
+            "lower_is_better": True,
         }
     )
 

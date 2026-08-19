@@ -46,6 +46,7 @@ def configure_builder() -> None:
     v141.OVERLAY_FILES = (
         *v141.OVERLAY_FILES,
         Path("mlevolve/agents/code_review_agent.py"),
+        Path("mlevolve/agents/result_parse_agent.py"),
     )
     v141.SUFFIX = SUFFIX
     v141.MANIFEST_DIR = MANIFEST_DIR
@@ -87,6 +88,10 @@ def configure_builder() -> None:
         Path(
             "experiments/end2end_memory_systems_20260804/"
             "V143_SMOKE16_R4_TERMINATED_FOR_FIX.json"
+        ),
+        Path(
+            "experiments/end2end_memory_systems_20260804/"
+            "V143_SMOKE16_R5_TERMINATED_FOR_FIX.json"
         ),
     )
     v141.write_dynamic_config = write_dynamic_config
