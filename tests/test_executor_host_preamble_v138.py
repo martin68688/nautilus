@@ -49,3 +49,15 @@ def test_host_preamble_is_inserted_after_all_future_imports():
     )
     assert composed.index("import os") < composed.index("VALUE = 1")
     compile(composed, "<composed>", "exec")
+
+
+def test_invalid_candidate_syntax_is_classified_before_subprocess_start(tmp_path):
+    result = Interpreter(tmp_path, timeout=10, cfg=_cfg()).run(
+        "def broken(:\n    pass\n",
+        "invalid-candidate",
+    )
+
+    assert result.exc_type == "CandidateSourceSyntaxError"
+    assert result.exc_info["candidate_subprocess_started"] is False
+    assert result.exc_info["host_instrumentation_failure"] is False
+    assert "Candidate source failed syntax validation" in "".join(result.term_out)

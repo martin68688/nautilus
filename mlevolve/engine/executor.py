@@ -952,24 +952,14 @@ class Interpreter:
             try:
                 compile(candidate_code, str(runfile_path), "exec")
             except SyntaxError as error:
-                try:
-                    compile(code, str(runfile_path), "exec")
-                except SyntaxError:
-                    error_type = "CandidateSourceSyntaxError"
-                    message_prefix = "Candidate source failed syntax validation"
-                else:
-                    error_type = "HostSourceInstrumentationError"
-                    message_prefix = "Host source transformation invalidated Candidate source"
                 return ExecutionResult(
-                    term_out=[f"{message_prefix}: {error}\n"],
+                    term_out=[f"Candidate source failed syntax validation: {error}\n"],
                     exec_time=time.time() - start_time,
-                    exc_type=error_type,
+                    exc_type="CandidateSourceSyntaxError",
                     exc_info={
                         "message": str(error),
                         "candidate_subprocess_started": False,
-                        "host_instrumentation_failure": (
-                            error_type == "HostSourceInstrumentationError"
-                        ),
+                        "host_instrumentation_failure": False,
                     },
                     exc_stack=[
                         (
