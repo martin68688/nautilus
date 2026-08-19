@@ -1,0 +1,10 @@
+# v143 keeps v142 engine and memory semantics, but binds exact Replay source
+# journals to the immutable v10-r7 bundle instead of the legacy runs tree.
+extends: ../systems_v142_smoke16/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_runs_root: /workspace/experiment-end2end-memory-agent-v142/memory-leaf-llm-redistilled-v10-r7/leaf-classification/bundles/v10-r7-leaf-llm-redistilled-20260819/run_artifacts
+
+run_identity:
+  memory_version: leaf_llm_redistilled_v10_r7_replay_artifact_binding_v143_smoke16

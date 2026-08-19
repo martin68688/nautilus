@@ -7,9 +7,13 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 from authority.memory_snapshot import MemorySnapshotLoader
+from agents.memory.run_forest_replay import load_replay_research_portfolio
 from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+from config import _load_config_tree
+from omegaconf import OmegaConf
 
 
 def read_json(path: Path) -> dict:
@@ -19,11 +23,116 @@ def read_json(path: Path) -> dict:
     return value
 
 
+def resolve_replay_binding(config_path: Path, bundle: Path) -> SimpleNamespace:
+    """Resolve and pin Replay assets to the immutable bundle being audited."""
+
+    cfg = _load_config_tree(config_path)
+    targets_value = OmegaConf.select(
+        cfg, "agent.draft_role_policy.replay_targets_path"
+    )
+    runs_root_value = OmegaConf.select(
+        cfg, "agent.draft_role_policy.replay_runs_root"
+    )
+    if not str(targets_value or "").strip():
+        raise ValueError("Production Replay preflight has no replay_targets_path")
+    if not str(runs_root_value or "").strip():
+        raise ValueError("Production Replay preflight has no replay_runs_root")
+
+    targets_path = Path(str(targets_value)).expanduser().resolve(strict=True)
+    runs_root = Path(str(runs_root_value)).expanduser().resolve(strict=True)
+    expected_targets = (
+        bundle / "reports" / "leaf_official_replay_targets_v139.json"
+    ).resolve(strict=True)
+    expected_runs_root = (bundle / "run_artifacts").resolve(strict=True)
+    if targets_path != expected_targets:
+        raise ValueError(
+            "Production Replay targets are not bound to the audited bundle: "
+            f"{targets_path} != {expected_targets}"
+        )
+    if runs_root != expected_runs_root:
+        raise ValueError(
+            "Production Replay journal root is not bound to the audited bundle: "
+            f"{runs_root} != {expected_runs_root}"
+        )
+    if targets_path.is_symlink() or runs_root.is_symlink():
+        raise ValueError("Production Replay bindings may not be symlinks")
+    return SimpleNamespace(
+        replay_targets_path=str(targets_path),
+        replay_runs_root=str(runs_root),
+    )
+
+
+def load_production_replay_portfolio(
+    *,
+    config_path: Path,
+    bundle: Path,
+    layer: StageAwareHybridMemoryLayer,
+) -> dict:
+    """Exercise the same complete Replay load used by memory_reproduction."""
+
+    policy = resolve_replay_binding(config_path, bundle)
+    agent = SimpleNamespace(
+        cfg=SimpleNamespace(
+            exp_id="leaf-classification",
+            fixed_holdout=SimpleNamespace(
+                enabled=False,
+                bypass_protocol_gates=True,
+            ),
+        ),
+        acfg=SimpleNamespace(
+            draft_role_policy=policy,
+            check_data_leakage=False,
+        ),
+        external_skill_memory=layer,
+    )
+    portfolio = load_replay_research_portfolio(agent)
+    results = dict(portfolio.get("results") or {})
+    receipt = dict(portfolio.get("receipt") or {})
+    anchor = dict(portfolio.get("anchor") or {})
+    anchor_source = dict(anchor.get("replay_source") or {})
+    if portfolio.get("schema") != "run-forest-replay-research-targets-v2":
+        raise ValueError("Production Replay portfolio has an unexpected schema")
+    if len(results) != 5 or len(receipt.get("targets") or []) != 5:
+        raise ValueError("Production Replay portfolio did not load all five targets")
+    if anchor_source.get("target_id") != receipt.get("anchor_target_id"):
+        raise ValueError("Production Replay anchor receipt mismatch")
+    for target_id, replay in results.items():
+        source = dict(replay.get("replay_source") or {})
+        code = str(replay.get("code") or "")
+        if not code or hashlib.sha256(code.encode("utf-8")).hexdigest() != source.get(
+            "code_sha256"
+        ):
+            raise ValueError(
+                f"Production Replay code receipt mismatch for {target_id}"
+            )
+    return {
+        "schema": "leaf_replay_portfolio_production_load_receipt_v1",
+        "status": "validated",
+        "target_count": len(results),
+        "anchor_target_id": receipt.get("anchor_target_id"),
+        "exact_research_target_ids": list(
+            portfolio.get("exact_research_target_ids") or []
+        ),
+        "strategy_target_ids": list(portfolio.get("strategy_target_ids") or []),
+        "replay_targets_path": policy.replay_targets_path,
+        "replay_runs_root": policy.replay_runs_root,
+        "target_code_sha256": {
+            target_id: (replay.get("replay_source") or {}).get("code_sha256")
+            for target_id, replay in sorted(results.items())
+        },
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--bundle-root", type=Path, required=True)
     parser.add_argument("--overlay", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--system-config",
+        type=Path,
+        help="load and verify the complete production Replay portfolio",
+    )
     args = parser.parse_args()
 
     root = args.bundle_root.resolve(strict=True)
@@ -131,6 +240,14 @@ def main() -> int:
     if not expected_new_repairs.issubset(layer.nodes):
         raise ValueError("A normalized v140 Repair is absent from runtime memory")
 
+    replay_portfolio_receipt = None
+    if args.system_config is not None:
+        replay_portfolio_receipt = load_production_replay_portfolio(
+            config_path=args.system_config.resolve(strict=True),
+            bundle=bundle,
+            layer=layer,
+        )
+
     report = {
         "schema": "leaf_llm_redistilled_memory_v10_runtime_load_smoke_v1",
         "status": "pass",
@@ -148,6 +265,8 @@ def main() -> int:
         "overlay_event_count": len(snapshot.session_overlay.events()),
         "bundle_files_unchanged": True,
     }
+    if replay_portfolio_receipt is not None:
+        report["replay_portfolio_load_receipt"] = replay_portfolio_receipt
     report["report_sha256"] = hashlib.sha256(
         json.dumps(
             report, ensure_ascii=False, sort_keys=True, separators=(",", ":")

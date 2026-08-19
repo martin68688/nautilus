@@ -1,0 +1,20 @@
+{
+  "schema": "mlevolve_leaf_v142_terminal_failure_v1",
+  "status": "retained_infrastructure_failure",
+  "pod_name": "mlevolve-leaf-gpt56sol-v142-smoke16-dev",
+  "pod_uid": "a66799df-0ba9-4d59-905c-665b7303feed",
+  "logical_run_id": "e2e-smoke-leaf-dynamic-replay-adaptation-official-gpt56sol-v142-smoke16__leaf-classification__dynamic_hybrid__seed-1",
+  "attempt": "attempt-000",
+  "solver_exit_code": 1,
+  "agent_wall_seconds": 367.708502944,
+  "measurement_sha256": "bc2609a6711fd92b117e577641d907b5c394a95b8ab745a23254d20f6e25e95d",
+  "failure": "Replay journal not found because replay_runs_root inherited the legacy /workspace/nautilus/mlevolve/runs binding",
+  "failed_role": "memory_reproduction",
+  "completed_role_code_checkpoints": [
+    "9c5cc0c2f12345879a8349fc67ef8e02"
+  ],
+  "candidate_set_frozen": false,
+  "internal_metric": null,
+  "official_score": null,
+  "evidence_preserved": true
+}
