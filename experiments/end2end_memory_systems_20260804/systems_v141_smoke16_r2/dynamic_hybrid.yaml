@@ -1,0 +1,27 @@
+# v141 changes only Dynamic Replay adaptation, alignment repair,
+# balanced cross-role synthesis, and the audited v10-r6 memory binding.
+extends: ../systems_v138_smoke_r3/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    ensure_valid_candidate_per_role: true
+    role_balance_min_valid_candidates: 1
+    replay_targets_path: /workspace/experiment-end2end-memory-agent-v140-r6/memory-leaf-llm-redistilled-v10-r6/leaf-classification/bundles/v10-r6-leaf-llm-redistilled-20260819/reports/leaf_official_replay_targets_v139.json
+    replay_adaptation_as_novel: true
+    replay_alignment_repair_enabled: true
+    replay_alignment_repair_max_attempts: 1
+    cross_role_synthesis_after_balance: true
+
+external_skill_memory:
+  recipe_sop_path: /workspace/experiment-end2end-memory-agent-v140-r6/memory-leaf-llm-redistilled-v10-r6/leaf-classification/bundles/v10-r6-leaf-llm-redistilled-20260819/recipe/recipe_sops.json
+  recipe_sop_file_sha256: fcfb8e6220e4548c96e46a178d0b460cd4232e9dee54d84689c1b5ea9fc49004
+  recipe_sop_bundle_sha256: 5189a8b7c32670d5ef40f667a38fd5b4b2d9933767a4addc4c074e5630579ae0
+  recipe_evidence_path: /workspace/experiment-end2end-memory-agent-v140-r6/memory-leaf-llm-redistilled-v10-r6/leaf-classification/bundles/v10-r6-leaf-llm-redistilled-20260819/recipe/evidence_manifest.json
+  recipe_evidence_file_sha256: 130b0bfa7e23d23a457e74bf8b5b243f5f3bbe11cd395ffa5d9e74dd702f8d68
+  recipe_evidence_manifest_sha256: cce7ec191e8513246b58c013ab516645ba5cfd2832e53391f173b2b7b415d755
+  recipe_implementation_path: /workspace/experiment-end2end-memory-agent-v140-r6/memory-leaf-llm-redistilled-v10-r6/leaf-classification/bundles/v10-r6-leaf-llm-redistilled-20260819/recipe/implementation_capsules.json
+  transition_evidence_capsules_path: /workspace/experiment-end2end-memory-agent-v140-r6/memory-leaf-llm-redistilled-v10-r6/leaf-classification/bundles/v10-r6-leaf-llm-redistilled-20260819/recipe/transition_evidence_capsules.json
+  transition_evidence_capsules_sha256: 951db74cc7098286fc6395c4942ad3a36765c2afd609cc014543e9a77a1d3d83
+
+run_identity:
+  memory_version: leaf_llm_redistilled_v10_r6_dynamic_replay_adaptation_v141_smoke16_r2
