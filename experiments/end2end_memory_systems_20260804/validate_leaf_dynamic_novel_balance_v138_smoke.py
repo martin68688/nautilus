@@ -22,7 +22,9 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--runtime", required=True, type=Path)
     parser.add_argument("--pod", required=True, type=Path)
+    parser.add_argument("--generation", type=int, default=1)
     args = parser.parse_args()
+    builder.configure_generation(args.generation)
 
     runtime = args.runtime.resolve(strict=True)
     manifests = runtime / builder.MANIFEST_DIR
@@ -94,6 +96,9 @@ def main() -> int:
     assert container["resources"]["requests"] == container["resources"]["limits"]
     assert container["resources"]["limits"]["nvidia.com/a100"] == "1"
     assert container["resources"]["limits"]["cpu"] == "16"
+    assert container["resources"]["limits"]["memory"] == (
+        f"{builder.DEV_MEMORY_GIB}Gi"
+    )
     assert len(pod["spec"]["volumes"]) == 2
     assert sum(
         1

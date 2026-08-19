@@ -1,0 +1,8 @@
+Dynamic v138 smoke pre-Pod staging failure
+
+Workload identity: mlevolve-leaf-gpt56sol-v138-smoke-dev
+Experiment label: experiment-end2end-memory-agent-v138-smoke
+Cluster outcome: no Pod object was created
+Admission response: standalone Pods are limited to 16 CPU cores and 32 GiB RAM
+Rejected request: 16 CPU cores, 64 GiB RAM, 1 A100
+Disposition: preserve this identity; use a fresh v138-smoke-r2 identity with 32 GiB
