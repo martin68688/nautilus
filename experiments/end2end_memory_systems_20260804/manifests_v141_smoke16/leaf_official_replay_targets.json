@@ -1,0 +1,262 @@
+{
+  "schema": "run-forest-replay-research-targets-v2",
+  "portfolios": [
+    {
+      "anchor_target_id": "leaf-official-runforest-efficientnet-b3-00168",
+      "diverse_frontier_target_ids": [
+        "leaf-official-runforest-efficientnet-b3-00168",
+        "leaf-official-macla-multideep-00599",
+        "leaf-official-dynamic-multibackbone-01008",
+        "leaf-internal-macla-lightgbm-034733",
+        "leaf-internal-runforest-vit-attention-047483"
+      ],
+      "fusion_weight_policy": "Use fixed weights or weights learned only from training-fold OOF predictions. Hidden terminal labels and official test labels are forbidden.",
+      "metric_comparison_policy": "Rank scores only inside one validation_protocol. The official_kaggle_scored_test group precedes full_oof_internal by authority; never numerically blend the two protocols into one leaderboard.",
+      "score_frontier_target_ids": [
+        "leaf-official-runforest-efficientnet-b3-00168",
+        "leaf-official-macla-multideep-00599",
+        "leaf-official-dynamic-multibackbone-01008",
+        "leaf-official-gome-crossattention-01176",
+        "leaf-internal-dynamic-multibackbone-013847"
+      ],
+      "task_id": "leaf-classification"
+    }
+  ],
+  "targets": [
+    {
+      "allowed_actions": [
+        "replay_exact_anchor",
+        "replay_prediction_fusion",
+        "replay_component_transplant",
+        "replay_ablation"
+      ],
+      "architecture_signature": "efficientnet_b3_frozen__shape_texture_tabular__self_attention_fusion__fold_temperature_ensemble",
+      "audit_status": "verified_clean",
+      "code_sha256": "572cd25bf41b9208adaa59607cb5203a6d7ac5b2650838d2afbb74dc38a03ec3",
+      "component_blueprint": {
+        "calibration": "fold probability averaging plus historical double-temperature variant",
+        "features": "frozen EfficientNet-B3 1536D image features plus margin/shape/texture tabular features",
+        "fusion": "LeafFeatureEncoder with SelfAttentionFusion",
+        "validation": "five-fold OOF; official submission receipt"
+      },
+      "exact_replay_eligible": true,
+      "graph_node_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__runforest_only__seed-1::attempt-001::node::4d2afeda635a44b4adb1c7c97d7a45d6",
+      "historical_metric": 0.00168,
+      "known_issue_codes": [],
+      "maximize": false,
+      "method_family": "runforest_efficientnet_b3_double_temperature",
+      "metric_authority": "official_observed",
+      "metric_status": "official_kaggle_scored_test",
+      "original_node_id": "4d2afeda635a44b4adb1c7c97d7a45d6",
+      "run_id": "e2e-pilot-agentic-three-role-v21__leaf-classification__runforest_only__seed-1::attempt-001",
+      "selection_basis": "Best leakage-eligible official Leaf result; immutable first Replay anchor.",
+      "sop_ids": [
+        "recipe::leaf-classification::001"
+      ],
+      "source_kind": "recipe_implementation_capsule",
+      "target_id": "leaf-official-runforest-efficientnet-b3-00168",
+      "task_id": "leaf-classification",
+      "validation_protocol": "official_kaggle_scored_test"
+    },
+    {
+      "allowed_actions": [
+        "replay_component_transplant",
+        "replay_ablation",
+        "protocol_repair_reference"
+      ],
+      "architecture_signature": "resnet18_efficientnet_multideep__engineered_tabular__cross_attention_mlp",
+      "audit_status": "candidate_replay",
+      "code_sha256": "b24b47c706ef6f8b0a5255500b561e5715c927ee9910500ca76c555e6df79555",
+      "component_blueprint": {
+        "features": "multi-model frozen deep features plus 322 engineered tabular features",
+        "fusion": "multi-branch cross-attention neural classifier",
+        "protocol_warning": "unsupervised RobustScaler fit occurs before fold split",
+        "validation": "five-fold OOF plus official submission receipt"
+      },
+      "exact_replay_eligible": false,
+      "graph_node_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__macla_style_port__seed-1::attempt-001::node::2e81a77222c7401c9c2585c5e6323905",
+      "historical_metric": 0.00599,
+      "known_issue_codes": [
+        "TRANSFORM_FIT_BEFORE_SPLIT"
+      ],
+      "maximize": false,
+      "method_family": "macla_multideep_cross_attention",
+      "metric_authority": "official_observed",
+      "metric_status": "official_kaggle_scored_test_reference_with_protocol_warning",
+      "original_node_id": "2e81a77222c7401c9c2585c5e6323905",
+      "run_id": "e2e-pilot-agentic-three-role-v21__leaf-classification__macla_style_port__seed-1::attempt-001",
+      "selection_basis": "Second official score, retained as code-visible repair/reference evidence rather than clean exact execution.",
+      "sop_ids": [],
+      "source_kind": "recipe_implementation_capsule",
+      "target_id": "leaf-official-macla-multideep-00599",
+      "task_id": "leaf-classification",
+      "validation_protocol": "official_kaggle_scored_test"
+    },
+    {
+      "allowed_actions": [
+        "replay_exact_diverse",
+        "replay_prediction_fusion",
+        "replay_component_transplant",
+        "replay_ablation"
+      ],
+      "architecture_signature": "siglip2_dinov2_vit_multibackbone__tabular__cross_attention__lightgbm_tta",
+      "audit_status": "verified_clean",
+      "code_sha256": "6dc242b810cb63eba3df4c2e8f50defc50b1d7c1770be71866360416d1ec8431",
+      "component_blueprint": {
+        "features": "SigLIP2, DINOv2 and ViT-B/16 frozen embeddings plus raw tabular features",
+        "fusion": "cross-attention neural head with LightGBM diversity branch",
+        "inference": "horizontal-flip TTA and prediction blending",
+        "validation": "five-fold OOF; official NN-only submission receipt"
+      },
+      "exact_replay_eligible": true,
+      "graph_node_id": "run::e2e-pilot-agentic-three-role-v22__leaf-classification__dynamic_hybrid__seed-1::attempt-000::node::36537a9cab674391b848515dfdeca00b",
+      "historical_metric": 0.01008,
+      "known_issue_codes": [],
+      "maximize": false,
+      "method_family": "dynamic_multibackbone_cross_attention_tta",
+      "metric_authority": "official_observed",
+      "metric_status": "official_kaggle_scored_test",
+      "original_node_id": "36537a9cab674391b848515dfdeca00b",
+      "run_id": "e2e-pilot-agentic-three-role-v22__leaf-classification__dynamic_hybrid__seed-1::attempt-000",
+      "selection_basis": "Best clean code-visible official architecture outside the anchor lineage.",
+      "sop_ids": [],
+      "source_kind": "recipe_implementation_capsule",
+      "target_id": "leaf-official-dynamic-multibackbone-01008",
+      "task_id": "leaf-classification",
+      "validation_protocol": "official_kaggle_scored_test"
+    },
+    {
+      "allowed_actions": [
+        "replay_component_transplant",
+        "replay_ablation",
+        "protocol_repair_reference"
+      ],
+      "architecture_signature": "efficientnet_image_pca__raw_engineered_tabular__cross_attention__drop_path_calibration",
+      "audit_status": "candidate_replay",
+      "code_sha256": "d37fe1fb3a05699893c7c92ae2906519eab7d72cdc26c1f8fb00f1d71d41b9ce",
+      "component_blueprint": {
+        "calibration": "temperature-scaled weighted fold ensemble",
+        "features": "EfficientNet image features with PCA plus raw and engineered tabular branches",
+        "fusion": "cross-attention with DropPath and adaptive label smoothing",
+        "protocol_warning": "PCA/scalers fit before fold split"
+      },
+      "exact_replay_eligible": false,
+      "graph_node_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__gome_style_port__seed-1::attempt-000::node::05bb9616e28748d8b7aad1e7389e7ac9",
+      "historical_metric": 0.01176,
+      "known_issue_codes": [
+        "TRANSFORM_FIT_BEFORE_SPLIT"
+      ],
+      "maximize": false,
+      "method_family": "gome_cross_attention_regularized_calibrated",
+      "metric_authority": "official_observed",
+      "metric_status": "official_kaggle_scored_test_reference_with_protocol_warning",
+      "original_node_id": "05bb9616e28748d8b7aad1e7389e7ac9",
+      "run_id": "e2e-pilot-agentic-three-role-v21__leaf-classification__gome_style_port__seed-1::attempt-000",
+      "selection_basis": "Fourth official score, code-visible for controlled component research after protocol repair.",
+      "sop_ids": [],
+      "source_kind": "recipe_implementation_capsule",
+      "target_id": "leaf-official-gome-crossattention-01176",
+      "task_id": "leaf-classification",
+      "validation_protocol": "official_kaggle_scored_test"
+    },
+    {
+      "allowed_actions": [
+        "replay_exact_diverse",
+        "replay_prediction_fusion",
+        "replay_component_transplant",
+        "replay_ablation"
+      ],
+      "architecture_signature": "siglip2_dinov2_vit_multibackbone__tabular__cross_attention__gradual_unfreeze",
+      "audit_status": "verified_clean",
+      "code_sha256": "84d2a335d2a80f7fd1f791db0e772f9f1db7fdc9de345a796f613526b60168f2",
+      "component_blueprint": {
+        "features": "SigLIP2, DINOv2 and ViT-B/16 embeddings with raw tabular features",
+        "fusion": "bidirectional cross-attention",
+        "training": "gradual unfreezing and temperature calibration",
+        "validation": "five-fold full OOF internal"
+      },
+      "exact_replay_eligible": true,
+      "graph_node_id": "run::e2e-pilot-agentic-three-role-v22__leaf-classification__dynamic_hybrid__seed-1::attempt-000::node::7ad758b35cdd4142a639cad67235b041",
+      "historical_metric": 0.013846588555656958,
+      "known_issue_codes": [],
+      "maximize": false,
+      "method_family": "dynamic_multibackbone_gradual_unfreeze",
+      "metric_authority": "strict_internal_observed",
+      "metric_status": "full_oof_internal",
+      "original_node_id": "7ad758b35cdd4142a639cad67235b041",
+      "run_id": "e2e-pilot-agentic-three-role-v22__leaf-classification__dynamic_hybrid__seed-1::attempt-000",
+      "selection_basis": "Best clean full-OOF internal target after the official score group; never compared numerically across protocols.",
+      "sop_ids": [],
+      "source_kind": "recipe_implementation_capsule",
+      "target_id": "leaf-internal-dynamic-multibackbone-013847",
+      "task_id": "leaf-classification",
+      "validation_protocol": "full_oof_internal"
+    },
+    {
+      "allowed_actions": [
+        "replay_exact_diverse",
+        "replay_prediction_fusion",
+        "replay_component_transplant",
+        "replay_ablation"
+      ],
+      "architecture_signature": "cnn_pca_tabular__lightgbm_probability_blend__temperature_calibration",
+      "audit_status": "verified_clean",
+      "code_sha256": "e65f7155d08dcf4c236fb5d0e9a145a05c394e23802cd7e6fa9e28c17b8a5900",
+      "component_blueprint": {
+        "calibration": "temperature-calibrated neural and LightGBM probability blend",
+        "features": "CNN/PCA plus tabular feature matrix",
+        "model": "LightGBM diversity branch alongside neural predictions",
+        "validation": "full OOF internal"
+      },
+      "exact_replay_eligible": true,
+      "graph_node_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__macla_style_port__seed-1::attempt-001::node::e00c12199acf41538ed8366163bd6606",
+      "historical_metric": 0.034733155834457116,
+      "known_issue_codes": [],
+      "maximize": false,
+      "method_family": "macla_lightgbm_neural_probability_blend",
+      "metric_authority": "strict_internal_observed",
+      "metric_status": "full_oof_internal",
+      "original_node_id": "e00c12199acf41538ed8366163bd6606",
+      "run_id": "e2e-pilot-agentic-three-role-v21__leaf-classification__macla_style_port__seed-1::attempt-001",
+      "selection_basis": "Clean, code-visible estimator-diverse frontier target.",
+      "sop_ids": [],
+      "source_kind": "recipe_implementation_capsule",
+      "target_id": "leaf-internal-macla-lightgbm-034733",
+      "task_id": "leaf-classification",
+      "validation_protocol": "full_oof_internal"
+    },
+    {
+      "allowed_actions": [
+        "replay_exact_diverse",
+        "replay_prediction_fusion",
+        "replay_component_transplant",
+        "replay_ablation"
+      ],
+      "architecture_signature": "vit_features__tabular__self_attention_fusion__tta",
+      "audit_status": "verified_clean",
+      "code_sha256": "90f5105822d2e9a3ed24a5b87503f51ce02a6cced15f0991d4942b78b73245cc",
+      "component_blueprint": {
+        "features": "ViT-family image features plus tabular descriptors",
+        "fusion": "self-attention feature fusion",
+        "inference": "TTA-aware test prediction",
+        "validation": "full OOF internal"
+      },
+      "exact_replay_eligible": true,
+      "graph_node_id": "run::e2e-pilot-agentic-three-role-v21__leaf-classification__runforest_only__seed-1::attempt-001::node::df9bccbe91dd435ab8e72658518246ee",
+      "historical_metric": 0.047482858644683164,
+      "known_issue_codes": [],
+      "maximize": false,
+      "method_family": "runforest_vit_self_attention_tta",
+      "metric_authority": "strict_internal_observed",
+      "metric_status": "full_oof_internal",
+      "original_node_id": "df9bccbe91dd435ab8e72658518246ee",
+      "run_id": "e2e-pilot-agentic-three-role-v21__leaf-classification__runforest_only__seed-1::attempt-001",
+      "selection_basis": "Clean, code-visible transformer-attention frontier target outside the anchor implementation.",
+      "sop_ids": [],
+      "source_kind": "recipe_implementation_capsule",
+      "target_id": "leaf-internal-runforest-vit-attention-047483",
+      "task_id": "leaf-classification",
+      "validation_protocol": "full_oof_internal"
+    }
+  ]
+}
