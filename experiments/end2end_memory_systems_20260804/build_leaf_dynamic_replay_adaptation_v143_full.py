@@ -15,17 +15,17 @@ import build_leaf_ten_system_gpt_v135_runtime as v135
 
 
 EXPERIMENT = Path("experiments/end2end_memory_systems_20260804")
-SUFFIX = "v143-full-r1"
-MANIFEST_DIR = EXPERIMENT / "manifests_v143_full_r1"
-SYSTEM_DIR = EXPERIMENT / "systems_v143_full_r1"
-JOBS_DIR = EXPERIMENT / "jobs_v143_full_r1"
-CLUSTER_RUNTIME = "/workspace/nautilus-exp-end2end-agent-v143-full-r1"
-OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v143-full-r1/runs"
+SUFFIX = "v143-full-r2"
+MANIFEST_DIR = EXPERIMENT / "manifests_v143_full_r2"
+SYSTEM_DIR = EXPERIMENT / "systems_v143_full_r2"
+JOBS_DIR = EXPERIMENT / "jobs_v143_full_r2"
+CLUSTER_RUNTIME = "/workspace/nautilus-exp-end2end-agent-v143-full-r2"
+OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v143-full-r2/runs"
 EVALUATOR_ROOT = (
     "/workspace/experiment-end2end-leaf-official-evaluator-v143-smoke16-r4"
 )
-EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v143-full-r1"
-JOB_NAME = "mlevolve-leaf-gpt56sol-v143-full-r1-dynamic-hybrid"
+EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v143-full-r2"
+JOB_NAME = "mlevolve-leaf-gpt56sol-v143-full-r2-dynamic-hybrid"
 
 
 def full_spec() -> dict:
@@ -37,17 +37,17 @@ def full_spec() -> dict:
         "system_dir": SYSTEM_DIR,
         "execution_name": "leaf_dynamic_full_manifest.json",
         "release_id": (
-            "end2end-leaf-dynamic-replay-adaptation-gpt56sol-v143-full-r1"
+            "end2end-leaf-dynamic-replay-adaptation-gpt56sol-v143-full-r2"
         ),
         "cluster_runtime": CLUSTER_RUNTIME,
         "output_root": OUTPUT_ROOT,
         "evaluator_root": EVALUATOR_ROOT,
         "experiment_label": EXPERIMENT_LABEL,
         "workload": JOB_NAME,
-        "stager": "unused-v143-full-r1-stager",
+        "stager": "unused-v143-full-r2-stager",
         "logical_run_id": (
             "e2e-full-leaf-dynamic-replay-adaptation-official-gpt56sol-"
-            "v143-full-r1__leaf-classification__dynamic_hybrid__seed-1"
+            "v143-full-r2__leaf-classification__dynamic_hybrid__seed-1"
         ),
     }
 
@@ -68,6 +68,7 @@ def configure_builders() -> None:
     v141.GPU_COUNT = 1
     v141.MEMORY_ROOT = v143r2.MEMORY_ROOT
     v141.MEMORY_BUNDLE = v143r2.MEMORY_BUNDLE
+    v143r2.MANIFEST_DIR = MANIFEST_DIR
     v141.OVERLAY_FILES = tuple(
         dict.fromkeys(
             (
@@ -143,7 +144,7 @@ def write_dynamic_config(output: Path) -> Path:
                 "",
                 "run_identity:",
                 "  memory_version: "
-                "leaf_llm_redistilled_v10_r8_replay_recipe_projection_v143_full_r1",
+                "leaf_llm_redistilled_v10_r8_replay_recipe_projection_v143_full_r2",
                 "",
             ]
         ),

@@ -1,0 +1,10 @@
+{
+  "schema": "mlevolve_prelaunch_failure_v1",
+  "generation": "v143-full-r1",
+  "stage": "local_runtime_build",
+  "kubernetes_resource_created": false,
+  "gpu_requested": false,
+  "reason": "The v10-r8 memory-manifest updater remained bound to manifests_v143_smoke16_r2 instead of the fresh full manifest directory.",
+  "disposition": "preserved_invalid_generation_do_not_reuse",
+  "next_generation": "v143-full-r2"
+}
