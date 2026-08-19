@@ -1,0 +1,22 @@
+{
+  "schema": "mlevolve_pre_run_workload_retirement_v1",
+  "recorded_at": "2026-08-19T13:28:11Z",
+  "workload_kind": "Pod",
+  "namespace": "ecepxie",
+  "name": "mlevolve-leaf-gpt56sol-v141-smoke16-r3-dev",
+  "uid": "772e339c-2641-456a-8c43-7083ceba2443",
+  "owner_label": "haoming",
+  "experiment_label": "experiment-end2end-memory-agent-v141-smoke16-r3",
+  "last_observed_phase": "Running",
+  "node_name": "hcc-nrp-shor-c6009.unl.edu",
+  "container_started_at": "2026-08-19T13:27:31Z",
+  "runtime_uploaded": false,
+  "output_root_created": false,
+  "solver_started": false,
+  "attempt_created": false,
+  "reason": "User requested replacing the A10 smoke Dev Pod with a two-GPU RTX 2080 Ti Dev Pod before runtime upload or solver launch.",
+  "replacement_identity": "mlevolve-leaf-gpt56sol-v141-smoke16-r4-dev",
+  "replacement_gpu_count": 2,
+  "replacement_gpu_resource_key": "nvidia.com/gpu",
+  "replacement_gpu_product_constraint": "NVIDIA-GeForce-RTX-2080-Ti"
+}

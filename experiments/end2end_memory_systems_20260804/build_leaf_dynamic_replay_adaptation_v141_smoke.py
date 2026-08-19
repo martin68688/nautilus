@@ -26,6 +26,7 @@ DEV_MEMORY_GIB = 64
 GPU_RESOURCE_KEY = "nvidia.com/a100"
 GPU_PRODUCT_CONSTRAINT: str | None = None
 GPU_TYPE = "NVIDIA A100 family"
+GPU_COUNT = 1
 MEMORY_ROOT = (
     "/workspace/experiment-end2end-memory-agent-v140-r6/"
     "memory-leaf-llm-redistilled-v10-r6/leaf-classification"
@@ -179,7 +180,13 @@ def update_runtime_budget(output: Path) -> str:
 
     path = output / MANIFEST_DIR / "budget.json"
     payload = v135.read_json(path)
-    payload["smoke"]["memory_gib"] = DEV_MEMORY_GIB
+    payload["smoke"].update(
+        {
+            "memory_gib": DEV_MEMORY_GIB,
+            "gpu_count": GPU_COUNT,
+            "parallel_search_num": GPU_COUNT,
+        }
+    )
     payload["runtime"].update(
         {
             "gpu_resource_key": GPU_RESOURCE_KEY,
@@ -235,7 +242,7 @@ def build_dev_pod(manifest_hash: str, source_lock_hash: str) -> dict:
         "cpu": "16",
         "memory": f"{DEV_MEMORY_GIB}Gi",
         "ephemeral-storage": "64Gi",
-        GPU_RESOURCE_KEY: "1",
+        GPU_RESOURCE_KEY: str(GPU_COUNT),
     }
     pod = {
         "apiVersion": "v1",
@@ -368,6 +375,9 @@ def build(base_runtime: Path, output_runtime: Path, pod_out: Path) -> dict:
         "dynamic_config_sha256": v135.sha256_file(dynamic_config),
         "agent_steps": 16,
         "dev_memory_gib": DEV_MEMORY_GIB,
+        "dev_gpu_count": GPU_COUNT,
+        "gpu_resource_key": GPU_RESOURCE_KEY,
+        "gpu_product_constraint": GPU_PRODUCT_CONSTRAINT,
         "memory_bundle_root": MEMORY_ROOT,
         "memory_bundle_manifest_sha256": "c46c6fb4e582bf079fd199c8732275293d3f63109f68924a0796b4dc8077e963",
         "llm_model": v135.LLM_MODEL,
@@ -403,6 +413,7 @@ def configure_generation(generation: int) -> None:
     global SUFFIX, MANIFEST_DIR, SYSTEM_DIR, CLUSTER_RUNTIME
     global OUTPUT_ROOT, EVALUATOR_ROOT, EXPERIMENT_LABEL, POD_NAME
     global DEV_MEMORY_GIB, GPU_RESOURCE_KEY, GPU_PRODUCT_CONSTRAINT, GPU_TYPE
+    global GPU_COUNT
     SUFFIX = f"v141-smoke16{revision}"
     MANIFEST_DIR = EXPERIMENT / f"manifests_v141_smoke16{manifest_revision}"
     SYSTEM_DIR = EXPERIMENT / f"systems_v141_smoke16{manifest_revision}"
@@ -418,6 +429,10 @@ def configure_generation(generation: int) -> None:
         GPU_RESOURCE_KEY = "nvidia.com/gpu"
         GPU_PRODUCT_CONSTRAINT = "NVIDIA-A10"
         GPU_TYPE = "NVIDIA A10"
+    if generation >= 4:
+        GPU_PRODUCT_CONSTRAINT = "NVIDIA-GeForce-RTX-2080-Ti"
+        GPU_TYPE = "NVIDIA GeForce RTX 2080 Ti"
+        GPU_COUNT = 2
 
 
 if __name__ == "__main__":

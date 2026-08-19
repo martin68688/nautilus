@@ -1,0 +1,18 @@
+{
+  "experimental_axis": "Dynamic-only v137 contract hardening over the frozen v135 Dynamic runtime",
+  "manifest_hash": "e65231476009ce7f1957c34cd8658b6109e2fc868af9141f60b469cdaa12758b",
+  "schema": "mlevolve_end2end_systems_manifest_v1",
+  "system_count": 1,
+  "systems": [
+    {
+      "config_path": "systems_v141_smoke16_r4/dynamic_hybrid.yaml",
+      "config_sha256": "a39ce082545a1e69a1c54dbbff18b45613ccbd5f800ef09633cde550e87f01df",
+      "description": "Frozen v135 Dynamic semantics with temperature precedence, local tool-schema validation, opaque Judge refs, Host stage fit, and stage-aware fallback over the preserved live Search pool",
+      "kind": "internal",
+      "label": "S5-v141-smoke16-r4-dynamic-retrieval-contract-hardening",
+      "limitation": null,
+      "primary_reference": null,
+      "system_id": "dynamic_hybrid"
+    }
+  ]
+}

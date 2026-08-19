@@ -1,0 +1,124 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "annotations": {
+      "mlevolve.ai/manifest-sha256": "93da392322b7797ccd6a48b73723360dd69d107534b2aca67bde47d2e4782c5a",
+      "mlevolve.ai/purpose": "sixteen-step-three-role-dynamic-smoke",
+      "mlevolve.ai/runtime-source-lock-sha256": "8ee7b396e45e865bebcf98b4e2ad15ec6ae33d4d2ee4bdc62f18097a0c2f4f69"
+    },
+    "labels": {
+      "app": "mlevolve-end2end-dev",
+      "app.kubernetes.io/managed-by": "codex-nrp-training",
+      "ecepxie.nrp/owner": "haoming",
+      "experiment": "experiment-end2end-memory-agent-v141-smoke16-r4",
+      "mlevolve.ai/release-mode": "smoke",
+      "mlevolve.ai/system": "dynamic_hybrid"
+    },
+    "name": "mlevolve-leaf-gpt56sol-v141-smoke16-r4-dev",
+    "namespace": "ecepxie"
+  },
+  "spec": {
+    "affinity": {
+      "nodeAffinity": {
+        "requiredDuringSchedulingIgnoredDuringExecution": {
+          "nodeSelectorTerms": [
+            {
+              "matchExpressions": [
+                {
+                  "key": "nvidia.com/gpu.product",
+                  "operator": "In",
+                  "values": [
+                    "NVIDIA-GeForce-RTX-2080-Ti"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "containers": [
+      {
+        "args": [
+          "exec sleep infinity"
+        ],
+        "command": [
+          "/bin/bash",
+          "-lc"
+        ],
+        "env": [
+          {
+            "name": "PYTHONUNBUFFERED",
+            "value": "1"
+          },
+          {
+            "name": "PYTHONDONTWRITEBYTECODE",
+            "value": "1"
+          },
+          {
+            "name": "PYTHONPATH",
+            "value": "/workspace/nautilus-exp-end2end-agent-v141-smoke16-r4/mlevolve:/workspace/nautilus-exp-end2end-agent-v141-smoke16-r4"
+          }
+        ],
+        "envFrom": [
+          {
+            "secretRef": {
+              "name": "mlevolve-openai-gpt56sol-v1"
+            }
+          }
+        ],
+        "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+        "imagePullPolicy": "IfNotPresent",
+        "name": "dev",
+        "resources": {
+          "limits": {
+            "cpu": "16",
+            "ephemeral-storage": "64Gi",
+            "memory": "32Gi",
+            "nvidia.com/gpu": "2"
+          },
+          "requests": {
+            "cpu": "16",
+            "ephemeral-storage": "64Gi",
+            "memory": "32Gi",
+            "nvidia.com/gpu": "2"
+          }
+        },
+        "volumeMounts": [
+          {
+            "mountPath": "/workspace",
+            "name": "workspace"
+          },
+          {
+            "mountPath": "/dev/shm",
+            "name": "shm"
+          }
+        ]
+      }
+    ],
+    "restartPolicy": "Never",
+    "terminationGracePeriodSeconds": 180,
+    "tolerations": [
+      {
+        "key": "nvidia.com/gpu",
+        "operator": "Exists"
+      }
+    ],
+    "volumes": [
+      {
+        "name": "workspace",
+        "persistentVolumeClaim": {
+          "claimName": "haoming-storage"
+        }
+      },
+      {
+        "emptyDir": {
+          "medium": "Memory",
+          "sizeLimit": "16Gi"
+        },
+        "name": "shm"
+      }
+    ]
+  }
+}
