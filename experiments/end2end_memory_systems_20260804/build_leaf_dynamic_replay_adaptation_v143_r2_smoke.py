@@ -84,6 +84,10 @@ def configure_builder() -> None:
             "experiments/end2end_memory_systems_20260804/"
             "V143_SMOKE16_R3_PRELAUNCH_FAILURE.json"
         ),
+        Path(
+            "experiments/end2end_memory_systems_20260804/"
+            "V143_SMOKE16_R4_TERMINATED_FOR_FIX.json"
+        ),
     )
     v141.write_dynamic_config = write_dynamic_config
     v141.update_memory_manifest = update_memory_manifest
@@ -185,6 +189,7 @@ def main() -> int:
             "memory_bundle_root": MEMORY_ROOT,
             "memory_bundle_manifest_sha256": MANIFEST_SHA256,
             "reused_existing_dev_pod": True,
+            "reused_evaluator_root": EVALUATOR_ROOT,
             "pod_manifest_must_not_be_created": True,
         }
     )
@@ -208,6 +213,11 @@ def configure_identity(generation: int) -> None:
     EVALUATOR_ROOT = (
         f"/workspace/experiment-end2end-leaf-official-evaluator-{SUFFIX}"
     )
+    if generation >= 5:
+        EVALUATOR_ROOT = (
+            "/workspace/experiment-end2end-leaf-official-evaluator-"
+            "v143-smoke16-r4"
+        )
     EXPERIMENT_LABEL = f"experiment-end2end-memory-agent-{SUFFIX}"
     POD_NAME = f"mlevolve-leaf-gpt56sol-{SUFFIX}-dev"
 

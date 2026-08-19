@@ -1,0 +1,35 @@
+{
+  "schema": "mlevolve_smoke_generation_failure_v1",
+  "generation": "v143-smoke16-r4",
+  "status": "terminated_by_user_for_small_general_fix",
+  "reusable": false,
+  "pod": {
+    "name": "mlevolve-leaf-gpt56sol-v142-smoke16-dev",
+    "uid": "a66799df-0ba9-4d59-905c-665b7303feed",
+    "node": "gpengine-uams.areon.net"
+  },
+  "processes": {
+    "wrapper_pid": 1160,
+    "solver_pid": 1178,
+    "termination_signal": 15,
+    "solver_exit_code": 143
+  },
+  "failure": {
+    "component": "OpenAI-compatible local JSON Schema validation",
+    "message": "submit_code_review returned needs_revision=false with revised_code=null, but the local tool schema admitted only string values",
+    "root_cause": "The tool description documented null as the clean-review value while revised_code.type was string-only.",
+    "fix_commit": "44cb117c",
+    "fix": "Accept either string or null for revised_code and retain strict validation for all other payload fields."
+  },
+  "retained_progress": {
+    "cold_start_draft_generated": true,
+    "replay_portfolio_registered": true,
+    "novel_retrieval_started": true,
+    "candidate_executions_completed": 0
+  },
+  "measurement": {
+    "status": "retained_infrastructure_or_timeout_failure",
+    "measurement_hash": "17e98ffab7bcdb98a38cdc3c41b75d834bc561ba9e9c48caa4250ad5297b4bff"
+  },
+  "next_generation": "v143-smoke16-r5"
+}
