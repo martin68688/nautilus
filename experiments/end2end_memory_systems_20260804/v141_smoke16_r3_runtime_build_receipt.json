@@ -1,0 +1,23 @@
+{
+  "agent_steps": 16,
+  "cluster_runtime": "/workspace/nautilus-exp-end2end-agent-v141-smoke16-r3",
+  "dev_memory_gib": 32,
+  "dynamic_config_sha256": "39224ad235240ed478a5d89740a2873ffc62acfaace0de72373febe2d4d09576",
+  "evaluator_root": "/workspace/experiment-end2end-leaf-official-evaluator-v141-smoke16-r3",
+  "execution_manifest_hash": "20ddc733958ce5c4b9e699349a7fe9be911bd6b8f8e589a72e0b07cb3dd84a71",
+  "llm_base_url": "https://apizh.net/v1",
+  "llm_model": "gpt-5.6-sol",
+  "llm_secret_reference": "mlevolve-openai-gpt56sol-v1",
+  "logical_run_id": "e2e-smoke-leaf-dynamic-replay-adaptation-official-gpt56sol-v141-smoke16-r3__leaf-classification__dynamic_hybrid__seed-1",
+  "memory_bundle_manifest_sha256": "c46c6fb4e582bf079fd199c8732275293d3f63109f68924a0796b4dc8077e963",
+  "memory_bundle_root": "/workspace/experiment-end2end-memory-agent-v140-r6/memory-leaf-llm-redistilled-v10-r6/leaf-classification",
+  "memory_bundles_manifest_hash": "58c292cdf32a071218b3c12685ed31567eba622c1299d88aa06fe12be3e5cbe1",
+  "output_root": "/workspace/experiment-end2end-memory-agent-v141-smoke16-r3/runs",
+  "pod_name": "mlevolve-leaf-gpt56sol-v141-smoke16-r3-dev",
+  "release_id": "end2end-leaf-dynamic-replay-adaptation-gpt56sol-v141-smoke16-r3",
+  "runtime_root": "/tmp/nautilus-exp-end2end-agent-v141-smoke16-r3",
+  "schema": "mlevolve_leaf_dynamic_replay_adaptation_v141_smoke_build_v1",
+  "source_lock_file_count": 716,
+  "source_lock_hash": "c5064e3e35ccd93134b053403a11751f9b20693da46fe7436b1231836ea30df8",
+  "status": "complete"
+}

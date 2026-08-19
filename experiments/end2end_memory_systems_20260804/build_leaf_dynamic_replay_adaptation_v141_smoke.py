@@ -23,6 +23,9 @@ EVALUATOR_ROOT = "/workspace/experiment-end2end-leaf-official-evaluator-v141-smo
 EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v141-smoke16"
 POD_NAME = "mlevolve-leaf-gpt56sol-v141-smoke16-dev"
 DEV_MEMORY_GIB = 64
+GPU_RESOURCE_KEY = "nvidia.com/a100"
+GPU_PRODUCT_CONSTRAINT: str | None = None
+GPU_TYPE = "NVIDIA A100 family"
 MEMORY_ROOT = (
     "/workspace/experiment-end2end-memory-agent-v140-r6/"
     "memory-leaf-llm-redistilled-v10-r6/leaf-classification"
@@ -171,6 +174,22 @@ def update_memory_manifest(output: Path) -> str:
     return v135.write_hashed(path, payload, "manifest_hash")
 
 
+def update_runtime_budget(output: Path) -> str:
+    """Bind the frozen smoke budget to the actual Dev-Pod resources."""
+
+    path = output / MANIFEST_DIR / "budget.json"
+    payload = v135.read_json(path)
+    payload["smoke"]["memory_gib"] = DEV_MEMORY_GIB
+    payload["runtime"].update(
+        {
+            "gpu_resource_key": GPU_RESOURCE_KEY,
+            "gpu_product_constraint": GPU_PRODUCT_CONSTRAINT,
+            "gpu_type": GPU_TYPE,
+        }
+    )
+    return v135.write_hashed(path, payload, "manifest_hash")
+
+
 def rewrite_source_lock(output: Path, run_spec: dict) -> tuple[str, int]:
     manifests = output / MANIFEST_DIR
     excluded = {
@@ -216,9 +235,9 @@ def build_dev_pod(manifest_hash: str, source_lock_hash: str) -> dict:
         "cpu": "16",
         "memory": f"{DEV_MEMORY_GIB}Gi",
         "ephemeral-storage": "64Gi",
-        "nvidia.com/a100": "1",
+        GPU_RESOURCE_KEY: "1",
     }
-    return {
+    pod = {
         "apiVersion": "v1",
         "kind": "Pod",
         "metadata": {
@@ -273,6 +292,25 @@ def build_dev_pod(manifest_hash: str, source_lock_hash: str) -> dict:
             ],
         },
     }
+    if GPU_PRODUCT_CONSTRAINT:
+        pod["spec"]["affinity"] = {
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "nvidia.com/gpu.product",
+                                    "operator": "In",
+                                    "values": [GPU_PRODUCT_CONSTRAINT],
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        }
+    return pod
 
 
 def build(base_runtime: Path, output_runtime: Path, pod_out: Path) -> dict:
@@ -294,6 +332,7 @@ def build(base_runtime: Path, output_runtime: Path, pod_out: Path) -> dict:
     v137.OVERLAY_FILES = OVERLAY_FILES
     dynamic_config = write_dynamic_config(output_runtime)
     bindings = v137.build_components(output_runtime, run_spec)
+    bindings["budget_manifest_hash"] = update_runtime_budget(output_runtime)
     bindings["memory_bundles_manifest_hash"] = update_memory_manifest(
         output_runtime
     )
@@ -363,7 +402,7 @@ def configure_generation(generation: int) -> None:
     manifest_revision = f"_r{generation}"
     global SUFFIX, MANIFEST_DIR, SYSTEM_DIR, CLUSTER_RUNTIME
     global OUTPUT_ROOT, EVALUATOR_ROOT, EXPERIMENT_LABEL, POD_NAME
-    global DEV_MEMORY_GIB
+    global DEV_MEMORY_GIB, GPU_RESOURCE_KEY, GPU_PRODUCT_CONSTRAINT, GPU_TYPE
     SUFFIX = f"v141-smoke16{revision}"
     MANIFEST_DIR = EXPERIMENT / f"manifests_v141_smoke16{manifest_revision}"
     SYSTEM_DIR = EXPERIMENT / f"systems_v141_smoke16{manifest_revision}"
@@ -375,6 +414,10 @@ def configure_generation(generation: int) -> None:
     EXPERIMENT_LABEL = f"experiment-end2end-memory-agent-{SUFFIX}"
     POD_NAME = f"mlevolve-leaf-gpt56sol-{SUFFIX}-dev"
     DEV_MEMORY_GIB = 32
+    if generation >= 3:
+        GPU_RESOURCE_KEY = "nvidia.com/gpu"
+        GPU_PRODUCT_CONSTRAINT = "NVIDIA-A10"
+        GPU_TYPE = "NVIDIA A10"
 
 
 if __name__ == "__main__":
