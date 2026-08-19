@@ -5,6 +5,7 @@ Python interpreter for executing code snippets via subprocess.
 - Supports multiple parallel slots (max_parallel_run) with CPU pinning.
 """
 
+import ast
 import logging
 import hashlib
 import json
@@ -51,6 +52,53 @@ from protocol_runtime.preflight import (
 )
 
 logger = logging.getLogger("MLEvolve")
+
+
+def _insert_host_preamble_after_future_imports(
+    candidate_code: str,
+    host_preamble: str,
+) -> str:
+    """Compose a runfile without invalidating Python ``__future__`` imports.
+
+    Python permits future imports only after comments, a module docstring, and
+    other future imports.  Executor-owned CPU/GPU/runtime setup therefore
+    belongs after that header rather than at byte zero of Candidate source.
+    The Candidate is parsed before this helper is called, so ``lineno`` and
+    ``end_lineno`` are safe deterministic insertion coordinates.
+    """
+
+    tree = ast.parse(candidate_code)
+    body = list(tree.body)
+    insertion_line = 0
+    body_index = 0
+
+    if (
+        body
+        and isinstance(body[0], ast.Expr)
+        and isinstance(body[0].value, ast.Constant)
+        and isinstance(body[0].value.value, str)
+    ):
+        insertion_line = int(body[0].end_lineno or body[0].lineno)
+        body_index = 1
+
+    while body_index < len(body):
+        statement = body[body_index]
+        if not (
+            isinstance(statement, ast.ImportFrom)
+            and statement.module == "__future__"
+        ):
+            break
+        insertion_line = int(statement.end_lineno or statement.lineno)
+        body_index += 1
+
+    lines = candidate_code.splitlines(keepends=True)
+    prefix = "".join(lines[:insertion_line])
+    suffix = "".join(lines[insertion_line:])
+    if prefix and not prefix.endswith(("\n", "\r")):
+        prefix += "\n"
+    if host_preamble and not host_preamble.endswith(("\n", "\r")):
+        host_preamble += "\n"
+    return prefix + host_preamble + suffix
 
 
 def _sha256_file(path: Path) -> str:
@@ -896,7 +944,71 @@ class Interpreter:
                         "probe_results": [],
                         "trace_hash": "",
                     }
-            code = pre_code + candidate_code
+            # Validate the Candidate and every Host source transformation
+            # before launch.  Candidate syntax remains a normal debuggable
+            # Candidate failure; a syntax error introduced only by Host
+            # instrumentation is classified separately and must never be fed
+            # back to the model as though its algorithm were at fault.
+            try:
+                compile(candidate_code, str(runfile_path), "exec")
+            except SyntaxError as error:
+                try:
+                    compile(code, str(runfile_path), "exec")
+                except SyntaxError:
+                    error_type = "CandidateSourceSyntaxError"
+                    message_prefix = "Candidate source failed syntax validation"
+                else:
+                    error_type = "HostSourceInstrumentationError"
+                    message_prefix = "Host source transformation invalidated Candidate source"
+                return ExecutionResult(
+                    term_out=[f"{message_prefix}: {error}\n"],
+                    exec_time=time.time() - start_time,
+                    exc_type=error_type,
+                    exc_info={
+                        "message": str(error),
+                        "candidate_subprocess_started": False,
+                        "host_instrumentation_failure": (
+                            error_type == "HostSourceInstrumentationError"
+                        ),
+                    },
+                    exc_stack=[
+                        (
+                            self.agent_file_name[process_id],
+                            int(error.lineno or 0),
+                            "",
+                            str(error.text or "").strip(),
+                        )
+                    ],
+                )
+
+            code = _insert_host_preamble_after_future_imports(
+                candidate_code,
+                pre_code,
+            )
+            try:
+                compile(code, str(runfile_path), "exec")
+            except SyntaxError as error:
+                return ExecutionResult(
+                    term_out=[
+                        "Host source composition invalidated Candidate source: "
+                        f"{error}\n"
+                    ],
+                    exec_time=time.time() - start_time,
+                    exc_type="HostSourceInstrumentationError",
+                    exc_info={
+                        "message": str(error),
+                        "candidate_subprocess_started": False,
+                        "host_instrumentation_failure": True,
+                    },
+                    exc_stack=[
+                        (
+                            self.agent_file_name[process_id],
+                            int(error.lineno or 0),
+                            "",
+                            str(error.text or "").strip(),
+                        )
+                    ],
+                )
 
             with open(runfile_path, "w") as f:
                 f.write(code)

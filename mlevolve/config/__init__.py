@@ -133,6 +133,12 @@ class DraftRolePolicyConfig:
     replay_research_exact_budget: int = 0
     replay_research_strategy_slots: int = 0
     replay_research_card_max_chars: int = 12000
+    # Dynamic-only fairness gate.  Before score-driven UCT/Top-K competition,
+    # every declared role must produce this many valid, rankable Candidates.
+    # Selection uses validity counts only; metric magnitude never decides
+    # whether a role receives its protected startup allocation.
+    ensure_valid_candidate_per_role: bool = False
+    role_balance_min_valid_candidates: int = 1
 
 
 @dataclass

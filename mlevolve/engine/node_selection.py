@@ -316,3 +316,37 @@ def select_with_soft_switch(agent) -> Optional[SearchNode]:
                 return None
             uct_node._topk_triggered = True
             return uct_node
+
+
+def select_role_balance_deficit(agent, role: str) -> Optional[SearchNode]:
+    """Select expandable work only from one Host-designated Draft role.
+
+    This is a startup resource gate, not a new ranking algorithm.  Once every
+    role has enough valid Candidates, the caller returns to the unchanged
+    UCT/Top-K policy above.
+    """
+
+    roots = sorted(
+        [
+            node
+            for node in getattr(agent.virtual_root, "children", set())
+            if str(getattr(node, "draft_role", "") or "") == str(role)
+        ],
+        key=lambda node: (node.ctime, str(node.id)),
+    )
+    for root in roots:
+        if root.lock or root.is_terminal or not _uct_selectable(root):
+            continue
+        selected = select(agent, root)
+        if selected is None:
+            continue
+        if selected.stage in {"draft", "fusion_draft"}:
+            selected.lock = True
+        logger.info(
+            "[role-balance] selected role=%s node=%s valid-score-independent=true",
+            role,
+            selected.id,
+        )
+        return selected
+    logger.info("[role-balance] role=%s has no currently selectable node", role)
+    return None

@@ -502,6 +502,18 @@ class AgentSearch:
         with lock:
             return int(getattr(self, "_draft_generation_count", 0)) >= len(roles)
 
+    def role_balance_status(self) -> dict:
+        """Return Host-owned startup fairness state for the fixed Draft roles.
+
+        A role clears this gate only by producing rankable metric-bearing
+        Candidates.  Scores are intentionally not compared here: a weak early
+        result still earns the same protected allocation as a strong one.
+        """
+
+        from engine.role_balance import build_role_balance_status
+
+        return build_role_balance_status(self)
+
     def claim_draft_role(self, explicit_role: str | None = None) -> str:
         with self._draft_role_lock:
             draft_index = self._draft_generation_count
@@ -1342,6 +1354,8 @@ class AgentSearch:
         claimed_repair_parent = None
         duplicate_repair_request = False
         claimed_replay_research: tuple[SearchNode, str] | None = None
+        role_balance = {"active": False, "next_role": None}
+        claimed_role_balance_node = None
         # Phase 1 must still create the three declared draft roles in order.
         # Mandatory repairs take priority only once normal execution/search begins.
         preserve_explicit_runtime_debug = self._is_explicit_runtime_debug_parent(node)
@@ -1374,6 +1388,47 @@ class AgentSearch:
         if (
             claimed_repair_parent is None
             and not duplicate_repair_request
+            and execute_immediately
+            and draft_role is None
+            and init_solution_path is None
+            and not preserve_explicit_runtime_debug
+        ):
+            role_balance = self.role_balance_status()
+            balance_role = role_balance.get("next_role")
+            if role_balance.get("active") and balance_role:
+                # A Replay Research execution is allowed only when the Host
+                # fairness scheduler is currently allocating the protected
+                # memory_reproduction slot.  It can no longer jump ahead of a
+                # deficient Cold Start or Novel role.
+                if balance_role == "memory_reproduction":
+                    claimed_replay_research = self._claim_replay_research_target()
+                    if claimed_replay_research is not None:
+                        node, target_id = claimed_replay_research
+                        logger.info(
+                            "[role-balance] allocated Replay Research target %s",
+                            target_id,
+                        )
+                if claimed_replay_research is None:
+                    claimed_role_balance_node = (
+                        node_selection.select_role_balance_deficit(
+                            self,
+                            str(balance_role),
+                        )
+                    )
+                    if claimed_role_balance_node is not None:
+                        node = claimed_role_balance_node
+                    else:
+                        logger.info(
+                            "[role-balance] waiting for role=%s; ordinary score-driven "
+                            "selection remains gated",
+                            balance_role,
+                        )
+                        return None
+
+        if (
+            claimed_repair_parent is None
+            and not duplicate_repair_request
+            and not role_balance.get("active")
             and execute_immediately
             and draft_role is None
             and init_solution_path is None
