@@ -1,0 +1,19 @@
+{
+  "attempt": "attempt-000",
+  "failure_class_observed": "infrastructure",
+  "failure_class_reconciled": "memory_bundle_contract",
+  "logical_run_id": "e2e-smoke-leaf-dynamic-replay-adaptation-official-gpt56sol-v141-smoke16-r6__leaf-classification__dynamic_hybrid__seed-1",
+  "measurement_status": "retained_agent_failure_without_outcome",
+  "node_name": "gpengine-uams.areon.net",
+  "pod_name": "mlevolve-leaf-gpt56sol-v141-smoke16-r6-dev",
+  "pod_uid": "7eae0cb3-ee69-4cd4-bc37-635793934364",
+  "root_cause": "The v10-r6 implementation capsule declared 41 required nodes while the production evidence projection required exactly 15 unique nodes. The 26 stale parent-only nodes caused StageAwareHybridMemoryLayer to fail closed before draft generation.",
+  "schema": "mlevolve_v141_smoke_terminal_failure_receipt_v1",
+  "solver_exit_code": 1,
+  "terminal_exception": "Recipe implementation required-node coverage mismatch",
+  "terminal_exception_type": "ValueError",
+  "terminal_step_count": 0,
+  "v10_r6_declared_required_node_count": 41,
+  "v10_r6_production_required_node_count": 15,
+  "v10_r6_stale_parent_node_count": 26
+}
