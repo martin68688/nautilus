@@ -1,0 +1,11 @@
+{
+  "schema": "mlevolve_precreate_failure_v1",
+  "status": "admission_rejected_before_object_creation",
+  "workload": "pod/mlevolve-leaf-gpt56sol-v141-smoke16-dev",
+  "experiment_label": "experiment-end2end-memory-agent-v141-smoke16",
+  "reason": "NRP standalone Pods are limited to 16 CPU cores and 32 GiB memory; the immutable first manifest requested 16 CPU cores and 64 GiB memory.",
+  "pod_uid": null,
+  "gpu_allocated": false,
+  "identity_reuse_forbidden": true,
+  "successor_generation": "v141-smoke16-r2"
+}

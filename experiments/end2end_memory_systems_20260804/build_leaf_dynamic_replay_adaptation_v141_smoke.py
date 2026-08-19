@@ -22,6 +22,7 @@ OUTPUT_ROOT = "/workspace/experiment-end2end-memory-agent-v141-smoke16/runs"
 EVALUATOR_ROOT = "/workspace/experiment-end2end-leaf-official-evaluator-v141-smoke16"
 EXPERIMENT_LABEL = "experiment-end2end-memory-agent-v141-smoke16"
 POD_NAME = "mlevolve-leaf-gpt56sol-v141-smoke16-dev"
+DEV_MEMORY_GIB = 64
 MEMORY_ROOT = (
     "/workspace/experiment-end2end-memory-agent-v140-r6/"
     "memory-leaf-llm-redistilled-v10-r6/leaf-classification"
@@ -72,9 +73,7 @@ def spec() -> dict:
         "manifest_dir": MANIFEST_DIR,
         "system_dir": SYSTEM_DIR,
         "execution_name": "leaf_dynamic_smoke_manifest.json",
-        "release_id": (
-            "end2end-leaf-dynamic-replay-adaptation-gpt56sol-v141-smoke16"
-        ),
+        "release_id": f"end2end-leaf-dynamic-replay-adaptation-gpt56sol-{SUFFIX}",
         "cluster_runtime": CLUSTER_RUNTIME,
         "output_root": OUTPUT_ROOT,
         "evaluator_root": EVALUATOR_ROOT,
@@ -83,7 +82,7 @@ def spec() -> dict:
         "stager": "unused-v141-smoke16-dev-stager",
         "logical_run_id": (
             "e2e-smoke-leaf-dynamic-replay-adaptation-official-gpt56sol-"
-            "v141-smoke16__leaf-classification__dynamic_hybrid__seed-1"
+            f"{SUFFIX}__leaf-classification__dynamic_hybrid__seed-1"
         ),
     }
 
@@ -120,7 +119,8 @@ def write_dynamic_config(output: Path) -> Path:
                 "  transition_evidence_capsules_sha256: 951db74cc7098286fc6395c4942ad3a36765c2afd609cc014543e9a77a1d3d83",
                 "",
                 "run_identity:",
-                "  memory_version: leaf_llm_redistilled_v10_r6_dynamic_replay_adaptation_v141_smoke16",
+                "  memory_version: leaf_llm_redistilled_v10_r6_dynamic_replay_adaptation_"
+                f"{SUFFIX.replace('-', '_')}",
                 "",
             ]
         ),
@@ -214,7 +214,7 @@ def build_dev_pod(manifest_hash: str, source_lock_hash: str) -> dict:
     }
     resources = {
         "cpu": "16",
-        "memory": "64Gi",
+        "memory": f"{DEV_MEMORY_GIB}Gi",
         "ephemeral-storage": "64Gi",
         "nvidia.com/a100": "1",
     }
@@ -328,7 +328,7 @@ def build(base_runtime: Path, output_runtime: Path, pod_out: Path) -> dict:
         ],
         "dynamic_config_sha256": v135.sha256_file(dynamic_config),
         "agent_steps": 16,
-        "dev_memory_gib": 64,
+        "dev_memory_gib": DEV_MEMORY_GIB,
         "memory_bundle_root": MEMORY_ROOT,
         "memory_bundle_manifest_sha256": "c46c6fb4e582bf079fd199c8732275293d3f63109f68924a0796b4dc8077e963",
         "llm_model": v135.LLM_MODEL,
@@ -343,11 +343,38 @@ def main() -> int:
     parser.add_argument("--output-runtime", required=True, type=Path)
     parser.add_argument("--pod-out", required=True, type=Path)
     parser.add_argument("--receipt", required=True, type=Path)
+    parser.add_argument("--generation", type=int, default=1)
     args = parser.parse_args()
+    configure_generation(args.generation)
     receipt = build(args.base_runtime, args.output_runtime, args.pod_out)
     v135.write_json(args.receipt, receipt)
     print(json.dumps(receipt, sort_keys=True))
     return 0
+
+
+def configure_generation(generation: int) -> None:
+    """Advance every mutable identity after a pre-Pod staging failure."""
+
+    if generation < 1:
+        raise ValueError("generation must be positive")
+    if generation == 1:
+        return
+    revision = f"-r{generation}"
+    manifest_revision = f"_r{generation}"
+    global SUFFIX, MANIFEST_DIR, SYSTEM_DIR, CLUSTER_RUNTIME
+    global OUTPUT_ROOT, EVALUATOR_ROOT, EXPERIMENT_LABEL, POD_NAME
+    global DEV_MEMORY_GIB
+    SUFFIX = f"v141-smoke16{revision}"
+    MANIFEST_DIR = EXPERIMENT / f"manifests_v141_smoke16{manifest_revision}"
+    SYSTEM_DIR = EXPERIMENT / f"systems_v141_smoke16{manifest_revision}"
+    CLUSTER_RUNTIME = f"/workspace/nautilus-exp-end2end-agent-{SUFFIX}"
+    OUTPUT_ROOT = f"/workspace/experiment-end2end-memory-agent-{SUFFIX}/runs"
+    EVALUATOR_ROOT = (
+        f"/workspace/experiment-end2end-leaf-official-evaluator-{SUFFIX}"
+    )
+    EXPERIMENT_LABEL = f"experiment-end2end-memory-agent-{SUFFIX}"
+    POD_NAME = f"mlevolve-leaf-gpt56sol-{SUFFIX}-dev"
+    DEV_MEMORY_GIB = 32
 
 
 if __name__ == "__main__":
