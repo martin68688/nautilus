@@ -812,6 +812,50 @@ def test_mandatory_repair_scheduler_prevents_duplicate_parallel_expansion():
     assert duplicate is False
 
 
+def test_alignment_pending_replay_uses_mandatory_repair_queue_without_leakage_transaction():
+    import sys
+
+    sys.path.insert(0, str(REPO / "mlevolve"))
+    from engine.agent_search import AgentSearch
+    from engine.search_node import SearchNode
+    from utils.metric import WorstMetricValue
+
+    node = SearchNode(
+        plan="alignment blocked",
+        code="print('adapted replay')\n",
+        metric=WorstMetricValue(),
+        stage="improve",
+        draft_role="novel_exploration",
+        replay_source={
+            "code_sha256": "a" * 64,
+            "alignment_repair_attempt": 0,
+        },
+        replay_status="replay_derived_novel_alignment_repair_pending",
+        is_buggy=True,
+        is_valid=False,
+        protocol_observation={
+            "submission_metric_alignment": {
+                "blocking": True,
+                "reexecution_required": True,
+                "repair_attempt": 0,
+                "max_repair_attempts": 1,
+            }
+        },
+    )
+    agent = AgentSearch.__new__(AgentSearch)
+    AgentSearch._init_mandatory_repair_scheduler(agent)
+
+    AgentSearch._enqueue_mandatory_repair(agent, node)
+    claimed, duplicate = AgentSearch._claim_mandatory_repair_parent(agent, None)
+
+    assert claimed is node
+    assert duplicate is False
+    assert node.protocol_repair == {}
+    assert node.protocol_observation["submission_metric_alignment"][
+        "repair_queue_status"
+    ] == "in_flight"
+
+
 def test_post_execution_audit_failure_is_requeued_for_mandatory_repair(monkeypatch):
     import sys
     import threading

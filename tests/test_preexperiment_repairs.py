@@ -89,6 +89,62 @@ def test_modified_replay_descendant_loses_exact_status_but_identical_child_keeps
     assert modified.derived_from_refs == ["replay:source:claim"]
 
 
+def test_dynamic_modified_replay_becomes_novel_without_losing_source_provenance():
+    source = "print('immutable replay')\n"
+    parent = SearchNode(
+        code=source,
+        plan="source",
+        stage="draft",
+        branch_id=1,
+        draft_role="memory_reproduction",
+        role_contract={"role": "memory_reproduction"},
+        replay_source={
+            "graph_node_id": "run::official::node::best",
+            "run_id": "official",
+            "code_sha256": hashlib.sha256(source.encode()).hexdigest(),
+        },
+        replay_status="historical_exact_anchor_loaded",
+    )
+    agent = SimpleNamespace(
+        _serialize_prompt=str,
+        next_branch_id=2,
+        branch_all_nodes={1: [parent]},
+        branch_successful_nodes={1: []},
+        acfg=SimpleNamespace(
+            draft_role_policy=SimpleNamespace(
+                enabled=True,
+                replay_adaptation_as_novel=True,
+            )
+        ),
+    )
+
+    identical = SearchNode(
+        code=source, plan="same", stage="improve", parent=parent
+    )
+    register_node(agent, identical, "same", parent_node=parent)
+    assert identical.draft_role == "memory_reproduction"
+    assert identical.replay_status == "historical_exact_anchor_loaded"
+
+    modified = SearchNode(
+        code="print('adapted replay')\n",
+        plan="adapt",
+        stage="improve",
+        parent=parent,
+    )
+    register_node(agent, modified, "adapt", parent_node=parent)
+
+    assert modified.draft_role == "novel_exploration"
+    assert modified.replay_status == "replay_derived_novel_candidate"
+    assert modified.replay_source["graph_node_id"] == "run::official::node::best"
+    assert modified.replay_source["code_sha256"] == hashlib.sha256(
+        source.encode()
+    ).hexdigest()
+    assert modified.replay_source["origin_draft_role"] == "memory_reproduction"
+    assert modified.replay_source["adaptation_parent_node_id"] == parent.id
+    assert modified.replay_source["lineage_kind"] == "replay_derived_novel"
+    assert modified.role_contract["behavioral_role"] == "replay_derived_novel"
+
+
 def test_host_instrumented_replay_is_derived_with_hash_bound_lineage_receipt():
     from authority.adapters.mlevolve.runtime import MLEvolveAuthorityAdapter
     from protocol_runtime.preflight import (

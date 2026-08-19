@@ -25,6 +25,7 @@ def build_role_balance_status(agent) -> dict:
         return {
             "enabled": enabled,
             "active": False,
+            "all_slots_reserved": all_slots_reserved,
             "minimum_valid_candidates": minimum,
             "roles": roles,
             "valid_counts": {},
@@ -82,6 +83,7 @@ def build_role_balance_status(agent) -> dict:
     return {
         "enabled": True,
         "active": bool(deficit_roles),
+        "all_slots_reserved": all_slots_reserved,
         "minimum_valid_candidates": minimum,
         "roles": roles,
         "valid_counts": valid_counts,

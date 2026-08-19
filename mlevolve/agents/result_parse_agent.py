@@ -1188,6 +1188,38 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                 submission_alignment_required=submission_alignment_required,
                 aligned_metric=aligned_metric,
             )
+            replay_policy = getattr(
+                getattr(agent, "acfg", None), "draft_role_policy", None
+            )
+            alignment_repair_enabled = bool(
+                replay_policy is not None
+                and getattr(replay_policy, "enabled", False)
+                and getattr(
+                    replay_policy, "replay_alignment_repair_enabled", False
+                )
+            )
+            max_alignment_repairs = max(
+                0,
+                int(
+                    getattr(
+                        replay_policy,
+                        "replay_alignment_repair_max_attempts",
+                        1,
+                    )
+                    or 0
+                ),
+            )
+            alignment_repair_attempt = int(
+                (getattr(node, "replay_source", None) or {}).get(
+                    "alignment_repair_attempt"
+                )
+                or 0
+            )
+            alignment_reexecution_required = bool(
+                alignment_blocking
+                and alignment_repair_enabled
+                and alignment_repair_attempt < max_alignment_repairs
+            )
             if (
                 aligned_metric is not None
                 and parser_facts.get("process_exited_normally")
@@ -1195,6 +1227,16 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
             ):
                 response["metric"] = float(aligned_metric)
                 submission_alignment_status = "verified_marker"
+                if (
+                    getattr(node, "replay_source", None)
+                    and not historical_exact_replay
+                    and getattr(node, "replay_status", None)
+                    in {
+                        "replay_derived_novel_candidate",
+                        "replay_derived_novel_alignment_repair_pending",
+                    }
+                ):
+                    node.replay_status = "replay_derived_novel_alignment_verified"
             elif alignment_blocking:
                 response["metric"] = None
                 response["is_bug"] = True
@@ -1205,8 +1247,18 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                     "candidate is excluded from ranking."
                 )
                 submission_alignment_status = (
-                    "modified_replay_missing_submission_aligned_metric"
+                    "modified_replay_alignment_repair_pending"
+                    if alignment_reexecution_required
+                    else "modified_replay_alignment_repair_exhausted"
+                    if alignment_repair_enabled
+                    else "modified_replay_missing_submission_aligned_metric"
                 )
+                if getattr(node, "replay_source", None):
+                    node.replay_status = (
+                        "replay_derived_novel_alignment_repair_pending"
+                        if alignment_reexecution_required
+                        else "replay_derived_novel_alignment_blocked"
+                    )
             elif submission_alignment_required and not historical_exact_replay:
                 if (
                     parser_facts.get("high_confidence_metric_ambiguous")
@@ -1261,7 +1313,14 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
                     parser_facts.get("submission_aligned_metric_line") or ""
                 ),
                 "blocking": alignment_blocking,
-                "reexecution_required": False,
+                "reexecution_required": alignment_reexecution_required,
+                "repair_attempt": alignment_repair_attempt,
+                "max_repair_attempts": max_alignment_repairs,
+                "repair_kind": (
+                    "preserve_prediction_variant_and_emit_exact_metric_marker"
+                    if alignment_blocking
+                    else ""
+                ),
             }
 
             if signed_metric is not None:

@@ -1,14 +1,71 @@
-"""Search conditions: should_trigger_branch_fusion, is_branch_stagnant, is_globally_stagnant."""
+"""Search conditions shared by every branch-fusion entry point."""
 
 import logging
 import time
+from typing import Mapping
 
 from agents.leakage_audit import rank_eligible
 logger = logging.getLogger("MLEvolve")
 
 
+def cross_role_synthesis_enabled(agent) -> bool:
+    """Return whether this run opted into balanced cross-role synthesis."""
+
+    policy = getattr(getattr(agent, "acfg", None), "draft_role_policy", None)
+    return bool(
+        policy is not None
+        and getattr(policy, "enabled", False)
+        and getattr(policy, "cross_role_synthesis_after_balance", False)
+    )
+
+
+def cross_role_synthesis_allowed(agent, *, component: str) -> bool:
+    """Fail closed while any protected Draft role lacks valid coverage.
+
+    Controls that do not opt into the Dynamic-only contract retain their old
+    behavior.  Once enabled, every aggregation/fusion caller uses this same
+    Host decision instead of maintaining a separate interpretation of role
+    balance.
+    """
+
+    if not cross_role_synthesis_enabled(agent):
+        return True
+    status_fn = getattr(agent, "role_balance_status", None)
+    if not callable(status_fn):
+        logger.error(
+            "Cross-role synthesis denied in %s: role_balance_status is unavailable",
+            component,
+        )
+        return False
+    balance = status_fn()
+    if (
+        not isinstance(balance, Mapping)
+        or balance.get("enabled") is not True
+        or balance.get("all_slots_reserved") is not True
+        or balance.get("active") is not False
+        or bool(balance.get("deficit_roles"))
+    ):
+        deficits = (
+            balance.get("deficit_roles") or ["roles_not_yet_reserved"]
+            if isinstance(balance, Mapping)
+            else ["unknown"]
+        )
+        logger.info(
+            "Cross-role synthesis denied in %s; role deficits=%s",
+            component,
+            deficits,
+        )
+        return False
+    return True
+
+
 def should_trigger_branch_fusion(agent) -> bool:
     """Whether to trigger multi-branch aggregation: time window, min branches with success, global stagnation, under max attempts."""
+    if not cross_role_synthesis_allowed(
+        agent,
+        component="engine.conditions.should_trigger_branch_fusion",
+    ):
+        return False
     if agent.fusion_draft_count >= agent.max_fusion_drafts:
         return False
 

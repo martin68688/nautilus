@@ -26,6 +26,7 @@ from agents.atomic_actuation import verify_atomic_code_change
 from agents.triggers import (
     refresh_replay_lineage_after_instrumentation,
     refresh_replay_lineage_after_revision,
+    replay_adaptation_as_novel_enabled,
 )
 from agents.prompts import enforce_host_candidate_entrypoint
 from agents.memory.run_forest_replay import is_historical_replay_anchor
@@ -34,7 +35,7 @@ from protocol_runtime.preflight import (
     build_bounded_repair_receipt,
 )
 from engine import node_selection, evaluation, execution, solution_manager
-from engine.conditions import is_branch_stagnant
+from engine.conditions import cross_role_synthesis_allowed, is_branch_stagnant
 from utils.data_preview import clean_task_desc
 
 logger = logging.getLogger("MLEvolve")
@@ -688,6 +689,17 @@ class AgentSearch:
             return False
         if protocol_repair.is_active(getattr(node, "protocol_repair", None)):
             return True
+        alignment = (
+            (getattr(node, "protocol_observation", None) or {}).get(
+                "submission_metric_alignment"
+            )
+            or {}
+        )
+        if (
+            alignment.get("blocking") is True
+            and alignment.get("reexecution_required") is True
+        ):
+            return True
         audit = node.leakage_audit or {}
         return audit.get("status") not in {None, "clean"} and bool(
             node.audit_repair_required or audit.get("repair_required")
@@ -718,7 +730,18 @@ class AgentSearch:
 
     def _enqueue_mandatory_repair(self, node: SearchNode) -> None:
         """Queue one blocked node exactly once, independently of UCT/root locks."""
-        protocol_repair.ensure_transaction(self, node)
+        alignment = (
+            (getattr(node, "protocol_observation", None) or {}).get(
+                "submission_metric_alignment"
+            )
+            or {}
+        )
+        alignment_pending = bool(
+            alignment.get("blocking") is True
+            and alignment.get("reexecution_required") is True
+        )
+        if not alignment_pending:
+            protocol_repair.ensure_transaction(self, node)
         if not self._is_mandatory_repair_parent(node):
             return
         with self._mandatory_repair_lock:
@@ -729,8 +752,18 @@ class AgentSearch:
                 return
             self._mandatory_repair_queue.append(node)
             self._mandatory_repair_queued_ids.add(node.id)
-            node.leakage_audit["repair_queue_status"] = "queued"
-        if node.protocol_repair:
+            if alignment_pending:
+                alignment["repair_queue_status"] = "queued"
+            else:
+                node.leakage_audit["repair_queue_status"] = "queued"
+        if alignment_pending:
+            logger.warning(
+                "Node %s queued for mandatory Replay alignment repair (attempt=%s/%s)",
+                node.id,
+                alignment.get("repair_attempt", 0) + 1,
+                alignment.get("max_repair_attempts", 1),
+            )
+        elif node.protocol_repair:
             logger.warning(
                 "Node %s queued for staged protocol repair (stage=%s, generation_attempts=%s)",
                 node.id,
@@ -780,7 +813,16 @@ class AgentSearch:
 
             if selected is not None:
                 self._mandatory_repair_inflight_ids.add(selected.id)
-                selected.leakage_audit["repair_queue_status"] = "in_flight"
+                alignment = (
+                    (getattr(selected, "protocol_observation", None) or {}).get(
+                        "submission_metric_alignment"
+                    )
+                    or {}
+                )
+                if alignment.get("reexecution_required") is True:
+                    alignment["repair_queue_status"] = "in_flight"
+                else:
+                    selected.leakage_audit["repair_queue_status"] = "in_flight"
                 return selected, False
 
             if (
@@ -794,7 +836,16 @@ class AgentSearch:
                 and role_allowed(requested_node)
             ):
                 self._mandatory_repair_inflight_ids.add(requested_node.id)
-                requested_node.leakage_audit["repair_queue_status"] = "in_flight"
+                alignment = (
+                    (getattr(requested_node, "protocol_observation", None) or {}).get(
+                        "submission_metric_alignment"
+                    )
+                    or {}
+                )
+                if alignment.get("reexecution_required") is True:
+                    alignment["repair_queue_status"] = "in_flight"
+                else:
+                    requested_node.leakage_audit["repair_queue_status"] = "in_flight"
                 return requested_node, False
         return None, False
 
@@ -809,6 +860,29 @@ class AgentSearch:
             journal_ids = {
                 item.id for item in getattr(getattr(self, "journal", None), "nodes", [])
             }
+            alignment = (
+                (getattr(node, "protocol_observation", None) or {}).get(
+                    "submission_metric_alignment"
+                )
+                or {}
+            )
+            alignment_pending = alignment.get("reexecution_required") is True
+            alignment_successors = [
+                child
+                for child in node.children
+                if child.id in journal_ids
+                and (getattr(child, "replay_source", None) or {}).get(
+                    "alignment_repair_parent_node_id"
+                )
+                == node.id
+            ]
+            if alignment_pending and alignment_successors and not retry:
+                successor = max(alignment_successors, key=lambda child: child.ctime)
+                alignment["reexecution_required"] = False
+                alignment["repair_queue_status"] = "superseded"
+                alignment["successor_node_id"] = successor.id
+                node.is_terminal = True
+                return
             tx_id = (node.protocol_repair or {}).get("transaction_id")
             successors = [
                 child for child in node.children
@@ -833,7 +907,10 @@ class AgentSearch:
                 if node.id not in self._mandatory_repair_queued_ids:
                     self._mandatory_repair_queue.appendleft(node)
                     self._mandatory_repair_queued_ids.add(node.id)
-                node.leakage_audit["repair_queue_status"] = "queued_after_error"
+                if alignment_pending:
+                    alignment["repair_queue_status"] = "queued_after_error"
+                else:
+                    node.leakage_audit["repair_queue_status"] = "queued_after_error"
             elif (
                 (node.protocol_repair or {}).get("state") == "exhausted"
                 or (node.leakage_repair_attempt >= 2 and node.is_terminal)
@@ -1077,7 +1154,10 @@ class AgentSearch:
                     if self.search_start_time:
                         elapsed_time = time.time() - self.search_start_time
                         if elapsed_time >= self.acfg.time_limit / 2:
-                            can_use_fusion = True
+                            can_use_fusion = cross_role_synthesis_allowed(
+                                self,
+                                component="engine.agent_search.stagnant_branch_fusion",
+                            )
                     is_from_topk = getattr(parent_node, '_topk_triggered', False)
                     stagnation_threshold = self.scfg.topk_stagnation_threshold if is_from_topk else self.scfg.branch_stagnation_threshold
                     if is_from_topk:
@@ -1086,13 +1166,13 @@ class AgentSearch:
                     if is_branch_stagnant(self, parent_node.branch_id, threshold=stagnation_threshold):
                         if can_use_fusion:
                             if random.random() < self.acfg.fusion_vs_evolution_prob:
-                                logger.info(f"🎯 Triggering fusion for stagnant node {parent_node.id} (after 6h)")
+                                logger.info(f"🎯 Triggering fusion for stagnant node {parent_node.id} (after time midpoint and role balance)")
                                 result_node = fusion_agent.run(self, parent_node)
                             else:
-                                logger.info(f"🎯 Triggering intra-branch evolution for stagnant node {parent_node.id} (after 6h)")
+                                logger.info(f"🎯 Triggering intra-branch evolution for stagnant node {parent_node.id} (after time midpoint)")
                                 result_node = evolution_agent.run(self, parent_node)
                         else:
-                            logger.info(f"🔄 Using evolution for stagnant node {parent_node.id} (before 6h)")
+                            logger.info(f"🔄 Using evolution for stagnant node {parent_node.id} (fusion time/role gate not met)")
                             result_node = evolution_agent.run(self, parent_node)
                     else:
                         logger.info(f"🔄 Using normal improve for node {parent_node.id}")
@@ -1115,6 +1195,9 @@ class AgentSearch:
                                 result_node,
                                 original_code=pre_review_code,
                                 revision_kind="code_review_descendant",
+                                reclassify_as_novel=replay_adaptation_as_novel_enabled(
+                                    self
+                                ),
                             )
                         else:
                             logger.info(f"Node {result_node.id} passed code review without changes")
@@ -1134,6 +1217,9 @@ class AgentSearch:
                             result_node,
                             original_code=semantic_source,
                             revision_kind="agent_semantic_protocol_repair",
+                            reclassify_as_novel=replay_adaptation_as_novel_enabled(
+                                self
+                            ),
                         )
 
                     # Active Strategy candidates remain bound to the same
@@ -1229,6 +1315,9 @@ class AgentSearch:
                             result_node,
                             original_code=pre_instrumentation_code,
                             instrumentation_receipt=receipt,
+                            reclassify_as_novel=replay_adaptation_as_novel_enabled(
+                                self
+                            ),
                         )
 
                     verifier = getattr(self, "adoption_verifier", None)

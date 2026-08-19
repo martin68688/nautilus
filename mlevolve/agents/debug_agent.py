@@ -35,6 +35,29 @@ from agents.strategy_actuation import (
 logger = logging.getLogger("MLEvolve")
 
 
+def replay_alignment_repair_guidance(parent_node: SearchNode) -> list[str]:
+    """Return the narrow repair contract for a blocked Replay adaptation."""
+
+    alignment = (
+        (getattr(parent_node, "protocol_observation", None) or {}).get(
+            "submission_metric_alignment"
+        )
+        or {}
+    )
+    if not (
+        alignment.get("blocking") is True
+        and alignment.get("reexecution_required") is True
+    ):
+        return []
+    return [
+        "This is a Replay-derived Novel alignment repair, not a model redesign.",
+        "Preserve the parent model, features, folds, ensemble/calibration, and the exact prediction variable written to submission.csv.",
+        "Compute validation predictions using that exact final submission variant; do not reuse a component, parent, pre-blend, or pre-calibration metric.",
+        "After writing submission.csv, print exactly one final line in this form: `Final Submission-Aligned Validation Score: <finite_metric> | variant=<stable_variant_name>`.",
+        "The marker is evidence only: its numeric value must be freshly computed by this execution and must match the submitted prediction path.",
+    ]
+
+
 def _protocol_preflight_recovery_guidance(parent_node: SearchNode) -> list[str]:
     """Expose exact fail-closed Preflight facts to the Debug Agent."""
 
@@ -365,6 +388,12 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             ]
         }
         prompt["Instructions"] = repair_contract | prompt["Instructions"]
+    alignment_guidance = replay_alignment_repair_guidance(parent_node)
+    if alignment_guidance:
+        prompt["Instructions"] = {
+            "REPLAY-DERIVED NOVEL ALIGNMENT REPAIR - HIGHEST PRIORITY": alignment_guidance,
+            **prompt["Instructions"],
+        }
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
     preflight_guidance = _protocol_preflight_recovery_guidance(parent_node)
     if preflight_guidance:

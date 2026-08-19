@@ -96,8 +96,8 @@ def modified_replay_alignment_is_blocking(
     return bool(
         submission_alignment_required
         and aligned_metric is None
-        and getattr(node, "draft_role", None) == "memory_reproduction"
-        and getattr(node, "replay_source", None)
+        and isinstance(getattr(node, "replay_source", None), dict)
+        and bool(getattr(node, "replay_source", None))
         and not is_immutable_exact_replay(node)
     )
 

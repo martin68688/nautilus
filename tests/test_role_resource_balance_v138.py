@@ -146,3 +146,75 @@ def test_host_instrumentation_failure_does_not_count_as_completed_role_work():
     assert status["completed_counts"]["novel_exploration"] == 0
     assert status["host_instrumentation_failures"]["novel_exploration"] == 1
     assert status["next_role"] == "novel_exploration"
+
+
+def test_cross_role_synthesis_is_blocked_until_role_balance_is_complete():
+    from engine.conditions import cross_role_synthesis_allowed, should_trigger_branch_fusion
+
+    agent = SimpleNamespace(
+        acfg=SimpleNamespace(
+            draft_role_policy=SimpleNamespace(
+                enabled=True,
+                cross_role_synthesis_after_balance=True,
+            )
+        ),
+        role_balance_status=lambda: {
+            "enabled": True,
+            "active": True,
+            "all_slots_reserved": True,
+            "deficit_roles": ["novel_exploration"],
+        },
+    )
+
+    assert should_trigger_branch_fusion(agent) is False
+    assert cross_role_synthesis_allowed(agent, component="test") is False
+
+    agent.role_balance_status = lambda: {
+        "enabled": True,
+        "active": False,
+        "all_slots_reserved": True,
+        "deficit_roles": [],
+    }
+    assert cross_role_synthesis_allowed(agent, component="test") is True
+
+
+def test_fixed_role_root_can_request_new_fusion_branch_after_balance(monkeypatch):
+    import engine.node_selection as node_selection
+
+    agent, _ = _agent(minimum=1)
+    agent.acfg.draft_role_policy.cross_role_synthesis_after_balance = True
+    agent.acfg.branch_fusion_trigger_prob = 1.0
+    agent.role_balance_status = lambda: {
+        "enabled": True,
+        "active": False,
+        "all_slots_reserved": True,
+        "deficit_roles": [],
+    }
+    monkeypatch.setattr(node_selection, "should_trigger_branch_fusion", lambda _: True)
+    monkeypatch.setattr(node_selection.random, "random", lambda: 0.0)
+
+    selected = node_selection.select(agent, agent.virtual_root)
+
+    assert selected is agent.virtual_root
+    assert agent.virtual_root._aggregation_requested is True
+
+
+def test_cross_role_synthesis_stays_blocked_before_all_roles_are_reserved():
+    from engine.conditions import cross_role_synthesis_allowed
+
+    agent = SimpleNamespace(
+        acfg=SimpleNamespace(
+            draft_role_policy=SimpleNamespace(
+                enabled=True,
+                cross_role_synthesis_after_balance=True,
+            )
+        ),
+        role_balance_status=lambda: {
+            "enabled": True,
+            "active": False,
+            "all_slots_reserved": False,
+            "deficit_roles": [],
+        },
+    )
+
+    assert cross_role_synthesis_allowed(agent, component="test") is False

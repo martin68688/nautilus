@@ -12,6 +12,7 @@ from agents.planner import run_planner, build_planner_task, build_chat_prompt_fo
 from agents.coder import plan_and_code_query
 from agents.coder.diff_coder import diff_generate_and_apply
 from engine import solution_manager
+from engine.conditions import cross_role_synthesis_allowed
 from agents.triggers import register_node
 from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
 
@@ -380,6 +381,16 @@ def _fuse_with_multiple_references(
 
 
 def run(agent, parent_node: SearchNode) -> SearchNode:
+    if not cross_role_synthesis_allowed(
+        agent,
+        component="agents.fusion_agent.run",
+    ):
+        logger.info(
+            "Cross-role fusion is gated; using same-branch improve for node %s",
+            parent_node.id,
+        )
+        return run_improve(agent, parent_node)
+
     candidates = _get_fusion_candidates(agent, parent_node)
 
     if not candidates:

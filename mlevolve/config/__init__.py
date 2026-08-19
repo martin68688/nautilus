@@ -139,6 +139,18 @@ class DraftRolePolicyConfig:
     # whether a role receives its protected startup allocation.
     ensure_valid_candidate_per_role: bool = False
     role_balance_min_valid_candidates: int = 1
+    # Dynamic-only Replay adaptation.  The immutable byte-exact seed remains
+    # memory_reproduction; any code-changing descendant becomes a Novel
+    # candidate while retaining its complete Replay provenance.
+    replay_adaptation_as_novel: bool = False
+    # Missing submission-aligned metrics remain ranking-blocking, but Dynamic
+    # may reserve a bounded Debug opportunity to produce the exact metric and
+    # prediction-variant marker for the modified descendant.
+    replay_alignment_repair_enabled: bool = False
+    replay_alignment_repair_max_attempts: int = 1
+    # Cross-role aggregation is a Novel operation and cannot begin until every
+    # protected Draft role has reached its minimum valid-candidate coverage.
+    cross_role_synthesis_after_balance: bool = False
 
 
 @dataclass

@@ -22,7 +22,61 @@ def _sha256_code(code: str) -> str:
     return hashlib.sha256(str(code or "").encode("utf-8")).hexdigest()
 
 
-def _update_replay_lineage(parent_node: SearchNode, node: SearchNode) -> None:
+def replay_adaptation_as_novel_enabled(agent) -> bool:
+    policy = getattr(getattr(agent, "acfg", None), "draft_role_policy", None)
+    return bool(
+        policy is not None
+        and getattr(policy, "enabled", False)
+        and getattr(policy, "replay_adaptation_as_novel", False)
+    )
+
+
+def _reclassify_modified_replay_as_novel(
+    node: SearchNode,
+    *,
+    adaptation_parent_node_id: str,
+    enabled: bool,
+) -> None:
+    """Give code-changing Replay descendants an honest behavioral role."""
+
+    if not enabled or not node.replay_source:
+        return
+    if node.replay_source.get("exact_source_match") is True:
+        return
+    origin_role = str(
+        node.replay_source.get("origin_draft_role")
+        or node.draft_role
+        or "memory_reproduction"
+    )
+    node.replay_source["origin_draft_role"] = origin_role
+    node.replay_source["adaptation_parent_node_id"] = str(
+        adaptation_parent_node_id or ""
+    )
+    node.replay_source["lineage_kind"] = "replay_derived_novel"
+    node.draft_role = "novel_exploration"
+    node.replay_status = "replay_derived_novel_candidate"
+    node.role_contract = {
+        "role": "novel_exploration",
+        "behavioral_role": "replay_derived_novel",
+        "origin_draft_role": origin_role,
+        "requirement": (
+            "Adapt the immutable Replay source as a Novel candidate. Preserve "
+            "the source identity, parent/code hashes, and explicit diff; never "
+            "claim byte-exact reproduction after changing code."
+        ),
+        "alignment_requirement": (
+            "The exact prediction variant written to submission.csv must have "
+            "its own submission-aligned validation metric."
+        ),
+    }
+
+
+def _update_replay_lineage(
+    parent_node: SearchNode,
+    node: SearchNode,
+    *,
+    reclassify_as_novel: bool = False,
+) -> None:
     """Keep source provenance without laundering a modified child as exact replay.
 
     ``replay_source`` describes the immutable historical origin and is therefore
@@ -52,6 +106,11 @@ def _update_replay_lineage(parent_node: SearchNode, node: SearchNode) -> None:
     if node.replay_status in _EXACT_REPLAY_STATUSES or node.replay_status is None:
         node.replay_status = "derived_modified_from_exact_source"
     node.replay_source["lineage_kind"] = "modified_descendant"
+    _reclassify_modified_replay_as_novel(
+        node,
+        adaptation_parent_node_id=str(parent_node.id),
+        enabled=reclassify_as_novel,
+    )
 
     # SearchNode lineage is distinct from Result Fact publication.  Result
     # Facts intentionally keep derived_from_refs=[], while this run-scoped
@@ -72,6 +131,7 @@ def refresh_replay_lineage_after_instrumentation(
     *,
     original_code: str,
     instrumentation_receipt: dict,
+    reclassify_as_novel: bool = False,
 ) -> None:
     """Recompute direct-replay lineage after deterministic Host instrumentation."""
 
@@ -97,6 +157,13 @@ def refresh_replay_lineage_after_instrumentation(
     node.replay_source["host_entrypoint_instrumentation_receipt"] = copy.deepcopy(
         instrumentation_receipt
     )
+    _reclassify_modified_replay_as_novel(
+        node,
+        adaptation_parent_node_id=str(
+            node.replay_source.get("lineage_parent_node_id") or node.id
+        ),
+        enabled=reclassify_as_novel,
+    )
     graph_node_id = str(node.replay_source.get("graph_node_id") or "")
     if graph_node_id:
         claim_ref = f"replay:{graph_node_id}:method_hypothesis"
@@ -109,6 +176,7 @@ def refresh_replay_lineage_after_revision(
     *,
     original_code: str,
     revision_kind: str,
+    reclassify_as_novel: bool = False,
 ) -> None:
     """Record an LLM/reviewer rewrite as a derived replay candidate."""
 
@@ -129,6 +197,13 @@ def refresh_replay_lineage_after_revision(
     )
     node.replay_source["lineage_kind"] = str(revision_kind)
     node.replay_status = "derived_full_runtime_candidate"
+    _reclassify_modified_replay_as_novel(
+        node,
+        adaptation_parent_node_id=str(
+            node.replay_source.get("lineage_parent_node_id") or node.id
+        ),
+        enabled=reclassify_as_novel,
+    )
     graph_node_id = str(node.replay_source.get("graph_node_id") or "")
     if graph_node_id:
         claim_ref = f"replay:{graph_node_id}:method_hypothesis"
@@ -242,7 +317,29 @@ def register_node(agent, node: SearchNode, prompt, parent_node=None, new_branch:
             node.replay_source = copy.deepcopy(parent_node.replay_source)
         if node.replay_status is None:
             node.replay_status = parent_node.replay_status
-        _update_replay_lineage(parent_node, node)
+        parent_alignment = (
+            (getattr(parent_node, "protocol_observation", None) or {}).get(
+                "submission_metric_alignment"
+            )
+            or {}
+        )
+        if (
+            replay_adaptation_as_novel_enabled(agent)
+            and parent_alignment.get("reexecution_required") is True
+            and node.replay_source
+        ):
+            previous_attempt = int(
+                node.replay_source.get("alignment_repair_attempt") or 0
+            )
+            node.replay_source["alignment_repair_attempt"] = previous_attempt + 1
+            node.replay_source["alignment_repair_parent_node_id"] = str(
+                parent_node.id
+            )
+        _update_replay_lineage(
+            parent_node,
+            node,
+            reclassify_as_novel=replay_adaptation_as_novel_enabled(agent),
+        )
         parent_audit = parent_node.leakage_audit or {}
         if parent_audit.get("status") not in {None, "clean"}:
             from agents.leakage_audit import build_repair_preservation_contract

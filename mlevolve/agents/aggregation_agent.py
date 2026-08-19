@@ -8,7 +8,7 @@ from agents.planner import build_chat_prompt_for_model
 from agents.coder import plan_and_code_query
 from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
 
-from engine.conditions import should_trigger_branch_fusion  # noqa: F401
+from engine.conditions import cross_role_synthesis_allowed
 from agents.triggers import register_node
 
 logger = logging.getLogger("MLEvolve")
@@ -79,6 +79,12 @@ def run(
         logger.error(
             f"_aggregation() should only be called from root node! Got parent_node: {parent_node.id}"
         )
+        return None
+
+    if not cross_role_synthesis_allowed(
+        agent,
+        component="agents.aggregation_agent.run",
+    ):
         return None
 
     if agent.fusion_draft_count >= agent.max_fusion_drafts:
@@ -212,6 +218,33 @@ def run(
 
     plan, code = plan_and_code_query(agent, prompt_complete)
 
+    policy = getattr(getattr(agent, "acfg", None), "draft_role_policy", None)
+    explicit_cross_role_provenance = bool(
+        policy is not None
+        and getattr(policy, "enabled", False)
+        and getattr(policy, "cross_role_synthesis_after_balance", False)
+    )
+    source_node_ids = [str(node.id) for node in branch_representatives]
+    source_roles = sorted(
+        {
+            str(getattr(node, "draft_role", "") or "")
+            for node in branch_representatives
+            if getattr(node, "draft_role", None)
+        }
+    )
+    role_contract = {
+        "role": "novel_exploration",
+        "requirement": "Explore a distinct memory-informed direction.",
+    }
+    if explicit_cross_role_provenance:
+        role_contract.update(
+            {
+                "behavioral_role": "cross_role_synthesis",
+                "source_node_ids": source_node_ids,
+                "source_draft_roles": source_roles,
+                "coverage_gate": "all_configured_roles_minimum_valid_met",
+            }
+        )
     aggregation_node = SearchNode(
         plan=plan,
         code=code,
@@ -219,7 +252,8 @@ def run(
         stage="fusion_draft",
         local_best_node=agent.virtual_root,
         draft_role="novel_exploration",
-        role_contract={"role": "novel_exploration", "requirement": "Explore a distinct memory-informed direction."},
+        role_contract=role_contract,
+        source_ref_ids=source_node_ids if explicit_cross_role_provenance else [],
     )
     register_node(agent, aggregation_node, prompt_complete, new_branch=True)
 

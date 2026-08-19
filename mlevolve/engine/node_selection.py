@@ -6,7 +6,10 @@ import time
 from typing import List, Optional
 
 from engine.search_node import SearchNode
-from engine.conditions import should_trigger_branch_fusion
+from engine.conditions import (
+    cross_role_synthesis_enabled,
+    should_trigger_branch_fusion,
+)
 logger = logging.getLogger("MLEvolve")
 
 
@@ -109,9 +112,10 @@ def select(agent, node: SearchNode) -> Optional[SearchNode]:
             fixed_roles = bool(
                 getattr(getattr(agent.acfg, "draft_role_policy", None), "enabled", False)
             )
+            fixed_role_synthesis = cross_role_synthesis_enabled(agent)
             if (
                 agent.is_root(node)
-                and not fixed_roles
+                and (not fixed_roles or fixed_role_synthesis)
                 and should_trigger_branch_fusion(agent)
                 and random.random() < agent.acfg.branch_fusion_trigger_prob
             ):

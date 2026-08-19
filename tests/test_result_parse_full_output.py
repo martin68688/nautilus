@@ -159,9 +159,9 @@ def test_modified_replay_without_submission_aligned_marker_blocks_ranking():
     modified = SearchNode(
         code="print('modified blend')\n",
         stage="improve",
-        draft_role="memory_reproduction",
+        draft_role="novel_exploration",
         replay_source=inherited_source,
-        replay_status="derived_modified_from_exact_source",
+        replay_status="replay_derived_novel_candidate",
     )
 
     assert is_immutable_exact_replay(modified) is False
@@ -175,6 +175,30 @@ def test_modified_replay_without_submission_aligned_marker_blocks_ranking():
         submission_alignment_required=True,
         aligned_metric=0.011,
     ) is False
+
+
+def test_replay_alignment_repair_guidance_preserves_exact_variant_and_marker():
+    from agents.debug_agent import replay_alignment_repair_guidance
+    from engine.search_node import SearchNode
+
+    node = SearchNode(
+        code="print('adapted')\n",
+        stage="improve",
+        draft_role="novel_exploration",
+        replay_source={"code_sha256": "a" * 64},
+        protocol_observation={
+            "submission_metric_alignment": {
+                "blocking": True,
+                "reexecution_required": True,
+            }
+        },
+    )
+
+    guidance = "\n".join(replay_alignment_repair_guidance(node))
+    assert "not a model redesign" in guidance
+    assert "Preserve the parent model" in guidance
+    assert "Final Submission-Aligned Validation Score" in guidance
+    assert "| variant=" in guidance
 
 
 def test_immutable_exact_replay_keeps_missing_marker_exemption():
