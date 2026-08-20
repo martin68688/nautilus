@@ -1,0 +1,11 @@
+# v148 adds one Host-sanitized L1 architecture blueprint to the existing
+# score/code/artifact-free same-type transfer route.  Exact-task Replay and
+# the independent target Novel lineage retain their v147-r8 behavior.
+extends: ../systems_v147_transfer_smoke_r8/dynamic_cross_task_transfer.yaml
+
+external_skill_memory:
+  cross_task_architecture_transfer_enabled: true
+  cross_task_architecture_max_items: 1
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_architecture_transfer_v148_smoke_r1

@@ -233,22 +233,46 @@ def run(
         }
         prompt["Instructions"]["Draft role contract (MANDATORY)"] = [role_contract["requirement"]]
     elif draft_role == "memory_transfer":
+        external_memory_cfg = getattr(
+            agent.cfg, "external_skill_memory", None
+        )
         transfer_enabled = bool(
             getattr(
-                getattr(agent.cfg, "external_skill_memory", None),
+                external_memory_cfg,
                 "cross_task_transfer_enabled",
                 False,
+            )
+        )
+        architecture_transfer_enabled = bool(
+            getattr(
+                external_memory_cfg,
+                "cross_task_architecture_transfer_enabled",
+                False,
+            )
+        )
+        transfer_requirement = (
+            "Build a runnable TARGET-task solution that materially adapts at "
+            "least one Host-projected structural architecture blueprint and "
+            "when compatible portable tactics are supplied, materially adapts "
+            "at least one of them. Preserve one coherent architecture rather "
+            "than concatenating incompatible source families. "
+            if architecture_transfer_enabled
+            else (
+                "Build a runnable TARGET-task solution that materially adapts "
+                "at least one Host-projected portable tactic. "
             )
         )
         role_contract = {
             "role": draft_role,
             "requirement": (
                 (
-                    "Build a runnable TARGET-task solution that materially adapts at least one "
-                    "Host-projected portable tactic. The source task is evidence, not an answer "
-                    "key: do not copy source code, checkpoints, predictions, submissions, class "
-                    "mappings, or source scores. Name the adapted tactic and validate it only on "
-                    "target-task training data. Preserve the frozen Host Protocol Contract."
+                    transfer_requirement
+                    + "The source task is evidence, not an answer key: do not "
+                    "copy source code, checkpoints, weights, predictions, "
+                    "submissions, class mappings, source data dimensions, "
+                    "artifact identities, or source scores. Name every adopted "
+                    "blueprint/tactic and validate it only on target-task "
+                    "training data. Preserve the frozen Host Protocol Contract."
                 )
                 if transfer_enabled
                 else (

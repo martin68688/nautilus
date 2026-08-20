@@ -523,6 +523,7 @@ def log_adoption(
             "stage_hybrid_memory_pack_v1",
             "layered_model_design_tactics_v1",
             "mlevolve_cross_task_transfer_pack_v1",
+            "mlevolve_cross_task_transfer_pack_v2",
         }
         and callable(candidate_exposure_recorder)
     ):

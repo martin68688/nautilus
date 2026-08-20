@@ -16,6 +16,8 @@ def _policy(**overrides):
         "target_task_type": "leaf_descriptor_multiclass",
         "allowed_levels": ("L2_tactic", "L3_repair"),
         "max_items": 6,
+        "architecture_transfer_enabled": False,
+        "architecture_max_items": 1,
     }
     values.update(overrides)
     policy = CrossTaskTransferPolicy(**values)
@@ -43,9 +45,46 @@ def _nodes():
             "type": "SOP",
             "task_id": "leaf-classification",
             "abstraction_level": "L1_recipe",
-            "title": "Exact source recipe",
+            "title": "Fold ensemble with multimodal fusion",
+            "method_family": "stratified_fold_multiview_oof_calibration",
+            "teacher_distilled_recipe": (
+                "Train a stratified fold ensemble over multimodal leaf features, "
+                "derive calibration from OOF predictions, and reproduce the best "
+                "official artifact."
+            ),
+            "pipeline": {
+                "data_validation": (
+                    "Verify 990 training rows, 594 test rows, 99 classes, and "
+                    "CSV bb19d7d42b8e1923825f462dc7b42a033381488e8766f90af50166aee996f6d4."
+                ),
+                "feature_representation": (
+                    "Use descriptor views and a contour/image representation; "
+                    "derive every feature width from target arrays."
+                ),
+                "model_stack": (
+                    "Use separate view encoders followed by a probability-level "
+                    "fusion interface and a 99-way source head."
+                ),
+                "training_protocol": (
+                    "Train fresh fold models and checkpoint by validation log loss."
+                ),
+                "oof_protocol": (
+                    "Fill row-indexed OOF probabilities exactly once per training row."
+                ),
+                "ensemble_calibration": (
+                    "Learn fusion and scalar temperature only from OOF predictions."
+                ),
+                "final_refit_inference": (
+                    "Average fold test probabilities and require CSV "
+                    "bb19d7d42b8e1923825f462dc7b42a033381488e8766f90af50166aee996f6d4."
+                ),
+            },
             "code": "print('exact replay')",
+            "implementation_capsule": "print('recipe capsule')",
             "official_metric": 0.0001,
+            "official_kaggle_ref": "55613290",
+            "class_mapping": {"Acer": 0},
+            "predictions": [[1.0, 0.0]],
         },
         "repair::leaf::001": {
             "id": "repair::leaf::001",
@@ -124,6 +163,161 @@ def test_projection_exposes_portable_l2_but_never_recipe_code_or_source_score():
         and row["source_code_exposed"] is False
         for row in pack["candidate_pool"]
     )
+
+
+def test_opt_in_architecture_projection_adds_one_sanitized_l1_blueprint():
+    from agents.memory.cross_task_transfer import (
+        ARCHITECTURE_TRANSFER_PACK_SCHEMA,
+        build_transfer_pack,
+    )
+
+    pack = build_transfer_pack(
+        _nodes(),
+        _policy(architecture_transfer_enabled=True),
+        target_task_id="uci-one-hundred-leaves",
+        stage="draft",
+        task_description=(
+            "100-class leaf descriptor and image classification with folds and OOF"
+        ),
+        query_text="multimodal view encoders, fold ensemble, and calibration",
+    )
+
+    assert pack["schema"] == ARCHITECTURE_TRANSFER_PACK_SCHEMA
+    assert pack["memory_transfer"]["architecture_transfer_enabled"] is True
+    assert pack["memory_transfer"]["architecture_projection_mode"] == (
+        "host_structural_fields_only_v1"
+    )
+    assert pack["memory_transfer"]["selected_architecture_ids"] == [
+        "recipe::leaf::001"
+    ]
+    assert pack["final_prompt_candidate_ids"] == [
+        "recipe::leaf::001",
+        "tactic::leaf::001",
+    ]
+    blueprint = pack["selected_architectures"][0]
+    assert blueprint["candidate_kind"] == "architecture_blueprint"
+    assert blueprint["portable_text"]["pipeline_order"] == [
+        "feature_representation",
+        "model_stack",
+        "training_protocol",
+        "oof_protocol",
+        "ensemble_calibration",
+        "final_refit_inference",
+    ]
+    prompt = pack["prompt_text"]
+    assert "Structural architecture blueprint" in prompt
+    assert "separate view encoders" in prompt
+    assert "a target-task output artifact" in prompt
+    assert "source artifact redacted" not in prompt
+    assert "0.0001" not in prompt
+    assert "55613290" not in prompt
+    assert "bb19d7d42b8e1923825f462dc7b42a033381488e8766f90af50166aee996f6d4" not in prompt
+    assert "990 training rows" not in prompt
+    assert "594 test rows" not in prompt
+    assert "99-way" not in prompt
+    assert "target-derived capacity" in prompt
+    assert "print('exact replay')" not in prompt
+    assert "print('recipe capsule')" not in prompt
+    assert "Acer" not in prompt
+    assert "[[1.0, 0.0]]" not in prompt
+    assert blueprint["source_score_inherited"] is False
+    assert blueprint["source_code_exposed"] is False
+    assert blueprint["source_artifact_exposed"] is False
+    assert pack["visibility_safety_gate"]["source_artifact_fields_exposed"] == 0
+
+
+def test_architecture_projection_is_draft_only_and_debug_remains_l3_only():
+    from agents.memory.cross_task_transfer import build_transfer_pack
+
+    pack = build_transfer_pack(
+        _nodes(),
+        _policy(architecture_transfer_enabled=True),
+        target_task_id="uci-one-hundred-leaves",
+        stage="debug",
+        task_description="100-class leaf descriptor classification",
+        query_text="ClassOrderMismatch",
+    )
+
+    assert pack["final_prompt_candidate_ids"] == ["repair::leaf::001"]
+    assert pack["selected_architectures"] == []
+    assert "recipe::leaf::001" not in pack["prompt_text"]
+
+    improve_pack = build_transfer_pack(
+        _nodes(),
+        _policy(architecture_transfer_enabled=True),
+        target_task_id="uci-one-hundred-leaves",
+        stage="improve",
+        task_description="100-class leaf descriptor classification",
+        query_text="improve OOF coverage",
+    )
+    assert improve_pack["selected_architectures"] == []
+    assert improve_pack["final_prompt_candidate_ids"] == ["tactic::leaf::001"]
+
+
+def test_runtime_normalized_l1_strategy_is_projected_as_l1_recipe():
+    from agents.memory.cross_task_transfer import build_transfer_pack
+
+    nodes = _nodes()
+    normalized = dict(nodes["recipe::leaf::001"])
+    normalized["abstraction_level"] = "L1_strategy"
+    normalized["recipe_abstraction_level"] = "L1_recipe"
+    nodes["recipe::leaf::001"] = normalized
+
+    pack = build_transfer_pack(
+        nodes,
+        _policy(architecture_transfer_enabled=True),
+        target_task_id="uci-one-hundred-leaves",
+        stage="draft",
+        task_description="multimodal leaf descriptor classification",
+        query_text="fold OOF architecture",
+    )
+
+    assert pack["memory_transfer"]["selected_architecture_ids"] == [
+        "recipe::leaf::001"
+    ]
+    assert pack["selected_architectures"][0]["abstraction_level"] == (
+        "L1_recipe"
+    )
+
+
+def test_architecture_transfer_never_activates_for_exact_source_task():
+    from agents.memory.cross_task_transfer import build_transfer_pack
+
+    pack = build_transfer_pack(
+        _nodes(),
+        _policy(architecture_transfer_enabled=True),
+        target_task_id="leaf-classification",
+        stage="draft",
+        task_description="source task",
+        query_text="fold architecture",
+    )
+
+    assert pack["memory_transfer"]["activated"] is False
+    assert pack["memory_transfer"]["host_decision"]["reason"] == (
+        "exact_task_must_use_existing_replay_path"
+    )
+    assert pack["selected_items"] == []
+    assert pack["prompt_text"] == ""
+
+
+def test_policy_reads_architecture_channel_without_changing_allowed_sop_levels():
+    from agents.memory.cross_task_transfer import CrossTaskTransferPolicy
+
+    config = SimpleNamespace(
+        cross_task_transfer_enabled=True,
+        cross_task_transfer_source_task_id="leaf-classification",
+        cross_task_transfer_source_task_type="leaf_descriptor_multiclass",
+        cross_task_transfer_target_task_type="leaf_descriptor_multiclass",
+        cross_task_transfer_allowed_levels=["L2_tactic", "L3_repair"],
+        cross_task_transfer_max_items=6,
+        cross_task_architecture_transfer_enabled=True,
+        cross_task_architecture_max_items=1,
+    )
+
+    policy = CrossTaskTransferPolicy.from_config(config)
+    assert policy.architecture_transfer_enabled is True
+    assert policy.architecture_max_items == 1
+    assert policy.allowed_levels == ("L2_tactic", "L3_repair")
 
 
 def test_transfer_host_gate_precedes_legacy_end2end_controller():
