@@ -47,6 +47,20 @@ def _nodes():
             "code": "print('exact replay')",
             "official_metric": 0.0001,
         },
+        "repair::leaf::001": {
+            "id": "repair::leaf::001",
+            "type": "SOP",
+            "task_id": "leaf-classification",
+            "abstraction_level": "L3_repair",
+            "title": "Align probability columns",
+            "when_to_use": "predict_proba omits or reorders classes",
+            "failure_signature": {"exception_names": ["ClassOrderMismatch"]},
+            "repair_action": {
+                "summary": "Map model classes into the target class order and renormalize."
+            },
+            "implementation_capsule": "print('source repair code must not transfer')",
+            "official_metric": 0.0002,
+        },
         "tactic::foreign::001": {
             "id": "tactic::foreign::001",
             "type": "SOP",
@@ -142,6 +156,72 @@ def test_transfer_host_gate_precedes_legacy_end2end_controller():
     assert pack["memory_transfer"]["host_decision"]["reason"] == (
         "different_task_same_explicit_type"
     )
+
+
+def test_independent_target_novel_never_enters_source_end2end_controller():
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    class ForbiddenEnd2EndController:
+        def retrieve(self, *_args, **_kwargs):
+            raise AssertionError("source End2End retrieval must not run for target Novel")
+
+    layer = StageAwareHybridMemoryLayer.__new__(StageAwareHybridMemoryLayer)
+    layer.nodes = _nodes()
+    layer.cross_task_transfer_policy = _policy()
+    layer.end2end_controller = ForbiddenEnd2EndController()
+    layer.prospective_audit_logger = None
+    layer.retrieval_control = "dynamic_agentic"
+    layer._trace_local = threading.local()
+    layer._last_agentic_pack = {}
+
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="uci-one-hundred-leaves",
+        task_desc="100-class leaf descriptors",
+        query_parts=["independent target hypothesis"],
+        draft_role="novel_exploration",
+    )
+
+    assert text == ""
+    assert refs == []
+    pack = layer.current_navigation_pack()
+    assert pack["schema"] == "stage_hybrid_role_policy_abstention_v1"
+    assert pack["draft_role"] == "novel_exploration"
+    assert pack["role_policy_abstention"]["reason"] == (
+        "cross_task_transfer_independent_target_no_source_memory"
+    )
+
+
+def test_transfer_debug_uses_score_free_l3_projection_before_legacy_controller():
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    class ForbiddenEnd2EndController:
+        def retrieve(self, *_args, **_kwargs):
+            raise AssertionError("legacy End2End retrieval must not run for transfer Debug")
+
+    layer = StageAwareHybridMemoryLayer.__new__(StageAwareHybridMemoryLayer)
+    layer.nodes = _nodes()
+    layer.cross_task_transfer_policy = _policy()
+    layer.end2end_controller = ForbiddenEnd2EndController()
+    layer.prospective_audit_logger = None
+    layer._trace_local = threading.local()
+    layer._last_agentic_pack = {}
+
+    text, refs = layer.retrieve_for_node(
+        stage="debug",
+        task_id="uci-one-hundred-leaves",
+        task_desc="100-class leaf descriptors",
+        query_parts=["ClassOrderMismatch"],
+        draft_role="memory_transfer",
+    )
+
+    assert refs == ["repair::leaf::001"]
+    assert "Align probability columns" in text
+    assert "0.0002" not in text
+    assert "source repair code must not transfer" not in text
+    pack = layer.current_navigation_pack()
+    assert pack["stage_route"]["stage"] == "debug"
+    assert pack["memory_transfer"]["source_score_inheritance_allowed"] is False
 
 
 def test_adoption_trace_accepts_list_shaped_transfer_candidate_pool():

@@ -1,0 +1,16 @@
+{
+  "attempt": "attempt-000",
+  "candidate_execution_started": false,
+  "completed_steps": 1,
+  "error": "Evidence Resolver task identity mismatch: capsule=leaf-classification query=uci-one-hundred-leaves",
+  "failure_class": "cross_task_independent_novel_source_memory_leak",
+  "logical_run_id": "e2e-smoke-uci100-cross-task-transfer-gpt56sol-v147-r6__uci-one-hundred-leaves__dynamic_cross_task_transfer__attempt-000",
+  "pod_name": "mlevolve-uci100-gpt56sol-v147-transfer-smoke-r6-dev",
+  "pod_uid": "6ffe637e-d7f7-4b89-8653-127698a4fd97",
+  "preservation": "The r6 runtime, public data, output, logs, candidate checkpoint, and attempt identity remain on the PVC and must not be reused.",
+  "root_cause": "The cross-task Host gate intercepted memory_transfer but allowed novel_exploration to fall through to the globally configured legacy End2End Search/Judge/Resolver. The Judge selected a source-task L2 tactic, then the exact-task Evidence Resolver correctly rejected that capsule for the distinct target task.",
+  "schema": "mlevolve_cross_task_novel_isolation_failure_v1",
+  "solver_started": true,
+  "training_candidate_executed": false,
+  "wrapper_exit": "fixed-role fail-closed after Novel retrieval failure; Transfer code generation was deferred and never executed"
+}

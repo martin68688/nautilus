@@ -30,6 +30,7 @@ from agents.memory.atomic_claim_memory import (
 from agents.memory.cross_task_transfer import (
     CrossTaskTransferPolicy,
     build_transfer_pack,
+    decide_transfer,
 )
 from agents.memory.sop_visibility_gateway import SOPVisibilityGateway
 from authority.domain_scope import (
@@ -6572,31 +6573,42 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         canonical_stage = STAGE_ALIASES.get(stage, stage)
         # Cross-task transfer is a Host activation boundary, not another
         # retrieval strategy inside the legacy End2End controller.  Evaluate
-        # it before that controller so an enabled memory_transfer Draft cannot
-        # leak into the ordinary multi-granular Search/Judge path.
-        if (
-            canonical_stage == "draft"
-            and draft_role == "memory_transfer"
-            and self.cross_task_transfer_policy.enabled
-        ):
-            query_text = "\n".join([task_desc or "", *(query_parts or [])])
-            pack = build_transfer_pack(
-                self.nodes,
-                self.cross_task_transfer_policy,
-                target_task_id=task_id,
-                stage=canonical_stage,
-                task_description=task_desc,
-                query_text=query_text,
-            )
-            self._last_agentic_pack = pack
-            self._trace_local.pack = pack
-            if self.prospective_audit_logger is not None:
-                self.prospective_audit_logger.record_run_candidates(
-                    pack, self.nodes
+        # it before that controller.  Once the Host activates a different-task
+        # same-type transfer, the source graph has exactly one legal route:
+        # score/code-free projection for the memory_transfer lineage.  The
+        # independent target Novel/Fusion lineages must see no source memory,
+        # even when the legacy End2End controller is configured globally.
+        transfer_decision = decide_transfer(
+            self.cross_task_transfer_policy,
+            target_task_id=task_id,
+        )
+        if transfer_decision.active:
+            if draft_role == "memory_transfer":
+                query_text = "\n".join([task_desc or "", *(query_parts or [])])
+                pack = build_transfer_pack(
+                    self.nodes,
+                    self.cross_task_transfer_policy,
+                    target_task_id=task_id,
+                    stage=canonical_stage,
+                    task_description=task_desc,
+                    query_text=query_text,
                 )
-            text = str(pack.get("prompt_text") or "")
-            refs = list(pack.get("final_prompt_candidate_ids") or [])
-            return text, self._prompt_visible_refs(text, refs)
+                self._last_agentic_pack = pack
+                self._trace_local.pack = pack
+                if self.prospective_audit_logger is not None:
+                    self.prospective_audit_logger.record_run_candidates(
+                        pack, self.nodes
+                    )
+                text = str(pack.get("prompt_text") or "")
+                refs = list(pack.get("final_prompt_candidate_ids") or [])
+                return text, self._prompt_visible_refs(text, refs)
+            self._record_role_policy_abstention(
+                stage=stage,
+                task_id=task_id,
+                draft_role=draft_role,
+                reason="cross_task_transfer_independent_target_no_source_memory",
+            )
+            return "", []
         if self.end2end_controller is not None:
             return self._retrieve_end2end_for_node(
                 stage=stage,
