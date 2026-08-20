@@ -1,0 +1,10 @@
+# v147-r4 disables the inherited legacy cold-start guidance path.  Only the
+# explicit memory_transfer role may receive the score-free cross-task pack;
+# the independent Novel role no longer receives a global pre-draft Leaf pack.
+extends: ../systems_v147_transfer_smoke_r3/dynamic_cross_task_transfer.yaml
+
+coldstart:
+  use_coldstart: false
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_score_free_transfer_v147_smoke_r4

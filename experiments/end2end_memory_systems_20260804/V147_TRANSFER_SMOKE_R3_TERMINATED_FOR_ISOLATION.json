@@ -1,0 +1,15 @@
+{
+  "attempt": "attempt-000",
+  "candidate_execution_started": false,
+  "error": "Inherited coldstart.use_coldstart=true exposed a global Leaf RunForest guidance pack before role-scoped transfer routing.",
+  "failure_class": "cross_task_isolation_configuration",
+  "logical_run_id": "e2e-smoke-uci100-cross-task-transfer-gpt56sol-v147-r3__uci-one-hundred-leaves__dynamic_cross_task_transfer__attempt-000",
+  "pod_name": "mlevolve-uci100-gpt56sol-v147-transfer-smoke-r3-dev",
+  "pod_uid": "1c384348-af02-4804-89a8-f1a320f9eddb",
+  "preservation": "Pod, runtime, data, output, logs, RUN_OUTCOME, and attempt identity are retained and must not be reused.",
+  "root_cause": "The two-role transfer overlay replaced draft roles but did not disable the legacy pre-role cold-start guidance path. That path selected source-task RunForest references and made them available to non-coldstart drafts, contaminating the independent target Novel control.",
+  "schema": "mlevolve_terminated_for_isolation_fix_v1",
+  "solver_started": true,
+  "training_candidate_executed": false,
+  "wrapper_termination": "SIGTERM after the first memory_transfer draft request began and before any candidate code was executed"
+}
