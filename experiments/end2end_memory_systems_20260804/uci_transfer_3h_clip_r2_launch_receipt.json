@@ -1,0 +1,59 @@
+{
+  "checkpoint": "b854b812934fb7d0a1a0ecb9f97b69325754f209",
+  "credential_secret": "cliproxyapi-haoming-client",
+  "endpoint": "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1",
+  "endpoint_preflight_passed": true,
+  "failed_attempts_preserved": [
+    {
+      "attempt": "/workspace/experiment-end2end-uci100-transfer-v147-3h-clip-r1/runs/attempt-000",
+      "reason": "private endpoint rejected the historical top-level named-tool wire shape",
+      "variant": "v147"
+    },
+    {
+      "attempt": "/workspace/experiment-end2end-uci100-dynamic-transfer-v149-3h-clip-r1/runs/attempt-000",
+      "reason": "private endpoint rejected the historical top-level named-tool wire shape",
+      "variant": "v149"
+    }
+  ],
+  "model": "gpt-5.6-sol",
+  "preserve_all_prior_tasks_pods_outputs_checkpoints": true,
+  "schema": "uci100_cross_task_transfer_three_hour_clip_r2_launch_v1",
+  "status": "running_verified",
+  "structured_endpoint_call_passed": true,
+  "tool_choice_wire_shape": {
+    "function": {
+      "name": "<tool-name>"
+    },
+    "type": "function"
+  },
+  "variants": {
+    "v147": {
+      "attempt_root": "/workspace/experiment-end2end-uci100-transfer-v147-3h-clip-r2/runs/attempt-001",
+      "expected_budget_end_utc": "2026-08-20T22:23:52Z",
+      "launched_at_utc": "2026-08-20T19:23:52Z",
+      "logical_run_id": "e2e-uci100-v147-3h-clip-r2__uci-one-hundred-leaves__dynamic_cross_task_transfer__attempt-001",
+      "pod_active_deadline_utc": "2026-08-20T22:50:51Z",
+      "pod_name": "mlevolve-uci100-v147-3h-clip-r1-dev",
+      "pod_uid": "96104342-97bb-43c9-8d65-863db7abe480",
+      "process_id": 950,
+      "runtime": "/workspace/nautilus-exp-end2end-agent-v147-transfer-3h-clip-r2",
+      "source_lock_hash": "b571c9c32933e168524bd4bb1cc8e5743c5246111890fd9974a744872547d641",
+      "step_ceiling": 2147483647,
+      "time_limit_seconds": 10800
+    },
+    "v149": {
+      "attempt_root": "/workspace/experiment-end2end-uci100-dynamic-transfer-v149-3h-clip-r2/runs/attempt-001",
+      "expected_budget_end_utc": "2026-08-20T22:23:52Z",
+      "launched_at_utc": "2026-08-20T19:23:52Z",
+      "logical_run_id": "e2e-uci100-v149-3h-clip-r2__uci-one-hundred-leaves__dynamic_cross_task_transfer__attempt-001",
+      "pod_active_deadline_utc": "2026-08-20T22:57:11Z",
+      "pod_name": "mlevolve-uci100-v149-3h-clip-r1-dev",
+      "pod_uid": "91137d2a-4f22-4ad6-b600-2d95f20160f2",
+      "process_id": 359,
+      "runtime": "/workspace/nautilus-exp-end2end-agent-v149-dynamic-transfer-3h-clip-r2",
+      "source_lock_hash": "a184f64345c19b9c80aaeb7d85f672470c73c86f5d2654da0fc81efacba002df",
+      "step_ceiling": 2147483647,
+      "time_limit_seconds": 10800
+    }
+  }
+}
