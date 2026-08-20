@@ -1,0 +1,105 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "annotations": {
+      "mlevolve.ai/manifest-sha256": "9d315bb300c858bae4250ba7c6f7f2e3a76366a7c1ceb9706f29c2bdd1249456",
+      "mlevolve.ai/purpose": "sixteen-step-two-role-one-fusion-equal-branch-smoke",
+      "mlevolve.ai/runtime-source-lock-sha256": "74941a417b69c651e43ff1b312269f2dcb9eed83a596e3f87d848acd247d604e"
+    },
+    "labels": {
+      "app": "mlevolve-end2end-dev",
+      "app.kubernetes.io/managed-by": "codex-nrp-training",
+      "ecepxie.nrp/owner": "haoming",
+      "experiment": "experiment-end2end-memory-agent-v146-smoke16",
+      "mlevolve.ai/release-mode": "smoke",
+      "mlevolve.ai/system": "dynamic_hybrid"
+    },
+    "name": "mlevolve-leaf-gpt56sol-v146-smoke16-dev",
+    "namespace": "ecepxie"
+  },
+  "spec": {
+    "containers": [
+      {
+        "args": [
+          "exec sleep infinity"
+        ],
+        "command": [
+          "/bin/bash",
+          "-lc"
+        ],
+        "env": [
+          {
+            "name": "PYTHONUNBUFFERED",
+            "value": "1"
+          },
+          {
+            "name": "PYTHONDONTWRITEBYTECODE",
+            "value": "1"
+          },
+          {
+            "name": "PYTHONPATH",
+            "value": "/workspace/nautilus-exp-end2end-agent-v146-smoke16/mlevolve:/workspace/nautilus-exp-end2end-agent-v146-smoke16"
+          }
+        ],
+        "envFrom": [
+          {
+            "secretRef": {
+              "name": "mlevolve-openai-gpt56sol-v1"
+            }
+          }
+        ],
+        "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+        "imagePullPolicy": "IfNotPresent",
+        "name": "dev",
+        "resources": {
+          "limits": {
+            "cpu": "16",
+            "ephemeral-storage": "64Gi",
+            "memory": "32Gi",
+            "nvidia.com/a100": "1"
+          },
+          "requests": {
+            "cpu": "16",
+            "ephemeral-storage": "64Gi",
+            "memory": "32Gi",
+            "nvidia.com/a100": "1"
+          }
+        },
+        "volumeMounts": [
+          {
+            "mountPath": "/workspace",
+            "name": "workspace"
+          },
+          {
+            "mountPath": "/dev/shm",
+            "name": "shm"
+          }
+        ]
+      }
+    ],
+    "restartPolicy": "Never",
+    "terminationGracePeriodSeconds": 180,
+    "tolerations": [
+      {
+        "key": "nvidia.com/gpu",
+        "operator": "Exists"
+      }
+    ],
+    "volumes": [
+      {
+        "name": "workspace",
+        "persistentVolumeClaim": {
+          "claimName": "haoming-storage"
+        }
+      },
+      {
+        "emptyDir": {
+          "medium": "Memory",
+          "sizeLimit": "16Gi"
+        },
+        "name": "shm"
+      }
+    ]
+  }
+}

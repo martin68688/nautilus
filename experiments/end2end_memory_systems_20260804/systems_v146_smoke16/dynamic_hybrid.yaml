@@ -1,0 +1,13 @@
+# v146 changes only post-coverage branch resource allocation.
+# Replay, independent Novel and first Fusion receive equal attempt depth.
+extends: ../systems_v145_smoke16/dynamic_hybrid.yaml
+
+agent:
+  max_fusion_drafts: 1
+  fusion_vs_evolution_prob: 0.0
+  draft_role_policy:
+    equal_branch_allocation_after_coverage: true
+    single_coverage_synthesis_only: true
+
+run_identity:
+  memory_version: leaf_llm_redistilled_v10_r8_dynamic_replay_novel_fusion_equal_branch_v146_smoke16
