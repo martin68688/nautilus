@@ -1,0 +1,11 @@
+{
+  "schema": "mlevolve_preserved_prelaunch_failure_v1",
+  "release": "v147-transfer-smoke-r7",
+  "pod_name": "mlevolve-uci100-gpt56sol-v147-transfer-smoke-r6-dev",
+  "pod_uid": "6ffe637e-d7f7-4b89-8653-127698a4fd97",
+  "output": "/workspace/experiment-end2end-uci100-transfer-v147-r7/runs/attempt-000",
+  "wrapper_pid": 537,
+  "entered_training": false,
+  "failure": "python entrypoint was addressed as runtime/run.py, but the frozen runtime entrypoint is runtime/mlevolve/run.py",
+  "preservation": "r7 identity and output are retained and must not be reused"
+}

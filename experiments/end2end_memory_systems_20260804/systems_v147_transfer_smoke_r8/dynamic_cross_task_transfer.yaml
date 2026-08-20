@@ -1,0 +1,7 @@
+# v147-r8 preserves the r7 cross-task isolation fix under a fresh run identity.
+# The only operational correction is launching mlevolve/run.py from the frozen
+# runtime rather than addressing a nonexistent runtime-root run.py.
+extends: ../systems_v147_transfer_smoke_r7/dynamic_cross_task_transfer.yaml
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_score_free_transfer_v147_smoke_r8
