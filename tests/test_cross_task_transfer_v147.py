@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from types import SimpleNamespace
 
 import pytest
@@ -108,6 +109,38 @@ def test_projection_exposes_portable_l2_but_never_recipe_code_or_source_score():
         row["source_score_inherited"] is False
         and row["source_code_exposed"] is False
         for row in pack["candidate_pool"]
+    )
+
+
+def test_transfer_host_gate_precedes_legacy_end2end_controller():
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    class ForbiddenEnd2EndController:
+        def retrieve(self, *_args, **_kwargs):
+            raise AssertionError("legacy End2End retrieval must not run for transfer")
+
+    layer = StageAwareHybridMemoryLayer.__new__(StageAwareHybridMemoryLayer)
+    layer.nodes = _nodes()
+    layer.cross_task_transfer_policy = _policy()
+    layer.end2end_controller = ForbiddenEnd2EndController()
+    layer.prospective_audit_logger = None
+    layer._trace_local = threading.local()
+    layer._last_agentic_pack = {}
+
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="uci-one-hundred-leaves",
+        task_desc="100-class leaf descriptors",
+        query_parts=["complete OOF validation"],
+        draft_role="memory_transfer",
+    )
+
+    assert refs == ["tactic::leaf::001"]
+    assert "Complete OOF coverage" in text
+    pack = layer.current_navigation_pack()
+    assert pack["stage_route"]["control"] == "dynamic_cross_task_transfer"
+    assert pack["memory_transfer"]["host_decision"]["reason"] == (
+        "different_task_same_explicit_type"
     )
 
 

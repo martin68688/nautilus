@@ -1,0 +1,6 @@
+# v147-r5 contains the Host-routing fix that evaluates the cross-task
+# transfer activation boundary before the inherited End2End controller.
+extends: ../systems_v147_transfer_smoke_r4/dynamic_cross_task_transfer.yaml
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_score_free_transfer_v147_smoke_r5

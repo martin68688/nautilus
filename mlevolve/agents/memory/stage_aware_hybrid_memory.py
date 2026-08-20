@@ -6569,6 +6569,34 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         active_protocol: ProtocolRef | str | None = None,
     ) -> tuple[str, list[str]]:
         self._begin_navigation_request()
+        canonical_stage = STAGE_ALIASES.get(stage, stage)
+        # Cross-task transfer is a Host activation boundary, not another
+        # retrieval strategy inside the legacy End2End controller.  Evaluate
+        # it before that controller so an enabled memory_transfer Draft cannot
+        # leak into the ordinary multi-granular Search/Judge path.
+        if (
+            canonical_stage == "draft"
+            and draft_role == "memory_transfer"
+            and self.cross_task_transfer_policy.enabled
+        ):
+            query_text = "\n".join([task_desc or "", *(query_parts or [])])
+            pack = build_transfer_pack(
+                self.nodes,
+                self.cross_task_transfer_policy,
+                target_task_id=task_id,
+                stage=canonical_stage,
+                task_description=task_desc,
+                query_text=query_text,
+            )
+            self._last_agentic_pack = pack
+            self._trace_local.pack = pack
+            if self.prospective_audit_logger is not None:
+                self.prospective_audit_logger.record_run_candidates(
+                    pack, self.nodes
+                )
+            text = str(pack.get("prompt_text") or "")
+            refs = list(pack.get("final_prompt_candidate_ids") or [])
+            return text, self._prompt_visible_refs(text, refs)
         if self.end2end_controller is not None:
             return self._retrieve_end2end_for_node(
                 stage=stage,
@@ -6617,7 +6645,6 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 "memory_snapshot_bound_but_not_exposed": True,
             }
             return "", []
-        canonical_stage = STAGE_ALIASES.get(stage, stage)
         if not self.stage_enabled(stage):
             self._record_role_policy_abstention(
                 stage=stage,
@@ -6641,24 +6668,6 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             return "", []
         if self.retrieval_control == "layered_strategy" and stage == "draft":
             if draft_role == "memory_transfer":
-                if self.cross_task_transfer_policy.enabled:
-                    pack = build_transfer_pack(
-                        self.nodes,
-                        self.cross_task_transfer_policy,
-                        target_task_id=task_id,
-                        stage=stage,
-                        task_description=task_desc,
-                        query_text=query_text,
-                    )
-                    self._last_agentic_pack = pack
-                    self._trace_local.pack = pack
-                    if self.prospective_audit_logger is not None:
-                        self.prospective_audit_logger.record_run_candidates(
-                            pack, self.nodes
-                        )
-                    text = str(pack.get("prompt_text") or "")
-                    refs = list(pack.get("final_prompt_candidate_ids") or [])
-                    return text, self._prompt_visible_refs(text, refs)
                 pack = self._hybrid_pack(
                     stage=stage,
                     task_id=task_id,

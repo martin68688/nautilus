@@ -1,0 +1,15 @@
+{
+  "attempt": "attempt-000",
+  "candidate_execution_started": false,
+  "error": "Enabled memory_transfer was intercepted by the inherited End2End controller before the cross-task Host gate.",
+  "failure_class": "cross_task_route_precedence",
+  "logical_run_id": "e2e-smoke-uci100-cross-task-transfer-gpt56sol-v147-r4__uci-one-hundred-leaves__dynamic_cross_task_transfer__attempt-000",
+  "pod_name": "mlevolve-uci100-gpt56sol-v147-transfer-smoke-r4-dev",
+  "pod_uid": "7220488f-73ca-4b94-9e82-38c7be4449e0",
+  "preservation": "Pod, runtime, data, output, logs, RUN_OUTCOME, and attempt identity are retained and must not be reused.",
+  "root_cause": "StageAwareHybridMemoryLayer.retrieve_for_node returned through end2end_controller before checking the memory_transfer role. The actual run therefore opened the legacy five-granularity Search Agent instead of constructing the deterministic score-free transfer pack.",
+  "schema": "mlevolve_terminated_for_routing_fix_v1",
+  "solver_started": true,
+  "training_candidate_executed": false,
+  "wrapper_termination": "SIGTERM during the legacy retrieval request and before candidate code execution"
+}
