@@ -1,0 +1,20 @@
+# v145 changes only the protected two-role Fusion generation contract.
+# Replay and Novel complete source programs are visible to free Fusion.
+extends: ../systems_v143_full_r2/dynamic_hybrid.yaml
+
+agent:
+  initial_drafts: 2
+  branch_fusion_trigger_prob: 1.0
+  search:
+    num_drafts: 2
+  draft_role_policy:
+    roles:
+      - memory_reproduction
+      - novel_exploration
+    ensure_valid_candidate_per_role: true
+    role_balance_min_valid_candidates: 1
+    cross_role_synthesis_after_balance: true
+    cross_role_synthesis_on_coverage: true
+
+run_identity:
+  memory_version: leaf_llm_redistilled_v10_r8_dynamic_replay_novel_parent_code_fusion_v145_smoke16

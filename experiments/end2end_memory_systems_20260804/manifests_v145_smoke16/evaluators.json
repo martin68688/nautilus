@@ -1,0 +1,20 @@
+{
+  "aggregate_binding_hash": "668896c08bd1c748ccb5a89220312daccae19ef4ad066db642518f00b9d67e47",
+  "aggregate_binding_path": "/workspace/experiment-c-formal-releases-r3/FORMAL_RELEASE_BINDING.json",
+  "failed_terminal_score": null,
+  "formal_releases_root": "/workspace/experiment-end2end-leaf-official-evaluator-v145-smoke16",
+  "manifest_hash": "a933e1454c0b79f6b9600572e9d9e92cc36f9f4fa94457da94ec93013b2b5711",
+  "reuse_scope": "task data and evaluator assets only; no Exp-C source/config/system manifest",
+  "schema": "mlevolve_end2end_evaluator_manifest_v1",
+  "tasks": {
+    "leaf-classification": {
+      "direction": "minimize",
+      "metric": "log_loss",
+      "release_root": "/workspace/experiment-end2end-leaf-official-evaluator-v145-smoke16/leaf-classification/release",
+      "runtime_spec": "RUNTIME_SPEC.json",
+      "terminal_evaluator_spec": "deferred official Kaggle v1",
+      "terminal_metric": "log_loss"
+    }
+  },
+  "timing": "after Agent exit; candidate-set receipts are observational only"
+}
