@@ -1,0 +1,13 @@
+{
+  "attempt": "attempt-000",
+  "candidate_execution_started": false,
+  "error": "FileNotFoundError: Run identity memory graph not found",
+  "failure_class": "prelaunch_configuration",
+  "logical_run_id": "e2e-smoke-uci100-cross-task-transfer-gpt56sol-v147-r2__uci-one-hundred-leaves__dynamic_cross_task_transfer__attempt-000",
+  "pod_name": "mlevolve-uci100-gpt56sol-v147-transfer-smoke-r2-dev",
+  "pod_uid": "83ddfc0c-1e78-41b8-a28e-11e43313b80a",
+  "preservation": "Pod, runtime, data, output, wrapper log, and attempt identity are retained and must not be reused.",
+  "root_cause": "The transfer overlay enabled memory but inherited empty legacy graph_path/index_path values. Path resolution treated the empty graph_path as the runtime mlevolve directory and run identity validation failed closed before workspace creation.",
+  "schema": "mlevolve_prelaunch_failure_v1",
+  "solver_started": false
+}

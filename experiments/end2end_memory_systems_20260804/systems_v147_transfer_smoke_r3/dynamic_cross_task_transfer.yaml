@@ -1,0 +1,11 @@
+# v147-r3 fixes only the immutable source-memory identity used by the
+# cross-task transfer smoke.  The transfer/router/training semantics inherit
+# v147-r2 unchanged.
+extends: ../systems_v147_transfer_smoke/dynamic_cross_task_transfer.yaml
+
+external_skill_memory:
+  graph_path: /workspace/experiment-end2end-memory-agent-v143-r2/memory-leaf-llm-redistilled-v10-r8/leaf-classification/bundles/v10-r8-leaf-llm-redistilled-20260820/runforest/graph.json
+  index_path: /workspace/experiment-end2end-memory-agent-v143-r2/memory-leaf-llm-redistilled-v10-r8/leaf-classification/bundles/v10-r8-leaf-llm-redistilled-20260820/runforest/index.npz
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_score_free_transfer_v147_smoke_r3
