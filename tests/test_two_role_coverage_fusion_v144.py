@@ -194,3 +194,97 @@ def test_coverage_aggregation_selects_best_exact_replay_and_independent_novel(
     representatives = aggregation_agent._collect_branch_representatives(agent)
 
     assert [node.id for node in representatives] == ["replay", "independent"]
+
+
+def test_coverage_fusion_prompt_includes_both_parent_programs_without_fresh_rewrite(
+    monkeypatch,
+):
+    from agents import adoption, aggregation_agent
+
+    replay = _node("replay", "memory_reproduction", 0.001)
+    replay.code = "print('executed replay source')\n"
+    replay.branch_id = 1
+    novel = _node("novel", "novel_exploration", 0.008)
+    novel.code = "print('executed novel source')\n"
+    novel.branch_id = 2
+    root = SearchNode(
+        id="root",
+        code="",
+        plan="root",
+        parent=None,
+        stage="root",
+    )
+    agent = SimpleNamespace(
+        acfg=SimpleNamespace(
+            code=SimpleNamespace(model="test-model"),
+            draft_role_policy=_two_role_policy(),
+        ),
+        virtual_root=root,
+        is_root=lambda node: node is root,
+        fusion_draft_count=0,
+        max_fusion_drafts=1,
+        task_desc="task",
+        data_preview="preview",
+    )
+    captured = {}
+
+    monkeypatch.setattr(
+        aggregation_agent,
+        "cross_role_synthesis_allowed",
+        lambda *_a, **_k: True,
+    )
+    monkeypatch.setattr(
+        aggregation_agent,
+        "_collect_branch_representatives",
+        lambda _agent: [replay, novel],
+    )
+    monkeypatch.setattr(
+        aggregation_agent,
+        "fetch_external_skill_memory",
+        lambda *_a, **_k: ("", [], ""),
+    )
+    monkeypatch.setattr(
+        aggregation_agent,
+        "get_impl_guideline_from_agent",
+        lambda _agent: {},
+    )
+    monkeypatch.setattr(
+        aggregation_agent,
+        "build_chat_prompt_for_model",
+        lambda model, system, user, assistant: {
+            "model": model,
+            "system": system,
+            "user": user,
+            "assistant": assistant,
+        },
+    )
+
+    def _capture_plan_and_code(_agent, prompt):
+        captured.update(prompt)
+        return "fusion plan", "print('fusion')\n"
+
+    monkeypatch.setattr(
+        aggregation_agent,
+        "plan_and_code_query",
+        _capture_plan_and_code,
+    )
+    monkeypatch.setattr(aggregation_agent, "register_node", lambda *_a, **_k: None)
+    monkeypatch.setattr(adoption, "log_adoption", lambda *_a, **_k: None)
+
+    result = aggregation_agent.run(agent, mode="node", parent_node=root)
+
+    prompt_text = "\n".join(
+        str(captured[key]) for key in ("system", "user", "assistant")
+    )
+    assert "print('executed replay source')" in prompt_text
+    assert "print('executed novel source')" in prompt_text
+    assert "role=memory_reproduction" in prompt_text
+    assert "role=novel_exploration" in prompt_text
+    assert "completely NEW" not in prompt_text
+    assert "FRESH NEW" not in prompt_text
+    assert "no non-degradation requirement" in prompt_text
+    assert "substitute an unrelated third method" in prompt_text
+    assert result is not None
+    assert result.stage == "fusion_draft"
+    assert result.role_contract["behavioral_role"] == "cross_role_synthesis"
+    assert result.source_ref_ids == ["replay", "novel"]

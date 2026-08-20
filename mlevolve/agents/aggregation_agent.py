@@ -14,13 +14,21 @@ from agents.triggers import register_node
 logger = logging.getLogger("MLEvolve")
 
 
-def _collect_branch_representatives(agent) -> List[SearchNode]:
+def _coverage_fusion_enabled(agent) -> bool:
+    """Whether this aggregation is the protected two-role Fusion milestone."""
+
     policy = getattr(getattr(agent, "acfg", None), "draft_role_policy", None)
-    coverage_mode = bool(
+    return bool(
         policy is not None
         and getattr(policy, "enabled", False)
+        and getattr(policy, "cross_role_synthesis_after_balance", False)
         and getattr(policy, "cross_role_synthesis_on_coverage", False)
     )
+
+
+def _collect_branch_representatives(agent) -> List[SearchNode]:
+    policy = getattr(getattr(agent, "acfg", None), "draft_role_policy", None)
+    coverage_mode = _coverage_fusion_enabled(agent)
     if coverage_mode:
         from agents.leakage_audit import legacy_rank_eligible
         from authority.adapters.mlevolve.ranking_gate import (
@@ -177,23 +185,42 @@ def run(
         logger.info("Not enough successful branches for aggregation")
         return None
 
-    introduction = (
-        "You are a Kaggle grandmaster attending a competition. "
-        "You are provided with multiple successful solutions from different independent branches below. "
-        "Your task is to synthesize these diverse approaches and create a completely NEW solution "
-        "that draws inspiration from their strengths. "
-        "This is a fresh start to spark new ideas by combining insights from different successful directions."
-    )
+    coverage_fusion = _coverage_fusion_enabled(agent)
+    if coverage_fusion:
+        introduction = (
+            "You are a Kaggle grandmaster attending a competition. "
+            "You are provided with the complete executed source programs and results from the best "
+            "authorized Replay and independent Novel branches. "
+            "Create an independent cross-role Fusion implementation by inspecting both programs and "
+            "freely combining, adapting, refactoring, or selectively replacing their compatible components. "
+            "The Fusion branch is exploratory: it may outperform or underperform either parent, and it is "
+            "not required to preserve Replay performance."
+        )
+    else:
+        introduction = (
+            "You are a Kaggle grandmaster attending a competition. "
+            "You are provided with multiple successful solutions from different independent branches below. "
+            "Your task is to synthesize these diverse approaches and create a completely NEW solution "
+            "that draws inspiration from their strengths. "
+            "This is a fresh start to spark new ideas by combining insights from different successful directions."
+        )
 
     reference_summaries = []
     if mode == "node":
         for i, node in enumerate(branch_representatives):
-            trajectory = node.generate_node_trajectory(need_code=False)
+            trajectory = node.generate_node_trajectory(need_code=coverage_fusion)
             branch_id = node.branch_id if hasattr(node, "branch_id") else i + 1
             metric_val = node.metric.value if node.metric else 0
-            branch_info = (
-                f"**Branch {branch_id} Best Solution** (Metric: {metric_val:.4f}):\n{trajectory}"
-            )
+            if coverage_fusion:
+                role = str(getattr(node, "draft_role", "") or "unknown")
+                branch_info = (
+                    f"**Fusion Parent {i + 1}: role={role}, branch={branch_id}, "
+                    f"node={node.id}, metric={metric_val:.12g}**\n{trajectory}"
+                )
+            else:
+                branch_info = (
+                    f"**Branch {branch_id} Best Solution** (Metric: {metric_val:.4f}):\n{trajectory}"
+                )
             reference_summaries.append(branch_info)
     elif mode == "trajectory":
         for i, node in enumerate(branch_representatives):
@@ -226,7 +253,19 @@ def run(
 
     prompt["Instructions"] |= prompt_resp_fmt()
 
-    if mode == "node":
+    if mode == "node" and coverage_fusion:
+        prompt["Instructions"] |= {
+            "Protected cross-role Fusion guideline": [
+                "- The complete executed source code for both parent branches is included above; inspect it directly rather than relying only on prose summaries.",
+                "- Build one independent Fusion candidate that concretely uses compatible strengths from both Replay and Novel.",
+                "- You may copy, adapt, refactor, combine, or discard incompatible components from either parent; there is no non-degradation requirement and no requirement to preserve Replay performance.",
+                "- Do not ignore the parent implementations and substitute an unrelated third method merely to appear novel.",
+                "- In the plan, identify the specific code-level elements taken or adapted from each parent and explain their compatibility.",
+                "- The Fusion candidate must remain a single self-contained runnable Python script and must satisfy the same validation and official-submission contract.",
+                "- Do not suggest to do EDA.",
+            ],
+        }
+    elif mode == "node":
         prompt["Instructions"] |= {
             "Multi-branch aggregation guideline (Node Mode)": [
                 "- You are provided with the BEST solutions from different independent branches.",
@@ -270,13 +309,22 @@ def run(
     instructions += compile_prompt_to_md(prompt["Instructions"], 2)
 
     data_preview = getattr(agent, "data_preview", "") or ""
-    assistant_prefix = (
-        "Let me approach this systematically.\n"
-        f"First, I'll examine the dataset:\n{data_preview}\n"
-        "I have access to multiple successful approaches from different independent branches. "
-        "I'll synthesize these diverse insights and create a completely new solution "
-        "that combines the best ideas in an innovative way."
-    )
+    if coverage_fusion:
+        assistant_prefix = (
+            "Let me approach this systematically.\n"
+            f"First, I'll examine the dataset:\n{data_preview}\n"
+            "I have the complete executed code and results from the Replay and Novel parents. "
+            "I'll inspect both implementations and build an independent Fusion candidate by "
+            "combining compatible code-level strengths while freely resolving conflicts."
+        )
+    else:
+        assistant_prefix = (
+            "Let me approach this systematically.\n"
+            f"First, I'll examine the dataset:\n{data_preview}\n"
+            "I have access to multiple successful approaches from different independent branches. "
+            "I'll synthesize these diverse insights and create a completely new solution "
+            "that combines the best ideas in an innovative way."
+        )
 
     external_skill_section = ""
     if prompt.get("External Skill Memory", "").strip():
