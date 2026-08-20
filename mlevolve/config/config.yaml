@@ -114,6 +114,8 @@ agent:
     replay_targets_path: ""
     replay_runs_root: ""
     cross_role_synthesis_on_coverage: False
+    equal_branch_allocation_after_coverage: False
+    single_coverage_synthesis_only: False
 
   # Optional host-enforced feasibility boundary for paired online experiments.
   # It is inert by default and must be identical across paired conditions.

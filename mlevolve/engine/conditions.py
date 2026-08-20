@@ -30,6 +30,16 @@ def cross_role_synthesis_allowed(agent, *, component: str) -> bool:
 
     if not cross_role_synthesis_enabled(agent):
         return True
+    policy = getattr(getattr(agent, "acfg", None), "draft_role_policy", None)
+    if bool(
+        getattr(policy, "single_coverage_synthesis_only", False)
+        and int(getattr(agent, "fusion_draft_count", 0) or 0) >= 1
+    ):
+        logger.info(
+            "Cross-role synthesis denied in %s: protected coverage Fusion already exists",
+            component,
+        )
+        return False
     status_fn = getattr(agent, "role_balance_status", None)
     if not callable(status_fn):
         logger.error(

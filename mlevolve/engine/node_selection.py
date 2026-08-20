@@ -151,10 +151,17 @@ def get_exploration_weight(time_elapsed: float, total_time: float,
         return min_weight
 
 
-def get_top_k_nodes_global(agent, k: int, max_from_same_branch: int) -> List[dict]:
+def get_top_k_nodes_global(
+    agent,
+    k: int,
+    max_from_same_branch: int,
+    branch_ids: set[int] | None = None,
+) -> List[dict]:
     """Select top-k nodes globally with branch diversity (recomputed each call). Returns list of {node, branch_id, metric, rank}."""
     all_nodes = []
     for branch_id in agent.branch_all_nodes:
+        if branch_ids is not None and branch_id not in branch_ids:
+            continue
         for node in agent.branch_all_nodes[branch_id]:
             if (
                 not node.is_buggy
@@ -221,10 +228,14 @@ def get_top_k_nodes_global(agent, k: int, max_from_same_branch: int) -> List[dic
     return selected
 
 
-def select_from_top_k_weighted(agent, top_k_nodes: List[dict]) -> Optional[SearchNode]:
+def select_from_top_k_weighted(
+    agent,
+    top_k_nodes: List[dict],
+    fallback_root: SearchNode | None = None,
+) -> Optional[SearchNode]:
     """Weighted random choice from top-k nodes (weight = 1/rank)."""
     if not top_k_nodes:
-        return select(agent, agent.virtual_root)
+        return select(agent, fallback_root or agent.virtual_root)
 
     weights = [1.0 / item['rank'] for item in top_k_nodes]
     total_weight = sum(weights)
@@ -240,7 +251,11 @@ def select_from_top_k_weighted(agent, top_k_nodes: List[dict]) -> Optional[Searc
         component="engine.node_selection.select_from_top_k_weighted",
     ):
         remaining = [item for item in top_k_nodes if item is not selected]
-        return select_from_top_k_weighted(agent, remaining)
+        return select_from_top_k_weighted(
+            agent,
+            remaining,
+            fallback_root=fallback_root,
+        )
 
     logger.info(f"🎯 Selected: Rank{selected['rank']} (Branch {selected['branch_id']}, "
                 f"metric={selected['metric']:.4f}, prob={probabilities[top_k_nodes.index(selected)]:.1%})")
@@ -256,6 +271,12 @@ def select_with_soft_switch(agent) -> Optional[SearchNode]:
     if coverage_synthesis_due(agent):
         logger.info("[select] prioritizing protected two-role coverage synthesis")
         return select(agent, agent.virtual_root)
+
+    from engine.role_balance import build_branch_fairness_status
+
+    fairness = build_branch_fairness_status(agent)
+    if fairness.get("active"):
+        return select_branch_fair(agent, fairness)
 
     if agent.search_start_time is None:
         logger.info("📊 Search not started yet, using standard UCT")
@@ -328,6 +349,124 @@ def select_with_soft_switch(agent) -> Optional[SearchNode]:
                 return None
             uct_node._topk_triggered = True
             return uct_node
+
+
+def _branch_root(agent, root_node_id: str) -> SearchNode | None:
+    return next(
+        (
+            node
+            for node in getattr(agent.virtual_root, "children", set())
+            if str(node.id) == str(root_node_id)
+        ),
+        None,
+    )
+
+
+def _select_within_branch(
+    agent,
+    branch_root: SearchNode,
+    branch_id: int,
+) -> Optional[SearchNode]:
+    """Preserve the legacy explore/exploit policy inside one chosen branch."""
+
+    if branch_root.lock or branch_root.is_terminal or not _uct_selectable(branch_root):
+        return None
+    if agent.search_start_time is None:
+        return select(agent, branch_root)
+
+    time_elapsed = time.time() - agent.search_start_time
+    total_time = agent.acfg.time_limit
+    time_progress = time_elapsed / total_time
+    scfg = agent.scfg
+    exploration_weight = get_exploration_weight(
+        time_elapsed,
+        total_time,
+        switch_start=scfg.explore_switch_start,
+        switch_end=scfg.explore_switch_end,
+        min_weight=scfg.min_exploration_weight,
+    )
+    if random.random() < exploration_weight:
+        logger.info(
+            "[branch-fair] branch=%s internal=uct exploration_weight=%.2f%%",
+            branch_id,
+            exploration_weight * 100,
+        )
+        return select(agent, branch_root)
+
+    if time_progress < scfg.explore_switch_end:
+        k = scfg.topk_early_k
+        max_per_branch = scfg.topk_early_max_per_branch
+    else:
+        k = scfg.topk_late_k
+        max_per_branch = scfg.topk_late_max_per_branch
+    top_k_nodes = get_top_k_nodes_global(
+        agent,
+        k=k,
+        max_from_same_branch=max(k, max_per_branch),
+        branch_ids={branch_id},
+    )
+    if not top_k_nodes:
+        return select(agent, branch_root)
+    available = [
+        item
+        for item in top_k_nodes
+        if not item["node"].reached_child_limit(agent.scfg, for_topk=True)
+    ]
+    selected = select_from_top_k_weighted(
+        agent,
+        available or top_k_nodes,
+        fallback_root=branch_root,
+    )
+    if selected is None:
+        return None
+    if not available:
+        selected = select(agent, selected)
+        if selected is None:
+            return None
+    selected._topk_triggered = True
+    logger.info(
+        "[branch-fair] branch=%s internal=topk candidate=%s",
+        branch_id,
+        selected.id,
+    )
+    return selected
+
+
+def select_branch_fair(agent, fairness: dict | None = None) -> Optional[SearchNode]:
+    """Choose the least-used protected branch, then select only within it."""
+
+    if fairness is None:
+        from engine.role_balance import build_branch_fairness_status
+
+        fairness = build_branch_fairness_status(agent)
+    if not fairness.get("active"):
+        return None
+    rows = {
+        int(row["branch_id"]): row for row in fairness.get("branches", [])
+    }
+    for branch_id in fairness.get("ordered_branch_ids", []):
+        row = rows[int(branch_id)]
+        root = _branch_root(agent, row["root_node_id"])
+        if root is None:
+            continue
+        selected = _select_within_branch(agent, root, int(branch_id))
+        if selected is not None:
+            logger.info(
+                "[branch-fair] allocated=%s branch=%s attempts=%s completed=%s in_flight=%s",
+                row["name"],
+                branch_id,
+                row["attempted_count"],
+                row["completed_count"],
+                row["in_flight_count"],
+            )
+            return selected
+        logger.info(
+            "[branch-fair] temporarily unavailable=%s branch=%s debt_retained=true",
+            row["name"],
+            branch_id,
+        )
+    logger.info("[branch-fair] no protected branch is currently selectable")
+    return None
 
 
 def select_role_balance_deficit(agent, role: str) -> Optional[SearchNode]:

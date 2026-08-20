@@ -545,6 +545,13 @@ class AgentSearch:
 
         return build_role_balance_status(self)
 
+    def branch_fairness_status(self) -> dict:
+        """Return Host-owned post-coverage branch allocation state."""
+
+        from engine.role_balance import build_branch_fairness_status
+
+        return build_branch_fairness_status(self)
+
     def claim_draft_role(self, explicit_role: str | None = None) -> str:
         with self._draft_role_lock:
             draft_index = self._draft_generation_count
@@ -818,12 +825,19 @@ class AgentSearch:
         *,
         required_draft_role: str | None = None,
         excluded_draft_role: str | None = None,
+        required_branch_id: int | None = None,
     ) -> tuple[SearchNode | None, bool]:
         """Claim the oldest repair parent; report duplicate concurrent requests."""
         if required_draft_role and excluded_draft_role:
             raise ValueError("A repair claim cannot require and exclude a Draft role")
 
         def role_allowed(candidate: SearchNode) -> bool:
+            if (
+                required_branch_id is not None
+                and int(getattr(candidate, "branch_id", 0) or 0)
+                != int(required_branch_id)
+            ):
+                return False
             role = getattr(candidate, "draft_role", None)
             if required_draft_role and role != required_draft_role:
                 return False
@@ -1479,6 +1493,12 @@ class AgentSearch:
         duplicate_repair_request = False
         claimed_replay_research: tuple[SearchNode, str] | None = None
         role_balance = {"active": False, "next_role": None}
+        branch_fairness = self.branch_fairness_status()
+        fair_branch_id = (
+            branch_fairness.get("next_branch_id")
+            if branch_fairness.get("active")
+            else None
+        )
         claimed_role_balance_node = None
         # Phase 1 must still create the three declared draft roles in order.
         # Mandatory repairs take priority only once normal execution/search begins.
@@ -1494,6 +1514,7 @@ class AgentSearch:
                     node,
                     required_draft_role=mandatory_repair_role,
                     excluded_draft_role=excluded_mandatory_repair_role,
+                    required_branch_id=fair_branch_id,
                 )
             )
             if claimed_repair_parent is not None:
@@ -1558,7 +1579,20 @@ class AgentSearch:
             and init_solution_path is None
             and not preserve_explicit_runtime_debug
         ):
-            claimed_replay_research = self._claim_replay_research_target()
+            replay_branch_id = next(
+                (
+                    int(row["branch_id"])
+                    for row in branch_fairness.get("branches", [])
+                    if row.get("name") == "replay"
+                ),
+                None,
+            )
+            fair_replay_turn = bool(
+                not branch_fairness.get("active")
+                or replay_branch_id == fair_branch_id
+            )
+            if fair_replay_turn:
+                claimed_replay_research = self._claim_replay_research_target()
             if claimed_replay_research is not None:
                 node, target_id = claimed_replay_research
                 logger.info(

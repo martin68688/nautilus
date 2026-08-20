@@ -153,9 +153,17 @@ class DraftRolePolicyConfig:
     cross_role_synthesis_after_balance: bool = False
     # Dynamic two-role mode may create its first root Fusion immediately when
     # Replay and an independently originated Novel route both have valid,
-    # rankable metrics. Later Fusion attempts retain the ordinary time and
-    # stagnation policy.
+    # rankable metrics.
     cross_role_synthesis_on_coverage: bool = False
+    # Optional Dynamic-only phase-2 scheduler. After the first protected
+    # Replay+Novel Fusion exists, allocate candidate attempts to the Replay,
+    # independent Novel, and Fusion branches by least cumulative usage. Score
+    # and UCT remain responsible only for choosing work *within* that branch.
+    equal_branch_allocation_after_coverage: bool = False
+    # When enabled, the protected coverage Fusion is the run's only cross-role
+    # synthesis. Later stagnant branches use their ordinary intra-branch
+    # Evolution path instead of silently creating another Fusion.
+    single_coverage_synthesis_only: bool = False
 
 
 @dataclass
