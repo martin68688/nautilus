@@ -1,0 +1,24 @@
+{
+  "agent_steps": 8,
+  "cpu": 16,
+  "data_root": "/workspace/experiment-end2end-uci100-transfer-v147-r4/data/public",
+  "draft_roles": [
+    "memory_transfer",
+    "novel_exploration"
+  ],
+  "experiment_label": "experiment-end2end-uci100-transfer-v147-smoke-r4",
+  "git_head": "9f715846be9425c208d4beeb0135cac5fab366bb",
+  "gpu_count": 1,
+  "gpu_resource": "nvidia.com/a100",
+  "local_runtime": "/private/tmp/nautilus-exp-end2end-agent-v147-transfer-smoke-r4",
+  "memory_gib": 32,
+  "output_root": "/workspace/experiment-end2end-uci100-transfer-v147-r4/runs",
+  "pod_name": "mlevolve-uci100-gpt56sol-v147-transfer-smoke-r4-dev",
+  "release_id": "uci100-same-type-cross-task-transfer-gpt56sol-v147-smoke-r4",
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v147-transfer-smoke-r4",
+  "schema": "uci100_cross_task_transfer_v147_smoke_build_v1",
+  "source_lock_file_count": 835,
+  "source_lock_hash": "0ca540b6ed019328a854e851031b3053900cf63ad23603127c44364d279c3826",
+  "source_task_id": "leaf-classification",
+  "target_task_id": "uci-one-hundred-leaves"
+}
