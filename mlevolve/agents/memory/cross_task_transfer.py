@@ -11,6 +11,7 @@ have been removed by the Host.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import re
@@ -25,6 +26,8 @@ ARCHITECTURE_LEVEL = "L1_recipe"
 ARCHITECTURE_RUNTIME_LEVELS = frozenset(
     {ARCHITECTURE_LEVEL, "L1_strategy"}
 )
+TRANSITION_REASON_LEVEL = "transition_reason"
+MODULE_INTERFACE_LEVEL = "module_interface"
 ARCHITECTURE_PIPELINE_FIELDS = (
     "feature_representation",
     "model_stack",
@@ -62,14 +65,18 @@ _SOURCE_LONG_ID_RE = re.compile(
     r"(?i)(?:(?:kaggle|submission|csv)\s*(?:ref(?:erence)?|id|sha(?:256)?)?\s*[:#=-]?\s*)\d{6,}"
 )
 _SOURCE_SHAPE_RE = re.compile(
-    r"\b\d+\s+(?:training|train|test|validation|rows?|classes?|columns?)\b",
+    r"\b\d+\s+(?:training|train|test|validation|rows?|samples?|classes?|columns?)\b",
     flags=re.IGNORECASE,
 )
 _SOURCE_DIMENSION_RE = re.compile(
     r"\b(?:\d+\s*[- ]\s*(?:way|class|classes|component|components|feature|features|"
-    r"dimensional|dimensions?|epochs?)|patience\s+\d+)\b",
+    r"dimensional|dimensions?|epochs?|workers?)|patience\s+\d+|batch(?:\s+size)?\s+\d+)\b",
     flags=re.IGNORECASE,
 )
+_SOURCE_TUPLE_SHAPE_RE = re.compile(r"\(\s*\d+(?:\s*,\s*\d+)+\s*\)")
+_SOURCE_PERCENT_RE = re.compile(r"(?<![A-Za-z0-9_])\d+(?:\.\d+)?%")
+_FENCED_CODE_RE = re.compile(r"```.*?```", flags=re.DOTALL)
+_INLINE_CODE_RE = re.compile(r"`[^`\n]+`")
 _SOURCE_ARTIFACT_PHRASE_RE = re.compile(
     r"(?:the\s+)?(?:exact\s+)?(?:[A-Za-z0-9_-]+\s+)?CSV\s+"
     r"(?:\[source artifact redacted\]|hash)",
@@ -260,6 +267,8 @@ def _sanitize_architecture_text(value: object, *, source_task_id: str) -> str:
     text = _SOURCE_DECIMAL_RE.sub("[source numeric redacted]", text)
     text = _SOURCE_SHAPE_RE.sub("target-derived data shape", text)
     text = _SOURCE_DIMENSION_RE.sub("target-derived capacity", text)
+    text = _SOURCE_TUPLE_SHAPE_RE.sub("target-derived data shape", text)
+    text = _SOURCE_PERCENT_RE.sub("[source percentage redacted]", text)
     text = _SOURCE_ARTIFACT_PHRASE_RE.sub(
         "a target-task output artifact",
         text,
@@ -399,6 +408,204 @@ def _candidate(
     }
 
 
+def _transition_reason(node: Mapping[str, Any]) -> str:
+    """Project only the causal reason from one curated successful transition."""
+
+    raw = str(node.get("text") or "").strip()
+    reason = ""
+    if raw.startswith("{"):
+        try:
+            decoded, _end = json.JSONDecoder().raw_decode(raw)
+            if isinstance(decoded, Mapping):
+                reason = str(decoded.get("reason") or "")
+        except (TypeError, ValueError, json.JSONDecodeError):
+            reason = ""
+    if not reason:
+        reason = raw.split("\n\n", 1)[0].split("\n", 1)[0]
+    reason = _FENCED_CODE_RE.sub("[implementation body redacted]", reason)
+    reason = _INLINE_CODE_RE.sub("[implementation detail redacted]", reason)
+    reason = _sanitize_architecture_text(
+        reason,
+        source_task_id=_node_task_id(node),
+    )
+    return reason[:1600].strip()
+
+
+def _transition_candidate(
+    node_id: str,
+    node: Mapping[str, Any],
+    *,
+    query_tokens: set[str],
+) -> dict[str, Any] | None:
+    capsule = node.get("implementation_repair_capsule")
+    if not isinstance(capsule, Mapping):
+        return None
+    if str(node.get("outcome") or "") not in {"debug_fixed", "metric_improved"}:
+        return None
+    reason = _transition_reason(node)
+    if not reason:
+        return None
+    portable = {
+        "title": "Curated parent-to-child improvement reason",
+        "stage_pair": _sanitize_architecture_text(
+            node.get("stage_pair"),
+            source_task_id=_node_task_id(node),
+        ),
+        "improvement_reason": reason,
+        "target_adaptation_contract": (
+            "Treat the causal change as a hypothesis. Re-derive every parameter "
+            "and validate the change only on target-task training data."
+        ),
+    }
+    lexical = _tokens(json.dumps(portable, ensure_ascii=False, sort_keys=True))
+    overlap = len(query_tokens & lexical) / max(1, len(query_tokens))
+    return {
+        "id": str(node_id),
+        "source": "runforest_projected_transition",
+        "source_task_id": _node_task_id(node),
+        "abstraction_level": TRANSITION_REASON_LEVEL,
+        "candidate_kind": "portable_transition_reason",
+        "portable_text": portable,
+        "method_family": "",
+        "parent_method_families": [],
+        "target_relevance": round(float(overlap), 8),
+        "source_success_verified": True,
+        "source_score_inherited": False,
+        "source_code_exposed": False,
+        "source_artifact_exposed": False,
+    }
+
+
+def _callable_signature(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
+    names = [arg.arg for arg in [*node.args.posonlyargs, *node.args.args]]
+    if node.args.vararg is not None:
+        names.append(f"*{node.args.vararg.arg}")
+    elif node.args.kwonlyargs:
+        names.append("*")
+    names.extend(arg.arg for arg in node.args.kwonlyargs)
+    if node.args.kwarg is not None:
+        names.append(f"**{node.args.kwarg.arg}")
+    prefix = "async " if isinstance(node, ast.AsyncFunctionDef) else ""
+    return f"{prefix}{node.name}({', '.join(names)})"
+
+
+def _sanitize_interface_text(value: object, *, source_task_id: str) -> str:
+    text = str(value or "")
+    for forbidden in sorted(FORBIDDEN_FIELDS, key=len, reverse=True):
+        text = re.sub(
+            rf"\b{re.escape(forbidden)}\b",
+            "source_specific_symbol",
+            text,
+            flags=re.IGNORECASE,
+        )
+    return _sanitize_architecture_text(text, source_task_id=source_task_id)
+
+
+def _code_free_module_interface(
+    code: str,
+    *,
+    source_task_id: str,
+) -> dict[str, Any]:
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return {}
+    dependencies: set[str] = set()
+    functions: list[str] = []
+    classes: list[dict[str, Any]] = []
+    for node in tree.body:
+        if isinstance(node, ast.Import):
+            dependencies.update(alias.name.split(".", 1)[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            dependencies.add(node.module.split(".", 1)[0])
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if not node.name.startswith("_"):
+                functions.append(
+                    _sanitize_interface_text(
+                        _callable_signature(node),
+                        source_task_id=source_task_id,
+                    )
+                )
+        elif isinstance(node, ast.ClassDef) and not node.name.startswith("_"):
+            methods = [
+                _callable_signature(child)
+                for child in node.body
+                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef))
+                and (child.name == "__init__" or not child.name.startswith("_"))
+            ]
+            classes.append(
+                {
+                    "name": _sanitize_interface_text(
+                        node.name,
+                        source_task_id=source_task_id,
+                    ),
+                    "methods": [
+                        _sanitize_interface_text(
+                            method,
+                            source_task_id=source_task_id,
+                        )
+                        for method in methods[:16]
+                    ],
+                }
+            )
+    payload = {
+        "title": "Code-free reusable module interface",
+        "dependencies": [
+            _sanitize_interface_text(value, source_task_id=source_task_id)
+            for value in sorted(dependencies)[:24]
+        ],
+        "functions": functions[:24],
+        "classes": classes,
+        "target_adaptation_contract": (
+            "Only symbol names, callable arguments, and dependency names are "
+            "projected. Reimplement all bodies from target requirements; no "
+            "source implementation, constants, weights, or artifacts are available."
+        ),
+    }
+    if not payload["dependencies"] and not payload["functions"] and not payload["classes"]:
+        return {}
+    return payload
+
+
+def _module_interface_candidate(
+    node_id: str,
+    node: Mapping[str, Any],
+    *,
+    query_tokens: set[str],
+) -> dict[str, Any] | None:
+    capsule = node.get("implementation_capsule")
+    if not isinstance(capsule, Mapping):
+        return None
+    if node.get("is_buggy") is not False or node.get("is_valid") is not True:
+        return None
+    code = capsule.get("code")
+    if not isinstance(code, str) or not code.strip():
+        return None
+    portable = _code_free_module_interface(
+        code,
+        source_task_id=_node_task_id(node),
+    )
+    if not portable:
+        return None
+    lexical = _tokens(json.dumps(portable, ensure_ascii=False, sort_keys=True))
+    overlap = len(query_tokens & lexical) / max(1, len(query_tokens))
+    return {
+        "id": str(node_id),
+        "source": "host_ast_module_interface_projection",
+        "source_task_id": _node_task_id(node),
+        "abstraction_level": MODULE_INTERFACE_LEVEL,
+        "candidate_kind": "code_free_module_interface",
+        "portable_text": portable,
+        "method_family": "",
+        "parent_method_families": [],
+        "target_relevance": round(float(overlap), 8),
+        "source_success_verified": True,
+        "source_score_inherited": False,
+        "source_code_exposed": False,
+        "source_artifact_exposed": False,
+    }
+
+
 def project_transfer_candidates(
     nodes: Mapping[str, Mapping[str, Any]],
     policy: CrossTaskTransferPolicy,
@@ -412,9 +619,10 @@ def project_transfer_candidates(
     """Build the irreversible Host-safe candidate universe.
 
     ``all_safe_levels`` is reserved for the dynamic Search/Judge/Resolver
-    route.  It removes the legacy stage preselection, but it does not widen
-    the authority boundary: only sanitized L1 structure and portable L2/L3
-    text from the configured same-type source task can enter the universe.
+    route.  It removes legacy stage preselection, but it does not widen the
+    authority boundary: sanitized L1 structure, portable L2/L3 text, curated
+    successful transition reasons, and AST-only module interfaces are the
+    only source-task representations that can enter the universe.
     """
 
     decision = decide_transfer(policy, target_task_id=target_task_id)
@@ -444,6 +652,25 @@ def project_transfer_candidates(
             row = _candidate(str(node_id), node, query_tokens=query_tokens)
             if row is not None:
                 observed.append(row)
+        if all_safe_levels:
+            for node_id, node in nodes.items():
+                if _node_task_id(node) != policy.source_task_id:
+                    continue
+                row = None
+                if str(node.get("type") or "") == "Transition":
+                    row = _transition_candidate(
+                        str(node_id),
+                        node,
+                        query_tokens=query_tokens,
+                    )
+                elif str(node.get("type") or "") == "RunNode":
+                    row = _module_interface_candidate(
+                        str(node_id),
+                        node,
+                        query_tokens=query_tokens,
+                    )
+                if row is not None:
+                    observed.append(row)
     observed.sort(
         key=lambda row: (-float(row["target_relevance"]), str(row["id"]))
     )
@@ -652,6 +879,8 @@ __all__ = [
     "ARCHITECTURE_TRANSFER_PACK_SCHEMA",
     "CrossTaskTransferDecision",
     "CrossTaskTransferPolicy",
+    "MODULE_INTERFACE_LEVEL",
+    "TRANSITION_REASON_LEVEL",
     "TRANSFER_PACK_SCHEMA",
     "build_transfer_pack",
     "decide_transfer",

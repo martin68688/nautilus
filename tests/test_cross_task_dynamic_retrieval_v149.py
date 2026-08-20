@@ -97,6 +97,63 @@ def _nodes():
             "code": "source repair code",
             "metric": 0.002,
         },
+        "transition::leaf::fixed-fold-state": {
+            "id": "transition::leaf::fixed-fold-state",
+            "type": "Transition",
+            "task_id": "leaf-classification",
+            "outcome": "metric_improved",
+            "stage_pair": "improve->improve",
+            "text": json.dumps(
+                {
+                    "reason": (
+                        "Preserve fold-local preprocessing state before target "
+                        "OOF fusion; source score 0.001234 and "
+                        "`secret_transition_call()` must be removed."
+                    )
+                }
+            ),
+            "implementation_repair_capsule": {
+                "before_code": "print('secret before body')",
+                "after_code": "print('secret after body')",
+                "unified_diff": "+ secret transition source diff",
+            },
+        },
+        "run-node::leaf::oof-module": {
+            "id": "run-node::leaf::oof-module",
+            "type": "RunNode",
+            "task_id": "leaf-classification",
+            "is_buggy": False,
+            "is_valid": True,
+            "implementation_capsule": {
+                "code": (
+                    "import numpy as np\n"
+                    "from sklearn.model_selection import StratifiedKFold\n\n"
+                    "def build_oof_views(train_x, fold_ids, *, calibrate=True):\n"
+                    "    secret_module_body = 'source-only-literal'\n"
+                    "    return np.asarray(train_x)\n\n"
+                    "def align_probabilities(probabilities, class_mapping):\n"
+                    "    return probabilities\n\n"
+                    "class TargetFusion:\n"
+                    "    def __init__(self, view_names):\n"
+                    "        self.view_names = view_names\n"
+                    "    def fit(self, oof_probabilities, labels):\n"
+                    "        return self\n"
+                )
+            },
+        },
+        "run-node::leaf::buggy-module": {
+            "id": "run-node::leaf::buggy-module",
+            "type": "RunNode",
+            "task_id": "leaf-classification",
+            "is_buggy": True,
+            "is_valid": False,
+            "implementation_capsule": {
+                "code": (
+                    "def unsafe_buggy_interface(leaked_source_value):\n"
+                    "    return 'buggy-source-body'\n"
+                )
+            },
+        },
         "tactic::foreign": {
             "id": "tactic::foreign",
             "task_id": "spooky-author-identification",
@@ -115,16 +172,22 @@ def _search_action():
             "class order mismatch",
             ["classordermismatch", "class"],
         ),
+        "improvement_transition": (
+            "fold preprocessing improvement",
+            ["fold", "preprocessing"],
+        ),
+        "module_interface": (
+            "oof fusion interface",
+            ["oof", "fusion"],
+        ),
     }
     return {
         "action": "search",
-        "reason": "broad projected L1 L2 L3 search",
-        "information_need": "architecture tactics and observed failures",
-        "allocation": {
-            "architecture_blueprint": 0.34,
-            "portable_tactic": 0.33,
-            "portable_repair": 0.33,
-        },
+        "reason": "broad projected five-granularity search",
+        "information_need": (
+            "architecture tactics failures transitions and module interfaces"
+        ),
+        "allocation": {granularity: 0.2 for granularity in queries},
         "queries": [
             {
                 "granularity": granularity,
@@ -144,9 +207,11 @@ def _finish_action():
         "reason": "projected evidence is sufficient",
         "information_need": "none",
         "allocation": {
-            "architecture_blueprint": 0.34,
-            "portable_tactic": 0.33,
-            "portable_repair": 0.33,
+            "architecture_blueprint": 0.2,
+            "portable_tactic": 0.2,
+            "portable_repair": 0.2,
+            "improvement_transition": 0.2,
+            "module_interface": 0.2,
         },
         "queries": [],
     }
@@ -219,6 +284,15 @@ def test_dynamic_search_and_judge_see_only_irreversible_safe_projection():
         assert "secret source implementation" not in serialized_prompt
         assert "source tactic code" not in serialized_prompt
         assert "source repair code" not in serialized_prompt
+        assert "secret before body" not in serialized_prompt
+        assert "secret after body" not in serialized_prompt
+        assert "secret transition source diff" not in serialized_prompt
+        assert "secret_transition_call" not in serialized_prompt
+        assert "secret_module_body" not in serialized_prompt
+        assert "source-only-literal" not in serialized_prompt
+        assert "class_mapping" not in serialized_prompt
+        assert "unsafe_buggy_interface" not in serialized_prompt
+        assert "buggy-source-body" not in serialized_prompt
         assert "0.000123" not in serialized_prompt
         assert "0.000456" not in serialized_prompt
         assert "55613290" not in serialized_prompt
@@ -267,17 +341,33 @@ def test_dynamic_search_and_judge_see_only_irreversible_safe_projection():
         "architecture_blueprint": 2,
         "portable_tactic": 2,
         "portable_repair": 1,
+        "improvement_transition": 1,
+        "module_interface": 1,
     }
     assert pack["memory_transfer"]["selected_level_counts"] == {
         "architecture_blueprint": 1,
         "portable_tactic": 1,
         "portable_repair": 0,
+        "improvement_transition": 0,
+        "module_interface": 0,
     }
     assert set(pack["final_prompt_candidate_ids"]) == {
         "recipe::leaf::fold",
         "tactic::leaf::oof",
     }
-    assert "tactic::foreign" not in json.dumps(pack)
+    assert [row["id"] for row in pack["final_prompt_candidates"]] == (
+        pack["final_prompt_candidate_ids"]
+    )
+    assert pack["evidence_resolver"]["selected_ids"] == (
+        pack["final_prompt_candidate_ids"]
+    )
+    serialized_pack = json.dumps(pack, sort_keys=True, ensure_ascii=False)
+    assert "tactic::foreign" not in serialized_pack
+    assert "secret transition source diff" not in serialized_pack
+    assert "secret_module_body" not in serialized_pack
+    assert "source-only-literal" not in serialized_pack
+    assert "unsafe_buggy_interface" not in serialized_pack
+    assert "buggy-source-body" not in serialized_pack
 
 
 def test_draft_judge_can_select_only_l2_without_fixed_l1_plus_six():
@@ -306,9 +396,69 @@ def test_draft_judge_can_select_only_l2_without_fixed_l1_plus_six():
         "architecture_blueprint": 0,
         "portable_tactic": 2,
         "portable_repair": 0,
+        "improvement_transition": 0,
+        "module_interface": 0,
     }
     assert pack["selected_architectures"] == []
     assert len(pack["selected_portable_items"]) == 2
+
+
+def test_judge_can_select_transition_reason_and_code_free_module_interface():
+    from agents.memory.cross_task_dynamic_retrieval import (
+        build_dynamic_transfer_pack,
+    )
+
+    def query_fn(**kwargs):
+        serialized_prompt = json.dumps(
+            kwargs["system_message"], sort_keys=True, ensure_ascii=False
+        )
+        assert "secret before body" not in serialized_prompt
+        assert "secret after body" not in serialized_prompt
+        assert "secret transition source diff" not in serialized_prompt
+        assert "secret_transition_call" not in serialized_prompt
+        assert "secret_module_body" not in serialized_prompt
+        assert "source-only-literal" not in serialized_prompt
+        assert "class_mapping" not in serialized_prompt
+        assert "unsafe_buggy_interface" not in serialized_prompt
+        assert "buggy-source-body" not in serialized_prompt
+        assert "0.001234" not in serialized_prompt
+        if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
+            return _search_action()
+        cards = json.loads(
+            kwargs["system_message"]["authorized_projected_cards"]
+        )
+        return _judge_action(
+            cards,
+            {"improvement_transition", "module_interface"},
+        )
+
+    pack = build_dynamic_transfer_pack(
+        _layer(query_fn, rounds=1),
+        _policy(),
+        target_task_id="uci-one-hundred-leaves",
+        stage="improve",
+        task_description="improve target OOF fusion implementation",
+        query_text="fold preprocessing module interface",
+    )
+
+    assert pack["memory_transfer"]["selected_level_counts"] == {
+        "architecture_blueprint": 0,
+        "portable_tactic": 0,
+        "portable_repair": 0,
+        "improvement_transition": 1,
+        "module_interface": 1,
+    }
+    prompt = pack["prompt_text"]
+    assert "Preserve fold-local preprocessing state" in prompt
+    assert "[source numeric redacted]" in prompt
+    assert "[implementation detail redacted]" in prompt
+    assert "build_oof_views(train_x, fold_ids, *, calibrate)" in prompt
+    assert "align_probabilities(probabilities, source_specific_symbol)" in prompt
+    assert "TargetFusion" in prompt
+    assert "fit(self, oof_probabilities, labels)" in prompt
+    assert "secret_module_body" not in prompt
+    assert "source-only-literal" not in prompt
+    assert "class_mapping" not in prompt
 
 
 def test_resolver_keeps_one_architecture_and_suppresses_incompatible_tactic():
@@ -350,6 +500,63 @@ def test_resolver_keeps_one_architecture_and_suppresses_incompatible_tactic():
         "resolver_multiple_architecture_families",
         "resolver_parent_method_family_mismatch",
     }
+
+
+def test_adoption_durably_mirrors_dynamic_search_and_resolver_receipts():
+    from agents.adoption import log_adoption
+    from agents.memory.cross_task_dynamic_retrieval import (
+        build_dynamic_transfer_pack,
+    )
+
+    def query_fn(**kwargs):
+        if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
+            return _search_action()
+        cards = json.loads(
+            kwargs["system_message"]["authorized_projected_cards"]
+        )
+        return _judge_action(cards, {"architecture_blueprint"})
+
+    pack = build_dynamic_transfer_pack(
+        _layer(query_fn, rounds=1),
+        _policy(),
+        target_task_id="uci-one-hundred-leaves",
+        stage="draft",
+        task_description="leaf descriptor classification",
+        query_text="fold architecture",
+    )
+    layer = SimpleNamespace(
+        current_navigation_pack=lambda: pack,
+        current_visibility_pack=lambda: None,
+        experiment_r_enabled=True,
+        memory_snapshot=None,
+    )
+    node = SimpleNamespace(
+        id="node::dynamic-transfer",
+        adoption_log=[],
+        memory_navigation_trace=[],
+        memory_routing_trace={},
+        replay_source={},
+    )
+    agent = SimpleNamespace(
+        external_skill_memory=layer,
+        cfg=SimpleNamespace(run_identity=SimpleNamespace()),
+        evaluation_authority=None,
+        adoption_tracking_enabled=True,
+    )
+
+    log_adoption(
+        node,
+        agent,
+        "run_forest_stage_hybrid_memory",
+        pack["final_prompt_candidate_ids"],
+        "draft",
+    )
+
+    trace = node.memory_routing_trace
+    assert trace["memory_pack_schema"] == pack["schema"]
+    assert trace["final_prompt_candidates"] == pack["final_prompt_candidates"]
+    assert trace["evidence_resolver"] == pack["evidence_resolver"]
+    assert trace["dynamic_retrieval"] == pack["dynamic_retrieval"]
 
 
 def test_stage_layer_dispatches_dynamic_route_before_legacy_controller():
@@ -396,4 +603,3 @@ def test_stage_layer_dispatches_dynamic_route_before_legacy_controller():
     pack = layer.current_navigation_pack()
     assert pack["schema"] == "mlevolve_cross_task_dynamic_transfer_pack_v1"
     assert pack["stage_route"]["stage"] == "debug"
-

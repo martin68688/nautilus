@@ -402,6 +402,9 @@ def log_adoption(
                     "retrieval_agent": copy.deepcopy(
                         pack.get("retrieval_agent") or {}
                     ),
+                    "dynamic_retrieval": copy.deepcopy(
+                        pack.get("dynamic_retrieval") or {}
+                    ),
                     "router_activation": copy.deepcopy(
                         pack.get("router_activation") or {}
                     ),

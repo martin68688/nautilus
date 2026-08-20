@@ -1,10 +1,11 @@
 """Dynamic cross-task retrieval over an irreversible Host-safe projection.
 
 The raw source graph never reaches either LLM.  The Host first projects only
-sanitized L1 architecture structure and portable L2/L3 text, then a Search
-Agent proposes literal queries over that projected universe.  An independent
-Judge selects a variable-cardinality set and a deterministic Resolver enforces
-one coherent architecture family plus declared tactic compatibility.
+sanitized architecture/tactic/repair text, curated successful transition
+reasons, and code-free module interfaces.  A Search Agent proposes literal
+queries over that projected universe.  An independent Judge selects a
+variable-cardinality set and a deterministic Resolver enforces one coherent
+architecture family plus declared tactic compatibility.
 """
 
 from __future__ import annotations
@@ -21,6 +22,8 @@ from typing import Any, Callable
 from agents.memory.cross_task_transfer import (
     ARCHITECTURE_LEVEL,
     FORBIDDEN_FIELDS,
+    MODULE_INTERFACE_LEVEL,
+    TRANSITION_REASON_LEVEL,
     CrossTaskTransferPolicy,
     project_transfer_candidates,
 )
@@ -34,11 +37,15 @@ GRANULARITIES = (
     "architecture_blueprint",
     "portable_tactic",
     "portable_repair",
+    "improvement_transition",
+    "module_interface",
 )
 LEVEL_TO_GRANULARITY = {
     ARCHITECTURE_LEVEL: "architecture_blueprint",
     "L2_tactic": "portable_tactic",
     "L3_repair": "portable_repair",
+    TRANSITION_REASON_LEVEL: "improvement_transition",
+    MODULE_INTERFACE_LEVEL: "module_interface",
 }
 GRANULARITY_FIELDS = {
     "architecture_blueprint": {
@@ -48,28 +55,54 @@ GRANULARITY_FIELDS = {
     },
     "portable_tactic": {"identity", "procedure", "compatibility"},
     "portable_repair": {"identity", "procedure", "failure"},
+    "improvement_transition": {"identity", "change_reason", "compatibility"},
+    "module_interface": {"identity", "interface", "dependency"},
 }
 STAGE_FIT = {
     "draft": {
         "architecture_blueprint": 1.0,
         "portable_tactic": 0.9,
         "portable_repair": 0.35,
+        "improvement_transition": 0.65,
+        "module_interface": 0.8,
     },
     "improve": {
         "architecture_blueprint": 0.55,
         "portable_tactic": 1.0,
         "portable_repair": 0.65,
+        "improvement_transition": 1.0,
+        "module_interface": 0.8,
     },
     "debug": {
         "architecture_blueprint": 0.25,
         "portable_tactic": 0.55,
         "portable_repair": 1.0,
+        "improvement_transition": 0.9,
+        "module_interface": 0.65,
     },
 }
 STAGE_FALLBACK_PRIORITY = {
-    "draft": ("architecture_blueprint", "portable_tactic", "portable_repair"),
-    "improve": ("portable_tactic", "portable_repair", "architecture_blueprint"),
-    "debug": ("portable_repair", "portable_tactic", "architecture_blueprint"),
+    "draft": (
+        "architecture_blueprint",
+        "portable_tactic",
+        "module_interface",
+        "improvement_transition",
+        "portable_repair",
+    ),
+    "improve": (
+        "portable_tactic",
+        "improvement_transition",
+        "module_interface",
+        "portable_repair",
+        "architecture_blueprint",
+    ),
+    "debug": (
+        "portable_repair",
+        "improvement_transition",
+        "module_interface",
+        "portable_tactic",
+        "architecture_blueprint",
+    ),
 }
 NOISE_TERMS = {
     "a", "an", "and", "are", "as", "at", "be", "by", "current", "for",
@@ -307,7 +340,7 @@ def _authorized_universe(
                 sort_keys=True,
                 ensure_ascii=False,
             )
-        else:
+        elif granularity in {"portable_tactic", "portable_repair"}:
             fields["procedure"] = json.dumps(
                 portable,
                 sort_keys=True,
@@ -318,6 +351,30 @@ def _authorized_universe(
                     str(portable.get(key) or "")
                     for key in ("when_to_use", "failure_signature", "repair")
                 )
+        elif granularity == "improvement_transition":
+            fields["change_reason"] = json.dumps(
+                portable,
+                sort_keys=True,
+                ensure_ascii=False,
+            )
+            fields["compatibility"] = " ".join(
+                value
+                for value in (
+                    fields.get("compatibility", ""),
+                    str(portable.get("stage_pair") or ""),
+                    str(portable.get("target_adaptation_contract") or ""),
+                )
+                if value
+            )
+        elif granularity == "module_interface":
+            fields["interface"] = json.dumps(
+                portable,
+                sort_keys=True,
+                ensure_ascii=False,
+            )
+            fields["dependency"] = " ".join(
+                str(value) for value in portable.get("dependencies") or []
+            )
         output.append(
             {
                 "id": str(candidate["id"]),
@@ -600,7 +657,7 @@ def _call_search_agent(
             indent=2,
         ),
         "policy": [
-            "The first round must query every L1/L2/L3 granularity with positive allocation; weights sum to 1.0.",
+            "The first round must query all five safe granularities with positive allocation; weights sum to 1.0.",
             "Do not choose fields or final candidates; the Host fixes fields and executes grep.",
             "Use target-task architecture, validation, failure, interface, and implementation terms; rewrite terminology across rounds.",
             "Later rounds should close evidence gaps and may finish only after the mandatory broad round.",
@@ -673,11 +730,7 @@ def _deterministic_search_action(
     first_round: bool,
 ) -> dict[str, Any]:
     terms = _terms([], query=context, limit=8) or ["validation"]
-    allocation = {
-        "architecture_blueprint": 0.34,
-        "portable_tactic": 0.33,
-        "portable_repair": 0.33,
-    }
+    allocation = {granularity: 0.2 for granularity in GRANULARITIES}
     return {
         "action": "search" if first_round else "finish",
         "reason": "Host-safe fallback after invalid Search Agent contract.",
@@ -748,7 +801,7 @@ def _call_judge(
         ),
         "policy": [
             "Assess every supplied C-ref exactly once and select only assessed refs.",
-            "Choose any useful L1/L2/L3 combination and quantity up to the cap; layer counts are not preassigned.",
+            "Choose any useful five-granularity combination and quantity up to the cap; layer counts are not preassigned.",
             "Prefer one coherent architecture family; tactics with declared parents must match it.",
             "Reject contradictions in target interface, stage, validation, dependencies, or compute.",
             "All cards are hypotheses; source success is unavailable and must not be inferred.",
@@ -999,7 +1052,8 @@ def _render_prompt(selected: list[dict[str, Any]]) -> str:
     parts = [
         "## Dynamically Retrieved Cross-task Memory (Host-projected)",
         (
-            "These L1/L2/L3 cards were found by multi-round Search, selected by "
+            "These architecture, tactic, repair, transition-reason, and "
+            "module-interface cards were found by multi-round Search, selected by "
             "an independent Judge, and compatibility-checked by the Host. They "
             "are target-adaptation hypotheses, not source-task answers. Never "
             "copy source code, checkpoints, weights, predictions, submissions, "
@@ -1322,7 +1376,7 @@ def build_dynamic_transfer_pack(
         "schema": PACK_SCHEMA,
         "algorithm_version": (
             "host_irreversible_projection_multiround_search_independent_judge_"
-            "stage_aware_resolver_v1"
+            "stage_aware_resolver_five_granularity_v2"
         ),
         "target_task_id": decision["target_task_id"],
         "source_task_id": decision["source_task_id"],
@@ -1334,7 +1388,7 @@ def build_dynamic_transfer_pack(
         "memory_transfer": {
             "activated": bool(decision["active"] and selected_candidates),
             "host_decision": decision,
-            "mode": "full_dynamic_projected_cross_task_retrieval_v1",
+            "mode": "full_dynamic_projected_cross_task_retrieval_v2",
             "architecture_transfer_enabled": policy.architecture_transfer_enabled,
             "architecture_projection_mode": "host_structural_fields_only_v1",
             "selected_architecture_ids": list(
@@ -1380,6 +1434,7 @@ def build_dynamic_transfer_pack(
         "evidence_refs": [],
         "failure_patterns": [],
         "final_prompt_candidate_ids": selected_ids,
+        "final_prompt_candidates": selected_candidates,
         "prompt_visible_refs": selected_ids,
         "prompt_text": prompt,
         "prompt_token_count": len(prompt.split()),
@@ -1430,6 +1485,13 @@ def build_dynamic_transfer_pack(
             },
             "elapsed_seconds": elapsed,
             "receipt_sha256": pack_sha256,
+        },
+        # Audit-compatible top-level mirror. Adoption serialization already
+        # treats this field as the durable post-Judge evidence receipt.
+        "evidence_resolver": {
+            key: copy.deepcopy(value)
+            for key, value in resolver.items()
+            if key != "selected"
         },
         "retrieval_agent": {
             "enabled": True,

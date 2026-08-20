@@ -1,0 +1,7 @@
+# v149-r2 adds durable adoption/Journaling mirrors and expands the safe dynamic
+# universe to architecture, tactic, repair, curated improvement-transition,
+# and code-free module-interface candidates. Judge cardinality remains dynamic.
+extends: ../systems_v149_dynamic_transfer_smoke/dynamic_cross_task_transfer.yaml
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_dynamic_transfer_v149_smoke_r2
