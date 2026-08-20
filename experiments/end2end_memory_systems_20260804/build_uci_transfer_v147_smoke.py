@@ -150,13 +150,14 @@ def build_pod(lock_hash: str) -> dict:
                     "env": [
                         {"name": "PYTHONUNBUFFERED", "value": "1"},
                         {"name": "PYTHONDONTWRITEBYTECODE", "value": "1"},
+                        {"name": "OPENAI_MODEL", "value": "gpt-5.6-sol"},
                         {
                             "name": "PYTHONPATH",
                             "value": f"{RUNTIME}/mlevolve:{RUNTIME}",
                         },
                     ],
                     "envFrom": [
-                        {"secretRef": {"name": "mlevolve-openai-gpt56sol-v1"}}
+                        {"secretRef": {"name": "cliproxyapi-haoming-client"}}
                     ],
                     "resources": {"limits": resources, "requests": resources},
                     "volumeMounts": [

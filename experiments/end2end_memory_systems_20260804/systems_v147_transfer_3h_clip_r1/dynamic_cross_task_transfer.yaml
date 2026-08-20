@@ -1,0 +1,11 @@
+# Three-hour, time-bounded rerun of the preserved v147 fixed Top-K transfer
+# policy.  The very large step ceiling makes wall time the practical stopping
+# condition while retaining the integer step contract expected by mlevolve.
+extends: ../systems_v147_transfer_smoke_r8/dynamic_cross_task_transfer.yaml
+
+agent:
+  steps: 2147483647
+  time_limit: 10800
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_transfer_v147_3h_clip_r1

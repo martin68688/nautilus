@@ -1,0 +1,11 @@
+# Three-hour, time-bounded rerun of the preserved v149 five-granularity
+# Search -> Judge -> Resolver transfer policy.  The step ceiling is deliberately
+# unreachable so wall time, rather than node count, terminates the experiment.
+extends: ../systems_v149_dynamic_transfer_smoke_r3/dynamic_cross_task_transfer.yaml
+
+agent:
+  steps: 2147483647
+  time_limit: 10800
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_dynamic_transfer_v149_3h_clip_r1

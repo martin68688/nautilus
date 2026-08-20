@@ -268,7 +268,8 @@ pip install -r requirements.txt  # (if available)
 ```bash
 # LLM API (set in config.yaml or env)
 export OPENAI_API_KEY=...
-export OPENAI_BASE_URL=https://apizh.net/v1
+# NRP workloads use the private cluster-local CLIProxyAPI service.
+export OPENAI_BASE_URL=http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1
 export OPENAI_MODEL=gpt-5.6-sol
 
 # Optional: HuggingFace cache

@@ -44,7 +44,10 @@ def main() -> int:
     stage = SimpleNamespace(
         model=args.model,
         api_key=api_key,
-        base_url=os.environ.get("OPENAI_BASE_URL", "https://apizh.net/v1"),
+        base_url=os.environ.get(
+            "OPENAI_BASE_URL",
+            "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1",
+        ),
     )
     cfg = SimpleNamespace(
         log_dir=output,
