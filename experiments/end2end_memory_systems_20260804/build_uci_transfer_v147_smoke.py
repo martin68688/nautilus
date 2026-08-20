@@ -12,12 +12,12 @@ from pathlib import Path
 
 
 REPO = Path(__file__).resolve().parents[2]
-RUNTIME = "/workspace/nautilus-exp-end2end-agent-v147-transfer-smoke"
-DATA_ROOT = "/workspace/experiment-end2end-uci100-transfer-v147/data/public"
-OUTPUT_ROOT = "/workspace/experiment-end2end-uci100-transfer-v147/runs"
-POD_NAME = "mlevolve-uci100-gpt56sol-v147-transfer-smoke-dev"
-EXPERIMENT_LABEL = "experiment-end2end-uci100-transfer-v147-smoke"
-RELEASE_ID = "uci100-same-type-cross-task-transfer-gpt56sol-v147-smoke"
+RUNTIME = "/workspace/nautilus-exp-end2end-agent-v147-transfer-smoke-r2"
+DATA_ROOT = "/workspace/experiment-end2end-uci100-transfer-v147-r2/data/public"
+OUTPUT_ROOT = "/workspace/experiment-end2end-uci100-transfer-v147-r2/runs"
+POD_NAME = "mlevolve-uci100-gpt56sol-v147-transfer-smoke-r2-dev"
+EXPERIMENT_LABEL = "experiment-end2end-uci100-transfer-v147-smoke-r2"
+RELEASE_ID = "uci100-same-type-cross-task-transfer-gpt56sol-v147-smoke-r2"
 IMAGE = (
     "docker.io/haomingwang22/mlevolve@"
     "sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc"
@@ -181,7 +181,14 @@ def main() -> int:
     args = parser.parse_args()
     if args.output_runtime.exists():
         raise FileExistsError(f"Refusing to reuse runtime: {args.output_runtime}")
-    shutil.copytree(args.base_runtime, args.output_runtime, symlinks=True)
+    shutil.copytree(
+        args.base_runtime,
+        args.output_runtime,
+        symlinks=True,
+        ignore=shutil.ignore_patterns(
+            "__pycache__", "*.pyc", "*.pyo", ".DS_Store", "._*"
+        ),
+    )
     for relative in OVERLAYS:
         copy_overlay(args.output_runtime, relative)
     lock = source_lock(args.output_runtime)
