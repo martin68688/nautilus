@@ -84,7 +84,10 @@ def coverage_synthesis_due(agent) -> bool:
     if int(getattr(agent, "max_fusion_drafts", 0) or 0) < 1:
         return False
     roles = tuple(str(role) for role in list(getattr(policy, "roles", []) or []))
-    if roles != ("memory_reproduction", "novel_exploration"):
+    if roles not in {
+        ("memory_reproduction", "novel_exploration"),
+        ("memory_transfer", "novel_exploration"),
+    }:
         return False
     return cross_role_synthesis_allowed(
         agent,

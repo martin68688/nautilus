@@ -1,0 +1,58 @@
+# Independent v147 transfer mode. Exact-task Replay is intentionally absent.
+# One Host-certified transfer branch competes with an independent target Novel
+# branch; after both score, one protected Fusion may be created.
+extends: ../systems_v143_full_r2/dynamic_hybrid.yaml
+
+agent:
+  steps: 8
+  time_limit: 3600
+  initial_drafts: 2
+  max_fusion_drafts: 1
+  branch_fusion_trigger_prob: 1.0
+  fusion_vs_evolution_prob: 0.0
+  search:
+    num_drafts: 2
+    replacement_drafts_enabled: false
+    max_replacement_drafts: 0
+  draft_role_policy:
+    roles:
+      - memory_transfer
+      - novel_exploration
+    replay_targets_path: ""
+    replay_runs_root: ""
+    replay_research_enabled: false
+    replay_research_exact_budget: 0
+    replay_research_strategy_slots: 0
+    ensure_valid_candidate_per_role: true
+    role_balance_min_valid_candidates: 1
+    cross_role_synthesis_after_balance: true
+    cross_role_synthesis_on_coverage: true
+    equal_branch_allocation_after_coverage: false
+    single_coverage_synthesis_only: true
+
+fixed_holdout:
+  enabled: false
+  bypass_protocol_gates: true
+  preflight_validate_train_view: false
+  internal_metric_disposition: search_only
+
+official_submission:
+  enabled: false
+  competition: ""
+  sample_submission_path: ""
+
+external_skill_memory:
+  cross_task_transfer_enabled: true
+  cross_task_transfer_source_task_id: leaf-classification
+  cross_task_transfer_source_task_type: leaf_descriptor_multiclass
+  cross_task_transfer_target_task_type: leaf_descriptor_multiclass
+  cross_task_transfer_allowed_levels:
+    - L2_tactic
+    - L3_repair
+  cross_task_transfer_max_items: 6
+  experiment_r_l3_agent_match_enabled: false
+  experiment_r_memory_transfer_static_gate: false
+  experiment_r_memory_transfer_runtime_gate: false
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_score_free_transfer_v147_smoke

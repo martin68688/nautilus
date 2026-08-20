@@ -27,6 +27,10 @@ from agents.memory.atomic_claim_memory import (
     structured_debug_relevance,
     verified_atomic_debug_claim,
 )
+from agents.memory.cross_task_transfer import (
+    CrossTaskTransferPolicy,
+    build_transfer_pack,
+)
 from agents.memory.sop_visibility_gateway import SOPVisibilityGateway
 from authority.domain_scope import (
     DOMAIN_GENERAL,
@@ -197,6 +201,7 @@ TASK_PROFILES = {
     "aerial-cactus-identification": ("image", "image_binary_classification"),
     "denoising-dirty-documents": ("image", "image_restoration"),
     "leaf-classification": ("multimodal", "tabular_multiclass"),
+    "uci-one-hundred-leaves": ("multimodal", "tabular_multiclass"),
     "random-acts-of-pizza": ("text", "text_binary_classification"),
     "mlsp-2013-birds": ("audio", "audio_multilabel_classification"),
     "nomad2018-predict-transparent-conductors": ("tabular", "tabular_multioutput_regression"),
@@ -209,6 +214,7 @@ TASK_TYPES = {
     "aerial-cactus-identification": "vision",
     "denoising-dirty-documents": "vision",
     "leaf-classification": "multimodal",
+    "uci-one-hundred-leaves": "multimodal",
     "mlsp-2013-birds": "audio",
     "nomad2018-predict-transparent-conductors": "tabular",
     "new-york-city-taxi-fare-prediction": "tabular",
@@ -544,6 +550,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         self.retrieval_control = str(retrieval_control or "stage_hybrid")
         if self.retrieval_control not in RETRIEVAL_CONTROLS:
             raise ValueError(f"Unsupported stage-hybrid retrieval_control: {self.retrieval_control}")
+        self.cross_task_transfer_policy = CrossTaskTransferPolicy.from_config(
+            ext_cfg
+        )
         if excluded_run_ids is None and ext_cfg is not None:
             excluded_run_ids = list(
                 getattr(ext_cfg, "excluded_run_ids", None) or []
@@ -6632,6 +6641,24 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             return "", []
         if self.retrieval_control == "layered_strategy" and stage == "draft":
             if draft_role == "memory_transfer":
+                if self.cross_task_transfer_policy.enabled:
+                    pack = build_transfer_pack(
+                        self.nodes,
+                        self.cross_task_transfer_policy,
+                        target_task_id=task_id,
+                        stage=stage,
+                        task_description=task_desc,
+                        query_text=query_text,
+                    )
+                    self._last_agentic_pack = pack
+                    self._trace_local.pack = pack
+                    if self.prospective_audit_logger is not None:
+                        self.prospective_audit_logger.record_run_candidates(
+                            pack, self.nodes
+                        )
+                    text = str(pack.get("prompt_text") or "")
+                    refs = list(pack.get("final_prompt_candidate_ids") or [])
+                    return text, self._prompt_visible_refs(text, refs)
                 pack = self._hybrid_pack(
                     stage=stage,
                     task_id=task_id,

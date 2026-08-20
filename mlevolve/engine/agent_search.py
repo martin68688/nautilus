@@ -463,6 +463,7 @@ class AgentSearch:
             return
         allowed = {
             ("memory_reproduction", "novel_exploration"),
+            ("memory_transfer", "novel_exploration"),
             ("coldstart_baseline", "memory_reproduction", "novel_exploration"),
             ("coldstart_baseline", "memory_transfer", "novel_exploration"),
             (
@@ -488,13 +489,13 @@ class AgentSearch:
         synthesize_on_coverage = bool(
             getattr(policy, "cross_role_synthesis_on_coverage", False)
         )
-        if synthesize_on_coverage and tuple(roles) != (
-            "memory_reproduction",
-            "novel_exploration",
-        ):
+        if synthesize_on_coverage and tuple(roles) not in {
+            ("memory_reproduction", "novel_exploration"),
+            ("memory_transfer", "novel_exploration"),
+        }:
             raise ValueError(
-                "cross_role_synthesis_on_coverage requires exactly the independent "
-                "memory_reproduction and novel_exploration roles"
+                "cross_role_synthesis_on_coverage requires novel_exploration "
+                "paired with memory_reproduction or memory_transfer"
             )
         if synthesize_on_coverage and not bool(
             getattr(policy, "cross_role_synthesis_after_balance", False)

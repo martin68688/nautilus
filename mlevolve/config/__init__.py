@@ -494,6 +494,17 @@ class ExternalSkillMemoryConfig:
     experiment_r_debug_confidence_threshold: float = 0.50
     experiment_r_memory_transfer_static_gate: bool = False
     experiment_r_memory_transfer_runtime_gate: bool = False
+    # Independent, opt-in cross-task transfer. Exact-task Replay remains on
+    # its existing path; this projection may expose only score-free portable
+    # L2/L3 text when different task IDs share one explicit Host task type.
+    cross_task_transfer_enabled: bool = False
+    cross_task_transfer_source_task_id: str = ""
+    cross_task_transfer_source_task_type: str = ""
+    cross_task_transfer_target_task_type: str = ""
+    cross_task_transfer_allowed_levels: list[str] = field(
+        default_factory=lambda: ["L2_tactic", "L3_repair"]
+    )
+    cross_task_transfer_max_items: int = 6
     experiment_r_agentic_retrieval_enabled: bool = False
     experiment_r_agentic_max_steps: int = 4
     experiment_r_agentic_per_step_top_k: int = 8

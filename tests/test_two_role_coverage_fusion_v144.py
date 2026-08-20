@@ -81,7 +81,7 @@ def test_coverage_mode_rejects_non_two_role_contract():
     )
     agent.scfg = SimpleNamespace(num_drafts=3)
 
-    with pytest.raises(ValueError, match="requires exactly the independent"):
+    with pytest.raises(ValueError, match="requires novel_exploration"):
         AgentSearch._validate_draft_role_policy(agent)
 
 

@@ -233,13 +233,30 @@ def run(
         }
         prompt["Instructions"]["Draft role contract (MANDATORY)"] = [role_contract["requirement"]]
     elif draft_role == "memory_transfer":
+        transfer_enabled = bool(
+            getattr(
+                getattr(agent.cfg, "external_skill_memory", None),
+                "cross_task_transfer_enabled",
+                False,
+            )
+        )
         role_contract = {
             "role": draft_role,
             "requirement": (
-                "Build a runnable solution that materially implements at least one explicitly retrieved, "
-                "Authority-approved RunForest/SOP memory item in executable code. Historical memory may "
-                "come from the same task or another task, but it is evidence rather than an answer key. "
-                "Name the adopted idea in the plan and preserve the frozen Host Protocol Contract."
+                (
+                    "Build a runnable TARGET-task solution that materially adapts at least one "
+                    "Host-projected portable tactic. The source task is evidence, not an answer "
+                    "key: do not copy source code, checkpoints, predictions, submissions, class "
+                    "mappings, or source scores. Name the adapted tactic and validate it only on "
+                    "target-task training data. Preserve the frozen Host Protocol Contract."
+                )
+                if transfer_enabled
+                else (
+                    "Build a runnable solution that materially implements at least one explicitly retrieved, "
+                    "Authority-approved RunForest/SOP memory item in executable code. Historical memory may "
+                    "come from the same task or another task, but it is evidence rather than an answer key. "
+                    "Name the adopted idea in the plan and preserve the frozen Host Protocol Contract."
+                )
             ),
         }
         prompt["Instructions"]["Draft role contract (MANDATORY)"] = [role_contract["requirement"]]
