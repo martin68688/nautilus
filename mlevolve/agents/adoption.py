@@ -326,6 +326,15 @@ def log_adoption(
                     getattr(agent, "cfg", None), "run_identity", None
                 )
                 pool = pack.get("candidate_pool") or {}
+                # Experiment-R packs historically used a Mapping with an
+                # embedded pool_identity.  Cross-task transfer deliberately
+                # exposes a score-free list of portable candidates instead.
+                # Preserve either shape without treating a list like a dict.
+                pool_identity = (
+                    pool.get("pool_identity") or {}
+                    if isinstance(pool, dict)
+                    else {}
+                )
                 node.memory_routing_trace = {
                     "schema": "mlevolve_memory_routing_trace_v1",
                     "memory_pack_schema": str(pack.get("schema") or ""),
@@ -339,7 +348,7 @@ def log_adoption(
                     "target_task_id": str(pack.get("target_task_id") or ""),
                     "memory_pool_sha256": str(
                         pack.get("memory_pool_sha256")
-                        or (pool.get("pool_identity") or {}).get("memory_pool_sha256")
+                        or pool_identity.get("memory_pool_sha256")
                         or ""
                     ),
                     "candidate_pool_hash": str(pack.get("candidate_pool_hash") or ""),
@@ -355,14 +364,23 @@ def log_adoption(
                         pack.get("live_query_used_for_candidate_pool", True)
                     ),
                     "candidate_pool_identity": copy.deepcopy(
-                        pool.get("pool_identity") or {}
+                        pool_identity
                     ),
                     "raw_candidates": copy.deepcopy(pool),
                     "selected_candidates": copy.deepcopy(
-                        pack.get("selected_items") or []
+                        pack.get("selected_items")
+                        or pack.get("selected_candidates")
+                        or []
                     ),
                     "budget_contract": copy.deepcopy(pack.get("budget_contract") or {}),
-                    "safety_gate": copy.deepcopy(pack.get("safety_gate") or {}),
+                    "safety_gate": copy.deepcopy(
+                        pack.get("safety_gate")
+                        or pack.get("visibility_safety_gate")
+                        or {}
+                    ),
+                    "memory_transfer": copy.deepcopy(
+                        pack.get("memory_transfer") or {}
+                    ),
                     "final_prompt_candidate_ids": list(
                         pack.get("final_prompt_candidate_ids") or []
                     ),
@@ -504,6 +522,7 @@ def log_adoption(
             "layered_strategy_memory_pack_v1",
             "stage_hybrid_memory_pack_v1",
             "layered_model_design_tactics_v1",
+            "mlevolve_cross_task_transfer_pack_v1",
         }
         and callable(candidate_exposure_recorder)
     ):

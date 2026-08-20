@@ -1,0 +1,15 @@
+{
+  "attempt": "attempt-000",
+  "candidate_execution_started": false,
+  "error": "AttributeError: 'list' object has no attribute 'get'",
+  "failure_class": "transfer_adoption_receipt_shape",
+  "logical_run_id": "e2e-smoke-uci100-cross-task-transfer-gpt56sol-v147-r5__uci-one-hundred-leaves__dynamic_cross_task_transfer__attempt-000",
+  "pod_name": "mlevolve-uci100-gpt56sol-v147-transfer-smoke-r5-dev",
+  "pod_uid": "a856a1b5-333b-48bc-afb7-3a593e455495",
+  "preservation": "Pod, runtime, data, output, full generated response log, and attempt identity are retained and must not be reused.",
+  "root_cause": "The new transfer pack correctly represents candidate_pool as a score-free list, while agents.adoption.log_adoption inherited an Experiment-R-only assumption that candidate_pool is a Mapping containing pool_identity.",
+  "schema": "mlevolve_draft_receipt_failure_v1",
+  "solver_started": true,
+  "stepwise_generation_completed": true,
+  "training_candidate_executed": false
+}

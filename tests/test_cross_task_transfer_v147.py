@@ -144,6 +144,54 @@ def test_transfer_host_gate_precedes_legacy_end2end_controller():
     )
 
 
+def test_adoption_trace_accepts_list_shaped_transfer_candidate_pool():
+    from agents.adoption import log_adoption
+    from agents.memory.cross_task_transfer import build_transfer_pack
+
+    pack = build_transfer_pack(
+        _nodes(),
+        _policy(),
+        target_task_id="uci-one-hundred-leaves",
+        stage="draft",
+        task_description="100-class leaf descriptor classification",
+        query_text="complete OOF validation",
+    )
+    layer = SimpleNamespace(
+        current_navigation_pack=lambda: pack,
+        current_visibility_pack=lambda: None,
+        experiment_r_enabled=True,
+        memory_snapshot=None,
+    )
+    node = SimpleNamespace(
+        id="node::transfer",
+        adoption_log=[],
+        memory_navigation_trace=[],
+        memory_routing_trace={},
+        replay_source={},
+    )
+    agent = SimpleNamespace(
+        external_skill_memory=layer,
+        cfg=SimpleNamespace(run_identity=SimpleNamespace()),
+        evaluation_authority=None,
+        adoption_tracking_enabled=True,
+    )
+
+    log_adoption(
+        node,
+        agent,
+        "run_forest_stage_hybrid_memory",
+        pack["final_prompt_candidate_ids"],
+        "draft",
+    )
+
+    trace = node.memory_routing_trace
+    assert trace["memory_pack_schema"] == "mlevolve_cross_task_transfer_pack_v1"
+    assert isinstance(trace["raw_candidates"], list)
+    assert trace["selected_candidates"] == pack["selected_candidates"]
+    assert trace["memory_transfer"]["source_score_inheritance_allowed"] is False
+    assert trace["memory_transfer"]["source_code_exposure_allowed"] is False
+
+
 def test_transfer_pair_is_valid_for_protected_coverage_fusion():
     from engine.agent_search import AgentSearch
     from engine.conditions import coverage_synthesis_due

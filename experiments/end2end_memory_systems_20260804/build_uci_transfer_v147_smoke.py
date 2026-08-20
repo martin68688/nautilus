@@ -12,12 +12,12 @@ from pathlib import Path
 
 
 REPO = Path(__file__).resolve().parents[2]
-RUNTIME = "/workspace/nautilus-exp-end2end-agent-v147-transfer-smoke-r5"
-DATA_ROOT = "/workspace/experiment-end2end-uci100-transfer-v147-r5/data/public"
-OUTPUT_ROOT = "/workspace/experiment-end2end-uci100-transfer-v147-r5/runs"
-POD_NAME = "mlevolve-uci100-gpt56sol-v147-transfer-smoke-r5-dev"
-EXPERIMENT_LABEL = "experiment-end2end-uci100-transfer-v147-smoke-r5"
-RELEASE_ID = "uci100-same-type-cross-task-transfer-gpt56sol-v147-smoke-r5"
+RUNTIME = "/workspace/nautilus-exp-end2end-agent-v147-transfer-smoke-r6"
+DATA_ROOT = "/workspace/experiment-end2end-uci100-transfer-v147-r6/data/public"
+OUTPUT_ROOT = "/workspace/experiment-end2end-uci100-transfer-v147-r6/runs"
+POD_NAME = "mlevolve-uci100-gpt56sol-v147-transfer-smoke-r6-dev"
+EXPERIMENT_LABEL = "experiment-end2end-uci100-transfer-v147-smoke-r6"
+RELEASE_ID = "uci100-same-type-cross-task-transfer-gpt56sol-v147-smoke-r6"
 IMAGE = (
     "docker.io/haomingwang22/mlevolve@"
     "sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc"
@@ -25,6 +25,7 @@ IMAGE = (
 
 OVERLAYS = (
     "mlevolve/agents/draft_agent.py",
+    "mlevolve/agents/adoption.py",
     "mlevolve/agents/memory/cross_task_transfer.py",
     "mlevolve/agents/memory/stage_aware_hybrid_memory.py",
     "mlevolve/config/__init__.py",
@@ -38,6 +39,7 @@ OVERLAYS = (
     "experiments/end2end_memory_systems_20260804/systems_v147_transfer_smoke_r3/dynamic_cross_task_transfer.yaml",
     "experiments/end2end_memory_systems_20260804/systems_v147_transfer_smoke_r4/dynamic_cross_task_transfer.yaml",
     "experiments/end2end_memory_systems_20260804/systems_v147_transfer_smoke_r5/dynamic_cross_task_transfer.yaml",
+    "experiments/end2end_memory_systems_20260804/systems_v147_transfer_smoke_r6/dynamic_cross_task_transfer.yaml",
 )
 
 

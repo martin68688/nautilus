@@ -294,9 +294,14 @@ def build_transfer_pack(
             "forbidden_fields": sorted(FORBIDDEN_FIELDS),
             "projection_sha256": projection_sha256,
         },
+        "candidate_pool_source": "host_same_type_score_free_projection",
+        "candidate_pool_hash": projection_sha256,
+        "memory_pool_sha256": projection_sha256,
+        "live_query_used_for_candidate_pool": False,
         "pre_gate_raw_candidates": observed,
         "candidate_pool": observed,
         "selected_candidates": selected,
+        "selected_items": selected,
         "suppressed_candidates": [
             {"candidate_id": row["id"], "reason": "outside_transfer_top_k"}
             for row in observed[policy.max_items :]
@@ -323,6 +328,12 @@ def build_transfer_pack(
         ],
         "visible_clause_ids": [],
         "visibility_safety_gate": {
+            "pre_ranking": True,
+            "unauthorized_prompt_exposure": 0,
+            "source_score_fields_exposed": 0,
+            "source_code_fields_exposed": 0,
+        },
+        "safety_gate": {
             "pre_ranking": True,
             "unauthorized_prompt_exposure": 0,
             "source_score_fields_exposed": 0,
