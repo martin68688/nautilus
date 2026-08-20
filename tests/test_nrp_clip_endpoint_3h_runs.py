@@ -58,12 +58,30 @@ def test_both_runs_are_three_hour_and_practically_step_unbounded():
         assert config["agent"]["steps"] == 2147483647
 
 
+def test_clip_r2_hotfixes_inherit_the_frozen_three_hour_policies():
+    expected = {
+        "systems_v147_transfer_3h_clip_r2/dynamic_cross_task_transfer.yaml": (
+            "../systems_v147_transfer_3h_clip_r1/dynamic_cross_task_transfer.yaml"
+        ),
+        "systems_v149_dynamic_transfer_3h_clip_r2/"
+        "dynamic_cross_task_transfer.yaml": (
+            "../systems_v149_dynamic_transfer_3h_clip_r1/"
+            "dynamic_cross_task_transfer.yaml"
+        ),
+    }
+    for relative, parent in expected.items():
+        config = yaml.safe_load((EXP / relative).read_text(encoding="utf-8"))
+        assert config["extends"] == parent
+        assert config["run_identity"]["memory_version"].endswith("clip_r2")
+
+
 def test_executable_defaults_and_future_v147_builder_no_longer_use_relay():
     paths = (
         REPO / "mlevolve" / "config" / "config.yaml",
         REPO / "mlevolve" / "analysis" / "adoption_verifier_smoke.py",
         EXP / "build_uci_transfer_v147_smoke.py",
         EXP / "build_uci_transfer_3h_clip_r1.py",
+        EXP / "build_uci_transfer_3h_clip_r2.py",
     )
     combined = "\n".join(path.read_text(encoding="utf-8") for path in paths)
     assert ENDPOINT in combined

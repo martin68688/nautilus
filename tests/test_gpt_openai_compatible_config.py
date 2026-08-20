@@ -126,11 +126,13 @@ def test_openai_named_tool_choice_uses_top_level_name():
     }
 
 
-def _openai_cfg() -> SimpleNamespace:
+def _openai_cfg(
+    base_url: str = "https://gateway.example.test/v1",
+) -> SimpleNamespace:
     stage = SimpleNamespace(
         model="gpt-5.6-sol",
         api_key="test-key",
-        base_url="https://gateway.example.test/v1",
+        base_url=base_url,
     )
     return SimpleNamespace(agent=SimpleNamespace(code=stage, feedback=stage))
 
@@ -192,6 +194,51 @@ def test_explicit_zero_temperature_overrides_gpt_profile_for_tool_calls(
 
     assert output == {"lower_is_better": True}
     assert captured["temperature"] == 0.0
+
+
+def test_nrp_clip_endpoint_uses_standard_nested_named_tool_choice(monkeypatch):
+    from llm import openai as backend
+
+    captured = {}
+
+    class FakeCompletions:
+        def create(self, **params):
+            captured.update(params)
+            return _tool_completion("emit_direction", '{"lower_is_better": true}')
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            self.chat = SimpleNamespace(completions=FakeCompletions())
+
+    monkeypatch.setattr(backend, "OpenAI", FakeClient)
+    spec = FunctionSpec(
+        name="emit_direction",
+        description="Emit metric direction",
+        json_schema={
+            "type": "object",
+            "properties": {"lower_is_better": {"type": "boolean"}},
+            "required": ["lower_is_better"],
+            "additionalProperties": False,
+        },
+    )
+
+    output, *_ = backend.query(
+        system_message="judge",
+        user_message=None,
+        model="gpt-5.6-sol",
+        temperature=0.0,
+        max_tokens=100,
+        func_spec=spec,
+        cfg=_openai_cfg(
+            "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
+        ),
+    )
+
+    assert output == {"lower_is_better": True}
+    assert captured["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "emit_direction"},
+    }
 
 
 def test_openai_compatible_tool_output_is_validated_locally(monkeypatch):

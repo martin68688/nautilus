@@ -1,0 +1,6 @@
+# Endpoint-wire compatibility hotfix for the three-hour v149 rerun.  Dynamic
+# Search -> Judge -> Resolver logic and budget remain identical to clip-r1.
+extends: ../systems_v149_dynamic_transfer_3h_clip_r1/dynamic_cross_task_transfer.yaml
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_dynamic_transfer_v149_3h_clip_r2

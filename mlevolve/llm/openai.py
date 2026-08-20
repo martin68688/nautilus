@@ -172,7 +172,9 @@ def query(
         if not supports_json_schema(model):
             tool_dict.pop("strict", None)
         params["tools"] = [tool_dict]
-        params["tool_choice"] = func_spec.openai_tool_choice_dict
+        params["tool_choice"] = func_spec.openai_tool_choice_for_base_url(
+            stage.base_url
+        )
 
     t0 = time.time()
     logger.info(f"Querying OpenAI-compatible API with model: {model}")

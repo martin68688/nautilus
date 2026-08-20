@@ -1,0 +1,7 @@
+# Endpoint-wire compatibility hotfix for the three-hour v147 rerun.  Search
+# policy and budget remain identical to clip-r1; only the frozen runtime and
+# immutable run identity change.
+extends: ../systems_v147_transfer_3h_clip_r1/dynamic_cross_task_transfer.yaml
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_transfer_v147_3h_clip_r2

@@ -88,6 +88,22 @@ class FunctionSpec(DataClassJsonMixin):
             "name": self.name,
         }
 
+    def openai_tool_choice_for_base_url(self, base_url: str | None):
+        """Return the named-tool dialect accepted by the selected gateway.
+
+        The historical GPT-5.6 relay expects ``name`` at the top level.  The
+        private NRP CLIProxyAPI endpoint follows the OpenAI chat-completions
+        schema and requires the name under ``function``.  Keep the distinction
+        here so callers cannot accidentally mix provider-specific wire shapes.
+        """
+
+        if base_url and "cliproxyapi-haoming.ecepxie.svc.cluster.local" in base_url:
+            return {
+                "type": "function",
+                "function": {"name": self.name},
+            }
+        return self.openai_tool_choice_dict
+
 # ---------------------------------------------------------------------------
 #  Gemini client
 # ---------------------------------------------------------------------------
