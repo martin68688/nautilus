@@ -1,0 +1,12 @@
+{
+  "schema": "mlevolve_leaf_v144_prelaunch_failure_v1",
+  "status": "retained_prelaunch_failure",
+  "generation": "v144-smoke16",
+  "pod_name": "mlevolve-leaf-gpt56sol-v144-smoke16-dev",
+  "pod_uid": "44ae2384-eed5-413b-916a-6316310da212",
+  "attempt_started": false,
+  "output_attempt_created": false,
+  "cause": "The frozen smoke budget still set initial_drafts=3, and run_assignment.py would override the two-role system config at launch.",
+  "repair": "Bind smoke.initial_drafts=2 in the v144 release builder and advance every mutable runtime, evaluator, output, Pod, and logical-run identity to generation r2.",
+  "disposition": "Never launch or reuse this generation. Preserve its runtime and evaluator evidence; remove only the idle Dev Pod to release the A100."
+}

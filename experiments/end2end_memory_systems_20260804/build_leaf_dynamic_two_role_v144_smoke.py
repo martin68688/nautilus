@@ -69,6 +69,7 @@ def configure_builder() -> None:
         )
     )
     base.write_dynamic_config = write_dynamic_config
+    base.update_runtime_budget = update_runtime_budget
     base.update_memory_manifest = update_memory_manifest
     base.build_dev_pod = build_dev_pod
 
@@ -117,6 +118,38 @@ def update_memory_manifest(output: Path) -> str:
         v143.MANIFEST_DIR = previous
 
 
+def update_runtime_budget(output: Path) -> str:
+    """Keep the frozen command-line draft count aligned with the two-role policy."""
+
+    path = output / MANIFEST_DIR / "budget.json"
+    payload = v135.read_json(path)
+    payload["smoke"]["initial_drafts"] = 2
+    return v135.write_hashed(path, payload, "manifest_hash")
+
+
+def configure_generation(generation: int) -> None:
+    """Advance all mutable identities after a pre-launch staging failure."""
+
+    if generation < 1:
+        raise ValueError("generation must be positive")
+    if generation == 1:
+        return
+    revision = f"-r{generation}"
+    manifest_revision = f"_r{generation}"
+    global SUFFIX, MANIFEST_DIR, SYSTEM_DIR, CLUSTER_RUNTIME
+    global OUTPUT_ROOT, EVALUATOR_ROOT, EXPERIMENT_LABEL, POD_NAME
+    SUFFIX = f"v144-smoke16{revision}"
+    MANIFEST_DIR = EXPERIMENT / f"manifests_v144_smoke16{manifest_revision}"
+    SYSTEM_DIR = EXPERIMENT / f"systems_v144_smoke16{manifest_revision}"
+    CLUSTER_RUNTIME = f"/workspace/nautilus-exp-end2end-agent-{SUFFIX}"
+    OUTPUT_ROOT = f"/workspace/experiment-end2end-memory-agent-{SUFFIX}/runs"
+    EVALUATOR_ROOT = (
+        f"/workspace/experiment-end2end-leaf-official-evaluator-{SUFFIX}"
+    )
+    EXPERIMENT_LABEL = f"experiment-end2end-memory-agent-{SUFFIX}"
+    POD_NAME = f"mlevolve-leaf-gpt56sol-{SUFFIX}-dev"
+
+
 def build_dev_pod(manifest_hash: str, source_lock_hash: str) -> dict:
     original = getattr(base, "_v144_original_build_dev_pod", None)
     if original is None:
@@ -134,10 +167,12 @@ def main() -> int:
     parser.add_argument("--output-runtime", required=True, type=Path)
     parser.add_argument("--pod-out", required=True, type=Path)
     parser.add_argument("--receipt", required=True, type=Path)
+    parser.add_argument("--generation", type=int, default=1)
     args = parser.parse_args()
 
     if not hasattr(base, "_v144_original_build_dev_pod"):
         base._v144_original_build_dev_pod = base.build_dev_pod
+    configure_generation(args.generation)
     configure_builder()
     receipt = base.build(args.base_runtime, args.output_runtime, args.pod_out)
     receipt.update(
