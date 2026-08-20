@@ -1,0 +1,6 @@
+# v147-r7 isolates every non-transfer lineage from the source-task memory
+# graph while preserving score/code-free L2/L3 projection for memory_transfer.
+extends: ../systems_v147_transfer_smoke_r6/dynamic_cross_task_transfer.yaml
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_score_free_transfer_v147_smoke_r7
