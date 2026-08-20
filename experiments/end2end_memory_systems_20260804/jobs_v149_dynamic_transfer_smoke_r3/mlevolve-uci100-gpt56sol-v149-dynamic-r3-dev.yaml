@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-uci100-gpt56sol-v149-dynamic-r3-dev
+  namespace: ecepxie
+  annotations:
+    mlevolve.ai/purpose: five-granularity-cross-task-dynamic-transfer-smoke
+    mlevolve.ai/source-task: leaf-classification
+    mlevolve.ai/target-task: uci-one-hundred-leaves
+  labels:
+    app: mlevolve-end2end-dev
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: experiment-end2end-uci100-dynamic-transfer-v149-r3
+    mlevolve.ai/release-mode: smoke
+    mlevolve.ai/system: dynamic-cross-task-transfer
+spec:
+  activeDeadlineSeconds: 21600
+  containers:
+    - name: dev
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command:
+        - /bin/bash
+        - -lc
+      args:
+        - exec sleep infinity
+      env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        - name: PYTHONPATH
+          value: /workspace/nautilus-exp-end2end-agent-v149-dynamic-transfer-smoke-r3/mlevolve:/workspace/nautilus-exp-end2end-agent-v149-dynamic-transfer-smoke-r3
+      envFrom:
+        - secretRef:
+            name: mlevolve-openai-gpt56sol-v1
+      resources:
+        limits:
+          cpu: "16"
+          ephemeral-storage: 64Gi
+          memory: 32Gi
+          nvidia.com/a100: "1"
+        requests:
+          cpu: "16"
+          ephemeral-storage: 64Gi
+          memory: 32Gi
+          nvidia.com/a100: "1"
+      volumeMounts:
+        - mountPath: /workspace
+          name: workspace
+        - mountPath: /dev/shm
+          name: shm
+  restartPolicy: Never
+  terminationGracePeriodSeconds: 180
+  tolerations:
+    - key: nvidia.com/gpu
+      operator: Exists
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
+    - name: shm
+      emptyDir:
+        medium: Memory
+        sizeLimit: 16Gi
