@@ -509,6 +509,25 @@ class ExternalSkillMemoryConfig:
     cross_task_transfer_max_items: int = 6
     cross_task_architecture_transfer_enabled: bool = False
     cross_task_architecture_max_items: int = 1
+    # Full dynamic cross-task retrieval operates only after the Host has
+    # irreversibly projected safe L1/L2/L3 fields. Search and Judge never see
+    # the raw source graph; the Resolver enforces architecture-family
+    # coherence and configured variable-cardinality ceilings.
+    cross_task_dynamic_retrieval_enabled: bool = False
+    cross_task_dynamic_search_rounds: int = 3
+    cross_task_dynamic_per_query_limit: int = 8
+    cross_task_dynamic_safe_supplement_per_query: int = 2
+    cross_task_dynamic_max_candidates: int = 32
+    cross_task_dynamic_judge_candidate_limit: int = 18
+    cross_task_dynamic_context_chars: int = 12000
+    cross_task_dynamic_trace_history: int = 6
+    cross_task_dynamic_search_max_tokens: int = 3000
+    cross_task_dynamic_judge_max_tokens: int = 7000
+    cross_task_dynamic_allow_abstention: bool = False
+    cross_task_dynamic_stage_selection_caps: dict = field(
+        default_factory=lambda: {"draft": 7, "improve": 6, "debug": 4}
+    )
+    cross_task_dynamic_max_selected_architectures: int = 1
     experiment_r_agentic_retrieval_enabled: bool = False
     experiment_r_agentic_max_steps: int = 4
     experiment_r_agentic_per_step_top_k: int = 8

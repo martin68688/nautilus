@@ -554,6 +554,152 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         self.cross_task_transfer_policy = CrossTaskTransferPolicy.from_config(
             ext_cfg
         )
+        self.cross_task_dynamic_retrieval_enabled = bool(
+            getattr(ext_cfg, "cross_task_dynamic_retrieval_enabled", False)
+            if ext_cfg is not None
+            else False
+        )
+        self.cross_task_dynamic_search_rounds = int(
+            getattr(ext_cfg, "cross_task_dynamic_search_rounds", 3)
+            if ext_cfg is not None
+            else 3
+        )
+        self.cross_task_dynamic_per_query_limit = int(
+            getattr(ext_cfg, "cross_task_dynamic_per_query_limit", 8)
+            if ext_cfg is not None
+            else 8
+        )
+        self.cross_task_dynamic_safe_supplement_per_query = int(
+            getattr(
+                ext_cfg,
+                "cross_task_dynamic_safe_supplement_per_query",
+                2,
+            )
+            if ext_cfg is not None
+            else 2
+        )
+        self.cross_task_dynamic_max_candidates = int(
+            getattr(ext_cfg, "cross_task_dynamic_max_candidates", 32)
+            if ext_cfg is not None
+            else 32
+        )
+        self.cross_task_dynamic_judge_candidate_limit = int(
+            getattr(ext_cfg, "cross_task_dynamic_judge_candidate_limit", 18)
+            if ext_cfg is not None
+            else 18
+        )
+        self.cross_task_dynamic_context_chars = int(
+            getattr(ext_cfg, "cross_task_dynamic_context_chars", 12000)
+            if ext_cfg is not None
+            else 12000
+        )
+        self.cross_task_dynamic_trace_history = int(
+            getattr(ext_cfg, "cross_task_dynamic_trace_history", 6)
+            if ext_cfg is not None
+            else 6
+        )
+        self.cross_task_dynamic_search_max_tokens = int(
+            getattr(ext_cfg, "cross_task_dynamic_search_max_tokens", 3000)
+            if ext_cfg is not None
+            else 3000
+        )
+        self.cross_task_dynamic_judge_max_tokens = int(
+            getattr(ext_cfg, "cross_task_dynamic_judge_max_tokens", 7000)
+            if ext_cfg is not None
+            else 7000
+        )
+        self.cross_task_dynamic_allow_abstention = bool(
+            getattr(ext_cfg, "cross_task_dynamic_allow_abstention", False)
+            if ext_cfg is not None
+            else False
+        )
+        self.cross_task_dynamic_stage_selection_caps = {
+            str(key): int(value)
+            for key, value in dict(
+                getattr(
+                    ext_cfg,
+                    "cross_task_dynamic_stage_selection_caps",
+                    {"draft": 7, "improve": 6, "debug": 4},
+                )
+                if ext_cfg is not None
+                else {"draft": 7, "improve": 6, "debug": 4}
+            ).items()
+        }
+        self.cross_task_dynamic_max_selected_architectures = int(
+            getattr(
+                ext_cfg,
+                "cross_task_dynamic_max_selected_architectures",
+                1,
+            )
+            if ext_cfg is not None
+            else 1
+        )
+        if self.cross_task_dynamic_retrieval_enabled:
+            if not self.cross_task_transfer_policy.enabled:
+                raise ValueError(
+                    "Dynamic cross-task retrieval requires cross-task transfer"
+                )
+            if not 1 <= self.cross_task_dynamic_search_rounds <= 5:
+                raise ValueError(
+                    "cross_task_dynamic_search_rounds must be in [1, 5]"
+                )
+            if not 1 <= self.cross_task_dynamic_per_query_limit <= 12:
+                raise ValueError(
+                    "cross_task_dynamic_per_query_limit must be in [1, 12]"
+                )
+            if not 0 <= self.cross_task_dynamic_safe_supplement_per_query <= 4:
+                raise ValueError(
+                    "cross_task_dynamic_safe_supplement_per_query must be in [0, 4]"
+                )
+            if not 3 <= self.cross_task_dynamic_max_candidates <= 64:
+                raise ValueError(
+                    "cross_task_dynamic_max_candidates must be in [3, 64]"
+                )
+            if not (
+                3
+                <= self.cross_task_dynamic_judge_candidate_limit
+                <= min(24, self.cross_task_dynamic_max_candidates)
+            ):
+                raise ValueError(
+                    "cross_task_dynamic_judge_candidate_limit must be in "
+                    "[3, min(24, max_candidates)]"
+                )
+            if not 4000 <= self.cross_task_dynamic_context_chars <= 16000:
+                raise ValueError(
+                    "cross_task_dynamic_context_chars must be in [4000, 16000]"
+                )
+            if not 1 <= self.cross_task_dynamic_trace_history <= 8:
+                raise ValueError(
+                    "cross_task_dynamic_trace_history must be in [1, 8]"
+                )
+            if not 800 <= self.cross_task_dynamic_search_max_tokens <= 100000:
+                raise ValueError(
+                    "cross_task_dynamic_search_max_tokens must be in [800, 100000]"
+                )
+            if not 800 <= self.cross_task_dynamic_judge_max_tokens <= 100000:
+                raise ValueError(
+                    "cross_task_dynamic_judge_max_tokens must be in [800, 100000]"
+                )
+            if set(self.cross_task_dynamic_stage_selection_caps) != {
+                "draft",
+                "improve",
+                "debug",
+            }:
+                raise ValueError(
+                    "cross_task_dynamic_stage_selection_caps must define "
+                    "draft/improve/debug"
+                )
+            if any(
+                cap not in range(1, 13)
+                for cap in self.cross_task_dynamic_stage_selection_caps.values()
+            ):
+                raise ValueError(
+                    "cross_task_dynamic stage caps must be in [1, 12]"
+                )
+            if self.cross_task_dynamic_max_selected_architectures not in range(0, 4):
+                raise ValueError(
+                    "cross_task_dynamic_max_selected_architectures must be in [0, 3]"
+                )
         if excluded_run_ids is None and ext_cfg is not None:
             excluded_run_ids = list(
                 getattr(ext_cfg, "excluded_run_ids", None) or []
@@ -6585,14 +6731,32 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if transfer_decision.active:
             if draft_role == "memory_transfer":
                 query_text = "\n".join([task_desc or "", *(query_parts or [])])
-                pack = build_transfer_pack(
-                    self.nodes,
-                    self.cross_task_transfer_policy,
-                    target_task_id=task_id,
-                    stage=canonical_stage,
-                    task_description=task_desc,
-                    query_text=query_text,
-                )
+                if getattr(
+                    self,
+                    "cross_task_dynamic_retrieval_enabled",
+                    False,
+                ):
+                    from agents.memory.cross_task_dynamic_retrieval import (
+                        build_dynamic_transfer_pack,
+                    )
+
+                    pack = build_dynamic_transfer_pack(
+                        self,
+                        self.cross_task_transfer_policy,
+                        target_task_id=task_id,
+                        stage=canonical_stage,
+                        task_description=task_desc,
+                        query_text=query_text,
+                    )
+                else:
+                    pack = build_transfer_pack(
+                        self.nodes,
+                        self.cross_task_transfer_policy,
+                        target_task_id=task_id,
+                        stage=canonical_stage,
+                        task_description=task_desc,
+                        query_text=query_text,
+                    )
                 self._last_agentic_pack = pack
                 self._trace_local.pack = pack
                 if self.prospective_audit_logger is not None:

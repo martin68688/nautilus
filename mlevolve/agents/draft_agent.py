@@ -250,12 +250,27 @@ def run(
                 False,
             )
         )
+        dynamic_transfer_enabled = bool(
+            getattr(
+                external_memory_cfg,
+                "cross_task_dynamic_retrieval_enabled",
+                False,
+            )
+        )
         transfer_requirement = (
             "Build a runnable TARGET-task solution that materially adapts at "
-            "least one Host-projected structural architecture blueprint and "
-            "when compatible portable tactics are supplied, materially adapts "
-            "at least one of them. Preserve one coherent architecture rather "
-            "than concatenating incompatible source families. "
+            "least one dynamically retrieved Host-projected memory card and, "
+            "when an L1 blueprint is selected, preserve its coherent "
+            "architecture family while adapting compatible L2/L3 cards. Name "
+            "the Search/Judge/Resolver-selected cards you actually use. "
+            if dynamic_transfer_enabled
+            else (
+                "Build a runnable TARGET-task solution that materially adapts at "
+                "least one Host-projected structural architecture blueprint and "
+                "when compatible portable tactics are supplied, materially adapts "
+                "at least one of them. Preserve one coherent architecture rather "
+                "than concatenating incompatible source families. "
+            )
             if architecture_transfer_enabled
             else (
                 "Build a runnable TARGET-task solution that materially adapts "

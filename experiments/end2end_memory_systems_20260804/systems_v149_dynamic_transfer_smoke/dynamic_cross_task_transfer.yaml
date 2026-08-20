@@ -1,0 +1,25 @@
+# v149 replaces v148's fixed 1x L1 + 6x L2 projection return with a full
+# projected-space Search -> Judge -> Resolver route. The Host still performs
+# irreversible score/code/artifact-free projection before any LLM call.
+extends: ../systems_v148_architecture_transfer_smoke/dynamic_cross_task_transfer.yaml
+
+external_skill_memory:
+  cross_task_dynamic_retrieval_enabled: true
+  cross_task_dynamic_search_rounds: 2
+  cross_task_dynamic_per_query_limit: 8
+  cross_task_dynamic_safe_supplement_per_query: 2
+  cross_task_dynamic_max_candidates: 32
+  cross_task_dynamic_judge_candidate_limit: 18
+  cross_task_dynamic_context_chars: 12000
+  cross_task_dynamic_trace_history: 6
+  cross_task_dynamic_search_max_tokens: 3000
+  cross_task_dynamic_judge_max_tokens: 7000
+  cross_task_dynamic_allow_abstention: false
+  cross_task_dynamic_stage_selection_caps:
+    draft: 7
+    improve: 6
+    debug: 4
+  cross_task_dynamic_max_selected_architectures: 1
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_dynamic_transfer_v149_smoke_r1

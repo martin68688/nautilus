@@ -350,19 +350,47 @@ def _candidate(
         candidate_kind = "architecture_blueprint"
     else:
         level = raw_level
-        text = _portable_text(node, level=level)
-        candidate_kind = "portable_tactic_or_repair"
+        source_task_id = _node_task_id(node)
+        text = {
+            key: _sanitize_architecture_text(
+                value,
+                source_task_id=source_task_id,
+            )
+            for key, value in _portable_text(node, level=level).items()
+        }
+        text = {key: value for key, value in text.items() if value}
+        candidate_kind = (
+            "portable_tactic" if level == "L2_tactic" else "portable_repair"
+        )
     if not text:
         return None
     lexical = _tokens(json.dumps(text, ensure_ascii=False, sort_keys=True))
     overlap = len(query_tokens & lexical) / max(1, len(query_tokens))
+    source_task_id = _node_task_id(node)
+    method_family = _sanitize_architecture_text(
+        node.get("method_family"),
+        source_task_id=source_task_id,
+    )
+    parent_method_families = [
+        value
+        for value in (
+            _sanitize_architecture_text(
+                item,
+                source_task_id=source_task_id,
+            )
+            for item in (node.get("parent_method_families") or [])
+        )
+        if value
+    ]
     return {
         "id": str(node_id),
         "source": "sop",
-        "source_task_id": _node_task_id(node),
+        "source_task_id": source_task_id,
         "abstraction_level": level,
         "candidate_kind": candidate_kind,
         "portable_text": text,
+        "method_family": method_family,
+        "parent_method_families": parent_method_families,
         # This is target-query lexical fit only.  It contains no source score.
         "target_relevance": round(float(overlap), 8),
         "source_score_inherited": False,
@@ -371,7 +399,7 @@ def _candidate(
     }
 
 
-def build_transfer_pack(
+def project_transfer_candidates(
     nodes: Mapping[str, Mapping[str, Any]],
     policy: CrossTaskTransferPolicy,
     *,
@@ -379,17 +407,32 @@ def build_transfer_pack(
     stage: str,
     task_description: str,
     query_text: str,
+    all_safe_levels: bool = False,
 ) -> dict[str, Any]:
+    """Build the irreversible Host-safe candidate universe.
+
+    ``all_safe_levels`` is reserved for the dynamic Search/Judge/Resolver
+    route.  It removes the legacy stage preselection, but it does not widen
+    the authority boundary: only sanitized L1 structure and portable L2/L3
+    text from the configured same-type source task can enter the universe.
+    """
+
     decision = decide_transfer(policy, target_task_id=target_task_id)
     canonical_stage = str(stage or "").lower()
-    allowed_for_stage = (
-        {"L3_repair"} if canonical_stage == "debug" else {"L2_tactic"}
-    )
-    if policy.architecture_transfer_enabled and canonical_stage == "draft":
-        allowed_for_stage.update(ARCHITECTURE_RUNTIME_LEVELS)
-    allowed = allowed_for_stage & set(policy.allowed_levels)
-    if policy.architecture_transfer_enabled and canonical_stage == "draft":
-        allowed.update(ARCHITECTURE_RUNTIME_LEVELS)
+    if all_safe_levels:
+        allowed = set(policy.allowed_levels)
+        if policy.architecture_transfer_enabled:
+            allowed.update(ARCHITECTURE_RUNTIME_LEVELS)
+    else:
+        allowed_for_stage = (
+            {"L3_repair"} if canonical_stage == "debug" else {"L2_tactic"}
+        )
+        if policy.architecture_transfer_enabled and canonical_stage == "draft":
+            allowed_for_stage.update(ARCHITECTURE_RUNTIME_LEVELS)
+        allowed = allowed_for_stage & set(policy.allowed_levels)
+        if policy.architecture_transfer_enabled and canonical_stage == "draft":
+            allowed.update(ARCHITECTURE_RUNTIME_LEVELS)
+
     query_tokens = _tokens(f"{task_description} {query_text}")
     observed: list[dict[str, Any]] = []
     if decision.active:
@@ -402,11 +445,47 @@ def build_transfer_pack(
             if row is not None:
                 observed.append(row)
     observed.sort(
-        key=lambda row: (
-            -float(row["target_relevance"]),
-            str(row["id"]),
-        )
+        key=lambda row: (-float(row["target_relevance"]), str(row["id"]))
     )
+    payload = {
+        "decision": decision.to_dict(),
+        "stage": canonical_stage,
+        "all_safe_levels": bool(all_safe_levels),
+        "allowed_levels": sorted(allowed),
+        "observed_candidates": observed,
+    }
+    payload["projection_sha256"] = hashlib.sha256(
+        json.dumps(
+            payload,
+            sort_keys=True,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    return payload
+
+
+def build_transfer_pack(
+    nodes: Mapping[str, Mapping[str, Any]],
+    policy: CrossTaskTransferPolicy,
+    *,
+    target_task_id: str,
+    stage: str,
+    task_description: str,
+    query_text: str,
+) -> dict[str, Any]:
+    projection = project_transfer_candidates(
+        nodes,
+        policy,
+        target_task_id=target_task_id,
+        stage=stage,
+        task_description=task_description,
+        query_text=query_text,
+    )
+    decision = CrossTaskTransferDecision(**projection["decision"])
+    canonical_stage = str(projection["stage"])
+    allowed = set(projection["allowed_levels"])
+    observed = list(projection["observed_candidates"])
     architecture_candidates = [
         row for row in observed if row["abstraction_level"] == ARCHITECTURE_LEVEL
     ]
@@ -576,4 +655,5 @@ __all__ = [
     "TRANSFER_PACK_SCHEMA",
     "build_transfer_pack",
     "decide_transfer",
+    "project_transfer_candidates",
 ]

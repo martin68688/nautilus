@@ -524,6 +524,7 @@ def log_adoption(
             "layered_model_design_tactics_v1",
             "mlevolve_cross_task_transfer_pack_v1",
             "mlevolve_cross_task_transfer_pack_v2",
+            "mlevolve_cross_task_dynamic_transfer_pack_v1",
         }
         and callable(candidate_exposure_recorder)
     ):
