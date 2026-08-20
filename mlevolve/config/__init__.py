@@ -151,6 +151,11 @@ class DraftRolePolicyConfig:
     # Cross-role aggregation is a Novel operation and cannot begin until every
     # protected Draft role has reached its minimum valid-candidate coverage.
     cross_role_synthesis_after_balance: bool = False
+    # Dynamic two-role mode may create its first root Fusion immediately when
+    # Replay and an independently originated Novel route both have valid,
+    # rankable metrics. Later Fusion attempts retain the ordinary time and
+    # stagnation policy.
+    cross_role_synthesis_on_coverage: bool = False
 
 
 @dataclass

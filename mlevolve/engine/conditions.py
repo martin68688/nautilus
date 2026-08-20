@@ -59,6 +59,29 @@ def cross_role_synthesis_allowed(agent, *, component: str) -> bool:
     return True
 
 
+def coverage_synthesis_due(agent) -> bool:
+    """Whether the opted-in two-role run owes its first protected Fusion."""
+
+    policy = getattr(getattr(agent, "acfg", None), "draft_role_policy", None)
+    if not bool(
+        policy is not None
+        and getattr(policy, "enabled", False)
+        and getattr(policy, "cross_role_synthesis_on_coverage", False)
+    ):
+        return False
+    if int(getattr(agent, "fusion_draft_count", 0) or 0) != 0:
+        return False
+    if int(getattr(agent, "max_fusion_drafts", 0) or 0) < 1:
+        return False
+    roles = tuple(str(role) for role in list(getattr(policy, "roles", []) or []))
+    if roles != ("memory_reproduction", "novel_exploration"):
+        return False
+    return cross_role_synthesis_allowed(
+        agent,
+        component="engine.conditions.coverage_synthesis_due",
+    )
+
+
 def should_trigger_branch_fusion(agent) -> bool:
     """Whether to trigger multi-branch aggregation: time window, min branches with success, global stagnation, under max attempts."""
     if not cross_role_synthesis_allowed(
@@ -68,6 +91,15 @@ def should_trigger_branch_fusion(agent) -> bool:
         return False
     if agent.fusion_draft_count >= agent.max_fusion_drafts:
         return False
+
+    # The first two-role Fusion is a deterministic coverage milestone. It must
+    # not wait for the legacy six-hour/stagnation window; later Fusion attempts
+    # continue to use the unchanged legacy conditions below.
+    if coverage_synthesis_due(agent):
+        logger.info(
+            "Two-role coverage complete; first protected cross-role synthesis is due"
+        )
+        return True
 
     if not agent.search_start_time:
         return False

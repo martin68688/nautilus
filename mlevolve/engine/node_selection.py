@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from engine.search_node import SearchNode
 from engine.conditions import (
+    coverage_synthesis_due,
     cross_role_synthesis_enabled,
     should_trigger_branch_fusion,
 )
@@ -249,6 +250,13 @@ def select_from_top_k_weighted(agent, top_k_nodes: List[dict]) -> Optional[Searc
 
 def select_with_soft_switch(agent) -> Optional[SearchNode]:
     """Soft switch: exploration (UCT) vs exploitation (Top-K) by time progress."""
+    # A completed two-role coverage contract owes exactly one root Fusion.
+    # Route through the root selector before random explore/exploit choices can
+    # spend another turn on either source branch.
+    if coverage_synthesis_due(agent):
+        logger.info("[select] prioritizing protected two-role coverage synthesis")
+        return select(agent, agent.virtual_root)
+
     if agent.search_start_time is None:
         logger.info("📊 Search not started yet, using standard UCT")
         return select(agent, agent.virtual_root)

@@ -3,6 +3,37 @@
 from __future__ import annotations
 
 
+def is_replay_derived_novel(node) -> bool:
+    """Whether a Novel-labeled node originated by modifying Replay code."""
+
+    replay_source = getattr(node, "replay_source", None) or {}
+    role_contract = getattr(node, "role_contract", None) or {}
+    return bool(
+        replay_source.get("lineage_kind") == "replay_derived_novel"
+        or role_contract.get("behavioral_role") == "replay_derived_novel"
+    )
+
+
+def candidate_matches_protected_role(node, role: str) -> bool:
+    """Match readiness to an independent configured Draft origin.
+
+    Replay adaptations are deliberately relabeled as Novel for honest ranking,
+    but they must not satisfy the independent Novel coverage prerequisite used
+    by two-role synthesis.
+    """
+
+    node_role = str(getattr(node, "draft_role", "") or "")
+    required_role = str(role or "")
+    if required_role == "novel_exploration":
+        from engine.draft_roles import canonical_draft_role
+
+        return bool(
+            canonical_draft_role(node_role) == "novel_exploration"
+            and not is_replay_derived_novel(node)
+        )
+    return node_role == required_role
+
+
 def build_role_balance_status(agent) -> dict:
     """Count valid Candidates per role without comparing their scores."""
 
@@ -39,30 +70,30 @@ def build_role_balance_status(agent) -> dict:
     host_instrumentation_failures: dict[str, int] = {role: 0 for role in roles}
     for nodes in dict(getattr(agent, "branch_all_nodes", {}) or {}).values():
         for node in nodes:
-            role = str(getattr(node, "draft_role", "") or "")
-            if role not in completed_counts:
-                continue
-            if getattr(node, "exc_type", None) == "HostSourceInstrumentationError":
-                host_instrumentation_failures[role] += 1
-                continue
-            if (
-                getattr(node, "pending_execution", False) is not True
-                and getattr(node, "is_buggy", None) is not None
-            ):
-                completed_counts[role] += 1
+            for role in roles:
+                if not candidate_matches_protected_role(node, role):
+                    continue
+                if getattr(node, "exc_type", None) == "HostSourceInstrumentationError":
+                    host_instrumentation_failures[role] += 1
+                    continue
+                if (
+                    getattr(node, "pending_execution", False) is not True
+                    and getattr(node, "is_buggy", None) is not None
+                ):
+                    completed_counts[role] += 1
 
     for nodes in dict(getattr(agent, "branch_successful_nodes", {}) or {}).values():
         for node in nodes:
-            role = str(getattr(node, "draft_role", "") or "")
             metric = getattr(node, "metric", None)
-            if (
-                role in valid_counts
-                and getattr(node, "is_buggy", None) is False
-                and getattr(node, "is_valid", None) is not False
-                and metric is not None
-                and getattr(metric, "value", None) is not None
-            ):
-                valid_counts[role] += 1
+            for role in roles:
+                if (
+                    candidate_matches_protected_role(node, role)
+                    and getattr(node, "is_buggy", None) is False
+                    and getattr(node, "is_valid", None) is not False
+                    and metric is not None
+                    and getattr(metric, "value", None) is not None
+                ):
+                    valid_counts[role] += 1
 
     deficit_roles = [role for role in roles if valid_counts[role] < minimum]
     next_role = None

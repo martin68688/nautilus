@@ -35,7 +35,11 @@ from protocol_runtime.preflight import (
     build_bounded_repair_receipt,
 )
 from engine import node_selection, evaluation, execution, solution_manager
-from engine.conditions import cross_role_synthesis_allowed, is_branch_stagnant
+from engine.conditions import (
+    coverage_synthesis_due,
+    cross_role_synthesis_allowed,
+    is_branch_stagnant,
+)
 from utils.data_preview import clean_task_desc
 
 logger = logging.getLogger("MLEvolve")
@@ -458,6 +462,7 @@ class AgentSearch:
         if policy is None or not bool(getattr(policy, "enabled", False)):
             return
         allowed = {
+            ("memory_reproduction", "novel_exploration"),
             ("coldstart_baseline", "memory_reproduction", "novel_exploration"),
             ("coldstart_baseline", "memory_transfer", "novel_exploration"),
             (
@@ -469,10 +474,35 @@ class AgentSearch:
         roles = [str(role) for role in list(getattr(policy, "roles", []) or [])]
         if tuple(roles) not in allowed:
             raise ValueError(f"RunForest draft roles must be one of {sorted(allowed)}; got {roles}")
-        if int(self.acfg.initial_drafts) != 3:
-            raise ValueError("RunForest draft role policy requires agent.initial_drafts == 3")
-        if int(self.scfg.num_drafts) != 3:
-            raise ValueError("RunForest draft role policy requires agent.search.num_drafts == 3")
+        expected_drafts = len(roles)
+        if int(self.acfg.initial_drafts) != expected_drafts:
+            raise ValueError(
+                "RunForest draft role policy requires agent.initial_drafts == "
+                f"len(roles) ({expected_drafts})"
+            )
+        if int(self.scfg.num_drafts) != expected_drafts:
+            raise ValueError(
+                "RunForest draft role policy requires agent.search.num_drafts == "
+                f"len(roles) ({expected_drafts})"
+            )
+        synthesize_on_coverage = bool(
+            getattr(policy, "cross_role_synthesis_on_coverage", False)
+        )
+        if synthesize_on_coverage and tuple(roles) != (
+            "memory_reproduction",
+            "novel_exploration",
+        ):
+            raise ValueError(
+                "cross_role_synthesis_on_coverage requires exactly the independent "
+                "memory_reproduction and novel_exploration roles"
+            )
+        if synthesize_on_coverage and not bool(
+            getattr(policy, "cross_role_synthesis_after_balance", False)
+        ):
+            raise ValueError(
+                "cross_role_synthesis_on_coverage requires "
+                "cross_role_synthesis_after_balance=true"
+            )
         ext_cfg = getattr(getattr(self, "cfg", None), "external_skill_memory", None)
         if (
             str(getattr(ext_cfg, "retrieval_control", "")) == "layered_strategy"
@@ -488,7 +518,7 @@ class AgentSearch:
         if 0 <= draft_index < len(roles):
             return roles[draft_index]
         raise DraftRoleReservationError(
-            f"Draft role index {draft_index} exceeds the fixed three-role policy"
+            f"Draft role index {draft_index} exceeds the fixed role policy"
         )
 
     def fixed_draft_slots_exhausted(self) -> bool:
@@ -655,6 +685,11 @@ class AgentSearch:
     ) -> tuple[SearchNode, str] | None:
         """Claim one exact target only after the historical anchor succeeds."""
 
+        # Once both protected source routes are ready, create their one-time
+        # Fusion before spending another turn on the remaining Replay Research
+        # queue. The queue remains intact and resumes after Fusion executes.
+        if coverage_synthesis_due(self):
+            return None
         anchor = self._successful_replay_anchor()
         if anchor is None:
             return None

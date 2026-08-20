@@ -342,7 +342,7 @@ def _run_impl():
                 logger.exception(f"❌ Exception during draft {draft_idx + 1} generation: {e}")
                 if strict_draft_roles:
                     raise RuntimeError(
-                        f"Fixed three-role Draft generation failed at slot {draft_idx}; refusing a partial root set"
+                        f"Fixed-role Draft generation failed at slot {draft_idx}; refusing a partial root set"
                     ) from e
 
         completed = len(journal) - 1

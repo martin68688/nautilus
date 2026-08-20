@@ -331,11 +331,11 @@ def test_draft_role_policy_validates_fixed_three_roles():
     assert AgentSearch.configured_draft_role(agent, 0) == "coldstart_baseline"
     assert AgentSearch.configured_draft_role(agent, 1) == "memory_reproduction"
     assert AgentSearch.configured_draft_role(agent, 2) == "novel_exploration"
-    with pytest.raises(ValueError, match="exceeds the fixed three-role policy"):
+    with pytest.raises(ValueError, match="exceeds the fixed role policy"):
         AgentSearch.configured_draft_role(agent, 3)
 
     agent.acfg.initial_drafts = 2
-    with pytest.raises(ValueError, match="initial_drafts == 3"):
+    with pytest.raises(ValueError, match=r"initial_drafts == len\(roles\) \(3\)"):
         AgentSearch._validate_draft_role_policy(agent)
 
     agent.acfg.initial_drafts = 3

@@ -15,6 +15,85 @@ logger = logging.getLogger("MLEvolve")
 
 
 def _collect_branch_representatives(agent) -> List[SearchNode]:
+    policy = getattr(getattr(agent, "acfg", None), "draft_role_policy", None)
+    coverage_mode = bool(
+        policy is not None
+        and getattr(policy, "enabled", False)
+        and getattr(policy, "cross_role_synthesis_on_coverage", False)
+    )
+    if coverage_mode:
+        from agents.leakage_audit import legacy_rank_eligible
+        from authority.adapters.mlevolve.ranking_gate import (
+            authorize_selection,
+            filter_ranked_nodes,
+        )
+        from authority.models import DecisionStage
+        from engine.role_balance import candidate_matches_protected_role
+
+        all_successful = [
+            node
+            for nodes in agent.branch_successful_nodes.values()
+            for node in nodes
+        ]
+        maximize = agent.metric_maximize if agent.metric_maximize is not None else True
+        representatives: list[SearchNode] = []
+        for role in list(getattr(policy, "roles", []) or []):
+            candidates = [
+                node
+                for node in all_successful
+                if candidate_matches_protected_role(node, str(role))
+                and node.metric is not None
+                and node.metric.value is not None
+            ]
+            candidates = filter_ranked_nodes(
+                agent,
+                candidates,
+                component=(
+                    "agents.aggregation_agent."
+                    f"_collect_two_role_representative.{role}"
+                ),
+            )
+            candidates.sort(
+                key=lambda node: node.metric.value,
+                reverse=maximize,
+            )
+            representative = next(
+                (
+                    node
+                    for node in candidates
+                    if authorize_selection(
+                        agent,
+                        node,
+                        legacy_allowed=legacy_rank_eligible(agent, node),
+                        component=(
+                            "agents.aggregation_agent."
+                            f"_collect_two_role_representative.{role}"
+                        ),
+                        stage=DecisionStage.FUSION,
+                    )
+                ),
+                None,
+            )
+            if representative is None:
+                logger.info(
+                    "Protected two-role synthesis has no authorized representative for role=%s",
+                    role,
+                )
+                return []
+            representatives.append(representative)
+        logger.info(
+            "Collected protected two-role representatives: %s",
+            [
+                {
+                    "role": str(role),
+                    "node_id": str(node.id),
+                    "metric": node.metric.value,
+                }
+                for role, node in zip(list(getattr(policy, "roles", []) or []), representatives)
+            ],
+        )
+        return representatives
+
     representatives = []
 
     for branch_id, successful_nodes in agent.branch_successful_nodes.items():
@@ -237,12 +316,21 @@ def run(
         "requirement": "Explore a distinct memory-informed direction.",
     }
     if explicit_cross_role_provenance:
+        coverage_trigger = bool(
+            getattr(policy, "cross_role_synthesis_on_coverage", False)
+        )
         role_contract.update(
             {
                 "behavioral_role": "cross_role_synthesis",
                 "source_node_ids": source_node_ids,
                 "source_draft_roles": source_roles,
                 "coverage_gate": "all_configured_roles_minimum_valid_met",
+                "synthesis_trigger": (
+                    "two_role_coverage_milestone_v1"
+                    if coverage_trigger
+                    else "balanced_cross_role_synthesis"
+                ),
+                "protected_first_execution": coverage_trigger,
             }
         )
     aggregation_node = SearchNode(
