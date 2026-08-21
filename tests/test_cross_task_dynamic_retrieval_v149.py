@@ -403,6 +403,80 @@ def test_draft_judge_can_select_only_l2_without_fixed_l1_plus_six():
     assert len(pack["selected_portable_items"]) == 2
 
 
+def test_quality_gate_anchors_selected_architecture_with_same_family_l2():
+    """An L1-only Judge decision must not reach the generator ungrounded."""
+
+    from agents.memory.cross_task_dynamic_retrieval import (
+        build_dynamic_transfer_pack,
+    )
+
+    def query_fn(**kwargs):
+        if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
+            return _search_action()
+        cards = json.loads(
+            kwargs["system_message"]["authorized_projected_cards"]
+        )
+        return _judge_action(cards, {"architecture_blueprint"})
+
+    pack = build_dynamic_transfer_pack(
+        _layer(query_fn, rounds=1),
+        _policy(),
+        target_task_id="uci-one-hundred-leaves",
+        stage="draft",
+        task_description="fold multiview leaf classification",
+        query_text="fold ensemble architecture",
+    )
+
+    counts = pack["memory_transfer"]["selected_level_counts"]
+    assert counts["architecture_blueprint"] == 1
+    assert counts["portable_tactic"] == 1
+    assert pack["dynamic_retrieval"]["resolver"]["quality_gate"]["applied"]
+    assert pack["dynamic_retrieval"]["resolver"]["quality_gate"]["actions"][0][
+        "action"
+    ] == "added_l2_tactic_anchor"
+    assert "tactic::leaf::oof" in pack["final_prompt_candidate_ids"]
+    assert "do not silently replace an OOF/fold/calibration requirement" in pack[
+        "prompt_text"
+    ]
+
+
+def test_quality_gate_suppresses_unanchored_architecture_when_no_compatible_l2():
+    """A complex blueprint is safer to drop than to inject without a tactic."""
+
+    from agents.memory.cross_task_dynamic_retrieval import (
+        build_dynamic_transfer_pack,
+    )
+
+    nodes = _nodes()
+    nodes.pop("tactic::leaf::oof")
+    nodes.pop("tactic::leaf::tree")
+
+    def query_fn(**kwargs):
+        if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
+            return _search_action()
+        cards = json.loads(
+            kwargs["system_message"]["authorized_projected_cards"]
+        )
+        return _judge_action(cards, {"architecture_blueprint"})
+
+    layer = _layer(query_fn, rounds=1)
+    layer.nodes = nodes
+    pack = build_dynamic_transfer_pack(
+        layer,
+        _policy(),
+        target_task_id="uci-one-hundred-leaves",
+        stage="draft",
+        task_description="fold multiview leaf classification",
+        query_text="fold ensemble architecture",
+    )
+
+    assert pack["memory_transfer"]["activated"] is False
+    assert pack["final_prompt_candidate_ids"] == []
+    assert pack["dynamic_retrieval"]["resolver"]["quality_gate"]["actions"][0][
+        "action"
+    ] == "suppressed_unanchored_architecture"
+
+
 def test_judge_can_select_transition_reason_and_code_free_module_interface():
     from agents.memory.cross_task_dynamic_retrieval import (
         build_dynamic_transfer_pack,

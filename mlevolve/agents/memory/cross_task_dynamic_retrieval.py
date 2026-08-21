@@ -1046,6 +1046,206 @@ def _resolve_selection(
     }
 
 
+def _selection_quality_score(
+    row: Mapping[str, Any],
+    assessment_by_id: Mapping[str, Mapping[str, Any]],
+    *,
+    stage: str,
+) -> tuple[float, float, float, float, float, str]:
+    """Return a deterministic score used only for Host-side safety repairs.
+
+    The independent Judge is deliberately score-free with respect to source
+    task outcomes.  That does not mean the Host has to accept an incoherent
+    selection.  This score combines the Judge's target-facing assessments with
+    the Host's own projected lexical evidence and is used only when a minimum
+    executable transfer contract (an L2 anchor for an L1 blueprint) is
+    missing.  It must never be interpreted as a source-task metric.
+    """
+
+    assessment = assessment_by_id.get(str(row.get("id") or ""), {})
+    applicability = float(assessment.get("applicability") or 0.0)
+    adaptability = float(assessment.get("target_adaptability") or 0.0)
+    coherence = float(assessment.get("coherence") or 0.0)
+    confidence = float(assessment.get("confidence") or 0.0)
+    stage_fit = STAGE_FIT[stage][str(row.get("granularity") or "")]
+    target_relevance = float(
+        (row.get("candidate") or {}).get("target_relevance") or 0.0
+    )
+    score = (
+        0.30 * confidence
+        + 0.20 * applicability
+        + 0.20 * adaptability
+        + 0.15 * coherence
+        + 0.10 * stage_fit
+        + 0.05 * target_relevance
+    )
+    return (
+        round(score, 8),
+        round(confidence, 8),
+        round(adaptability, 8),
+        round(stage_fit, 8),
+        round(target_relevance, 8),
+        str(row.get("id") or ""),
+    )
+
+
+def _apply_transfer_quality_gate(
+    *,
+    resolver: Mapping[str, Any],
+    judge: Mapping[str, Any],
+    candidates: list[dict[str, Any]],
+    stage: str,
+    max_selected: int,
+    require_tactic_anchor: bool = True,
+) -> dict[str, Any]:
+    """Repair an L1-only dynamic decision before it reaches the generator.
+
+    Search/Judge is intentionally variable-cardinality, but variable does not
+    mean arbitrary.  A blueprint without at least one same-family L2 tactic is
+    not an executable transfer plan: it asks the target generator to invent an
+    entire training protocol from a source-shaped sketch.  The gate first adds
+    the highest-scoring compatible tactic from the already authorized Judge
+    pool.  If no such tactic exists, it suppresses the blueprint and keeps the
+    best portable cards instead.  No new source data is queried and no source
+    score/code/artifact is exposed.
+    """
+
+    repaired = copy.deepcopy(dict(resolver))
+    selected = [copy.deepcopy(row) for row in resolver.get("selected") or []]
+    candidate_by_id = {str(row["id"]): row for row in candidates}
+    assessment_by_id = {
+        str(row.get("candidate_id") or ""): row
+        for row in (judge.get("assessments") or [])
+    }
+    selected_ids = {str(row["id"]) for row in selected}
+    suppressed = list(copy.deepcopy(resolver.get("suppressed") or []))
+    gate_actions: list[dict[str, Any]] = []
+
+    def compatible_tactic(architecture: Mapping[str, Any], row: Mapping[str, Any]) -> bool:
+        if row.get("granularity") != "portable_tactic":
+            return False
+        assessment = assessment_by_id.get(str(row.get("id") or ""), {})
+        if bool(assessment.get("contradiction")):
+            return False
+        family = str(
+            ((architecture.get("relations") or {}).get("method_family")) or ""
+        ).strip().lower()
+        parents = {
+            str(value).strip().lower()
+            for value in ((row.get("relations") or {}).get("parent_method_families") or [])
+            if str(value).strip()
+        }
+        return not family or not parents or family in parents
+
+    architectures = [
+        row for row in selected if row.get("granularity") == "architecture_blueprint"
+    ]
+    if require_tactic_anchor and architectures and not any(
+        row.get("granularity") == "portable_tactic" for row in selected
+    ):
+        architecture = architectures[0]
+        available = [
+            row
+            for row in candidate_by_id.values()
+            if str(row["id"]) not in selected_ids
+            and compatible_tactic(architecture, row)
+        ]
+        available.sort(
+            key=lambda row: _selection_quality_score(
+                row, assessment_by_id, stage=stage
+            ),
+            reverse=True,
+        )
+        if available and len(selected) < int(max_selected):
+            anchor = copy.deepcopy(available[0])
+            selected.append(anchor)
+            selected_ids.add(str(anchor["id"]))
+            gate_actions.append(
+                {
+                    "action": "added_l2_tactic_anchor",
+                    "candidate_id": str(anchor["id"]),
+                    "architecture_id": str(architecture["id"]),
+                    "reason": "architecture_requires_same_family_portable_tactic",
+                }
+            )
+        elif available:
+            # The cap is full.  Replace the weakest non-architecture portable
+            # card rather than silently dropping the executable anchor.
+            replaceable = [
+                row
+                for row in selected
+                if row.get("granularity") != "architecture_blueprint"
+            ]
+            if replaceable:
+                weakest = min(
+                    replaceable,
+                    key=lambda row: _selection_quality_score(
+                        row, assessment_by_id, stage=stage
+                    ),
+                )
+                selected.remove(weakest)
+                suppressed.append(
+                    {
+                        "candidate_id": str(weakest["id"]),
+                        "reason": "quality_gate_replaced_by_l2_tactic_anchor",
+                    }
+                )
+                anchor = copy.deepcopy(available[0])
+                selected.append(anchor)
+                selected_ids.add(str(anchor["id"]))
+                gate_actions.append(
+                    {
+                        "action": "replaced_weak_portable_with_l2_tactic_anchor",
+                        "candidate_id": str(anchor["id"]),
+                        "architecture_id": str(architecture["id"]),
+                        "reason": "architecture_requires_same_family_portable_tactic",
+                    }
+                )
+        else:
+            # No compatible tactic was found in the authorized pool.  Keeping
+            # the L1 would be an ungrounded architecture injection, so suppress
+            # it and retain portable cards selected by the Judge.
+            selected = [
+                row
+                for row in selected
+                if row.get("granularity") != "architecture_blueprint"
+            ]
+            selected_ids = {str(row["id"]) for row in selected}
+            suppressed.append(
+                {
+                    "candidate_id": str(architecture["id"]),
+                    "reason": "quality_gate_suppressed_unanchored_architecture",
+                }
+            )
+            gate_actions.append(
+                {
+                    "action": "suppressed_unanchored_architecture",
+                    "candidate_id": str(architecture["id"]),
+                    "reason": "no_same_family_portable_tactic_in_authorized_pool",
+                }
+            )
+
+    repaired["selected"] = selected
+    repaired["selected_ids"] = [str(row["id"]) for row in selected]
+    repaired["selected_architecture_ids"] = [
+        str(row["id"])
+        for row in selected
+        if row.get("granularity") == "architecture_blueprint"
+    ]
+    repaired["selected_level_counts"] = {
+        granularity: sum(row.get("granularity") == granularity for row in selected)
+        for granularity in GRANULARITIES
+    }
+    repaired["suppressed"] = suppressed
+    repaired["quality_gate"] = {
+        "schema": "cross_task_dynamic_transfer_quality_gate_v1",
+        "require_tactic_anchor": bool(require_tactic_anchor),
+        "applied": bool(gate_actions),
+        "actions": gate_actions,
+    }
+    return repaired
+
+
 def _render_prompt(selected: list[dict[str, Any]]) -> str:
     if not selected:
         return ""
@@ -1062,6 +1262,16 @@ def _render_prompt(selected: list[dict[str, Any]]) -> str:
             "data and preserve one coherent architecture family."
         ),
     ]
+    if any(row.get("granularity") == "architecture_blueprint" for row in selected):
+        parts.append(
+            "## Mandatory architecture adoption gate\n"
+            "For every selected L1 blueprint, implement each non-empty pipeline "
+            "component as a target-derived contract. In particular, do not "
+            "silently replace an OOF/fold/calibration requirement with a single "
+            "holdout shortcut. If a component cannot be implemented and checked "
+            "on target training data, reject the blueprint and fall back to the "
+            "portable L2/L3 items instead of claiming adoption."
+        )
     for row in selected:
         candidate = row["candidate"]
         parts.append(
@@ -1341,6 +1551,16 @@ def build_dynamic_transfer_pack(
             layer.cross_task_dynamic_max_selected_architectures
         ),
     )
+    resolver = _apply_transfer_quality_gate(
+        resolver=resolver,
+        judge=judge,
+        candidates=judge_candidates,
+        stage=canonical_stage,
+        max_selected=max_selected,
+        require_tactic_anchor=bool(
+            getattr(layer, "cross_task_dynamic_require_tactic_anchor", True)
+        ),
+    )
     selected_rows = list(resolver["selected"])
     selected_candidates = [
         copy.deepcopy(row["candidate"]) for row in selected_rows
@@ -1376,7 +1596,7 @@ def build_dynamic_transfer_pack(
         "schema": PACK_SCHEMA,
         "algorithm_version": (
             "host_irreversible_projection_multiround_search_independent_judge_"
-            "stage_aware_resolver_five_granularity_v2"
+            "stage_aware_resolver_five_granularity_quality_gate_v3"
         ),
         "target_task_id": decision["target_task_id"],
         "source_task_id": decision["source_task_id"],

@@ -528,6 +528,10 @@ class ExternalSkillMemoryConfig:
         default_factory=lambda: {"draft": 7, "improve": 6, "debug": 4}
     )
     cross_task_dynamic_max_selected_architectures: int = 1
+    # An L1 blueprint is not executable on its own.  The Host quality gate
+    # therefore requires a same-family L2 tactic anchor before the blueprint
+    # can reach the target generator; otherwise it is suppressed safely.
+    cross_task_dynamic_require_tactic_anchor: bool = True
     experiment_r_agentic_retrieval_enabled: bool = False
     experiment_r_agentic_max_steps: int = 4
     experiment_r_agentic_per_step_top_k: int = 8
