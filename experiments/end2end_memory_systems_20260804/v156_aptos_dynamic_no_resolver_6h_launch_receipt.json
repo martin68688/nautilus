@@ -1,0 +1,76 @@
+{
+  "schema": "mlevolve_nrp_launch_receipt_v1",
+  "version": "v156",
+  "task": "aptos2019-blindness-detection",
+  "branch": "codex/cross-task-dynamic-no-resolver-aptos-v156",
+  "code_revision": "00687ef597add19b123ed8ba412dcb3319880cf0",
+  "retrieval_mode": "five_granularity_search_independent_judge_direct_no_resolver_v5",
+  "resolver_present": false,
+  "post_judge_suppression_applied": false,
+  "source_memory_task": "leaf-classification",
+  "source_memory_bundle": "v10-r8-leaf-llm-redistilled-20260820",
+  "pod": "mlevolve-aptos-v156-no-resolver-6h-a100-r1-dev",
+  "namespace": "ecepxie",
+  "node": "emporia.gp-argo.greatplains.net",
+  "gpu": "NVIDIA A100-PCIE-40GB",
+  "gpu_memory_mib": 40960,
+  "pod_created_utc": "2026-08-21T17:28:31Z",
+  "active_deadline_seconds": 36000,
+  "experiment_start_utc": "2026-08-21T17:43:06Z",
+  "time_limit_seconds": 21600,
+  "step_limit": 2147483647,
+  "pid": 891,
+  "process_group": 891,
+  "model": "gpt-5.6-sol",
+  "openai_base_url": "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1",
+  "endpoint_check_after_launch": {
+    "http_status": 200,
+    "expected_model_advertised": true,
+    "advertised_models": 10
+  },
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v156-aptos-dynamic-no-resolver-6h",
+  "output": "/workspace/experiment-end2end-aptos-v156-dynamic-no-resolver-6h",
+  "launcher_log": "/workspace/experiment-end2end-aptos-v156-dynamic-no-resolver-6h/launcher.log",
+  "run_directory": "/workspace/experiment-end2end-aptos-v156-dynamic-no-resolver-6h/runs/attempt-000/20260821_174303_e2e-aptos-dynamic-v156-no-resolver-6h",
+  "memory_version": "leaf_v10_r8_to_aptos2019_dynamic_transfer_v156_no_resolver_6h",
+  "metric": {
+    "name": "quadratic_weighted_cohens_kappa",
+    "maximize": true,
+    "runtime_direction_check_passed": true
+  },
+  "dataset": {
+    "source": "official_kaggle_competition_archive",
+    "archive_bytes": 10215289875,
+    "train_rows": 3662,
+    "test_rows": 1928,
+    "train_images": 3662,
+    "test_images": 1928,
+    "train_csv_sha256": "b2a3479695922e62c83c94a1a9ef669b4b6d68cc26a1d7090ebedecdd7dd79a5",
+    "test_csv_sha256": "ea4952ca93823bf7fa59c8f5dee2eb7564a64c695c7958dc70e91fc3ef61c84c",
+    "sample_submission_sha256": "2458b54012288d495d00dade08d19fe0eebf22fe349eedf66f8cfb55b39baeb1"
+  },
+  "initial_memory_decision": {
+    "search_rounds": 2,
+    "judge_calls": 1,
+    "judge_candidates": 18,
+    "selected_refs": [
+      "C01",
+      "C03",
+      "C10",
+      "C11",
+      "C12",
+      "C15",
+      "C16"
+    ],
+    "selected_count": 7,
+    "selection_summary": "one adaptable image-fold/OOF architecture hypothesis plus six runtime, probability-shape, checkpoint, OOF-identity, and submission-assembly constraints",
+    "resolver_calls": 0
+  },
+  "preservation_check": {
+    "existing_uci_v155_pod": "mlevolve-uci100-v155-no-resolver-3h-a40-r1-dev",
+    "existing_uci_v155_pod_phase_after_launch": "Running",
+    "existing_uci_v155_pod_ready_after_launch": true,
+    "old_pods_deleted": false,
+    "old_branches_modified": false
+  }
+}
