@@ -221,7 +221,18 @@ def clean_task_desc(task_desc: str, cfg) -> str:
 
     acfg = cfg.agent
 
-    prompt = {
+    # Some target descriptions are already normalized by the experiment
+    # release.  In that case the pre-draft cleanup call adds latency and can
+    # consume the model endpoint before the actual Search/Judge work starts.
+    # Keep this as an explicit opt-in escape hatch so ordinary experiments
+    # retain the historical cleanup behavior and the run receipt can record
+    # exactly when it was used.
+    skip_task_desc_clean = os.environ.get("MLEVOLVE_SKIP_TASK_DESC_CLEAN", "") == "1"
+    if skip_task_desc_clean:
+        cleaned_desc = task_desc
+        logger.info("Skipping LLM task-description cleanup by explicit release override")
+    else:
+        prompt = {
         "Task": "Remove ONLY useless environment information from the task description below. Keep all core task content.",
         "Instructions": [
             "**What to REMOVE** (not related to the essence of the task):",
@@ -241,21 +252,21 @@ def clean_task_desc(task_desc: str, cfg) -> str:
             "**Output**: Return ONLY the cleaned task description text, no explanations."
         ],
         "Task Description to Clean": task_desc
-    }
+        }
 
-    try:
-        cleaned_desc = query(
-            system_message=prompt,
-            user_message=None,
-            model=acfg.code.model,
-            temperature=0.0,
-            cfg=cfg
-        )
-        logger.info(f"Task description cleaned for code review")
-        cleaned_desc = cleaned_desc.strip()
-    except Exception as e:
-        logger.warning(f"Failed to clean task_desc with LLM: {e}. Using original.")
-        cleaned_desc = task_desc
+        try:
+            cleaned_desc = query(
+                system_message=prompt,
+                user_message=None,
+                model=acfg.code.model,
+                temperature=0.0,
+                cfg=cfg
+            )
+            logger.info(f"Task description cleaned for code review")
+            cleaned_desc = cleaned_desc.strip()
+        except Exception as e:
+            logger.warning(f"Failed to clean task_desc with LLM: {e}. Using original.")
+            cleaned_desc = task_desc
 
     input_dir = os.path.join(cfg.workspace_dir, "input")
     sample_submission_paths = [
