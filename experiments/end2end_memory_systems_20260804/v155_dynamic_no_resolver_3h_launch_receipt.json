@@ -1,0 +1,39 @@
+{
+  "schema": "mlevolve_nrp_launch_receipt_v1",
+  "version": "v155",
+  "task": "uci-one-hundred-leaves",
+  "branch": "codex/cross-task-dynamic-no-resolver-v155",
+  "code_revision": "6614e8881f589205e6b51d2ea70b37489886edef",
+  "retrieval_mode": "five_granularity_search_independent_judge_direct_no_resolver_v5",
+  "resolver_present": false,
+  "post_judge_suppression_applied": false,
+  "pod": "mlevolve-uci100-v155-no-resolver-3h-a40-r1-dev",
+  "namespace": "ecepxie",
+  "node": "rci-nautilus01.msu.montana.edu",
+  "gpu": "NVIDIA-A40",
+  "pod_start_utc": "2026-08-21T16:43:38Z",
+  "active_deadline_seconds": 21600,
+  "experiment_start_utc": "2026-08-21T16:52:06Z",
+  "time_limit_seconds": 10800,
+  "step_limit": 2147483647,
+  "pid": 214,
+  "process_group": 214,
+  "model": "gpt-5.6-sol",
+  "openai_base_url": "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1",
+  "endpoint_check": {
+    "http_status": 200,
+    "advertised_models": 10
+  },
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v155-dynamic-no-resolver-3h",
+  "output": "/workspace/experiment-end2end-uci100-v155-dynamic-no-resolver-3h",
+  "launcher_log": "/workspace/experiment-end2end-uci100-v155-dynamic-no-resolver-3h/launcher.log",
+  "run_identity": "leaf_v10_r8_to_uci100_dynamic_transfer_v155_no_resolver_3h",
+  "preserved_reference_runtime": "/workspace/nautilus-exp-end2end-agent-v154-dynamic-quality-gate-3h",
+  "preserved_reference_output": "/workspace/experiment-end2end-uci100-v154-dynamic-quality-gate-3h",
+  "isolation_check": {
+    "v154_resolver_definition_count": 1,
+    "v155_resolver_definition_count": 0,
+    "v154_v155_target_inode_distinct": true,
+    "old_branches_modified": false
+  }
+}
