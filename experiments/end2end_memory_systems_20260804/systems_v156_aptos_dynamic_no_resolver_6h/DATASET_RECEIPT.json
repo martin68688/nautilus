@@ -1,0 +1,38 @@
+{
+  "schema": "mlevolve_dataset_receipt_v1",
+  "competition": "aptos2019-blindness-detection",
+  "source": "Kaggle competition files API",
+  "download_archive_bytes": 10215289875,
+  "archive_crc_check": "passed",
+  "train_rows": 3662,
+  "test_rows": 1928,
+  "train_images": 3662,
+  "test_images": 1928,
+  "label_counts": {
+    "0": 1805,
+    "1": 370,
+    "2": 999,
+    "3": 193,
+    "4": 295
+  },
+  "train_csv_sha256": "b2a3479695922e62c83c94a1a9ef669b4b6d68cc26a1d7090ebedecdd7dd79a5",
+  "test_csv_sha256": "ea4952ca93823bf7fa59c8f5dee2eb7564a64c695c7958dc70e91fc3ef61c84c",
+  "sample_submission_sha256": "2458b54012288d495d00dade08d19fe0eebf22fe349eedf66f8cfb55b39baeb1",
+  "contracts": {
+    "train_schema": [
+      "id_code",
+      "diagnosis"
+    ],
+    "test_schema": [
+      "id_code"
+    ],
+    "submission_schema": [
+      "id_code",
+      "diagnosis"
+    ],
+    "test_order_matches_sample_submission": true,
+    "train_ids_match_image_stems": true,
+    "test_ids_match_image_stems": true,
+    "sample_images_decode": true
+  }
+}

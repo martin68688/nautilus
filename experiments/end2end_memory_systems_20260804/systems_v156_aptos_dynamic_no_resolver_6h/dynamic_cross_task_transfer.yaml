@@ -1,0 +1,19 @@
+# Six-hour Leaf -> APTOS cross-task migration on the v155 direct-Judge route.
+# The common vision_multiclass family authorizes only projected transfer; the
+# target description and Judge must adapt all selected cards to ordinal retinal
+# grading and quadratic weighted kappa. No source code, weights, predictions,
+# scores, dimensions, class mapping, or artifacts may cross the boundary.
+extends: ../systems_v155_dynamic_no_resolver_3h/dynamic_cross_task_transfer.yaml
+
+agent:
+  steps: 2147483647
+  time_limit: 21600
+
+external_skill_memory:
+  cross_task_transfer_source_task_id: leaf-classification
+  cross_task_transfer_source_task_type: vision_multiclass
+  cross_task_transfer_target_task_type: vision_multiclass
+
+run_identity:
+  memory_version: leaf_v10_r8_to_aptos2019_dynamic_transfer_v156_no_resolver_6h
+
