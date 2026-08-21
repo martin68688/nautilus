@@ -332,7 +332,7 @@ def test_dynamic_search_and_judge_see_only_irreversible_safe_projection():
     assert search_calls == 2
     assert judge_calls == 1
     assert pack["stage_route"]["route"] == (
-        "projected_multiround_search_judge_resolver"
+        "projected_multiround_search_direct_judge"
     )
     assert pack["safety_gate"]["irreversible_projection_before_llm"] is True
     assert pack["safety_gate"]["search_agent_raw_graph_access"] is False
@@ -345,20 +345,22 @@ def test_dynamic_search_and_judge_see_only_irreversible_safe_projection():
         "module_interface": 1,
     }
     assert pack["memory_transfer"]["selected_level_counts"] == {
-        "architecture_blueprint": 1,
-        "portable_tactic": 1,
+        "architecture_blueprint": 2,
+        "portable_tactic": 2,
         "portable_repair": 0,
         "improvement_transition": 0,
         "module_interface": 0,
     }
     assert set(pack["final_prompt_candidate_ids"]) == {
         "recipe::leaf::fold",
+        "recipe::leaf::tree",
         "tactic::leaf::oof",
+        "tactic::leaf::tree",
     }
     assert [row["id"] for row in pack["final_prompt_candidates"]] == (
         pack["final_prompt_candidate_ids"]
     )
-    assert pack["evidence_resolver"]["selected_ids"] == (
+    assert pack["judge_selection_receipt"]["selected_ids"] == (
         pack["final_prompt_candidate_ids"]
     )
     serialized_pack = json.dumps(pack, sort_keys=True, ensure_ascii=False)
@@ -403,8 +405,8 @@ def test_draft_judge_can_select_only_l2_without_fixed_l1_plus_six():
     assert len(pack["selected_portable_items"]) == 2
 
 
-def test_quality_gate_anchors_selected_architecture_with_same_family_l2():
-    """An L1-only Judge decision must not reach the generator ungrounded."""
+def test_direct_judge_selection_keeps_l1_without_adding_tactic_anchor():
+    """v155 injects the independent Judge choice without a Resolver repair."""
 
     from agents.memory.cross_task_dynamic_retrieval import (
         build_dynamic_transfer_pack,
@@ -428,20 +430,18 @@ def test_quality_gate_anchors_selected_architecture_with_same_family_l2():
     )
 
     counts = pack["memory_transfer"]["selected_level_counts"]
-    assert counts["architecture_blueprint"] == 1
-    assert counts["portable_tactic"] == 1
-    assert pack["dynamic_retrieval"]["resolver"]["quality_gate"]["applied"]
-    assert pack["dynamic_retrieval"]["resolver"]["quality_gate"]["actions"][0][
-        "action"
-    ] == "added_l2_tactic_anchor"
-    assert "tactic::leaf::oof" in pack["final_prompt_candidate_ids"]
+    assert counts["architecture_blueprint"] == 2
+    assert counts["portable_tactic"] == 0
+    assert "resolver" not in pack["dynamic_retrieval"]
+    assert pack["dynamic_retrieval"]["judge_selection"]["resolver_present"] is False
+    assert "tactic::leaf::oof" not in pack["final_prompt_candidate_ids"]
     assert "do not silently replace an OOF/fold/calibration requirement" in pack[
         "prompt_text"
     ]
 
 
-def test_quality_gate_suppresses_unanchored_architecture_when_no_compatible_l2():
-    """A complex blueprint is safer to drop than to inject without a tactic."""
+def test_direct_judge_selection_keeps_architecture_when_no_l2_exists():
+    """No post-Judge Host component may suppress a selected L1 in v155."""
 
     from agents.memory.cross_task_dynamic_retrieval import (
         build_dynamic_transfer_pack,
@@ -470,11 +470,12 @@ def test_quality_gate_suppresses_unanchored_architecture_when_no_compatible_l2()
         query_text="fold ensemble architecture",
     )
 
-    assert pack["memory_transfer"]["activated"] is False
-    assert pack["final_prompt_candidate_ids"] == []
-    assert pack["dynamic_retrieval"]["resolver"]["quality_gate"]["actions"][0][
-        "action"
-    ] == "suppressed_unanchored_architecture"
+    assert pack["memory_transfer"]["activated"] is True
+    assert set(pack["final_prompt_candidate_ids"]) == {
+        "recipe::leaf::fold",
+        "recipe::leaf::tree",
+    }
+    assert "resolver" not in pack["dynamic_retrieval"]
 
 
 def test_judge_can_select_transition_reason_and_code_free_module_interface():
@@ -535,7 +536,7 @@ def test_judge_can_select_transition_reason_and_code_free_module_interface():
     assert "class_mapping" not in prompt
 
 
-def test_resolver_keeps_one_architecture_and_suppresses_incompatible_tactic():
+def test_direct_judge_selection_does_not_filter_method_family_labels():
     from agents.memory.cross_task_dynamic_retrieval import (
         build_dynamic_transfer_pack,
     )
@@ -560,23 +561,16 @@ def test_resolver_keeps_one_architecture_and_suppresses_incompatible_tactic():
         query_text="fold ensemble OOF coverage",
     )
 
-    resolver = pack["dynamic_retrieval"]["resolver"]
-    assert len(resolver["selected_architecture_ids"]) == 1
-    selected_architecture = resolver["selected_architecture_ids"][0]
-    if selected_architecture == "recipe::leaf::fold":
-        incompatible_tactic = "tactic::leaf::tree"
-    else:
-        incompatible_tactic = "tactic::leaf::oof"
-    assert incompatible_tactic not in pack["final_prompt_candidate_ids"]
-    assert {
-        row["reason"] for row in resolver["suppressed"]
-    } >= {
-        "resolver_multiple_architecture_families",
-        "resolver_parent_method_family_mismatch",
+    assert "resolver" not in pack["dynamic_retrieval"]
+    assert set(pack["final_prompt_candidate_ids"]) == {
+        "recipe::leaf::fold",
+        "recipe::leaf::tree",
+        "tactic::leaf::oof",
+        "tactic::leaf::tree",
     }
 
 
-def test_adoption_durably_mirrors_dynamic_search_and_resolver_receipts():
+def test_adoption_durably_mirrors_dynamic_search_and_direct_judge_receipt():
     from agents.adoption import log_adoption
     from agents.memory.cross_task_dynamic_retrieval import (
         build_dynamic_transfer_pack,
@@ -629,8 +623,11 @@ def test_adoption_durably_mirrors_dynamic_search_and_resolver_receipts():
     trace = node.memory_routing_trace
     assert trace["memory_pack_schema"] == pack["schema"]
     assert trace["final_prompt_candidates"] == pack["final_prompt_candidates"]
-    assert trace["evidence_resolver"] == pack["evidence_resolver"]
     assert trace["dynamic_retrieval"] == pack["dynamic_retrieval"]
+    assert "resolver" not in trace["dynamic_retrieval"]
+    assert trace["dynamic_retrieval"]["judge_selection"] == (
+        pack["judge_selection_receipt"]
+    )
 
 
 def test_stage_layer_dispatches_dynamic_route_before_legacy_controller():

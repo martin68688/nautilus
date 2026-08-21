@@ -634,15 +634,6 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else 1
         )
-        self.cross_task_dynamic_require_tactic_anchor = bool(
-            getattr(
-                ext_cfg,
-                "cross_task_dynamic_require_tactic_anchor",
-                True,
-            )
-            if ext_cfg is not None
-            else True
-        )
         if self.cross_task_dynamic_retrieval_enabled:
             if not self.cross_task_transfer_policy.enabled:
                 raise ValueError(

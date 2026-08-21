@@ -1,0 +1,8 @@
+# Fresh UCI three-hour run on the v155 direct dynamic-transfer route.
+# Search and the independent Judge remain unchanged; the deterministic
+# post-Judge Resolver and its method-family/quality-gate suppression are absent.
+# All v147/v149/v154 branches, runtimes, outputs, and checkpoints stay separate.
+extends: ../systems_v149_dynamic_transfer_3h_clip_r2/dynamic_cross_task_transfer.yaml
+
+run_identity:
+  memory_version: leaf_v10_r8_to_uci100_dynamic_transfer_v155_no_resolver_3h

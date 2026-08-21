@@ -3,9 +3,8 @@
 The raw source graph never reaches either LLM.  The Host first projects only
 sanitized architecture/tactic/repair text, curated successful transition
 reasons, and code-free module interfaces.  A Search Agent proposes literal
-queries over that projected universe.  An independent Judge selects a
-variable-cardinality set and a deterministic Resolver enforces one coherent
-architecture family plus declared tactic compatibility.
+queries over that projected universe.  An independent Judge assesses every
+candidate and its variable-cardinality selection is injected directly.
 """
 
 from __future__ import annotations
@@ -32,7 +31,6 @@ from agents.memory.cross_task_transfer import (
 PACK_SCHEMA = "mlevolve_cross_task_dynamic_transfer_pack_v1"
 SEARCH_SCHEMA = "mlevolve_cross_task_projected_search_v1"
 JUDGE_SCHEMA = "mlevolve_cross_task_projected_judge_v1"
-RESOLVER_SCHEMA = "mlevolve_cross_task_projected_resolver_v1"
 GRANULARITIES = (
     "architecture_blueprint",
     "portable_tactic",
@@ -954,298 +952,6 @@ def _host_judge_fallback(
     }
 
 
-def _resolve_selection(
-    *,
-    judge: Mapping[str, Any],
-    candidates: list[dict[str, Any]],
-    max_selected: int,
-    max_architectures: int,
-) -> dict[str, Any]:
-    by_id = {str(row["id"]): row for row in candidates}
-    assessment_by_id = {
-        str(row["candidate_id"]): row
-        for row in (judge.get("assessments") or [])
-    }
-    requested = [
-        by_id[value]
-        for value in judge.get("selected_ids") or []
-        if value in by_id
-    ]
-    architectures = [
-        row
-        for row in requested
-        if row["granularity"] == "architecture_blueprint"
-    ]
-    architectures.sort(
-        key=lambda row: (
-            -float(assessment_by_id.get(row["id"], {}).get("confidence") or 0.0),
-            -float(assessment_by_id.get(row["id"], {}).get("coherence") or 0.0),
-            -float(row["candidate"].get("target_relevance") or 0.0),
-            str(row["id"]),
-        )
-    )
-    kept_architectures = architectures[: max(0, int(max_architectures))]
-    kept_architecture_ids = {row["id"] for row in kept_architectures}
-    chosen_families = {
-        _normalize(row["relations"].get("method_family"))
-        for row in kept_architectures
-        if _normalize(row["relations"].get("method_family"))
-    }
-    selected: list[dict[str, Any]] = []
-    suppressed = []
-    for row in requested:
-        if row["granularity"] == "architecture_blueprint":
-            if row["id"] not in kept_architecture_ids:
-                suppressed.append(
-                    {
-                        "candidate_id": row["id"],
-                        "reason": "resolver_multiple_architecture_families",
-                    }
-                )
-                continue
-        else:
-            parents = {
-                _normalize(value)
-                for value in row["relations"].get("parent_method_families") or []
-                if _normalize(value)
-            }
-            if chosen_families and parents and not (chosen_families & parents):
-                suppressed.append(
-                    {
-                        "candidate_id": row["id"],
-                        "reason": "resolver_parent_method_family_mismatch",
-                    }
-                )
-                continue
-        if len(selected) >= int(max_selected):
-            suppressed.append(
-                {
-                    "candidate_id": row["id"],
-                    "reason": "resolver_stage_selection_cap",
-                }
-            )
-            continue
-        selected.append(row)
-    return {
-        "schema": RESOLVER_SCHEMA,
-        "mode": "host_stage_aware_architecture_family_compatibility_v1",
-        "requested_ids": [row["id"] for row in requested],
-        "selected_ids": [row["id"] for row in selected],
-        "selected_architecture_ids": [
-            row["id"]
-            for row in selected
-            if row["granularity"] == "architecture_blueprint"
-        ],
-        "selected_level_counts": {
-            granularity: sum(row["granularity"] == granularity for row in selected)
-            for granularity in GRANULARITIES
-        },
-        "chosen_method_families": sorted(chosen_families),
-        "suppressed": suppressed,
-        "selected": selected,
-    }
-
-
-def _selection_quality_score(
-    row: Mapping[str, Any],
-    assessment_by_id: Mapping[str, Mapping[str, Any]],
-    *,
-    stage: str,
-) -> tuple[float, float, float, float, float, str]:
-    """Return a deterministic score used only for Host-side safety repairs.
-
-    The independent Judge is deliberately score-free with respect to source
-    task outcomes.  That does not mean the Host has to accept an incoherent
-    selection.  This score combines the Judge's target-facing assessments with
-    the Host's own projected lexical evidence and is used only when a minimum
-    executable transfer contract (an L2 anchor for an L1 blueprint) is
-    missing.  It must never be interpreted as a source-task metric.
-    """
-
-    assessment = assessment_by_id.get(str(row.get("id") or ""), {})
-    applicability = float(assessment.get("applicability") or 0.0)
-    adaptability = float(assessment.get("target_adaptability") or 0.0)
-    coherence = float(assessment.get("coherence") or 0.0)
-    confidence = float(assessment.get("confidence") or 0.0)
-    stage_fit = STAGE_FIT[stage][str(row.get("granularity") or "")]
-    target_relevance = float(
-        (row.get("candidate") or {}).get("target_relevance") or 0.0
-    )
-    score = (
-        0.30 * confidence
-        + 0.20 * applicability
-        + 0.20 * adaptability
-        + 0.15 * coherence
-        + 0.10 * stage_fit
-        + 0.05 * target_relevance
-    )
-    return (
-        round(score, 8),
-        round(confidence, 8),
-        round(adaptability, 8),
-        round(stage_fit, 8),
-        round(target_relevance, 8),
-        str(row.get("id") or ""),
-    )
-
-
-def _apply_transfer_quality_gate(
-    *,
-    resolver: Mapping[str, Any],
-    judge: Mapping[str, Any],
-    candidates: list[dict[str, Any]],
-    stage: str,
-    max_selected: int,
-    require_tactic_anchor: bool = True,
-) -> dict[str, Any]:
-    """Repair an L1-only dynamic decision before it reaches the generator.
-
-    Search/Judge is intentionally variable-cardinality, but variable does not
-    mean arbitrary.  A blueprint without at least one same-family L2 tactic is
-    not an executable transfer plan: it asks the target generator to invent an
-    entire training protocol from a source-shaped sketch.  The gate first adds
-    the highest-scoring compatible tactic from the already authorized Judge
-    pool.  If no such tactic exists, it suppresses the blueprint and keeps the
-    best portable cards instead.  No new source data is queried and no source
-    score/code/artifact is exposed.
-    """
-
-    repaired = copy.deepcopy(dict(resolver))
-    selected = [copy.deepcopy(row) for row in resolver.get("selected") or []]
-    candidate_by_id = {str(row["id"]): row for row in candidates}
-    assessment_by_id = {
-        str(row.get("candidate_id") or ""): row
-        for row in (judge.get("assessments") or [])
-    }
-    selected_ids = {str(row["id"]) for row in selected}
-    suppressed = list(copy.deepcopy(resolver.get("suppressed") or []))
-    gate_actions: list[dict[str, Any]] = []
-
-    def compatible_tactic(architecture: Mapping[str, Any], row: Mapping[str, Any]) -> bool:
-        if row.get("granularity") != "portable_tactic":
-            return False
-        assessment = assessment_by_id.get(str(row.get("id") or ""), {})
-        if bool(assessment.get("contradiction")):
-            return False
-        family = str(
-            ((architecture.get("relations") or {}).get("method_family")) or ""
-        ).strip().lower()
-        parents = {
-            str(value).strip().lower()
-            for value in ((row.get("relations") or {}).get("parent_method_families") or [])
-            if str(value).strip()
-        }
-        return not family or not parents or family in parents
-
-    architectures = [
-        row for row in selected if row.get("granularity") == "architecture_blueprint"
-    ]
-    if require_tactic_anchor and architectures and not any(
-        row.get("granularity") == "portable_tactic" for row in selected
-    ):
-        architecture = architectures[0]
-        available = [
-            row
-            for row in candidate_by_id.values()
-            if str(row["id"]) not in selected_ids
-            and compatible_tactic(architecture, row)
-        ]
-        available.sort(
-            key=lambda row: _selection_quality_score(
-                row, assessment_by_id, stage=stage
-            ),
-            reverse=True,
-        )
-        if available and len(selected) < int(max_selected):
-            anchor = copy.deepcopy(available[0])
-            selected.append(anchor)
-            selected_ids.add(str(anchor["id"]))
-            gate_actions.append(
-                {
-                    "action": "added_l2_tactic_anchor",
-                    "candidate_id": str(anchor["id"]),
-                    "architecture_id": str(architecture["id"]),
-                    "reason": "architecture_requires_same_family_portable_tactic",
-                }
-            )
-        elif available:
-            # The cap is full.  Replace the weakest non-architecture portable
-            # card rather than silently dropping the executable anchor.
-            replaceable = [
-                row
-                for row in selected
-                if row.get("granularity") != "architecture_blueprint"
-            ]
-            if replaceable:
-                weakest = min(
-                    replaceable,
-                    key=lambda row: _selection_quality_score(
-                        row, assessment_by_id, stage=stage
-                    ),
-                )
-                selected.remove(weakest)
-                suppressed.append(
-                    {
-                        "candidate_id": str(weakest["id"]),
-                        "reason": "quality_gate_replaced_by_l2_tactic_anchor",
-                    }
-                )
-                anchor = copy.deepcopy(available[0])
-                selected.append(anchor)
-                selected_ids.add(str(anchor["id"]))
-                gate_actions.append(
-                    {
-                        "action": "replaced_weak_portable_with_l2_tactic_anchor",
-                        "candidate_id": str(anchor["id"]),
-                        "architecture_id": str(architecture["id"]),
-                        "reason": "architecture_requires_same_family_portable_tactic",
-                    }
-                )
-        else:
-            # No compatible tactic was found in the authorized pool.  Keeping
-            # the L1 would be an ungrounded architecture injection, so suppress
-            # it and retain portable cards selected by the Judge.
-            selected = [
-                row
-                for row in selected
-                if row.get("granularity") != "architecture_blueprint"
-            ]
-            selected_ids = {str(row["id"]) for row in selected}
-            suppressed.append(
-                {
-                    "candidate_id": str(architecture["id"]),
-                    "reason": "quality_gate_suppressed_unanchored_architecture",
-                }
-            )
-            gate_actions.append(
-                {
-                    "action": "suppressed_unanchored_architecture",
-                    "candidate_id": str(architecture["id"]),
-                    "reason": "no_same_family_portable_tactic_in_authorized_pool",
-                }
-            )
-
-    repaired["selected"] = selected
-    repaired["selected_ids"] = [str(row["id"]) for row in selected]
-    repaired["selected_architecture_ids"] = [
-        str(row["id"])
-        for row in selected
-        if row.get("granularity") == "architecture_blueprint"
-    ]
-    repaired["selected_level_counts"] = {
-        granularity: sum(row.get("granularity") == granularity for row in selected)
-        for granularity in GRANULARITIES
-    }
-    repaired["suppressed"] = suppressed
-    repaired["quality_gate"] = {
-        "schema": "cross_task_dynamic_transfer_quality_gate_v1",
-        "require_tactic_anchor": bool(require_tactic_anchor),
-        "applied": bool(gate_actions),
-        "actions": gate_actions,
-    }
-    return repaired
-
-
 def _render_prompt(selected: list[dict[str, Any]]) -> str:
     if not selected:
         return ""
@@ -1254,7 +960,7 @@ def _render_prompt(selected: list[dict[str, Any]]) -> str:
         (
             "These architecture, tactic, repair, transition-reason, and "
             "module-interface cards were found by multi-round Search, selected by "
-            "an independent Judge, and compatibility-checked by the Host. They "
+            "an independent Judge and passed directly to this target generator. They "
             "are target-adaptation hypotheses, not source-task answers. Never "
             "copy source code, checkpoints, weights, predictions, submissions, "
             "class mappings, source data dimensions, artifact identities, or "
@@ -1299,7 +1005,7 @@ def build_dynamic_transfer_pack(
     task_description: str,
     query_text: str,
 ) -> dict[str, Any]:
-    """Run projected multi-round Search -> Judge -> Host Resolver."""
+    """Run projected multi-round Search followed by direct Judge selection."""
 
     canonical_stage = str(stage or "").lower()
     if canonical_stage not in STAGE_FIT:
@@ -1543,25 +1249,37 @@ def build_dynamic_transfer_pack(
             candidates=judge_candidates,
             max_selected=max_selected,
         )
-    resolver = _resolve_selection(
-        judge=judge,
-        candidates=judge_candidates,
-        max_selected=max_selected,
-        max_architectures=int(
-            layer.cross_task_dynamic_max_selected_architectures
-        ),
-    )
-    resolver = _apply_transfer_quality_gate(
-        resolver=resolver,
-        judge=judge,
-        candidates=judge_candidates,
-        stage=canonical_stage,
-        max_selected=max_selected,
-        require_tactic_anchor=bool(
-            getattr(layer, "cross_task_dynamic_require_tactic_anchor", True)
-        ),
-    )
-    selected_rows = list(resolver["selected"])
+    # v155 deliberately removes the deterministic Resolver from cross-task
+    # migration.  The independent Judge already validates every projected
+    # card, rejects contradictions, and is schema-capped.  Its ordered choice
+    # now reaches the generator directly; there is no method-family string
+    # equality filter and no post-Judge tactic/architecture suppression.
+    candidate_by_id = {str(row["id"]): row for row in judge_candidates}
+    selected_rows = [
+        copy.deepcopy(candidate_by_id[candidate_id])
+        for candidate_id in judge.get("selected_ids") or []
+        if candidate_id in candidate_by_id
+    ]
+    selected_architecture_ids = [
+        str(row["id"])
+        for row in selected_rows
+        if row["granularity"] == "architecture_blueprint"
+    ]
+    selected_level_counts = {
+        granularity: sum(
+            row["granularity"] == granularity for row in selected_rows
+        )
+        for granularity in GRANULARITIES
+    }
+    judge_selection_receipt = {
+        "schema": "mlevolve_cross_task_direct_judge_selection_v1",
+        "mode": "independent_judge_direct_no_resolver",
+        "selected_ids": [str(row["id"]) for row in selected_rows],
+        "selected_architecture_ids": selected_architecture_ids,
+        "selected_level_counts": selected_level_counts,
+        "resolver_present": False,
+        "post_judge_suppression_applied": False,
+    }
     selected_candidates = [
         copy.deepcopy(row["candidate"]) for row in selected_rows
     ]
@@ -1570,10 +1288,9 @@ def build_dynamic_transfer_pack(
     prompt = _render_prompt(selected_rows)
     pool_rows = _rank_accumulated(list(accumulated.values()))
     projected_pool = [copy.deepcopy(row["candidate"]) for row in pool_rows]
-    suppressed = list(resolver["suppressed"])
-    resolver_suppressed_ids = {row["candidate_id"] for row in suppressed}
+    suppressed = []
     for row in pool_rows:
-        if row["id"] not in selected_id_set and row["id"] not in resolver_suppressed_ids:
+        if row["id"] not in selected_id_set:
             suppressed.append(
                 {
                     "candidate_id": row["id"],
@@ -1585,9 +1302,7 @@ def build_dynamic_transfer_pack(
         "projection_sha256": projection["projection_sha256"],
         "search_trace_sha256": _sha(trace),
         "judge_sha256": _sha(judge),
-        "resolver_sha256": _sha(
-            {key: value for key, value in resolver.items() if key != "selected"}
-        ),
+        "judge_selection_sha256": _sha(judge_selection_receipt),
         "selected_ids": selected_ids,
     }
     pack_sha256 = _sha(receipt_identity)
@@ -1596,14 +1311,14 @@ def build_dynamic_transfer_pack(
         "schema": PACK_SCHEMA,
         "algorithm_version": (
             "host_irreversible_projection_multiround_search_independent_judge_"
-            "stage_aware_resolver_five_granularity_quality_gate_v3"
+            "direct_five_granularity_no_resolver_v5"
         ),
         "target_task_id": decision["target_task_id"],
         "source_task_id": decision["source_task_id"],
         "stage_route": {
             "stage": canonical_stage,
             "control": "dynamic_cross_task_transfer",
-            "route": "projected_multiround_search_judge_resolver",
+            "route": "projected_multiround_search_direct_judge",
         },
         "memory_transfer": {
             "activated": bool(decision["active"] and selected_candidates),
@@ -1611,12 +1326,8 @@ def build_dynamic_transfer_pack(
             "mode": "full_dynamic_projected_cross_task_retrieval_v2",
             "architecture_transfer_enabled": policy.architecture_transfer_enabled,
             "architecture_projection_mode": "host_structural_fields_only_v1",
-            "selected_architecture_ids": list(
-                resolver["selected_architecture_ids"]
-            ),
-            "selected_level_counts": copy.deepcopy(
-                resolver["selected_level_counts"]
-            ),
+            "selected_architecture_ids": list(selected_architecture_ids),
+            "selected_level_counts": copy.deepcopy(selected_level_counts),
             "source_score_inheritance_allowed": False,
             "source_code_exposure_allowed": False,
             "source_artifact_exposure_allowed": False,
@@ -1698,21 +1409,11 @@ def build_dynamic_transfer_pack(
                 ),
                 "receipt_sha256": _sha(judge),
             },
-            "resolver": {
-                key: copy.deepcopy(value)
-                for key, value in resolver.items()
-                if key != "selected"
-            },
+            "judge_selection": copy.deepcopy(judge_selection_receipt),
             "elapsed_seconds": elapsed,
             "receipt_sha256": pack_sha256,
         },
-        # Audit-compatible top-level mirror. Adoption serialization already
-        # treats this field as the durable post-Judge evidence receipt.
-        "evidence_resolver": {
-            key: copy.deepcopy(value)
-            for key, value in resolver.items()
-            if key != "selected"
-        },
+        "judge_selection_receipt": copy.deepcopy(judge_selection_receipt),
         "retrieval_agent": {
             "enabled": True,
             "mode": "projected_multiround_search_then_independent_judge",
@@ -1726,9 +1427,9 @@ def build_dynamic_transfer_pack(
             "selection_complete": True,
             "agent_abstained": not bool(selected_ids),
             "final_selection_authority": (
-                "projected_search_host_fallback_plus_resolver"
+                "projected_search_host_fallback_direct_selection"
                 if judge_fallback_used
-                else "independent_projected_judge_plus_host_resolver"
+                else "independent_projected_judge_direct_selection"
             ),
             "fallback_used": search_fallback_used or judge_fallback_used,
         },
@@ -1759,7 +1460,6 @@ __all__ = [
     "GRANULARITIES",
     "JUDGE_SCHEMA",
     "PACK_SCHEMA",
-    "RESOLVER_SCHEMA",
     "SEARCH_SCHEMA",
     "build_dynamic_transfer_pack",
 ]
