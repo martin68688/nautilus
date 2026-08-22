@@ -1,0 +1,74 @@
+{
+  "code_commit": "b39752a3632b2fa1f0d88e916ad0cc1be94ece96",
+  "data": {
+    "archive_bytes": 1810679877,
+    "archive_sha256_local_and_pvc": "40e1fd27ff34902be7ca3d7579aea47f116f5227f083228a6a073ff79c4d3d36",
+    "classes": 12,
+    "sample_submission_columns": [
+      "file",
+      "species"
+    ],
+    "test_images": 794,
+    "train_images": 4750
+  },
+  "endpoint": {
+    "authenticated_http_status": 200,
+    "base_url": "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1",
+    "model_advertised": true,
+    "preflight": "passed",
+    "secret": "cliproxyapi-haoming-client"
+  },
+  "experiment": {
+    "agent_steps": 2147483647,
+    "agent_time_limit_seconds": 21600,
+    "finalize_reserve_seconds": 900,
+    "memory_system": "dynamic-search-x2-independent-judge-no-resolver",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "low",
+    "target": "plant-seedlings-classification"
+  },
+  "final_attempt": {
+    "attempt": "attempt-001",
+    "gpu": "NVIDIA A100-PCIE-40GB",
+    "launch_started_at_utc": "2026-08-22T09:42:34Z",
+    "node": "emporia.gp-argo.greatplains.net",
+    "pid": 70,
+    "pod": "mlevolve-plant-seedlings-v157-luna-low-6h-a100-r3-dev",
+    "pod_active_deadline_seconds": 21600,
+    "pod_started_at_utc": "2026-08-22T09:41:09Z",
+    "resolver_calls_after_initial_retrieval": 0,
+    "run_id": "20260822_094342_e2e-plant-seedlings-dynamic-v157-no-resolver-6h-luna-low-r3",
+    "selected_memory": [
+      {
+        "candidate_ref": "C11",
+        "id": "recipe::leaf-classification::v140::001",
+        "layer": "L1",
+        "title": "Flat-retrieval fold ensemble with temperature and Sinkhorn"
+      },
+      {
+        "candidate_ref": "C07",
+        "id": "tactic::leaf-classification::v140::006",
+        "layer": "L2",
+        "title": "Make optional Sinkhorn calibration nonfatal"
+      },
+      {
+        "candidate_ref": "C08",
+        "id": "tactic::leaf-classification::v140::003",
+        "layer": "L2",
+        "title": "Enforce complete row-keyed OOF probabilities"
+      }
+    ]
+  },
+  "preserved_startup_attempt": {
+    "attempt": "attempt-000",
+    "note": "Stopped after initial retrieval so the final run could use a fresh full Pod lifetime; all logs remain preserved.",
+    "pod": "mlevolve-plant-seedlings-v157-luna-low-6h-a100-r2-dev",
+    "selected_memory_ids": [
+      "recipe::leaf-classification::v140::008",
+      "tactic::leaf-classification::v140::009",
+      "repair::leaf-classification::v140::006"
+    ]
+  },
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v157-plant-seedlings-luna-low-6h",
+  "output": "/workspace/experiment-end2end-plant-seedlings-v157-dynamic-no-resolver-6h-luna-low"
+}
