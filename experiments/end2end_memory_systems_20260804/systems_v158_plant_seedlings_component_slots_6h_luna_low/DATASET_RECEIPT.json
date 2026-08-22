@@ -1,0 +1,29 @@
+{
+  "archive": "plant-seedlings-classification.zip",
+  "archive_bytes": 1810679877,
+  "archive_sha256": "40e1fd27ff34902be7ca3d7579aea47f116f5227f083228a6a073ff79c4d3d36",
+  "competition": "plant-seedlings-classification",
+  "downloaded_at_utc": "2026-08-22T09:23:49Z",
+  "integrity_check": "zip CRC passed with no errors",
+  "sample_submission_columns": [
+    "file",
+    "species"
+  ],
+  "test_images": 794,
+  "train_class_counts": {
+    "Black-grass": 263,
+    "Charlock": 390,
+    "Cleavers": 287,
+    "Common Chickweed": 611,
+    "Common wheat": 221,
+    "Fat Hen": 475,
+    "Loose Silky-bent": 654,
+    "Maize": 221,
+    "Scentless Mayweed": 516,
+    "Shepherds Purse": 231,
+    "Small-flowered Cranesbill": 496,
+    "Sugar beet": 385
+  },
+  "train_classes": 12,
+  "train_images": 4750
+}

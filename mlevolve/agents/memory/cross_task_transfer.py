@@ -23,18 +23,35 @@ TRANSFER_PACK_SCHEMA = "mlevolve_cross_task_transfer_pack_v1"
 ARCHITECTURE_TRANSFER_PACK_SCHEMA = "mlevolve_cross_task_transfer_pack_v2"
 DEFAULT_LEVELS = ("L2_tactic", "L3_repair")
 ARCHITECTURE_LEVEL = "L1_recipe"
-ARCHITECTURE_RUNTIME_LEVELS = frozenset(
-    {ARCHITECTURE_LEVEL, "L1_strategy"}
+ARCHITECTURE_RUNTIME_LEVELS = frozenset({ARCHITECTURE_LEVEL, "L1_strategy"})
+REPRESENTATION_BLUEPRINT = "representation_blueprint"
+VALIDATION_BLUEPRINT = "validation_blueprint"
+CALIBRATION_BLUEPRINT = "calibration_blueprint"
+INFERENCE_BLUEPRINT = "inference_blueprint"
+BLUEPRINT_SLOTS = (
+    REPRESENTATION_BLUEPRINT,
+    VALIDATION_BLUEPRINT,
+    CALIBRATION_BLUEPRINT,
+    INFERENCE_BLUEPRINT,
 )
+BLUEPRINT_PIPELINE_FIELDS = {
+    REPRESENTATION_BLUEPRINT: ("feature_representation", "model_stack"),
+    VALIDATION_BLUEPRINT: ("training_protocol", "oof_protocol"),
+    CALIBRATION_BLUEPRINT: ("ensemble_calibration",),
+    INFERENCE_BLUEPRINT: ("final_refit_inference",),
+}
 TRANSITION_REASON_LEVEL = "transition_reason"
 MODULE_INTERFACE_LEVEL = "module_interface"
-ARCHITECTURE_PIPELINE_FIELDS = (
-    "feature_representation",
-    "model_stack",
-    "training_protocol",
-    "oof_protocol",
-    "ensemble_calibration",
-    "final_refit_inference",
+_REPRESENTATION_SIGNAL_RE = re.compile(
+    r"\b(?:"
+    r"efficientnet|resnet|convnext|densenet|mobilenet|regnet|inception|"
+    r"vision\s+transformer|transformer|vit|dino(?:v2)?|siglip(?:2)?|clip|"
+    r"cnn|mlp|svm|lightgbm|xgboost|catboost|random\s+forest|forest|tree|"
+    r"encoders?|classifiers?|cross[- ]attention|attention|graph\s+neural|gnn|"
+    r"descriptor[- ](?:fusion|stack|classifier|expert)|"
+    r"multimodal[- ](?:fusion|encoder|classifier)|[a-z0-9]+net(?:-[a-z0-9]+)?"
+    r")\b",
+    flags=re.IGNORECASE,
 )
 FORBIDDEN_FIELDS = frozenset(
     {
@@ -128,9 +145,7 @@ class CrossTaskTransferPolicy:
             )
         )
         policy = cls(
-            enabled=bool(
-                getattr(config, "cross_task_transfer_enabled", False)
-            ),
+            enabled=bool(getattr(config, "cross_task_transfer_enabled", False)),
             source_task_id=_canonical_task_id(
                 getattr(config, "cross_task_transfer_source_task_id", "")
             ),
@@ -141,9 +156,7 @@ class CrossTaskTransferPolicy:
                 getattr(config, "cross_task_transfer_target_task_type", "") or ""
             ).strip(),
             allowed_levels=raw_levels,
-            max_items=int(
-                getattr(config, "cross_task_transfer_max_items", 6) or 6
-            ),
+            max_items=int(getattr(config, "cross_task_transfer_max_items", 6) or 6),
             architecture_transfer_enabled=bool(
                 getattr(
                     config,
@@ -169,16 +182,16 @@ class CrossTaskTransferPolicy:
             raise ValueError(
                 "cross-task transfer source/target task types must match exactly"
             )
-        if not self.allowed_levels or not set(self.allowed_levels) <= set(DEFAULT_LEVELS):
+        if not self.allowed_levels or not set(self.allowed_levels) <= set(
+            DEFAULT_LEVELS
+        ):
             raise ValueError(
                 "cross-task transfer may expose only L2_tactic and L3_repair"
             )
         if not 1 <= self.max_items <= 12:
             raise ValueError("cross-task transfer max_items must be in [1, 12]")
         if not 1 <= self.architecture_max_items <= 3:
-            raise ValueError(
-                "cross-task architecture_max_items must be in [1, 3]"
-            )
+            raise ValueError("cross-task architecture_max_items must be in [1, 3]")
 
 
 @dataclass(frozen=True)
@@ -241,8 +254,7 @@ def _portable_text(node: Mapping[str, Any], *, level: str) -> dict[str, str]:
             "title": str(node.get("title") or ""),
             "when_to_use": str(node.get("when_to_use") or ""),
             "failure_signature": " ".join(
-                str(value)
-                for value in (signature.get("exception_names") or [])
+                str(value) for value in (signature.get("exception_names") or [])
             ),
             "repair": str(repair.get("summary") or ""),
         }
@@ -302,48 +314,93 @@ def _sanitize_architecture_text(value: object, *, source_task_id: str) -> str:
     return text.strip()
 
 
-def _architecture_blueprint(node: Mapping[str, Any]) -> dict[str, Any]:
-    """Project one L1 Recipe into a code/artifact/score-free architecture."""
+def _blueprint_candidates(
+    node_id: str,
+    node: Mapping[str, Any],
+    *,
+    query_tokens: set[str],
+) -> list[dict[str, Any]]:
+    """Decompose one L1 Recipe into independently composable safe slots."""
 
     source_task_id = _node_task_id(node)
     pipeline = node.get("pipeline") or {}
     if not isinstance(pipeline, Mapping):
         pipeline = {}
-    components = {
-        key: _sanitize_architecture_text(
-            pipeline.get(key), source_task_id=source_task_id
-        )
-        for key in ARCHITECTURE_PIPELINE_FIELDS
-    }
-    components = {key: value for key, value in components.items() if value}
-    summary = _sanitize_architecture_text(
-        node.get("teacher_distilled_recipe")
-        or node.get("distilled_recipe")
-        or "",
-        source_task_id=source_task_id,
+    title = _sanitize_architecture_text(
+        node.get("title"), source_task_id=source_task_id
     )
-    blueprint = {
-        "title": _sanitize_architecture_text(
-            node.get("title"), source_task_id=source_task_id
+    method_family = _sanitize_architecture_text(
+        node.get("method_family"), source_task_id=source_task_id
+    )
+    contracts = {
+        REPRESENTATION_BLUEPRINT: (
+            "Choose at most one primary target representation. Derive input and "
+            "feature dimensions from target data, replace unavailable dependencies, "
+            "and train or fit every retained component only on target training data."
         ),
-        "method_family": _sanitize_architecture_text(
-            node.get("method_family"), source_task_id=source_task_id
+        VALIDATION_BLUEPRINT: (
+            "Derive split groups, folds, checkpoint selection, and OOF state only "
+            "from target labeled training data; preserve row and class alignment."
         ),
-        "architecture_summary": summary,
-        "pipeline_order": list(components),
-        "components": components,
-        "target_adaptation_contract": (
-            "Derive feature dimensions, class order, dependencies, folds, model "
-            "selection, calibration, and inference state entirely from target-task "
-            "training data. Replace or omit every component that fails target "
-            "runtime preflight or target validation."
+        CALIBRATION_BLUEPRINT: (
+            "Treat calibration as optional. Compare it with raw normalized target "
+            "validation probabilities and retain the raw fallback unless calibration "
+            "improves the target metric with finite, aligned outputs."
+        ),
+        INFERENCE_BLUEPRINT: (
+            "Replay only target-fitted state, preserve target row and class order, "
+            "and verify the emitted target submission interface."
         ),
     }
-    return {
-        key: value
-        for key, value in blueprint.items()
-        if value not in ("", [], {})
-    }
+    rows: list[dict[str, Any]] = []
+    for slot in BLUEPRINT_SLOTS:
+        components = {
+            key: _sanitize_architecture_text(
+                pipeline.get(key), source_task_id=source_task_id
+            )
+            for key in BLUEPRINT_PIPELINE_FIELDS[slot]
+        }
+        components = {key: value for key, value in components.items() if value}
+        if not components:
+            continue
+        if slot == REPRESENTATION_BLUEPRINT:
+            representation_text = " ".join([title, method_family, *components.values()])
+            if not _REPRESENTATION_SIGNAL_RE.search(representation_text):
+                # Generic neural/fold wording is not a concrete representation.
+                # It may still yield validation/calibration/inference cards below.
+                continue
+        portable = {
+            "title": title,
+            "method_family": method_family,
+            "blueprint_slot": slot,
+            "pipeline_order": list(components),
+            "components": components,
+            "target_adaptation_contract": contracts[slot],
+        }
+        portable = {
+            key: value for key, value in portable.items() if value not in ("", [], {})
+        }
+        lexical = _tokens(json.dumps(portable, ensure_ascii=False, sort_keys=True))
+        overlap = len(query_tokens & lexical) / max(1, len(query_tokens))
+        rows.append(
+            {
+                "id": f"{node_id}::{slot}",
+                "source_recipe_id": str(node_id),
+                "source": "sop_component_projection",
+                "source_task_id": source_task_id,
+                "abstraction_level": ARCHITECTURE_LEVEL,
+                "candidate_kind": slot,
+                "blueprint_slot": slot,
+                "portable_text": portable,
+                "method_family": method_family,
+                "parent_method_families": [],
+                "target_relevance": round(float(overlap), 8),
+                "source_score_inherited": False,
+                "source_code_exposed": False,
+                "source_artifact_exposed": False,
+            }
+        )
+    return rows
 
 
 def _candidate(
@@ -354,23 +411,18 @@ def _candidate(
 ) -> dict[str, Any] | None:
     raw_level = str(node.get("abstraction_level") or "")
     if raw_level in ARCHITECTURE_RUNTIME_LEVELS:
-        level = ARCHITECTURE_LEVEL
-        text = _architecture_blueprint(node)
-        candidate_kind = "architecture_blueprint"
-    else:
-        level = raw_level
-        source_task_id = _node_task_id(node)
-        text = {
-            key: _sanitize_architecture_text(
-                value,
-                source_task_id=source_task_id,
-            )
-            for key, value in _portable_text(node, level=level).items()
-        }
-        text = {key: value for key, value in text.items() if value}
-        candidate_kind = (
-            "portable_tactic" if level == "L2_tactic" else "portable_repair"
+        raise ValueError("L1 Recipes must be projected through component slots")
+    level = raw_level
+    source_task_id = _node_task_id(node)
+    text = {
+        key: _sanitize_architecture_text(
+            value,
+            source_task_id=source_task_id,
         )
+        for key, value in _portable_text(node, level=level).items()
+    }
+    text = {key: value for key, value in text.items() if value}
+    candidate_kind = "portable_tactic" if level == "L2_tactic" else "portable_repair"
     if not text:
         return None
     lexical = _tokens(json.dumps(text, ensure_ascii=False, sort_keys=True))
@@ -562,7 +614,11 @@ def _code_free_module_interface(
             "source implementation, constants, weights, or artifacts are available."
         ),
     }
-    if not payload["dependencies"] and not payload["functions"] and not payload["classes"]:
+    if (
+        not payload["dependencies"]
+        and not payload["functions"]
+        and not payload["classes"]
+    ):
         return {}
     return payload
 
@@ -647,11 +703,17 @@ def project_transfer_candidates(
         for node_id, node in nodes.items():
             if _node_task_id(node) != policy.source_task_id:
                 continue
-            if str(node.get("abstraction_level") or "") not in allowed:
+            raw_level = str(node.get("abstraction_level") or "")
+            if raw_level not in allowed:
                 continue
-            row = _candidate(str(node_id), node, query_tokens=query_tokens)
-            if row is not None:
-                observed.append(row)
+            if raw_level in ARCHITECTURE_RUNTIME_LEVELS:
+                observed.extend(
+                    _blueprint_candidates(str(node_id), node, query_tokens=query_tokens)
+                )
+            else:
+                row = _candidate(str(node_id), node, query_tokens=query_tokens)
+                if row is not None:
+                    observed.append(row)
         if all_safe_levels:
             for node_id, node in nodes.items():
                 if _node_task_id(node) != policy.source_task_id:
@@ -671,9 +733,7 @@ def project_transfer_candidates(
                     )
                 if row is not None:
                     observed.append(row)
-    observed.sort(
-        key=lambda row: (-float(row["target_relevance"]), str(row["id"]))
-    )
+    observed.sort(key=lambda row: (-float(row["target_relevance"]), str(row["id"])))
     payload = {
         "decision": decision.to_dict(),
         "stage": canonical_stage,
@@ -713,33 +773,44 @@ def build_transfer_pack(
     canonical_stage = str(projection["stage"])
     allowed = set(projection["allowed_levels"])
     observed = list(projection["observed_candidates"])
-    architecture_candidates = [
-        row for row in observed if row["abstraction_level"] == ARCHITECTURE_LEVEL
+    blueprint_candidates = [
+        row for row in observed if row.get("candidate_kind") in BLUEPRINT_SLOTS
     ]
     portable_candidates = [
-        row for row in observed if row["abstraction_level"] != ARCHITECTURE_LEVEL
+        row for row in observed if row.get("candidate_kind") not in BLUEPRINT_SLOTS
     ]
-    selected_architectures = architecture_candidates[
-        : policy.architecture_max_items
+    selected_blueprints = []
+    for slot in BLUEPRINT_SLOTS:
+        slot_rows = [
+            row for row in blueprint_candidates if row["candidate_kind"] == slot
+        ]
+        cap = 1
+        selected_blueprints.extend(slot_rows[:cap])
+    selected_architectures = [
+        row
+        for row in selected_blueprints
+        if row["candidate_kind"] == REPRESENTATION_BLUEPRINT
     ]
     selected_portable = portable_candidates[: policy.max_items]
-    selected = [*selected_architectures, *selected_portable]
+    selected = [*selected_blueprints, *selected_portable]
     selected_ids = {row["id"] for row in selected}
     parts = [
         "## Cross-task Transfer Memory (Host-projected)",
         (
-            "Adapt the Host-projected architecture blueprint and portable tactics "
-            "to the target task. They are hypotheses, not source-task answers. "
+            "Compose the Host-projected representation, validation, calibration, "
+            "and inference blueprints with portable tactics for the target task. "
+            "They are hypotheses, not source-task answers. "
             "Do not copy source code, checkpoints, weights, predictions, "
             "submissions, class mappings, source data dimensions, artifact "
-            "identities, or source scores. Select one coherent architecture; do "
-            "not concatenate incompatible source families. Validate every choice "
-            "only on target-task training data."
+            "identities, or source scores. Select at most one primary representation; "
+            "blueprints in different slots are composable and are not competing "
+            "architecture families. Validate every choice only on target-task "
+            "training data."
         ),
     ]
-    if selected_architectures:
-        parts.append("## Structural architecture blueprint")
-    for row in selected_architectures:
+    if selected_blueprints:
+        parts.append("## Composable structural blueprints")
+    for row in selected_blueprints:
         lines = [
             f"### {row['id']} [{row['abstraction_level']}]",
             json.dumps(
@@ -754,9 +825,7 @@ def build_transfer_pack(
         parts.append("## Portable tactics and repairs")
     for row in selected_portable:
         lines = [f"### {row['id']} [{row['abstraction_level']}]"]
-        lines.extend(
-            f"{key}: {value}" for key, value in row["portable_text"].items()
-        )
+        lines.extend(f"{key}: {value}" for key, value in row["portable_text"].items())
         parts.append("\n".join(lines))
     prompt = "\n\n".join(parts) if selected else ""
     safe_payload = {
@@ -765,9 +834,8 @@ def build_transfer_pack(
         "allowed_levels": sorted(allowed),
         "observed_candidates": observed,
         "selected_candidate_ids": [row["id"] for row in selected],
-        "selected_architecture_ids": [
-            row["id"] for row in selected_architectures
-        ],
+        "selected_blueprint_ids": [row["id"] for row in selected_blueprints],
+        "selected_architecture_ids": [row["id"] for row in selected_architectures],
     }
     projection_sha256 = hashlib.sha256(
         json.dumps(
@@ -784,7 +852,7 @@ def build_transfer_pack(
             else TRANSFER_PACK_SCHEMA
         ),
         "algorithm_version": (
-            "host_same_type_score_code_artifact_free_architecture_projection_v2"
+            "host_same_type_score_code_artifact_free_component_projection_v3"
             if policy.architecture_transfer_enabled
             else "host_same_type_score_free_projection_v1"
         ),
@@ -799,21 +867,26 @@ def build_transfer_pack(
             "activated": decision.active and bool(selected),
             "host_decision": decision.to_dict(),
             "mode": (
-                "same_type_cross_task_architecture_and_portable_projection_v2"
+                "same_type_cross_task_component_and_portable_projection_v3"
                 if policy.architecture_transfer_enabled
                 else "same_type_cross_task_portable_sop_projection_v1"
             ),
-            "architecture_transfer_enabled": (
-                policy.architecture_transfer_enabled
-            ),
+            "architecture_transfer_enabled": (policy.architecture_transfer_enabled),
             "architecture_projection_mode": (
-                "host_structural_fields_only_v1"
+                "host_component_slots_only_v2"
                 if policy.architecture_transfer_enabled
                 else "disabled"
             ),
-            "selected_architecture_ids": [
-                row["id"] for row in selected_architectures
-            ],
+            "selected_architecture_ids": [row["id"] for row in selected_architectures],
+            "selected_blueprint_ids": [row["id"] for row in selected_blueprints],
+            "selected_blueprint_slots": {
+                slot: [
+                    row["id"]
+                    for row in selected_blueprints
+                    if row["candidate_kind"] == slot
+                ]
+                for slot in BLUEPRINT_SLOTS
+            },
             "source_score_inheritance_allowed": False,
             "source_code_exposure_allowed": False,
             "source_artifact_exposure_allowed": False,
@@ -829,6 +902,7 @@ def build_transfer_pack(
         "candidate_pool": observed,
         "selected_candidates": selected,
         "selected_architectures": selected_architectures,
+        "selected_blueprints": selected_blueprints,
         "selected_portable_items": selected_portable,
         "selected_items": selected,
         "suppressed_candidates": [
@@ -850,9 +924,7 @@ def build_transfer_pack(
             {
                 "candidate_id": row["id"],
                 "retrieval_channel": "cross_task_transfer_projection",
-                "selection_state": (
-                    "injected" if row in selected else "suppressed"
-                ),
+                "selection_state": ("injected" if row in selected else "suppressed"),
             }
             for row in observed
         ],
@@ -877,11 +949,16 @@ def build_transfer_pack(
 
 __all__ = [
     "ARCHITECTURE_TRANSFER_PACK_SCHEMA",
+    "BLUEPRINT_SLOTS",
+    "CALIBRATION_BLUEPRINT",
     "CrossTaskTransferDecision",
     "CrossTaskTransferPolicy",
+    "INFERENCE_BLUEPRINT",
     "MODULE_INTERFACE_LEVEL",
+    "REPRESENTATION_BLUEPRINT",
     "TRANSITION_REASON_LEVEL",
     "TRANSFER_PACK_SCHEMA",
+    "VALIDATION_BLUEPRINT",
     "build_transfer_pack",
     "decide_transfer",
     "project_transfer_candidates",

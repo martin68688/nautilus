@@ -1,0 +1,9 @@
+# Six-hour Leaf -> Plant Seedlings migration with component-slot L1 projection.
+# Only the memory_transfer lineage changes: each source L1 Recipe is decomposed
+# into independently composable representation, validation, calibration, and
+# inference cards before Search/Judge. Novel, Replay, Fusion, data, model,
+# reasoning effort, resource budget, and evaluation semantics remain v157-identical.
+extends: ../systems_v157_plant_seedlings_dynamic_no_resolver_6h_luna_low/dynamic_cross_task_transfer.yaml
+
+run_identity:
+  memory_version: leaf_v10_r8_to_plant_seedlings_dynamic_transfer_v158_component_slots_6h_luna_low

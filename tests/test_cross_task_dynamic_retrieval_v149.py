@@ -166,7 +166,19 @@ def _nodes():
 
 def _search_action():
     queries = {
-        "architecture_blueprint": ("fold ensemble", ["fold", "ensemble"]),
+        "representation_blueprint": (
+            "image or descriptor representation",
+            ["descriptor", "encoder"],
+        ),
+        "validation_blueprint": ("fold OOF validation", ["fold", "oof"]),
+        "calibration_blueprint": (
+            "probability calibration",
+            ["calibration", "probabilities"],
+        ),
+        "inference_blueprint": (
+            "fold inference",
+            ["fold", "probabilities"],
+        ),
         "portable_tactic": ("oof coverage", ["oof", "coverage"]),
         "portable_repair": (
             "class order mismatch",
@@ -183,11 +195,11 @@ def _search_action():
     }
     return {
         "action": "search",
-        "reason": "broad projected five-granularity search",
+        "reason": "broad projected eight-granularity search",
         "information_need": (
             "architecture tactics failures transitions and module interfaces"
         ),
-        "allocation": {granularity: 0.2 for granularity in queries},
+        "allocation": {granularity: 1.0 / len(queries) for granularity in queries},
         "queries": [
             {
                 "granularity": granularity,
@@ -202,27 +214,43 @@ def _search_action():
 
 
 def _finish_action():
+    granularities = (
+        "representation_blueprint",
+        "validation_blueprint",
+        "calibration_blueprint",
+        "inference_blueprint",
+        "portable_tactic",
+        "portable_repair",
+        "improvement_transition",
+        "module_interface",
+    )
     return {
         "action": "finish",
         "reason": "projected evidence is sufficient",
         "information_need": "none",
-        "allocation": {
-            "architecture_blueprint": 0.2,
-            "portable_tactic": 0.2,
-            "portable_repair": 0.2,
-            "improvement_transition": 0.2,
-            "module_interface": 0.2,
-        },
+        "allocation": {value: 1.0 / len(granularities) for value in granularities},
         "queries": [],
     }
 
 
 def _judge_action(cards, selected_granularities):
-    selected = [
-        row["ref"]
-        for row in cards
-        if row["granularity"] in set(selected_granularities)
-    ]
+    selected = []
+    selected_slots = set()
+    blueprint_slots = {
+        "representation_blueprint",
+        "validation_blueprint",
+        "calibration_blueprint",
+        "inference_blueprint",
+    }
+    for row in cards:
+        granularity = row["granularity"]
+        if granularity not in set(selected_granularities):
+            continue
+        if granularity in blueprint_slots:
+            if granularity in selected_slots:
+                continue
+            selected_slots.add(granularity)
+        selected.append(row["ref"])
     return {
         "decision": "select",
         "selected_refs": selected,
@@ -307,16 +335,14 @@ def test_dynamic_search_and_judge_see_only_irreversible_safe_projection():
             return _finish_action()
 
         judge_calls += 1
-        cards = json.loads(
-            kwargs["system_message"]["authorized_projected_cards"]
-        )
+        cards = json.loads(kwargs["system_message"]["authorized_projected_cards"])
         assert all("candidate_id" not in row for row in cards)
         assert [row["ref"] for row in cards] == [
             f"C{index:02d}" for index in range(1, len(cards) + 1)
         ]
         return _judge_action(
             cards,
-            {"architecture_blueprint", "portable_tactic"},
+            {"representation_blueprint", "portable_tactic"},
         )
 
     pack = build_dynamic_transfer_pack(
@@ -331,32 +357,41 @@ def test_dynamic_search_and_judge_see_only_irreversible_safe_projection():
     assert pack["schema"] == PACK_SCHEMA
     assert search_calls == 2
     assert judge_calls == 1
-    assert pack["stage_route"]["route"] == (
-        "projected_multiround_search_direct_judge"
-    )
+    assert pack["stage_route"]["route"] == ("projected_multiround_search_direct_judge")
     assert pack["safety_gate"]["irreversible_projection_before_llm"] is True
     assert pack["safety_gate"]["search_agent_raw_graph_access"] is False
     assert pack["safety_gate"]["judge_raw_graph_access"] is False
     assert pack["dynamic_retrieval"]["search"]["authorized_counts"] == {
-        "architecture_blueprint": 2,
+        "representation_blueprint": 2,
+        "validation_blueprint": 1,
+        "calibration_blueprint": 1,
+        "inference_blueprint": 1,
         "portable_tactic": 2,
         "portable_repair": 1,
         "improvement_transition": 1,
         "module_interface": 1,
     }
     assert pack["memory_transfer"]["selected_level_counts"] == {
-        "architecture_blueprint": 2,
+        "representation_blueprint": 1,
+        "validation_blueprint": 0,
+        "calibration_blueprint": 0,
+        "inference_blueprint": 0,
         "portable_tactic": 2,
         "portable_repair": 0,
         "improvement_transition": 0,
         "module_interface": 0,
     }
-    assert set(pack["final_prompt_candidate_ids"]) == {
-        "recipe::leaf::fold",
-        "recipe::leaf::tree",
-        "tactic::leaf::oof",
-        "tactic::leaf::tree",
-    }
+    assert len(pack["final_prompt_candidate_ids"]) == 3
+    assert (
+        sum(
+            value.endswith("::representation_blueprint")
+            for value in pack["final_prompt_candidate_ids"]
+        )
+        == 1
+    )
+    assert {"tactic::leaf::oof", "tactic::leaf::tree"} <= set(
+        pack["final_prompt_candidate_ids"]
+    )
     assert [row["id"] for row in pack["final_prompt_candidates"]] == (
         pack["final_prompt_candidate_ids"]
     )
@@ -380,9 +415,7 @@ def test_draft_judge_can_select_only_l2_without_fixed_l1_plus_six():
     def query_fn(**kwargs):
         if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
             return _search_action()
-        cards = json.loads(
-            kwargs["system_message"]["authorized_projected_cards"]
-        )
+        cards = json.loads(kwargs["system_message"]["authorized_projected_cards"])
         return _judge_action(cards, {"portable_tactic"})
 
     pack = build_dynamic_transfer_pack(
@@ -395,7 +428,10 @@ def test_draft_judge_can_select_only_l2_without_fixed_l1_plus_six():
     )
 
     assert pack["memory_transfer"]["selected_level_counts"] == {
-        "architecture_blueprint": 0,
+        "representation_blueprint": 0,
+        "validation_blueprint": 0,
+        "calibration_blueprint": 0,
+        "inference_blueprint": 0,
         "portable_tactic": 2,
         "portable_repair": 0,
         "improvement_transition": 0,
@@ -415,10 +451,16 @@ def test_direct_judge_selection_keeps_l1_without_adding_tactic_anchor():
     def query_fn(**kwargs):
         if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
             return _search_action()
-        cards = json.loads(
-            kwargs["system_message"]["authorized_projected_cards"]
+        cards = json.loads(kwargs["system_message"]["authorized_projected_cards"])
+        return _judge_action(
+            cards,
+            {
+                "representation_blueprint",
+                "validation_blueprint",
+                "calibration_blueprint",
+                "inference_blueprint",
+            },
         )
-        return _judge_action(cards, {"architecture_blueprint"})
 
     pack = build_dynamic_transfer_pack(
         _layer(query_fn, rounds=1),
@@ -430,14 +472,17 @@ def test_direct_judge_selection_keeps_l1_without_adding_tactic_anchor():
     )
 
     counts = pack["memory_transfer"]["selected_level_counts"]
-    assert counts["architecture_blueprint"] == 2
+    assert counts["representation_blueprint"] == 1
+    assert counts["validation_blueprint"] == 1
+    assert counts["calibration_blueprint"] == 1
+    assert counts["inference_blueprint"] == 1
     assert counts["portable_tactic"] == 0
     assert "resolver" not in pack["dynamic_retrieval"]
     assert pack["dynamic_retrieval"]["judge_selection"]["resolver_present"] is False
     assert "tactic::leaf::oof" not in pack["final_prompt_candidate_ids"]
-    assert "do not silently replace an OOF/fold/calibration requirement" in pack[
-        "prompt_text"
-    ]
+    assert (
+        "do not import unselected fields from its source Recipe" in pack["prompt_text"]
+    )
 
 
 def test_direct_judge_selection_keeps_architecture_when_no_l2_exists():
@@ -454,10 +499,16 @@ def test_direct_judge_selection_keeps_architecture_when_no_l2_exists():
     def query_fn(**kwargs):
         if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
             return _search_action()
-        cards = json.loads(
-            kwargs["system_message"]["authorized_projected_cards"]
+        cards = json.loads(kwargs["system_message"]["authorized_projected_cards"])
+        return _judge_action(
+            cards,
+            {
+                "representation_blueprint",
+                "validation_blueprint",
+                "calibration_blueprint",
+                "inference_blueprint",
+            },
         )
-        return _judge_action(cards, {"architecture_blueprint"})
 
     layer = _layer(query_fn, rounds=1)
     layer.nodes = nodes
@@ -471,10 +522,12 @@ def test_direct_judge_selection_keeps_architecture_when_no_l2_exists():
     )
 
     assert pack["memory_transfer"]["activated"] is True
-    assert set(pack["final_prompt_candidate_ids"]) == {
-        "recipe::leaf::fold",
-        "recipe::leaf::tree",
-    }
+    assert len(pack["final_prompt_candidate_ids"]) == 4
+    assert (
+        pack["memory_transfer"]["selected_level_counts"]["representation_blueprint"]
+        == 1
+    )
+    assert pack["memory_transfer"]["selected_level_counts"]["validation_blueprint"] == 1
     assert "resolver" not in pack["dynamic_retrieval"]
 
 
@@ -499,9 +552,7 @@ def test_judge_can_select_transition_reason_and_code_free_module_interface():
         assert "0.001234" not in serialized_prompt
         if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
             return _search_action()
-        cards = json.loads(
-            kwargs["system_message"]["authorized_projected_cards"]
-        )
+        cards = json.loads(kwargs["system_message"]["authorized_projected_cards"])
         return _judge_action(
             cards,
             {"improvement_transition", "module_interface"},
@@ -517,7 +568,10 @@ def test_judge_can_select_transition_reason_and_code_free_module_interface():
     )
 
     assert pack["memory_transfer"]["selected_level_counts"] == {
-        "architecture_blueprint": 0,
+        "representation_blueprint": 0,
+        "validation_blueprint": 0,
+        "calibration_blueprint": 0,
+        "inference_blueprint": 0,
         "portable_tactic": 0,
         "portable_repair": 0,
         "improvement_transition": 1,
@@ -544,12 +598,14 @@ def test_direct_judge_selection_does_not_filter_method_family_labels():
     def query_fn(**kwargs):
         if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
             return _search_action()
-        cards = json.loads(
-            kwargs["system_message"]["authorized_projected_cards"]
-        )
+        cards = json.loads(kwargs["system_message"]["authorized_projected_cards"])
         return _judge_action(
             cards,
-            {"architecture_blueprint", "portable_tactic"},
+            {
+                "representation_blueprint",
+                "validation_blueprint",
+                "portable_tactic",
+            },
         )
 
     pack = build_dynamic_transfer_pack(
@@ -562,12 +618,65 @@ def test_direct_judge_selection_does_not_filter_method_family_labels():
     )
 
     assert "resolver" not in pack["dynamic_retrieval"]
-    assert set(pack["final_prompt_candidate_ids"]) == {
-        "recipe::leaf::fold",
-        "recipe::leaf::tree",
-        "tactic::leaf::oof",
-        "tactic::leaf::tree",
-    }
+    final_ids = set(pack["final_prompt_candidate_ids"])
+    assert len(final_ids) == 4
+    assert "recipe::leaf::fold::validation_blueprint" in final_ids
+    assert {"tactic::leaf::oof", "tactic::leaf::tree"} <= final_ids
+    assert sum(value.endswith("::representation_blueprint") for value in final_ids) == 1
+
+
+def test_same_blueprint_slot_collision_is_rejected_but_cross_slot_composition_is_valid():
+    from agents.memory.cross_task_dynamic_retrieval import (
+        build_dynamic_transfer_pack,
+    )
+
+    def query_fn(**kwargs):
+        if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
+            return _search_action()
+        cards = json.loads(kwargs["system_message"]["authorized_projected_cards"])
+        selected = [
+            row["ref"]
+            for row in cards
+            if row["granularity"] == "representation_blueprint"
+        ]
+        return {
+            "decision": "select",
+            "selected_refs": selected,
+            "reason": "intentionally invalid same-slot collision",
+            "assessments": [
+                {
+                    "ref": row["ref"],
+                    "applicability": 0.9,
+                    "target_adaptability": 0.9,
+                    "coherence": 0.9,
+                    "contradiction": False,
+                    "confidence": 0.9,
+                    "reason": "test assessment",
+                }
+                for row in cards
+            ],
+        }
+
+    pack = build_dynamic_transfer_pack(
+        _layer(query_fn, rounds=1),
+        _policy(),
+        target_task_id="uci-one-hundred-leaves",
+        stage="draft",
+        task_description="fold multiview leaf classification",
+        query_text="compare descriptor representations and OOF validation",
+    )
+
+    assert pack["dynamic_retrieval"]["judge"]["fallback_used"] is True
+    assert any(
+        "exceeded blueprint slot cap: representation_blueprint"
+        in attempt.get("error", "")
+        for attempt in pack["dynamic_retrieval"]["judge"]["attempts"]
+    )
+    counts = pack["memory_transfer"]["selected_level_counts"]
+    assert counts["representation_blueprint"] == 1
+    assert counts["validation_blueprint"] <= 1
+    assert counts["calibration_blueprint"] <= 1
+    assert counts["inference_blueprint"] <= 1
 
 
 def test_adoption_durably_mirrors_dynamic_search_and_direct_judge_receipt():
@@ -579,10 +688,8 @@ def test_adoption_durably_mirrors_dynamic_search_and_direct_judge_receipt():
     def query_fn(**kwargs):
         if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
             return _search_action()
-        cards = json.loads(
-            kwargs["system_message"]["authorized_projected_cards"]
-        )
-        return _judge_action(cards, {"architecture_blueprint"})
+        cards = json.loads(kwargs["system_message"]["authorized_projected_cards"])
+        return _judge_action(cards, {"representation_blueprint"})
 
     pack = build_dynamic_transfer_pack(
         _layer(query_fn, rounds=1),
@@ -640,9 +747,7 @@ def test_stage_layer_dispatches_dynamic_route_before_legacy_controller():
     def query_fn(**kwargs):
         if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
             return _search_action()
-        cards = json.loads(
-            kwargs["system_message"]["authorized_projected_cards"]
-        )
+        cards = json.loads(kwargs["system_message"]["authorized_projected_cards"])
         return _judge_action(cards, {"portable_repair"})
 
     dynamic = _layer(query_fn, rounds=1)

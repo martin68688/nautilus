@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import threading
 from types import SimpleNamespace
 
@@ -115,9 +116,7 @@ def test_host_activates_only_for_different_task_with_same_explicit_type():
     from agents.memory.cross_task_transfer import decide_transfer
 
     policy = _policy()
-    transfer = decide_transfer(
-        policy, target_task_id="uci-one-hundred-leaves"
-    )
+    transfer = decide_transfer(policy, target_task_id="uci-one-hundred-leaves")
     assert transfer.active is True
     assert transfer.reason == "different_task_same_explicit_type"
 
@@ -159,8 +158,7 @@ def test_projection_exposes_portable_l2_but_never_recipe_code_or_source_score():
     assert pack["visibility_safety_gate"]["source_score_fields_exposed"] == 0
     assert pack["visibility_safety_gate"]["source_code_fields_exposed"] == 0
     assert all(
-        row["source_score_inherited"] is False
-        and row["source_code_exposed"] is False
+        row["source_score_inherited"] is False and row["source_code_exposed"] is False
         for row in pack["candidate_pool"]
     )
 
@@ -185,33 +183,40 @@ def test_opt_in_architecture_projection_adds_one_sanitized_l1_blueprint():
     assert pack["schema"] == ARCHITECTURE_TRANSFER_PACK_SCHEMA
     assert pack["memory_transfer"]["architecture_transfer_enabled"] is True
     assert pack["memory_transfer"]["architecture_projection_mode"] == (
-        "host_structural_fields_only_v1"
+        "host_component_slots_only_v2"
     )
     assert pack["memory_transfer"]["selected_architecture_ids"] == [
-        "recipe::leaf::001"
+        "recipe::leaf::001::representation_blueprint"
     ]
     assert pack["final_prompt_candidate_ids"] == [
-        "recipe::leaf::001",
+        "recipe::leaf::001::representation_blueprint",
+        "recipe::leaf::001::validation_blueprint",
+        "recipe::leaf::001::calibration_blueprint",
+        "recipe::leaf::001::inference_blueprint",
         "tactic::leaf::001",
     ]
     blueprint = pack["selected_architectures"][0]
-    assert blueprint["candidate_kind"] == "architecture_blueprint"
+    assert blueprint["candidate_kind"] == "representation_blueprint"
     assert blueprint["portable_text"]["pipeline_order"] == [
         "feature_representation",
         "model_stack",
-        "training_protocol",
-        "oof_protocol",
-        "ensemble_calibration",
-        "final_refit_inference",
     ]
+    assert set(pack["memory_transfer"]["selected_blueprint_slots"]) == {
+        "representation_blueprint",
+        "validation_blueprint",
+        "calibration_blueprint",
+        "inference_blueprint",
+    }
     prompt = pack["prompt_text"]
-    assert "Structural architecture blueprint" in prompt
+    assert "Composable structural blueprints" in prompt
     assert "separate view encoders" in prompt
     assert "a target-task output artifact" in prompt
     assert "source artifact redacted" not in prompt
     assert "0.0001" not in prompt
     assert "55613290" not in prompt
-    assert "bb19d7d42b8e1923825f462dc7b42a033381488e8766f90af50166aee996f6d4" not in prompt
+    assert (
+        "bb19d7d42b8e1923825f462dc7b42a033381488e8766f90af50166aee996f6d4" not in prompt
+    )
     assert "990 training rows" not in prompt
     assert "594 test rows" not in prompt
     assert "99-way" not in prompt
@@ -273,10 +278,77 @@ def test_runtime_normalized_l1_strategy_is_projected_as_l1_recipe():
     )
 
     assert pack["memory_transfer"]["selected_architecture_ids"] == [
-        "recipe::leaf::001"
+        "recipe::leaf::001::representation_blueprint"
     ]
-    assert pack["selected_architectures"][0]["abstraction_level"] == (
-        "L1_recipe"
+    assert pack["selected_architectures"][0]["abstraction_level"] == ("L1_recipe")
+
+
+def test_l1_recipe_is_decomposed_and_generic_c11_cannot_take_representation_slot():
+    from agents.memory.cross_task_transfer import project_transfer_candidates
+
+    nodes = {
+        "recipe::leaf::c11": {
+            "id": "recipe::leaf::c11",
+            "task_id": "leaf-classification",
+            "abstraction_level": "L1_recipe",
+            "title": "Fold ensemble with temperature and Sinkhorn",
+            "method_family": "fold_oof_temperature_sinkhorn_checkpoint",
+            "pipeline": {
+                "feature_representation": (
+                    "Preserve generic neural feature views and derive widths from target data."
+                ),
+                "model_stack": (
+                    "Use retained fold checkpoints and auxiliary probability components."
+                ),
+                "training_protocol": "Train fresh fold models and select checkpoints.",
+                "oof_protocol": "Fill every OOF row exactly once.",
+                "ensemble_calibration": "Fit temperature and optional Sinkhorn on OOF.",
+                "final_refit_inference": "Replay target fold checkpoints on test rows.",
+            },
+        },
+        "recipe::leaf::b3": {
+            "id": "recipe::leaf::b3",
+            "task_id": "leaf-classification",
+            "abstraction_level": "L1_recipe",
+            "title": "EfficientNet-B3 descriptor fusion",
+            "method_family": "efficientnet_b3_descriptor_fusion",
+            "pipeline": {
+                "feature_representation": (
+                    "Fuse an EfficientNet-B3 image embedding with color and shape descriptors."
+                ),
+                "model_stack": "Use a regularized multimodal fusion classifier.",
+                "ensemble_calibration": "Evaluate double temperature on OOF predictions.",
+            },
+        },
+    }
+    projection = project_transfer_candidates(
+        nodes,
+        _policy(architecture_transfer_enabled=True),
+        target_task_id="plant-seedlings-classification",
+        stage="draft",
+        task_description="plant seedling image classification",
+        query_text="EfficientNet color shape grouped folds calibration",
+        all_safe_levels=True,
+    )
+    rows = projection["observed_candidates"]
+    ids = {row["id"] for row in rows}
+    assert "recipe::leaf::c11::representation_blueprint" not in ids
+    assert "recipe::leaf::c11::validation_blueprint" in ids
+    assert "recipe::leaf::c11::calibration_blueprint" in ids
+    assert "recipe::leaf::c11::inference_blueprint" in ids
+    assert "recipe::leaf::b3::representation_blueprint" in ids
+    b3_representation = next(
+        row for row in rows if row["id"] == "recipe::leaf::b3::representation_blueprint"
+    )
+    assert set(b3_representation["portable_text"]["components"]) == {
+        "feature_representation",
+        "model_stack",
+    }
+    assert (
+        "double temperature"
+        not in json.dumps(
+            b3_representation["portable_text"], ensure_ascii=False
+        ).lower()
     )
 
 
@@ -357,7 +429,9 @@ def test_independent_target_novel_never_enters_source_end2end_controller():
 
     class ForbiddenEnd2EndController:
         def retrieve(self, *_args, **_kwargs):
-            raise AssertionError("source End2End retrieval must not run for target Novel")
+            raise AssertionError(
+                "source End2End retrieval must not run for target Novel"
+            )
 
     layer = StageAwareHybridMemoryLayer.__new__(StageAwareHybridMemoryLayer)
     layer.nodes = _nodes()
@@ -391,7 +465,9 @@ def test_transfer_debug_uses_score_free_l3_projection_before_legacy_controller()
 
     class ForbiddenEnd2EndController:
         def retrieve(self, *_args, **_kwargs):
-            raise AssertionError("legacy End2End retrieval must not run for transfer Debug")
+            raise AssertionError(
+                "legacy End2End retrieval must not run for transfer Debug"
+            )
 
     layer = StageAwareHybridMemoryLayer.__new__(StageAwareHybridMemoryLayer)
     layer.nodes = _nodes()
