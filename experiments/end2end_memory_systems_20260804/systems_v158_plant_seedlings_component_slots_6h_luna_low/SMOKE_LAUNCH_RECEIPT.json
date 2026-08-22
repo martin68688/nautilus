@@ -1,0 +1,94 @@
+{
+  "schema": "mlevolve_plant_seedlings_component_slots_smoke_launch_v1",
+  "recorded_at": "2026-08-22T22:15:43+08:00",
+  "scope": {
+    "changed_route": "memory_transfer",
+    "novel_route_changed": false,
+    "replay_route_changed": false,
+    "fusion_route_changed": false,
+    "generic_memory_changed": false,
+    "resolver_present": false
+  },
+  "checkpoint": {
+    "branch": "codex/cross-task-component-blueprints-v158",
+    "commit": "f2b721cd",
+    "runtime_worktree_sha256": "1bde58dbc3861192c6fb5f94dbb430b341dc6c119f5bf8f3b891e38e54119523",
+    "cross_task_transfer_sha256": "5a6f80e90815fdf41fd2bf3708576c07a2dc416f4acb6a06a1f9f1f324c744c1",
+    "cross_task_dynamic_retrieval_sha256": "7e204b27fc3ce28f797f059d845fe3bb10d04f2f6e9e9c831b1484b86dc4882d"
+  },
+  "runtime": {
+    "namespace": "ecepxie",
+    "pod": "mlevolve-plant-v158-slots-luna-low-6h-a100-r1-dev",
+    "pod_uid": "579e58c3-356c-486f-a3d9-048938a9a854",
+    "node": "node-2-2.sdsc.optiputer.net",
+    "gpu": "NVIDIA A100-SXM4-80GB",
+    "runtime_path": "/workspace/nautilus-exp-end2end-agent-v158-plant-seedlings-component-slots-luna-low-6h",
+    "output_path": "/workspace/experiment-end2end-plant-seedlings-v158-component-slots-6h-luna-low",
+    "main_pid": 387,
+    "run_id": "20260822_140832_e2e-plant-seedlings-dynamic-v158-component-slots-6h-luna-low-r1"
+  },
+  "budget": {
+    "seconds": 21600,
+    "steps": 2147483647,
+    "gpu_count": 1,
+    "cpu_count": 16
+  },
+  "model_access": {
+    "provider": "ecepxie_cluster_local_cliproxy",
+    "base_url": "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "low",
+    "authenticated_health_status": 200
+  },
+  "validation": {
+    "local_focused_tests_passed": 22,
+    "local_route_isolation_tests_passed": 130,
+    "container_core_tests_passed": 23,
+    "container_extended_suite_note": "Collection succeeded after isolating a third-party tests package, then stopped because the staged runtime intentionally lacks the repository-only paper-skills/hyper_memory test fixture; no implementation assertion failed.",
+    "py_compile_passed": true,
+    "black_check_passed": true,
+    "git_diff_check_passed": true
+  },
+  "initial_dynamic_retrieval": {
+    "elapsed_seconds": 87.03532,
+    "search_agent_calls": 3,
+    "search_fallback_used": false,
+    "judge_agent_calls": 1,
+    "judge_fallback_used": false,
+    "judge_mode": "independent_judge_direct_no_resolver",
+    "selected_refs": [
+      "C03",
+      "C04",
+      "C05",
+      "C08",
+      "C09",
+      "C12",
+      "C15"
+    ],
+    "selected_ids": [
+      "recipe::leaf-classification::v140::005::calibration_blueprint",
+      "recipe::leaf-classification::v140::006::inference_blueprint",
+      "tactic::leaf-classification::v140::003",
+      "run::e2e-pilot-agentic-three-role-v22__leaf-classification__dynamic_hybrid__seed-1::attempt-000::node::ccc9a3503fc74bb08fec033af376c22b",
+      "recipe::leaf-classification::v140::008::representation_blueprint",
+      "recipe::leaf-classification::v140::002::validation_blueprint",
+      "repair::leaf-classification::v140::012"
+    ],
+    "selected_blueprint_slots": {
+      "representation_blueprint": "recipe::leaf-classification::v140::008::representation_blueprint",
+      "validation_blueprint": "recipe::leaf-classification::v140::002::validation_blueprint",
+      "calibration_blueprint": "recipe::leaf-classification::v140::005::calibration_blueprint",
+      "inference_blueprint": "recipe::leaf-classification::v140::006::inference_blueprint"
+    },
+    "exact_b3_representation_candidate": "recipe::leaf-classification::v140::002::representation_blueprint",
+    "exact_b3_candidate_was_observed": true,
+    "exact_b3_candidate_was_selected": false,
+    "generated_transfer_architecture": "target-fitted EfficientNet-B3 plus ResNet-50 fused with engineered RGB/HSV/LAB, gradient, texture, and foreground-shape descriptors",
+    "raw_probability_calibration_fallback_required": true
+  },
+  "preservation": {
+    "v157_pods_deleted": false,
+    "v157_outputs_overwritten": false,
+    "source_memory_snapshot_mutated": false
+  }
+}
