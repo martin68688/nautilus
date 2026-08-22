@@ -17,6 +17,30 @@ from .model_profiles import get_profile, supports_json_schema, thinking_json_inc
 
 logger = logging.getLogger("MLEvolve")
 
+_REASONING_EFFORTS = frozenset(
+    {"none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"}
+)
+
+
+def _reasoning_effort_extra_body() -> dict[str, str]:
+    """Return an audited optional reasoning-effort request for CLIProxyAPI.
+
+    ``extra_body`` is used deliberately: it places ``reasoning_effort`` in the
+    JSON request body without requiring a particular OpenAI SDK version to
+    expose the keyword in its typed ``chat.completions.create`` signature.
+    """
+
+    effort = os.environ.get("OPENAI_REASONING_EFFORT", "").strip().lower()
+    if not effort:
+        return {}
+    if effort not in _REASONING_EFFORTS:
+        accepted = ", ".join(sorted(_REASONING_EFFORTS))
+        raise ValueError(
+            f"Unsupported OPENAI_REASONING_EFFORT={effort!r}; expected one of: "
+            f"{accepted}"
+        )
+    return {"reasoning_effort": effort}
+
 
 def _strip_markdown_fences(args: str) -> str:
     """Remove markdown code fences that LLMs sometimes append inside JSON string values."""
@@ -146,6 +170,7 @@ def query(
         resolution,
         use_thinking=use_thinking,
     )
+    extra_body.update(_reasoning_effort_extra_body())
     if "top_k" in profile:
         extra_body["top_k"] = profile["top_k"]
     if "enable_thinking" in profile:
@@ -213,6 +238,10 @@ def query(
         "model": getattr(completion, "model", model),
         "requested_model": resolution.requested_name,
         "effective_model": resolution.effective_name,
+        "reasoning_effort": os.environ.get("OPENAI_REASONING_EFFORT", "")
+        .strip()
+        .lower()
+        or None,
         "created": getattr(completion, "created", int(time.time())),
     }
     return output, req_time, in_tok, out_tok, info
@@ -288,6 +317,7 @@ def generate(
         resolution,
         use_thinking=use_thinking,
     )
+    extra_body.update(_reasoning_effort_extra_body())
     if "top_k" in profile:
         extra_body["top_k"] = profile["top_k"]
     if "enable_thinking" in profile:

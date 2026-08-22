@@ -1,0 +1,17 @@
+# Six-hour Leaf -> Plant Seedlings migration on the latest direct-Judge route.
+# The source and target share the vision_multiclass family, but every selected
+# memory remains a target-side hypothesis. No Leaf code, weights, predictions,
+# scores, dimensions, class mapping, checkpoints, or artifacts may cross.
+extends: ../systems_v155_dynamic_no_resolver_3h/dynamic_cross_task_transfer.yaml
+
+agent:
+  steps: 2147483647
+  time_limit: 21600
+
+external_skill_memory:
+  cross_task_transfer_source_task_id: leaf-classification
+  cross_task_transfer_source_task_type: vision_multiclass
+  cross_task_transfer_target_task_type: vision_multiclass
+
+run_identity:
+  memory_version: leaf_v10_r8_to_plant_seedlings_dynamic_transfer_v157_no_resolver_6h_luna_low

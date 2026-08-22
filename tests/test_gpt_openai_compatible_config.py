@@ -196,6 +196,57 @@ def test_explicit_zero_temperature_overrides_gpt_profile_for_tool_calls(
     assert captured["temperature"] == 0.0
 
 
+def test_openai_reasoning_effort_is_forwarded_via_extra_body(monkeypatch):
+    from llm import openai as backend
+
+    captured = {}
+
+    class FakeCompletions:
+        def create(self, **params):
+            captured.update(params)
+            return _tool_completion("emit_direction", '{"lower_is_better": true}')
+
+    class FakeClient:
+        def __init__(self, **_kwargs):
+            self.chat = SimpleNamespace(completions=FakeCompletions())
+
+    monkeypatch.setattr(backend, "OpenAI", FakeClient)
+    monkeypatch.setenv("OPENAI_REASONING_EFFORT", "low")
+    spec = FunctionSpec(
+        name="emit_direction",
+        description="Emit metric direction",
+        json_schema={
+            "type": "object",
+            "properties": {"lower_is_better": {"type": "boolean"}},
+            "required": ["lower_is_better"],
+            "additionalProperties": False,
+        },
+    )
+
+    output, *_rest, info = backend.query(
+        system_message="judge",
+        user_message=None,
+        model="gpt-5.6-luna",
+        temperature=0.0,
+        max_tokens=100,
+        func_spec=spec,
+        cfg=_openai_cfg(),
+    )
+
+    assert output == {"lower_is_better": True}
+    assert captured["extra_body"] == {"reasoning_effort": "low"}
+    assert info["reasoning_effort"] == "low"
+
+
+def test_invalid_openai_reasoning_effort_fails_closed(monkeypatch):
+    from llm import openai as backend
+
+    monkeypatch.setenv("OPENAI_REASONING_EFFORT", "fastest")
+
+    with pytest.raises(ValueError, match="OPENAI_REASONING_EFFORT"):
+        backend.generate("hello", _openai_cfg(), max_retries=1)
+
+
 def test_nrp_clip_endpoint_uses_standard_nested_named_tool_choice(monkeypatch):
     from llm import openai as backend
 
