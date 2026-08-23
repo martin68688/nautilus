@@ -1,0 +1,5 @@
+# v43: v42 hermetic Debug policy with its structured config schema declared.
+extends: ../systems_v42/dynamic_hybrid.yaml
+
+run_identity:
+  memory_version: experiment_r_leaf_tiered_debug_router_hermetic_schema_v1

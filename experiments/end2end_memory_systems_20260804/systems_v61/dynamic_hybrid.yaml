@@ -1,0 +1,19 @@
+# Leaf v61 official-scored memory release.
+extends: ../systems_v43/dynamic_hybrid.yaml
+
+agent:
+  draft_role_policy:
+    replay_targets_path: /workspace/nautilus-exp-end2end-agent-v61/experiments/end2end_memory_systems_20260804/manifests_v61/leaf_official_replay_targets.json
+
+external_skill_memory:
+  recipe_sop_path: /workspace/experiment-end2end-memory-agent-v56/memory-leaf-official-v6-r6/leaf-classification/bundles/v6-leaf-official-20260810-r6/recipe/recipe_sops.json
+  recipe_sop_file_sha256: c7d0ea774918b8a4c40e3ef92fa281cd05aa80084ea988810efd950f2d6c6236
+  recipe_sop_bundle_sha256: ebbf56d6ee6452588ea4336583c3b576b78f67a4351dc5fd08c2910ab15af1be
+  recipe_evidence_path: /workspace/experiment-end2end-memory-agent-v56/memory-leaf-official-v6-r6/leaf-classification/bundles/v6-leaf-official-20260810-r6/recipe/evidence_manifest.json
+  recipe_evidence_file_sha256: 27d3141312d9a685bcdcd4cf867f837d89272316ba023d02666e8c6710604e3b
+  recipe_evidence_manifest_sha256: 2e985014b11ffec09f2f1c1c8bb942534a6062165f5764b921823bb568fdd828
+  recipe_implementation_path: /workspace/experiment-end2end-memory-agent-v56/memory-leaf-official-v6-r6/leaf-classification/bundles/v6-leaf-official-20260810-r6/recipe/implementation_capsules.json
+  experiment_r_enabled: true
+
+run_identity:
+  memory_version: leaf_official_recipe_runforest_v6

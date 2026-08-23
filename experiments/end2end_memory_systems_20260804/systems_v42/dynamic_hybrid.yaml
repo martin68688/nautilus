@@ -1,0 +1,12 @@
+# v42: v41 tiered-Debug Router plus hermetic runtime repair enforcement.
+extends: ../systems_v41/dynamic_hybrid.yaml
+
+external_skill_memory:
+  # NRP candidate execution has no model-download/network path.  Debug must
+  # choose an existing local asset or an installed offline model instead of
+  # turning a missing torch.hub repository into an HTTP download attempt.
+  experiment_r_offline_runtime_only: true
+  runtime_network_policy: offline
+
+run_identity:
+  memory_version: experiment_r_leaf_tiered_debug_router_hermetic_v1

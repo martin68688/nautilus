@@ -1,0 +1,38 @@
+# Plant Seedlings v164: A100 rerun of only the v161 memory_transfer role.
+#
+# The fixed two-role declaration is retained because the engine validates the
+# original v161 role contract. RUNFOREST_DEV_EXECUTION_ROLE=memory_transfer
+# selects only slot 0 at runtime. Novel generation and every Fusion path are
+# disabled, while retrieval, Judge, component-slot projection, target data,
+# metric, model, reasoning effort, and six-hour budget remain v161-aligned.
+extends: ../systems_v161_plant_seedlings_dedicated_lanes_6h_luna_low/dynamic_cross_task_transfer.yaml
+
+agent:
+  steps: 2147483647
+  time_limit: 21600
+  initial_drafts: 2
+  max_fusion_drafts: 0
+  branch_fusion_trigger_prob: 0.0
+  fusion_vs_evolution_prob: 0.0
+  draft_role_policy:
+    enabled: true
+    roles:
+      - memory_transfer
+      - novel_exploration
+    ensure_valid_candidate_per_role: false
+    cross_role_synthesis_after_balance: false
+    cross_role_synthesis_on_coverage: false
+    equal_branch_allocation_after_coverage: false
+    dedicated_branch_gpu_lanes: false
+    dedicated_branch_lane_budget_seconds: 0
+    single_coverage_synthesis_only: false
+  search:
+    num_drafts: 2
+    num_gpus: 1
+    parallel_search_num: 1
+
+run_identity:
+  experiment_group: plant_seedlings_v164_transfer_only_a100_6h_luna_low
+  memory_version: leaf_v10_r8_to_plant_seedlings_v164_transfer_only_a100
+  system_id: dynamic_cross_task_transfer_only_a100
+  identity_source: isolated_runtime_v164
