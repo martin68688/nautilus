@@ -1239,6 +1239,9 @@ def build_strategy_context(
     elapsed = max(0.0, time.time() - started)
     remaining = max(0.0, total_seconds - elapsed) if total_seconds else None
     current_code = str(getattr(parent_node, "code", "") or "")
+    parent_atomic_trace = dict(
+        getattr(parent_node, "atomic_actuation_trace", None) or {}
+    )
     context = {
         "schema": "mlevolve_memory_strategy_context_v2",
         "mode": str(mode),
@@ -1286,6 +1289,14 @@ def build_strategy_context(
                 ) :
             ]
         ),
+        "host_runtime_feedback": {
+            "representation_contract": copy.deepcopy(
+                parent_atomic_trace.get("host_representation_contract") or {}
+            ),
+            "pre_execution": copy.deepcopy(
+                parent_atomic_trace.get("pre_execution_host_feedback") or {}
+            ),
+        },
         "task": {
             "task_id": str(getattr(getattr(agent, "cfg", None), "exp_id", "") or ""),
             "description": str(getattr(agent, "task_desc", "") or ""),
@@ -1407,6 +1418,21 @@ def _strategy_prompt(
             "genuinely smaller independently falsifiable slice. "
             "smallest independently executable phase may be selected now. "
         )
+        host_feedback = dict(context.get("host_runtime_feedback") or {})
+        pre_execution_feedback = dict(host_feedback.get("pre_execution") or {})
+        host_contract = dict(host_feedback.get("representation_contract") or {})
+        if (
+            pre_execution_feedback.get("status") == "repair_required"
+            or host_contract.get("enabled") is True
+        ):
+            mode_contract += (
+                "Host runtime feedback in CONTEXT_JSON is binding production evidence. "
+                "The recommended hypothesis must satisfy every Host representation "
+                "requirement and pre-execution violation in its positive hypothesis, "
+                "minimal_change_set, compatibility_checks, and expected_mechanism. "
+                "Do not preserve, relabel, or add a fallback to the conflicting component. "
+                "The Planner will receive only a memo that passes these requirements. "
+            )
         if bool(strategy_contract.get("abstention_allowed", False)):
             mode_contract += (
                 "Abstention is allowed only when the complete citable evidence set is "
@@ -1677,6 +1703,7 @@ def validate_strategy_memo(
     abstention_allowed: bool = True,
     required_opportunity_ids: Iterable[str] = (),
     required_opportunities: Iterable[Mapping[str, Any]] = (),
+    host_runtime_feedback: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     violations: list[str] = []
     missing_keys = [key for key in _STRATEGY_REQUIRED_KEYS if key not in memo]
@@ -1771,6 +1798,58 @@ def validate_strategy_memo(
         violations.append("nonempty compositions require one recommendation")
     if decision == "abstain" and recommended:
         violations.append("abstain requires empty recommended_hypothesis_id")
+    host_contract = dict(
+        (host_runtime_feedback or {}).get("representation_contract") or {}
+    )
+    host_requirements = {
+        str(slot): str(value)
+        for slot, value in dict(host_contract.get("requirements") or {}).items()
+        if value
+    }
+    recommended_composition = next(
+        (
+            item
+            for item in compositions
+            if isinstance(item, Mapping)
+            and str(item.get("hypothesis_id") or "") == recommended
+        ),
+        None,
+    )
+    if host_requirements and isinstance(recommended_composition, Mapping):
+        positive_text = _canonical_json(
+            {
+                key: recommended_composition.get(key)
+                for key in (
+                    "hypothesis",
+                    "minimal_change_set",
+                    "compatibility_checks",
+                    "expected_mechanism",
+                )
+            }
+        ).lower()
+        forbidden_text = _canonical_json(
+            recommended_composition.get("forbidden_changes") or []
+        ).lower()
+        required_backbone = host_requirements.get("backbone_family", "")
+        if required_backbone and not re.search(
+            re.escape(required_backbone).replace(r"\_", r"[- _]?"),
+            positive_text,
+            re.IGNORECASE,
+        ):
+            violations.append(
+                "recommended hypothesis does not positively adopt Host backbone: "
+                + required_backbone
+            )
+        if host_requirements.get("initialization_source") == "public_pretrained":
+            if "pretrain" not in positive_text:
+                violations.append(
+                    "recommended hypothesis does not positively adopt Host "
+                    "public_pretrained initialization"
+                )
+            if "random" not in forbidden_text:
+                violations.append(
+                    "recommended hypothesis must forbid random initialization fallback"
+                )
     opportunity_details = {
         str(row.get("opportunity_id") or ""): dict(row)
         for row in required_opportunities
@@ -1865,6 +1944,7 @@ def validate_strategy_memo(
         "composition_count": len(compositions),
         "required_opportunity_ids": sorted(required_opportunity_set),
         "addressed_opportunity_ids": addressed_ids,
+        "host_runtime_requirements": host_requirements,
     }
 
 
@@ -2118,6 +2198,7 @@ def run_memory_strategy_shadow(
                     abstention_allowed=abstention_allowed,
                     required_opportunity_ids=required_opportunity_ids,
                     required_opportunities=required_opportunities,
+                    host_runtime_feedback=context.get("host_runtime_feedback"),
                 )
             except Exception as exc:
                 memo = {}

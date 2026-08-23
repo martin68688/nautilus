@@ -802,6 +802,78 @@ def test_strategy_context_keeps_parent_metric_distinct_from_branch_best():
     }
 
 
+def test_strategy_context_and_validator_bind_host_runtime_feedback():
+    agent = _agent()
+    parent = _parent()
+    host_feedback = {
+        "representation_contract": {
+            "schema": "mlevolve_host_representation_contract_v1",
+            "enabled": True,
+            "requirements": {
+                "backbone_family": "efficientnet_b3",
+                "initialization_source": "public_pretrained",
+            },
+        },
+        "pre_execution": {
+            "schema": "mlevolve_pre_execution_host_feedback_v1",
+            "status": "repair_required",
+            "route": {
+                "target": "planner",
+                "repairable": True,
+                "violations": ["selected backbone is absent: efficientnet_b3"],
+            },
+        },
+    }
+    parent.atomic_actuation_trace = {
+        "host_representation_contract": host_feedback[
+            "representation_contract"
+        ],
+        "pre_execution_host_feedback": host_feedback["pre_execution"],
+    }
+    context = build_strategy_context(
+        agent,
+        parent,
+        stage="debug",
+        router_pack=_router_pack(),
+        mode="active_atomic",
+    )
+    assert context["host_runtime_feedback"] == host_feedback
+
+    rejected = validate_strategy_memo(
+        _strategy_memo(),
+        available_memory_ids=["run::three-model", "run::five-fold"],
+        host_runtime_feedback=host_feedback,
+    )
+    accepted_memo = copy.deepcopy(_strategy_memo())
+    composition = accepted_memo["candidate_compositions"][0]
+    composition["hypothesis"] = (
+        "repair the candidate with public pretrained EfficientNet-B3"
+    )
+    composition["minimal_change_set"] = [
+        "construct efficientnet_b3 through the public pretrained cache"
+    ]
+    composition["compatibility_checks"] = [
+        "offline public pretrained EfficientNet-B3 construction succeeds"
+    ]
+    composition["expected_mechanism"] = (
+        "the public pretrained EfficientNet-B3 representation preserves transfer"
+    )
+    composition["forbidden_changes"] = [
+        "do not use random initialization fallback"
+    ]
+    accepted = validate_strategy_memo(
+        accepted_memo,
+        available_memory_ids=["run::three-model", "run::five-fold"],
+        host_runtime_feedback=host_feedback,
+    )
+
+    assert rejected["valid"] is False
+    assert any(
+        "Host backbone" in value for value in rejected["violations"]
+    )
+    assert accepted["valid"] is True
+
+
 def test_strategy_uses_independent_v4_pro_thinking_without_mutating_coder_cfg(
     monkeypatch,
 ):
