@@ -3,7 +3,7 @@
 import ast
 import logging
 import time
-from typing import cast
+from typing import Any, Mapping, cast
 
 from llm import FunctionSpec, query
 from engine.candidate_execution_contract import (
@@ -218,7 +218,12 @@ def _deterministic_contract_audit(agent, code: str) -> dict | None:
         return None
 
 
-def run(agent, node: SearchNode) -> str:
+def run(
+    agent,
+    node: SearchNode,
+    *,
+    atomic_host_feedback: Mapping[str, Any] | None = None,
+) -> str:
     logger.debug(f"[review] node {node.id}")
 
     prompt = get_code_review_prompt(
@@ -228,6 +233,19 @@ def run(agent, node: SearchNode) -> str:
     if "Instructions" not in prompt:
         prompt["Instructions"] = {}
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
+    if atomic_host_feedback:
+        feedback = dict(atomic_host_feedback)
+        prompt["Instructions"][
+            "ATOMIC HOST FEEDBACK - CONTRACT-PRESERVING REPAIR"
+        ] = [
+            "The previous generic review changed a candidate that had already passed its Atomic Coder contract. Repair the candidate against the original code in this prompt; do not repeat the rejected review patch.",
+            "Exact Host violations: "
+            + "; ".join(str(value) for value in feedback.get("violations") or []),
+            "The Strategy hypothesis and Atomic plan are frozen. Do not broaden the experiment, add an undeclared module, or negotiate away a Host constraint.",
+            "Return only a minimal SEARCH/REPLACE repair. If the prior review was unnecessary, approve this original pre-review candidate unchanged.",
+            "Frozen Atomic plan: "
+            + str(feedback.get("atomic_plan") or {}),
+        ]
     deterministic_audit = _deterministic_contract_audit(agent, node.code)
     if deterministic_audit and deterministic_audit.get("violations"):
         prompt["Instructions"][

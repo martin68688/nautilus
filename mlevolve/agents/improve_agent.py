@@ -32,6 +32,7 @@ from agents.strategy_actuation import (
     MemoryStrategyActuationRejected,
     active_strategy_enabled,
     active_strategy_required,
+    record_recoverable_strategy_rejection,
     run_active_strategy_actuation,
 )
 
@@ -387,8 +388,32 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             "stage": "improve",
             "reason": str(active_actuation_trace.get("reason") or "rejected"),
         }
-        parent_node.is_terminal = True
-        parent_node.continue_improve = False
+        ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
+        recoverable = bool(
+            getattr(
+                ext_cfg,
+                "memory_strategy_recoverable_rejection_enabled",
+                False,
+            )
+        )
+        if recoverable:
+            receipt = record_recoverable_strategy_rejection(
+                agent,
+                parent_node,
+                active_actuation_trace,
+            )
+            parent_node.protocol_observation[
+                "memory_strategy_active_rejection"
+            ]["recovery"] = {
+                "status": "deferred_retry",
+                "parent_preserved": True,
+                "rejection_fingerprint": receipt["rejection_fingerprint"],
+            }
+            parent_node.is_terminal = False
+            parent_node.continue_improve = True
+        else:
+            parent_node.is_terminal = True
+            parent_node.continue_improve = False
         raise MemoryStrategyActuationRejected(active_actuation_trace)
     elif agent.acfg.use_diff_mode:
         try:

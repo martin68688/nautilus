@@ -10,6 +10,7 @@ parseable Planner JSON and checks only patch application, syntax, and count.
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import time
 from typing import Any, Mapping
@@ -56,6 +57,47 @@ def _budget_snapshot(agent: Any) -> dict[str, Any]:
         "elapsed_search_seconds": round(elapsed, 6),
         "remaining_search_seconds": round(remaining, 6),
     }
+
+
+def record_recoverable_strategy_rejection(
+    agent: Any,
+    parent_node: Any,
+    trace: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Attach a compact rejection receipt without terminating the parent."""
+
+    ext_cfg = getattr(getattr(agent, "cfg", None), "external_skill_memory", None)
+    atomic = dict(trace.get("atomic") or {})
+    planner = dict(atomic.get("planner") or {})
+    plan = dict(planner.get("plan") or {})
+    alignment = dict(planner.get("intent_alignment") or {})
+    receipt = {
+        "schema": "mlevolve_strategy_rejection_receipt_v1",
+        "reason": str(trace.get("reason") or trace.get("status") or "rejected"),
+        "stage": str(trace.get("stage") or ""),
+        "hypothesis_id": str(plan.get("hypothesis_id") or ""),
+        "plan_sha256": str(planner.get("plan_sha256") or ""),
+        "planner_status": str(planner.get("status") or ""),
+        "coder_status": str((atomic.get("coder") or {}).get("status") or ""),
+        "intent_alignment_status": str(alignment.get("status") or ""),
+        "intent_alignment_reason": str(alignment.get("reason") or ""),
+    }
+    receipt["rejection_fingerprint"] = hashlib.sha256(
+        json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    history = list(
+        getattr(parent_node, "memory_strategy_rejection_history", None) or []
+    )
+    if not history or history[-1].get("rejection_fingerprint") != receipt[
+        "rejection_fingerprint"
+    ]:
+        history.append(receipt)
+    limit = max(
+        1,
+        int(getattr(ext_cfg, "memory_strategy_rejection_history_limit", 8) or 8),
+    )
+    parent_node.memory_strategy_rejection_history = history[-limit:]
+    return receipt
 
 
 def run_active_strategy_actuation(
@@ -143,5 +185,6 @@ __all__ = [
     "MemoryStrategyActuationRejected",
     "active_strategy_enabled",
     "active_strategy_required",
+    "record_recoverable_strategy_rejection",
     "run_active_strategy_actuation",
 ]

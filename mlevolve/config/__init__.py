@@ -634,6 +634,20 @@ class ExternalSkillMemoryConfig:
     memory_strategy_atomic_require_complete_roadmap: bool = True
     memory_strategy_atomic_strict_coder_enabled: bool = False
     memory_strategy_atomic_verifier_mode: str = "strict"
+    # Optional bounded return channel from Atomic Planner to the Strategy
+    # owner. Historical experiments keep it disabled; enabled runs require an
+    # explicit semantic handoff verdict before Coder execution.
+    memory_strategy_plan_alignment_enabled: bool = False
+    memory_strategy_plan_alignment_retries: int = 2
+    memory_strategy_plan_alignment_max_tokens: int = 4000
+    # A rejected Strategy transaction is an attempt-level failure by default
+    # when enabled. The parent remains selectable and receives compact
+    # rejection history so Strategy can choose a different hypothesis.
+    memory_strategy_recoverable_rejection_enabled: bool = False
+    memory_strategy_rejection_history_limit: int = 8
+    # Reviewer-originated Atomic Contract violations get a bounded repair
+    # round before the candidate is rejected.
+    memory_strategy_post_review_repair_attempts: int = 0
     # Dynamic Hybrid may delegate L3 failure/root-cause matching to the
     # Retrieval Agent.  The Host keeps only objective task/evidence gates and
     # literal traceback-anchor extraction; no maintained synonym table is

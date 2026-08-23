@@ -1268,6 +1268,24 @@ def build_strategy_context(
                 or 1
             ),
         },
+        "prior_actuation_rejections": copy.deepcopy(
+            list(
+                getattr(parent_node, "memory_strategy_rejection_history", None)
+                or []
+            )[
+                -max(
+                    1,
+                    int(
+                        getattr(
+                            ext_cfg,
+                            "memory_strategy_rejection_history_limit",
+                            8,
+                        )
+                        or 8
+                    ),
+                ) :
+            ]
+        ),
         "task": {
             "task_id": str(getattr(getattr(agent, "cfg", None), "exp_id", "") or ""),
             "description": str(getattr(agent, "task_desc", "") or ""),
@@ -1383,6 +1401,10 @@ def _strategy_prompt(
         mode_contract = (
             "This is ACTIVE ATOMIC MODE: an accepted memo is production input to a "
             "bounded Planner and Coder. Treat every hypothesis as a staged roadmap whose "
+            "intent will be returned to you for an explicit alignment verdict before coding. "
+            "Inspect prior_actuation_rejections and do not repeat a rejected hypothesis/plan "
+            "combination unchanged; choose another existing evidence-backed hypothesis or a "
+            "genuinely smaller independently falsifiable slice. "
             "smallest independently executable phase may be selected now. "
         )
         if bool(strategy_contract.get("abstention_allowed", False)):

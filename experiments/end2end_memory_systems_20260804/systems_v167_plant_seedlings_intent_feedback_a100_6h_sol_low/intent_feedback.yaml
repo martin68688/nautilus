@@ -1,0 +1,17 @@
+# Plant Seedlings v167: v165 Transfer condition plus bounded communication
+# between Strategy intent owner, Atomic Planner, Coder/Reviewer, and Host.
+extends: ../systems_v165_plant_seedlings_transfer_attributes_a100_6h_luna_low/transfer_only.yaml
+
+external_skill_memory:
+  memory_strategy_plan_alignment_enabled: true
+  memory_strategy_plan_alignment_retries: 2
+  memory_strategy_plan_alignment_max_tokens: 4000
+  memory_strategy_recoverable_rejection_enabled: true
+  memory_strategy_rejection_history_limit: 8
+  memory_strategy_post_review_repair_attempts: 1
+
+run_identity:
+  experiment_group: plant_seedlings_v167_intent_feedback_a100_6h_sol_low
+  memory_version: leaf_v10_r8_to_plant_seedlings_v167_intent_feedback
+  system_id: dynamic_transfer_intent_feedback_contracts
+  identity_source: isolated_runtime_v167

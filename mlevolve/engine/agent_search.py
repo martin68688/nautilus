@@ -23,7 +23,10 @@ from agents import (
     result_parse_agent, agent_protocol_review_agent, replay_research_agent,
 )
 from agents import protocol_repair
-from agents.atomic_actuation import verify_atomic_code_change
+from agents.atomic_actuation import (
+    route_atomic_host_feedback,
+    verify_atomic_code_change,
+)
 from agents.triggers import (
     refresh_replay_lineage_after_instrumentation,
     refresh_replay_lineage_after_revision,
@@ -1236,6 +1239,7 @@ class AgentSearch:
 
                 if result_node:
                     memory_transfer_adoption_blocked = False
+                    pre_review_code = result_node.code
                     if init_solution_path or result_node.skip_code_review:
                         logger.info(f"Node {result_node.id} uses immutable source code, skipping code review")
                     else:
@@ -1323,6 +1327,118 @@ class AgentSearch:
                             "post_review_plan_diff_verdict"
                         ] = post_review_verdict
                         result_node.plan_diff_verdict = post_review_verdict
+                        repair_attempt_limit = max(
+                            0,
+                            int(
+                                getattr(
+                                    ext_cfg,
+                                    "memory_strategy_post_review_repair_attempts",
+                                    0,
+                                )
+                                or 0
+                            ),
+                        )
+                        repair_attempts: list[dict] = []
+                        if (
+                            post_review_verdict.get("valid") is not True
+                            and repair_attempt_limit > 0
+                        ):
+                            feedback_route = route_atomic_host_feedback(
+                                post_review_verdict,
+                                origin="post_review",
+                            )
+                            for repair_index in range(repair_attempt_limit):
+                                # The Atomic Coder candidate passed before the
+                                # generic reviewer touched it. Repair against
+                                # that stable source, never against a broken
+                                # intermediate review patch.
+                                result_node.code = pre_review_code
+                                repaired_code = code_review_agent.run(
+                                    self,
+                                    result_node,
+                                    atomic_host_feedback={
+                                        **feedback_route,
+                                        "atomic_plan": copy.deepcopy(atomic_plan),
+                                    },
+                                )
+                                if repaired_code.strip() != result_node.code.strip():
+                                    before_repair = result_node.code
+                                    result_node.code = repaired_code
+                                    refresh_replay_lineage_after_revision(
+                                        result_node,
+                                        original_code=before_repair,
+                                        revision_kind="atomic_host_feedback_repair",
+                                        reclassify_as_novel=replay_adaptation_as_novel_enabled(
+                                            self
+                                        ),
+                                    )
+
+                                repair_semantic_source = result_node.code
+                                repaired_source, repair_semantic_report = (
+                                    agent_protocol_review_agent.run(self, result_node)
+                                )
+                                result_node.agent_semantic_review = (
+                                    repair_semantic_report
+                                )
+                                if (
+                                    repaired_source.strip()
+                                    != repair_semantic_source.strip()
+                                ):
+                                    result_node.code = repaired_source
+                                    refresh_replay_lineage_after_revision(
+                                        result_node,
+                                        original_code=repair_semantic_source,
+                                        revision_kind=(
+                                            "atomic_host_feedback_semantic_repair"
+                                        ),
+                                        reclassify_as_novel=replay_adaptation_as_novel_enabled(
+                                            self
+                                        ),
+                                    )
+
+                                post_review_verdict = verify_atomic_code_change(
+                                    original_code=parent_node.code,
+                                    candidate_code=result_node.code,
+                                    atomic_plan=atomic_plan,
+                                    patch_count=post_review_patch_count,
+                                    verification_mode=verification_mode,
+                                )
+                                repair_attempts.append(
+                                    {
+                                        "attempt": repair_index + 1,
+                                        "route": copy.deepcopy(feedback_route),
+                                        "valid": bool(
+                                            post_review_verdict.get("valid")
+                                        ),
+                                        "violations": list(
+                                            post_review_verdict.get("violations")
+                                            or []
+                                        ),
+                                    }
+                                )
+                                if post_review_verdict.get("valid") is True:
+                                    break
+                                feedback_route = route_atomic_host_feedback(
+                                    post_review_verdict,
+                                    origin="post_review",
+                                )
+                            result_node.atomic_actuation_trace[
+                                "post_review_host_feedback"
+                            ] = {
+                                "schema": (
+                                    "mlevolve_post_review_host_feedback_trace_v1"
+                                ),
+                                "status": (
+                                    "recovered"
+                                    if post_review_verdict.get("valid") is True
+                                    else "rejected"
+                                ),
+                                "attempts": repair_attempts,
+                            }
+                            result_node.atomic_actuation_trace[
+                                "post_review_plan_diff_verdict"
+                            ] = post_review_verdict
+                            result_node.plan_diff_verdict = post_review_verdict
                         if post_review_verdict.get("valid") is not True:
                             raise ValueError(
                                 "Post-review code escaped the Atomic Actuation Contract: "

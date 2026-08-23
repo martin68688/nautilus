@@ -19,6 +19,7 @@ from typing import Any, Iterable, Mapping
 
 from llm import generate
 from agents.coder.diff_coder.patcher import SearchReplacePatcher
+from agents.strategy_plan_alignment import run_strategy_plan_alignment_review
 from agents.coder.diff_coder.prompts import (
     DIFF_SYS_FORMAT,
     build_base_diff_instructions,
@@ -705,6 +706,7 @@ def _planner_prompt(
     previous_plan: Mapping[str, Any] | None = None,
     contract_violations: Iterable[str] = (),
     coder_replan_feedback: Mapping[str, Any] | None = None,
+    intent_alignment_feedback: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     stage_contract = ""
     if str(stage) == "debug":
@@ -802,6 +804,25 @@ def _planner_prompt(
                 )
             ),
         }
+    if intent_alignment_feedback:
+        feedback = dict(intent_alignment_feedback)
+        review = dict(feedback.get("review") or {})
+        payload["strategy_intent_revision_required"] = {
+            "previous_plan": dict(
+                (intent_alignment_feedback or {}).get("previous_plan") or {}
+            ),
+            "verdict": str(feedback.get("verdict") or "revise_plan"),
+            "reason": str(feedback.get("reason") or ""),
+            "mismatches": list(review.get("mismatches") or []),
+            "instruction": (
+                "The Strategy owner found semantic drift in the Planner handoff. Keep the "
+                "same hypothesis_id and exact source_memory_ids. Repair every typed mismatch "
+                "without widening modules, symbols, imports, patches, or compute. Preserve the "
+                "causal mechanism and forbidden changes. If some work cannot fit now, defer it "
+                "explicitly and return the smallest independently executable falsification of "
+                "the same hypothesis. Do not replace the hypothesis."
+            ),
+        }
     user = _canonical_json(payload)
     return {"system": system, "user": user, "assistant": "{"}
 
@@ -818,6 +839,15 @@ def run_atomic_actuation_planner(
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
     verification_mode = _atomic_verification_mode(agent)
     limits = _atomic_limits(agent, stage)
+    alignment_enabled = bool(
+        getattr(ext_cfg, "memory_strategy_plan_alignment_enabled", False)
+    )
+    alignment_retries = max(
+        0,
+        int(
+            getattr(ext_cfg, "memory_strategy_plan_alignment_retries", 2) or 0
+        ),
+    )
     started = time.monotonic()
     if not _composition_by_id(strategy_memo):
         return {
@@ -847,7 +877,13 @@ def run_atomic_actuation_planner(
             "violations": ["planner did not produce a plan"],
         }
         contract_attempts: list[dict[str, Any]] = []
-        for contract_attempt in range(contract_retries + 1):
+        alignment_attempts: list[dict[str, Any]] = []
+        alignment_feedback: dict[str, Any] | None = None
+        contract_failures = 0
+        max_attempts = 1 + contract_retries + (
+            alignment_retries if alignment_enabled else 0
+        )
+        for contract_attempt in range(max_attempts):
             prompt = _planner_prompt(
                 strategy_memo,
                 parent_code=parent_code,
@@ -859,6 +895,7 @@ def run_atomic_actuation_planner(
                 if contract_attempt
                 else (),
                 coder_replan_feedback=coder_replan_feedback,
+                intent_alignment_feedback=alignment_feedback,
             )
             query_fn = getattr(agent, "_atomic_planner_query_fn", None)
             if callable(query_fn):
@@ -877,6 +914,7 @@ def run_atomic_actuation_planner(
                     json_schema=ATOMIC_ACTUATION_PLAN_SCHEMA,
                     max_retries=2,
                 )
+            alignment_trace: dict[str, Any] = {}
             try:
                 plan = _parse_json_object(response)
                 if verification_mode == "mechanical_only":
@@ -956,6 +994,31 @@ def run_atomic_actuation_planner(
                             *list(validation.get("violations") or []),
                             *decomposition_violations,
                         ]
+                if validation.get("valid") and alignment_enabled:
+                    alignment_trace = run_strategy_plan_alignment_review(
+                        agent,
+                        strategy_memo=strategy_memo,
+                        plan=plan,
+                        stage=stage,
+                        review_attempt=len(alignment_attempts),
+                    )
+                    alignment_attempts.append(copy.deepcopy(alignment_trace))
+                    if alignment_trace.get("status") != "accepted":
+                        validation = copy.deepcopy(validation)
+                        validation["valid"] = False
+                        validation["violations"] = [
+                            *list(validation.get("violations") or []),
+                            "Strategy intent alignment: "
+                            + str(
+                                alignment_trace.get("reason")
+                                or alignment_trace.get("status")
+                                or "not accepted"
+                            ),
+                        ]
+                        alignment_feedback = {
+                            **copy.deepcopy(alignment_trace),
+                            "previous_plan": copy.deepcopy(plan),
+                        }
             except Exception as exc:
                 plan = {}
                 validation = {
@@ -977,9 +1040,21 @@ def run_atomic_actuation_planner(
                     ).hexdigest(),
                     "valid": bool(validation.get("valid")),
                     "violations": list(validation.get("violations") or []),
+                    "intent_alignment_status": str(
+                        (alignment_trace or {}).get("status") or "not_run"
+                    ),
                 }
             )
             if validation.get("valid"):
+                break
+            if alignment_trace:
+                if alignment_trace.get("status") != "revise":
+                    break
+                if len(alignment_attempts) > alignment_retries:
+                    break
+                continue
+            contract_failures += 1
+            if contract_failures > contract_retries:
                 break
         return {
             "schema": "mlevolve_atomic_actuation_planner_trace_v1",
@@ -996,6 +1071,20 @@ def run_atomic_actuation_planner(
             "verification_mode": verification_mode,
             "semantic_contract_bypassed": verification_mode == "mechanical_only",
             "contract_attempts": contract_attempts,
+            "intent_alignment_enabled": alignment_enabled,
+            "intent_alignment_verified": bool(
+                not alignment_enabled
+                or (
+                    alignment_attempts
+                    and alignment_attempts[-1].get("status") == "accepted"
+                )
+            ),
+            "intent_alignment": (
+                copy.deepcopy(alignment_attempts[-1])
+                if alignment_attempts
+                else {}
+            ),
+            "intent_alignment_attempts": alignment_attempts,
         }
     except Exception as exc:
         return {
@@ -1023,6 +1112,7 @@ def _staged_planner_prompt(
     previous_roadmap: Mapping[str, Any] | None = None,
     contract_violations: Iterable[str] = (),
     coder_replan_feedback: Mapping[str, Any] | None = None,
+    intent_alignment_feedback: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     debug_contract = ""
     if str(stage) == "debug":
@@ -1105,6 +1195,25 @@ def _staged_planner_prompt(
             "replan_mode": replan_mode,
             "instruction": instruction,
         }
+    if intent_alignment_feedback:
+        feedback = dict(intent_alignment_feedback)
+        review = dict(feedback.get("review") or {})
+        payload["strategy_intent_revision_required"] = {
+            "previous_roadmap": dict(
+                (intent_alignment_feedback or {}).get("previous_plan") or {}
+            ),
+            "verdict": str(feedback.get("verdict") or "revise_plan"),
+            "reason": str(feedback.get("reason") or ""),
+            "mismatches": list(review.get("mismatches") or []),
+            "instruction": (
+                "The Strategy owner found semantic drift in this roadmap. Keep the same "
+                "hypothesis_id, exact source_memory_ids, and causal mechanism. Repair every "
+                "typed mismatch without widening per-phase Host limits or compute. Express "
+                "coupled interfaces through explicit ordered phases and compatibility checks. "
+                "Do not delete indispensable work merely to pass a size cap and do not replace "
+                "the hypothesis."
+            ),
+        }
     return {"system": system, "user": _canonical_json(payload), "assistant": "{"}
 
 
@@ -1120,6 +1229,15 @@ def run_atomic_staged_actuation_planner(
     ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
     verification_mode = _atomic_verification_mode(agent)
     limits = _atomic_limits(agent, stage)
+    alignment_enabled = bool(
+        getattr(ext_cfg, "memory_strategy_plan_alignment_enabled", False)
+    )
+    alignment_retries = max(
+        0,
+        int(
+            getattr(ext_cfg, "memory_strategy_plan_alignment_retries", 2) or 0
+        ),
+    )
     max_phases = max(
         1,
         int(getattr(ext_cfg, "memory_strategy_atomic_max_phases", 3) or 3),
@@ -1160,8 +1278,14 @@ def run_atomic_staged_actuation_planner(
             "violations": ["planner did not produce a staged roadmap"],
         }
         contract_attempts: list[dict[str, Any]] = []
+        alignment_attempts: list[dict[str, Any]] = []
+        alignment_feedback: dict[str, Any] | None = None
+        contract_failures = 0
         query_fn = getattr(agent, "_atomic_planner_query_fn", None)
-        for contract_attempt in range(contract_retries + 1):
+        max_attempts = 1 + contract_retries + (
+            alignment_retries if alignment_enabled else 0
+        )
+        for contract_attempt in range(max_attempts):
             prompt = _staged_planner_prompt(
                 strategy_memo,
                 parent_code=parent_code,
@@ -1174,6 +1298,7 @@ def run_atomic_staged_actuation_planner(
                 if contract_attempt
                 else (),
                 coder_replan_feedback=coder_replan_feedback,
+                intent_alignment_feedback=alignment_feedback,
             )
             if callable(query_fn):
                 response = query_fn(
@@ -1191,6 +1316,7 @@ def run_atomic_staged_actuation_planner(
                     json_schema=ATOMIC_STAGED_ACTUATION_PLAN_SCHEMA,
                     max_retries=2,
                 )
+            alignment_trace: dict[str, Any] = {}
             try:
                 roadmap = _parse_json_object(response)
                 if verification_mode == "mechanical_only":
@@ -1247,6 +1373,31 @@ def run_atomic_staged_actuation_planner(
                             *list(validation.get("violations") or []),
                             *replan_violations,
                         ]
+                if validation.get("valid") and alignment_enabled:
+                    alignment_trace = run_strategy_plan_alignment_review(
+                        agent,
+                        strategy_memo=strategy_memo,
+                        plan=roadmap,
+                        stage=stage,
+                        review_attempt=len(alignment_attempts),
+                    )
+                    alignment_attempts.append(copy.deepcopy(alignment_trace))
+                    if alignment_trace.get("status") != "accepted":
+                        validation = copy.deepcopy(validation)
+                        validation["valid"] = False
+                        validation["violations"] = [
+                            *list(validation.get("violations") or []),
+                            "Strategy intent alignment: "
+                            + str(
+                                alignment_trace.get("reason")
+                                or alignment_trace.get("status")
+                                or "not accepted"
+                            ),
+                        ]
+                        alignment_feedback = {
+                            **copy.deepcopy(alignment_trace),
+                            "previous_plan": copy.deepcopy(roadmap),
+                        }
             except Exception as exc:
                 roadmap = {}
                 validation = {
@@ -1264,9 +1415,21 @@ def run_atomic_staged_actuation_planner(
                     ).hexdigest(),
                     "valid": bool(validation.get("valid")),
                     "violations": list(validation.get("violations") or []),
+                    "intent_alignment_status": str(
+                        (alignment_trace or {}).get("status") or "not_run"
+                    ),
                 }
             )
             if validation.get("valid"):
+                break
+            if alignment_trace:
+                if alignment_trace.get("status") != "revise":
+                    break
+                if len(alignment_attempts) > alignment_retries:
+                    break
+                continue
+            contract_failures += 1
+            if contract_failures > contract_retries:
                 break
         return {
             "schema": "mlevolve_staged_atomic_planner_trace_v1",
@@ -1284,6 +1447,20 @@ def run_atomic_staged_actuation_planner(
             "verification_mode": verification_mode,
             "semantic_contract_bypassed": verification_mode == "mechanical_only",
             "contract_attempts": contract_attempts,
+            "intent_alignment_enabled": alignment_enabled,
+            "intent_alignment_verified": bool(
+                not alignment_enabled
+                or (
+                    alignment_attempts
+                    and alignment_attempts[-1].get("status") == "accepted"
+                )
+            ),
+            "intent_alignment": (
+                copy.deepcopy(alignment_attempts[-1])
+                if alignment_attempts
+                else {}
+            ),
+            "intent_alignment_attempts": alignment_attempts,
         }
     except Exception as exc:
         logger.exception("Staged Atomic Planner failed")
@@ -1628,6 +1805,45 @@ def _coder_replan_mode(
     ):
         return "scope_reconciliation"
     return "decompose"
+
+
+def route_atomic_host_feedback(
+    verdict: Mapping[str, Any],
+    *,
+    origin: str,
+) -> dict[str, Any]:
+    """Route a typed Host rejection to the component that can repair it."""
+
+    violations = [str(value) for value in verdict.get("violations") or []]
+    joined = "\n".join(violations).lower()
+    if str(origin) == "post_review":
+        target = "reviewer"
+        repairable = True
+    elif "syntax error" in joined or "diff application failed" in joined:
+        target = "coder"
+        repairable = True
+    elif any(
+        marker in joined
+        for marker in (
+            "outside atomic limit",
+            "outside allowed set",
+            "unauthorized new imports",
+            "planned target symbols were not changed",
+            "planned symbol operations were not followed",
+        )
+    ):
+        target = "planner"
+        repairable = True
+    else:
+        target = "strategy"
+        repairable = False
+    return {
+        "schema": "mlevolve_atomic_host_feedback_route_v1",
+        "origin": str(origin),
+        "target": target,
+        "repairable": repairable,
+        "violations": violations,
+    }
 
 
 def validate_scope_reconciliation(
@@ -2638,6 +2854,7 @@ __all__ = [
     "run_atomic_actuation_planner",
     "run_atomic_staged_actuation_planner",
     "run_atomic_coder",
+    "route_atomic_host_feedback",
     "validate_atomic_plan",
     "validate_decomposed_replan",
     "validate_scope_reconciliation",

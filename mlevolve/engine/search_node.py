@@ -82,6 +82,12 @@ class SearchNode(DataClassJsonMixin):
     # outside prompt_input/adoption_log so replay analysis can prove that the
     # memo did not actuate the production Planner/Coder.
     memory_strategy_trace: dict = field(default_factory=dict, kw_only=True)
+    # Compact, bounded history of failed active Strategy transactions. It is
+    # prompt-visible only to the next Strategy call so the system can try a
+    # different hypothesis without terminating the parent branch.
+    memory_strategy_rejection_history: list[dict] = field(
+        default_factory=list, kw_only=True
+    )
     # Populated only by the isolated Strategy -> Atomic Planner -> Coder path.
     atomic_actuation_trace: dict = field(default_factory=dict, kw_only=True)
     plan_diff_verdict: dict = field(default_factory=dict, kw_only=True)
