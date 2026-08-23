@@ -1,5 +1,6 @@
 """AgentSearch: tree search coordinator; delegates to node_selection, evaluation, execution, solution_manager."""
 
+import copy
 import logging
 import random
 import time
@@ -1370,6 +1371,37 @@ class AgentSearch:
                                 self
                             ),
                         )
+
+                    if (
+                        not result_node.representation_adoption_contracts
+                        and getattr(parent_node, "representation_adoption_contracts", None)
+                        and getattr(result_node, "draft_role", None) == "memory_transfer"
+                    ):
+                        result_node.representation_adoption_contracts = copy.deepcopy(
+                            parent_node.representation_adoption_contracts
+                        )
+                    if result_node.representation_adoption_contracts:
+                        from agents.memory.cross_task_dynamic_retrieval import (
+                            verify_representation_adoption,
+                        )
+
+                        representation_gate = verify_representation_adoption(
+                            result_node.code,
+                            result_node.representation_adoption_contracts,
+                        )
+                        result_node.representation_adoption_gate = representation_gate
+                        if representation_gate.get("valid") is not True:
+                            result_node.is_buggy = True
+                            result_node.is_valid = False
+                            result_node.metric = WorstMetricValue()
+                            result_node.analysis = (
+                                "REPRESENTATION_ADOPTION_REQUIRED: "
+                                + "; ".join(
+                                    representation_gate.get("violations") or []
+                                )
+                            )
+                            result_node._term_out = [result_node.analysis]
+                            memory_transfer_adoption_blocked = True
 
                     verifier = getattr(self, "adoption_verifier", None)
                     if (

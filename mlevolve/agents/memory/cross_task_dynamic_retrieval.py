@@ -10,6 +10,7 @@ candidate and its variable-cardinality selection is injected directly.
 from __future__ import annotations
 
 import copy
+import ast
 import hashlib
 import json
 import math
@@ -44,6 +45,13 @@ GRANULARITIES = (
     "portable_repair",
     "improvement_transition",
     "module_interface",
+)
+REPRESENTATION_COMPONENT_SLOTS = (
+    "backbone_family",
+    "initialization_source",
+    "feature_branch",
+    "fusion_operator",
+    "input_resolution",
 )
 LEVEL_TO_GRANULARITY = {
     "L2_tactic": "portable_tactic",
@@ -238,7 +246,7 @@ def _model(layer: Any) -> str:
 
 def _blueprint_slot_caps(layer: Any) -> dict[str, int]:
     representation_cap = min(
-        1,
+        len(REPRESENTATION_COMPONENT_SLOTS),
         max(0, int(layer.cross_task_dynamic_max_selected_architectures)),
     )
     return {
@@ -319,6 +327,7 @@ def _judge_spec(*, candidate_refs: list[str], max_selected: int) -> Any:
 
     score = {"type": "number", "minimum": 0.0, "maximum": 1.0}
     ref = {"type": "string", "enum": list(candidate_refs)}
+    optional_ref = {"oneOf": [ref, {"type": "null"}]}
     return FunctionSpec(
         name="judge_projected_cross_task_memory",
         description=(
@@ -336,6 +345,14 @@ def _judge_spec(*, candidate_refs: list[str], max_selected: int) -> Any:
                     "items": ref,
                 },
                 "reason": {"type": "string", "maxLength": 1600},
+                "representation_components": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        slot: optional_ref for slot in REPRESENTATION_COMPONENT_SLOTS
+                    },
+                    "required": list(REPRESENTATION_COMPONENT_SLOTS),
+                },
                 "assessments": {
                     "type": "array",
                     "minItems": len(candidate_refs),
@@ -364,9 +381,154 @@ def _judge_spec(*, candidate_refs: list[str], max_selected: int) -> Any:
                     },
                 },
             },
-            "required": ["decision", "selected_refs", "reason", "assessments"],
+            "required": [
+                "decision",
+                "selected_refs",
+                "reason",
+                "representation_components",
+                "assessments",
+            ],
         },
     )
+
+
+def _representation_requirement(slot: str, candidate: Mapping[str, Any]) -> str:
+    """Extract a machine-checkable attribute from a safe representation card."""
+
+    text = _normalize(json.dumps(candidate.get("portable_text") or {}, ensure_ascii=False))
+    if slot == "backbone_family":
+        patterns = (
+            (r"efficientnet[-_ ]?b([0-7])", lambda m: f"efficientnet_b{m.group(1)}"),
+            (r"resnet[-_ ]?(18|34|50|101|152)", lambda m: f"resnet{m.group(1)}"),
+            (r"convnext[-_ ]?(tiny|small|base|large)", lambda m: f"convnext_{m.group(1)}"),
+        )
+        for pattern, render in patterns:
+            match = re.search(pattern, text)
+            if match:
+                return render(match)
+        return ""
+    if slot == "initialization_source":
+        if "imagenet" in text or "public pretrained" in text or "pretrained" in text:
+            return "public_pretrained"
+        # A frozen named visual embedding is not useful from random initialization;
+        # interpret this portable architecture attribute as public pretraining, never
+        # as permission to reuse a source-task checkpoint.
+        if "frozen" in text and _representation_requirement("backbone_family", candidate):
+            return "public_pretrained"
+        return ""
+    if slot == "feature_branch":
+        if any(value in text for value in ("descriptor", "colour", "color", "texture", "shape")):
+            return "target_derived_descriptors"
+        return ""
+    if slot == "fusion_operator":
+        if "self-attention" in text or "self attention" in text:
+            return "self_attention"
+        if "gated" in text or " gate" in text:
+            return "gated_fusion"
+        if "concat" in text:
+            return "concatenation"
+        return ""
+    if slot == "input_resolution":
+        match = re.search(r"\b(\d{2,4})\s*[x×]\s*(\d{2,4})\b", text)
+        return f"{match.group(1)}x{match.group(2)}" if match else ""
+    raise ValueError(f"Unknown representation component slot: {slot}")
+
+
+def verify_representation_adoption(
+    source: str, contracts: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Mechanically verify binding representation attributes before execution."""
+
+    required = {
+        slot: str((row or {}).get("required_value") or "")
+        for slot, row in dict(contracts or {}).items()
+        if isinstance(row, Mapping) and row.get("required_value")
+    }
+    violations: list[str] = []
+    try:
+        tree = ast.parse(str(source or ""))
+    except SyntaxError as error:
+        return {
+            "schema": "mlevolve_representation_adoption_gate_v1",
+            "valid": False,
+            "required": required,
+            "violations": [f"candidate syntax error: {error.msg}"],
+        }
+
+    backbone = required.get("backbone_family", "")
+    if backbone and not re.search(rf"\b{re.escape(backbone)}\b", source, re.I):
+        violations.append(f"selected backbone is absent: {backbone}")
+
+    if required.get("initialization_source") == "public_pretrained":
+        pretrained = False
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func_name = ""
+            if isinstance(node.func, ast.Attribute):
+                func_name = node.func.attr
+            elif isinstance(node.func, ast.Name):
+                func_name = node.func.id
+            if backbone and func_name == backbone:
+                for keyword in node.keywords:
+                    if keyword.arg == "weights" and not (
+                        isinstance(keyword.value, ast.Constant)
+                        and keyword.value.value is None
+                    ):
+                        pretrained = True
+                    if keyword.arg == "pretrained" and isinstance(
+                        keyword.value, ast.Constant
+                    ) and keyword.value.value is True:
+                        pretrained = True
+            if func_name == "create_model" and node.args:
+                model_name = node.args[0]
+                names_backbone = (
+                    isinstance(model_name, ast.Constant)
+                    and str(model_name.value).lower() == backbone.lower()
+                )
+                has_pretrained = any(
+                    keyword.arg == "pretrained"
+                    and isinstance(keyword.value, ast.Constant)
+                    and keyword.value.value is True
+                    for keyword in node.keywords
+                )
+                pretrained = pretrained or (names_backbone and has_pretrained)
+        if not pretrained:
+            violations.append(
+                "selected public_pretrained initialization is absent or weights=None"
+            )
+
+    normalized_source = _normalize(source)
+    if required.get("feature_branch") == "target_derived_descriptors" and not any(
+        token in normalized_source
+        for token in ("histogram", "texture", "descriptor", "image_features", "feature_branch")
+    ):
+        violations.append("selected target-derived descriptor branch is absent")
+    fusion = required.get("fusion_operator")
+    if fusion == "self_attention" and not any(
+        token in normalized_source for token in ("multiheadattention", "self_attention", "attention")
+    ):
+        violations.append("selected self-attention fusion is absent")
+    if fusion == "gated_fusion" and not any(
+        token in normalized_source for token in ("gatedfusion", "gated_fusion", "self.gate", "sigmoid")
+    ):
+        violations.append("selected gated fusion is absent")
+    if fusion == "concatenation" and not any(
+        token in normalized_source for token in ("torch.cat", "np.concatenate", "concatenate")
+    ):
+        violations.append("selected concatenation fusion is absent")
+    resolution = required.get("input_resolution", "")
+    if resolution:
+        width, height = resolution.split("x", 1)
+        if width not in source or height not in source:
+            violations.append(f"selected input resolution is absent: {resolution}")
+
+    return {
+        "schema": "mlevolve_representation_adoption_gate_v1",
+        "valid": not violations,
+        "required": required,
+        "violations": violations,
+    }
 
 
 def _assert_projected_candidate(candidate: Mapping[str, Any]) -> None:
@@ -894,6 +1056,18 @@ def _call_judge(
             {
                 "maximum_selected": max_selected,
                 "blueprint_slot_caps": _blueprint_slot_caps(layer),
+                "representation_component_slots": list(
+                    REPRESENTATION_COMPONENT_SLOTS
+                ),
+                "performance_utility": {
+                    "primary_objective": "expected target validation performance",
+                    "implementation_risk_is_a_penalty_not_the_objective": True,
+                    "small_natural_image_prior": (
+                        "Prefer a public pretrained visual backbone over a randomly "
+                        "initialized large CNN unless target evidence or domain mismatch "
+                        "justifies otherwise."
+                    ),
+                },
                 "abstention_allowed": bool(layer.cross_task_dynamic_allow_abstention),
                 "stage_preferences_are_guidance_not_hard_layer_filters": STAGE_FIT[
                     stage
@@ -904,7 +1078,10 @@ def _call_judge(
         "policy": [
             "Assess every supplied C-ref exactly once and select only assessed refs.",
             "Choose any useful eight-granularity combination and quantity up to the cap; layer counts are not preassigned.",
-            "Select at most one card per blueprint slot. Representation, validation, calibration, and inference cards are independently composable.",
+            "Decompose representation into backbone_family, initialization_source, feature_branch, fusion_operator, and input_resolution. Cards assigned to different representation components are composable; only cards competing for the same component conflict.",
+            "Populate representation_components with the selected C-ref for every implemented component, or null when no card supplies it. Every non-null component ref must also appear in selected_refs.",
+            "Optimize expected target validation performance, using implementation risk as a penalty rather than the primary objective.",
+            "For small natural-image datasets, public ImageNet-style pretrained backbones have a strong sample-efficiency prior over random initialization. Public pretrained weights are allowed and are distinct from forbidden source-task checkpoints or weights.",
             "Do not mark cards from different blueprint slots contradictory merely because their source Recipe families differ.",
             "Only cards competing for the same blueprint slot conflict; L2/L3 items are judged by target interface and dependency compatibility.",
             "Calibration is optional and must preserve raw normalized probabilities as a target-validation fallback.",
@@ -971,6 +1148,38 @@ def _validate_judge(
     if len(selected_ids) > int(max_selected):
         raise ValueError("Judge exceeded the stage selection cap")
     candidate_by_id = {str(row["id"]): row for row in candidates}
+    representation_components = dict(
+        normalized.get("representation_components") or {}
+    )
+    if set(representation_components) != set(REPRESENTATION_COMPONENT_SLOTS):
+        raise ValueError("Judge must decide every representation component slot")
+    representation_contracts = {}
+    for slot in REPRESENTATION_COMPONENT_SLOTS:
+        component_ref = representation_components.get(slot)
+        if component_ref is None:
+            continue
+        component_ref = str(component_ref)
+        if component_ref not in selected_refs:
+            raise ValueError(
+                f"Representation component ref is not selected: {slot}={component_ref}"
+            )
+        candidate_id = ref_to_id.get(component_ref)
+        if not candidate_id or candidate_by_id[candidate_id]["granularity"] != REPRESENTATION_BLUEPRINT:
+            raise ValueError(
+                f"Representation component must reference a representation card: {slot}"
+            )
+        requirement = _representation_requirement(
+            slot, candidate_by_id[candidate_id]["candidate"]
+        )
+        if slot in {"backbone_family", "initialization_source"} and not requirement:
+            raise ValueError(
+                f"Representation component is not machine-checkable: {slot}={component_ref}"
+            )
+        representation_contracts[slot] = {
+            "ref": component_ref,
+            "candidate_id": candidate_id,
+            "required_value": requirement,
+        }
     for slot, cap in blueprint_slot_caps.items():
         selected_in_slot = sum(
             candidate_by_id[value]["granularity"] == slot for value in selected_ids
@@ -987,6 +1196,8 @@ def _validate_judge(
         raise ValueError("Judge selection is empty or malformed")
     normalized["selected_refs"] = selected_refs
     normalized["selected_ids"] = selected_ids
+    normalized["representation_components"] = representation_components
+    normalized["representation_contracts"] = representation_contracts
     normalized["assessments"] = assessments
     normalized["candidate_handles"] = [
         {"ref": ref, "candidate_id": candidate_id}
@@ -1068,6 +1279,25 @@ def _host_judge_fallback(
             }
         )
     selected_ids = [row["id"] for row in selected]
+    representation_components = {
+        slot: None for slot in REPRESENTATION_COMPONENT_SLOTS
+    }
+    representation_contracts = {}
+    representation_rows = [
+        row for row in selected if row["granularity"] == REPRESENTATION_BLUEPRINT
+    ]
+    for slot in REPRESENTATION_COMPONENT_SLOTS:
+        for row in representation_rows:
+            requirement = _representation_requirement(slot, row["candidate"])
+            if requirement:
+                ref = id_to_ref[row["id"]]
+                representation_components[slot] = ref
+                representation_contracts[slot] = {
+                    "ref": ref,
+                    "candidate_id": row["id"],
+                    "required_value": requirement,
+                }
+                break
     return {
         "decision": "select",
         "selected_refs": [id_to_ref[value] for value in selected_ids],
@@ -1076,6 +1306,8 @@ def _host_judge_fallback(
             "Independent Judge failed its contract; Host selected from the "
             "preserved projected Search pool."
         ),
+        "representation_components": representation_components,
+        "representation_contracts": representation_contracts,
         "assessments": assessments,
         "candidate_handles": [
             {"ref": ref, "candidate_id": candidate_id}
@@ -1084,7 +1316,10 @@ def _host_judge_fallback(
     }
 
 
-def _render_prompt(selected: list[dict[str, Any]]) -> str:
+def _render_prompt(
+    selected: list[dict[str, Any]],
+    representation_contracts: Mapping[str, Any] | None = None,
+) -> str:
     if not selected:
         return ""
     parts = [
@@ -1098,10 +1333,28 @@ def _render_prompt(selected: list[dict[str, Any]]) -> str:
             "copy source code, checkpoints, weights, predictions, submissions, "
             "class mappings, source data dimensions, artifact identities, or "
             "source scores. Validate every choice only on target-task training "
-            "data. Select at most one primary representation; cards in different "
-            "blueprint slots are independently composable."
+            "data. Representation attributes are independently composable; a "
+            "backbone card does not exclude a compatible feature or fusion card."
         ),
     ]
+    contracts = dict(representation_contracts or {})
+    if contracts:
+        contract_lines = [
+            "## Mandatory machine-checkable representation contract",
+            (
+                "These Host-derived attributes are binding. Public pretrained weights "
+                "are allowed; source-task checkpoints and weights remain forbidden. "
+                "Do not substitute a different backbone or random initialization."
+            ),
+        ]
+        for slot in REPRESENTATION_COMPONENT_SLOTS:
+            row = contracts.get(slot)
+            if not isinstance(row, Mapping) or not row.get("required_value"):
+                continue
+            contract_lines.append(
+                f"- {slot} = {row['required_value']} (from {row['candidate_id']})"
+            )
+        parts.append("\n".join(contract_lines))
     if any(row.get("granularity") in BLUEPRINT_SLOTS for row in selected):
         parts.append(
             "## Mandatory component adoption gate\n"
@@ -1408,6 +1661,9 @@ def build_dynamic_transfer_pack(
         granularity: sum(row["granularity"] == granularity for row in selected_rows)
         for granularity in GRANULARITIES
     }
+    representation_contracts = copy.deepcopy(
+        judge.get("representation_contracts") or {}
+    )
     judge_selection_receipt = {
         "schema": "mlevolve_cross_task_direct_judge_selection_v2",
         "mode": "independent_judge_direct_no_resolver",
@@ -1416,13 +1672,17 @@ def build_dynamic_transfer_pack(
         "selected_blueprint_ids": selected_blueprint_ids,
         "selected_blueprint_slots": selected_blueprint_slots,
         "selected_level_counts": selected_level_counts,
+        "representation_components": copy.deepcopy(
+            judge.get("representation_components") or {}
+        ),
+        "representation_contracts": representation_contracts,
         "resolver_present": False,
         "post_judge_suppression_applied": False,
     }
     selected_candidates = [copy.deepcopy(row["candidate"]) for row in selected_rows]
     selected_ids = [row["id"] for row in selected_candidates]
     selected_id_set = set(selected_ids)
-    prompt = _render_prompt(selected_rows)
+    prompt = _render_prompt(selected_rows, representation_contracts)
     pool_rows = _rank_accumulated(list(accumulated.values()))
     projected_pool = [copy.deepcopy(row["candidate"]) for row in pool_rows]
     suppressed = []
@@ -1467,6 +1727,12 @@ def build_dynamic_transfer_pack(
             "selected_blueprint_ids": list(selected_blueprint_ids),
             "selected_blueprint_slots": copy.deepcopy(selected_blueprint_slots),
             "selected_level_counts": copy.deepcopy(selected_level_counts),
+            "representation_components": copy.deepcopy(
+                judge.get("representation_components") or {}
+            ),
+            "representation_contracts": copy.deepcopy(
+                representation_contracts
+            ),
             "source_score_inheritance_allowed": False,
             "source_code_exposure_allowed": False,
             "source_artifact_exposure_allowed": False,
@@ -1544,6 +1810,12 @@ def build_dynamic_transfer_pack(
                 "selected_refs": list(judge.get("selected_refs") or []),
                 "selected_ids": list(judge.get("selected_ids") or []),
                 "reason": str(judge.get("reason") or ""),
+                "representation_components": copy.deepcopy(
+                    judge.get("representation_components") or {}
+                ),
+                "representation_contracts": copy.deepcopy(
+                    representation_contracts
+                ),
                 "assessments": copy.deepcopy(judge.get("assessments") or []),
                 "attempts": judge_attempts,
                 "candidate_handles": copy.deepcopy(
@@ -1602,6 +1874,8 @@ __all__ = [
     "GRANULARITIES",
     "JUDGE_SCHEMA",
     "PACK_SCHEMA",
+    "REPRESENTATION_COMPONENT_SLOTS",
     "SEARCH_SCHEMA",
     "build_dynamic_transfer_pack",
+    "verify_representation_adoption",
 ]

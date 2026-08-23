@@ -255,6 +255,13 @@ def _judge_action(cards, selected_granularities):
         "decision": "select",
         "selected_refs": selected,
         "reason": "target-compatible projected cards",
+        "representation_components": {
+            "backbone_family": None,
+            "initialization_source": None,
+            "feature_branch": None,
+            "fusion_operator": None,
+            "input_resolution": None,
+        },
         "assessments": [
             {
                 "ref": row["ref"],
@@ -643,6 +650,13 @@ def test_same_blueprint_slot_collision_is_rejected_but_cross_slot_composition_is
             "decision": "select",
             "selected_refs": selected,
             "reason": "intentionally invalid same-slot collision",
+            "representation_components": {
+                "backbone_family": None,
+                "initialization_source": None,
+                "feature_branch": None,
+                "fusion_operator": None,
+                "input_resolution": None,
+            },
             "assessments": [
                 {
                     "ref": row["ref"],
@@ -677,6 +691,114 @@ def test_same_blueprint_slot_collision_is_rejected_but_cross_slot_composition_is
     assert counts["validation_blueprint"] <= 1
     assert counts["calibration_blueprint"] <= 1
     assert counts["inference_blueprint"] <= 1
+
+
+def test_representation_components_compose_b3_pretraining_with_separate_fusion():
+    from agents.memory.cross_task_dynamic_retrieval import _validate_judge
+
+    cards = [
+        {
+            "id": "representation::fusion",
+            "granularity": "representation_blueprint",
+            "fields": {},
+            "relations": {},
+            "candidate": {
+                "id": "representation::fusion",
+                "portable_text": {
+                    "components": {
+                        "feature_representation": "Target-derived colour and texture descriptors.",
+                        "model_stack": "Use gated fusion for visual and descriptor branches.",
+                    }
+                },
+            },
+        },
+        {
+            "id": "representation::b3",
+            "granularity": "representation_blueprint",
+            "fields": {},
+            "relations": {},
+            "candidate": {
+                "id": "representation::b3",
+                "portable_text": {
+                    "components": {
+                        "feature_representation": "Use frozen EfficientNet-B3 embeddings."
+                    }
+                },
+            },
+        },
+    ]
+    action = {
+        "decision": "select",
+        "selected_refs": ["C01", "C02"],
+        "reason": "compose independent representation attributes",
+        "representation_components": {
+            "backbone_family": "C02",
+            "initialization_source": "C02",
+            "feature_branch": "C01",
+            "fusion_operator": "C01",
+            "input_resolution": None,
+        },
+        "assessments": [
+            {
+                "ref": ref,
+                "applicability": 0.9,
+                "target_adaptability": 0.9,
+                "coherence": 0.9,
+                "contradiction": False,
+                "confidence": 0.9,
+                "reason": "independent compatible component",
+            }
+            for ref in ("C01", "C02")
+        ],
+    }
+    result = _validate_judge(
+        action,
+        candidates=cards,
+        max_selected=7,
+        abstention_allowed=False,
+        blueprint_slot_caps={"representation_blueprint": 5},
+    )
+
+    assert result["representation_contracts"]["backbone_family"][
+        "required_value"
+    ] == "efficientnet_b3"
+    assert result["representation_contracts"]["initialization_source"][
+        "required_value"
+    ] == "public_pretrained"
+    assert result["representation_contracts"]["feature_branch"][
+        "candidate_id"
+    ] == "representation::fusion"
+
+
+def test_representation_adoption_gate_rejects_backbone_substitution_and_weights_none():
+    from agents.memory.cross_task_dynamic_retrieval import (
+        verify_representation_adoption,
+    )
+
+    contracts = {
+        "backbone_family": {"required_value": "efficientnet_b3"},
+        "initialization_source": {"required_value": "public_pretrained"},
+        "feature_branch": {"required_value": "target_derived_descriptors"},
+        "fusion_operator": {"required_value": "gated_fusion"},
+    }
+    accepted = verify_representation_adoption(
+        "from torchvision import models\n"
+        "model = models.efficientnet_b3(weights=models.EfficientNet_B3_Weights.DEFAULT)\n"
+        "def image_features(image): return histogram(image)\n"
+        "class Fusion:\n    def forward(self, a, b): return a + self.gate(b).sigmoid()\n",
+        contracts,
+    )
+    rejected = verify_representation_adoption(
+        "from torchvision import models\n"
+        "model = models.resnet50(weights=None)\n"
+        "def image_features(image): return histogram(image)\n",
+        contracts,
+    )
+
+    assert accepted["valid"] is True
+    assert rejected["valid"] is False
+    assert "selected backbone is absent: efficientnet_b3" in rejected["violations"]
+    assert any("weights=None" in row for row in rejected["violations"])
 
 
 def test_adoption_durably_mirrors_dynamic_search_and_direct_judge_receipt():

@@ -520,8 +520,8 @@ class ExternalSkillMemoryConfig:
     cross_task_architecture_max_items: int = 1
     # Full dynamic cross-task retrieval operates only after the Host has
     # irreversibly projected safe L1/L2/L3 fields. Search and Judge never see
-    # the raw source graph; the Resolver enforces architecture-family
-    # coherence and configured variable-cardinality ceilings.
+    # the raw source graph; the Judge assigns independently composable
+    # representation attributes and obeys configured cardinality ceilings.
     cross_task_dynamic_retrieval_enabled: bool = False
     cross_task_dynamic_search_rounds: int = 3
     cross_task_dynamic_per_query_limit: int = 8

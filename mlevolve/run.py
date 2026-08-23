@@ -792,10 +792,16 @@ def _run_impl():
         try:
             futures = set()
             focus_futures = set()
+            future_origins = {}
 
             def submit_future(callable_, *args, focused=False):
                 future = executor.submit(callable_, *args)
                 futures.add(future)
+                future_origins[future] = (
+                    args[0]
+                    if args and hasattr(args[0], "id")
+                    else None
+                )
                 if focused:
                     focus_futures.add(future)
                 return future
@@ -872,6 +878,7 @@ def _run_impl():
                     futures.remove(fut)
                     was_focused = fut in focus_futures
                     focus_futures.discard(fut)
+                    focused_origin = future_origins.pop(fut, None)
                     worker_exhausted = False
                     try:
                         cur_node = fut.result()
@@ -880,6 +887,12 @@ def _run_impl():
                             logger.info(f"✅ Task completed: node_id={cur_node.id}, step={cur_node.step}, is_buggy={cur_node.is_buggy}, metric={cur_node.metric.value if cur_node.metric else 'N/A'}")
                         else:
                             logger.warning(f"⚠️  Task returned None (execution failed)")
+                            if was_focused and focused_origin is not None:
+                                cur_node = focused_origin
+                                logger.warning(
+                                    "Focused role returned no node; retrying from preserved role parent %s",
+                                    cur_node.id,
+                                )
                     except Exception as e:
                         if isinstance(e, SearchSpaceExhausted):
                             worker_exhausted = True
@@ -900,7 +913,12 @@ def _run_impl():
                                     router_failure_breaker.count,
                                     e,
                                 )
-                        cur_node = None
+                        cur_node = focused_origin if was_focused else None
+                        if cur_node is not None:
+                            logger.warning(
+                                "Focused role task failed; retrying from preserved role parent %s",
+                                cur_node.id,
+                            )
 
                     with lock:
                         save_run(cfg, journal)

@@ -696,9 +696,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 raise ValueError(
                     "cross_task_dynamic stage caps must be in [1, 12]"
                 )
-            if self.cross_task_dynamic_max_selected_architectures not in range(0, 4):
+            if self.cross_task_dynamic_max_selected_architectures not in range(0, 6):
                 raise ValueError(
-                    "cross_task_dynamic_max_selected_architectures must be in [0, 3]"
+                    "cross_task_dynamic_max_selected_architectures must be in [0, 5]"
                 )
         if excluded_run_ids is None and ext_cfg is not None:
             excluded_run_ids = list(

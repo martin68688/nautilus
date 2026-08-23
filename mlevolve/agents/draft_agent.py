@@ -511,6 +511,17 @@ def run(
         l2_tactic_refs=l2_ref_ids,
         strategy_alignment=strategy_alignment,
     )
+    if draft_role == "memory_transfer":
+        memory_layer = getattr(agent, "external_skill_memory", None)
+        latest_pack = dict(
+            getattr(memory_layer, "_last_agentic_pack", None) or {}
+        )
+        new_node.representation_adoption_contracts = dict(
+            (latest_pack.get("memory_transfer") or {}).get(
+                "representation_contracts"
+            )
+            or {}
+        )
     register_node(agent, new_node, prompt_complete, new_branch=True)
 
     from agents.adoption import log_adoption
