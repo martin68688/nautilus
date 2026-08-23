@@ -1,0 +1,16 @@
+# PVC-isolated launch overlay. The absolute parent is the immutable v164
+# runtime copy; v165 code and outputs live under separate paths.
+extends: /workspace/nautilus-exp-end2end-agent-v164-plant-seedlings-transfer-only-a100-luna-low-r1/experiments/end2end_memory_systems_20260804/systems_v164_plant_seedlings_transfer_only_a100_6h_luna_low/transfer_only.yaml
+
+external_skill_memory:
+  cross_task_dynamic_stage_selection_caps:
+    draft: 9
+    improve: 8
+    debug: 5
+  cross_task_dynamic_max_selected_architectures: 5
+
+run_identity:
+  experiment_group: plant_seedlings_v165_transfer_attributes_a100_6h_luna_low
+  memory_version: leaf_v10_r8_to_plant_seedlings_v165_representation_attributes
+  system_id: dynamic_transfer_representation_attribute_contracts
+  identity_source: isolated_runtime_v165
