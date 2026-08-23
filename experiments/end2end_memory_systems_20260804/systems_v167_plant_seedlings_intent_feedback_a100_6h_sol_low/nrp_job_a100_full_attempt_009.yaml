@@ -4,6 +4,7 @@ metadata:
   name: mlevolve-plant-v167-intent-feedback-a100-full-r1
   namespace: ecepxie
   annotations:
+    mlevolve.ai/code-commit: 9cd1bf18
     mlevolve.ai/purpose: plant-v167-full-strategy-planner-host-feedback
     mlevolve.ai/source-task: leaf-classification
     mlevolve.ai/target-task: plant-seedlings-classification
