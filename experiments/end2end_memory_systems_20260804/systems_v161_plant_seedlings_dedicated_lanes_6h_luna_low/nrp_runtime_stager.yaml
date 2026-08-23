@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-plant-v161-runtime-stager-r1
+  namespace: ecepxie
+  labels:
+    app: mlevolve-runtime-stager
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: plant-v161-runtime-stager-r1
+spec:
+  activeDeadlineSeconds: 3600
+  restartPolicy: Never
+  containers:
+    - name: stager
+      image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+      imagePullPolicy: IfNotPresent
+      command:
+        - /bin/bash
+        - -lc
+      args:
+        - exec sleep infinity
+      resources:
+        requests:
+          cpu: "1"
+          memory: 2Gi
+          ephemeral-storage: 4Gi
+        limits:
+          cpu: "1"
+          memory: 2Gi
+          ephemeral-storage: 4Gi
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
