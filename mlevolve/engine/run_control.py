@@ -52,6 +52,51 @@ def queue_representation_adoption_repair(node: object) -> str:
     return analysis
 
 
+def queue_host_plan_execution_repair(node: object) -> str:
+    """Queue a Planner/Code runtime-intent mismatch for bounded repair."""
+
+    gate = dict(getattr(node, "host_plan_execution_gate", None) or {})
+    violations = [str(value) for value in gate.get("violations") or []]
+    analysis = "HOST_PLAN_EXECUTION_REQUIRED: " + "; ".join(violations)
+    setattr(node, "is_buggy", True)
+    setattr(node, "is_valid", False)
+    setattr(node, "analysis", analysis)
+    setattr(node, "_term_out", [analysis])
+    setattr(node, "audit_repair_required", True)
+    setattr(
+        node,
+        "leakage_audit",
+        {
+            "schema": "mlevolve_host_plan_execution_repair_v1",
+            "status": "host_plan_execution_blocked",
+            "hard_block": True,
+            "repair_required": True,
+            "repair_mode": "host_plan_execution",
+            "repair_queue_status": "pending",
+            "rank_eligible": False,
+            "metric_disposition": "unverified",
+            "memory_disposition": "negative_only",
+            "issues": [
+                {
+                    "issue_code": "HOST_PLAN_EXECUTION_REQUIRED",
+                    "category": "host_plan_execution",
+                    "severity": "high",
+                    "line": 0,
+                    "evidence": "; ".join(violations),
+                    "remediation": (
+                        "Return the Host evidence to Planner and regenerate a bounded "
+                        "candidate whose final executable behavior matches the complete "
+                        "roadmap. Preserve the parent and the Improve hypothesis."
+                    ),
+                    "execution_disposition": "block",
+                    "detector": "host_plan_execution_gate_v1",
+                }
+            ],
+        },
+    )
+    return analysis
+
+
 @dataclass
 class RequiredRouterFailureCircuitBreaker:
     """Stop a broken required Router from consuming the full search budget.

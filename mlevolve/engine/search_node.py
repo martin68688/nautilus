@@ -139,6 +139,9 @@ class SearchNode(DataClassJsonMixin):
     memory_transfer_adoption_gate: dict = field(default_factory=dict, kw_only=True)
     representation_adoption_contracts: dict = field(default_factory=dict, kw_only=True)
     representation_adoption_gate: dict = field(default_factory=dict, kw_only=True)
+    # Host receipt proving that explicit Planner execution semantics (currently
+    # frozen-checkpoint reuse without retraining) survive every code review.
+    host_plan_execution_gate: dict = field(default_factory=dict, kw_only=True)
     actuation_report_refs: list[str] = field(default_factory=list, kw_only=True)
     derived_from_refs: list[str] = field(default_factory=list, kw_only=True)
     protocol_ref: str = field(default="", kw_only=True)

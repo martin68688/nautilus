@@ -1427,11 +1427,13 @@ def _strategy_prompt(
         ):
             mode_contract += (
                 "Host runtime feedback in CONTEXT_JSON is binding production evidence. "
-                "The recommended hypothesis must satisfy every Host representation "
-                "requirement and pre-execution violation in its positive hypothesis, "
+                "The recommended hypothesis must satisfy every Host representation or "
+                "execution-semantics requirement and every pre-execution violation in "
+                "its positive hypothesis, "
                 "minimal_change_set, compatibility_checks, and expected_mechanism. "
                 "Do not preserve, relabel, or add a fallback to the conflicting component. "
-                "The Planner will receive only a memo that passes these requirements. "
+                "Preserve the Improve intent, but require the Planner to revise the roadmap "
+                "and executable change until the exact Host violation is absent. "
             )
         if bool(strategy_contract.get("abstention_allowed", False)):
             mode_contract += (

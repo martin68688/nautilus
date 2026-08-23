@@ -22,11 +22,16 @@ from agents.strategy_plan_alignment import (  # noqa: E402
     merge_host_representation_requirements,
     run_strategy_plan_alignment_review,
 )
+from agents.host_plan_execution import verify_host_plan_execution  # noqa: E402
 from agents.memory.cross_task_dynamic_retrieval import (  # noqa: E402
     verify_representation_adoption,
 )
 from config import _load_cfg  # noqa: E402
 from engine.search_node import SearchNode  # noqa: E402
+from engine.run_control import (  # noqa: E402
+    draft_execution_lane,
+    queue_host_plan_execution_repair,
+)
 
 
 def _memo() -> dict:
@@ -270,6 +275,89 @@ def test_staged_planner_also_requires_strategy_owner_alignment():
     assert len(trace["intent_alignment_attempts"]) == 2
     second_payload = json.loads(prompts[1]["user"])
     assert "strategy_intent_revision_required" in second_payload
+
+
+def test_host_plan_execution_gate_blocks_retraining_after_frozen_checkpoint_plan():
+    plan = _roadmap(
+        "Reuse existing frozen fold checkpoints and recalibrate without retraining"
+    )
+    code = """
+def main():
+    for epoch in range(3):
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+"""
+    gate = verify_host_plan_execution(plan, code)
+
+    assert gate["enabled"] is True
+    assert gate["valid"] is False
+    assert gate["observations"]["active_gradient_training_loops"][0][
+        "loop_line"
+    ] == 3
+    assert gate["violations"][0].startswith("plan_runtime_retraining_conflict:")
+
+
+def test_host_plan_execution_gate_accepts_checkpoint_only_inference():
+    plan = _roadmap(
+        "Load and reuse existing frozen fold checkpoints without retraining"
+    )
+    code = """
+def main():
+    for checkpoint in checkpoints:
+        state = torch.load(checkpoint, weights_only=False)
+        model.load_state_dict(state)
+        predictions.append(model(batch))
+"""
+    gate = verify_host_plan_execution(plan, code)
+
+    assert gate["enabled"] is True
+    assert gate["valid"] is True
+    assert gate["observations"]["active_gradient_training_loops"] == []
+
+
+def test_host_plan_execution_gate_does_not_infer_no_retraining_from_preservation():
+    plan = _roadmap("Do not alter the existing training loop or optimizer settings")
+    code = """
+def main():
+    for epoch in range(3):
+        loss.backward()
+        optimizer.step()
+"""
+    gate = verify_host_plan_execution(plan, code)
+
+    assert gate["enabled"] is False
+    assert gate["valid"] is True
+
+
+def test_host_plan_execution_feedback_returns_to_planner_repair_lane():
+    gate = verify_host_plan_execution(
+        _roadmap("No retraining; all existing checkpoints remain frozen"),
+        """
+for epoch in range(2):
+    loss.backward()
+    optimizer.step()
+""",
+    )
+    route = route_atomic_host_feedback(
+        gate,
+        origin="pre_execution_runtime_invariant",
+    )
+    node = SimpleNamespace(
+        id="plan-runtime-blocked",
+        pending_execution=False,
+        is_terminal=False,
+        host_plan_execution_gate=gate,
+    )
+    queue_host_plan_execution_repair(node)
+
+    assert route["target"] == "planner"
+    assert route["repairable"] is True
+    assert node.is_terminal is False
+    assert node.audit_repair_required is True
+    assert node.leakage_audit["repair_queue_status"] == "pending"
+    assert node.leakage_audit["repair_mode"] == "host_plan_execution"
+    assert draft_execution_lane(node) == "repair"
 
 
 def test_recoverable_rejection_preserves_bounded_history():

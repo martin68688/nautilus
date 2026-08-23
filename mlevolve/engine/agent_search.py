@@ -6,7 +6,7 @@ import random
 import time
 from collections import deque
 from pathlib import Path
-from typing import Callable, List, Dict, Optional
+from typing import Callable, List, Dict, Mapping, Optional
 
 from engine.executor import ExecutionResult
 from engine.search_node import SearchNode, Journal
@@ -28,6 +28,7 @@ from agents.atomic_actuation import (
     verify_atomic_code_change,
 )
 from agents.strategy_plan_alignment import merge_host_representation_requirements
+from agents.host_plan_execution import verify_host_plan_execution
 from agents.triggers import (
     refresh_replay_lineage_after_instrumentation,
     refresh_replay_lineage_after_revision,
@@ -45,7 +46,10 @@ from engine.conditions import (
     cross_role_synthesis_allowed,
     is_branch_stagnant,
 )
-from engine.run_control import queue_representation_adoption_repair
+from engine.run_control import (
+    queue_host_plan_execution_repair,
+    queue_representation_adoption_repair,
+)
 from utils.data_preview import clean_task_desc
 
 logger = logging.getLogger("MLEvolve")
@@ -1489,6 +1493,38 @@ class AgentSearch:
                                 self
                             ),
                         )
+
+                    # Patch budgets prove edit shape, not execution semantics.
+                    # Re-check the complete Planner roadmap against the exact
+                    # post-review, Host-normalized source that would execute.
+                    atomic_trace = dict(
+                        getattr(result_node, "atomic_actuation_trace", None) or {}
+                    )
+                    planner_plan = (
+                        (atomic_trace.get("planner") or {}).get("plan") or {}
+                    )
+                    if not isinstance(planner_plan, Mapping):
+                        planner_plan = {}
+                    host_plan_execution_gate = verify_host_plan_execution(
+                        planner_plan,
+                        result_node.code,
+                    )
+                    result_node.host_plan_execution_gate = host_plan_execution_gate
+                    if host_plan_execution_gate.get("valid") is not True:
+                        atomic_trace["pre_execution_host_feedback"] = {
+                            "schema": "mlevolve_pre_execution_host_feedback_v1",
+                            "status": "repair_required",
+                            "route": route_atomic_host_feedback(
+                                host_plan_execution_gate,
+                                origin="pre_execution_runtime_invariant",
+                            ),
+                            "gate": "host_plan_execution",
+                            "receipt": copy.deepcopy(host_plan_execution_gate),
+                        }
+                        result_node.atomic_actuation_trace = atomic_trace
+                        result_node.metric = WorstMetricValue()
+                        queue_host_plan_execution_repair(result_node)
+                        memory_transfer_adoption_blocked = True
 
                     if (
                         not result_node.representation_adoption_contracts
