@@ -1,0 +1,93 @@
+# Phase 1 of the iterative memory-learning curve experiment.
+#
+# This is a strict cold-start control: one independently generated Draft and
+# its ordinary Improve/Debug lineage, with every memory, replay, transfer,
+# resolver, replacement-draft, and fusion path disabled.  The same topology is
+# shared by Leaf, Spooky, and Plant Seedlings for three hours per task.
+extends: ../../../mlevolve/config/config.yaml
+
+methodology_kb_path: ""
+methodology_dynamic: false
+
+fixed_holdout:
+  enabled: false
+  bypass_protocol_gates: true
+  preflight_validate_train_view: false
+  internal_metric_disposition: search_only
+
+official_submission:
+  enabled: false
+  competition: ""
+  sample_submission_path: ""
+
+agent:
+  steps: 2147483647
+  time_limit: 10800
+  initial_drafts: 1
+  use_global_memory: false
+  max_fusion_drafts: 0
+  branch_fusion_trigger_prob: 0.0
+  fusion_vs_evolution_prob: 0.0
+  draft_role_policy:
+    enabled: false
+    roles: []
+    replay_targets_path: ""
+    replay_runs_root: ""
+    replay_research_enabled: false
+    replay_research_exact_budget: 0
+    replay_research_strategy_slots: 0
+    ensure_valid_candidate_per_role: false
+    cross_role_synthesis_after_balance: false
+    cross_role_synthesis_on_coverage: false
+    equal_branch_allocation_after_coverage: false
+    single_coverage_synthesis_only: false
+  protocol_repair:
+    enabled: false
+  protocol_preflight:
+    enabled: false
+    repair_enabled: false
+    agent_semantic_review_enabled: false
+  search:
+    num_drafts: 1
+    replacement_drafts_enabled: false
+    max_replacement_drafts: 0
+    num_gpus: 1
+    parallel_search_num: 1
+
+adoption_tracking:
+  enable: false
+  enable_analysis: false
+
+adoption_verifier:
+  enabled: false
+
+prospective_audit:
+  enabled: false
+
+external_skill_memory:
+  enable: false
+  enable_agentic: false
+  end2end_memory_system: no_memory
+  retrieval_control: no_memory
+  bundle_root: ""
+  session_overlay_path: ""
+  graph_path: ""
+  index_path: ""
+  text_model_path: ""
+  recipe_sop_path: ""
+  recipe_evidence_path: ""
+  recipe_implementation_path: ""
+  transition_evidence_capsules_path: ""
+  cross_task_transfer_enabled: false
+  cross_task_dynamic_retrieval_enabled: false
+  memory_strategy_shadow_enabled: false
+  memory_strategy_active_enabled: false
+
+run_identity:
+  experiment_group: iterative_memory_curve_v162_phase1_nomemory_3h
+  baseline_reference_group: iterative_memory_curve_v162
+  memory_enabled: false
+  memory_system: no_memory
+  memory_version: phase1_cold_start_v162
+  system_id: phase1_no_memory_novel
+  identity_source: isolated_runtime_v162
