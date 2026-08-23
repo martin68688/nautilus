@@ -1062,6 +1062,17 @@ def _call_judge(
                 "performance_utility": {
                     "primary_objective": "expected target validation performance",
                     "implementation_risk_is_a_penalty_not_the_objective": True,
+                    "ranking_order": [
+                        "architecture_sample_efficiency_prior",
+                        "target_adaptability",
+                        "component_coherence",
+                        "implementation_risk_penalty",
+                    ],
+                    "vague_family_card_penalty": (
+                        "A generic ResNet/EfficientNet family suggestion must not "
+                        "outrank an explicit, machine-checkable pretrained backbone "
+                        "when target evidence does not favor the vague alternative."
+                    ),
                     "small_natural_image_prior": (
                         "Prefer a public pretrained visual backbone over a randomly "
                         "initialized large CNN unless target evidence or domain mismatch "
@@ -1080,7 +1091,10 @@ def _call_judge(
             "Choose any useful eight-granularity combination and quantity up to the cap; layer counts are not preassigned.",
             "Decompose representation into backbone_family, initialization_source, feature_branch, fusion_operator, and input_resolution. Cards assigned to different representation components are composable; only cards competing for the same component conflict.",
             "Populate representation_components with the selected C-ref for every implemented component, or null when no card supplies it. Every non-null component ref must also appear in selected_refs.",
+            "If any supplied representation card exposes a machine-checkable backbone_family or initialization_source, those slots must not be null in a select decision; choose and select the best such card under the performance utility.",
+            "A representation component may reference only a representation_blueprint card, never a tactic, repair, transition, validation, calibration, inference, or module-interface card.",
             "Optimize expected target validation performance, using implementation risk as a penalty rather than the primary objective.",
+            "Do not prefer a vague model-family card merely because it is safer to describe. In the absence of contrary target evidence, an explicit public-pretrained architecture has the stronger sample-efficiency prior and is auditable in generated code.",
             "For small natural-image datasets, public ImageNet-style pretrained backbones have a strong sample-efficiency prior over random initialization. Public pretrained weights are allowed and are distinct from forbidden source-task checkpoints or weights.",
             "Do not mark cards from different blueprint slots contradictory merely because their source Recipe families differ.",
             "Only cards competing for the same blueprint slot conflict; L2/L3 items are judged by target interface and dependency compatibility.",
@@ -1153,6 +1167,35 @@ def _validate_judge(
     )
     if set(representation_components) != set(REPRESENTATION_COMPONENT_SLOTS):
         raise ValueError("Judge must decide every representation component slot")
+    available_requirements = {
+        slot: [
+            (candidate_id, _representation_requirement(slot, row["candidate"]))
+            for candidate_id, row in candidate_by_id.items()
+            if row["granularity"] == REPRESENTATION_BLUEPRINT
+            and _representation_requirement(slot, row["candidate"])
+        ]
+        for slot in REPRESENTATION_COMPONENT_SLOTS
+    }
+    for required_slot in ("backbone_family", "initialization_source"):
+        if (
+            normalized.get("decision") == "select"
+            and available_requirements[required_slot]
+            and representation_components.get(required_slot) is None
+        ):
+            raise ValueError(
+                "Judge may not null a machine-checkable representation slot: "
+                f"{required_slot}; available candidate refs="
+                + ",".join(
+                    next(
+                        ref
+                        for ref, value in ref_to_id.items()
+                        if value == candidate_id
+                    )
+                    for candidate_id, _requirement in available_requirements[
+                        required_slot
+                    ]
+                )
+            )
     representation_contracts = {}
     for slot in REPRESENTATION_COMPONENT_SLOTS:
         component_ref = representation_components.get(slot)
