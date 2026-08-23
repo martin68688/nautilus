@@ -14,7 +14,7 @@ EXP_NAME="$5"
 
 RUNTIME=/workspace/nautilus-exp-end2end-agent-v162-iterative-memory-curve
 CONFIG=${RUNTIME}/experiments/end2end_memory_systems_20260804/systems_v162_iterative_memory_curve_phase1_nomemory_3h_luna_low/no_memory_phase1.yaml
-ATTEMPT_ROOT=${OUTPUT_ROOT}/runs/phase-1-no-memory/attempt-000
+ATTEMPT_ROOT=${OUTPUT_ROOT}/runs/attempt-000
 
 test -n "${OPENAI_API_KEY:-}"
 test "${OPENAI_BASE_URL:-}" = "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
