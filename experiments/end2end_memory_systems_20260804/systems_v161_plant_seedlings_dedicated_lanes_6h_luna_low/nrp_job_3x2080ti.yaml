@@ -89,7 +89,7 @@ spec:
                 exec.timeout=21600 \
                 agent.search.num_gpus=3 \
                 agent.search.parallel_search_num=3 \
-                cpu_number=24
+                cpu_number=18
           envFrom:
             - secretRef:
                 name: cliproxyapi-haoming-client
@@ -104,14 +104,14 @@ spec:
               value: "1"
           resources:
             requests:
-              cpu: "24"
-              memory: 64Gi
-              ephemeral-storage: 64Gi
+              cpu: "18"
+              memory: 48Gi
+              ephemeral-storage: 32Gi
               nvidia.com/gpu: "3"
             limits:
-              cpu: "24"
-              memory: 64Gi
-              ephemeral-storage: 64Gi
+              cpu: "18"
+              memory: 48Gi
+              ephemeral-storage: 32Gi
               nvidia.com/gpu: "3"
           volumeMounts:
             - name: workspace
@@ -125,4 +125,4 @@ spec:
         - name: shm
           emptyDir:
             medium: Memory
-            sizeLimit: 48Gi
+            sizeLimit: 32Gi
