@@ -348,6 +348,19 @@ def test_host_runtime_contract_overrides_retrieval_and_blocks_random_fallback():
         "model = timm.create_model('efficientnet_b3', pretrained=True)\n",
         contracts,
     )
+    accepted_alias = verify_representation_adoption(
+        "import timm\n"
+        "model_identifier = 'efficientnet_b3'\n"
+        "model = timm.create_model(model_identifier, pretrained=True)\n",
+        contracts,
+    )
+    rejected_ambiguous_alias = verify_representation_adoption(
+        "import timm\n"
+        "model_identifier = 'efficientnet_b3'\n"
+        "model_identifier = 'efficientnet_b0'\n"
+        "model = timm.create_model(model_identifier, pretrained=True)\n",
+        contracts,
+    )
 
     assert receipt["enabled"] is True
     assert receipt["selection_overrides"] == [
@@ -359,6 +372,8 @@ def test_host_runtime_contract_overrides_retrieval_and_blocks_random_fallback():
     ]
     assert rejected["valid"] is False
     assert accepted["valid"] is True
+    assert accepted_alias["valid"] is True
+    assert rejected_ambiguous_alias["valid"] is False
 
 
 def test_config_declares_alignment_feedback_defaults():

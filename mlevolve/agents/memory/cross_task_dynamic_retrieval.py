@@ -462,6 +462,39 @@ def verify_representation_adoption(
             "violations": [f"candidate syntax error: {error.msg}"],
         }
 
+    string_constants: dict[str, str] = {}
+    ambiguous_constants: set[str] = set()
+    for node in ast.walk(tree):
+        name = ""
+        value: ast.AST | None = None
+        if (
+            isinstance(node, ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], ast.Name)
+        ):
+            name = node.targets[0].id
+            value = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            name = node.target.id
+            value = node.value
+        if not name or not isinstance(value, ast.Constant) or not isinstance(
+            value.value, str
+        ):
+            continue
+        resolved = str(value.value)
+        if name in string_constants and string_constants[name] != resolved:
+            ambiguous_constants.add(name)
+            string_constants.pop(name, None)
+        elif name not in ambiguous_constants:
+            string_constants[name] = resolved
+
+    def resolve_static_string(value: ast.AST | None) -> str:
+        if isinstance(value, ast.Constant) and isinstance(value.value, str):
+            return str(value.value)
+        if isinstance(value, ast.Name) and value.id not in ambiguous_constants:
+            return string_constants.get(value.id, "")
+        return ""
+
     backbone = required.get("backbone_family", "")
     if backbone and not re.search(rf"\b{re.escape(backbone)}\b", source, re.I):
         violations.append(f"selected backbone is absent: {backbone}")
@@ -488,11 +521,8 @@ def verify_representation_adoption(
                     ) and keyword.value.value is True:
                         pretrained = True
             if func_name == "create_model" and node.args:
-                model_name = node.args[0]
-                names_backbone = (
-                    isinstance(model_name, ast.Constant)
-                    and str(model_name.value).lower() == backbone.lower()
-                )
+                model_name = resolve_static_string(node.args[0])
+                names_backbone = model_name.lower() == backbone.lower()
                 has_pretrained = any(
                     keyword.arg == "pretrained"
                     and isinstance(keyword.value, ast.Constant)
