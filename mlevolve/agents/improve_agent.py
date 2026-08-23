@@ -32,7 +32,7 @@ from agents.strategy_actuation import (
     MemoryStrategyActuationRejected,
     active_strategy_enabled,
     active_strategy_required,
-    record_recoverable_strategy_rejection,
+    apply_strategy_rejection_policy,
     run_active_strategy_actuation,
 )
 
@@ -375,45 +375,12 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             parent_node.id,
         )
     elif strategy_active and active_strategy_required(agent):
-        parent_node.memory_strategy_trace = memory_strategy_trace
-        parent_node.atomic_actuation_trace = dict(
-            active_actuation_trace.get("atomic") or {}
+        apply_strategy_rejection_policy(
+            agent,
+            parent_node,
+            active_actuation_trace,
+            stage="improve",
         )
-        if not isinstance(parent_node.protocol_observation, dict):
-            parent_node.protocol_observation = {}
-        parent_node.protocol_observation[
-            "memory_strategy_active_rejection"
-        ] = {
-            "schema": "mlevolve_memory_strategy_active_rejection_v1",
-            "stage": "improve",
-            "reason": str(active_actuation_trace.get("reason") or "rejected"),
-        }
-        ext_cfg = getattr(agent.cfg, "external_skill_memory", None)
-        recoverable = bool(
-            getattr(
-                ext_cfg,
-                "memory_strategy_recoverable_rejection_enabled",
-                False,
-            )
-        )
-        if recoverable:
-            receipt = record_recoverable_strategy_rejection(
-                agent,
-                parent_node,
-                active_actuation_trace,
-            )
-            parent_node.protocol_observation[
-                "memory_strategy_active_rejection"
-            ]["recovery"] = {
-                "status": "deferred_retry",
-                "parent_preserved": True,
-                "rejection_fingerprint": receipt["rejection_fingerprint"],
-            }
-            parent_node.is_terminal = False
-            parent_node.continue_improve = True
-        else:
-            parent_node.is_terminal = True
-            parent_node.continue_improve = False
         raise MemoryStrategyActuationRejected(active_actuation_trace)
     elif agent.acfg.use_diff_mode:
         try:

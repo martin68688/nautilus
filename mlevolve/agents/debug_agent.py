@@ -29,6 +29,7 @@ from agents.strategy_actuation import (
     MemoryStrategyActuationRejected,
     active_strategy_enabled,
     active_strategy_required,
+    apply_strategy_rejection_policy,
     run_active_strategy_actuation,
 )
 
@@ -554,21 +555,12 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             parent_node.id,
         )
     elif strategy_active and active_strategy_required(agent):
-        parent_node.memory_strategy_trace = memory_strategy_trace
-        parent_node.atomic_actuation_trace = dict(
-            active_actuation_trace.get("atomic") or {}
+        apply_strategy_rejection_policy(
+            agent,
+            parent_node,
+            active_actuation_trace,
+            stage="debug",
         )
-        if not isinstance(parent_node.protocol_observation, dict):
-            parent_node.protocol_observation = {}
-        parent_node.protocol_observation[
-            "memory_strategy_active_rejection"
-        ] = {
-            "schema": "mlevolve_memory_strategy_active_rejection_v1",
-            "stage": "debug",
-            "reason": str(active_actuation_trace.get("reason") or "rejected"),
-        }
-        parent_node.is_terminal = True
-        parent_node.continue_improve = False
         raise MemoryStrategyActuationRejected(active_actuation_trace)
     elif agent.acfg.use_diff_mode:
         diff_instructions = base_instructions + f"\n\n🔴 **IMPORTANT**: There is a bug that MUST be fixed. "

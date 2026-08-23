@@ -15,6 +15,7 @@ from agents.atomic_actuation import (  # noqa: E402
     run_atomic_staged_actuation_planner,
 )
 from agents.strategy_actuation import (  # noqa: E402
+    apply_strategy_rejection_policy,
     record_recoverable_strategy_rejection,
 )
 from agents.strategy_plan_alignment import (  # noqa: E402
@@ -297,6 +298,45 @@ def test_recoverable_rejection_preserves_bounded_history():
     assert parent.memory_strategy_rejection_history[0][
         "rejection_fingerprint"
     ] == first["rejection_fingerprint"]
+
+
+def test_debug_rejection_uses_recoverable_parent_policy():
+    agent = _agent()
+    agent.cfg.external_skill_memory.memory_strategy_recoverable_rejection_enabled = (
+        True
+    )
+    parent = SearchNode(code="x = 1\n", stage="debug")
+    trace = {
+        "stage": "debug",
+        "status": "rejected",
+        "reason": "atomic_pipeline_not_accepted",
+        "strategy": {"status": "completed"},
+        "atomic": {
+            "planner": {
+                "status": "rejected",
+                "plan_sha256": "b" * 64,
+                "plan": {"hypothesis_id": "repair-b3"},
+                "intent_alignment": {
+                    "status": "revise",
+                    "reason": "reconcile compute budget",
+                },
+            }
+        },
+    }
+    observation = apply_strategy_rejection_policy(
+        agent,
+        parent,
+        trace,
+        stage="debug",
+    )
+
+    assert parent.is_terminal is False
+    assert parent.continue_improve is True
+    assert observation["recovery"]["status"] == "deferred_retry"
+    assert observation["recovery"]["parent_preserved"] is True
+    assert parent.memory_strategy_rejection_history[-1][
+        "hypothesis_id"
+    ] == "repair-b3"
 
 
 def test_host_feedback_routes_by_failure_owner():

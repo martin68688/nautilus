@@ -100,6 +100,58 @@ def record_recoverable_strategy_rejection(
     return receipt
 
 
+def apply_strategy_rejection_policy(
+    agent: Any,
+    parent_node: Any,
+    trace: Mapping[str, Any],
+    *,
+    stage: str,
+) -> dict[str, Any]:
+    """Apply the same terminal/retry policy to Improve and Debug rejections."""
+
+    parent_node.memory_strategy_trace = copy.deepcopy(
+        dict(trace.get("strategy") or {})
+    )
+    parent_node.atomic_actuation_trace = copy.deepcopy(
+        dict(trace.get("atomic") or {})
+    )
+    if not isinstance(parent_node.protocol_observation, dict):
+        parent_node.protocol_observation = {}
+    observation = {
+        "schema": "mlevolve_memory_strategy_active_rejection_v1",
+        "stage": str(stage),
+        "reason": str(trace.get("reason") or "rejected"),
+    }
+    parent_node.protocol_observation[
+        "memory_strategy_active_rejection"
+    ] = observation
+    ext_cfg = getattr(getattr(agent, "cfg", None), "external_skill_memory", None)
+    recoverable = bool(
+        getattr(
+            ext_cfg,
+            "memory_strategy_recoverable_rejection_enabled",
+            False,
+        )
+    )
+    if recoverable:
+        receipt = record_recoverable_strategy_rejection(
+            agent,
+            parent_node,
+            trace,
+        )
+        observation["recovery"] = {
+            "status": "deferred_retry",
+            "parent_preserved": True,
+            "rejection_fingerprint": receipt["rejection_fingerprint"],
+        }
+        parent_node.is_terminal = False
+        parent_node.continue_improve = True
+    else:
+        parent_node.is_terminal = True
+        parent_node.continue_improve = False
+    return observation
+
+
 def run_active_strategy_actuation(
     agent: Any,
     parent_node: Any,
@@ -185,6 +237,7 @@ __all__ = [
     "MemoryStrategyActuationRejected",
     "active_strategy_enabled",
     "active_strategy_required",
+    "apply_strategy_rejection_policy",
     "record_recoverable_strategy_rejection",
     "run_active_strategy_actuation",
 ]
