@@ -27,6 +27,7 @@ from agents.atomic_actuation import (
     route_atomic_host_feedback,
     verify_atomic_code_change,
 )
+from agents.strategy_plan_alignment import merge_host_representation_requirements
 from agents.triggers import (
     refresh_replay_lineage_after_instrumentation,
     refresh_replay_lineage_after_revision,
@@ -1497,6 +1498,32 @@ class AgentSearch:
                         result_node.representation_adoption_contracts = copy.deepcopy(
                             parent_node.representation_adoption_contracts
                         )
+                    ext_cfg = getattr(self.cfg, "external_skill_memory", None)
+                    if (
+                        ext_cfg is not None
+                        and getattr(result_node, "draft_role", None)
+                        == "memory_transfer"
+                    ):
+                        (
+                            result_node.representation_adoption_contracts,
+                            host_representation_receipt,
+                        ) = merge_host_representation_requirements(
+                            result_node.representation_adoption_contracts,
+                            ext_cfg=ext_cfg,
+                        )
+                        if host_representation_receipt.get("enabled") is True:
+                            atomic_trace = dict(
+                                getattr(
+                                    result_node,
+                                    "atomic_actuation_trace",
+                                    None,
+                                )
+                                or {}
+                            )
+                            atomic_trace["host_representation_contract"] = (
+                                host_representation_receipt
+                            )
+                            result_node.atomic_actuation_trace = atomic_trace
                     if result_node.representation_adoption_contracts:
                         from agents.memory.cross_task_dynamic_retrieval import (
                             verify_representation_adoption,
@@ -1508,6 +1535,27 @@ class AgentSearch:
                         )
                         result_node.representation_adoption_gate = representation_gate
                         if representation_gate.get("valid") is not True:
+                            atomic_trace = dict(
+                                getattr(
+                                    result_node,
+                                    "atomic_actuation_trace",
+                                    None,
+                                )
+                                or {}
+                            )
+                            atomic_trace["pre_execution_host_feedback"] = {
+                                "schema": (
+                                    "mlevolve_pre_execution_host_feedback_v1"
+                                ),
+                                "status": "repair_required",
+                                "route": route_atomic_host_feedback(
+                                    representation_gate,
+                                    origin=(
+                                        "pre_execution_runtime_invariant"
+                                    ),
+                                ),
+                            }
+                            result_node.atomic_actuation_trace = atomic_trace
                             result_node.metric = WorstMetricValue()
                             queue_representation_adoption_repair(result_node)
                             memory_transfer_adoption_blocked = True

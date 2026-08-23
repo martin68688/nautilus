@@ -86,6 +86,78 @@ def _canonical_json(value: Any) -> str:
     )
 
 
+def merge_host_representation_requirements(
+    contracts: Mapping[str, Any] | None,
+    *,
+    ext_cfg: Any,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Bind environment-owned representation requirements to a candidate.
+
+    Retrieval owns which memory cards are useful, but it cannot weaken a
+    launch-time method invariant. Host requirements therefore win when they
+    conflict with a selected card. The override remains explicit in a receipt
+    so Planner and Strategy can reconcile it instead of silently changing the
+    experiment.
+    """
+
+    merged = copy.deepcopy(dict(contracts or {}))
+    required_backbone = str(
+        getattr(
+            ext_cfg,
+            "memory_strategy_host_required_backbone_family",
+            "",
+        )
+        or ""
+    ).strip()
+    require_public_pretrained = bool(
+        getattr(
+            ext_cfg,
+            "memory_strategy_host_require_public_pretrained",
+            False,
+        )
+    )
+    overrides: list[dict[str, str]] = []
+
+    def bind(slot: str, required_value: str) -> None:
+        previous = merged.get(slot)
+        previous_value = (
+            str(previous.get("required_value") or "")
+            if isinstance(previous, Mapping)
+            else ""
+        )
+        if previous_value and previous_value != required_value:
+            overrides.append(
+                {
+                    "slot": slot,
+                    "selected_value": previous_value,
+                    "host_required_value": required_value,
+                }
+            )
+        merged[slot] = {
+            "required_value": required_value,
+            "authority": "host_runtime_contract",
+        }
+
+    if required_backbone:
+        bind("backbone_family", required_backbone)
+    if require_public_pretrained:
+        bind("initialization_source", "public_pretrained")
+
+    requirements = {
+        slot: str(value.get("required_value") or "")
+        for slot, value in merged.items()
+        if isinstance(value, Mapping)
+        and value.get("authority") == "host_runtime_contract"
+    }
+    receipt = {
+        "schema": "mlevolve_host_representation_contract_v1",
+        "enabled": bool(requirements),
+        "requirements": requirements,
+        "selection_overrides": overrides,
+    }
+    return merged, receipt
+
+
 def _parse_json_object(response: Any) -> dict[str, Any]:
     if isinstance(response, Mapping):
         return copy.deepcopy(dict(response))
@@ -312,5 +384,6 @@ def run_strategy_plan_alignment_review(
 
 __all__ = [
     "PLAN_ALIGNMENT_REVIEW_SCHEMA",
+    "merge_host_representation_requirements",
     "run_strategy_plan_alignment_review",
 ]

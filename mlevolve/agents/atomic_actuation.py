@@ -1819,6 +1819,9 @@ def route_atomic_host_feedback(
     if str(origin) == "post_review":
         target = "reviewer"
         repairable = True
+    elif str(origin) == "pre_execution_runtime_invariant":
+        target = "planner"
+        repairable = True
     elif "syntax error" in joined or "diff application failed" in joined:
         target = "coder"
         repairable = True

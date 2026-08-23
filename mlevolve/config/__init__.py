@@ -648,6 +648,10 @@ class ExternalSkillMemoryConfig:
     # Reviewer-originated Atomic Contract violations get a bounded repair
     # round before the candidate is rejected.
     memory_strategy_post_review_repair_attempts: int = 0
+    # Optional Host-owned launch/runtime representation floor. Empty/false
+    # preserves historical dynamic-retrieval behavior.
+    memory_strategy_host_required_backbone_family: str = ""
+    memory_strategy_host_require_public_pretrained: bool = False
     # Dynamic Hybrid may delegate L3 failure/root-cause matching to the
     # Retrieval Agent.  The Host keeps only objective task/evidence gates and
     # literal traceback-anchor extraction; no maintained synonym table is

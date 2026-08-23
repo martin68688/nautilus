@@ -51,6 +51,8 @@ assert "memory_transfer" in roles
 assert bool(cfg.external_skill_memory.memory_strategy_plan_alignment_enabled)
 assert bool(cfg.external_skill_memory.memory_strategy_recoverable_rejection_enabled)
 assert int(cfg.external_skill_memory.memory_strategy_post_review_repair_attempts) == 1
+assert cfg.external_skill_memory.memory_strategy_host_required_backbone_family == "efficientnet_b3"
+assert bool(cfg.external_skill_memory.memory_strategy_host_require_public_pretrained)
 print(f"intent feedback config preflight passed: roles={roles}")
 PY
 

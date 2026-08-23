@@ -18,7 +18,11 @@ from agents.strategy_actuation import (  # noqa: E402
     record_recoverable_strategy_rejection,
 )
 from agents.strategy_plan_alignment import (  # noqa: E402
+    merge_host_representation_requirements,
     run_strategy_plan_alignment_review,
+)
+from agents.memory.cross_task_dynamic_retrieval import (  # noqa: E402
+    verify_representation_adoption,
 )
 from config import _load_cfg  # noqa: E402
 from engine.search_node import SearchNode  # noqa: E402
@@ -304,9 +308,57 @@ def test_host_feedback_routes_by_failure_owner():
         {"violations": ["patch count 8 is outside atomic limit 1..6"]},
         origin="atomic_coder",
     )
+    runtime = route_atomic_host_feedback(
+        {
+            "violations": [
+                "selected public_pretrained initialization is absent or weights=None"
+            ]
+        },
+        origin="pre_execution_runtime_invariant",
+    )
     assert post_review["target"] == "reviewer"
     assert post_review["repairable"] is True
     assert planner["target"] == "planner"
+    assert runtime["target"] == "planner"
+    assert runtime["repairable"] is True
+
+
+def test_host_runtime_contract_overrides_retrieval_and_blocks_random_fallback():
+    ext_cfg = SimpleNamespace(
+        memory_strategy_host_required_backbone_family="efficientnet_b3",
+        memory_strategy_host_require_public_pretrained=True,
+    )
+    contracts, receipt = merge_host_representation_requirements(
+        {
+            "backbone_family": {
+                "required_value": "efficientnet_b0",
+                "candidate_id": "memory::b0",
+            }
+        },
+        ext_cfg=ext_cfg,
+    )
+    rejected = verify_representation_adoption(
+        "from torchvision.models import efficientnet_b0\n"
+        "model = efficientnet_b0(weights=None)\n"
+        "initialization_mode = 'random'\n",
+        contracts,
+    )
+    accepted = verify_representation_adoption(
+        "import timm\n"
+        "model = timm.create_model('efficientnet_b3', pretrained=True)\n",
+        contracts,
+    )
+
+    assert receipt["enabled"] is True
+    assert receipt["selection_overrides"] == [
+        {
+            "slot": "backbone_family",
+            "selected_value": "efficientnet_b0",
+            "host_required_value": "efficientnet_b3",
+        }
+    ]
+    assert rejected["valid"] is False
+    assert accepted["valid"] is True
 
 
 def test_config_declares_alignment_feedback_defaults():
@@ -319,3 +371,19 @@ def test_config_declares_alignment_feedback_defaults():
     assert ext.memory_strategy_plan_alignment_retries == 2
     assert ext.memory_strategy_recoverable_rejection_enabled is False
     assert ext.memory_strategy_post_review_repair_attempts == 0
+    assert ext.memory_strategy_host_required_backbone_family == ""
+    assert ext.memory_strategy_host_require_public_pretrained is False
+
+
+def test_v167_enables_host_runtime_method_floor():
+    cfg = _load_cfg(
+        ROOT
+        / "experiments"
+        / "end2end_memory_systems_20260804"
+        / "systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low"
+        / "intent_feedback.yaml",
+        use_cli_args=False,
+    )
+    ext = cfg.external_skill_memory
+    assert ext.memory_strategy_host_required_backbone_family == "efficientnet_b3"
+    assert ext.memory_strategy_host_require_public_pretrained is True
