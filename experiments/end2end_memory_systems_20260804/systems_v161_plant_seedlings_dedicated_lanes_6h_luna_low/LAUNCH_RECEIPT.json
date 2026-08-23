@@ -1,0 +1,83 @@
+{
+  "schema": "mlevolve_plant_v161_dedicated_branch_lanes_launch_v1",
+  "recorded_at_utc": "2026-08-23T08:17:26Z",
+  "checkpoint": {
+    "branch": "codex/cross-task-dedicated-branch-lanes-v161",
+    "runtime_commit": "22850db651dedd4115f9e7615e637e1732117e92",
+    "config_sha256": "d5e62a36fb819ce5b37cf7536b359c6f8eb07bc0e8d65aa044929b5c4a7563cf",
+    "run_py_sha256": "763ee39af355c7357058c921cc249fb25e055a410cdd1c5131600bc3862ebbc0",
+    "agent_search_sha256": "1ae18120286e337cf3e1aae4dfcabe664d8ce034ee63d8b9bf9482f15fa23869",
+    "executor_sha256": "39df3c4fd1c48bd0d9f5951a8079d101792ce26f7796930f1f8ceb2b8f15f9c9",
+    "job_manifest_sha256": "4c8f742bc64491e54c288392b26caced6cfd86324474fe622a7d79f322ae69d5"
+  },
+  "runtime": {
+    "namespace": "ecepxie",
+    "job": "mlevolve-plant-v161-lanes-luna-low-2080ti3-r2",
+    "job_uid": "43cc8e65-60cb-4164-a091-697ff0d46744",
+    "pod": "mlevolve-plant-v161-lanes-luna-low-2080ti3-r2-qtkch",
+    "pod_uid": "1ea1c306-4597-408a-9c47-1191b66efd84",
+    "node": "epic001.clemson.edu",
+    "runtime_path": "/workspace/nautilus-exp-end2end-agent-v161-plant-seedlings-dedicated-lanes-luna-low-r2",
+    "output_path": "/workspace/experiment-end2end-plant-seedlings-v161-dedicated-lanes-6h-luna-low-r2",
+    "run_id": "20260823_080502_e2e-plant-seedlings-v161-dedicated-lanes-6h-luna-low-r2",
+    "phase_at_receipt": "Running",
+    "main_pid": 1
+  },
+  "resources": {
+    "gpu_count": 3,
+    "gpu_model": "NVIDIA GeForce RTX 2080 Ti",
+    "gpu_memory_mib_each": 11264,
+    "cpu_total": 18,
+    "memory_gib_total": 48,
+    "per_lane_cpu_share": 6
+  },
+  "branch_contract": {
+    "independent_lane_budget_seconds": 21600,
+    "outer_run_guard_seconds": 46800,
+    "steps": 2147483647,
+    "lane_0": "memory_transfer/GPU0",
+    "lane_1": "novel_exploration/GPU1",
+    "lane_2": "cross_role_synthesis/GPU2",
+    "fusion_wait_time_charged_to_fusion": false,
+    "source_lanes_continue_after_fusion": true,
+    "single_coverage_fusion_only": true
+  },
+  "initial_nodes": {
+    "memory_transfer": "b36a4cfc75144909926dfc2e5db91c1f",
+    "novel_exploration": "8ac4c0326d8b4555bc88d94319bb9daa",
+    "transfer_assigned_process_id": 0,
+    "novel_assigned_process_id": 1
+  },
+  "model_access": {
+    "provider": "ecepxie_cluster_local_cliproxy",
+    "base_url": "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "low",
+    "authenticated_health_status": 200,
+    "advertised_models": 10
+  },
+  "validation": {
+    "local_non_abi_tests_passed": 13,
+    "container_focused_tests_passed": 17,
+    "runtime_config_contract_passed": true,
+    "three_physical_gpus_verified": true,
+    "dedicated_lane_state_file_verified": true
+  },
+  "retry_audit": {
+    "r1_job": "mlevolve-plant-v161-lanes-luna-low-2080ti3-r1",
+    "r1_job_uid": "865fbd49-45bc-4225-9cfe-9bd2f4e8648e",
+    "r1_pod": "mlevolve-plant-v161-lanes-luna-low-2080ti3-r1-mfhk6",
+    "r1_pod_uid": "a5ea8bc6-679e-43de-89ec-dc6512c433a7",
+    "r1_failure": "git archive omitted an untracked historical config inheritance dependency: systems_v61/dynamic_hybrid.yaml",
+    "r1_candidate_training_started": false,
+    "r1_preserved": true,
+    "r2_repair": "clone complete v158 runtime into a new r2 path, then overlay the v161 tracked checkpoint and validate config inside the container"
+  },
+  "preservation": {
+    "old_pods_deleted": false,
+    "old_outputs_overwritten": false,
+    "v158_runtime_mutated": false,
+    "v160_running_pod_entered_or_mutated": false
+  },
+  "provenance_note": "The inherited run_identity code fields are blank; this external receipt binds the running runtime to exact content hashes without mutating the active run."
+}
