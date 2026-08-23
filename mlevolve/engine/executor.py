@@ -10,7 +10,9 @@ import logging
 import hashlib
 import json
 import os
+import re
 import secrets
+import shutil
 import signal
 import sys
 import threading
@@ -52,6 +54,15 @@ from protocol_runtime.preflight import (
 )
 
 logger = logging.getLogger("MLEvolve")
+
+
+_CANDIDATE_HF_SEED_ROOT_ENV = "MLEVOLVE_CANDIDATE_HF_HUB_SEED"
+_CANDIDATE_HF_SEED_REPOSITORIES_ENV = (
+    "MLEVOLVE_CANDIDATE_HF_REPOSITORIES"
+)
+_HF_REPOSITORY_RE = re.compile(
+    r"^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$"
+)
 
 
 def _insert_host_preamble_after_future_imports(
@@ -109,6 +120,141 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _hf_repository_cache_name(repository: str) -> str:
+    """Return the on-disk Hub name for one explicitly declared repository."""
+
+    repository = str(repository or "").strip()
+    if not _HF_REPOSITORY_RE.fullmatch(repository):
+        raise ValueError(
+            "candidate Hugging Face seed repositories must use owner/name: "
+            f"{repository!r}"
+        )
+    return "models--" + repository.replace("/", "--")
+
+
+def _validate_hf_seed_repository(repository_dir: Path) -> Path:
+    """Reject cache trees whose symlinks escape the declared repository."""
+
+    if repository_dir.is_symlink() or not repository_dir.is_dir():
+        raise ValueError(
+            "candidate Hugging Face seed repository must be a real directory: "
+            f"{repository_dir}"
+        )
+    resolved_root = repository_dir.resolve(strict=True)
+    for path in repository_dir.rglob("*"):
+        if not path.is_symlink():
+            continue
+        try:
+            resolved_target = path.resolve(strict=True)
+        except FileNotFoundError as error:
+            raise ValueError(
+                f"candidate Hugging Face seed contains a broken symlink: {path}"
+            ) from error
+        if not resolved_target.is_relative_to(resolved_root):
+            raise ValueError(
+                "candidate Hugging Face seed symlink escapes its repository: "
+                f"{path} -> {resolved_target}"
+            )
+    return resolved_root
+
+
+def _seed_candidate_hf_hub_cache(
+    *,
+    runtime_cache_root: Path,
+    destination_hub_cache: Path,
+    inherited_env: dict[str, str],
+) -> dict | None:
+    """Copy allowlisted public Hub repositories into an isolated cache.
+
+    Candidate execution deliberately receives a fresh HOME and HF_HOME.  A
+    launch-time pretrained-model preflight therefore cannot make the model
+    available to the Candidate unless the Host explicitly bridges the verified
+    public cache into that fresh tree.  Only named repositories are copied;
+    arbitrary contents of the Host cache never become visible to Candidate
+    code.
+    """
+
+    raw_seed_root = str(
+        inherited_env.get(_CANDIDATE_HF_SEED_ROOT_ENV, "") or ""
+    ).strip()
+    raw_repositories = str(
+        inherited_env.get(_CANDIDATE_HF_SEED_REPOSITORIES_ENV, "") or ""
+    ).strip()
+    if not raw_seed_root and not raw_repositories:
+        return None
+    if not raw_seed_root or not raw_repositories:
+        raise ValueError(
+            "candidate Hugging Face cache seeding requires both "
+            f"{_CANDIDATE_HF_SEED_ROOT_ENV} and "
+            f"{_CANDIDATE_HF_SEED_REPOSITORIES_ENV}"
+        )
+
+    seed_root = Path(raw_seed_root)
+    if not seed_root.is_absolute() or seed_root.is_symlink():
+        raise ValueError(
+            "candidate Hugging Face seed root must be an absolute real directory"
+        )
+    seed_root = seed_root.resolve(strict=True)
+    if not seed_root.is_dir():
+        raise ValueError(
+            f"candidate Hugging Face seed root is not a directory: {seed_root}"
+        )
+
+    repositories = []
+    for item in raw_repositories.split(","):
+        repository = item.strip()
+        if repository and repository not in repositories:
+            repositories.append(repository)
+    if not repositories:
+        raise ValueError("candidate Hugging Face seed repository list is empty")
+
+    destination_hub_cache.mkdir(parents=True, exist_ok=True)
+    destination_hub_cache.chmod(0o777)
+    seeded = []
+    for repository in repositories:
+        cache_name = _hf_repository_cache_name(repository)
+        source_repository = seed_root / cache_name
+        _validate_hf_seed_repository(source_repository)
+        destination_repository = destination_hub_cache / cache_name
+        shutil.copytree(
+            source_repository,
+            destination_repository,
+            symlinks=True,
+            dirs_exist_ok=True,
+        )
+        _validate_hf_seed_repository(destination_repository)
+        for path in (destination_repository, *destination_repository.rglob("*")):
+            if path.is_symlink():
+                continue
+            mode = path.stat().st_mode
+            path.chmod(mode | (0o555 if path.is_dir() else 0o444))
+        seeded.append(
+            {
+                "repository": repository,
+                "cache_name": cache_name,
+                "destination": str(destination_repository),
+            }
+        )
+
+    receipt = {
+        "schema": "mlevolve_candidate_hf_cache_seed_v1",
+        "source_hub_cache": str(seed_root),
+        "destination_hub_cache": str(destination_hub_cache),
+        "repositories": seeded,
+    }
+    receipt_path = runtime_cache_root / "host_hf_cache_seed_receipt.json"
+    receipt_path.write_text(
+        json.dumps(receipt, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    receipt_path.chmod(0o444)
+    logger.info(
+        "Seeded Candidate Hugging Face cache with repositories=%s",
+        repositories,
+    )
+    return receipt
+
+
 def _execution_environment(runtime_cache_root: Path | None = None) -> dict[str, str]:
     """Expose runtime helpers and a writable cache home to isolated runfiles.
 
@@ -147,6 +293,19 @@ def _execution_environment(runtime_cache_root: Path | None = None) -> dict[str, 
             path.mkdir(parents=True, exist_ok=True)
             path.chmod(0o777)
             env[name] = str(path)
+        # Current huggingface_hub releases prefer HF_HUB_CACHE while older
+        # releases used HUGGINGFACE_HUB_CACHE.  Bind both names to the exact
+        # same isolated location so the preflight and Candidate resolve one
+        # deterministic cache.
+        env["HF_HUB_CACHE"] = env["HUGGINGFACE_HUB_CACHE"]
+        _seed_candidate_hf_hub_cache(
+            runtime_cache_root=cache_root,
+            destination_hub_cache=Path(env["HF_HUB_CACHE"]),
+            inherited_env=env,
+        )
+        # These are Host-only bridge controls, not Candidate inputs.
+        env.pop(_CANDIDATE_HF_SEED_ROOT_ENV, None)
+        env.pop(_CANDIDATE_HF_SEED_REPOSITORIES_ENV, None)
         env["TOKENIZERS_PARALLELISM"] = "false"
     return env
 

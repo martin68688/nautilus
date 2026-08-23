@@ -91,6 +91,56 @@ def test_isolated_candidate_environment_uses_writable_per_candidate_caches(
     assert env["TOKENIZERS_PARALLELISM"] == "false"
 
 
+def test_isolated_candidate_environment_seeds_only_declared_hf_repository(
+    tmp_path, monkeypatch
+) -> None:
+    source_hub = tmp_path / "trusted-hub"
+    declared = source_hub / "models--timm--efficientnet_b3.ra2_in1k"
+    undeclared = source_hub / "models--private--unrelated"
+    for repository, payload in (
+        (declared, b"public-weights"),
+        (undeclared, b"must-not-cross-boundary"),
+    ):
+        blob = repository / "blobs" / "abc123"
+        snapshot = repository / "snapshots" / "revision"
+        blob.parent.mkdir(parents=True)
+        snapshot.mkdir(parents=True)
+        blob.write_bytes(payload)
+        (snapshot / "model.safetensors").symlink_to(
+            "../../blobs/abc123"
+        )
+        (repository / "refs").mkdir()
+        (repository / "refs" / "main").write_text("revision\n")
+
+    monkeypatch.setenv("MLEVOLVE_CANDIDATE_HF_HUB_SEED", str(source_hub))
+    monkeypatch.setenv(
+        "MLEVOLVE_CANDIDATE_HF_REPOSITORIES",
+        "timm/efficientnet_b3.ra2_in1k",
+    )
+    cache_root = tmp_path / "candidate-cache"
+    env = _execution_environment(cache_root)
+
+    destination_hub = Path(env["HF_HUB_CACHE"])
+    copied = (
+        destination_hub
+        / declared.name
+        / "snapshots"
+        / "revision"
+        / "model.safetensors"
+    )
+    assert copied.read_bytes() == b"public-weights"
+    assert not (destination_hub / undeclared.name).exists()
+    assert env["HF_HUB_CACHE"] == env["HUGGINGFACE_HUB_CACHE"]
+    assert "MLEVOLVE_CANDIDATE_HF_HUB_SEED" not in env
+    assert "MLEVOLVE_CANDIDATE_HF_REPOSITORIES" not in env
+    receipt = json.loads(
+        (cache_root / "host_hf_cache_seed_receipt.json").read_text()
+    )
+    assert [item["repository"] for item in receipt["repositories"]] == [
+        "timm/efficientnet_b3.ra2_in1k"
+    ]
+
+
 def test_candidate_execution_contract_accepts_bounded_local_pipeline() -> None:
     code = """
 import os

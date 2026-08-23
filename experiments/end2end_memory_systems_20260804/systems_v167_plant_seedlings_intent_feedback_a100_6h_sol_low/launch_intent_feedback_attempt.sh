@@ -16,10 +16,12 @@ DATA_ROOT="${DATA_ROOT:-/workspace/experiment-end2end-plant-seedlings-v157-dynam
 DESC_FILE="${DESC_FILE:-/workspace/nautilus-exp-end2end-agent-v164-plant-seedlings-transfer-only-a100-luna-low-r1/experiments/end2end_memory_systems_20260804/systems_v158_plant_seedlings_component_slots_6h_luna_low/dataset_description.md}"
 ATTEMPT_ROOT="$OUTPUT_ROOT/runs/$ATTEMPT_ID"
 RECEIPT="$OUTPUT_ROOT/preflight-$ATTEMPT_ID-public-pretrained.json"
+CANDIDATE_RECEIPT="$OUTPUT_ROOT/preflight-$ATTEMPT_ID-candidate-public-pretrained.json"
+CANDIDATE_CACHE_ROOT="$OUTPUT_ROOT/preflight-$ATTEMPT_ID-candidate-runtime-cache"
 LAUNCH_LOG="$OUTPUT_ROOT/launcher-$ATTEMPT_ID.log"
 PID_FILE="$OUTPUT_ROOT/main-$ATTEMPT_ID.pid"
 
-if [[ -e "$ATTEMPT_ROOT" || -e "$RECEIPT" || -e "$PID_FILE" ]]; then
+if [[ -e "$ATTEMPT_ROOT" || -e "$RECEIPT" || -e "$CANDIDATE_RECEIPT" || -e "$CANDIDATE_CACHE_ROOT" || -e "$PID_FILE" ]]; then
   echo "refusing to overwrite existing attempt identity: $ATTEMPT_ID" >&2
   exit 3
 fi
@@ -34,9 +36,15 @@ test -f "$MLEVOLVE_CONFIG"
 mkdir -p "$OUTPUT_ROOT"
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
+export MLEVOLVE_CANDIDATE_HF_HUB_SEED="${MLEVOLVE_CANDIDATE_HF_HUB_SEED:-/root/.cache/huggingface/hub}"
+export MLEVOLVE_CANDIDATE_HF_REPOSITORIES="${MLEVOLVE_CANDIDATE_HF_REPOSITORIES:-timm/efficientnet_b3.ra2_in1k}"
 python "$SYSTEM_DIR/../systems_v165_plant_seedlings_transfer_attributes_a100_6h_luna_low/preflight_public_pretrained.py" \
   --repair-cache \
   --receipt "$RECEIPT"
+PYTHONPATH="$MLEVOLVE_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+python "$SYSTEM_DIR/preflight_candidate_public_pretrained.py" \
+  --runtime-cache-root "$CANDIDATE_CACHE_ROOT" \
+  --receipt "$CANDIDATE_RECEIPT"
 
 cd "$MLEVOLVE_DIR"
 python - <<'PY'
@@ -70,4 +78,4 @@ nohup python run.py \
   >"$LAUNCH_LOG" 2>&1 &
 PID=$!
 printf '%s\n' "$PID" >"$PID_FILE"
-echo "started $ATTEMPT_ID pid=$PID receipt=$RECEIPT log=$LAUNCH_LOG"
+echo "started $ATTEMPT_ID pid=$PID receipt=$RECEIPT candidate_receipt=$CANDIDATE_RECEIPT log=$LAUNCH_LOG"
