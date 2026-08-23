@@ -508,6 +508,35 @@ def test_host_runtime_contract_overrides_retrieval_and_blocks_random_fallback():
     assert rejected_ambiguous_alias["valid"] is False
 
 
+def test_representation_gate_accepts_active_transformer_encoder_self_attention():
+    contracts = {
+        "fusion_operator": {"required_value": "self_attention"},
+    }
+    transformer_encoder = verify_representation_adoption(
+        "import torch\n"
+        "from torch import nn\n"
+        "class FusionNet(nn.Module):\n"
+        "    def __init__(self):\n"
+        "        layer = nn.TransformerEncoderLayer(d_model=384, nhead=8, "
+        "batch_first=True)\n"
+        "        self.attn = nn.TransformerEncoder(layer, num_layers=2)\n"
+        "    def forward(self, tokens):\n"
+        "        attended = self.attn(tokens)\n"
+        "        return torch.cat([attended[:, 0], attended[:, 1]], dim=1)\n",
+        contracts,
+    )
+    concat_only = verify_representation_adoption(
+        "import torch\n"
+        "def forward(vision, descriptors):\n"
+        "    return torch.cat([vision, descriptors], dim=1)\n",
+        contracts,
+    )
+
+    assert transformer_encoder["valid"] is True
+    assert concat_only["valid"] is False
+    assert concat_only["violations"] == ["selected self-attention fusion is absent"]
+
+
 def test_config_declares_alignment_feedback_defaults():
     cfg = _load_cfg(
         ROOT / "mlevolve" / "config" / "config.yaml",

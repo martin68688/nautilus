@@ -543,7 +543,14 @@ def verify_representation_adoption(
         violations.append("selected target-derived descriptor branch is absent")
     fusion = required.get("fusion_operator")
     if fusion == "self_attention" and not any(
-        token in normalized_source for token in ("multiheadattention", "self_attention", "attention")
+        token in normalized_source
+        for token in (
+            "multiheadattention",
+            "transformerencoder",
+            "scaled_dot_product_attention",
+            "self_attention",
+            "attention",
+        )
     ):
         violations.append("selected self-attention fusion is absent")
     if fusion == "gated_fusion" and not any(
