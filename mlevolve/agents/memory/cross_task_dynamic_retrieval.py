@@ -395,6 +395,13 @@ def _judge_spec(*, candidate_refs: list[str], max_selected: int) -> Any:
 def _representation_requirement(slot: str, candidate: Mapping[str, Any]) -> str:
     """Extract a machine-checkable attribute from a safe representation card."""
 
+    explicit = (
+        (candidate.get("portable_text") or {}).get("representation_attributes")
+        if isinstance(candidate.get("portable_text"), Mapping)
+        else None
+    )
+    if isinstance(explicit, Mapping) and explicit.get(slot):
+        return str(explicit[slot])
     text = _normalize(json.dumps(candidate.get("portable_text") or {}, ensure_ascii=False))
     if slot == "backbone_family":
         patterns = (

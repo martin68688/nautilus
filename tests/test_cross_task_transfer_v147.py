@@ -314,7 +314,7 @@ def test_l1_recipe_is_decomposed_and_generic_c11_cannot_take_representation_slot
             "method_family": "efficientnet_b3_descriptor_fusion",
             "pipeline": {
                 "feature_representation": (
-                    "Fuse an EfficientNet-B3 image embedding with color and shape descriptors."
+                    "Fuse a frozen EfficientNet-B3 image embedding with color and shape descriptors."
                 ),
                 "model_stack": "Use a regularized multimodal fusion classifier.",
                 "ensemble_calibration": "Evaluate double temperature on OOF predictions.",
@@ -343,6 +343,11 @@ def test_l1_recipe_is_decomposed_and_generic_c11_cannot_take_representation_slot
     assert set(b3_representation["portable_text"]["components"]) == {
         "feature_representation",
         "model_stack",
+    }
+    assert b3_representation["portable_text"]["representation_attributes"] == {
+        "backbone_family": "efficientnet_b3",
+        "initialization_source": "public_pretrained",
+        "feature_branch": "target_derived_descriptors",
     }
     assert (
         "double temperature"

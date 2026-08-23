@@ -40,6 +40,13 @@ BLUEPRINT_PIPELINE_FIELDS = {
     CALIBRATION_BLUEPRINT: ("ensemble_calibration",),
     INFERENCE_BLUEPRINT: ("final_refit_inference",),
 }
+REPRESENTATION_ATTRIBUTE_SLOTS = (
+    "backbone_family",
+    "initialization_source",
+    "feature_branch",
+    "fusion_operator",
+    "input_resolution",
+)
 TRANSITION_REASON_LEVEL = "transition_reason"
 MODULE_INTERFACE_LEVEL = "module_interface"
 _REPRESENTATION_SIGNAL_RE = re.compile(
@@ -314,6 +321,48 @@ def _sanitize_architecture_text(value: object, *, source_task_id: str) -> str:
     return text.strip()
 
 
+def _representation_attributes(components: Mapping[str, str]) -> dict[str, str]:
+    """Project explicit, composable representation attributes without artifacts."""
+
+    text = " ".join(str(value or "") for value in components.values()).lower()
+    attributes: dict[str, str] = {}
+    backbone_patterns = (
+        (r"efficientnet[-_ ]?b([0-7])", lambda m: f"efficientnet_b{m.group(1)}"),
+        (r"resnet[-_ ]?(18|34|50|101|152)", lambda m: f"resnet{m.group(1)}"),
+        (r"convnext[-_ ]?(tiny|small|base|large)", lambda m: f"convnext_{m.group(1)}"),
+    )
+    for pattern, render in backbone_patterns:
+        match = re.search(pattern, text)
+        if match:
+            attributes["backbone_family"] = render(match)
+            break
+    if any(value in text for value in ("imagenet", "public pretrained", "pretrained")):
+        attributes["initialization_source"] = "public_pretrained"
+    elif "frozen" in text and attributes.get("backbone_family"):
+        # A frozen named backbone cannot be useful from random initialization.
+        # Cross-task projection never authorizes a source-task checkpoint, so the
+        # only portable interpretation is a public pretrained initialization.
+        attributes["initialization_source"] = "public_pretrained"
+    if any(value in text for value in ("descriptor", "colour", "color", "texture", "shape")):
+        attributes["feature_branch"] = "target_derived_descriptors"
+    if "self-attention" in text or "self attention" in text:
+        attributes["fusion_operator"] = "self_attention"
+    elif "gated" in text or " gate" in text:
+        attributes["fusion_operator"] = "gated_fusion"
+    elif "concat" in text:
+        attributes["fusion_operator"] = "concatenation"
+    resolution = re.search(r"\b(\d{2,4})\s*[x×]\s*(\d{2,4})\b", text)
+    if resolution:
+        attributes["input_resolution"] = (
+            f"{resolution.group(1)}x{resolution.group(2)}"
+        )
+    return {
+        slot: attributes[slot]
+        for slot in REPRESENTATION_ATTRIBUTE_SLOTS
+        if slot in attributes
+    }
+
+
 def _blueprint_candidates(
     node_id: str,
     node: Mapping[str, Any],
@@ -377,6 +426,10 @@ def _blueprint_candidates(
             "components": components,
             "target_adaptation_contract": contracts[slot],
         }
+        if slot == REPRESENTATION_BLUEPRINT:
+            attributes = _representation_attributes(components)
+            if attributes:
+                portable["representation_attributes"] = attributes
         portable = {
             key: value for key, value in portable.items() if value not in ("", [], {})
         }
