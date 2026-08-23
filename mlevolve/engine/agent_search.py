@@ -41,6 +41,7 @@ from engine.conditions import (
     cross_role_synthesis_allowed,
     is_branch_stagnant,
 )
+from engine.run_control import queue_representation_adoption_repair
 from utils.data_preview import clean_task_desc
 
 logger = logging.getLogger("MLEvolve")
@@ -1391,16 +1392,8 @@ class AgentSearch:
                         )
                         result_node.representation_adoption_gate = representation_gate
                         if representation_gate.get("valid") is not True:
-                            result_node.is_buggy = True
-                            result_node.is_valid = False
                             result_node.metric = WorstMetricValue()
-                            result_node.analysis = (
-                                "REPRESENTATION_ADOPTION_REQUIRED: "
-                                + "; ".join(
-                                    representation_gate.get("violations") or []
-                                )
-                            )
-                            result_node._term_out = [result_node.analysis]
+                            queue_representation_adoption_repair(result_node)
                             memory_transfer_adoption_blocked = True
 
                     verifier = getattr(self, "adoption_verifier", None)

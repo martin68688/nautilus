@@ -13,6 +13,7 @@ from engine.run_control import (  # noqa: E402
     focused_outcome_context,
     focused_protocol_status,
     focused_protocol_success_error,
+    queue_representation_adoption_repair,
     should_continue_focused_search,
     should_finalize_search_exhaustion,
 )
@@ -174,6 +175,30 @@ def test_preexecution_blocked_draft_is_routed_only_to_repair_lane():
         assert "neither executable nor repair-queued" in str(error)
     else:
         raise AssertionError("invalid generated Draft must fail closed")
+
+
+def test_representation_adoption_failure_enters_mandatory_repair_lane():
+    node = SimpleNamespace(
+        id="representation-blocked",
+        pending_execution=False,
+        representation_adoption_gate={
+            "valid": False,
+            "violations": [
+                "selected public_pretrained initialization is absent or weights=None"
+            ],
+        },
+    )
+
+    analysis = queue_representation_adoption_repair(node)
+
+    assert draft_execution_lane(node) == "repair"
+    assert node.audit_repair_required is True
+    assert node.leakage_audit["repair_mode"] == "representation_adoption"
+    assert node.leakage_audit["repair_required"] is True
+    assert node.leakage_audit["issues"][0]["issue_code"] == (
+        "REPRESENTATION_ADOPTION_REQUIRED"
+    )
+    assert "weights=None" in analysis
 
 
 def test_focused_status_tracks_ordinary_leakage_repair_until_exhaustion():

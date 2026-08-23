@@ -8,6 +8,50 @@ ACTIVE_PROTOCOL_STATES = frozenset({"pending", "stage_in_progress", "final_pendi
 REQUIRED_ROUTER_FAILURE_PREFIX = "Stage-hybrid memory retrieval failed:"
 
 
+def queue_representation_adoption_repair(node: object) -> str:
+    """Make a failed representation contract a first-class repair-lane node."""
+
+    gate = dict(getattr(node, "representation_adoption_gate", None) or {})
+    violations = [str(value) for value in gate.get("violations") or []]
+    analysis = "REPRESENTATION_ADOPTION_REQUIRED: " + "; ".join(violations)
+    setattr(node, "is_buggy", True)
+    setattr(node, "is_valid", False)
+    setattr(node, "analysis", analysis)
+    setattr(node, "_term_out", [analysis])
+    setattr(node, "audit_repair_required", True)
+    setattr(
+        node,
+        "leakage_audit",
+        {
+            "schema": "mlevolve_representation_adoption_repair_v1",
+            "status": "representation_adoption_blocked",
+            "hard_block": True,
+            "repair_required": True,
+            "repair_mode": "representation_adoption",
+            "repair_queue_status": "pending",
+            "rank_eligible": False,
+            "metric_disposition": "unverified",
+            "memory_disposition": "negative_only",
+            "issues": [
+                {
+                    "issue_code": "REPRESENTATION_ADOPTION_REQUIRED",
+                    "category": "representation_adoption",
+                    "severity": "high",
+                    "line": 0,
+                    "evidence": "; ".join(violations),
+                    "remediation": (
+                        "Repair the generated code so every selected representation "
+                        "attribute passes its Host-owned adoption assertion."
+                    ),
+                    "execution_disposition": "block",
+                    "detector": "representation_adoption_gate_v1",
+                }
+            ],
+        },
+    )
+    return analysis
+
+
 @dataclass
 class RequiredRouterFailureCircuitBreaker:
     """Stop a broken required Router from consuming the full search budget.
