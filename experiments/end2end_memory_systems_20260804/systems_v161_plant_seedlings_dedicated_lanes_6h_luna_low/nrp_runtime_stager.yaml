@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: mlevolve-plant-v161-runtime-stager-r1
+  name: mlevolve-plant-v161-runtime-stager-r2
   namespace: ecepxie
   labels:
     app: mlevolve-runtime-stager
     app.kubernetes.io/managed-by: codex-nrp-training
     ecepxie.nrp/owner: haoming
-    experiment: plant-v161-runtime-stager-r1
+    experiment: plant-v161-runtime-stager-r2
 spec:
   activeDeadlineSeconds: 3600
   restartPolicy: Never
