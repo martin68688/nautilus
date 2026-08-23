@@ -144,6 +144,26 @@ def test_fairness_counts_failed_debug_and_inflight_attempts_without_scores():
     assert status["next_branch_name"] == "fusion"
 
 
+def test_cross_task_transfer_is_a_protected_phase2_branch():
+    from engine.role_balance import build_branch_fairness_status
+
+    agent, replay, _, _ = _agent()
+    replay.draft_role = "memory_transfer"
+    agent.acfg.draft_role_policy.roles = [
+        "memory_transfer",
+        "novel_exploration",
+    ]
+
+    status = build_branch_fairness_status(agent)
+
+    assert status["active"] is True
+    assert {row["name"] for row in status["branches"]} == {
+        "transfer",
+        "novel",
+        "fusion",
+    }
+
+
 def test_fair_selector_chooses_least_used_branch_not_global_best(monkeypatch):
     from engine import node_selection
     from engine.role_balance import build_branch_fairness_status

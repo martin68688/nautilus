@@ -67,12 +67,28 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
         )
         return False
 
-    if (agent.search_start_time and
+    branch_clocks = getattr(agent, "_dedicated_branch_started_at", {})
+    branch_started_at = branch_clocks.get(cur_node.branch_id)
+    search_started_at = branch_started_at or agent.search_start_time
+    if (search_started_at and
         cur_node.stage != "root" and
         cur_node.branch_id is not None):
 
-        time_elapsed = time.time() - agent.search_start_time
-        time_progress = time_elapsed / agent.acfg.time_limit
+        time_elapsed = time.time() - search_started_at
+        lane_budget = int(
+            getattr(
+                getattr(agent.acfg, "draft_role_policy", None),
+                "dedicated_branch_lane_budget_seconds",
+                0,
+            )
+            or 0
+        )
+        total_time = (
+            lane_budget
+            if branch_started_at and lane_budget
+            else agent.acfg.time_limit
+        )
+        time_progress = time_elapsed / total_time
 
         if not hasattr(agent, 'branch_node_count'):
             agent.branch_node_count = {}

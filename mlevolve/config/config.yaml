@@ -115,6 +115,8 @@ agent:
     replay_runs_root: ""
     cross_role_synthesis_on_coverage: False
     equal_branch_allocation_after_coverage: False
+    dedicated_branch_gpu_lanes: False
+    dedicated_branch_lane_budget_seconds: 0
     single_coverage_synthesis_only: False
 
   # Optional host-enforced feasibility boundary for paired online experiments.

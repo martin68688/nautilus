@@ -1,0 +1,128 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-plant-v161-lanes-luna-low-2080ti3-r1
+  namespace: ecepxie
+  annotations:
+    mlevolve.ai/purpose: plant-v161-three-independent-six-hour-branch-lanes
+    mlevolve.ai/source-task: leaf-classification
+    mlevolve.ai/target-task: plant-seedlings-classification
+    mlevolve.ai/llm-endpoint: private-cluster-local-cliproxyapi
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: plant-v161-lanes-luna-low-2080ti3-r1
+    mlevolve.ai/release-mode: three-independent-six-hour-lanes
+    mlevolve.ai/system: dynamic-transfer-dedicated-lanes
+spec:
+  activeDeadlineSeconds: 48600
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app: mlevolve-end2end
+        app.kubernetes.io/managed-by: codex-nrp-training
+        ecepxie.nrp/owner: haoming
+        experiment: plant-v161-lanes-luna-low-2080ti3-r1
+        mlevolve.ai/release-mode: three-independent-six-hour-lanes
+        mlevolve.ai/system: dynamic-transfer-dedicated-lanes
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 300
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nvidia.com/gpu.product
+                    operator: In
+                    values:
+                      - NVIDIA-GeForce-RTX-2080-Ti
+      containers:
+        - name: mlevolve
+          image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -lc
+          args:
+            - |
+              set -euo pipefail
+              export PATH="/opt/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:${PATH}"
+              test -n "${OPENAI_API_KEY:-}"
+              test "${OPENAI_BASE_URL:-}" = "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
+              test "${OPENAI_MODEL:-}" = "gpt-5.6-luna"
+              test "${OPENAI_REASONING_EFFORT:-}" = "low"
+
+              RUNTIME=/workspace/nautilus-exp-end2end-agent-v161-plant-seedlings-dedicated-lanes-luna-low
+              DATA_ROOT=/workspace/experiment-end2end-plant-seedlings-v157-dynamic-no-resolver-6h-luna-low/data/public
+              OUTPUT_ROOT=/workspace/experiment-end2end-plant-seedlings-v161-dedicated-lanes-6h-luna-low
+              ATTEMPT_ROOT=${OUTPUT_ROOT}/runs/attempt-000
+              CONFIG=${RUNTIME}/experiments/end2end_memory_systems_20260804/systems_v161_plant_seedlings_dedicated_lanes_6h_luna_low/dynamic_cross_task_transfer.yaml
+              DESCRIPTION=${RUNTIME}/experiments/end2end_memory_systems_20260804/systems_v158_plant_seedlings_component_slots_6h_luna_low/dataset_description.md
+
+              test -d "${RUNTIME}/mlevolve"
+              test -f "${CONFIG}"
+              test -d "${DATA_ROOT}/train"
+              test -d "${DATA_ROOT}/test"
+              test -f "${DESCRIPTION}"
+              test ! -e "${OUTPUT_ROOT}"
+              mkdir -p "${ATTEMPT_ROOT}"
+
+              export PYTHONPATH="${RUNTIME}/mlevolve:${RUNTIME}"
+              export MLEVOLVE_CONFIG="${CONFIG}"
+              cd "${RUNTIME}/mlevolve"
+              exec python run.py \
+                exp_id=plant-seedlings-classification \
+                dataset_dir="${DATA_ROOT}" \
+                data_dir="${DATA_ROOT}" \
+                desc_file="${DESCRIPTION}" \
+                exp_name=e2e-plant-seedlings-v161-dedicated-lanes-6h-luna-low-r1 \
+                log_dir="${ATTEMPT_ROOT}" \
+                workspace_dir="${ATTEMPT_ROOT}" \
+                agent.steps=2147483647 \
+                agent.time_limit=21600 \
+                exec.timeout=21600 \
+                agent.search.num_gpus=3 \
+                agent.search.parallel_search_num=3 \
+                cpu_number=24
+          envFrom:
+            - secretRef:
+                name: cliproxyapi-haoming-client
+          env:
+            - name: OPENAI_MODEL
+              value: gpt-5.6-luna
+            - name: OPENAI_REASONING_EFFORT
+              value: low
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+          resources:
+            requests:
+              cpu: "24"
+              memory: 64Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/gpu: "3"
+            limits:
+              cpu: "24"
+              memory: 64Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/gpu: "3"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 48Gi

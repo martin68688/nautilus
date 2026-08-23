@@ -371,11 +371,26 @@ def _select_within_branch(
 
     if branch_root.lock or branch_root.is_terminal or not _uct_selectable(branch_root):
         return None
-    if agent.search_start_time is None:
+    branch_clocks = getattr(agent, "_dedicated_branch_started_at", {})
+    branch_started_at = branch_clocks.get(int(branch_id))
+    search_started_at = branch_started_at or agent.search_start_time
+    if search_started_at is None:
         return select(agent, branch_root)
 
-    time_elapsed = time.time() - agent.search_start_time
-    total_time = agent.acfg.time_limit
+    time_elapsed = time.time() - search_started_at
+    lane_budget = int(
+        getattr(
+            getattr(agent.acfg, "draft_role_policy", None),
+            "dedicated_branch_lane_budget_seconds",
+            0,
+        )
+        or 0
+    )
+    total_time = (
+        lane_budget
+        if branch_started_at and lane_budget
+        else agent.acfg.time_limit
+    )
     time_progress = time_elapsed / total_time
     scfg = agent.scfg
     exploration_weight = get_exploration_weight(
@@ -430,6 +445,43 @@ def _select_within_branch(
         selected.id,
     )
     return selected
+
+
+def select_from_branch_id(agent, branch_id: int) -> Optional[SearchNode]:
+    """Select work only from one caller-owned branch.
+
+    Dedicated transfer lanes call this after a child chain returns to the
+    virtual root.  The branch is chosen by the Host before score/UCT logic, so
+    global ranking can never redirect a Transfer worker into Novel or Fusion.
+    """
+
+    roots = [
+        node
+        for node in getattr(agent.virtual_root, "children", set())
+        if int(getattr(node, "branch_id", -1) or -1) == int(branch_id)
+    ]
+    if len(roots) != 1:
+        logger.warning(
+            "[dedicated-lane] branch root unavailable branch=%s matches=%s",
+            branch_id,
+            len(roots),
+        )
+        return None
+    root = roots[0]
+    # A root lock normally prevents two generic workers entering one branch.
+    # A dedicated lane is the sole owner of its branch, so a stale root lock
+    # must not strand it after an explicit continuation returns to root.
+    was_locked = bool(root.lock)
+    if was_locked:
+        root.lock = False
+    try:
+        return _select_within_branch(agent, root, int(branch_id))
+    finally:
+        if was_locked and root.stage in {"draft", "fusion_draft"}:
+            # ``select`` restores the lock when it chooses the branch root.
+            # If no node was selected, preserve the prior lock state.
+            if not root.lock:
+                root.lock = True
 
 
 def select_branch_fair(agent, fairness: dict | None = None) -> Optional[SearchNode]:

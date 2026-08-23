@@ -1098,6 +1098,7 @@ class AgentSearch:
         draft_role: Optional[str] = None,
         replacement_draft: bool = False,
         replay_research_target_id: str | None = None,
+        execution_lane: int | None = None,
     ):
         """Run one search step: select action (draft/debug/improve), execute, parse, validate."""
         result_node = None
@@ -1434,6 +1435,7 @@ class AgentSearch:
                             adoption_verification_plan=(
                                 result_node.adoption_verification_plan or None
                             ),
+                            preferred_process_id=execution_lane,
                         )
                         result_node = result_parse_agent.run(self,
                             node=result_node,
@@ -1461,6 +1463,43 @@ class AgentSearch:
                         self._notify_search_state()
 
             except Exception as e:
+                dedicated_lanes = bool(
+                    getattr(
+                        getattr(self.acfg, "draft_role_policy", None),
+                        "dedicated_branch_gpu_lanes",
+                        False,
+                    )
+                )
+                if dedicated_lanes and result_node is not None:
+                    # A generated child is attached to its parent and branch at
+                    # construction time.  Dropping it on a post-generation
+                    # review/contract exception leaves an ``is_buggy=None``
+                    # ghost that can poison UCT forever.  Dedicated lanes keep
+                    # the attempt explicit and immediately debuggable instead.
+                    logger.exception(
+                        "Dedicated lane journaled pre-execution failure for node %s",
+                        result_node.id,
+                    )
+                    result_node.finish_time = time.strftime("%Y-%m-%dT%H:%M:%S")
+                    result_node.is_buggy = True
+                    result_node.is_valid = False
+                    result_node.exc_type = type(e).__name__
+                    result_node.exc_info = {"message": str(e)}
+                    result_node._term_out = [
+                        f"{type(e).__name__}: {e}"
+                    ]
+                    result_node.analysis = (
+                        "HOST_PREEXECUTION_GENERATION_FAILURE: "
+                        f"{type(e).__name__}: {e}"
+                    )
+                    result_node.metric = WorstMetricValue()
+                    _root = evaluation.check_improvement(
+                        self, result_node, parent_node
+                    )
+                    with self.journal_lock:
+                        self.journal.append(result_node)
+                    self._notify_search_state()
+                    return _root, result_node
                 logger.warning("Step failed for parent %s; propagating zero reward", parent_node.id)
                 self._record_protocol_generation_failure(parent_node, e)
                 evaluation.backpropagate(node=parent_node, value=0, add_to_tree=False)
@@ -1484,6 +1523,9 @@ class AgentSearch:
         draft_role: Optional[str] = None,
         mandatory_repair_role: Optional[str] = None,
         excluded_mandatory_repair_role: Optional[str] = None,
+        required_branch_id: int | None = None,
+        execution_lane: int | None = None,
+        coverage_fusion_only: bool = False,
     ) -> Optional[SearchNode]:
         if not self.journal.nodes or self.data_preview is None:
             self.update_data_preview()
@@ -1509,13 +1551,18 @@ class AgentSearch:
             and draft_role is None
             and init_solution_path is None
             and not preserve_explicit_runtime_debug
+            and not coverage_fusion_only
         ):
             claimed_repair_parent, duplicate_repair_request = (
                 self._claim_mandatory_repair_parent(
                     node,
                     required_draft_role=mandatory_repair_role,
                     excluded_draft_role=excluded_mandatory_repair_role,
-                    required_branch_id=fair_branch_id,
+                    required_branch_id=(
+                        int(required_branch_id)
+                        if required_branch_id is not None
+                        else fair_branch_id
+                    ),
                 )
             )
             if claimed_repair_parent is not None:
@@ -1538,6 +1585,8 @@ class AgentSearch:
             and draft_role is None
             and init_solution_path is None
             and not preserve_explicit_runtime_debug
+            and required_branch_id is None
+            and not coverage_fusion_only
         ):
             role_balance = self.role_balance_status()
             balance_role = role_balance.get("next_role")
@@ -1579,12 +1628,14 @@ class AgentSearch:
             and draft_role is None
             and init_solution_path is None
             and not preserve_explicit_runtime_debug
+            and required_branch_id is None
+            and not coverage_fusion_only
         ):
             replay_branch_id = next(
                 (
                     int(row["branch_id"])
                     for row in branch_fairness.get("branches", [])
-                    if row.get("name") == "replay"
+                    if row.get("name") in {"memory", "replay", "transfer"}
                 ),
                 None,
             )
@@ -1601,16 +1652,44 @@ class AgentSearch:
                     target_id,
                 )
 
+        if (
+            required_branch_id is not None
+            and node is not None
+            and node.stage != "root"
+            and int(getattr(node, "branch_id", -1) or -1)
+            != int(required_branch_id)
+        ):
+            raise RuntimeError(
+                "Dedicated branch lane received a foreign node: "
+                f"required={required_branch_id}, actual={getattr(node, 'branch_id', None)}"
+            )
+
         replacement_draft = False
         if not node or node.stage == "root":
-            node = node_selection.select_with_soft_switch(self)
+            node = (
+                node_selection.select_from_branch_id(self, int(required_branch_id))
+                if required_branch_id is not None
+                else node_selection.select_with_soft_switch(self)
+            )
             if node is None:
                 condition = getattr(self, "_search_condition", None)
                 if condition is not None:
                     with condition:
                         condition.wait(timeout=1.0)
-                node = node_selection.select_with_soft_switch(self)
+                node = (
+                    node_selection.select_from_branch_id(
+                        self, int(required_branch_id)
+                    )
+                    if required_branch_id is not None
+                    else node_selection.select_with_soft_switch(self)
+                )
                 if node is None:
+                    if required_branch_id is not None:
+                        logger.info(
+                            "[dedicated-lane] branch=%s has no selectable node yet",
+                            required_branch_id,
+                        )
+                        return None
                     if not self._has_pending_search_work():
                         if (
                             execute_immediately
@@ -1643,6 +1722,7 @@ class AgentSearch:
                         if claimed_replay_research is not None
                         else None
                     ),
+                    execution_lane=execution_lane,
                 )
             except Exception:
                 if claimed_repair_parent is not None:
@@ -1684,7 +1764,12 @@ class AgentSearch:
         else:
             return result_node
 
-    def execute_deferred_node(self, node: SearchNode, exec_callback: ExecCallbackType) -> SearchNode:
+    def execute_deferred_node(
+        self,
+        node: SearchNode,
+        exec_callback: ExecCallbackType,
+        execution_lane: int | None = None,
+    ) -> SearchNode:
         """Execute a node that was generated and reviewed but not yet run (pending_execution=True)."""
         if not hasattr(node, 'pending_execution') or not node.pending_execution:
             logger.warning(f"Node {node.id} is not marked for deferred execution")
@@ -1705,6 +1790,7 @@ class AgentSearch:
                 adoption_verification_plan=(
                     node.adoption_verification_plan or None
                 ),
+                preferred_process_id=execution_lane,
             )
             node = result_parse_agent.run(self,
                 node=node,

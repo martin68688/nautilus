@@ -160,6 +160,15 @@ class DraftRolePolicyConfig:
     # independent Novel, and Fusion branches by least cumulative usage. Score
     # and UCT remain responsible only for choosing work *within* that branch.
     equal_branch_allocation_after_coverage: bool = False
+    # Dynamic transfer-only execution mode.  The two protected source roles
+    # and their first coverage Fusion each own one persistent executor slot.
+    # Slot ids are also GPU ids, so a slow or high-scoring branch cannot steal
+    # another branch's accelerator or continuation budget.
+    dedicated_branch_gpu_lanes: bool = False
+    # Optional wall-clock budget owned by each dedicated branch.  A value of
+    # zero preserves the legacy run-wide deadline.  Fusion's clock starts only
+    # after protected source coverage makes that branch eligible.
+    dedicated_branch_lane_budget_seconds: int = 0
     # When enabled, the protected coverage Fusion is the run's only cross-role
     # synthesis. Later stagnant branches use their ordinary intra-branch
     # Evolution path instead of silently creating another Fusion.

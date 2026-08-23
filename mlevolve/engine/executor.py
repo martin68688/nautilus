@@ -314,6 +314,7 @@ class Interpreter:
         self._active_procs: dict[int, subprocess.Popen] = {}
         self._active_candidate_ids: set[str] = set()
         self.deadline_monotonic: float | None = None
+        self.slot_deadlines_monotonic: dict[int, float] = {}
         self.finalize_reserve_seconds = 0
 
     def set_run_deadline(
@@ -327,18 +328,40 @@ class Interpreter:
         self.deadline_monotonic = float(deadline_monotonic)
         self.finalize_reserve_seconds = max(0, int(finalize_reserve_seconds))
 
-    def remaining_work_seconds(self) -> float | None:
-        if self.deadline_monotonic is None:
+    def set_slot_deadline(
+        self,
+        slot_id: int,
+        deadline_monotonic: float,
+    ) -> None:
+        slot_id = int(slot_id)
+        if not 0 <= slot_id < self.max_parallel_run:
+            raise ValueError(
+                f"slot deadline is outside allocated slots: {slot_id}"
+            )
+        if deadline_monotonic <= time.monotonic():
+            raise ValueError("Slot deadline must be in the future")
+        self.slot_deadlines_monotonic[slot_id] = float(deadline_monotonic)
+
+    def remaining_work_seconds(self, slot_id: int | None = None) -> float | None:
+        deadlines = []
+        if self.deadline_monotonic is not None:
+            deadlines.append(
+                self.deadline_monotonic - self.finalize_reserve_seconds
+            )
+        if slot_id is not None:
+            slot_deadline = self.slot_deadlines_monotonic.get(int(slot_id))
+            if slot_deadline is not None:
+                deadlines.append(slot_deadline)
+        if not deadlines:
             return None
         return max(
             0.0,
-            self.deadline_monotonic
-            - time.monotonic()
-            - self.finalize_reserve_seconds,
+            min(deadlines)
+            - time.monotonic(),
         )
 
-    def effective_timeout_seconds(self) -> int:
-        remaining = self.remaining_work_seconds()
+    def effective_timeout_seconds(self, slot_id: int | None = None) -> int:
+        remaining = self.remaining_work_seconds(slot_id)
         if remaining is None:
             return int(self.timeout)
         return max(0, min(int(self.timeout), int(remaining)))
@@ -434,6 +457,7 @@ class Interpreter:
         reset_session=True,
         working_dir: str | None = None,
         adoption_verification_plan: dict | None = None,
+        preferred_process_id: int | None = None,
     ):
         """
         Execute the provided Python command in a subprocess and return its output.
@@ -451,6 +475,7 @@ class Interpreter:
             id=id,
             working_dir=working_dir,
             adoption_verification_plan=adoption_verification_plan,
+            preferred_process_id=preferred_process_id,
         )
 
     def _run_subprocess(
@@ -459,6 +484,7 @@ class Interpreter:
         id,
         working_dir: str | None = None,
         adoption_verification_plan: dict | None = None,
+        preferred_process_id: int | None = None,
     ):
         """
         Execute code via subprocess (avoids CUDA fork issues).
@@ -466,7 +492,9 @@ class Interpreter:
         """
         logger.info("REPL is executing code via subprocess")
         logger.info(f"Current running process: {self.current_parallel_run}")
-        effective_timeout = self.effective_timeout_seconds()
+        effective_timeout = self.effective_timeout_seconds(
+            preferred_process_id
+        )
         if effective_timeout <= 0:
             return ExecutionResult(
                 term_out=[
@@ -485,15 +513,36 @@ class Interpreter:
 
         with self.lock:
             self.current_parallel_run += 1
-            for idx in range(self.max_parallel_run):
-                if self.status_map[idx] == 0:
-                    self.status_map[idx] = 1
-                    process_id = idx
-                    logger.info(f"Assigned process_id: {process_id}")
-                    break
-                elif idx == self.max_parallel_run - 1:
-                    logger.info("reach max process parallel number")
-                    raise ValueError("reach max process parallel number")
+            if preferred_process_id is not None:
+                preferred_process_id = int(preferred_process_id)
+                if not 0 <= preferred_process_id < self.max_parallel_run:
+                    self.current_parallel_run -= 1
+                    raise ValueError(
+                        "preferred_process_id must address an allocated executor slot: "
+                        f"slot={preferred_process_id}, slots={self.max_parallel_run}"
+                    )
+                if self.status_map[preferred_process_id] != 0:
+                    self.current_parallel_run -= 1
+                    raise RuntimeError(
+                        "Dedicated executor slot is already occupied: "
+                        f"slot={preferred_process_id}"
+                    )
+                self.status_map[preferred_process_id] = 1
+                process_id = preferred_process_id
+                logger.info(
+                    "Assigned dedicated process_id: %s", process_id
+                )
+            else:
+                for idx in range(self.max_parallel_run):
+                    if self.status_map[idx] == 0:
+                        self.status_map[idx] = 1
+                        process_id = idx
+                        logger.info(f"Assigned process_id: {process_id}")
+                        break
+                    elif idx == self.max_parallel_run - 1:
+                        self.current_parallel_run -= 1
+                        logger.info("reach max process parallel number")
+                        raise ValueError("reach max process parallel number")
 
         start_time = time.time()
         candidate_deadline_monotonic = time.monotonic() + effective_timeout

@@ -1,0 +1,28 @@
+# Plant Seedlings v161: the v158 component-slot Transfer system with three
+# persistent branch-owned GPU lanes.  Each source branch and the first
+# coverage Fusion owns six hours independently; Fusion eligibility does not
+# stop or redirect Transfer/Novel evolution.
+extends: ../systems_v158_plant_seedlings_component_slots_6h_luna_low/dynamic_cross_task_transfer.yaml
+
+agent:
+  steps: 2147483647
+  time_limit: 21600
+  initial_drafts: 2
+  max_fusion_drafts: 1
+  draft_role_policy:
+    enabled: true
+    roles:
+      - memory_transfer
+      - novel_exploration
+    cross_role_synthesis_on_coverage: true
+    dedicated_branch_gpu_lanes: true
+    dedicated_branch_lane_budget_seconds: 21600
+    single_coverage_synthesis_only: true
+  search:
+    num_gpus: 3
+    parallel_search_num: 3
+
+run_identity:
+  experiment_group: plant_seedlings_v161_dedicated_branch_gpu_lanes
+  memory_version: leaf_v10_r8_to_plant_seedlings_v161_component_slots_dedicated_lanes
+  system_id: dynamic_cross_task_transfer_dedicated_lanes

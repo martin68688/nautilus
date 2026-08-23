@@ -126,18 +126,25 @@ def build_role_balance_status(agent) -> dict:
 
 
 def _protected_branch_roots(agent) -> list[tuple[str, object]]:
-    """Return the Replay, independent Novel, and first coverage-Fusion roots."""
+    """Return the Memory, independent Novel, and coverage-Fusion roots.
+
+    Cross-task transfer uses ``memory_transfer`` while same-task replay uses
+    ``memory_reproduction``.  Both are protected memory-source branches for
+    phase-2 allocation; treating only Replay as protected silently disables
+    fairness in transfer experiments.
+    """
 
     roots = sorted(
         list(getattr(getattr(agent, "virtual_root", None), "children", set()) or []),
         key=lambda node: (float(getattr(node, "ctime", 0.0) or 0.0), str(node.id)),
     )
-    replay = next(
+    memory = next(
         (
             node
             for node in roots
             if getattr(node, "stage", None) == "draft"
-            and getattr(node, "draft_role", None) == "memory_reproduction"
+            and getattr(node, "draft_role", None)
+            in {"memory_reproduction", "memory_transfer"}
         ),
         None,
     )
@@ -162,10 +169,16 @@ def _protected_branch_roots(agent) -> list[tuple[str, object]]:
         ),
         None,
     )
+    memory_name = (
+        "transfer"
+        if memory is not None
+        and getattr(memory, "draft_role", None) == "memory_transfer"
+        else "replay"
+    )
     return [
         (name, node)
         for name, node in (
-            ("replay", replay),
+            (memory_name, memory),
             ("novel", novel),
             ("fusion", fusion),
         )

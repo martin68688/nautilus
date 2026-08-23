@@ -1,4 +1,5 @@
 import atexit
+import json
 import logging
 import os
 import signal
@@ -17,6 +18,7 @@ from config import load_task_desc, prep_agent_workspace, save_run, save_run_iden
 from utils.visualization import journal_to_string_tree
 from utils.seed import set_global_seed
 from engine.coldstart import build_guidance_description
+from engine.conditions import coverage_synthesis_due
 from engine.run_control import (
     RequiredRouterFailureCircuitBreaker,
     draft_execution_lane,
@@ -214,8 +216,31 @@ def _run_impl():
             else 0.0
         ),
     )
+    deadline_policy = getattr(cfg.agent, "draft_role_policy", None)
+    deadline_lane_budget = int(
+        getattr(
+            deadline_policy,
+            "dedicated_branch_lane_budget_seconds",
+            0,
+        )
+        or 0
+    )
+    dedicated_run_guard_seconds = remaining_agent_wall_seconds
+    if bool(
+        deadline_policy is not None
+        and getattr(deadline_policy, "enabled", False)
+        and getattr(deadline_policy, "dedicated_branch_gpu_lanes", False)
+    ):
+        # The source lanes begin together, while Fusion becomes eligible only
+        # after both have a valid root.  Keep the ordinary six-hour search
+        # phase semantics inside every branch, but give the process enough
+        # outer wall time for a late Fusion to receive its own full budget.
+        dedicated_run_guard_seconds = max(
+            remaining_agent_wall_seconds,
+            (2 * deadline_lane_budget) + 3600,
+        )
     interpreter.set_run_deadline(
-        run_started_monotonic + remaining_agent_wall_seconds,
+        run_started_monotonic + dedicated_run_guard_seconds,
         finalize_reserve_seconds=int(
             getattr(cfg, "finalize_reserve_seconds", 900) or 900
         ),
@@ -382,7 +407,369 @@ def _run_impl():
                 skipped_roles,
             )
 
-    if pending_draft_nodes or blocked_draft_nodes or completed < total_steps:
+    dedicated_policy = getattr(cfg.agent, "draft_role_policy", None)
+    dedicated_branch_lanes = bool(
+        dedicated_policy is not None
+        and getattr(dedicated_policy, "enabled", False)
+        and getattr(dedicated_policy, "dedicated_branch_gpu_lanes", False)
+    )
+
+    if dedicated_branch_lanes:
+        if resume_checkpoint is not None:
+            raise RuntimeError(
+                "Dedicated branch GPU lanes require a fresh immutable runtime"
+            )
+        if dev_execution_role:
+            raise RuntimeError(
+                "Dedicated branch GPU lanes cannot be combined with a DEV role filter"
+            )
+        configured_roles = list(getattr(dedicated_policy, "roles", []) or [])
+        if configured_roles != ["memory_transfer", "novel_exploration"]:
+            raise RuntimeError(
+                "Dedicated branch GPU lanes require exactly "
+                "[memory_transfer, novel_exploration] source roles"
+            )
+        if max_workers != 3 or int(cfg.agent.search.num_gpus) != 3:
+            raise RuntimeError(
+                "Dedicated branch GPU lanes require exactly three executor slots "
+                "and three GPUs"
+            )
+        if int(getattr(cfg.agent, "max_fusion_drafts", 0) or 0) != 1:
+            raise RuntimeError(
+                "Dedicated branch GPU lanes require exactly one coverage Fusion"
+            )
+        lane_budget_seconds = int(
+            getattr(
+                dedicated_policy,
+                "dedicated_branch_lane_budget_seconds",
+                0,
+            )
+            or 0
+        )
+        if lane_budget_seconds <= 0:
+            raise RuntimeError(
+                "Dedicated branch GPU lanes require a positive independent "
+                "lane budget"
+            )
+
+        initial_by_role = {
+            str(getattr(node, "draft_role", "")): node
+            for node in [*pending_draft_nodes, *blocked_draft_nodes]
+        }
+        missing_roles = [
+            role for role in configured_roles if role not in initial_by_role
+        ]
+        if missing_roles:
+            raise RuntimeError(
+                f"Dedicated branch lanes are missing initial nodes: {missing_roles}"
+            )
+
+        logger.info(
+            "🚦 Dedicated branch lanes enabled: "
+            "lane0=memory_transfer/GPU0 lane1=novel_exploration/GPU1 "
+            "lane2=cross_role_synthesis/GPU2"
+        )
+        lane_state_lock = threading.Lock()
+        lane_state = {
+            "memory_transfer": {
+                "lane": 0,
+                "gpu": 0,
+                "branch_id": int(initial_by_role["memory_transfer"].branch_id),
+                "budget_seconds": lane_budget_seconds,
+                "attempts": 0,
+                "status": "starting",
+            },
+            "novel_exploration": {
+                "lane": 1,
+                "gpu": 1,
+                "branch_id": int(initial_by_role["novel_exploration"].branch_id),
+                "budget_seconds": lane_budget_seconds,
+                "attempts": 0,
+                "status": "starting",
+            },
+            "cross_role_synthesis": {
+                "lane": 2,
+                "gpu": 2,
+                "branch_id": None,
+                "budget_seconds": lane_budget_seconds,
+                "attempts": 0,
+                "status": "waiting_for_coverage",
+            },
+        }
+
+        def persist_lane_state():
+            payload = {
+                "schema": "mlevolve_dedicated_branch_gpu_lanes_v1",
+                "wall_time_limit_seconds": int(cfg.agent.time_limit),
+                "outer_run_guard_seconds": dedicated_run_guard_seconds,
+                "independent_lane_budget_seconds": lane_budget_seconds,
+                "shared_step_limit": int(total_steps),
+                "lanes": lane_state,
+            }
+            path = Path(cfg.log_dir) / "DEDICATED_BRANCH_LANES.json"
+            temp = path.with_suffix(".json.tmp")
+            temp.write_text(
+                json.dumps(payload, indent=2, sort_keys=True),
+                encoding="utf-8",
+            )
+            temp.replace(path)
+
+        def record_lane(role, **updates):
+            with lane_state_lock:
+                lane_state[role].update(updates)
+                persist_lane_state()
+
+        def checkpoint_lane_progress(role, node):
+            nonlocal completed
+            with lock:
+                save_run(cfg, journal)
+                completed = len(journal) - 1
+                runtime_state["completed"] = completed
+            with lane_state_lock:
+                state = lane_state[role]
+                state["attempts"] = int(state["attempts"]) + 1
+                state["last_node_id"] = str(getattr(node, "id", ""))
+                state["last_stage"] = str(getattr(node, "stage", ""))
+                metric = getattr(getattr(node, "metric", None), "value", None)
+                state["last_metric"] = metric
+                state["status"] = "running"
+                persist_lane_state()
+
+        agent._dedicated_branch_started_at = {}
+
+        def start_lane_budget(role: str) -> tuple[float, float]:
+            started_monotonic = time.monotonic()
+            started_epoch = time.time()
+            record_lane(
+                role,
+                budget_started_at_epoch=started_epoch,
+                budget_deadline_epoch=started_epoch + lane_budget_seconds,
+                status="running",
+            )
+            return (
+                started_monotonic + lane_budget_seconds,
+                started_epoch,
+            )
+
+        def lane_has_budget(deadline: float) -> bool:
+            if time.monotonic() >= deadline:
+                return False
+            remaining_work = interpreter.remaining_work_seconds()
+            return remaining_work is None or remaining_work > 0
+
+        def source_lane(role: str, lane: int):
+            node = initial_by_role[role]
+            branch_id = int(node.branch_id)
+            record_lane(role, status="executing_initial")
+            lane_deadline, lane_started_at = start_lane_budget(role)
+            agent._dedicated_branch_started_at[branch_id] = lane_started_at
+            interpreter.set_slot_deadline(lane, lane_deadline)
+            try:
+                while (
+                    getattr(node, "pending_execution", False)
+                    and lane_has_budget(lane_deadline)
+                ):
+                    try:
+                        node = agent.execute_deferred_node(
+                            node,
+                            exec_callback,
+                            execution_lane=lane,
+                        )
+                    except Exception as error:
+                        logger.exception(
+                            "Dedicated initial execution failed "
+                            "role=%s lane=%s: %s",
+                            role,
+                            lane,
+                            error,
+                        )
+                        record_lane(
+                            role,
+                            status="retrying_initial",
+                            last_error=f"{type(error).__name__}: {error}",
+                        )
+                        time.sleep(1)
+                        continue
+                    checkpoint_lane_progress(role, node)
+                while lane_has_budget(lane_deadline):
+                    try:
+                        node = agent.step(
+                            exec_callback=exec_callback,
+                            node=node,
+                            required_branch_id=branch_id,
+                            execution_lane=lane,
+                        )
+                    except SearchSpaceExhausted:
+                        node = None
+                        time.sleep(1)
+                        continue
+                    except Exception as error:
+                        logger.exception(
+                            "Dedicated source lane failed role=%s lane=%s: %s",
+                            role,
+                            lane,
+                            error,
+                        )
+                        record_lane(
+                            role,
+                            status="retrying",
+                            last_error=f"{type(error).__name__}: {error}",
+                        )
+                        node = None
+                        time.sleep(1)
+                        continue
+                    if node is None:
+                        time.sleep(1)
+                        continue
+                    checkpoint_lane_progress(role, node)
+            finally:
+                record_lane(
+                    role,
+                    status=(
+                        "budget_exhausted"
+                        if time.monotonic() >= lane_deadline
+                        else "finished"
+                    ),
+                )
+
+        def fusion_lane():
+            role = "cross_role_synthesis"
+            lane = 2
+            node = None
+            branch_id = None
+            lane_deadline = None
+            lane_started_at = None
+            try:
+                while (
+                    interpreter.remaining_work_seconds() is None
+                    or interpreter.remaining_work_seconds() > 0
+                ):
+                    if branch_id is None:
+                        if not coverage_synthesis_due(agent):
+                            time.sleep(1)
+                            continue
+                        record_lane(role, status="creating_coverage_fusion")
+                        if lane_deadline is None:
+                            lane_deadline, lane_started_at = start_lane_budget(
+                                role
+                            )
+                            interpreter.set_slot_deadline(lane, lane_deadline)
+                        if not lane_has_budget(lane_deadline):
+                            break
+                        try:
+                            node = agent.step(
+                                exec_callback=exec_callback,
+                                node=agent.virtual_root,
+                                execution_lane=lane,
+                                coverage_fusion_only=True,
+                            )
+                        except Exception as error:
+                            logger.exception(
+                                "Dedicated Fusion creation failed lane=%s: %s",
+                                lane,
+                                error,
+                            )
+                            record_lane(
+                                role,
+                                status="retrying_fusion_creation",
+                                last_error=(
+                                    f"{type(error).__name__}: {error}"
+                                ),
+                            )
+                            time.sleep(1)
+                            continue
+                        if (
+                            node is None
+                            or node.stage != "fusion_draft"
+                            or node.branch_id is None
+                        ):
+                            raise RuntimeError(
+                                "Coverage Fusion lane did not receive a Fusion root"
+                            )
+                        branch_id = int(node.branch_id)
+                        if lane_started_at is None:
+                            raise RuntimeError(
+                                "Fusion branch was created without a lane clock"
+                            )
+                        agent._dedicated_branch_started_at[
+                            branch_id
+                        ] = lane_started_at
+                        record_lane(role, branch_id=branch_id, status="running")
+                        checkpoint_lane_progress(role, node)
+                        continue
+                    if lane_deadline is not None and not lane_has_budget(
+                        lane_deadline
+                    ):
+                        break
+                    try:
+                        node = agent.step(
+                            exec_callback=exec_callback,
+                            node=node,
+                            required_branch_id=branch_id,
+                            execution_lane=lane,
+                        )
+                    except SearchSpaceExhausted:
+                        node = None
+                        time.sleep(1)
+                        continue
+                    except Exception as error:
+                        logger.exception(
+                            "Dedicated Fusion lane failed lane=%s: %s", lane, error
+                        )
+                        record_lane(
+                            role,
+                            status="retrying",
+                            last_error=f"{type(error).__name__}: {error}",
+                        )
+                        node = None
+                        time.sleep(1)
+                        continue
+                    if node is None:
+                        time.sleep(1)
+                        continue
+                    checkpoint_lane_progress(role, node)
+            finally:
+                record_lane(
+                    role,
+                    status=(
+                        "budget_exhausted"
+                        if lane_deadline is not None
+                        and time.monotonic() >= lane_deadline
+                        else "finished"
+                    ),
+                )
+
+        persist_lane_state()
+        executor = ThreadPoolExecutor(max_workers=3)
+        lane_futures = {
+            executor.submit(source_lane, "memory_transfer", 0),
+            executor.submit(source_lane, "novel_exploration", 1),
+            executor.submit(fusion_lane),
+        }
+        interrupted = False
+        try:
+            while lane_futures:
+                done, lane_futures = wait(
+                    lane_futures,
+                    timeout=1.0,
+                    return_when=FIRST_COMPLETED,
+                )
+                for future in done:
+                    future.result()
+                remaining_work = interpreter.remaining_work_seconds()
+                if remaining_work is not None and remaining_work <= 0:
+                    deadline_reached = True
+                    interpreter.terminate_all_subprocesses()
+        except KeyboardInterrupt:
+            interrupted = True
+            interpreter.terminate_all_subprocesses()
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise
+        finally:
+            if not interrupted:
+                executor.shutdown(wait=True)
+
+    elif pending_draft_nodes or blocked_draft_nodes or completed < total_steps:
         logger.info(f"🚀 Phase 2: Pipelined parallel execution")
         logger.info(f"   - Pending draft executions: {len(pending_draft_nodes)}")
         logger.info(f"   - Pending preflight repairs: {len(blocked_draft_nodes)}")
