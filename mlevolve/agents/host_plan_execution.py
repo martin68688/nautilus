@@ -20,10 +20,12 @@ _NO_RETRAIN_PATTERNS = (
     re.compile(r"\b(?:do\s+not|never)\s+re[- ]?(?:train|fit)\b", re.IGNORECASE),
 )
 _CHECKPOINT_REUSE_PATTERN = re.compile(
-    r"\b(?:reuse|replay|load|use|existing|remain|keep)\w*\b[^.\n]{0,100}"
-    r"\b(?:frozen|unchanged)\w*\b[^.\n]{0,80}\bcheckpoints?\b|"
-    r"\b(?:frozen|unchanged)\w*\b[^.\n]{0,80}\bcheckpoints?\b[^.\n]{0,100}"
-    r"\b(?:reuse|replay|load|use|existing|remain|keep)\w*\b",
+    r"\bexisting\b[^.\n]{0,80}\bfrozen\b[^.\n]{0,80}\bcheckpoints?\b|"
+    r"\b(?:reuse|replay|load|use)\w*\b[^.\n]{0,100}\bfrozen\b"
+    r"[^.\n]{0,80}\bcheckpoints?\b|"
+    r"\bfrozen\b[^.\n]{0,80}\bcheckpoints?\b[^.\n]{0,100}"
+    r"\b(?:reuse|replay|load|use)\w*\b|"
+    r"\bcheckpoints?\b[^.\n]{0,80}\b(?:remain|keep|kept)\w*\s+frozen\b",
     re.IGNORECASE,
 )
 
@@ -123,9 +125,10 @@ def verify_host_plan_execution(
     """Verify explicit frozen-checkpoint/no-retraining roadmap semantics.
 
     This intentionally does not infer a no-retraining requirement from generic
-    preservation language such as "do not alter the training loop".  The gate
-    activates only when the Planner explicitly promises no retraining or reuse
-    of existing frozen checkpoints.
+    preservation language such as "do not alter the training loop" or
+    "unchanged checkpoint selection remains executable".  The gate activates
+    only when the Planner explicitly promises no retraining or reuse of
+    existing frozen checkpoints.
     """
 
     plan_object = dict(plan or {})

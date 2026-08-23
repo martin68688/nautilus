@@ -318,6 +318,10 @@ def main():
 
 def test_host_plan_execution_gate_does_not_infer_no_retraining_from_preservation():
     plan = _roadmap("Do not alter the existing training loop or optimizer settings")
+    plan["phases"][0]["preserve_invariants"] = [
+        "The unchanged target-only split, scaler, augmentation, checkpoint "
+        "selection, and held-out evaluation remain executable."
+    ]
     code = """
 def main():
     for epoch in range(3):
