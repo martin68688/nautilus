@@ -64,7 +64,8 @@ assert bool(cfg.external_skill_memory.memory_strategy_host_require_public_pretra
 print(f"intent feedback config preflight passed: roles={roles}")
 PY
 
-nohup python run.py \
+RUN_ARGS=(
+  run.py
   exp_id=plant-seedlings-classification \
   dataset_dir="$DATA_ROOT" \
   data_dir="$DATA_ROOT" \
@@ -72,10 +73,21 @@ nohup python run.py \
   exp_name="e2e-plant-seedlings-v167-intent-feedback-6h-sol-low-a100-r1-$ATTEMPT_ID" \
   log_dir="$ATTEMPT_ROOT" \
   workspace_dir="$ATTEMPT_ROOT" \
+  agent.steps=2147483647 \
+  agent.time_limit=21600 \
+  exec.timeout=21600 \
   agent.search.num_gpus=1 \
   agent.search.parallel_search_num=1 \
-  cpu_number=16 \
-  >"$LAUNCH_LOG" 2>&1 &
+  cpu_number=16
+)
+
+if [[ "${MLEVOLVE_FOREGROUND:-0}" == "1" ]]; then
+  printf '%s\n' "$$" >"$PID_FILE"
+  echo "starting $ATTEMPT_ID in foreground pid=$$ receipt=$RECEIPT candidate_receipt=$CANDIDATE_RECEIPT log=$LAUNCH_LOG"
+  exec python "${RUN_ARGS[@]}" >"$LAUNCH_LOG" 2>&1
+fi
+
+nohup python "${RUN_ARGS[@]}" >"$LAUNCH_LOG" 2>&1 &
 PID=$!
 printf '%s\n' "$PID" >"$PID_FILE"
 echo "started $ATTEMPT_ID pid=$PID receipt=$RECEIPT candidate_receipt=$CANDIDATE_RECEIPT log=$LAUNCH_LOG"
