@@ -2,6 +2,7 @@
 
 import ast
 import logging
+import re
 import time
 from typing import Any, Mapping, cast
 
@@ -55,22 +56,63 @@ def _metric_comparison(node: ast.AST) -> bool:
 
 
 def _contains_termination(statements: list[ast.stmt]) -> bool:
+    """Return whether this branch directly terminates the candidate.
+
+    Do not recurse into nested integrity checks.  For example, a best-score
+    branch may save a checkpoint and then raise only if that file is missing;
+    the outer metric comparison does not make that persistence failure an
+    empirical non-improvement abort.
+    """
+
     for statement in statements:
-        for child in ast.walk(statement):
-            if isinstance(child, ast.Raise):
-                return True
-            if isinstance(child, ast.Call):
-                target = child.func
-                if isinstance(target, ast.Name) and target.id in {"exit", "quit"}:
-                    return True
-                if (
-                    isinstance(target, ast.Attribute)
-                    and target.attr == "exit"
-                    and isinstance(target.value, ast.Name)
-                    and target.value.id == "sys"
-                ):
-                    return True
+        if isinstance(statement, ast.Raise):
+            return True
+        if not isinstance(statement, ast.Expr) or not isinstance(
+            statement.value, ast.Call
+        ):
+            continue
+        target = statement.value.func
+        if isinstance(target, ast.Name) and target.id in {"exit", "quit"}:
+            return True
+        if (
+            isinstance(target, ast.Attribute)
+            and target.attr == "exit"
+            and isinstance(target.value, ast.Name)
+            and target.value.id == "sys"
+        ):
+            return True
     return False
+
+
+def _violation_source_excerpts(
+    code: str,
+    violations: list[str],
+    *,
+    radius: int = 4,
+) -> list[dict[str, Any]]:
+    """Attach bounded exact source context to line-addressed Host feedback."""
+
+    rows = str(code or "").splitlines()
+    excerpts: list[dict[str, Any]] = []
+    for violation in violations[:8]:
+        match = re.search(r"(?:line=|line\(s\)\s+)(\d+)", violation)
+        if not match:
+            continue
+        line = int(match.group(1))
+        start = max(1, line - radius)
+        end = min(len(rows), line + radius)
+        excerpts.append(
+            {
+                "line": line,
+                "start_line": start,
+                "end_line": end,
+                "source": "\n".join(
+                    f"{number}: {rows[number - 1]}"
+                    for number in range(start, end + 1)
+                ),
+            }
+        )
+    return excerpts
 
 
 def _metric_falsification_fallback_audit(code: str) -> dict:
@@ -212,6 +254,10 @@ def _deterministic_contract_audit(agent, code: str) -> dict | None:
         ]
         report["metric_falsification_fallback_audit"] = fallback
         report["valid"] = not bool(report["violations"])
+        report["source_excerpts"] = _violation_source_excerpts(
+            code,
+            report["violations"],
+        )
         return report
     except (AttributeError, TypeError, ValueError) as error:
         logger.warning("Deterministic Host Contract review unavailable: %s", error)
@@ -265,6 +311,8 @@ def run(
             "The Host static checker has already rejected this exact code. Set needs_revision=true and repair every listed violation; do not approve unchanged code.",
             "Exact violations: "
             + "; ".join(deterministic_audit["violations"]),
+            "Exact source excerpts: "
+            + str(deterministic_audit.get("source_excerpts") or []),
             "Preserve the method, model family, metric, folds, ensembles, epochs, and training design. Repair only the listed leakage or Host-lifecycle violations.",
             "Do not evade the checker through variable renaming; change the actual violating operation.",
             "For metric_improvement_assert or metric_gated_termination, preserve the baseline validation/test predictions. Select the proposed variant only when it is genuinely better under the metric direction; otherwise select the baseline predictions, report the baseline score/variant, and still write the complete submission. Do not merely delete the assertion while continuing with a worse variant.",
@@ -337,6 +385,8 @@ def run(
                                     "The previous review patch still failed the Host static checker. Return a complete replacement diff against the original code in this prompt.",
                                     "Exact remaining violations: "
                                     + "; ".join(post_audit["violations"]),
+                                    "Exact remaining source excerpts: "
+                                    + str(post_audit.get("source_excerpts") or []),
                                     "Metric non-improvement must select baseline validation/test predictions and continue through submission writing.",
                                 ]
                                 continue

@@ -54,6 +54,43 @@ write_submission(final_predictions)
     assert report["violations"] == []
 
 
+def test_checkpoint_integrity_raise_inside_best_score_branch_is_allowed() -> None:
+    code = """
+if epoch_score > best_score:
+    save_checkpoint(checkpoint_path)
+    if not checkpoint_path.is_file():
+        raise FileNotFoundError("checkpoint persistence failed")
+else:
+    stale_epochs += 1
+    if stale_epochs >= patience:
+        break
+"""
+    report = _metric_falsification_fallback_audit(code)
+
+    assert report["valid"] is True
+    assert report["violations"] == []
+
+
+def test_host_audit_includes_exact_source_excerpt_for_repair() -> None:
+    agent = SimpleNamespace(
+        cfg=SimpleNamespace(agent=SimpleNamespace()),
+        acfg=SimpleNamespace(protocol_preflight=SimpleNamespace(enabled=False)),
+    )
+    audit = _deterministic_contract_audit(
+        agent,
+        "candidate_score = 0.4\n"
+        "baseline_score = 0.5\n"
+        "if candidate_score >= baseline_score:\n"
+        "    raise RuntimeError('candidate did not improve')\n",
+    )
+
+    assert audit is not None
+    assert audit["source_excerpts"][0]["line"] == 3
+    assert "3: if candidate_score >= baseline_score:" in audit[
+        "source_excerpts"
+    ][0]["source"]
+
+
 def test_code_review_host_audit_runs_without_optional_protocol_contract() -> None:
     agent = SimpleNamespace(
         cfg=SimpleNamespace(agent=SimpleNamespace()),
