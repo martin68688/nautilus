@@ -537,6 +537,14 @@ class ExternalSkillMemoryConfig:
         default_factory=lambda: {"draft": 7, "improve": 6, "debug": 4}
     )
     cross_task_dynamic_max_selected_architectures: int = 1
+    # Optional bounded Transfer tournament. Search/Judge runs once to create a
+    # frozen portfolio; independent branches then consume one named candidate
+    # from that same manifest instead of repeating a stochastic retrieval.
+    cross_task_transfer_portfolio_enabled: bool = False
+    cross_task_transfer_portfolio_size: int = 4
+    cross_task_transfer_portfolio_candidate: str = "comprehensive_best"
+    cross_task_transfer_portfolio_manifest_path: str = ""
+    cross_task_transfer_portfolio_manifest_sha256: str = ""
     experiment_r_agentic_retrieval_enabled: bool = False
     experiment_r_agentic_max_steps: int = 4
     experiment_r_agentic_per_step_top_k: int = 8

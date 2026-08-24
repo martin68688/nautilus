@@ -14,6 +14,7 @@ import ast
 import hashlib
 import json
 import math
+from pathlib import Path
 import re
 import time
 from collections.abc import Mapping
@@ -36,6 +37,14 @@ from agents.memory.cross_task_transfer import (
 PACK_SCHEMA = "mlevolve_cross_task_dynamic_transfer_pack_v1"
 SEARCH_SCHEMA = "mlevolve_cross_task_projected_search_v1"
 JUDGE_SCHEMA = "mlevolve_cross_task_projected_judge_v1"
+PORTFOLIO_SCHEMA = "mlevolve_cross_task_transfer_portfolio_v1"
+PORTFOLIO_CANDIDATE_SCHEMA = "mlevolve_cross_task_transfer_candidate_v1"
+TRANSFER_PORTFOLIO_SEATS = (
+    "comprehensive_best",
+    "backbone_diversity_1",
+    "backbone_diversity_2",
+    "descriptor_fusion_diversity",
+)
 GRANULARITIES = (
     REPRESENTATION_BLUEPRINT,
     VALIDATION_BLUEPRINT,
@@ -1510,6 +1519,779 @@ def _render_prompt(
     return "\n\n".join(parts)
 
 
+def _portfolio_assessment_score(
+    assessment: Mapping[str, Any] | None,
+    candidate: Mapping[str, Any],
+) -> float:
+    """Return a stable quality score without importing source-task metrics."""
+
+    row = dict(assessment or {})
+    score = (
+        0.30 * float(row.get("applicability") or 0.0)
+        + 0.30 * float(row.get("target_adaptability") or 0.0)
+        + 0.25 * float(row.get("coherence") or 0.0)
+        + 0.15 * float(row.get("confidence") or 0.0)
+    )
+    # target_relevance is computed entirely from the Host-safe projection. It
+    # breaks otherwise equal Judge scores; no source score is available here.
+    score += 0.01 * float(candidate.get("target_relevance") or 0.0)
+    return round(score, 8)
+
+
+def _portfolio_representation_signature(
+    candidate: Mapping[str, Any],
+) -> dict[str, str]:
+    return {
+        slot: _representation_requirement(slot, candidate)
+        for slot in REPRESENTATION_COMPONENT_SLOTS
+    }
+
+
+def _portfolio_coverage_supplement(
+    accumulated: Mapping[str, dict[str, Any]],
+    authorized: list[dict[str, Any]],
+) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    """Add generic diversity coverage without naming or requiring a model.
+
+    Search still supplies the ordinary candidate pool. The Host adds only the
+    best safely projected card for each distinct machine-checkable backbone
+    family and descriptor/fusion signature needed by the four-seat portfolio.
+    This prevents one Search query from becoming a premature information
+    bottleneck while remaining completely architecture-agnostic.
+    """
+
+    output = {str(key): copy.deepcopy(value) for key, value in accumulated.items()}
+    representation_rows = sorted(
+        (
+            row
+            for row in authorized
+            if row["granularity"] == REPRESENTATION_BLUEPRINT
+        ),
+        key=lambda row: (
+            -float(row["candidate"].get("target_relevance") or 0.0),
+            str(row["id"]),
+        ),
+    )
+    backbone_rows: list[dict[str, Any]] = []
+    seen_backbones: set[str] = set()
+    for row in representation_rows:
+        family = _representation_requirement(
+            "backbone_family", row["candidate"]
+        )
+        if not family or family in seen_backbones:
+            continue
+        backbone_rows.append(row)
+        seen_backbones.add(family)
+        if len(backbone_rows) >= 2:
+            break
+
+    descriptor_rows: list[dict[str, Any]] = []
+    seen_descriptor_signatures: set[tuple[str, str]] = set()
+    for row in representation_rows:
+        signature = _portfolio_representation_signature(row["candidate"])
+        descriptor_signature = (
+            signature["feature_branch"],
+            signature["fusion_operator"],
+        )
+        if (
+            not any(descriptor_signature)
+            or descriptor_signature in seen_descriptor_signatures
+        ):
+            continue
+        descriptor_rows.append(row)
+        seen_descriptor_signatures.add(descriptor_signature)
+        if len(descriptor_rows) >= 2:
+            break
+
+    required_rows = list(
+        {
+            str(row["id"]): row for row in [*backbone_rows, *descriptor_rows]
+        }.values()
+    )
+    added_ids: list[str] = []
+    next_first_seen = len(output)
+    for row in required_rows:
+        candidate_id = str(row["id"])
+        if candidate_id in output:
+            routes = output[candidate_id].setdefault("search_routes", [])
+            if "host_portfolio_coverage" not in routes:
+                routes.append("host_portfolio_coverage")
+            continue
+        projected = copy.deepcopy(row)
+        projected["first_seen"] = next_first_seen
+        projected["search_routes"] = ["host_portfolio_coverage"]
+        projected["grep_evidence"] = []
+        projected["safe_lexical_supplemented"] = True
+        projected["portfolio_coverage_supplemented"] = True
+        output[candidate_id] = projected
+        added_ids.append(candidate_id)
+        next_first_seen += 1
+
+    violations = []
+    if len(backbone_rows) < 2:
+        violations.append(
+            "fewer than two distinct machine-checkable backbone families are "
+            "available in the Host-safe projection"
+        )
+    if len(descriptor_rows) < 2:
+        violations.append(
+            "fewer than two distinct descriptor/fusion signatures are available "
+            "in the Host-safe projection"
+        )
+    return output, {
+        "schema": "mlevolve_cross_task_portfolio_coverage_v1",
+        "status": "passed" if not violations else "incomplete",
+        "architecture_specific_requirement": False,
+        "required_backbone_family_count": 2,
+        "observed_backbone_families": sorted(seen_backbones),
+        "required_descriptor_fusion_signature_count": 2,
+        "observed_descriptor_fusion_signatures": [
+            {"feature_branch": feature, "fusion_operator": fusion}
+            for feature, fusion in sorted(seen_descriptor_signatures)
+        ],
+        "required_candidate_ids": [str(row["id"]) for row in required_rows],
+        "added_candidate_ids": added_ids,
+        "violations": violations,
+    }
+
+
+def _coverage_bound_with_required(
+    rows: list[dict[str, Any]],
+    *,
+    limit: int,
+    required_ids: list[str],
+) -> list[dict[str, Any]]:
+    bounded = _coverage_bound(rows, limit)
+    by_id = {str(row["id"]): row for row in rows}
+    selected_ids = {str(row["id"]) for row in bounded}
+    required = [value for value in required_ids if value in by_id]
+    for candidate_id in required:
+        if candidate_id in selected_ids:
+            continue
+        if len(bounded) < int(limit):
+            bounded.append(copy.deepcopy(by_id[candidate_id]))
+            selected_ids.add(candidate_id)
+            continue
+        replacement_index = next(
+            (
+                index
+                for index in range(len(bounded) - 1, -1, -1)
+                if bounded[index]["granularity"]
+                == by_id[candidate_id]["granularity"]
+                and str(bounded[index]["id"]) not in set(required)
+            ),
+            None,
+        )
+        if replacement_index is None:
+            raise ValueError(
+                "Portfolio coverage cannot fit required candidate into Judge cap: "
+                f"{candidate_id}"
+            )
+        selected_ids.discard(str(bounded[replacement_index]["id"]))
+        bounded[replacement_index] = copy.deepcopy(by_id[candidate_id])
+        selected_ids.add(candidate_id)
+    return bounded
+
+
+def build_transfer_candidate_portfolio(
+    *,
+    candidates: list[dict[str, Any]],
+    judge: Mapping[str, Any],
+    requested_size: int = 4,
+) -> dict[str, Any]:
+    """Compose the first bounded four-seat Transfer tournament portfolio."""
+
+    if int(requested_size) != len(TRANSFER_PORTFOLIO_SEATS):
+        raise ValueError(
+            "The v1 Transfer portfolio requires exactly four candidates"
+        )
+    candidate_by_id = {str(row["id"]): row for row in candidates}
+    ref_by_id = {
+        str(row.get("candidate_id") or ""): str(row.get("ref") or "")
+        for row in judge.get("candidate_handles") or []
+    }
+    assessment_by_id = {
+        str(row.get("candidate_id") or ""): row
+        for row in judge.get("assessments") or []
+    }
+
+    eligible = [
+        row
+        for row in candidates
+        if not bool(
+            (assessment_by_id.get(str(row["id"])) or {}).get("contradiction")
+        )
+    ]
+
+    def quality(row: Mapping[str, Any]) -> float:
+        return _portfolio_assessment_score(
+            assessment_by_id.get(str(row["id"])), row["candidate"]
+        )
+
+    ranked = sorted(eligible, key=lambda row: (-quality(row), str(row["id"])))
+    selected_by_judge = [
+        candidate_by_id[value]
+        for value in judge.get("selected_ids") or []
+        if value in candidate_by_id
+    ]
+    common_support: list[dict[str, Any]] = []
+    seen_support_ids: set[str] = set()
+    for slot in (VALIDATION_BLUEPRINT, CALIBRATION_BLUEPRINT, INFERENCE_BLUEPRINT):
+        row = next(
+            (
+                item
+                for item in selected_by_judge
+                if item["granularity"] == slot
+            ),
+            None,
+        ) or next((item for item in ranked if item["granularity"] == slot), None)
+        if row is not None and str(row["id"]) not in seen_support_ids:
+            common_support.append(row)
+            seen_support_ids.add(str(row["id"]))
+    for row in selected_by_judge:
+        if row["granularity"] in BLUEPRINT_SLOTS:
+            continue
+        if str(row["id"]) not in seen_support_ids:
+            common_support.append(row)
+            seen_support_ids.add(str(row["id"]))
+
+    representation_rows = [
+        row for row in ranked if row["granularity"] == REPRESENTATION_BLUEPRINT
+    ]
+    explicit_backbones: list[tuple[str, dict[str, Any]]] = []
+    seen_backbone_families: set[str] = set()
+    for row in representation_rows:
+        family = _representation_requirement(
+            "backbone_family", row["candidate"]
+        )
+        if not family or family in seen_backbone_families:
+            continue
+        explicit_backbones.append((family, row))
+        seen_backbone_families.add(family)
+
+    base_contracts = copy.deepcopy(
+        judge.get("representation_contracts") or {}
+    )
+    base_signature = {
+        slot: str((base_contracts.get(slot) or {}).get("required_value") or "")
+        for slot in REPRESENTATION_COMPONENT_SLOTS
+    }
+
+    def descriptor_distance(row: Mapping[str, Any]) -> int:
+        signature = _portfolio_representation_signature(row["candidate"])
+        return sum(
+            bool(signature[slot]) and signature[slot] != base_signature[slot]
+            for slot in ("feature_branch", "fusion_operator")
+        )
+
+    descriptor_variants = sorted(
+        (
+            row
+            for row in representation_rows
+            if descriptor_distance(row) > 0
+        ),
+        key=lambda row: (-descriptor_distance(row), -quality(row), str(row["id"])),
+    )
+
+    violations: list[str] = []
+    if len(explicit_backbones) < 2:
+        violations.append(
+            "portfolio requires two distinct machine-checkable backbone candidates"
+        )
+    if not descriptor_variants:
+        violations.append(
+            "portfolio requires a descriptor/fusion candidate distinct from the "
+            "comprehensive Judge selection"
+        )
+
+    def contract_for(
+        row: Mapping[str, Any], slot: str
+    ) -> dict[str, Any] | None:
+        requirement = _representation_requirement(slot, row["candidate"])
+        if not requirement:
+            return None
+        candidate_id = str(row["id"])
+        return {
+            "ref": ref_by_id.get(candidate_id, ""),
+            "candidate_id": candidate_id,
+            "required_value": requirement,
+        }
+
+    def candidate_entry(
+        *,
+        seat: str,
+        representation_rows_for_seat: list[dict[str, Any]],
+        contracts: Mapping[str, Any],
+        selection_reason: str,
+        slice_representation_components: bool,
+    ) -> dict[str, Any]:
+        selected_rows: list[dict[str, Any]] = []
+        seen_ids: set[str] = set()
+        for row in [*representation_rows_for_seat, *common_support]:
+            candidate_id = str(row["id"])
+            if candidate_id in seen_ids:
+                continue
+            selected_rows.append(row)
+            seen_ids.add(candidate_id)
+        normalized_contracts = {
+            slot: copy.deepcopy(value)
+            for slot, value in dict(contracts or {}).items()
+            if isinstance(value, Mapping) and value.get("required_value")
+        }
+        if slice_representation_components:
+            sliced_rows: list[dict[str, Any]] = []
+            for row in selected_rows:
+                if row["granularity"] != REPRESENTATION_BLUEPRINT:
+                    sliced_rows.append(row)
+                    continue
+                candidate_id = str(row["id"])
+                attributes = {
+                    slot: str(contract["required_value"])
+                    for slot, contract in normalized_contracts.items()
+                    if str(contract.get("candidate_id") or "") == candidate_id
+                }
+                if not attributes:
+                    continue
+                sliced = copy.deepcopy(row)
+                sliced["candidate"]["method_family"] = ""
+                sliced["candidate"]["portable_text"] = {
+                    "title": "Portfolio-composed representation component slice",
+                    "blueprint_slot": REPRESENTATION_BLUEPRINT,
+                    "representation_attributes": attributes,
+                    "component_sources": {
+                        slot: candidate_id for slot in sorted(attributes)
+                    },
+                    "target_adaptation_contract": (
+                        "Implement exactly these retrieved representation attributes; "
+                        "all other representation choices remain Planner decisions."
+                    ),
+                }
+                sliced_rows.append(sliced)
+            selected_rows = sliced_rows
+        components = {
+            slot: (
+                str(normalized_contracts[slot].get("ref") or "") or None
+                if slot in normalized_contracts
+                else None
+            )
+            for slot in REPRESENTATION_COMPONENT_SLOTS
+        }
+        fingerprint = {
+            slot: str(
+                (normalized_contracts.get(slot) or {}).get("required_value")
+                or "planner_selected"
+            )
+            for slot in REPRESENTATION_COMPONENT_SLOTS
+        }
+        fingerprint.update(
+            {
+                "validation_candidate_id": next(
+                    (
+                        str(row["id"])
+                        for row in common_support
+                        if row["granularity"] == VALIDATION_BLUEPRINT
+                    ),
+                    "none",
+                ),
+                "calibration_candidate_id": next(
+                    (
+                        str(row["id"])
+                        for row in common_support
+                        if row["granularity"] == CALIBRATION_BLUEPRINT
+                    ),
+                    "none",
+                ),
+                "inference_candidate_id": next(
+                    (
+                        str(row["id"])
+                        for row in common_support
+                        if row["granularity"] == INFERENCE_BLUEPRINT
+                    ),
+                    "none",
+                ),
+            }
+        )
+        selected_candidates = [
+            copy.deepcopy(row["candidate"]) for row in selected_rows
+        ]
+        entry_identity = {
+            "seat": seat,
+            "fingerprint": fingerprint,
+            "selected_ids": [str(row["id"]) for row in selected_rows],
+        }
+        return {
+            "schema": PORTFOLIO_CANDIDATE_SCHEMA,
+            "candidate_id": f"transfer::{seat}::{_sha(entry_identity)[:12]}",
+            "seat": seat,
+            "selection_reason": selection_reason,
+            "selected_ids": entry_identity["selected_ids"],
+            "selected_candidates": selected_candidates,
+            "representation_components": components,
+            "representation_contracts": normalized_contracts,
+            "fingerprint": fingerprint,
+            "quality_score": round(
+                sum(quality(row) for row in selected_rows)
+                / max(1, len(selected_rows)),
+                8,
+            ),
+            "prompt_text": _render_prompt(
+                selected_rows, normalized_contracts
+            ),
+            "receipt_sha256": _sha(entry_identity),
+        }
+
+    entries: list[dict[str, Any]] = []
+    comprehensive_rows = [
+        row
+        for row in selected_by_judge
+        if row["granularity"] == REPRESENTATION_BLUEPRINT
+    ]
+    if not comprehensive_rows and representation_rows:
+        comprehensive_rows = [representation_rows[0]]
+    entries.append(
+        candidate_entry(
+            seat="comprehensive_best",
+            representation_rows_for_seat=comprehensive_rows,
+            contracts=base_contracts,
+            selection_reason=(
+                "Preserve the independent Judge's highest-utility coherent "
+                "selection without prescribing an omitted representation slot."
+            ),
+            slice_representation_components=False,
+        )
+    )
+
+    used_fingerprints = {_sha(entries[0]["fingerprint"])}
+    for index, (family, backbone_row) in enumerate(
+        explicit_backbones[:2], start=1
+    ):
+        entry = None
+        # First isolate the backbone hypothesis. If that exactly duplicates the
+        # comprehensive contract, compose it with a retrieved descriptor/fusion
+        # variant. This keeps all four executable candidates structurally unique
+        # without inventing an architecture or prescribing a named model.
+        for descriptor_row in [None, *descriptor_variants]:
+            contracts = {}
+            selected_representation_rows = [backbone_row]
+            for slot in (
+                "backbone_family",
+                "initialization_source",
+                "input_resolution",
+            ):
+                row_contract = contract_for(backbone_row, slot)
+                if row_contract:
+                    contracts[slot] = row_contract
+            if "initialization_source" not in contracts:
+                shared_initialization = base_contracts.get(
+                    "initialization_source"
+                )
+                if (
+                    isinstance(shared_initialization, Mapping)
+                    and shared_initialization.get("required_value")
+                ):
+                    contracts["initialization_source"] = copy.deepcopy(
+                        shared_initialization
+                    )
+                    initialization_row = candidate_by_id.get(
+                        str(shared_initialization.get("candidate_id") or "")
+                    )
+                    if initialization_row is not None:
+                        selected_representation_rows.append(initialization_row)
+            if descriptor_row is not None:
+                selected_representation_rows.append(descriptor_row)
+                for slot in (
+                    "feature_branch",
+                    "fusion_operator",
+                    "input_resolution",
+                ):
+                    row_contract = contract_for(descriptor_row, slot)
+                    if row_contract:
+                        contracts[slot] = row_contract
+            proposed = candidate_entry(
+                seat=f"backbone_diversity_{index}",
+                representation_rows_for_seat=selected_representation_rows,
+                contracts=contracts,
+                selection_reason=(
+                    "Reserve one of the two highest-quality distinct explicit "
+                    f"backbone families discovered by generic coverage: {family}."
+                ),
+                slice_representation_components=True,
+            )
+            proposed_fingerprint = _sha(proposed["fingerprint"])
+            if proposed_fingerprint not in used_fingerprints:
+                entry = proposed
+                used_fingerprints.add(proposed_fingerprint)
+                break
+        if entry is None:
+            violations.append(
+                f"could not construct a unique backbone diversity seat for {family}"
+            )
+        else:
+            entries.append(entry)
+
+    if descriptor_variants:
+        entry = None
+        backbone_options = [row for _family, row in explicit_backbones] or [None]
+        for descriptor_row in descriptor_variants:
+            for backbone_row in backbone_options:
+                contracts = {}
+                selected_representation_rows = []
+                if backbone_row is not None:
+                    selected_representation_rows.append(backbone_row)
+                    for slot in ("backbone_family", "initialization_source"):
+                        row_contract = contract_for(backbone_row, slot)
+                        if row_contract:
+                            contracts[slot] = row_contract
+                selected_representation_rows.append(descriptor_row)
+                for slot in (
+                    "feature_branch",
+                    "fusion_operator",
+                    "input_resolution",
+                ):
+                    row_contract = contract_for(descriptor_row, slot)
+                    if row_contract:
+                        contracts[slot] = row_contract
+                proposed = candidate_entry(
+                    seat="descriptor_fusion_diversity",
+                    representation_rows_for_seat=selected_representation_rows,
+                    contracts=contracts,
+                    selection_reason=(
+                        "Maximize non-empty descriptor/fusion distance from the "
+                        "comprehensive Judge selection while keeping common validation."
+                    ),
+                    slice_representation_components=True,
+                )
+                proposed_fingerprint = _sha(proposed["fingerprint"])
+                if proposed_fingerprint not in used_fingerprints:
+                    entry = proposed
+                    used_fingerprints.add(proposed_fingerprint)
+                    break
+            if entry is not None:
+                break
+        if entry is None:
+            violations.append(
+                "could not construct a unique descriptor/fusion diversity seat"
+            )
+        else:
+            entries.append(entry)
+
+    if len(entries) != int(requested_size):
+        violations.append(
+            f"portfolio produced {len(entries)} candidates; expected {requested_size}"
+        )
+    fingerprints = [
+        _sha(row["fingerprint"]) for row in entries
+    ]
+    if len(fingerprints) != len(set(fingerprints)):
+        violations.append("portfolio contains duplicate candidate fingerprints")
+    observed_backbone_families = [
+        row["fingerprint"]["backbone_family"]
+        for row in entries
+        if row["seat"].startswith("backbone_diversity_")
+    ]
+    if len(observed_backbone_families) != len(set(observed_backbone_families)):
+        violations.append("backbone diversity seats are not distinct")
+
+    identity = {
+        "requested_size": int(requested_size),
+        "seats": list(TRANSFER_PORTFOLIO_SEATS),
+        "candidate_receipts": [row["receipt_sha256"] for row in entries],
+    }
+    return {
+        "schema": PORTFOLIO_SCHEMA,
+        "status": "passed" if not violations else "incomplete",
+        "requested_size": int(requested_size),
+        "actual_size": len(entries),
+        "seat_policy": list(TRANSFER_PORTFOLIO_SEATS),
+        "low_risk_control_included": False,
+        "selection_mode": (
+            "judge_quality_plus_deterministic_host_diversity_no_model_names"
+        ),
+        "common_support_ids": [str(row["id"]) for row in common_support],
+        "candidates": entries,
+        "violations": violations,
+        "receipt_sha256": _sha(identity),
+    }
+
+
+def materialize_transfer_portfolio_candidate(
+    pack: Mapping[str, Any], candidate_selector: str
+) -> dict[str, Any]:
+    """Project one frozen portfolio entry into the legacy single-Draft pack."""
+
+    output = copy.deepcopy(dict(pack))
+    portfolio = dict(output.get("transfer_portfolio") or {})
+    if portfolio.get("schema") != PORTFOLIO_SCHEMA:
+        raise ValueError("Transfer portfolio is missing or malformed")
+    if portfolio.get("status") != "passed":
+        raise ValueError(
+            f"Transfer portfolio is not executable: {portfolio.get('violations')}"
+        )
+    selected = next(
+        (
+            row
+            for row in portfolio.get("candidates") or []
+            if candidate_selector
+            in {str(row.get("seat") or ""), str(row.get("candidate_id") or "")}
+        ),
+        None,
+    )
+    if selected is None:
+        raise ValueError(
+            "Unknown Transfer portfolio candidate: " + str(candidate_selector)
+        )
+    selected = copy.deepcopy(selected)
+    selected_candidates = list(selected.get("selected_candidates") or [])
+    selected_ids = [str(row["id"]) for row in selected_candidates]
+    selected_id_set = set(selected_ids)
+    selected_architecture_ids = [
+        str(row["id"])
+        for row in selected_candidates
+        if row.get("candidate_kind") == REPRESENTATION_BLUEPRINT
+    ]
+    selected_blueprint_ids = [
+        str(row["id"])
+        for row in selected_candidates
+        if row.get("candidate_kind") in BLUEPRINT_SLOTS
+    ]
+    selected_blueprint_slots = {
+        slot: [
+            str(row["id"])
+            for row in selected_candidates
+            if row.get("candidate_kind") == slot
+        ]
+        for slot in BLUEPRINT_SLOTS
+    }
+    selected_level_counts = {
+        granularity: sum(
+            (
+                row.get("candidate_kind")
+                if row.get("candidate_kind") in BLUEPRINT_SLOTS
+                else LEVEL_TO_GRANULARITY.get(
+                    str(row.get("abstraction_level") or "")
+                )
+            )
+            == granularity
+            for row in selected_candidates
+        )
+        for granularity in GRANULARITIES
+    }
+    output.update(
+        {
+            "selected_candidates": selected_candidates,
+            "selected_architectures": [
+                row
+                for row in selected_candidates
+                if row.get("candidate_kind") == REPRESENTATION_BLUEPRINT
+            ],
+            "selected_blueprints": [
+                row
+                for row in selected_candidates
+                if row.get("candidate_kind") in BLUEPRINT_SLOTS
+            ],
+            "selected_portable_items": [
+                row
+                for row in selected_candidates
+                if row.get("candidate_kind") not in BLUEPRINT_SLOTS
+            ],
+            "selected_items": selected_candidates,
+            "selected_sop_gateways": selected_candidates,
+            "sop_only_candidates": selected_candidates,
+            "final_prompt_candidate_ids": selected_ids,
+            "final_prompt_candidates": selected_candidates,
+            "prompt_visible_refs": selected_ids,
+            "prompt_text": str(selected.get("prompt_text") or ""),
+            "prompt_token_count": len(
+                str(selected.get("prompt_text") or "").split()
+            ),
+            "portfolio_candidate_receipt": {
+                key: copy.deepcopy(selected.get(key))
+                for key in (
+                    "schema",
+                    "candidate_id",
+                    "seat",
+                    "selection_reason",
+                    "fingerprint",
+                    "quality_score",
+                    "receipt_sha256",
+                )
+            },
+        }
+    )
+    output["memory_transfer"].update(
+        {
+            "activated": bool(selected_candidates),
+            "mode": "bounded_four_candidate_transfer_portfolio_v1",
+            "selected_architecture_ids": selected_architecture_ids,
+            "selected_blueprint_ids": selected_blueprint_ids,
+            "selected_blueprint_slots": selected_blueprint_slots,
+            "selected_level_counts": selected_level_counts,
+            "representation_components": copy.deepcopy(
+                selected.get("representation_components") or {}
+            ),
+            "representation_contracts": copy.deepcopy(
+                selected.get("representation_contracts") or {}
+            ),
+            "portfolio_candidate_id": str(selected.get("candidate_id") or ""),
+            "portfolio_seat": str(selected.get("seat") or ""),
+        }
+    )
+    output["suppressed_candidates"] = [
+        {
+            "candidate_id": str(row.get("id") or ""),
+            "reason": "not_in_materialized_transfer_portfolio_candidate",
+        }
+        for row in output.get("candidate_pool") or []
+        if str(row.get("id") or "") not in selected_id_set
+    ]
+    output["navigation_trace"] = [
+        {
+            "candidate_id": str(row.get("id") or ""),
+            "retrieval_channel": "cross_task_transfer_portfolio",
+            "selection_state": (
+                "injected"
+                if str(row.get("id") or "") in selected_id_set
+                else "suppressed"
+            ),
+        }
+        for row in output.get("candidate_pool") or []
+    ]
+    output["dynamic_retrieval"]["portfolio_selection"] = copy.deepcopy(
+        output["portfolio_candidate_receipt"]
+    )
+    output["retrieval_agent"]["effective_selected_ids"] = selected_ids
+    output["retrieval_agent"]["final_selection_authority"] = (
+        "deterministic_portfolio_builder_over_independent_judge_assessments"
+    )
+    return output
+
+
+def load_transfer_portfolio_manifest(
+    path: str | Path, expected_sha256: str
+) -> dict[str, Any]:
+    """Load one immutable Search/Judge portfolio and fail closed on drift."""
+
+    manifest_path = Path(path).expanduser()
+    if not manifest_path.is_file():
+        raise FileNotFoundError(manifest_path)
+    if not str(expected_sha256 or "").strip():
+        raise ValueError("A frozen Transfer portfolio requires an expected SHA-256")
+    raw = manifest_path.read_bytes()
+    observed = hashlib.sha256(raw).hexdigest()
+    if observed != str(expected_sha256):
+        raise ValueError(
+            "Frozen Transfer portfolio SHA-256 mismatch: "
+            f"expected={expected_sha256} observed={observed}"
+        )
+    pack = json.loads(raw)
+    if pack.get("schema") != PACK_SCHEMA:
+        raise ValueError("Frozen Transfer portfolio uses an unexpected pack schema")
+    portfolio = pack.get("transfer_portfolio") or {}
+    if portfolio.get("schema") != PORTFOLIO_SCHEMA or portfolio.get("status") != "passed":
+        raise ValueError("Frozen Transfer portfolio did not pass its construction gate")
+    return pack
+
+
 def build_dynamic_transfer_pack(
     layer: Any,
     policy: CrossTaskTransferPolicy,
@@ -1524,6 +2306,10 @@ def build_dynamic_transfer_pack(
     canonical_stage = str(stage or "").lower()
     if canonical_stage not in STAGE_FIT:
         raise ValueError("Dynamic cross-task retrieval supports Draft/Improve/Debug")
+    portfolio_enabled = bool(
+        canonical_stage == "draft"
+        and getattr(layer, "cross_task_transfer_portfolio_enabled", False)
+    )
     started = time.monotonic()
     projection = project_transfer_candidates(
         layer.nodes,
@@ -1705,10 +2491,33 @@ def build_dynamic_transfer_pack(
     else:
         search_status = "completed"
 
-    judge_candidates = _coverage_bound(
-        list(accumulated.values()),
-        int(layer.cross_task_dynamic_judge_candidate_limit),
-    )
+    portfolio_coverage = None
+    if portfolio_enabled:
+        accumulated, portfolio_coverage = _portfolio_coverage_supplement(
+            accumulated,
+            authorized,
+        )
+        if portfolio_coverage["status"] != "passed":
+            raise ValueError(
+                "Transfer portfolio coverage is incomplete: "
+                + "; ".join(portfolio_coverage["violations"])
+            )
+        bounded = _coverage_bound_with_required(
+            list(accumulated.values()),
+            limit=int(layer.cross_task_dynamic_max_candidates),
+            required_ids=list(portfolio_coverage["required_candidate_ids"]),
+        )
+        accumulated = {row["id"]: row for row in bounded}
+        judge_candidates = _coverage_bound_with_required(
+            list(accumulated.values()),
+            limit=int(layer.cross_task_dynamic_judge_candidate_limit),
+            required_ids=list(portfolio_coverage["required_candidate_ids"]),
+        )
+    else:
+        judge_candidates = _coverage_bound(
+            list(accumulated.values()),
+            int(layer.cross_task_dynamic_judge_candidate_limit),
+        )
     if not judge_candidates:
         raise ValueError("Projected Search accumulated no candidates")
     max_selected = int(layer.cross_task_dynamic_stage_selection_caps[canonical_stage])
@@ -1829,7 +2638,7 @@ def build_dynamic_transfer_pack(
     }
     pack_sha256 = _sha(receipt_identity)
     elapsed = round(time.monotonic() - started, 6)
-    return {
+    pack = {
         "schema": PACK_SCHEMA,
         "algorithm_version": (
             "host_irreversible_projection_multiround_search_independent_judge_"
@@ -1993,14 +2802,54 @@ def build_dynamic_transfer_pack(
         },
         "unauthorized_prompt_exposure": 0,
     }
+    if not portfolio_enabled:
+        return pack
+
+    portfolio = build_transfer_candidate_portfolio(
+        candidates=judge_candidates,
+        judge=judge,
+        requested_size=int(layer.cross_task_transfer_portfolio_size),
+    )
+    if portfolio["status"] != "passed":
+        raise ValueError(
+            "Transfer portfolio construction failed: "
+            + "; ".join(portfolio["violations"])
+        )
+    pack["transfer_portfolio"] = portfolio
+    pack["dynamic_retrieval"]["portfolio_coverage"] = portfolio_coverage
+    pack["dynamic_retrieval"]["portfolio"] = {
+        "schema": PORTFOLIO_SCHEMA,
+        "status": portfolio["status"],
+        "requested_size": portfolio["requested_size"],
+        "actual_size": portfolio["actual_size"],
+        "seat_policy": list(portfolio["seat_policy"]),
+        "receipt_sha256": portfolio["receipt_sha256"],
+    }
+    pack["algorithm_version"] = (
+        "host_irreversible_projection_multiround_search_independent_judge_"
+        "bounded_four_candidate_portfolio_v1"
+    )
+    pack["stage_route"]["route"] = (
+        "projected_multiround_search_judge_four_candidate_portfolio"
+    )
+    return materialize_transfer_portfolio_candidate(
+        pack,
+        str(layer.cross_task_transfer_portfolio_candidate),
+    )
 
 
 __all__ = [
     "GRANULARITIES",
     "JUDGE_SCHEMA",
     "PACK_SCHEMA",
+    "PORTFOLIO_CANDIDATE_SCHEMA",
+    "PORTFOLIO_SCHEMA",
     "REPRESENTATION_COMPONENT_SLOTS",
     "SEARCH_SCHEMA",
+    "TRANSFER_PORTFOLIO_SEATS",
+    "build_transfer_candidate_portfolio",
     "build_dynamic_transfer_pack",
+    "load_transfer_portfolio_manifest",
+    "materialize_transfer_portfolio_candidate",
     "verify_representation_adoption",
 ]

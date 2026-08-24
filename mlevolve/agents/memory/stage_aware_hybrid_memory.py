@@ -643,6 +643,65 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             if ext_cfg is not None
             else 1
         )
+        self.cross_task_transfer_portfolio_enabled = bool(
+            getattr(ext_cfg, "cross_task_transfer_portfolio_enabled", False)
+            if ext_cfg is not None
+            else False
+        )
+        self.cross_task_transfer_portfolio_size = int(
+            getattr(ext_cfg, "cross_task_transfer_portfolio_size", 4)
+            if ext_cfg is not None
+            else 4
+        )
+        self.cross_task_transfer_portfolio_candidate = str(
+            getattr(
+                ext_cfg,
+                "cross_task_transfer_portfolio_candidate",
+                "comprehensive_best",
+            )
+            if ext_cfg is not None
+            else "comprehensive_best"
+        )
+        self.cross_task_transfer_portfolio_manifest_path = str(
+            getattr(ext_cfg, "cross_task_transfer_portfolio_manifest_path", "")
+            if ext_cfg is not None
+            else ""
+        ).strip()
+        self.cross_task_transfer_portfolio_manifest_sha256 = str(
+            getattr(
+                ext_cfg,
+                "cross_task_transfer_portfolio_manifest_sha256",
+                "",
+            )
+            if ext_cfg is not None
+            else ""
+        ).strip()
+        if self.cross_task_transfer_portfolio_enabled:
+            if not self.cross_task_dynamic_retrieval_enabled:
+                raise ValueError(
+                    "Transfer portfolio requires dynamic cross-task retrieval"
+                )
+            if self.cross_task_transfer_portfolio_size != 4:
+                raise ValueError(
+                    "The v1 Transfer portfolio requires exactly four candidates"
+                )
+            if self.cross_task_transfer_portfolio_candidate not in {
+                "comprehensive_best",
+                "backbone_diversity_1",
+                "backbone_diversity_2",
+                "descriptor_fusion_diversity",
+            }:
+                raise ValueError(
+                    "Unknown Transfer portfolio candidate: "
+                    + self.cross_task_transfer_portfolio_candidate
+                )
+            if bool(self.cross_task_transfer_portfolio_manifest_path) != bool(
+                self.cross_task_transfer_portfolio_manifest_sha256
+            ):
+                raise ValueError(
+                    "Frozen Transfer portfolio path and SHA-256 must be configured "
+                    "together"
+                )
         if self.cross_task_dynamic_retrieval_enabled:
             if not self.cross_task_transfer_policy.enabled:
                 raise ValueError(
@@ -6751,16 +6810,50 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                 ):
                     from agents.memory.cross_task_dynamic_retrieval import (
                         build_dynamic_transfer_pack,
+                        load_transfer_portfolio_manifest,
+                        materialize_transfer_portfolio_candidate,
                     )
 
-                    pack = build_dynamic_transfer_pack(
-                        self,
-                        self.cross_task_transfer_policy,
-                        target_task_id=task_id,
-                        stage=transfer_stage,
-                        task_description=task_desc,
-                        query_text=query_text,
+                    manifest_path = str(
+                        getattr(
+                            self,
+                            "cross_task_transfer_portfolio_manifest_path",
+                            "",
+                        )
+                        or ""
                     )
+                    if (
+                        transfer_stage == "draft"
+                        and getattr(
+                            self,
+                            "cross_task_transfer_portfolio_enabled",
+                            False,
+                        )
+                        and manifest_path
+                    ):
+                        frozen_pack = load_transfer_portfolio_manifest(
+                            manifest_path,
+                            self.cross_task_transfer_portfolio_manifest_sha256,
+                        )
+                        if str(frozen_pack.get("target_task_id") or "") != str(
+                            task_id
+                        ):
+                            raise ValueError(
+                                "Frozen Transfer portfolio target task mismatch"
+                            )
+                        pack = materialize_transfer_portfolio_candidate(
+                            frozen_pack,
+                            self.cross_task_transfer_portfolio_candidate,
+                        )
+                    else:
+                        pack = build_dynamic_transfer_pack(
+                            self,
+                            self.cross_task_transfer_policy,
+                            target_task_id=task_id,
+                            stage=transfer_stage,
+                            task_description=task_desc,
+                            query_text=query_text,
+                        )
                 else:
                     pack = build_transfer_pack(
                         self.nodes,

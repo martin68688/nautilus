@@ -3,6 +3,14 @@
 extends: ../systems_v165_plant_seedlings_transfer_attributes_a100_6h_luna_low/transfer_only.yaml
 
 external_skill_memory:
+  # Build one frozen four-seat Transfer portfolio before any candidate runs:
+  # one independent-Judge comprehensive choice, two distinct backbones, and
+  # one descriptor/fusion alternative.  No low-risk control and no model name
+  # is prescribed here; all four seats must come from Host-safe retrieval.
+  cross_task_transfer_portfolio_enabled: true
+  cross_task_transfer_portfolio_size: 4
+  cross_task_transfer_portfolio_candidate: comprehensive_best
+  cross_task_dynamic_judge_candidate_limit: 24
   memory_strategy_plan_alignment_enabled: true
   # One initial handoff plus enough bounded turns to repair independent
   # fallback, provenance, and interface mismatches without restarting retrieval.

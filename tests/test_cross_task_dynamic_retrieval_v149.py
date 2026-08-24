@@ -1082,3 +1082,282 @@ def test_cross_task_late_stage_routes_use_improve_retrieval_intent(runtime_stage
     assert text and refs
     pack = layer.current_navigation_pack()
     assert pack["stage_route"]["stage"] == "improve"
+
+
+def _portfolio_candidate_row(candidate_id, attributes, *, relevance):
+    from agents.memory.cross_task_transfer import REPRESENTATION_BLUEPRINT
+
+    candidate = {
+        "id": candidate_id,
+        "source": "sop_component_projection",
+        "source_task_id": "leaf-classification",
+        "abstraction_level": "L1_architecture",
+        "candidate_kind": REPRESENTATION_BLUEPRINT,
+        "blueprint_slot": REPRESENTATION_BLUEPRINT,
+        "portable_text": {
+            "title": candidate_id,
+            "blueprint_slot": REPRESENTATION_BLUEPRINT,
+            "components": {"feature_representation": candidate_id},
+            "representation_attributes": dict(attributes),
+            "target_adaptation_contract": "Fit only on target training data.",
+        },
+        "method_family": "",
+        "parent_method_families": [],
+        "target_relevance": relevance,
+        "source_score_inherited": False,
+        "source_code_exposed": False,
+        "source_artifact_exposed": False,
+    }
+    return {
+        "id": candidate_id,
+        "granularity": REPRESENTATION_BLUEPRINT,
+        "candidate": candidate,
+        "first_seen": 0,
+        "search_routes": ["test"],
+        "grep_evidence": [],
+        "safe_lexical_supplemented": False,
+    }
+
+
+def _portfolio_fixture():
+    rows = [
+        _portfolio_candidate_row(
+            "rep::best",
+            {
+                "backbone_family": "family_best",
+                "initialization_source": "public_pretrained",
+                "feature_branch": "target_derived_descriptors",
+                "fusion_operator": "gated_fusion",
+            },
+            relevance=0.95,
+        ),
+        _portfolio_candidate_row(
+            "rep::backbone-alt",
+            {
+                "backbone_family": "family_alternative",
+                "initialization_source": "public_pretrained",
+            },
+            relevance=0.8,
+        ),
+        _portfolio_candidate_row(
+            "rep::descriptor-alt",
+            {
+                "feature_branch": "target_derived_descriptors",
+                "fusion_operator": "self_attention",
+            },
+            relevance=0.85,
+        ),
+    ]
+    refs = {row["id"]: f"C{index:02d}" for index, row in enumerate(rows, 1)}
+    judge = {
+        "selected_ids": ["rep::best"],
+        "candidate_handles": [
+            {"candidate_id": candidate_id, "ref": ref}
+            for candidate_id, ref in refs.items()
+        ],
+        "assessments": [
+            {
+                "candidate_id": row["id"],
+                "applicability": 0.96 if row["id"] == "rep::best" else 0.85,
+                "target_adaptability": 0.94,
+                "coherence": 0.93,
+                "confidence": 0.92,
+                "contradiction": False,
+            }
+            for row in rows
+        ],
+        "representation_contracts": {
+            slot: {
+                "candidate_id": "rep::best",
+                "ref": refs["rep::best"],
+                "required_value": value,
+            }
+            for slot, value in {
+                "backbone_family": "family_best",
+                "initialization_source": "public_pretrained",
+                "feature_branch": "target_derived_descriptors",
+                "fusion_operator": "gated_fusion",
+            }.items()
+        },
+    }
+    return rows, judge
+
+
+def test_transfer_portfolio_has_requested_four_seats_without_control():
+    from agents.memory.cross_task_dynamic_retrieval import (
+        TRANSFER_PORTFOLIO_SEATS,
+        build_transfer_candidate_portfolio,
+        materialize_transfer_portfolio_candidate,
+    )
+
+    rows, judge = _portfolio_fixture()
+    portfolio = build_transfer_candidate_portfolio(
+        candidates=rows,
+        judge=judge,
+        requested_size=4,
+    )
+
+    assert portfolio["status"] == "passed"
+    assert portfolio["actual_size"] == 4
+    assert portfolio["seat_policy"] == list(TRANSFER_PORTFOLIO_SEATS)
+    assert portfolio["low_risk_control_included"] is False
+    assert [row["seat"] for row in portfolio["candidates"]] == list(
+        TRANSFER_PORTFOLIO_SEATS
+    )
+    backbone_seats = [
+        row
+        for row in portfolio["candidates"]
+        if row["seat"].startswith("backbone_diversity_")
+    ]
+    assert {row["fingerprint"]["backbone_family"] for row in backbone_seats} == {
+        "family_best",
+        "family_alternative",
+    }
+    assert {
+        row["fingerprint"]["initialization_source"] for row in backbone_seats
+    } == {"public_pretrained"}
+    first_backbone_prompt = backbone_seats[0]["prompt_text"]
+    assert "gated_fusion" not in first_backbone_prompt
+    assert "self_attention" not in first_backbone_prompt
+    first_backbone_attributes = backbone_seats[0]["selected_candidates"][0][
+        "portable_text"
+    ]["representation_attributes"]
+    assert set(first_backbone_attributes) == {
+        "backbone_family",
+        "initialization_source",
+    }
+    comprehensive = portfolio["candidates"][0]
+    descriptor = portfolio["candidates"][3]
+    assert descriptor["fingerprint"]["fusion_operator"] != (
+        comprehensive["fingerprint"]["fusion_operator"]
+    )
+    descriptor_attributes = [
+        row["portable_text"]["representation_attributes"]
+        for row in descriptor["selected_candidates"]
+        if row["candidate_kind"] == "representation_blueprint"
+    ]
+    assert descriptor_attributes == [
+        {
+            "backbone_family": "family_best",
+            "initialization_source": "public_pretrained",
+        },
+        {
+            "feature_branch": "target_derived_descriptors",
+            "fusion_operator": "self_attention",
+        },
+    ]
+    assert len(
+        {json.dumps(row["fingerprint"], sort_keys=True) for row in portfolio["candidates"]}
+    ) == 4
+
+    pack = {
+        "schema": "mlevolve_cross_task_dynamic_transfer_pack_v1",
+        "transfer_portfolio": portfolio,
+        "memory_transfer": {},
+        "dynamic_retrieval": {},
+        "retrieval_agent": {},
+        "candidate_pool": [row["candidate"] for row in rows],
+    }
+    selected = materialize_transfer_portfolio_candidate(
+        pack,
+        "backbone_diversity_2",
+    )
+    assert selected["memory_transfer"]["portfolio_seat"] == (
+        "backbone_diversity_2"
+    )
+    assert selected["memory_transfer"]["representation_contracts"][
+        "backbone_family"
+    ]["required_value"] == "family_alternative"
+
+
+def test_frozen_transfer_portfolio_manifest_requires_exact_sha256(tmp_path):
+    import hashlib
+
+    from agents.memory.cross_task_dynamic_retrieval import (
+        load_transfer_portfolio_manifest,
+    )
+
+    rows, judge = _portfolio_fixture()
+    from agents.memory.cross_task_dynamic_retrieval import (
+        build_transfer_candidate_portfolio,
+    )
+
+    pack = {
+        "schema": "mlevolve_cross_task_dynamic_transfer_pack_v1",
+        "transfer_portfolio": build_transfer_candidate_portfolio(
+            candidates=rows,
+            judge=judge,
+            requested_size=4,
+        ),
+    }
+    path = tmp_path / "portfolio.json"
+    raw = json.dumps(pack, sort_keys=True).encode("utf-8")
+    path.write_bytes(raw)
+    receipt = hashlib.sha256(raw).hexdigest()
+
+    assert load_transfer_portfolio_manifest(path, receipt) == pack
+    with pytest.raises(ValueError, match="SHA-256 mismatch"):
+        load_transfer_portfolio_manifest(path, "0" * 64)
+
+
+def test_stage_layer_reuses_frozen_portfolio_without_recalling_search(tmp_path):
+    import hashlib
+
+    from agents.memory.cross_task_dynamic_retrieval import (
+        build_transfer_candidate_portfolio,
+    )
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    rows, judge = _portfolio_fixture()
+    portfolio = build_transfer_candidate_portfolio(
+        candidates=rows,
+        judge=judge,
+        requested_size=4,
+    )
+    frozen_pack = {
+        "schema": "mlevolve_cross_task_dynamic_transfer_pack_v1",
+        "target_task_id": "uci-one-hundred-leaves",
+        "stage_route": {
+            "stage": "draft",
+            "route": "projected_multiround_search_judge_four_candidate_portfolio",
+        },
+        "transfer_portfolio": portfolio,
+        "memory_transfer": {},
+        "dynamic_retrieval": {},
+        "retrieval_agent": {},
+        "candidate_pool": [row["candidate"] for row in rows],
+    }
+    path = tmp_path / "frozen.json"
+    raw = json.dumps(frozen_pack, sort_keys=True).encode("utf-8")
+    path.write_bytes(raw)
+
+    layer = StageAwareHybridMemoryLayer.__new__(StageAwareHybridMemoryLayer)
+    layer.nodes = _nodes()
+    layer.cfg = None
+    layer.cross_task_transfer_policy = _policy()
+    layer.cross_task_dynamic_retrieval_enabled = True
+    layer.cross_task_transfer_portfolio_enabled = True
+    layer.cross_task_transfer_portfolio_candidate = "descriptor_fusion_diversity"
+    layer.cross_task_transfer_portfolio_manifest_path = str(path)
+    layer.cross_task_transfer_portfolio_manifest_sha256 = hashlib.sha256(raw).hexdigest()
+    layer._experiment_r_agentic_query_fn = lambda **_kwargs: (_ for _ in ()).throw(
+        AssertionError("frozen portfolio must not recall Search or Judge")
+    )
+    layer.end2end_controller = None
+    layer.prospective_audit_logger = None
+    layer._trace_local = threading.local()
+    layer._last_agentic_pack = {}
+
+    text, refs = layer.retrieve_for_node(
+        stage="draft",
+        task_id="uci-one-hundred-leaves",
+        task_desc="leaf descriptor classification",
+        query_parts=["initial Transfer"],
+        draft_role="memory_transfer",
+    )
+
+    assert text and refs
+    selected = layer.current_navigation_pack()
+    assert selected["memory_transfer"]["portfolio_seat"] == (
+        "descriptor_fusion_diversity"
+    )
