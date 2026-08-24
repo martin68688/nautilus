@@ -652,6 +652,7 @@ class ExternalSkillMemoryConfig:
     # preserves historical dynamic-retrieval behavior.
     memory_strategy_host_required_backbone_family: str = ""
     memory_strategy_host_require_public_pretrained: bool = False
+    memory_strategy_host_required_pretrained_loader: str = ""
     # Dynamic Hybrid may delegate L3 failure/root-cause matching to the
     # Retrieval Agent.  The Host keeps only objective task/evidence gates and
     # literal traceback-anchor extraction; no maintained synonym table is

@@ -1852,6 +1852,12 @@ def validate_strategy_memo(
                 violations.append(
                     "recommended hypothesis must forbid random initialization fallback"
                 )
+        required_loader = host_requirements.get("pretrained_loader", "")
+        if required_loader and required_loader.lower() not in positive_text:
+            violations.append(
+                "recommended hypothesis does not positively adopt Host-verified "
+                f"pretrained loader: {required_loader}"
+            )
     opportunity_details = {
         str(row.get("opportunity_id") or ""): dict(row)
         for row in required_opportunities

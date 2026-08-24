@@ -495,12 +495,26 @@ def verify_representation_adoption(
             return string_constants.get(value.id, "")
         return ""
 
+    timm_module_aliases: set[str] = set()
+    timm_create_model_aliases: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "timm":
+                    timm_module_aliases.add(alias.asname or alias.name)
+        elif isinstance(node, ast.ImportFrom) and node.module == "timm":
+            for alias in node.names:
+                if alias.name == "create_model":
+                    timm_create_model_aliases.add(alias.asname or alias.name)
+
     backbone = required.get("backbone_family", "")
     if backbone and not re.search(rf"\b{re.escape(backbone)}\b", source, re.I):
         violations.append(f"selected backbone is absent: {backbone}")
 
     if required.get("initialization_source") == "public_pretrained":
         pretrained = False
+        verified_pretrained_loader = False
+        required_loader = required.get("pretrained_loader", "").lower()
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
@@ -520,7 +534,10 @@ def verify_representation_adoption(
                         keyword.value, ast.Constant
                     ) and keyword.value.value is True:
                         pretrained = True
-            if func_name == "create_model" and node.args:
+            if (
+                func_name == "create_model"
+                or func_name in timm_create_model_aliases
+            ) and node.args:
                 model_name = resolve_static_string(node.args[0])
                 names_backbone = model_name.lower() == backbone.lower()
                 has_pretrained = any(
@@ -530,9 +547,29 @@ def verify_representation_adoption(
                     for keyword in node.keywords
                 )
                 pretrained = pretrained or (names_backbone and has_pretrained)
+                timm_call = (
+                    isinstance(node.func, ast.Attribute)
+                    and isinstance(node.func.value, ast.Name)
+                    and node.func.value.id in timm_module_aliases
+                    and node.func.attr == "create_model"
+                ) or (
+                    isinstance(node.func, ast.Name)
+                    and node.func.id in timm_create_model_aliases
+                )
+                if names_backbone and has_pretrained:
+                    verified_pretrained_loader = (
+                        verified_pretrained_loader
+                        or not required_loader
+                        or (required_loader == "timm" and timm_call)
+                    )
         if not pretrained:
             violations.append(
                 "selected public_pretrained initialization is absent or weights=None"
+            )
+        elif required_loader and not verified_pretrained_loader:
+            violations.append(
+                "public_pretrained initialization does not use the Host-verified "
+                f"loader: {required_loader}"
             )
 
     normalized_source = _normalize(source)

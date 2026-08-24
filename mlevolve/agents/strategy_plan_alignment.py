@@ -116,6 +116,14 @@ def merge_host_representation_requirements(
             False,
         )
     )
+    required_pretrained_loader = str(
+        getattr(
+            ext_cfg,
+            "memory_strategy_host_required_pretrained_loader",
+            "",
+        )
+        or ""
+    ).strip().lower()
     overrides: list[dict[str, str]] = []
 
     def bind(slot: str, required_value: str) -> None:
@@ -142,6 +150,8 @@ def merge_host_representation_requirements(
         bind("backbone_family", required_backbone)
     if require_public_pretrained:
         bind("initialization_source", "public_pretrained")
+    if required_pretrained_loader:
+        bind("pretrained_loader", required_pretrained_loader)
 
     requirements = {
         slot: str(value.get("required_value") or "")

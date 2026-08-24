@@ -455,6 +455,7 @@ external_skill_memory:
   # a conflicting retrieval selection and are checked before execution.
   memory_strategy_host_required_backbone_family: ""
   memory_strategy_host_require_public_pretrained: false
+  memory_strategy_host_required_pretrained_loader: ""
   # Each enabled pre-L3 route contributes this many already-authorized repair
   # cards. Structured causal rank is always present; dense semantic rank is an
   # opt-in second route. The union is deduplicated before the L3 Agent.

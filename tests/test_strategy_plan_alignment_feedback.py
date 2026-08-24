@@ -459,6 +459,7 @@ def test_host_runtime_contract_overrides_retrieval_and_blocks_random_fallback():
     ext_cfg = SimpleNamespace(
         memory_strategy_host_required_backbone_family="efficientnet_b3",
         memory_strategy_host_require_public_pretrained=True,
+        memory_strategy_host_required_pretrained_loader="timm",
     )
     contracts, receipt = merge_host_representation_requirements(
         {
@@ -493,8 +494,23 @@ def test_host_runtime_contract_overrides_retrieval_and_blocks_random_fallback():
         "model = timm.create_model(model_identifier, pretrained=True)\n",
         contracts,
     )
+    accepted_import_alias = verify_representation_adoption(
+        "from timm import create_model as build_model\n"
+        "model = build_model('efficientnet_b3', pretrained=True)\n",
+        contracts,
+    )
+    rejected_unverified_loader = verify_representation_adoption(
+        "from torchvision.models import EfficientNet_B3_Weights, efficientnet_b3\n"
+        "model = efficientnet_b3(weights=EfficientNet_B3_Weights.DEFAULT)\n",
+        contracts,
+    )
 
     assert receipt["enabled"] is True
+    assert receipt["requirements"] == {
+        "backbone_family": "efficientnet_b3",
+        "initialization_source": "public_pretrained",
+        "pretrained_loader": "timm",
+    }
     assert receipt["selection_overrides"] == [
         {
             "slot": "backbone_family",
@@ -505,7 +521,12 @@ def test_host_runtime_contract_overrides_retrieval_and_blocks_random_fallback():
     assert rejected["valid"] is False
     assert accepted["valid"] is True
     assert accepted_alias["valid"] is True
+    assert accepted_import_alias["valid"] is True
     assert rejected_ambiguous_alias["valid"] is False
+    assert rejected_unverified_loader["valid"] is False
+    assert rejected_unverified_loader["violations"] == [
+        "public_pretrained initialization does not use the Host-verified loader: timm"
+    ]
 
 
 def test_representation_gate_accepts_active_transformer_encoder_self_attention():
@@ -549,6 +570,7 @@ def test_config_declares_alignment_feedback_defaults():
     assert ext.memory_strategy_post_review_repair_attempts == 0
     assert ext.memory_strategy_host_required_backbone_family == ""
     assert ext.memory_strategy_host_require_public_pretrained is False
+    assert ext.memory_strategy_host_required_pretrained_loader == ""
 
 
 def test_v167_enables_host_runtime_method_floor():
@@ -563,3 +585,4 @@ def test_v167_enables_host_runtime_method_floor():
     ext = cfg.external_skill_memory
     assert ext.memory_strategy_host_required_backbone_family == "efficientnet_b3"
     assert ext.memory_strategy_host_require_public_pretrained is True
+    assert ext.memory_strategy_host_required_pretrained_loader == "timm"
