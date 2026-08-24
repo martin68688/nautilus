@@ -4,7 +4,7 @@ metadata:
   name: mlevolve-plant-v167-intent-feedback-a100-full-r2
   namespace: ecepxie
   annotations:
-    mlevolve.ai/code-commit: b0e6ce8e
+    mlevolve.ai/code-commit: c8c35b81
     mlevolve.ai/purpose: plant-v167-full-strategy-planner-host-feedback
     mlevolve.ai/source-task: leaf-classification
     mlevolve.ai/target-task: plant-seedlings-classification
@@ -56,7 +56,7 @@ spec:
               test "${OPENAI_MODEL:-}" = "gpt-5.6-sol"
               test "${OPENAI_REASONING_EFFORT:-}" = "low"
 
-              RUNTIME=/workspace/nautilus-exp-end2end-agent-v167-intent-feedback-a100-sol-low-r3
+              RUNTIME=/workspace/nautilus-exp-end2end-agent-v167-intent-feedback-a100-sol-low-r4
               OUTPUT_ROOT=/workspace/experiment-end2end-plant-seedlings-v167-intent-feedback-6h-sol-low-a100-r1
               SOURCE_HUB=${OUTPUT_ROOT}/preflight-attempt-009-candidate-runtime-cache/huggingface/hub
               HOST_CACHE_ROOT=${OUTPUT_ROOT}/preflight-attempt-010-host-runtime-cache
