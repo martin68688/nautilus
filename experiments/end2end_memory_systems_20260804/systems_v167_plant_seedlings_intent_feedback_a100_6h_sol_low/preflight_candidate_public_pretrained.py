@@ -122,6 +122,11 @@ print(json.dumps({
     receipt = {
         "schema": "mlevolve_candidate_public_pretrained_preflight_v1",
         "status": "passed",
+        "selection_binding": False,
+        "purpose": (
+            "runtime capability receipt only; retrieval and Strategy remain free "
+            "to select a different representation"
+        ),
         "network_mode": "offline",
         "candidate_uid": (
             args.candidate_uid if os.geteuid() == 0 else os.geteuid()

@@ -772,6 +772,68 @@ def test_representation_components_compose_b3_pretraining_with_separate_fusion()
     ] == "representation::fusion"
 
 
+def test_multi_backbone_card_cannot_silently_bind_singular_backbone_slot():
+    from agents.memory.cross_task_dynamic_retrieval import (
+        _representation_requirement,
+        _validate_judge,
+    )
+
+    card = {
+        "id": "representation::multi",
+        "granularity": "representation_blueprint",
+        "fields": {},
+        "relations": {},
+        "candidate": {
+            "id": "representation::multi",
+            "portable_text": {
+                "components": {
+                    "feature_representation": (
+                        "Fuse public pretrained ResNet50 and EfficientNet-B0 "
+                        "embeddings with target-derived descriptors."
+                    )
+                }
+            },
+        },
+    }
+    assert _representation_requirement(
+        "backbone_family", card["candidate"]
+    ) == ""
+    action = {
+        "decision": "select",
+        "selected_refs": ["C01"],
+        "reason": "incorrectly treat an ensemble as one exact backbone",
+        "representation_components": {
+            "backbone_family": "C01",
+            "initialization_source": "C01",
+            "feature_branch": "C01",
+            "fusion_operator": None,
+            "input_resolution": None,
+        },
+        "assessments": [
+            {
+                "ref": "C01",
+                "applicability": 0.9,
+                "target_adaptability": 0.9,
+                "coherence": 0.9,
+                "contradiction": False,
+                "confidence": 0.9,
+                "reason": "test assessment",
+            }
+        ],
+    }
+    with pytest.raises(
+        ValueError,
+        match="not machine-checkable: backbone_family",
+    ):
+        _validate_judge(
+            action,
+            candidates=[card],
+            max_selected=7,
+            abstention_allowed=False,
+            blueprint_slot_caps={"representation_blueprint": 5},
+        )
+
+
 def test_judge_cannot_null_explicit_backbone_and_pretraining_candidates():
     from agents.memory.cross_task_dynamic_retrieval import _validate_judge
 

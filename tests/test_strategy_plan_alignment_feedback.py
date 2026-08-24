@@ -670,7 +670,7 @@ def test_config_declares_alignment_feedback_defaults():
     assert ext.memory_strategy_host_required_pretrained_loader == ""
 
 
-def test_v167_enables_host_runtime_method_floor():
+def test_v167_does_not_prescribe_the_retrieval_answer():
     cfg = _load_cfg(
         ROOT
         / "experiments"
@@ -681,6 +681,6 @@ def test_v167_enables_host_runtime_method_floor():
     )
     ext = cfg.external_skill_memory
     assert ext.memory_strategy_plan_alignment_retries == 3
-    assert ext.memory_strategy_host_required_backbone_family == "efficientnet_b3"
-    assert ext.memory_strategy_host_require_public_pretrained is True
-    assert ext.memory_strategy_host_required_pretrained_loader == "timm"
+    assert ext.memory_strategy_host_required_backbone_family == ""
+    assert ext.memory_strategy_host_require_public_pretrained is False
+    assert ext.memory_strategy_host_required_pretrained_loader == ""

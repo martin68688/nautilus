@@ -331,11 +331,17 @@ def _representation_attributes(components: Mapping[str, str]) -> dict[str, str]:
         (r"resnet[-_ ]?(18|34|50|101|152)", lambda m: f"resnet{m.group(1)}"),
         (r"convnext[-_ ]?(tiny|small|base|large)", lambda m: f"convnext_{m.group(1)}"),
     )
-    for pattern, render in backbone_patterns:
-        match = re.search(pattern, text)
-        if match:
-            attributes["backbone_family"] = render(match)
-            break
+    backbone_families = {
+        render(match)
+        for pattern, render in backbone_patterns
+        for match in re.finditer(pattern, text)
+    }
+    # A multi-backbone/ensemble card is useful architecture evidence, but it
+    # cannot truthfully bind the singular backbone_family slot.  Leaving the
+    # slot unbound lets the Judge compose it with an explicit, auditable
+    # backbone card instead of silently choosing whichever name appears first.
+    if len(backbone_families) == 1:
+        attributes["backbone_family"] = next(iter(backbone_families))
     if any(value in text for value in ("imagenet", "public pretrained", "pretrained")):
         attributes["initialization_source"] = "public_pretrained"
     elif "frozen" in text and attributes.get("backbone_family"):

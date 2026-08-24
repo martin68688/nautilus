@@ -11,9 +11,10 @@ external_skill_memory:
   memory_strategy_recoverable_rejection_enabled: true
   memory_strategy_rejection_history_limit: 8
   memory_strategy_post_review_repair_attempts: 1
-  memory_strategy_host_required_backbone_family: efficientnet_b3
-  memory_strategy_host_require_public_pretrained: true
-  memory_strategy_host_required_pretrained_loader: timm
+  # Architecture and initialization are selected by cross-task retrieval and
+  # Strategy, then preserved by the Planner alignment loop.  Host feedback is
+  # limited to execution/interface invariants; it must not prescribe the
+  # retrieval answer.
 
 run_identity:
   experiment_group: plant_seedlings_v167_intent_feedback_a100_6h_sol_low

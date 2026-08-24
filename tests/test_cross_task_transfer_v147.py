@@ -320,6 +320,20 @@ def test_l1_recipe_is_decomposed_and_generic_c11_cannot_take_representation_slot
                 "ensemble_calibration": "Evaluate double temperature on OOF predictions.",
             },
         },
+        "recipe::leaf::multi-backbone": {
+            "id": "recipe::leaf::multi-backbone",
+            "task_id": "leaf-classification",
+            "abstraction_level": "L1_recipe",
+            "title": "Multi-backbone descriptor ensemble",
+            "method_family": "resnet50_efficientnet_b0_descriptor_ensemble",
+            "pipeline": {
+                "feature_representation": (
+                    "Fuse public pretrained ResNet50 and EfficientNet-B0 "
+                    "embeddings with target-derived shape descriptors."
+                ),
+                "model_stack": "Concatenate the branches before classification.",
+            },
+        },
     }
     projection = project_transfer_candidates(
         nodes,
@@ -349,6 +363,18 @@ def test_l1_recipe_is_decomposed_and_generic_c11_cannot_take_representation_slot
         "initialization_source": "public_pretrained",
         "feature_branch": "target_derived_descriptors",
     }
+    multi_representation = next(
+        row
+        for row in rows
+        if row["id"]
+        == "recipe::leaf::multi-backbone::representation_blueprint"
+    )
+    multi_attributes = multi_representation["portable_text"][
+        "representation_attributes"
+    ]
+    assert "backbone_family" not in multi_attributes
+    assert multi_attributes["initialization_source"] == "public_pretrained"
+    assert multi_attributes["feature_branch"] == "target_derived_descriptors"
     assert (
         "double temperature"
         not in json.dumps(

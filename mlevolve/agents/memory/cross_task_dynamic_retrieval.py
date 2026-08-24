@@ -409,11 +409,12 @@ def _representation_requirement(slot: str, candidate: Mapping[str, Any]) -> str:
             (r"resnet[-_ ]?(18|34|50|101|152)", lambda m: f"resnet{m.group(1)}"),
             (r"convnext[-_ ]?(tiny|small|base|large)", lambda m: f"convnext_{m.group(1)}"),
         )
-        for pattern, render in patterns:
-            match = re.search(pattern, text)
-            if match:
-                return render(match)
-        return ""
+        families = {
+            render(match)
+            for pattern, render in patterns
+            for match in re.finditer(pattern, text)
+        }
+        return next(iter(families)) if len(families) == 1 else ""
     if slot == "initialization_source":
         if "imagenet" in text or "public pretrained" in text or "pretrained" in text:
             return "public_pretrained"
