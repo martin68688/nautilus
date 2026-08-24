@@ -472,7 +472,7 @@ def verify_representation_adoption(
             "violations": [f"candidate syntax error: {error.msg}"],
         }
 
-    string_constants: dict[str, str] = {}
+    static_constants: dict[str, str | bool] = {}
     ambiguous_constants: set[str] = set()
     for node in ast.walk(tree):
         name = ""
@@ -487,23 +487,120 @@ def verify_representation_adoption(
         elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             name = node.target.id
             value = node.value
-        if not name or not isinstance(value, ast.Constant) or not isinstance(
-            value.value, str
+        if (
+            not name
+            or not isinstance(value, ast.Constant)
+            or type(value.value) not in (str, bool)
         ):
             continue
-        resolved = str(value.value)
-        if name in string_constants and string_constants[name] != resolved:
+        resolved = value.value
+        if name in static_constants and static_constants[name] != resolved:
             ambiguous_constants.add(name)
-            string_constants.pop(name, None)
+            static_constants.pop(name, None)
         elif name not in ambiguous_constants:
-            string_constants[name] = resolved
+            static_constants[name] = resolved
 
-    def resolve_static_string(value: ast.AST | None) -> str:
-        if isinstance(value, ast.Constant) and isinstance(value.value, str):
-            return str(value.value)
+    parents: dict[ast.AST, ast.AST] = {
+        child: parent for parent in ast.walk(tree) for child in ast.iter_child_nodes(parent)
+    }
+
+    def enclosing_function(node: ast.AST) -> ast.FunctionDef | ast.AsyncFunctionDef | None:
+        parent = parents.get(node)
+        while parent is not None:
+            if isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                return parent
+            parent = parents.get(parent)
+        return None
+
+    def function_defaults(
+        function: ast.FunctionDef | ast.AsyncFunctionDef,
+    ) -> tuple[list[str], dict[str, str | bool]]:
+        positional = [*function.args.posonlyargs, *function.args.args]
+        if positional and positional[0].arg in {"self", "cls"}:
+            positional = positional[1:]
+        defaults: dict[str, str | bool] = {}
+        for argument, value in zip(
+            positional[-len(function.args.defaults) :] if function.args.defaults else [],
+            function.args.defaults,
+        ):
+            if isinstance(value, ast.Constant) and type(value.value) in (str, bool):
+                defaults[argument.arg] = value.value
+        for argument, value in zip(function.args.kwonlyargs, function.args.kw_defaults):
+            if isinstance(value, ast.Constant) and type(value.value) in (str, bool):
+                defaults[argument.arg] = value.value
+        return [argument.arg for argument in positional], defaults
+
+    def callable_name(function: ast.FunctionDef | ast.AsyncFunctionDef) -> str:
+        parent = parents.get(function)
+        if function.name == "__init__" and isinstance(parent, ast.ClassDef):
+            return parent.name
+        return function.name
+
+    def matching_calls(name: str) -> list[ast.Call]:
+        calls: list[ast.Call] = []
+        for candidate in ast.walk(tree):
+            if not isinstance(candidate, ast.Call):
+                continue
+            if isinstance(candidate.func, ast.Name):
+                observed = candidate.func.id
+            elif isinstance(candidate.func, ast.Attribute):
+                observed = candidate.func.attr
+            else:
+                observed = ""
+            if observed == name:
+                calls.append(candidate)
+        return calls
+
+    def resolve_parameter_default(
+        node: ast.AST,
+        parameter: str,
+    ) -> str | bool | None:
+        """Resolve a constant default only when every visible call preserves it.
+
+        Generated candidates commonly wrap ``timm.create_model`` in a model
+        constructor.  Requiring literal arguments at the inner call falsely
+        rejects code whose constructor defaults and every instantiation bind
+        the selected values.  Dynamic or contradictory calls remain
+        deliberately unverifiable.
+        """
+
+        function = enclosing_function(node)
+        if function is None:
+            return None
+        positional_names, defaults = function_defaults(function)
+        if parameter not in defaults:
+            return None
+        resolved = defaults[parameter]
+        owner = callable_name(function)
+        for call in matching_calls(owner):
+            explicit: ast.AST | None = None
+            for keyword in call.keywords:
+                if keyword.arg == parameter:
+                    explicit = keyword.value
+                    break
+            if explicit is None and parameter in positional_names:
+                index = positional_names.index(parameter)
+                if index < len(call.args):
+                    explicit = call.args[index]
+            if explicit is None:
+                continue
+            if not isinstance(explicit, ast.Constant) or type(explicit.value) not in (
+                str,
+                bool,
+            ):
+                return None
+            if explicit.value != resolved:
+                return None
+        return resolved
+
+    def resolve_static(value: ast.AST | None, *, at: ast.AST) -> str | bool | None:
+        if isinstance(value, ast.Constant) and type(value.value) in (str, bool):
+            return value.value
         if isinstance(value, ast.Name) and value.id not in ambiguous_constants:
-            return string_constants.get(value.id, "")
-        return ""
+            if value.id in static_constants:
+                return static_constants[value.id]
+            return resolve_parameter_default(at, value.id)
+        return None
 
     timm_module_aliases: set[str] = set()
     timm_create_model_aliases: set[str] = set()
@@ -548,12 +645,14 @@ def verify_representation_adoption(
                 func_name == "create_model"
                 or func_name in timm_create_model_aliases
             ) and node.args:
-                model_name = resolve_static_string(node.args[0])
-                names_backbone = model_name.lower() == backbone.lower()
+                model_name = resolve_static(node.args[0], at=node)
+                names_backbone = (
+                    isinstance(model_name, str)
+                    and model_name.lower() == backbone.lower()
+                )
                 has_pretrained = any(
                     keyword.arg == "pretrained"
-                    and isinstance(keyword.value, ast.Constant)
-                    and keyword.value.value is True
+                    and resolve_static(keyword.value, at=node) is True
                     for keyword in node.keywords
                 )
                 pretrained = pretrained or (names_backbone and has_pretrained)

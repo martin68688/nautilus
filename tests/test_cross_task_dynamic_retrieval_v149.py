@@ -938,6 +938,77 @@ def test_representation_adoption_gate_rejects_backbone_substitution_and_weights_
     assert any("weights=None" in row for row in rejected["violations"])
 
 
+def test_representation_adoption_gate_accepts_consistently_bound_timm_wrapper():
+    from agents.memory.cross_task_dynamic_retrieval import (
+        verify_representation_adoption,
+    )
+
+    contracts = {
+        "backbone_family": {"required_value": "efficientnet_b3"},
+        "initialization_source": {"required_value": "public_pretrained"},
+        "pretrained_loader": {"required_value": "timm"},
+    }
+    source = """
+import timm
+
+class Model:
+    def __init__(self, backbone_name="efficientnet_b3", pretrained=True):
+        self.backbone = timm.create_model(
+            backbone_name,
+            pretrained=pretrained,
+            num_classes=0,
+        )
+
+model = Model(backbone_name="efficientnet_b3", pretrained=True)
+"""
+
+    result = verify_representation_adoption(source, contracts)
+
+    assert result["valid"] is True
+    assert result["violations"] == []
+
+
+@pytest.mark.parametrize(
+    "unsafe_binding",
+    [
+        'Model(backbone_name="efficientnet_b3", pretrained=False)',
+        'Model(backbone_name="resnet50", pretrained=True)',
+        'Model(backbone_name="efficientnet_b3", pretrained=use_weights)',
+    ],
+)
+def test_representation_adoption_gate_rejects_unsafe_timm_wrapper_binding(
+    unsafe_binding,
+):
+    from agents.memory.cross_task_dynamic_retrieval import (
+        verify_representation_adoption,
+    )
+
+    contracts = {
+        "backbone_family": {"required_value": "efficientnet_b3"},
+        "initialization_source": {"required_value": "public_pretrained"},
+        "pretrained_loader": {"required_value": "timm"},
+    }
+    source = f"""
+import timm
+use_weights = True
+
+class Model:
+    def __init__(self, backbone_name="efficientnet_b3", pretrained=True):
+        self.backbone = timm.create_model(
+            backbone_name,
+            pretrained=pretrained,
+            num_classes=0,
+        )
+
+model = {unsafe_binding}
+"""
+
+    result = verify_representation_adoption(source, contracts)
+
+    assert result["valid"] is False
+    assert any("public_pretrained" in row for row in result["violations"])
+
+
 def test_adoption_durably_mirrors_dynamic_search_and_direct_judge_receipt():
     from agents.adoption import log_adoption
     from agents.memory.cross_task_dynamic_retrieval import (
