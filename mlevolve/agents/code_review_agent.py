@@ -31,6 +31,23 @@ _METRIC_NAME_PARTS = {
 }
 
 
+def _submission_placeholder_safety_guidance() -> list[str]:
+    """Prevent reviewers from treating example targets as a class registry."""
+
+    return [
+        "Values already present in a sample-submission target column may be "
+        "placeholders rather than the complete target vocabulary.",
+        "Do not add an equality assertion between training labels/classes and "
+        "the unique target values observed in sample_submission unless the "
+        "frozen dataset or Host contract explicitly declares that column to be "
+        "an exhaustive class registry.",
+        "Validate submission columns, row count, row identity/order, missing "
+        "values, and that emitted predictions belong to the training-derived "
+        "target vocabulary. Do not infer the vocabulary from example target "
+        "values alone.",
+    ]
+
+
 def _metric_names(node: ast.AST) -> set[str]:
     names: set[str] = set()
     for child in ast.walk(node):
@@ -280,6 +297,9 @@ def run(
     if "Instructions" not in prompt:
         prompt["Instructions"] = {}
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
+    prompt["Instructions"][
+        "SAMPLE SUBMISSION PLACEHOLDER SAFETY"
+    ] = _submission_placeholder_safety_guidance()
     if atomic_plan:
         prompt["Instructions"][
             "FROZEN ATOMIC PLAN - REVIEW AUTHORITY BOUNDARY"
