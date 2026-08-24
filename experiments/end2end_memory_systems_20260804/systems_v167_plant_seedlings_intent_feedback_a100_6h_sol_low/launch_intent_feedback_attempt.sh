@@ -20,6 +20,9 @@ CANDIDATE_RECEIPT="$OUTPUT_ROOT/preflight-$ATTEMPT_ID-candidate-public-pretraine
 CANDIDATE_CACHE_ROOT="$OUTPUT_ROOT/preflight-$ATTEMPT_ID-candidate-runtime-cache"
 LAUNCH_LOG="$OUTPUT_ROOT/launcher-$ATTEMPT_ID.log"
 PID_FILE="$OUTPUT_ROOT/main-$ATTEMPT_ID.pid"
+PORTFOLIO_MANIFEST_PATH="${MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_PATH:-}"
+PORTFOLIO_MANIFEST_SHA256="${MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_SHA256:-}"
+PORTFOLIO_CANDIDATE="${MLEVOLVE_TRANSFER_PORTFOLIO_CANDIDATE:-comprehensive_best}"
 
 if [[ -e "$ATTEMPT_ROOT" || -e "$RECEIPT" || -e "$CANDIDATE_RECEIPT" || -e "$CANDIDATE_CACHE_ROOT" || -e "$PID_FILE" ]]; then
   echo "refusing to overwrite existing attempt identity: $ATTEMPT_ID" >&2
@@ -32,6 +35,19 @@ test -d "$DATA_ROOT/train"
 test -d "$DATA_ROOT/test"
 test -f "$DESC_FILE"
 test -f "$MLEVOLVE_CONFIG"
+
+if [[ -n "$PORTFOLIO_MANIFEST_PATH" || -n "$PORTFOLIO_MANIFEST_SHA256" ]]; then
+  if [[ -z "$PORTFOLIO_MANIFEST_PATH" || -z "$PORTFOLIO_MANIFEST_SHA256" ]]; then
+    echo "portfolio manifest path and SHA-256 must be supplied together" >&2
+    exit 4
+  fi
+  test -f "$PORTFOLIO_MANIFEST_PATH"
+  ACTUAL_PORTFOLIO_SHA256="$(sha256sum "$PORTFOLIO_MANIFEST_PATH" | awk '{print $1}')"
+  if [[ "$ACTUAL_PORTFOLIO_SHA256" != "$PORTFOLIO_MANIFEST_SHA256" ]]; then
+    echo "portfolio manifest SHA-256 mismatch" >&2
+    exit 5
+  fi
+fi
 
 mkdir -p "$OUTPUT_ROOT"
 export HF_HUB_OFFLINE=1
@@ -82,13 +98,21 @@ RUN_ARGS=(
   cpu_number=16
 )
 
+if [[ -n "$PORTFOLIO_MANIFEST_PATH" ]]; then
+  RUN_ARGS+=(
+    "external_skill_memory.cross_task_transfer_portfolio_manifest_path=$PORTFOLIO_MANIFEST_PATH"
+    "external_skill_memory.cross_task_transfer_portfolio_manifest_sha256=$PORTFOLIO_MANIFEST_SHA256"
+    "external_skill_memory.cross_task_transfer_portfolio_candidate=$PORTFOLIO_CANDIDATE"
+  )
+fi
+
 if [[ "${MLEVOLVE_FOREGROUND:-0}" == "1" ]]; then
   printf '%s\n' "$$" >"$PID_FILE"
-  echo "starting $ATTEMPT_ID in foreground pid=$$ receipt=$RECEIPT candidate_receipt=$CANDIDATE_RECEIPT log=$LAUNCH_LOG"
+  echo "starting $ATTEMPT_ID in foreground pid=$$ receipt=$RECEIPT candidate_receipt=$CANDIDATE_RECEIPT portfolio_manifest=$PORTFOLIO_MANIFEST_PATH portfolio_sha256=$PORTFOLIO_MANIFEST_SHA256 portfolio_candidate=$PORTFOLIO_CANDIDATE log=$LAUNCH_LOG"
   exec python "${RUN_ARGS[@]}" >"$LAUNCH_LOG" 2>&1
 fi
 
 nohup python "${RUN_ARGS[@]}" >"$LAUNCH_LOG" 2>&1 &
 PID=$!
 printf '%s\n' "$PID" >"$PID_FILE"
-echo "started $ATTEMPT_ID pid=$PID receipt=$RECEIPT candidate_receipt=$CANDIDATE_RECEIPT log=$LAUNCH_LOG"
+echo "started $ATTEMPT_ID pid=$PID receipt=$RECEIPT candidate_receipt=$CANDIDATE_RECEIPT portfolio_manifest=$PORTFOLIO_MANIFEST_PATH portfolio_sha256=$PORTFOLIO_MANIFEST_SHA256 portfolio_candidate=$PORTFOLIO_CANDIDATE log=$LAUNCH_LOG"
