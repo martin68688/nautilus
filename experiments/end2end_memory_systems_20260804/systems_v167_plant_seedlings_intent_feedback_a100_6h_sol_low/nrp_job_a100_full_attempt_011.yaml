@@ -1,0 +1,142 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-plant-v167-intent-feedback-a100-full-r3
+  namespace: ecepxie
+  annotations:
+    mlevolve.ai/code-commit: af7628d0
+    mlevolve.ai/purpose: plant-v167-full-strategy-planner-host-feedback-recovery
+    mlevolve.ai/source-task: leaf-classification
+    mlevolve.ai/target-task: plant-seedlings-classification
+    mlevolve.ai/llm-endpoint: private-cluster-local-cliproxyapi
+  labels:
+    app: mlevolve-end2end
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: plant-v167-intent-feedback-a100-full-r3
+    mlevolve.ai/release-mode: standalone-six-hour-transfer
+    mlevolve.ai/system: strategy-planner-host-feedback
+spec:
+  # Includes scheduler wait and teardown while preserving the program's full
+  # 21600-second search budget once the container actually starts.
+  activeDeadlineSeconds: 86400
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app: mlevolve-end2end
+        app.kubernetes.io/managed-by: codex-nrp-training
+        ecepxie.nrp/owner: haoming
+        experiment: plant-v167-intent-feedback-a100-full-r3
+        mlevolve.ai/release-mode: standalone-six-hour-transfer
+        mlevolve.ai/system: strategy-planner-host-feedback
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 300
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: PreferNoSchedule
+      containers:
+        - name: mlevolve
+          image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -lc
+          args:
+            - |
+              set -euo pipefail
+              export PATH="/opt/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:${PATH}"
+              test -n "${OPENAI_API_KEY:-}"
+              test "${OPENAI_BASE_URL:-}" = "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
+              test "${OPENAI_MODEL:-}" = "gpt-5.6-sol"
+              test "${OPENAI_REASONING_EFFORT:-}" = "low"
+
+              RUNTIME=/workspace/nautilus-exp-end2end-agent-v167-intent-feedback-a100-sol-low-r9
+              OUTPUT_ROOT=/workspace/experiment-end2end-plant-seedlings-v167-intent-feedback-6h-sol-low-a100-r1
+              SOURCE_HUB=${OUTPUT_ROOT}/preflight-attempt-009-candidate-runtime-cache/huggingface/hub
+              HOST_CACHE_ROOT=${OUTPUT_ROOT}/preflight-attempt-011-host-runtime-cache
+              REPOSITORY=models--timm--efficientnet_b3.ra2_in1k
+              EXPECTED_SHA=279d2a53898aa89dab43fd6bd7df9f706aea4cb9cf916223988bbcb8e5850469
+              LAUNCHER=${RUNTIME}/experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low/launch_intent_feedback_attempt.sh
+
+              test -d "${RUNTIME}/mlevolve"
+              test -x "${LAUNCHER}"
+              test -d "${SOURCE_HUB}/${REPOSITORY}"
+              REVISION=$(tr -d '\n' < "${SOURCE_HUB}/${REPOSITORY}/refs/main")
+              test -n "${REVISION}"
+              SOURCE_WEIGHT=${SOURCE_HUB}/${REPOSITORY}/snapshots/${REVISION}/model.safetensors
+              test -f "${SOURCE_WEIGHT}"
+              test "$(sha256sum "${SOURCE_WEIGHT}" | awk '{print $1}')" = "${EXPECTED_SHA}"
+              test ! -e "${HOST_CACHE_ROOT}"
+
+              mkdir -p "${HOST_CACHE_ROOT}/huggingface"
+              cp -a "${SOURCE_HUB}" "${HOST_CACHE_ROOT}/huggingface/hub"
+              export HF_HOME="${HOST_CACHE_ROOT}/huggingface"
+              export HF_HUB_CACHE="${HOST_CACHE_ROOT}/huggingface/hub"
+              export HUGGINGFACE_HUB_CACHE="${HOST_CACHE_ROOT}/huggingface/hub"
+              export MLEVOLVE_CANDIDATE_HF_HUB_SEED="${HOST_CACHE_ROOT}/huggingface/hub"
+              export OUTPUT_ROOT
+              exec env MLEVOLVE_FOREGROUND=1 bash "${LAUNCHER}" attempt-011
+          envFrom:
+            - secretRef:
+                name: cliproxyapi-haoming-client
+          env:
+            - name: OPENAI_MODEL
+              value: gpt-5.6-sol
+            - name: OPENAI_REASONING_EFFORT
+              value: low
+            - name: RUNFOREST_DEV_EXECUTION_ROLE
+              value: memory_transfer
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: HF_HUB_OFFLINE
+              value: "1"
+            - name: TRANSFORMERS_OFFLINE
+              value: "1"
+            - name: HTTP_PROXY
+              value: http://127.0.0.1:9
+            - name: HTTPS_PROXY
+              value: http://127.0.0.1:9
+            - name: ALL_PROXY
+              value: http://127.0.0.1:9
+            - name: NO_PROXY
+              value: 127.0.0.1,localhost,cliproxyapi-haoming.ecepxie.svc.cluster.local,.ecepxie.svc.cluster.local,.svc.cluster.local,.svc,.cluster.local
+            - name: http_proxy
+              value: http://127.0.0.1:9
+            - name: https_proxy
+              value: http://127.0.0.1:9
+            - name: all_proxy
+              value: http://127.0.0.1:9
+            - name: no_proxy
+              value: 127.0.0.1,localhost,cliproxyapi-haoming.ecepxie.svc.cluster.local,.ecepxie.svc.cluster.local,.svc.cluster.local,.svc,.cluster.local
+          resources:
+            requests:
+              cpu: "16"
+              memory: 32Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/a100: "1"
+            limits:
+              cpu: "16"
+              memory: 32Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/a100: "1"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Gi
