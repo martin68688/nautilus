@@ -659,6 +659,7 @@ def test_v167_enables_host_runtime_method_floor():
         use_cli_args=False,
     )
     ext = cfg.external_skill_memory
+    assert ext.memory_strategy_plan_alignment_retries == 3
     assert ext.memory_strategy_host_required_backbone_family == "efficientnet_b3"
     assert ext.memory_strategy_host_require_public_pretrained is True
     assert ext.memory_strategy_host_required_pretrained_loader == "timm"

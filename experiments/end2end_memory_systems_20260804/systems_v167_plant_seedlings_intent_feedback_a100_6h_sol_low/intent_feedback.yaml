@@ -4,7 +4,9 @@ extends: ../systems_v165_plant_seedlings_transfer_attributes_a100_6h_luna_low/tr
 
 external_skill_memory:
   memory_strategy_plan_alignment_enabled: true
-  memory_strategy_plan_alignment_retries: 2
+  # One initial handoff plus enough bounded turns to repair independent
+  # fallback, provenance, and interface mismatches without restarting retrieval.
+  memory_strategy_plan_alignment_retries: 3
   memory_strategy_plan_alignment_max_tokens: 4000
   memory_strategy_recoverable_rejection_enabled: true
   memory_strategy_rejection_history_limit: 8
