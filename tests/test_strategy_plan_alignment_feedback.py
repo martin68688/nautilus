@@ -316,6 +316,27 @@ def main():
     assert gate["observations"]["active_gradient_training_loops"] == []
 
 
+def test_host_plan_execution_gate_treats_exact_retained_checkpoint_as_frozen():
+    plan = _roadmap(
+        "Compare original-view and four-view inference on the same exact "
+        "retained best single checkpoint"
+    )
+    code = """
+for epoch in range(16):
+    loss.backward()
+    optimizer.step()
+"""
+
+    gate = verify_host_plan_execution(plan, code)
+
+    assert gate["enabled"] is True
+    assert gate["valid"] is False
+    assert gate["requirement_evidence"][0]["detector"] == (
+        "frozen_checkpoint_reuse"
+    )
+    assert gate["violations"][0].startswith("plan_runtime_retraining_conflict:")
+
+
 def test_host_plan_execution_gate_does_not_infer_no_retraining_from_preservation():
     plan = _roadmap("Do not alter the existing training loop or optimizer settings")
     plan["phases"][0]["preserve_invariants"] = [

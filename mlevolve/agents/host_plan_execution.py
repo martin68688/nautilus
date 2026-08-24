@@ -27,7 +27,10 @@ _CHECKPOINT_REUSE_PATTERN = re.compile(
     r"[^.\n]{0,80}\bcheckpoints?\b|"
     r"\bfrozen\b[^.\n]{0,80}\bcheckpoints?\b[^.\n]{0,100}"
     r"\b(?:reuse|replay|load|use)\w*\b|"
-    r"\bcheckpoints?\b[^.\n]{0,80}\b(?:remain|keep|kept)\w*\s+frozen\b",
+    r"\bcheckpoints?\b[^.\n]{0,80}\b(?:remain|keep|kept)\w*\s+frozen\b|"
+    r"\b(?:same\s+)?exact\s+retained\b[^.\n]{0,100}\bcheckpoints?\b|"
+    r"\b(?:reuse|replay|load|use)\w*\b[^.\n]{0,100}"
+    r"\bexact\s+retained\b[^.\n]{0,80}\bcheckpoints?\b",
     re.IGNORECASE,
 )
 _STRICT_ABSOLUTE_THRESHOLD_PATTERNS = (
