@@ -31,6 +31,15 @@ from agents.memory_strategy_agent import payload_sha256
 logger = logging.getLogger("MLEvolve")
 
 
+def _compact_coder_diagnostic(value: Any, *, max_chars: int = 3000) -> str:
+    """Keep an actionable Coder refusal without replaying an unbounded response."""
+
+    text = " ".join(str(value or "").split())
+    if len(text) <= max_chars:
+        return text
+    return text[: max(0, max_chars - 3)] + "..."
+
+
 ATOMIC_ACTUATION_PLAN_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
@@ -776,6 +785,9 @@ def _planner_prompt(
             "coder_verdict": dict(
                 (coder_replan_feedback or {}).get("coder_verdict") or {}
             ),
+            "coder_diagnostic": _compact_coder_diagnostic(
+                (coder_replan_feedback or {}).get("coder_diagnostic")
+            ),
             "allow_hypothesis_switch": allow_hypothesis_switch,
             "replan_mode": replan_mode,
             "rejected_hypothesis_ids": rejected_hypothesis_ids,
@@ -1192,6 +1204,9 @@ def _staged_planner_prompt(
             "failed_phase_index": int(feedback.get("failed_phase_index") or 0),
             "failed_phase": dict(feedback.get("previous_plan") or {}),
             "coder_verdict": dict(feedback.get("coder_verdict") or {}),
+            "coder_diagnostic": _compact_coder_diagnostic(
+                feedback.get("coder_diagnostic")
+            ),
             "replan_mode": replan_mode,
             "instruction": instruction,
         }
@@ -2343,6 +2358,7 @@ def run_atomic_coder(
                 else ""
             ),
             "plan_diff_verdict": verdict,
+            "response_excerpt": _compact_coder_diagnostic(response),
             "strict_coder_enabled": strict_coder,
             "verification_mode": verification_mode,
             "coder_allowlist": build_atomic_coder_allowlist(plan),
@@ -2554,6 +2570,9 @@ def _run_staged_atomic_actuation_pipeline(
             "previous_plan": copy.deepcopy(failed_phase),
             "failed_phase_index": failed_phase_index,
             "coder_verdict": coder_verdict,
+            "coder_diagnostic": str(
+                final_coder.get("response_excerpt") or ""
+            ),
             "replan_mode": _coder_replan_mode(failed_phase, coder_verdict),
         }
 
@@ -2720,6 +2739,9 @@ def run_atomic_actuation_pipeline(
             "coder_verdict": copy.deepcopy(
                 dict(coder_trace.get("plan_diff_verdict") or {})
             ),
+            "coder_diagnostic": str(
+                coder_trace.get("response_excerpt") or ""
+            ),
             "replan_mode": _coder_replan_mode(
                 dict(planner_trace.get("plan") or {}),
                 dict(coder_trace.get("plan_diff_verdict") or {}),
@@ -2739,6 +2761,9 @@ def run_atomic_actuation_pipeline(
                 "previous_plan": copy.deepcopy(dict(planner_trace.get("plan") or {})),
                 "coder_verdict": copy.deepcopy(
                     dict(coder_trace.get("plan_diff_verdict") or {})
+                ),
+                "coder_diagnostic": str(
+                    coder_trace.get("response_excerpt") or ""
                 ),
                 "allow_hypothesis_switch": True,
                 "rejected_hypothesis_ids": sorted(rejected_hypothesis_ids),
@@ -2791,6 +2816,9 @@ def run_atomic_actuation_pipeline(
                     ),
                     "coder_verdict": copy.deepcopy(
                         dict(coder_trace.get("plan_diff_verdict") or {})
+                    ),
+                    "coder_diagnostic": str(
+                        coder_trace.get("response_excerpt") or ""
                     ),
                     "replan_mode": replan_mode,
                 }

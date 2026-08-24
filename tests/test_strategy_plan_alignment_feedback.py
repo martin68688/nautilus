@@ -392,6 +392,40 @@ def test_recoverable_rejection_preserves_bounded_history():
     ] == first["rejection_fingerprint"]
 
 
+def test_recoverable_rejection_preserves_coder_diagnostic_for_next_strategy():
+    agent = _agent()
+    parent = SearchNode(code="x = 1\n", stage="debug")
+    trace = {
+        "stage": "debug",
+        "status": "rejected",
+        "reason": "atomic_pipeline_not_accepted",
+        "atomic": {
+            "planner": {
+                "status": "accepted",
+                "plan_sha256": "c" * 64,
+                "plan": {"hypothesis_id": "repair-symbol-closure"},
+            },
+            "coder": {
+                "status": "rejected",
+                "response_excerpt": (
+                    "No patch: moving model before its class definition would raise NameError."
+                ),
+                "plan_diff_verdict": {
+                    "valid": False,
+                    "violations": ["diff application failed: no SEARCH/REPLACE block"],
+                },
+            },
+        },
+    }
+
+    receipt = record_recoverable_strategy_rejection(agent, parent, trace)
+
+    assert "NameError" in receipt["coder_diagnostic"]
+    assert receipt["coder_violations"] == [
+        "diff application failed: no SEARCH/REPLACE block"
+    ]
+
+
 def test_debug_rejection_uses_recoverable_parent_policy():
     agent = _agent()
     agent.cfg.external_skill_memory.memory_strategy_recoverable_rejection_enabled = (

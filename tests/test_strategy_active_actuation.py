@@ -950,6 +950,41 @@ def test_staged_pipeline_reconciles_observed_scope_and_retries(monkeypatch):
     assert len(planner_calls) >= 2
 
 
+def test_staged_planner_receives_bounded_coder_refusal_diagnostic():
+    feedback = {
+        "previous_roadmap": _staged_roadmap(
+            [_atomic_phase("repair", 1, target_symbols=["model"])]
+        ),
+        "failed_phase_index": 0,
+        "previous_plan": _atomic_phase(
+            "repair", 1, target_symbols=["model"]
+        ),
+        "coder_verdict": {
+            "valid": False,
+            "violations": ["diff application failed: no SEARCH/REPLACE block"],
+        },
+        "coder_diagnostic": (
+            "No patch: model would execute before PlantSeedlingFusionModel is defined."
+        ),
+        "replan_mode": "decompose",
+    }
+
+    prompt = atomic_actuation._staged_planner_prompt(
+        _strategy_trace()["memo"],
+        parent_code="model = build_model()\n",
+        budget={},
+        limits={"max_modules": 2, "max_changes": 3, "max_patches": 6},
+        max_phases=3,
+        stage="debug",
+        coder_replan_feedback=feedback,
+    )
+    payload = json.loads(prompt["user"])
+
+    assert "PlantSeedlingFusionModel" in payload["coder_replan_required"][
+        "coder_diagnostic"
+    ]
+
+
 def test_strict_coder_requires_every_planned_symbol_and_forbids_extra_symbol():
     plan = _atomic_phase(
         "p1",

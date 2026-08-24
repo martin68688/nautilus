@@ -71,6 +71,8 @@ def record_recoverable_strategy_rejection(
     planner = dict(atomic.get("planner") or {})
     plan = dict(planner.get("plan") or {})
     alignment = dict(planner.get("intent_alignment") or {})
+    coder = dict(atomic.get("coder") or {})
+    coder_verdict = dict(coder.get("plan_diff_verdict") or {})
     receipt = {
         "schema": "mlevolve_strategy_rejection_receipt_v1",
         "reason": str(trace.get("reason") or trace.get("status") or "rejected"),
@@ -78,7 +80,12 @@ def record_recoverable_strategy_rejection(
         "hypothesis_id": str(plan.get("hypothesis_id") or ""),
         "plan_sha256": str(planner.get("plan_sha256") or ""),
         "planner_status": str(planner.get("status") or ""),
-        "coder_status": str((atomic.get("coder") or {}).get("status") or ""),
+        "coder_status": str(coder.get("status") or ""),
+        "coder_diagnostic": str(coder.get("response_excerpt") or "")[:3000],
+        "coder_violations": [
+            str(value)[:1000]
+            for value in list(coder_verdict.get("violations") or [])[:8]
+        ],
         "intent_alignment_status": str(alignment.get("status") or ""),
         "intent_alignment_reason": str(alignment.get("reason") or ""),
     }
