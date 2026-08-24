@@ -1249,7 +1249,26 @@ class AgentSearch:
                         logger.info(f"Node {result_node.id} uses immutable source code, skipping code review")
                     else:
                         pre_review_code = result_node.code
-                        reviewed_code = code_review_agent.run(self, result_node)
+                        review_atomic_trace = dict(
+                            getattr(result_node, "atomic_actuation_trace", None)
+                            or {}
+                        )
+                        review_atomic_plan = (
+                            (review_atomic_trace.get("planner") or {}).get(
+                                "plan"
+                            )
+                            or {}
+                        )
+                        reviewed_code = code_review_agent.run(
+                            self,
+                            result_node,
+                            atomic_plan=(
+                                review_atomic_plan
+                                if review_atomic_trace.get("status")
+                                == "accepted"
+                                else None
+                            ),
+                        )
                         if reviewed_code.strip() != result_node.code.strip():
                             logger.info(f"Node {result_node.id} code has been reviewed and modified")
                             result_node.code = reviewed_code

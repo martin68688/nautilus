@@ -222,6 +222,7 @@ def run(
     agent,
     node: SearchNode,
     *,
+    atomic_plan: Mapping[str, Any] | None = None,
     atomic_host_feedback: Mapping[str, Any] | None = None,
 ) -> str:
     logger.debug(f"[review] node {node.id}")
@@ -233,6 +234,16 @@ def run(
     if "Instructions" not in prompt:
         prompt["Instructions"] = {}
     prompt["Instructions"] |= get_impl_guideline_from_agent(agent)
+    if atomic_plan:
+        prompt["Instructions"][
+            "FROZEN ATOMIC PLAN - REVIEW AUTHORITY BOUNDARY"
+        ] = [
+            "Strategy has already reviewed and approved this Planner handoff. You review only P0 leakage and P1 critical implementation correctness; you are not the plan owner.",
+            "Any SEARCH/REPLACE patch must preserve the plan's objective, expected mechanism, required selection gates, falsification fallback, compute ceiling, phase dependencies, and preserve-invariants exactly.",
+            "Do not remove a predeclared metric threshold, disagreement gate, timeout gate, baseline fallback, required model/provider, or submission continuation merely because you would have designed the experiment differently.",
+            "If the code faithfully implements an approved but debatable methodological choice, approve it unchanged. Host verification will return any mechanically demonstrated plan conflict to Planner rather than allowing a silent review-time redesign.",
+            "Frozen Atomic plan: " + str(dict(atomic_plan)),
+        ]
     if atomic_host_feedback:
         feedback = dict(atomic_host_feedback)
         prompt["Instructions"][

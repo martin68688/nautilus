@@ -334,6 +334,48 @@ def main():
     assert gate["valid"] is True
 
 
+def test_host_plan_execution_gate_blocks_removed_absolute_metric_threshold():
+    plan = _roadmap(
+        "Select the seeded average only when it strictly exceeds both the "
+        "measured baseline and 0.9478724989519529; otherwise retain baseline"
+    )
+    code = """
+ensemble_score = 0.96
+baseline_score = 0.95
+exceeds_absolute_threshold = True
+select_average = ensemble_score > baseline_score and exceeds_absolute_threshold
+"""
+    gate = verify_host_plan_execution(plan, code)
+
+    assert gate["enabled"] is True
+    assert "absolute_metric_selection_threshold" in gate["requirements"]
+    assert gate["valid"] is False
+    assert gate["violations"][0].startswith(
+        "plan_runtime_absolute_metric_threshold_missing:"
+    )
+
+
+def test_host_plan_execution_gate_accepts_bound_absolute_metric_threshold():
+    plan = _roadmap(
+        "Select the seeded average only when it strictly exceeds both the "
+        "measured baseline and 0.9478724989519529; otherwise retain baseline"
+    )
+    code = """
+ensemble_score = 0.96
+baseline_score = 0.95
+absolute_score_threshold = 0.9478724989519529
+select_average = (
+    ensemble_score > baseline_score
+    and ensemble_score > absolute_score_threshold
+)
+"""
+    gate = verify_host_plan_execution(plan, code)
+
+    assert gate["enabled"] is True
+    assert gate["valid"] is True
+    assert gate["observations"]["absolute_metric_threshold_comparisons"]
+
+
 def test_host_plan_execution_feedback_returns_to_planner_repair_lane():
     gate = verify_host_plan_execution(
         _roadmap("No retraining; all existing checkpoints remain frozen"),
