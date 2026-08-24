@@ -114,6 +114,15 @@ STAGE_ALIASES = {
     "aggregation": "fusion",
 }
 
+# Cross-task transfer exposes three retrieval intents only. Evolution and
+# fusion both refine an existing target solution, so they use the improve
+# intent at this boundary. Keep this mapping separate from ``STAGE_ALIASES``
+# so same-task retrieval retains its dedicated evolution/fusion routing.
+CROSS_TASK_TRANSFER_STAGE_ALIASES = {
+    "evolution": "improve",
+    "fusion": "improve",
+}
+
 RETRIEVAL_CONTROLS = {
     "no_memory",
     "stage_hybrid",
@@ -6731,6 +6740,10 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
         if transfer_decision.active:
             if draft_role == "memory_transfer":
                 query_text = "\n".join([task_desc or "", *(query_parts or [])])
+                transfer_stage = CROSS_TASK_TRANSFER_STAGE_ALIASES.get(
+                    canonical_stage,
+                    canonical_stage,
+                )
                 if getattr(
                     self,
                     "cross_task_dynamic_retrieval_enabled",
@@ -6744,7 +6757,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                         self,
                         self.cross_task_transfer_policy,
                         target_task_id=task_id,
-                        stage=canonical_stage,
+                        stage=transfer_stage,
                         task_description=task_desc,
                         query_text=query_text,
                     )
@@ -6753,7 +6766,7 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                         self.nodes,
                         self.cross_task_transfer_policy,
                         target_task_id=task_id,
-                        stage=canonical_stage,
+                        stage=transfer_stage,
                         task_description=task_desc,
                         query_text=query_text,
                     )

@@ -976,3 +976,47 @@ def test_stage_layer_dispatches_dynamic_route_before_legacy_controller():
     pack = layer.current_navigation_pack()
     assert pack["schema"] == "mlevolve_cross_task_dynamic_transfer_pack_v1"
     assert pack["stage_route"]["stage"] == "debug"
+
+
+@pytest.mark.parametrize(
+    "runtime_stage",
+    ["evolution", "fusion", "multi_fusion", "fusion_draft", "aggregation"],
+)
+def test_cross_task_late_stage_routes_use_improve_retrieval_intent(runtime_stage):
+    """Late-stage agents must not send unsupported stages to dynamic transfer."""
+
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    def query_fn(**kwargs):
+        if kwargs["func_spec"].name == "plan_projected_cross_task_memory_search":
+            return _search_action()
+        cards = json.loads(kwargs["system_message"]["authorized_projected_cards"])
+        return _judge_action(cards, {"portable_tactic"})
+
+    dynamic = _layer(query_fn, rounds=1)
+    layer = StageAwareHybridMemoryLayer.__new__(StageAwareHybridMemoryLayer)
+    layer.nodes = dynamic.nodes
+    layer.cfg = None
+    layer.cross_task_transfer_policy = _policy()
+    layer.cross_task_dynamic_retrieval_enabled = True
+    for key, value in dynamic.__dict__.items():
+        if key.startswith("cross_task_dynamic_") or key == (
+            "_experiment_r_agentic_query_fn"
+        ):
+            setattr(layer, key, value)
+    layer.end2end_controller = None
+    layer.prospective_audit_logger = None
+    layer._trace_local = threading.local()
+    layer._last_agentic_pack = {}
+
+    text, refs = layer.retrieve_for_node(
+        stage=runtime_stage,
+        task_id="uci-one-hundred-leaves",
+        task_desc="leaf descriptor classification",
+        query_parts=["Refine the current branch after a metric plateau."],
+        draft_role="memory_transfer",
+    )
+
+    assert text and refs
+    pack = layer.current_navigation_pack()
+    assert pack["stage_route"]["stage"] == "improve"
