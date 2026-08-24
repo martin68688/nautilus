@@ -60,9 +60,14 @@ _CANDIDATE_HF_SEED_ROOT_ENV = "MLEVOLVE_CANDIDATE_HF_HUB_SEED"
 _CANDIDATE_HF_SEED_REPOSITORIES_ENV = (
     "MLEVOLVE_CANDIDATE_HF_REPOSITORIES"
 )
+_CANDIDATE_TORCH_SEED_ROOT_ENV = "MLEVOLVE_CANDIDATE_TORCH_HUB_SEED"
+_CANDIDATE_TORCH_SEED_CHECKPOINTS_ENV = (
+    "MLEVOLVE_CANDIDATE_TORCH_CHECKPOINTS"
+)
 _HF_REPOSITORY_RE = re.compile(
     r"^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$"
 )
+_TORCH_CHECKPOINT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
 def _insert_host_preamble_after_future_imports(
@@ -255,6 +260,124 @@ def _seed_candidate_hf_hub_cache(
     return receipt
 
 
+def _seed_candidate_torch_hub_cache(
+    *,
+    runtime_cache_root: Path,
+    destination_checkpoint_dir: Path,
+    inherited_env: dict[str, str],
+) -> dict | None:
+    """Copy allowlisted public checkpoints into isolated ``torch.hub``.
+
+    Public model providers do not share one cache layout.  The existing Hub
+    bridge covers ``timm``/Hugging Face, while torchvision resolves its
+    official weights through ``TORCH_HOME/hub/checkpoints``.  Bridge only
+    explicitly named regular files so making the verified artifact available
+    does not expose arbitrary Host files or bind Candidate code to one loader.
+    """
+
+    raw_seed_root = str(
+        inherited_env.get(_CANDIDATE_TORCH_SEED_ROOT_ENV, "") or ""
+    ).strip()
+    raw_checkpoints = str(
+        inherited_env.get(_CANDIDATE_TORCH_SEED_CHECKPOINTS_ENV, "") or ""
+    ).strip()
+    if not raw_seed_root and not raw_checkpoints:
+        return None
+    if not raw_seed_root or not raw_checkpoints:
+        raise ValueError(
+            "candidate Torch Hub cache seeding requires both "
+            f"{_CANDIDATE_TORCH_SEED_ROOT_ENV} and "
+            f"{_CANDIDATE_TORCH_SEED_CHECKPOINTS_ENV}"
+        )
+
+    seed_root = Path(raw_seed_root)
+    if not seed_root.is_absolute() or seed_root.is_symlink():
+        raise ValueError(
+            "candidate Torch Hub seed root must be an absolute real directory"
+        )
+    seed_root = seed_root.resolve(strict=True)
+    if not seed_root.is_dir():
+        raise ValueError(
+            f"candidate Torch Hub seed root is not a directory: {seed_root}"
+        )
+
+    checkpoint_names = []
+    for item in raw_checkpoints.split(","):
+        checkpoint_name = item.strip()
+        if not checkpoint_name or checkpoint_name in checkpoint_names:
+            continue
+        if not _TORCH_CHECKPOINT_RE.fullmatch(checkpoint_name):
+            raise ValueError(
+                "candidate Torch Hub checkpoint must be one basename: "
+                f"{checkpoint_name!r}"
+            )
+        checkpoint_names.append(checkpoint_name)
+    if not checkpoint_names:
+        raise ValueError("candidate Torch Hub seed checkpoint list is empty")
+
+    destination_checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    destination_checkpoint_dir.chmod(0o777)
+    seeded = []
+    for checkpoint_name in checkpoint_names:
+        source = seed_root / checkpoint_name
+        if source.is_symlink() or not source.is_file():
+            raise ValueError(
+                "candidate Torch Hub seed checkpoint must be a regular file: "
+                f"{source}"
+            )
+        size = source.stat().st_size
+        if size <= 0:
+            raise ValueError(
+                f"candidate Torch Hub seed checkpoint is empty: {source}"
+            )
+        source_sha256 = _sha256_file(source)
+        destination = destination_checkpoint_dir / checkpoint_name
+        shutil.copy2(source, destination, follow_symlinks=False)
+        if destination.is_symlink() or not destination.is_file():
+            raise ValueError(
+                "seeded Candidate Torch Hub checkpoint is not a regular file: "
+                f"{destination}"
+            )
+        if destination.stat().st_size != size:
+            raise ValueError(
+                "seeded Candidate Torch Hub checkpoint size changed: "
+                f"{destination}"
+            )
+        destination_sha256 = _sha256_file(destination)
+        if destination_sha256 != source_sha256:
+            raise ValueError(
+                "seeded Candidate Torch Hub checkpoint digest changed: "
+                f"{destination}"
+            )
+        destination.chmod(0o444)
+        seeded.append(
+            {
+                "checkpoint": checkpoint_name,
+                "source_sha256": source_sha256,
+                "size": size,
+                "destination": str(destination),
+            }
+        )
+
+    receipt = {
+        "schema": "mlevolve_candidate_torch_hub_cache_seed_v1",
+        "source_checkpoint_dir": str(seed_root),
+        "destination_checkpoint_dir": str(destination_checkpoint_dir),
+        "checkpoints": seeded,
+    }
+    receipt_path = runtime_cache_root / "host_torch_hub_cache_seed_receipt.json"
+    receipt_path.write_text(
+        json.dumps(receipt, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    receipt_path.chmod(0o444)
+    logger.info(
+        "Seeded Candidate Torch Hub cache with checkpoints=%s",
+        checkpoint_names,
+    )
+    return receipt
+
+
 def _execution_environment(runtime_cache_root: Path | None = None) -> dict[str, str]:
     """Expose runtime helpers and a writable cache home to isolated runfiles.
 
@@ -303,9 +426,18 @@ def _execution_environment(runtime_cache_root: Path | None = None) -> dict[str, 
             destination_hub_cache=Path(env["HF_HUB_CACHE"]),
             inherited_env=env,
         )
+        _seed_candidate_torch_hub_cache(
+            runtime_cache_root=cache_root,
+            destination_checkpoint_dir=(
+                Path(env["TORCH_HOME"]) / "hub" / "checkpoints"
+            ),
+            inherited_env=env,
+        )
         # These are Host-only bridge controls, not Candidate inputs.
         env.pop(_CANDIDATE_HF_SEED_ROOT_ENV, None)
         env.pop(_CANDIDATE_HF_SEED_REPOSITORIES_ENV, None)
+        env.pop(_CANDIDATE_TORCH_SEED_ROOT_ENV, None)
+        env.pop(_CANDIDATE_TORCH_SEED_CHECKPOINTS_ENV, None)
         env["TOKENIZERS_PARALLELISM"] = "false"
     return env
 

@@ -54,6 +54,9 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export MLEVOLVE_CANDIDATE_HF_HUB_SEED="${MLEVOLVE_CANDIDATE_HF_HUB_SEED:-/root/.cache/huggingface/hub}"
 export MLEVOLVE_CANDIDATE_HF_REPOSITORIES="${MLEVOLVE_CANDIDATE_HF_REPOSITORIES:-timm/efficientnet_b3.ra2_in1k}"
+export MLEVOLVE_CANDIDATE_TORCH_HUB_SEED="${MLEVOLVE_CANDIDATE_TORCH_HUB_SEED:-$SYSTEM_DIR/public_pretrained_assets/torch_hub_checkpoints}"
+export MLEVOLVE_CANDIDATE_TORCH_CHECKPOINTS="${MLEVOLVE_CANDIDATE_TORCH_CHECKPOINTS:-efficientnet_b3_rwightman-b3899882.pth}"
+test -f "$MLEVOLVE_CANDIDATE_TORCH_HUB_SEED/efficientnet_b3_rwightman-b3899882.pth"
 python "$SYSTEM_DIR/../systems_v165_plant_seedlings_transfer_attributes_a100_6h_luna_low/preflight_public_pretrained.py" \
   --repair-cache \
   --receipt "$RECEIPT"

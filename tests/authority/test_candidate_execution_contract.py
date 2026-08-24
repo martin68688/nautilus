@@ -141,6 +141,62 @@ def test_isolated_candidate_environment_seeds_only_declared_hf_repository(
     ]
 
 
+def test_isolated_candidate_environment_seeds_only_declared_torch_checkpoint(
+    tmp_path, monkeypatch
+) -> None:
+    source_checkpoints = tmp_path / "trusted-torch-checkpoints"
+    source_checkpoints.mkdir()
+    declared = source_checkpoints / "efficientnet_b3-public.pth"
+    undeclared = source_checkpoints / "private-unrelated.pth"
+    declared.write_bytes(b"official-public-weights")
+    undeclared.write_bytes(b"must-not-cross-boundary")
+
+    monkeypatch.setenv(
+        "MLEVOLVE_CANDIDATE_TORCH_HUB_SEED", str(source_checkpoints)
+    )
+    monkeypatch.setenv(
+        "MLEVOLVE_CANDIDATE_TORCH_CHECKPOINTS",
+        declared.name,
+    )
+    cache_root = tmp_path / "candidate-cache"
+    env = _execution_environment(cache_root)
+
+    destination = (
+        Path(env["TORCH_HOME"]) / "hub" / "checkpoints" / declared.name
+    )
+    assert destination.read_bytes() == b"official-public-weights"
+    assert not (destination.parent / undeclared.name).exists()
+    assert "MLEVOLVE_CANDIDATE_TORCH_HUB_SEED" not in env
+    assert "MLEVOLVE_CANDIDATE_TORCH_CHECKPOINTS" not in env
+    receipt = json.loads(
+        (cache_root / "host_torch_hub_cache_seed_receipt.json").read_text()
+    )
+    assert [item["checkpoint"] for item in receipt["checkpoints"]] == [
+        declared.name
+    ]
+    assert receipt["checkpoints"][0]["source_sha256"]
+
+
+def test_isolated_candidate_torch_seed_rejects_path_traversal(
+    tmp_path, monkeypatch
+) -> None:
+    source_checkpoints = tmp_path / "trusted-torch-checkpoints"
+    source_checkpoints.mkdir()
+    monkeypatch.setenv(
+        "MLEVOLVE_CANDIDATE_TORCH_HUB_SEED", str(source_checkpoints)
+    )
+    monkeypatch.setenv(
+        "MLEVOLVE_CANDIDATE_TORCH_CHECKPOINTS", "../private.pth"
+    )
+
+    try:
+        _execution_environment(tmp_path / "candidate-cache")
+    except ValueError as error:
+        assert "one basename" in str(error)
+    else:
+        raise AssertionError("path traversal checkpoint must be rejected")
+
+
 def test_candidate_execution_contract_accepts_bounded_local_pipeline() -> None:
     code = """
 import os
