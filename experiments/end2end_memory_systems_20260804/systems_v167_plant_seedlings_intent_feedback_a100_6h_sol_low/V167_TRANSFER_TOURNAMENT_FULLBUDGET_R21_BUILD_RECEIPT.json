@@ -1,0 +1,33 @@
+{
+  "schema_version": "v1",
+  "created_at": "2026-08-25T19:21:49Z",
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-fullbudget-sol-low-r21",
+  "base_runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r20",
+  "source_commit": "5e3d4afe62b4fbf7a5c2f835a9c682c944921073",
+  "immutable": true,
+  "build_method": "copy-on-write hard-link clone of immutable r20; every changed file has a private inode",
+  "purpose": "Honor an explicit zero-second finalization reserve so the tournament search receives the full configured 21600-second budget; the outer Job deadline remains 86400 seconds for orderly finalization.",
+  "files": {
+    "mlevolve/run.py": "5f8796c77e3416a50b1bfca4b2b8a2610b836a70ffc9cdc99adbd55534e97d3a",
+    "tests/test_run_finalize_reserve.py": "531b545d18f89b84ab0d1357af964d0ef68da4e191577f254c186becfaec35b4",
+    "experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low/launch_transfer_portfolio_tournament_attempt.sh": "83bb78f7d629adc55987517ce04656129b7fd94c8f062f5ac9d92902a8098c0e",
+    "mlevolve/engine/transfer_tournament.py": "11e3e27d0a1828ac532227c9cfd3361efb3a0eae523fc894c049594d1af2ad18",
+    "mlevolve/engine/agent_search.py": "655b0fabacdd573c7dc9f9445028d357ff68e27afd11f044727c063e38a433cb",
+    "mlevolve/engine/node_selection.py": "ab4e3d87148a187a1aecd07be786246c19efbbfe49c33aa2f9f3f414d5db88cb",
+    "frozen_transfer_portfolio/initial_transfer_codegen_pack.json": "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b"
+  },
+  "verification": {
+    "pod": "mlevolve-plant-v167-fullbudget-stage-cpu-r1-dev",
+    "endpoint": "gpt-5.6-sol HTTP 200",
+    "bash_syntax": "passed",
+    "pod_authoritative_tests": "59 passed, 3 warnings",
+    "test_files": [
+      "tests/test_run_finalize_reserve.py",
+      "tests/test_transfer_portfolio_tournament.py",
+      "tests/test_cross_task_dynamic_retrieval_v149.py",
+      "tests/test_strategy_plan_alignment_feedback.py"
+    ],
+    "frozen_portfolio_inherited_unchanged": true,
+    "candidate_offline_preflight": "inherited unchanged from r20/r19; B0 and B3 passed as uid 65534 with network disabled"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "schema_version": "v1",
+  "recorded_at": "2026-08-25T19:21:49Z",
+  "attempt": "attempt-001",
+  "job": "mlevolve-plant-v167-tournament-rollover-a100-r1",
+  "pod": "mlevolve-plant-v167-tournament-rollover-a100-r1-g5nnc",
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r20",
+  "run_dir": "/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1/runs/attempt-001/20260825_131700_e2e-plant-seedlings-v167-transfer-tournament-6h-sol-low-r1-attempt-001",
+  "container_started_at": "2026-08-25T13:15:02Z",
+  "container_finished_at": "2026-08-25T19:02:11Z",
+  "pod_phase": "Failed",
+  "container_exit_code": 1,
+  "container_restart_count": 0,
+  "job_condition": "BackoffLimitExceeded",
+  "run_outcome": {
+    "status": "partial",
+    "reason": "finalization_reserve_reached",
+    "completed_steps": 11,
+    "configured_steps": 2147483647,
+    "certified_solution_available": true,
+    "configured_search_seconds": 21600,
+    "effective_search_seconds": 20700,
+    "unconsumed_seconds": 900,
+    "software_cause": "mlevolve/run.py converted an explicit finalize_reserve_seconds=0 to the 900-second default through `value or 900`"
+  },
+  "tournament": {
+    "terminal_phase": "round1_equal_improve",
+    "finalists_provisional": [
+      "backbone_diversity_2",
+      "descriptor_fusion_diversity"
+    ],
+    "valid_post_baseline_improves": 0,
+    "rollover_verified": true,
+    "rollover_evidence": "branch1 primary unavailable; scheduler selected queued branch2 with rolled_over=true while preserving branch1 entitlement"
+  },
+  "baselines": [
+    {
+      "branch_id": 1,
+      "seat": "comprehensive_best",
+      "node_id": "20faa69e3cf84b659308d33d22911bd2",
+      "macro_f1": 0.9489772288149125
+    },
+    {
+      "branch_id": 2,
+      "seat": "backbone_diversity_1",
+      "node_id": "25e42416af2f474bbeea2a0cceeb3d00",
+      "macro_f1": 0.9646739701925672
+    },
+    {
+      "branch_id": 3,
+      "seat": "backbone_diversity_2",
+      "node_id": "880bbe7277ac47ab95d33fb1153125a1",
+      "macro_f1": 0.9760516819175155
+    },
+    {
+      "branch_id": 4,
+      "seat": "descriptor_fusion_diversity",
+      "node_id": "bcb80e5e9efe4c9bb5859f1ed36b5972",
+      "macro_f1": 0.9656962184263623
+    }
+  ],
+  "artifact_sha256": {
+    "TRANSFER_PORTFOLIO_TOURNAMENT.json": "6abfa2aad9d00109539019df9ca91aa793fcb392162a09608d11208d150b562c",
+    "RUN_OUTCOME.json": "8ee58242cd2e29dfa1d19853c841864abb0164dd3b2cb7f8e742412b8eca4639",
+    "best_solution": "0b7a1dde49b2bebd2193bfd1b92496b0e8d6889bad41e4a7a978b0de486a8d34",
+    "best_submission": "8eb90160f8ccab51588cdfc944c48a47da746682c816bc2bedafcdebdd6dce3c"
+  },
+  "interpretation": "This is a preserved partial run and valid scheduler-mechanism record, not a completed six-hour tournament result."
+}

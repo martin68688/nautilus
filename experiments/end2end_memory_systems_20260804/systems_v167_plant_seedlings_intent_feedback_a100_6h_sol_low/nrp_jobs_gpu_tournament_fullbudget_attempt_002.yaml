@@ -1,0 +1,333 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-plant-v167-fullbudget-a100-r1
+  namespace: ecepxie
+  annotations:
+    mlevolve.ai/purpose: full-six-hour-work-conserving-four-seat-transfer-tournament
+    mlevolve.ai/source-commit: 5e3d4afe
+    mlevolve.ai/runtime: nautilus-exp-end2end-agent-v167-transfer-tournament-fullbudget-sol-low-r21
+    mlevolve.ai/llm-endpoint: private-cluster-local-cliproxyapi
+    mlevolve.ai/preserves: all-v167-training-pods-attempts-and-runtimes
+  labels: &job-labels-a100
+    app: mlevolve-end2end-job
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: plant-v167-transfer-tournament-fullbudget-a100-r1
+    mlevolve.ai/release-mode: standalone-six-hour-transfer
+    mlevolve.ai/system: four-seat-transfer-tournament-fullbudget
+spec:
+  activeDeadlineSeconds: 86400
+  backoffLimit: 0
+  template:
+    metadata:
+      labels: *job-labels-a100
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 300
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: PreferNoSchedule
+      containers:
+        - &mlevolve-container-a100
+          name: mlevolve
+          image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+          imagePullPolicy: IfNotPresent
+          command: [/bin/bash, -lc]
+          args:
+            - |
+              set -euo pipefail
+              test -n "${OPENAI_API_KEY:-}"
+              test "${OPENAI_BASE_URL:-}" = "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
+              test "${OPENAI_MODEL:-}" = "gpt-5.6-sol"
+              test -z "${RUNFOREST_DEV_EXECUTION_ROLE:-}"
+              RUNTIME=/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-fullbudget-sol-low-r21
+              SYSTEM_DIR="$RUNTIME/experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low"
+              MANIFEST="$RUNTIME/frozen_transfer_portfolio/initial_transfer_codegen_pack.json"
+              test -d "$RUNTIME"
+              test -x "$SYSTEM_DIR/launch_transfer_portfolio_tournament_attempt.sh"
+              test -f "$MANIFEST"
+              test "$(sha256sum "$RUNTIME/mlevolve/run.py" | awk '{print $1}')" = "5f8796c77e3416a50b1bfca4b2b8a2610b836a70ffc9cdc99adbd55534e97d3a"
+              test "$(sha256sum "$SYSTEM_DIR/launch_transfer_portfolio_tournament_attempt.sh" | awk '{print $1}')" = "83bb78f7d629adc55987517ce04656129b7fd94c8f062f5ac9d92902a8098c0e"
+              test "$(sha256sum "$MANIFEST" | awk '{print $1}')" = "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b"
+              export MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_PATH="$MANIFEST"
+              export MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_SHA256=7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b
+              export OUTPUT_ROOT=/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1
+              CLAIM_DIR="$OUTPUT_ROOT/.attempt-002-launch-claim"
+              mkdir -p "$OUTPUT_ROOT"
+              if ! mkdir "$CLAIM_DIR" 2>/dev/null; then
+                echo "another GPU Job already owns $CLAIM_DIR; exiting without creating an attempt"
+                exit 0
+              fi
+              printf '%s\n' "$POD_NAME" >"$CLAIM_DIR/pod_name"
+              printf '%s\n' a100 >"$CLAIM_DIR/gpu_queue"
+              export MLEVOLVE_FOREGROUND=1
+              cd "$SYSTEM_DIR"
+              exec ./launch_transfer_portfolio_tournament_attempt.sh attempt-002
+          envFrom:
+            - secretRef:
+                name: cliproxyapi-haoming-client
+          env: &runtime-env-a100
+            - name: OPENAI_MODEL
+              value: gpt-5.6-sol
+            - name: OPENAI_REASONING_EFFORT
+              value: low
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: MLEVOLVE_CPU_NUMBER
+              value: "8"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: "8"
+              memory: 32Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/a100: "1"
+            limits:
+              cpu: "8"
+              memory: 32Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/a100: "1"
+          volumeMounts: &runtime-mounts-a100
+            - name: workspace
+              mountPath: /workspace
+            - name: shm
+              mountPath: /dev/shm
+      volumes: &runtime-volumes-a100
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-plant-v167-fullbudget-a40-r1
+  namespace: ecepxie
+  annotations:
+    mlevolve.ai/purpose: full-six-hour-work-conserving-four-seat-transfer-tournament
+    mlevolve.ai/source-commit: 5e3d4afe
+    mlevolve.ai/runtime: nautilus-exp-end2end-agent-v167-transfer-tournament-fullbudget-sol-low-r21
+    mlevolve.ai/llm-endpoint: private-cluster-local-cliproxyapi
+    mlevolve.ai/preserves: all-v167-training-pods-attempts-and-runtimes
+  labels: &job-labels-a40
+    app: mlevolve-end2end-job
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: plant-v167-transfer-tournament-fullbudget-a40-r1
+    mlevolve.ai/release-mode: standalone-six-hour-transfer
+    mlevolve.ai/system: four-seat-transfer-tournament-fullbudget
+spec:
+  activeDeadlineSeconds: 86400
+  backoffLimit: 0
+  template:
+    metadata:
+      labels: *job-labels-a40
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 300
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: PreferNoSchedule
+      containers:
+        - name: mlevolve
+          image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+          imagePullPolicy: IfNotPresent
+          command: [/bin/bash, -lc]
+          args:
+            - |
+              set -euo pipefail
+              test -n "${OPENAI_API_KEY:-}"
+              test "${OPENAI_BASE_URL:-}" = "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
+              test "${OPENAI_MODEL:-}" = "gpt-5.6-sol"
+              test -z "${RUNFOREST_DEV_EXECUTION_ROLE:-}"
+              RUNTIME=/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-fullbudget-sol-low-r21
+              SYSTEM_DIR="$RUNTIME/experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low"
+              MANIFEST="$RUNTIME/frozen_transfer_portfolio/initial_transfer_codegen_pack.json"
+              test -d "$RUNTIME"
+              test -x "$SYSTEM_DIR/launch_transfer_portfolio_tournament_attempt.sh"
+              test -f "$MANIFEST"
+              test "$(sha256sum "$RUNTIME/mlevolve/run.py" | awk '{print $1}')" = "5f8796c77e3416a50b1bfca4b2b8a2610b836a70ffc9cdc99adbd55534e97d3a"
+              test "$(sha256sum "$SYSTEM_DIR/launch_transfer_portfolio_tournament_attempt.sh" | awk '{print $1}')" = "83bb78f7d629adc55987517ce04656129b7fd94c8f062f5ac9d92902a8098c0e"
+              test "$(sha256sum "$MANIFEST" | awk '{print $1}')" = "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b"
+              export MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_PATH="$MANIFEST"
+              export MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_SHA256=7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b
+              export OUTPUT_ROOT=/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1
+              CLAIM_DIR="$OUTPUT_ROOT/.attempt-002-launch-claim"
+              mkdir -p "$OUTPUT_ROOT"
+              if ! mkdir "$CLAIM_DIR" 2>/dev/null; then
+                echo "another GPU Job already owns $CLAIM_DIR; exiting without creating an attempt"
+                exit 0
+              fi
+              printf '%s\n' "$POD_NAME" >"$CLAIM_DIR/pod_name"
+              printf '%s\n' a40 >"$CLAIM_DIR/gpu_queue"
+              export MLEVOLVE_FOREGROUND=1
+              cd "$SYSTEM_DIR"
+              exec ./launch_transfer_portfolio_tournament_attempt.sh attempt-002
+          envFrom:
+            - secretRef:
+                name: cliproxyapi-haoming-client
+          env:
+            - name: OPENAI_MODEL
+              value: gpt-5.6-sol
+            - name: OPENAI_REASONING_EFFORT
+              value: low
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: MLEVOLVE_CPU_NUMBER
+              value: "8"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: "8"
+              memory: 32Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/a40: "1"
+            limits:
+              cpu: "8"
+              memory: 32Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/a40: "1"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mlevolve-plant-v167-fullbudget-a6000-r1
+  namespace: ecepxie
+  annotations:
+    mlevolve.ai/purpose: full-six-hour-work-conserving-four-seat-transfer-tournament
+    mlevolve.ai/source-commit: 5e3d4afe
+    mlevolve.ai/runtime: nautilus-exp-end2end-agent-v167-transfer-tournament-fullbudget-sol-low-r21
+    mlevolve.ai/llm-endpoint: private-cluster-local-cliproxyapi
+    mlevolve.ai/preserves: all-v167-training-pods-attempts-and-runtimes
+  labels: &job-labels-a6000
+    app: mlevolve-end2end-job
+    app.kubernetes.io/managed-by: codex-nrp-training
+    ecepxie.nrp/owner: haoming
+    experiment: plant-v167-transfer-tournament-fullbudget-a6000-r1
+    mlevolve.ai/release-mode: standalone-six-hour-transfer
+    mlevolve.ai/system: four-seat-transfer-tournament-fullbudget
+spec:
+  activeDeadlineSeconds: 86400
+  backoffLimit: 0
+  template:
+    metadata:
+      labels: *job-labels-a6000
+    spec:
+      restartPolicy: Never
+      terminationGracePeriodSeconds: 300
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: PreferNoSchedule
+      containers:
+        - name: mlevolve
+          image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+          imagePullPolicy: IfNotPresent
+          command: [/bin/bash, -lc]
+          args:
+            - |
+              set -euo pipefail
+              test -n "${OPENAI_API_KEY:-}"
+              test "${OPENAI_BASE_URL:-}" = "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
+              test "${OPENAI_MODEL:-}" = "gpt-5.6-sol"
+              test -z "${RUNFOREST_DEV_EXECUTION_ROLE:-}"
+              RUNTIME=/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-fullbudget-sol-low-r21
+              SYSTEM_DIR="$RUNTIME/experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low"
+              MANIFEST="$RUNTIME/frozen_transfer_portfolio/initial_transfer_codegen_pack.json"
+              test -d "$RUNTIME"
+              test -x "$SYSTEM_DIR/launch_transfer_portfolio_tournament_attempt.sh"
+              test -f "$MANIFEST"
+              test "$(sha256sum "$RUNTIME/mlevolve/run.py" | awk '{print $1}')" = "5f8796c77e3416a50b1bfca4b2b8a2610b836a70ffc9cdc99adbd55534e97d3a"
+              test "$(sha256sum "$SYSTEM_DIR/launch_transfer_portfolio_tournament_attempt.sh" | awk '{print $1}')" = "83bb78f7d629adc55987517ce04656129b7fd94c8f062f5ac9d92902a8098c0e"
+              test "$(sha256sum "$MANIFEST" | awk '{print $1}')" = "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b"
+              export MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_PATH="$MANIFEST"
+              export MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_SHA256=7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b
+              export OUTPUT_ROOT=/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1
+              CLAIM_DIR="$OUTPUT_ROOT/.attempt-002-launch-claim"
+              mkdir -p "$OUTPUT_ROOT"
+              if ! mkdir "$CLAIM_DIR" 2>/dev/null; then
+                echo "another GPU Job already owns $CLAIM_DIR; exiting without creating an attempt"
+                exit 0
+              fi
+              printf '%s\n' "$POD_NAME" >"$CLAIM_DIR/pod_name"
+              printf '%s\n' rtxa6000 >"$CLAIM_DIR/gpu_queue"
+              export MLEVOLVE_FOREGROUND=1
+              cd "$SYSTEM_DIR"
+              exec ./launch_transfer_portfolio_tournament_attempt.sh attempt-002
+          envFrom:
+            - secretRef:
+                name: cliproxyapi-haoming-client
+          env:
+            - name: OPENAI_MODEL
+              value: gpt-5.6-sol
+            - name: OPENAI_REASONING_EFFORT
+              value: low
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: MLEVOLVE_CPU_NUMBER
+              value: "8"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: "8"
+              memory: 32Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/rtxa6000: "1"
+            limits:
+              cpu: "8"
+              memory: 32Gi
+              ephemeral-storage: 64Gi
+              nvidia.com/rtxa6000: "1"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: haoming-storage
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 32Gi
