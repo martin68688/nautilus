@@ -5,8 +5,8 @@ metadata:
   namespace: ecepxie
   annotations:
     mlevolve.ai/purpose: full-six-hour-work-conserving-four-seat-transfer-tournament
-    mlevolve.ai/source-commit: 1dc7a92c
-    mlevolve.ai/runtime: nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r19
+    mlevolve.ai/source-commit: 03a604cb
+    mlevolve.ai/runtime: nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r20
     mlevolve.ai/llm-endpoint: private-cluster-local-cliproxyapi
     mlevolve.ai/preserves: all-v167-training-pods-attempts-and-runtimes
   labels:
@@ -17,7 +17,7 @@ metadata:
     mlevolve.ai/release-mode: standalone-six-hour-transfer
     mlevolve.ai/system: four-seat-transfer-tournament-rollover
 spec:
-  activeDeadlineSeconds: 28800
+  activeDeadlineSeconds: 86400
   backoffLimit: 0
   template:
     metadata:
@@ -51,7 +51,7 @@ spec:
               test "${OPENAI_BASE_URL:-}" = "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
               test "${OPENAI_MODEL:-}" = "gpt-5.6-sol"
               test -z "${RUNFOREST_DEV_EXECUTION_ROLE:-}"
-              RUNTIME=/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r19
+              RUNTIME=/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r20
               SYSTEM_DIR="$RUNTIME/experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low"
               MANIFEST="$RUNTIME/frozen_transfer_portfolio/initial_transfer_codegen_pack.json"
               test -d "$RUNTIME"
@@ -61,6 +61,14 @@ spec:
               export MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_PATH="$MANIFEST"
               export MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_SHA256=7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b
               export OUTPUT_ROOT=/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1
+              CLAIM_DIR="$OUTPUT_ROOT/.attempt-001-launch-claim"
+              mkdir -p "$OUTPUT_ROOT"
+              if ! mkdir "$CLAIM_DIR" 2>/dev/null; then
+                echo "another GPU Job already owns $CLAIM_DIR; exiting without creating an attempt"
+                exit 0
+              fi
+              printf '%s\n' "$POD_NAME" >"$CLAIM_DIR/pod_name"
+              printf '%s\n' a100 >"$CLAIM_DIR/gpu_queue"
               export MLEVOLVE_FOREGROUND=1
               cd "$SYSTEM_DIR"
               exec ./launch_transfer_portfolio_tournament_attempt.sh attempt-001
@@ -76,14 +84,20 @@ spec:
               value: "1"
             - name: PYTHONDONTWRITEBYTECODE
               value: "1"
+            - name: MLEVOLVE_CPU_NUMBER
+              value: "8"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           resources:
             requests:
-              cpu: "16"
+              cpu: "8"
               memory: 32Gi
               ephemeral-storage: 64Gi
               nvidia.com/a100: "1"
             limits:
-              cpu: "16"
+              cpu: "8"
               memory: 32Gi
               ephemeral-storage: 64Gi
               nvidia.com/a100: "1"
