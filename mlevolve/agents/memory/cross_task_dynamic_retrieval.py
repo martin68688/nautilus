@@ -1268,6 +1268,13 @@ def _call_judge(
                         "initialization choices are hypotheses. Do not rank one above "
                         "another solely because it is explicit or readily available."
                     ),
+                    "contradiction_semantics": (
+                        "Judge each card as a standalone tournament hypothesis. Cards "
+                        "that compete for the same component slot are alternatives, "
+                        "not contradictions. Mark contradiction=true only when the "
+                        "card is intrinsically incompatible with the target task, "
+                        "safety boundary, or required interface even in isolation."
+                    ),
                 },
                 "abstention_allowed": bool(layer.cross_task_dynamic_allow_abstention),
                 "stage_preferences_are_guidance_not_hard_layer_filters": STAGE_FIT[
@@ -1284,6 +1291,7 @@ def _call_judge(
             "A representation component may reference only a representation_blueprint card, never a tactic, repair, transition, validation, calibration, inference, or module-interface card.",
             "Optimize expected target validation performance, using implementation risk as a penalty rather than the primary objective.",
             "Remain architecture- and initialization-neutral unless target-task evidence supports a preference. Explicitness and machine-checkability improve auditability but are not performance evidence.",
+            "For per-card assessments, same-slot candidates are tournament alternatives, not contradictions. Set contradiction=true only for an intrinsic target, safety, or interface conflict that remains when the card is evaluated alone.",
             "Public pretrained weights are allowed and are distinct from forbidden source-task checkpoints or weights, but their availability must not create a selection preference.",
             "Do not mark cards from different blueprint slots contradictory merely because their source Recipe families differ.",
             "Only cards competing for the same blueprint slot conflict; L2/L3 items are judged by target interface and dependency compatibility.",

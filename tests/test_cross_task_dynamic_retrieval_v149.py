@@ -953,9 +953,13 @@ def test_judge_prompt_is_architecture_and_initialization_neutral():
     assert "architecture_sample_efficiency_prior" not in json.dumps(prompt)
     assert "small_natural_image_prior" not in utility
     assert "vague_family_card_penalty" not in utility
+    assert "same component slot are alternatives" in utility[
+        "contradiction_semantics"
+    ]
     policy = "\n".join(prompt["policy"])
     assert "must not be null" not in policy
     assert "architecture- and initialization-neutral" in policy
+    assert "same-slot candidates are tournament alternatives" in policy
 
 
 def test_representation_adoption_gate_rejects_backbone_substitution_and_weights_none():
