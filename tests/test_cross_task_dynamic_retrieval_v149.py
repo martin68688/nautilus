@@ -944,9 +944,20 @@ def test_judge_prompt_is_architecture_and_initialization_neutral():
         candidates=[candidate],
         max_selected=4,
         retry_feedback="",
+        blind_ballot_id="B01",
+        candidate_order_receipt={"receipt_sha256": "a" * 64},
     )
 
     prompt = captured["system_message"]
+    assert prompt["blind_ballot"] == {
+        "schema": "mlevolve_cross_task_projected_judge_ballot_v1",
+        "ballot_id": "B01",
+        "independence_contract": (
+            "This is one sealed ballot. You cannot see other ballots, their "
+            "candidate order, scores, reasons, winners, or aggregate result."
+        ),
+        "candidate_order_receipt_sha256": "a" * 64,
+    }
     contract = json.loads(prompt["selection_contract"])
     utility = contract["performance_utility"]
     assert utility["ranking_order"][0] == "target_task_evidence"
@@ -960,6 +971,7 @@ def test_judge_prompt_is_architecture_and_initialization_neutral():
     assert "must not be null" not in policy
     assert "architecture- and initialization-neutral" in policy
     assert "same-slot candidates are tournament alternatives" in policy
+    assert "select exactly one best" in policy
 
 
 def test_representation_adoption_gate_rejects_backbone_substitution_and_weights_none():
@@ -1307,6 +1319,121 @@ def _portfolio_fixture():
         },
     }
     return rows, judge
+
+
+def test_four_blind_judge_ballots_preserve_raw_votes_before_portfolio_constraints():
+    from agents.memory.cross_task_dynamic_retrieval import (
+        _aggregate_transfer_judge_ballots,
+        _blind_judge_ballot_candidates,
+        build_transfer_candidate_portfolio,
+    )
+
+    order_rows = [{"id": f"candidate::{index}"} for index in range(8)]
+    order_receipts = [
+        _blind_judge_ballot_candidates(order_rows, ballot_index=index)
+        for index in range(4)
+    ]
+    assert len(
+        {
+            tuple(row["id"] for row in ordered)
+            for ordered, _receipt in order_receipts
+        }
+    ) == 4
+    assert all(
+        {row["id"] for row in ordered} == {row["id"] for row in order_rows}
+        for ordered, _receipt in order_receipts
+    )
+    assert len(
+        {receipt["receipt_sha256"] for _ordered, receipt in order_receipts}
+    ) == 4
+
+    rows, _single_judge = _portfolio_fixture()
+    candidate_ids = [row["id"] for row in rows]
+    raw_winners = [
+        "rep::best",
+        "rep::backbone-alt",
+        "rep::best",
+        "rep::descriptor-alt",
+    ]
+    preference_orders = [
+        ["rep::best", "rep::backbone-alt", "rep::descriptor-alt"],
+        ["rep::backbone-alt", "rep::best", "rep::descriptor-alt"],
+        ["rep::best", "rep::descriptor-alt", "rep::backbone-alt"],
+        ["rep::descriptor-alt", "rep::best", "rep::backbone-alt"],
+    ]
+    ballot_records = []
+    for ballot_index, (winner, preference) in enumerate(
+        zip(raw_winners, preference_orders, strict=True)
+    ):
+        ordered, order_receipt = _blind_judge_ballot_candidates(
+            rows,
+            ballot_index=ballot_index,
+        )
+        score_by_id = {
+            candidate_id: 0.95 - 0.12 * rank
+            for rank, candidate_id in enumerate(preference)
+        }
+        judge = {
+            "decision": "select",
+            "selected_ids": [winner],
+            "reason": f"sealed ballot {ballot_index + 1}",
+            "assessments": [
+                {
+                    "candidate_id": candidate_id,
+                    "applicability": score_by_id[candidate_id],
+                    "target_adaptability": score_by_id[candidate_id],
+                    "coherence": score_by_id[candidate_id],
+                    "confidence": 0.9,
+                    "contradiction": False,
+                }
+                for candidate_id in candidate_ids
+            ],
+        }
+        ballot_records.append(
+            {
+                "ballot_id": f"B{ballot_index + 1:02d}",
+                "candidate_order_receipt": order_receipt,
+                "judge": judge,
+                "attempts": [
+                    {"attempt": 1, "status": "valid", "action": judge}
+                ],
+                "agent_calls": 1,
+            }
+        )
+
+    aggregate = _aggregate_transfer_judge_ballots(
+        candidates=rows,
+        ballot_records=ballot_records,
+        max_selected=4,
+        blueprint_slot_caps={"representation_blueprint": 1},
+    )
+    assert [
+        row["raw_representation_winner"] for row in aggregate["blind_ballots"]
+    ] == raw_winners
+    assert aggregate["ballot_aggregate"]["ballot_count"] == 4
+    assert aggregate["ballot_aggregate"][
+        "aggregate_representation_winner"
+    ] == "rep::best"
+    assert aggregate["ballot_aggregate"]["aggregate_representation_ranking"][
+        0
+    ]["candidate_id"] == "rep::best"
+    assert aggregate["selected_ids"] == ["rep::best"]
+    assert aggregate["representation_contracts"]["backbone_family"][
+        "required_value"
+    ] == "family_best"
+
+    portfolio = build_transfer_candidate_portfolio(
+        candidates=rows,
+        judge=aggregate,
+        requested_size=4,
+    )
+    assert portfolio["status"] == "passed"
+    assert portfolio["raw_representation_winners"] == raw_winners
+    assert portfolio["selection_mode"] == (
+        "four_blind_judge_ballots_borda_plus_deterministic_host_diversity_"
+        "no_model_names"
+    )
+    assert portfolio["ballot_aggregate"]["receipt_sha256"]
 
 
 def test_transfer_portfolio_has_requested_four_seats_without_control():

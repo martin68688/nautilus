@@ -149,6 +149,10 @@ def main() -> None:
     if route not in {
         "projected_multiround_search_direct_judge",
         "projected_multiround_search_judge_four_candidate_portfolio",
+        (
+            "projected_multiround_search_four_blind_judge_ballots_"
+            "four_candidate_portfolio"
+        ),
     }:
         raise RuntimeError(
             f"unexpected retrieval route: {pack.get('stage_route')}"
@@ -219,6 +223,8 @@ def main() -> None:
                 judge.get("representation_contracts") or {}
             ),
             "assessments": list(judge.get("assessments") or []),
+            "blind_ballots": list(judge.get("blind_ballots") or []),
+            "ballot_aggregate": dict(judge.get("ballot_aggregate") or {}),
         },
         "transfer_portfolio": {
             "status": str(portfolio.get("status") or ""),
@@ -227,6 +233,12 @@ def main() -> None:
             "selection_mode": str(portfolio.get("selection_mode") or ""),
             "seat_policy": list(portfolio.get("seat_policy") or []),
             "receipt_sha256": str(portfolio.get("receipt_sha256") or ""),
+            "raw_representation_winners": list(
+                portfolio.get("raw_representation_winners") or []
+            ),
+            "ballot_aggregate": dict(
+                portfolio.get("ballot_aggregate") or {}
+            ),
             "candidates": [
                 {
                     "seat": str(row.get("seat") or ""),

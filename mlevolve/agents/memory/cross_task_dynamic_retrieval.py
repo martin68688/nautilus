@@ -37,8 +37,13 @@ from agents.memory.cross_task_transfer import (
 PACK_SCHEMA = "mlevolve_cross_task_dynamic_transfer_pack_v1"
 SEARCH_SCHEMA = "mlevolve_cross_task_projected_search_v1"
 JUDGE_SCHEMA = "mlevolve_cross_task_projected_judge_v1"
+JUDGE_BALLOT_SCHEMA = "mlevolve_cross_task_projected_judge_ballot_v1"
+JUDGE_BALLOT_AGGREGATE_SCHEMA = (
+    "mlevolve_cross_task_projected_judge_ballot_aggregate_v1"
+)
 PORTFOLIO_SCHEMA = "mlevolve_cross_task_transfer_portfolio_v1"
 PORTFOLIO_CANDIDATE_SCHEMA = "mlevolve_cross_task_transfer_candidate_v1"
+TRANSFER_PORTFOLIO_JUDGE_BALLOT_COUNT = 4
 TRANSFER_PORTFOLIO_SEATS = (
     "comprehensive_best",
     "backbone_diversity_1",
@@ -1221,6 +1226,8 @@ def _call_judge(
     candidates: list[dict[str, Any]],
     max_selected: int,
     retry_feedback: str,
+    blind_ballot_id: str = "",
+    candidate_order_receipt: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     cards, ref_to_id = _opaque_cards(candidates, prefix="C")
     prompt = {
@@ -1301,6 +1308,24 @@ def _call_judge(
         ],
         "retry_feedback": str(retry_feedback or "")[:1600],
     }
+    if blind_ballot_id:
+        prompt["blind_ballot"] = {
+            "schema": JUDGE_BALLOT_SCHEMA,
+            "ballot_id": str(blind_ballot_id),
+            "independence_contract": (
+                "This is one sealed ballot. You cannot see other ballots, their "
+                "candidate order, scores, reasons, winners, or aggregate result."
+            ),
+            "candidate_order_receipt_sha256": str(
+                (candidate_order_receipt or {}).get("receipt_sha256") or ""
+            ),
+        }
+        prompt["policy"].append(
+            "For this sealed Transfer-portfolio ballot, select exactly one best "
+            "non-contradicted representation_blueprint when at least one viable "
+            "representation card is supplied. Other blueprint and portable cards "
+            "may be selected only as coherent support."
+        )
     return _query_fn(layer)(
         system_message=prompt,
         user_message=None,
@@ -1603,6 +1628,8 @@ def _portfolio_assessment_score(
     """Return a stable quality score without importing source-task metrics."""
 
     row = dict(assessment or {})
+    if row.get("aggregate_portfolio_score") is not None:
+        return round(float(row["aggregate_portfolio_score"]), 8)
     score = (
         0.30 * float(row.get("applicability") or 0.0)
         + 0.30 * float(row.get("target_adaptability") or 0.0)
@@ -1613,6 +1640,333 @@ def _portfolio_assessment_score(
     # breaks otherwise equal Judge scores; no source score is available here.
     score += 0.01 * float(candidate.get("target_relevance") or 0.0)
     return round(score, 8)
+
+
+def _blind_judge_ballot_candidates(
+    candidates: list[dict[str, Any]],
+    *,
+    ballot_index: int,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Return one deterministic, position-balanced sealed-ballot ordering."""
+
+    if int(ballot_index) < 0:
+        raise ValueError("ballot_index must be non-negative")
+    base = sorted(
+        (copy.deepcopy(row) for row in candidates),
+        key=lambda row: _sha(
+            {
+                "schema": JUDGE_BALLOT_SCHEMA,
+                "candidate_id": str(row["id"]),
+            }
+        ),
+    )
+    if not base:
+        raise ValueError("A sealed Judge ballot requires candidates")
+    shift = (
+        int(ballot_index) * len(base) // TRANSFER_PORTFOLIO_JUDGE_BALLOT_COUNT
+        if len(base) >= TRANSFER_PORTFOLIO_JUDGE_BALLOT_COUNT
+        else int(ballot_index) % len(base)
+    )
+    ordered = [*base[shift:], *base[:shift]]
+    ballot_id = f"B{int(ballot_index) + 1:02d}"
+    identity = {
+        "schema": JUDGE_BALLOT_SCHEMA,
+        "ballot_id": ballot_id,
+        "order_policy": "host_hashed_base_cyclic_position_balance_v1",
+        "candidate_ids": [str(row["id"]) for row in ordered],
+    }
+    return ordered, {
+        **identity,
+        "receipt_sha256": _sha(identity),
+    }
+
+
+def _aggregate_transfer_judge_ballots(
+    *,
+    candidates: list[dict[str, Any]],
+    ballot_records: list[Mapping[str, Any]],
+    max_selected: int,
+    blueprint_slot_caps: Mapping[str, int],
+) -> dict[str, Any]:
+    """Aggregate four sealed Judge ballots without hiding their raw winners."""
+
+    if len(ballot_records) != TRANSFER_PORTFOLIO_JUDGE_BALLOT_COUNT:
+        raise ValueError(
+            "Transfer portfolio requires exactly four valid sealed Judge ballots"
+        )
+    candidate_by_id = {str(row["id"]): row for row in candidates}
+    expected_ids = set(candidate_by_id)
+    representation_ids = {
+        candidate_id
+        for candidate_id, row in candidate_by_id.items()
+        if row["granularity"] == REPRESENTATION_BLUEPRINT
+    }
+    if not representation_ids:
+        raise ValueError("Sealed Judge ballots require representation candidates")
+
+    selected_vote_counts = {candidate_id: 0 for candidate_id in expected_ids}
+    winner_vote_counts = {candidate_id: 0 for candidate_id in representation_ids}
+    contradiction_vote_counts = {candidate_id: 0 for candidate_id in expected_ids}
+    score_rows: dict[str, list[dict[str, float]]] = {
+        candidate_id: [] for candidate_id in expected_ids
+    }
+    borda_totals = {candidate_id: 0.0 for candidate_id in representation_ids}
+    sealed_ballots: list[dict[str, Any]] = []
+
+    for record in ballot_records:
+        judge = copy.deepcopy(dict(record.get("judge") or {}))
+        ballot_id = str(record.get("ballot_id") or "")
+        assessment_by_id = {
+            str(row.get("candidate_id") or ""): row
+            for row in judge.get("assessments") or []
+        }
+        if set(assessment_by_id) != expected_ids:
+            raise ValueError(f"{ballot_id} did not assess the complete candidate set")
+        selected_ids = [str(value) for value in judge.get("selected_ids") or []]
+        selected_representation_ids = [
+            value for value in selected_ids if value in representation_ids
+        ]
+        if len(selected_representation_ids) != 1:
+            raise ValueError(
+                f"{ballot_id} must select exactly one representation candidate"
+            )
+        winner_id = selected_representation_ids[0]
+        winner_vote_counts[winner_id] += 1
+        for candidate_id in selected_ids:
+            if candidate_id in selected_vote_counts:
+                selected_vote_counts[candidate_id] += 1
+
+        representation_ranking = sorted(
+            representation_ids,
+            key=lambda candidate_id: (
+                -_portfolio_assessment_score(
+                    assessment_by_id[candidate_id],
+                    candidate_by_id[candidate_id]["candidate"],
+                ),
+                candidate_id,
+            ),
+        )
+        representation_count = len(representation_ranking)
+        ranking_receipt = []
+        for rank, candidate_id in enumerate(representation_ranking, start=1):
+            points = representation_count - rank + 1
+            borda_totals[candidate_id] += float(points)
+            ranking_receipt.append(
+                {
+                    "rank": rank,
+                    "candidate_id": candidate_id,
+                    "quality_score": _portfolio_assessment_score(
+                        assessment_by_id[candidate_id],
+                        candidate_by_id[candidate_id]["candidate"],
+                    ),
+                }
+            )
+
+        for candidate_id, assessment in assessment_by_id.items():
+            if bool(assessment.get("contradiction")):
+                contradiction_vote_counts[candidate_id] += 1
+            score_rows[candidate_id].append(
+                {
+                    key: float(assessment.get(key) or 0.0)
+                    for key in (
+                        "applicability",
+                        "target_adaptability",
+                        "coherence",
+                        "confidence",
+                    )
+                }
+            )
+        ballot_identity = {
+            "ballot_id": ballot_id,
+            "candidate_order_receipt": copy.deepcopy(
+                record.get("candidate_order_receipt") or {}
+            ),
+            "selected_ids": selected_ids,
+            "raw_representation_winner": winner_id,
+            "representation_ranking": ranking_receipt,
+            "judge_receipt_sha256": _sha(judge),
+        }
+        sealed_ballots.append(
+            {
+                "schema": JUDGE_BALLOT_SCHEMA,
+                **ballot_identity,
+                "decision": str(judge.get("decision") or ""),
+                "reason": str(judge.get("reason") or ""),
+                "attempts": copy.deepcopy(record.get("attempts") or []),
+                "agent_calls": int(record.get("agent_calls") or 0),
+                "receipt_sha256": _sha(ballot_identity),
+            }
+        )
+
+    ballot_count = len(sealed_ballots)
+    representation_count = len(representation_ids)
+    aggregated_assessments = []
+    aggregate_by_id: dict[str, dict[str, Any]] = {}
+    for candidate_id in sorted(expected_ids):
+        rows = score_rows[candidate_id]
+        means = {
+            key: round(sum(row[key] for row in rows) / ballot_count, 8)
+            for key in (
+                "applicability",
+                "target_adaptability",
+                "coherence",
+                "confidence",
+            )
+        }
+        mean_quality = _portfolio_assessment_score(
+            means,
+            candidate_by_id[candidate_id]["candidate"],
+        )
+        borda_score = (
+            round(
+                borda_totals[candidate_id]
+                / float(ballot_count * representation_count),
+                8,
+            )
+            if candidate_id in representation_ids
+            else 0.0
+        )
+        winner_share = (
+            round(winner_vote_counts.get(candidate_id, 0) / ballot_count, 8)
+            if candidate_id in representation_ids
+            else 0.0
+        )
+        aggregate_portfolio_score = (
+            round(
+                0.55 * winner_share + 0.30 * borda_score + 0.15 * mean_quality,
+                8,
+            )
+            if candidate_id in representation_ids
+            else mean_quality
+        )
+        assessment = {
+            "candidate_id": candidate_id,
+            **means,
+            "contradiction": contradiction_vote_counts[candidate_id]
+            > ballot_count / 2,
+            "contradiction_vote_count": contradiction_vote_counts[candidate_id],
+            "selected_vote_count": selected_vote_counts[candidate_id],
+            "winner_vote_count": winner_vote_counts.get(candidate_id, 0),
+            "aggregate_borda_score": borda_score,
+            "aggregate_mean_quality_score": mean_quality,
+            "aggregate_portfolio_score": aggregate_portfolio_score,
+            "reason": "Numeric aggregate of four sealed architecture-neutral ballots.",
+            "assessment_authority": "four_blind_projected_memory_judge_aggregate",
+        }
+        aggregate_by_id[candidate_id] = assessment
+        aggregated_assessments.append(assessment)
+
+    aggregate_representation_ranking = sorted(
+        representation_ids,
+        key=lambda candidate_id: (
+            -winner_vote_counts[candidate_id],
+            -aggregate_by_id[candidate_id]["aggregate_borda_score"],
+            -aggregate_by_id[candidate_id]["aggregate_mean_quality_score"],
+            candidate_id,
+        ),
+    )
+    champion_id = aggregate_representation_ranking[0]
+    canonical_ref_to_id = {
+        f"C{index:02d}": str(row["id"])
+        for index, row in enumerate(candidates, start=1)
+    }
+    canonical_ref_by_id = {
+        candidate_id: ref for ref, candidate_id in canonical_ref_to_id.items()
+    }
+
+    selected_ids = [champion_id]
+    selected_slot_counts = {slot: 0 for slot in BLUEPRINT_SLOTS}
+    selected_slot_counts[REPRESENTATION_BLUEPRINT] = 1
+    support_ranking = sorted(
+        (candidate_id for candidate_id in expected_ids if candidate_id != champion_id),
+        key=lambda candidate_id: (
+            -selected_vote_counts[candidate_id],
+            -aggregate_by_id[candidate_id]["aggregate_portfolio_score"],
+            candidate_id,
+        ),
+    )
+    for candidate_id in support_ranking:
+        if len(selected_ids) >= int(max_selected):
+            break
+        if selected_vote_counts[candidate_id] <= 0:
+            continue
+        granularity = str(candidate_by_id[candidate_id]["granularity"])
+        if granularity in BLUEPRINT_SLOTS:
+            if selected_slot_counts[granularity] >= int(
+                blueprint_slot_caps.get(granularity, 0)
+            ):
+                continue
+            selected_slot_counts[granularity] += 1
+        selected_ids.append(candidate_id)
+
+    champion_candidate = candidate_by_id[champion_id]["candidate"]
+    representation_components = {
+        slot: None for slot in REPRESENTATION_COMPONENT_SLOTS
+    }
+    representation_contracts = {}
+    champion_ref = canonical_ref_by_id[champion_id]
+    for slot in REPRESENTATION_COMPONENT_SLOTS:
+        requirement = _representation_requirement(slot, champion_candidate)
+        if not requirement:
+            continue
+        representation_components[slot] = champion_ref
+        representation_contracts[slot] = {
+            "ref": champion_ref,
+            "candidate_id": champion_id,
+            "required_value": requirement,
+        }
+
+    ranking_receipt = [
+        {
+            "rank": rank,
+            "candidate_id": candidate_id,
+            "winner_vote_count": winner_vote_counts[candidate_id],
+            "borda_score": aggregate_by_id[candidate_id]["aggregate_borda_score"],
+            "mean_quality_score": aggregate_by_id[candidate_id][
+                "aggregate_mean_quality_score"
+            ],
+            "portfolio_score": aggregate_by_id[candidate_id][
+                "aggregate_portfolio_score"
+            ],
+        }
+        for rank, candidate_id in enumerate(
+            aggregate_representation_ranking,
+            start=1,
+        )
+    ]
+    aggregate_identity = {
+        "schema": JUDGE_BALLOT_AGGREGATE_SCHEMA,
+        "ballot_receipts": [row["receipt_sha256"] for row in sealed_ballots],
+        "raw_representation_winners": [
+            row["raw_representation_winner"] for row in sealed_ballots
+        ],
+        "aggregate_representation_ranking": ranking_receipt,
+        "selected_ids": selected_ids,
+    }
+    return {
+        "decision": "select",
+        "selected_refs": [canonical_ref_by_id[value] for value in selected_ids],
+        "selected_ids": selected_ids,
+        "reason": (
+            "Four sealed Judge ballots were aggregated before the deterministic "
+            "architecture-agnostic portfolio diversity constraint was applied."
+        ),
+        "representation_components": representation_components,
+        "representation_contracts": representation_contracts,
+        "assessments": aggregated_assessments,
+        "candidate_handles": [
+            {"ref": ref, "candidate_id": candidate_id}
+            for ref, candidate_id in canonical_ref_to_id.items()
+        ],
+        "blind_ballots": sealed_ballots,
+        "ballot_aggregate": {
+            **aggregate_identity,
+            "status": "passed",
+            "ballot_count": ballot_count,
+            "aggregate_representation_winner": champion_id,
+            "receipt_sha256": _sha(aggregate_identity),
+        },
+    }
 
 
 def _portfolio_representation_signature(
@@ -2031,8 +2385,13 @@ def build_transfer_candidate_portfolio(
             representation_rows_for_seat=comprehensive_rows,
             contracts=base_contracts,
             selection_reason=(
-                "Preserve the independent Judge's highest-utility coherent "
+                "Preserve the four-ballot aggregate's highest-utility coherent "
                 "selection without prescribing an omitted representation slot."
+                if judge.get("ballot_aggregate")
+                else (
+                    "Preserve the independent Judge's highest-utility coherent "
+                    "selection without prescribing an omitted representation slot."
+                )
             ),
             slice_representation_components=False,
         )
@@ -2169,10 +2528,15 @@ def build_transfer_candidate_portfolio(
     if len(observed_backbone_families) != len(set(observed_backbone_families)):
         violations.append("backbone diversity seats are not distinct")
 
+    ballot_aggregate = copy.deepcopy(judge.get("ballot_aggregate") or {})
+    blind_ballots = copy.deepcopy(judge.get("blind_ballots") or [])
     identity = {
         "requested_size": int(requested_size),
         "seats": list(TRANSFER_PORTFOLIO_SEATS),
         "candidate_receipts": [row["receipt_sha256"] for row in entries],
+        "ballot_aggregate_receipt_sha256": str(
+            ballot_aggregate.get("receipt_sha256") or ""
+        ),
     }
     return {
         "schema": PORTFOLIO_SCHEMA,
@@ -2182,8 +2546,17 @@ def build_transfer_candidate_portfolio(
         "seat_policy": list(TRANSFER_PORTFOLIO_SEATS),
         "low_risk_control_included": False,
         "selection_mode": (
-            "judge_quality_plus_deterministic_host_diversity_no_model_names"
+            "four_blind_judge_ballots_borda_plus_deterministic_host_diversity_"
+            "no_model_names"
+            if ballot_aggregate
+            else "judge_quality_plus_deterministic_host_diversity_no_model_names"
         ),
+        "blind_ballots": blind_ballots,
+        "raw_representation_winners": [
+            str(row.get("raw_representation_winner") or "")
+            for row in blind_ballots
+        ],
+        "ballot_aggregate": ballot_aggregate,
         "common_support_ids": [str(row["id"]) for row in common_support],
         "candidates": entries,
         "violations": violations,
@@ -2601,50 +2974,148 @@ def build_dynamic_transfer_pack(
     judge_calls = 0
     judge = None
     judge_attempts = []
-    retry_feedback = ""
-    for attempt in range(2):
-        judge_calls += 1
-        raw = None
-        try:
-            raw = _call_judge(
-                layer,
-                stage=canonical_stage,
-                task_id=target_task_id,
-                task_desc=task_description,
-                context=query_text,
-                candidates=judge_candidates,
-                max_selected=max_selected,
-                retry_feedback=retry_feedback,
+    judge_ballot_records: list[dict[str, Any]] = []
+    if portfolio_enabled:
+        for ballot_index in range(TRANSFER_PORTFOLIO_JUDGE_BALLOT_COUNT):
+            ballot_candidates, order_receipt = _blind_judge_ballot_candidates(
+                judge_candidates,
+                ballot_index=ballot_index,
             )
-            judge = _validate_judge(
-                raw,
-                candidates=judge_candidates,
-                max_selected=max_selected,
-                abstention_allowed=bool(layer.cross_task_dynamic_allow_abstention),
-                blueprint_slot_caps=_blueprint_slot_caps(layer),
+            ballot_id = str(order_receipt["ballot_id"])
+            ballot_judge = None
+            ballot_attempts = []
+            retry_feedback = ""
+            for attempt in range(2):
+                judge_calls += 1
+                raw = None
+                try:
+                    raw = _call_judge(
+                        layer,
+                        stage=canonical_stage,
+                        task_id=target_task_id,
+                        task_desc=task_description,
+                        context=query_text,
+                        candidates=ballot_candidates,
+                        max_selected=max_selected,
+                        retry_feedback=retry_feedback,
+                        blind_ballot_id=ballot_id,
+                        candidate_order_receipt=order_receipt,
+                    )
+                    ballot_judge = _validate_judge(
+                        raw,
+                        candidates=ballot_candidates,
+                        max_selected=max_selected,
+                        abstention_allowed=False,
+                        blueprint_slot_caps=_blueprint_slot_caps(layer),
+                    )
+                    representation_winners = [
+                        candidate_id
+                        for candidate_id in ballot_judge.get("selected_ids") or []
+                        if next(
+                            (
+                                row["granularity"]
+                                for row in ballot_candidates
+                                if str(row["id"]) == str(candidate_id)
+                            ),
+                            "",
+                        )
+                        == REPRESENTATION_BLUEPRINT
+                    ]
+                    if len(representation_winners) != 1:
+                        raise ValueError(
+                            "sealed portfolio ballot must select exactly one "
+                            "representation candidate"
+                        )
+                    ballot_attempts.append(
+                        {
+                            "attempt": attempt + 1,
+                            "status": "valid",
+                            "action": copy.deepcopy(ballot_judge),
+                        }
+                    )
+                    break
+                except Exception as error:
+                    retry_feedback = f"{type(error).__name__}: {error}"
+                    receipt = {
+                        "attempt": attempt + 1,
+                        "status": "invalid",
+                        "error": retry_feedback,
+                    }
+                    if isinstance(raw, Mapping):
+                        receipt["action"] = copy.deepcopy(dict(raw))
+                    ballot_attempts.append(receipt)
+            if ballot_judge is None:
+                raise ValueError(
+                    f"Sealed Judge ballot {ballot_id} failed after two attempts; "
+                    "Host fallback cannot impersonate an independent vote"
+                )
+            judge_attempts.extend(
+                {**copy.deepcopy(row), "ballot_id": ballot_id}
+                for row in ballot_attempts
             )
-            judge_attempts.append(
-                {"attempt": attempt + 1, "status": "valid", "action": judge}
+            judge_ballot_records.append(
+                {
+                    "ballot_id": ballot_id,
+                    "candidate_order_receipt": order_receipt,
+                    "judge": ballot_judge,
+                    "attempts": ballot_attempts,
+                    "agent_calls": len(ballot_attempts),
+                }
             )
-            break
-        except Exception as error:
-            retry_feedback = f"{type(error).__name__}: {error}"
-            receipt = {
-                "attempt": attempt + 1,
-                "status": "invalid",
-                "error": retry_feedback,
-            }
-            if isinstance(raw, Mapping):
-                receipt["action"] = copy.deepcopy(dict(raw))
-            judge_attempts.append(receipt)
-    judge_fallback_used = judge is None
-    if judge is None:
-        judge = _host_judge_fallback(
-            stage=canonical_stage,
+        judge = _aggregate_transfer_judge_ballots(
             candidates=judge_candidates,
+            ballot_records=judge_ballot_records,
             max_selected=max_selected,
             blueprint_slot_caps=_blueprint_slot_caps(layer),
         )
+        judge_fallback_used = False
+    else:
+        retry_feedback = ""
+        for attempt in range(2):
+            judge_calls += 1
+            raw = None
+            try:
+                raw = _call_judge(
+                    layer,
+                    stage=canonical_stage,
+                    task_id=target_task_id,
+                    task_desc=task_description,
+                    context=query_text,
+                    candidates=judge_candidates,
+                    max_selected=max_selected,
+                    retry_feedback=retry_feedback,
+                )
+                judge = _validate_judge(
+                    raw,
+                    candidates=judge_candidates,
+                    max_selected=max_selected,
+                    abstention_allowed=bool(
+                        layer.cross_task_dynamic_allow_abstention
+                    ),
+                    blueprint_slot_caps=_blueprint_slot_caps(layer),
+                )
+                judge_attempts.append(
+                    {"attempt": attempt + 1, "status": "valid", "action": judge}
+                )
+                break
+            except Exception as error:
+                retry_feedback = f"{type(error).__name__}: {error}"
+                receipt = {
+                    "attempt": attempt + 1,
+                    "status": "invalid",
+                    "error": retry_feedback,
+                }
+                if isinstance(raw, Mapping):
+                    receipt["action"] = copy.deepcopy(dict(raw))
+                judge_attempts.append(receipt)
+        judge_fallback_used = judge is None
+        if judge is None:
+            judge = _host_judge_fallback(
+                stage=canonical_stage,
+                candidates=judge_candidates,
+                max_selected=max_selected,
+                blueprint_slot_caps=_blueprint_slot_caps(layer),
+            )
     # v155 deliberately removes the deterministic Resolver from cross-task
     # migration.  The independent Judge already validates every projected
     # card, rejects contradictions, and is schema-capped.  Its ordered choice
@@ -2677,7 +3148,11 @@ def build_dynamic_transfer_pack(
     )
     judge_selection_receipt = {
         "schema": "mlevolve_cross_task_direct_judge_selection_v2",
-        "mode": "independent_judge_direct_no_resolver",
+        "mode": (
+            "four_blind_judge_ballot_aggregate_no_resolver"
+            if portfolio_enabled
+            else "independent_judge_direct_no_resolver"
+        ),
         "selected_ids": [str(row["id"]) for row in selected_rows],
         "selected_architecture_ids": selected_architecture_ids,
         "selected_blueprint_ids": selected_blueprint_ids,
@@ -2690,6 +3165,20 @@ def build_dynamic_transfer_pack(
         "resolver_present": False,
         "post_judge_suppression_applied": False,
     }
+    if portfolio_enabled:
+        judge_selection_receipt["raw_representation_winners"] = [
+            str(row.get("raw_representation_winner") or "")
+            for row in judge.get("blind_ballots") or []
+        ]
+        judge_selection_receipt["aggregate_representation_ranking"] = copy.deepcopy(
+            (judge.get("ballot_aggregate") or {}).get(
+                "aggregate_representation_ranking"
+            )
+            or []
+        )
+        judge_selection_receipt["ballot_aggregate_receipt_sha256"] = str(
+            (judge.get("ballot_aggregate") or {}).get("receipt_sha256") or ""
+        )
     selected_candidates = [copy.deepcopy(row["candidate"]) for row in selected_rows]
     selected_ids = [row["id"] for row in selected_candidates]
     selected_id_set = set(selected_ids)
@@ -2813,7 +3302,13 @@ def build_dynamic_transfer_pack(
             "judge": {
                 "schema": JUDGE_SCHEMA,
                 "status": (
-                    "failed_host_fallback" if judge_fallback_used else "completed"
+                    "completed_four_blind_ballots"
+                    if portfolio_enabled
+                    else (
+                        "failed_host_fallback"
+                        if judge_fallback_used
+                        else "completed"
+                    )
                 ),
                 "agent_calls": judge_calls,
                 "fallback_used": judge_fallback_used,
@@ -2832,6 +3327,10 @@ def build_dynamic_transfer_pack(
                 "candidate_handles": copy.deepcopy(
                     judge.get("candidate_handles") or []
                 ),
+                "blind_ballots": copy.deepcopy(judge.get("blind_ballots") or []),
+                "ballot_aggregate": copy.deepcopy(
+                    judge.get("ballot_aggregate") or {}
+                ),
                 "receipt_sha256": _sha(judge),
             },
             "judge_selection": copy.deepcopy(judge_selection_receipt),
@@ -2841,7 +3340,11 @@ def build_dynamic_transfer_pack(
         "judge_selection_receipt": copy.deepcopy(judge_selection_receipt),
         "retrieval_agent": {
             "enabled": True,
-            "mode": "projected_multiround_search_then_independent_judge",
+            "mode": (
+                "projected_multiround_search_then_four_blind_judge_ballots"
+                if portfolio_enabled
+                else "projected_multiround_search_then_independent_judge"
+            ),
             "agent_calls": search_calls + judge_calls,
             "multigranular_search_agent_calls": search_calls,
             "independent_retrieval_judge_calls": judge_calls,
@@ -2852,9 +3355,13 @@ def build_dynamic_transfer_pack(
             "selection_complete": True,
             "agent_abstained": not bool(selected_ids),
             "final_selection_authority": (
-                "projected_search_host_fallback_direct_selection"
-                if judge_fallback_used
-                else "independent_projected_judge_direct_selection"
+                "four_blind_projected_judge_ballot_aggregate"
+                if portfolio_enabled
+                else (
+                    "projected_search_host_fallback_direct_selection"
+                    if judge_fallback_used
+                    else "independent_projected_judge_direct_selection"
+                )
             ),
             "fallback_used": search_fallback_used or judge_fallback_used,
         },
@@ -2900,14 +3407,22 @@ def build_dynamic_transfer_pack(
         "requested_size": portfolio["requested_size"],
         "actual_size": portfolio["actual_size"],
         "seat_policy": list(portfolio["seat_policy"]),
+        "selection_mode": str(portfolio["selection_mode"]),
+        "raw_representation_winners": list(
+            portfolio["raw_representation_winners"]
+        ),
+        "ballot_aggregate_receipt_sha256": str(
+            (portfolio.get("ballot_aggregate") or {}).get("receipt_sha256") or ""
+        ),
         "receipt_sha256": portfolio["receipt_sha256"],
     }
     pack["algorithm_version"] = (
-        "host_irreversible_projection_multiround_search_independent_judge_"
-        "bounded_four_candidate_portfolio_v1"
+        "host_irreversible_projection_multiround_search_four_blind_judge_"
+        "ballots_bounded_four_candidate_portfolio_v2"
     )
     pack["stage_route"]["route"] = (
-        "projected_multiround_search_judge_four_candidate_portfolio"
+        "projected_multiround_search_four_blind_judge_ballots_"
+        "four_candidate_portfolio"
     )
     return materialize_transfer_portfolio_candidate(
         pack,
@@ -2917,6 +3432,8 @@ def build_dynamic_transfer_pack(
 
 __all__ = [
     "GRANULARITIES",
+    "JUDGE_BALLOT_AGGREGATE_SCHEMA",
+    "JUDGE_BALLOT_SCHEMA",
     "JUDGE_SCHEMA",
     "PACK_SCHEMA",
     "PORTFOLIO_CANDIDATE_SCHEMA",
@@ -2924,6 +3441,7 @@ __all__ = [
     "REPRESENTATION_COMPONENT_SLOTS",
     "SEARCH_SCHEMA",
     "TRANSFER_PORTFOLIO_SEATS",
+    "TRANSFER_PORTFOLIO_JUDGE_BALLOT_COUNT",
     "build_transfer_candidate_portfolio",
     "build_dynamic_transfer_pack",
     "load_transfer_portfolio_manifest",
