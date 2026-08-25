@@ -1,0 +1,269 @@
+{
+  "schema": "mlevolve_paper_experiment_record_v1",
+  "recorded_at_utc": "2026-08-25T11:22:08Z",
+  "record_status": "frozen_from_pvc_and_live_kubernetes_state",
+  "paper_use": {
+    "full_tournament_result_eligible": false,
+    "partial_baseline_result_eligible_with_censoring_disclosure": true,
+    "rank_eligible": false,
+    "required_label": "incomplete four-seat tournament, censored by Pod DeadlineExceeded during baseline qualification",
+    "prohibited_claims": [
+      "completed six-hour tournament",
+      "completed four-seat ranking",
+      "Top-2 result",
+      "champion result",
+      "four-blind-ballot result"
+    ]
+  },
+  "experiment": {
+    "target_task": "plant-seedlings-classification",
+    "source_task_for_transfer_candidates": "leaf-classification",
+    "system_id": "dynamic_transfer_portfolio_tournament_v1",
+    "experiment_group": "plant_seedlings_v167_transfer_portfolio_tournament_6h_sol_low",
+    "attempt": "attempt-002",
+    "run_id": "20260825_034153_e2e-plant-seedlings-v167-transfer-tournament-6h-sol-low-r1-attempt-002",
+    "output_root": "/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-6h-sol-low-r1",
+    "run_root": "/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-6h-sol-low-r1/runs/attempt-002/20260825_034153_e2e-plant-seedlings-v167-transfer-tournament-6h-sol-low-r1-attempt-002",
+    "behavior": "memory_transfer",
+    "metric": "macro-F1",
+    "metric_direction": "maximize",
+    "model": "gpt-5.6-sol",
+    "reasoning_effort": "low",
+    "requested_internal_budget_seconds": 21600,
+    "requested_steps": 2147483647,
+    "num_gpus": 1,
+    "parallel_search_num": 1,
+    "cpu_number": 16,
+    "selection_binding": false,
+    "four_blind_ballots_used": false
+  },
+  "provenance": {
+    "tournament_implementation_commit": "9ca3b51722d28e8d92d631c8bbfe67983412a97a",
+    "seat_identity_fix_commit": "9ecc6d295e1108d8fc0e7b3555642dee4318af9c",
+    "pod_manifest_commit": "2623499a706e534bd59f1475ae0b554cabff4e08",
+    "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-sol-low-r14",
+    "runtime_receipt_sha256": "24506e4a272255ba8584f3a79c395a579cc5928daf4edb880548a1a184cb535e",
+    "frozen_transfer_portfolio_manifest_sha256": "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b",
+    "memory_version": "leaf_v10_r8_to_plant_seedlings_v167_four_seat_tournament",
+    "memory_snapshot_sha256": "cd84a7e76721139eb1068183c7e92bf2620ee8f2000b7d86e9f52e4f1ef6cd27",
+    "memory_index_sha256": "2488813025311b1081daf414b6ff7b5df59247fe9de77868721ce4dbe43c15b2",
+    "registered_memory_source_run_count": 96,
+    "rng_state_hash": "a6651f532d4722751932d03f323ee9858cfab1310d323562fdfe934dab86f8ec",
+    "run_identity_sha256": "12cf992aeb93a34db8dc4278780e87ed26687c98fb670df00e0cb45c05e08fad",
+    "config_sha256": "698a0b6b7e2b3d2196fa19a9cda20983663a38086a602e8e8d40475ab61e311d"
+  },
+  "preflight": {
+    "pod_authoritative_tests": "80 passed",
+    "endpoint_check": "gpt-5.6-sol HTTP 200",
+    "offline_candidate_preflight": "UID 65534, network blocked, EfficientNet-B0 and EfficientNet-B3 construction passed",
+    "b0_checkpoint_sha256": "7f5810bc96def8f7552d5b7e68d53c4786f81167d28291b21c0d90e1fca14934",
+    "b3_checkpoint_sha256": "b3899882250c22946d0229d266049fcd133c169233530b36b9ffa7983988362f",
+    "known_preflight_gap": "The offline construction smoke did not exercise the exact isolated Candidate cache-discovery path later used by generated B0 repairs."
+  },
+  "kubernetes": {
+    "pod": "mlevolve-plant-v167-tournament-a100-r1-dev",
+    "pod_uid": "a900ce1e-1d8c-4b47-924d-8fe0d6ca8a59",
+    "namespace": "ecepxie",
+    "node": "gp-engine.beocat.ksu.edu",
+    "gpu": "NVIDIA A100-SXM4-80GB",
+    "resources": {
+      "cpu": 16,
+      "memory": "32Gi",
+      "ephemeral_storage": "64Gi",
+      "nvidia.com/a100": 1
+    },
+    "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+    "creation_timestamp": "2026-08-25T02:10:28Z",
+    "pod_start_time": "2026-08-25T02:28:31Z",
+    "container_started_at": "2026-08-25T02:32:39Z",
+    "run_process_started_at": "2026-08-25T03:41:41Z",
+    "run_identity_persisted_at": "2026-08-25T03:41:54Z",
+    "pod_deadline_triggered_at": "2026-08-25T08:28:31Z",
+    "container_finished_at": "2026-08-25T08:33:32Z",
+    "expected_internal_deadline": "2026-08-25T09:41:41Z",
+    "live_active_deadline_seconds": 21600,
+    "manifest_active_deadline_seconds": 50400,
+    "termination_grace_period_seconds": 300,
+    "restart_count": 0,
+    "phase": "Failed",
+    "reason": "DeadlineExceeded",
+    "message": "Pod was active on the node longer than the specified deadline",
+    "exit_code": 137,
+    "run_seconds_before_deadline_signal": 17210,
+    "run_seconds_before_container_exit": 17511,
+    "internal_budget_seconds_not_reached": 4390,
+    "interpretation": "The live Pod lifetime was capped at six hours from Pod start, not from run.py start. Exit 137 followed DeadlineExceeded and a 300-second grace interval; it is not evidence of OOM or NodeNotReady."
+  },
+  "tournament_protocol": {
+    "expected_roles": [
+      "memory_transfer_comprehensive_best",
+      "memory_transfer_backbone_diversity_1",
+      "memory_transfer_backbone_diversity_2",
+      "memory_transfer_descriptor_fusion_diversity"
+    ],
+    "required_progression": [
+      "four valid baselines",
+      "one valid Improve per seat",
+      "one additional valid Improve for each Top-2 seat",
+      "champion-only continuation"
+    ],
+    "terminal_observed_phase": "baseline_qualification",
+    "four_distinct_roots_verified": true,
+    "valid_baselines_observed": 3,
+    "valid_baselines_required": 4,
+    "round1_improves_observed": 0,
+    "finalist_roles": [],
+    "champion_role": null,
+    "rankings": [],
+    "tournament_state_sha256": "ca8670599c7a2bd20000e3b34e33bed43faf74eb2b12153dffffbb40e501cbbc"
+  },
+  "seats": [
+    {
+      "seat": "comprehensive_best",
+      "draft_role": "memory_transfer_comprehensive_best",
+      "branch_id": 1,
+      "portfolio_candidate_id": "transfer::comprehensive_best::5843e2a11615",
+      "representation": "EfficientNet-B3 + target-derived descriptors + self-attention",
+      "root_node_id": "81386978aad648e2a714fe2ab9056a2d",
+      "root_code_sha256": "6296a96a3a78b90324bbf30458ae72557f82c04284efe4422b4cec63dd1a421c",
+      "root_result": "rejected by representation adoption gate: selected public_pretrained initialization is absent or weights=None",
+      "baseline_node_id": "a1c0044cba42441f97057af77b0ecec3",
+      "baseline_stage": "debug",
+      "baseline_code_sha256": "d4e45f9f8b3071f308dd4f73a82a8d8dd302feed8f5233adfa89ae0d23597ec7",
+      "baseline_valid": true,
+      "internal_macro_f1": 0.9147905354949875,
+      "submission_sha256": "aafe4916c87730317ee8ba7a3be8519cf748407f27005f43768f58164f9142a5",
+      "official_score_available": false,
+      "post_baseline_valid_count": 0
+    },
+    {
+      "seat": "backbone_diversity_1",
+      "draft_role": "memory_transfer_backbone_diversity_1",
+      "branch_id": 2,
+      "portfolio_candidate_id": "transfer::backbone_diversity_1::33f6f45eeb05",
+      "representation": "EfficientNet-B3 backbone-isolation variant",
+      "root_node_id": "ce07d322db8f4c379dc81ccb5ff68c44",
+      "root_code_sha256": "082a09d36f8127e281ea980b8ed28242c09c20ea69b4bfb43174f45a61158ac2",
+      "root_result": "rejected by representation adoption gate: selected public_pretrained initialization is absent or weights=None",
+      "baseline_node_id": "4457027e05544659a64d8a84299d1a30",
+      "baseline_stage": "debug",
+      "baseline_code_sha256": "62be3a1ae841ef3f3c2d666b6694198786528709dc707f402047d6f4fe374989",
+      "baseline_valid": true,
+      "internal_macro_f1": 0.9600101100499252,
+      "submission_sha256": "bfbe9c9ac52be11a8bba039f39fef205ccbdc9bf428521f700d7a4416c3e517d",
+      "official_score_available": false,
+      "post_baseline_valid_count": 0
+    },
+    {
+      "seat": "backbone_diversity_2",
+      "draft_role": "memory_transfer_backbone_diversity_2",
+      "branch_id": 3,
+      "portfolio_candidate_id": "transfer::backbone_diversity_2::4dc76486e52c",
+      "representation": "EfficientNet-B0 independent-backbone variant",
+      "root_node_id": "cdf7051534ae4865923e032c468ab946",
+      "root_code_sha256": "0e2c2775f7702e3d655df8c53632c541be15c9a03c0acf717fcd5e84caff2885",
+      "root_result": "rejected by representation adoption gate: selected public_pretrained initialization is absent or weights=None",
+      "baseline_node_id": null,
+      "baseline_valid": false,
+      "internal_macro_f1": null,
+      "debug_failures": [
+        {
+          "node_id": "bd546a034b714cde8824fb9247511f32",
+          "code_sha256": "3dc0cfaf2773d14b2e5e11be26a9826fea3b6ff1129837ee7a0687a4582156f0d",
+          "exec_time_seconds": 244.28664565086365,
+          "error": "FileNotFoundError: Local public-pretrained EfficientNet-B0 weights not found: efficientnet_b0_rwightman-7f5810bc.pth"
+        },
+        {
+          "node_id": "20e02dcc46b34b648c2c12da5f6b6676",
+          "code_sha256": "731f94fb9de8bf3cb8262159577ff703b683e3a71e5c8c8c2f49af927c3e89cc",
+          "exec_time_seconds": 666.7562396526337,
+          "error": "FileNotFoundError: Local public-pretrained EfficientNet-B0 weights not found: efficientnet_b0_rwightman-7f5810bc.pth"
+        },
+        {
+          "node_id": "40f63c678a834660bd157b010db174f1",
+          "code_sha256": "3401ab590091216ce6187ef17544d900f7a124037c5ab369113c76b32b721571",
+          "exec_time_seconds": 251.33270502090454,
+          "error": "FileNotFoundError: Local public-pretrained EfficientNet-B0 weights not found: efficientnet_b0_rwightman-7f5810bc.pth"
+        }
+      ],
+      "post_baseline_valid_count": 0
+    },
+    {
+      "seat": "descriptor_fusion_diversity",
+      "draft_role": "memory_transfer_descriptor_fusion_diversity",
+      "branch_id": 4,
+      "portfolio_candidate_id": "transfer::descriptor_fusion_diversity::73f1758184d2",
+      "representation": "EfficientNet-B3 + target-derived descriptors + gated fusion",
+      "root_node_id": "2fa93df8144240188a1c77227ddb5753",
+      "root_code_sha256": "637643cbb4abbc58d5c5fa28f2fa5b091ee6a46e798c68dc4e2f8069de205c61",
+      "root_result": "valid baseline",
+      "baseline_node_id": "2fa93df8144240188a1c77227ddb5753",
+      "baseline_stage": "draft",
+      "baseline_code_sha256": "637643cbb4abbc58d5c5fa28f2fa5b091ee6a46e798c68dc4e2f8069de205c61",
+      "baseline_valid": true,
+      "internal_macro_f1": 0.9863712473009653,
+      "submission_sha256": "0908310bb337da7df9dee251a38007c9864844e6586db40d7f55a6bbb902909e",
+      "official_score_available": true,
+      "official_public_score": 0.98236,
+      "official_private_score": 0.98236,
+      "kaggle_submission_ref": 55766426,
+      "post_baseline_valid_count": 0
+    }
+  ],
+  "best_partial_result": {
+    "seat": "descriptor_fusion_diversity",
+    "node_id": "2fa93df8144240188a1c77227ddb5753",
+    "stage": "draft",
+    "internal_macro_f1": 0.9863712473009653,
+    "official_public_score": 0.98236,
+    "official_private_score": 0.98236,
+    "solution_path": "/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-6h-sol-low-r1/runs/attempt-002/20260825_034153_e2e-plant-seedlings-v167-transfer-tournament-6h-sol-low-r1-attempt-002/workspace/best_solution/solution.py",
+    "solution_sha256": "637643cbb4abbc58d5c5fa28f2fa5b091ee6a46e798c68dc4e2f8069de205c61",
+    "submission_path": "/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-6h-sol-low-r1/runs/attempt-002/20260825_034153_e2e-plant-seedlings-v167-transfer-tournament-6h-sol-low-r1-attempt-002/workspace/best_submission/submission.csv",
+    "submission_sha256": "0908310bb337da7df9dee251a38007c9864844e6586db40d7f55a6bbb902909e",
+    "prediction_signature_sha256": "8e08d3d930df98fc4a40c64b3924b14dbdbed68b3f2a95b8191d7ed468d6acd1",
+    "certified_solution_available": false,
+    "paper_grade_eligible": false
+  },
+  "failure_analysis": {
+    "primary_software_failure": "The isolated Candidate execution environment could not discover the verified EfficientNet-B0 Torch Hub checkpoint, despite the host-side offline construction preflight passing.",
+    "scheduler_consequence": "After three B0 Debug failures, baseline qualification required branch 3 but that role had no selectable node. The scheduler repeatedly returned None and kept ordinary score-driven selection gated.",
+    "last_real_candidate_finished_at": "2026-08-25T06:55:49Z",
+    "idle_gated_seconds_before_deadline_signal": 5562,
+    "infrastructure_censoring": "The live Pod activeDeadlineSeconds was 21600 from Pod start and terminated the still-running process before its internal six-hour deadline.",
+    "not_observed": [
+      "OOMKilled",
+      "NodeNotReady",
+      "container restart",
+      "clean run.py terminal state",
+      "complete tournament"
+    ]
+  },
+  "communication_and_authority_evidence": {
+    "four_distinct_role_contracts_present": true,
+    "strategy_alignment_payloads": "empty for all nine candidate nodes",
+    "host_plan_execution_gate": "enabled=false and valid=true for all nine candidate nodes",
+    "positive_strategy_to_planner_feedback_loop_evidence": false,
+    "positive_host_to_planner_recoverable_return_evidence": false,
+    "authority_event_count": 44,
+    "authority_event_counts": {
+      "protocol_registered": 1,
+      "authority_rollout_versions_frozen": 1,
+      "claim_created": 21,
+      "receipt_written": 9,
+      "authority_decision": 6,
+      "authority_shadow_comparison": 6
+    },
+    "authority_mode": "shadow; enforced=false",
+    "last_failed_b0_authority_outcome": "require_replay due to missing code_execution receipt; repairable=true; responsible_component=evidence_collector"
+  },
+  "artifact_hashes": {
+    "journal_sha256": "e0bbc60417ce8b4d3644452c25659507248655ba8ec2001daf7718e023ba5556",
+    "filtered_journal_sha256": "c2a592b0fe334e588e533d889ed7a131578dc8711ff51f80eb9178f468e0fc11",
+    "tournament_state_sha256": "ca8670599c7a2bd20000e3b34e33bed43faf74eb2b12153dffffbb40e501cbbc",
+    "best_solution_sha256": "637643cbb4abbc58d5c5fa28f2fa5b091ee6a46e798c68dc4e2f8069de205c61",
+    "best_submission_sha256": "0908310bb337da7df9dee251a38007c9864844e6586db40d7f55a6bbb902909e",
+    "official_score_ledger_receipt_sha256": "248649d0896589e2ff413fb20ee20fc02509f7ebffb3814105da80904f49fe4c",
+    "official_score_ledger_file_sha256": "fd5736395b11f52535b87bfd83d20fffbc8a8ccedf3e16215ebb9de9858eb9d9"
+  }
+}
