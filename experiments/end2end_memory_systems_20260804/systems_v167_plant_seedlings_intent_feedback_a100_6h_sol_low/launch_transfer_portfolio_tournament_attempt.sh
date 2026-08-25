@@ -146,6 +146,7 @@ RUN_ARGS=(
   agent.steps=2147483647
   agent.time_limit=21600
   exec.timeout=21600
+  finalize_reserve_seconds=0
   agent.search.num_gpus=1
   agent.search.parallel_search_num=1
   "cpu_number=$CPU_NUMBER"

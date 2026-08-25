@@ -43,6 +43,15 @@ from utils.logging_config import setup_logging
 import torch
 
 
+def _resolve_finalize_reserve_seconds(cfg) -> int:
+    """Return the configured reserve while preserving an explicit zero."""
+
+    value = getattr(cfg, "finalize_reserve_seconds", 900)
+    if value is None:
+        value = 900
+    return max(0, int(value))
+
+
 class SigtermFinalizer:
     """Seal the latest journal/outcome before Kubernetes terminates the Pod."""
 
@@ -241,9 +250,7 @@ def _run_impl():
         )
     interpreter.set_run_deadline(
         run_started_monotonic + dedicated_run_guard_seconds,
-        finalize_reserve_seconds=int(
-            getattr(cfg, "finalize_reserve_seconds", 900) or 900
-        ),
+        finalize_reserve_seconds=_resolve_finalize_reserve_seconds(cfg),
     )
     runtime_state["interpreter"] = interpreter
 
