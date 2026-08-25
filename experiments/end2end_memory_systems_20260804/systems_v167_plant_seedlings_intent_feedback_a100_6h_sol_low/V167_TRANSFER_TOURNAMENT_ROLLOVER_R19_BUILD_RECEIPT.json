@@ -1,0 +1,46 @@
+{
+  "schema": "mlevolve_immutable_runtime_build_receipt_v1",
+  "created_at": "2026-08-25T12:14:39Z",
+  "runtime_path": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r19",
+  "base_runtime_path": "/workspace/nautilus-exp-end2end-agent-v167-transfer-neutral-judge-sol-low-r18",
+  "base_source_commit": "c722a3f5",
+  "overlay_source_commit": "1dc7a92c",
+  "ops_commit": "14d947f1",
+  "immutable": true,
+  "overlay_files": {
+    "mlevolve/engine/transfer_tournament.py": "11e3e27d0a1828ac532227c9cfd3361efb3a0eae523fc894c049594d1af2ad18",
+    "mlevolve/engine/agent_search.py": "655b0fabacdd573c7dc9f9445028d357ff68e27afd11f044727c063e38a433cb",
+    "mlevolve/engine/node_selection.py": "ab4e3d87148a187a1aecd07be786246c19efbbfe49c33aa2f9f3f414d5db88cb",
+    "tests/test_transfer_portfolio_tournament.py": "2372c572c1dedcef592e887d68e8cef3e5e7080dd61bb8af585b4dca6fbb959f"
+  },
+  "frozen_transfer_portfolio": {
+    "path": "frozen_transfer_portfolio/initial_transfer_codegen_pack.json",
+    "sha256": "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b",
+    "selection_binding": false
+  },
+  "public_pretrained_assets": {
+    "efficientnet_b0_rwightman-7f5810bc.pth": {
+      "size": 21444401,
+      "sha256": "7f5810bc96def8f7552d5b7e68d53c4786f81167d28291b21c0d90e1fca14934"
+    },
+    "efficientnet_b3_rwightman-b3899882.pth": {
+      "size": 49475909,
+      "sha256": "b3899882250c22946d0229d266049fcd133c169233530b36b9ffa7983988362f"
+    },
+    "timm_efficientnet_b3_ra2_in1k_model.safetensors": {
+      "size": 49335454,
+      "sha256": "279d2a53898aa89dab43fd6bd7df9f706aea4cb9cf916223988bbcb8e5850469"
+    }
+  },
+  "verification": {
+    "pod": "mlevolve-plant-v167-rollover-stage-cpu-r1-dev",
+    "pytest": "94 passed, 3 warnings",
+    "candidate_uid": 65534,
+    "network_mode": "offline",
+    "torchvision_parameter_counts": {
+      "efficientnet_b0": 5288548,
+      "efficientnet_b3": 12233232
+    },
+    "candidate_preflight_receipt_sha256": "9934a0af2b3243a970e0c4c544d9032ed4afcd1d46cba408d31fb99073ad1ad6"
+  }
+}
