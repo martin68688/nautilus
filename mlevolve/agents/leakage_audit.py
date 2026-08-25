@@ -935,10 +935,12 @@ def legacy_rank_eligible(agent: Any, node: Any) -> bool:
     if not leakage_clean:
         return False
     ext_cfg = getattr(getattr(agent, "cfg", None), "external_skill_memory", None)
+    from engine.draft_roles import is_memory_transfer_draft_role
+
     if bool(
         getattr(ext_cfg, "experiment_r_enabled", False)
         and getattr(ext_cfg, "experiment_r_memory_transfer_runtime_gate", False)
-        and str(getattr(node, "draft_role", "") or "") == "memory_transfer"
+        and is_memory_transfer_draft_role(getattr(node, "draft_role", None))
     ):
         verdict = getattr(node, "adoption_verifier_verdict", None) or {}
         activated = any(

@@ -24,6 +24,7 @@ from agents.memory.atomic_claim_memory import (
     extract_debug_signature,
     structured_debug_relevance,
 )
+from engine.draft_roles import is_memory_transfer_draft_role
 
 
 PACK_SCHEMA = "experiment_r_memory_pack_v1"
@@ -5302,7 +5303,7 @@ def format_experiment_r_pack(layer: Any, pack: dict[str, Any]) -> str:
                     "Memory-transfer contract: materially implement at least one relevant "
                     "injected item in executable code; unsupported name-dropping does not count."
                 ]
-                if pack.get("draft_role") == "memory_transfer"
+                if is_memory_transfer_draft_role(pack.get("draft_role"))
                 else []
             ),
             f"Routing contract: {json.dumps(pack['stage_route'], sort_keys=True)}",

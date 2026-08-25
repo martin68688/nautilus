@@ -1,0 +1,37 @@
+# Four-seat v167 Transfer tournament. The frozen Search/Judge portfolio owns
+# candidate content; Host scheduling owns only equal opportunity and bounded
+# elimination. No low-risk control is added and no model name is prescribed.
+extends: intent_feedback.yaml
+
+agent:
+  initial_drafts: 4
+  max_fusion_drafts: 0
+  branch_fusion_trigger_prob: 0.0
+  fusion_vs_evolution_prob: 0.0
+  draft_role_policy:
+    enabled: true
+    roles:
+      - memory_transfer_comprehensive_best
+      - memory_transfer_backbone_diversity_1
+      - memory_transfer_backbone_diversity_2
+      - memory_transfer_descriptor_fusion_diversity
+    ensure_valid_candidate_per_role: true
+    role_balance_min_valid_candidates: 1
+    cross_role_synthesis_after_balance: false
+    cross_role_synthesis_on_coverage: false
+    equal_branch_allocation_after_coverage: false
+    dedicated_branch_gpu_lanes: false
+    dedicated_branch_lane_budget_seconds: 0
+    single_coverage_synthesis_only: false
+    transfer_portfolio_tournament_enabled: true
+    transfer_portfolio_round1_valid_successors_per_seat: 1
+    transfer_portfolio_survivor_count: 2
+    transfer_portfolio_finalist_valid_successors_per_seat: 2
+  search:
+    num_drafts: 4
+
+run_identity:
+  experiment_group: plant_seedlings_v167_transfer_portfolio_tournament_6h_sol_low
+  memory_version: leaf_v10_r8_to_plant_seedlings_v167_four_seat_tournament
+  system_id: dynamic_transfer_portfolio_tournament_v1
+  identity_source: isolated_runtime_v167_tournament

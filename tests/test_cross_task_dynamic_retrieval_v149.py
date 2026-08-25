@@ -1432,3 +1432,66 @@ def test_stage_layer_reuses_frozen_portfolio_without_recalling_search(tmp_path):
     assert selected["memory_transfer"]["portfolio_seat"] == (
         "descriptor_fusion_diversity"
     )
+
+
+def test_tournament_role_binds_its_frozen_seat_across_improve(tmp_path):
+    import hashlib
+
+    from agents.memory.cross_task_dynamic_retrieval import (
+        build_transfer_candidate_portfolio,
+    )
+    from agents.memory.stage_aware_hybrid_memory import StageAwareHybridMemoryLayer
+
+    rows, judge = _portfolio_fixture()
+    portfolio = build_transfer_candidate_portfolio(
+        candidates=rows,
+        judge=judge,
+        requested_size=4,
+    )
+    frozen_pack = {
+        "schema": "mlevolve_cross_task_dynamic_transfer_pack_v1",
+        "target_task_id": "uci-one-hundred-leaves",
+        "stage_route": {"stage": "draft", "route": "frozen_portfolio"},
+        "transfer_portfolio": portfolio,
+        "memory_transfer": {},
+        "dynamic_retrieval": {},
+        "retrieval_agent": {},
+        "candidate_pool": [row["candidate"] for row in rows],
+    }
+    path = tmp_path / "frozen.json"
+    raw = json.dumps(frozen_pack, sort_keys=True).encode("utf-8")
+    path.write_bytes(raw)
+
+    layer = StageAwareHybridMemoryLayer.__new__(StageAwareHybridMemoryLayer)
+    layer.nodes = _nodes()
+    layer.cfg = None
+    layer.cross_task_transfer_policy = _policy()
+    layer.cross_task_dynamic_retrieval_enabled = True
+    layer.cross_task_transfer_portfolio_enabled = True
+    # The global legacy selector deliberately disagrees with the role. The
+    # scheduling identity must win without recalling Search/Judge.
+    layer.cross_task_transfer_portfolio_candidate = "comprehensive_best"
+    layer.cross_task_transfer_portfolio_manifest_path = str(path)
+    layer.cross_task_transfer_portfolio_manifest_sha256 = hashlib.sha256(raw).hexdigest()
+    layer._experiment_r_agentic_query_fn = lambda **_kwargs: (_ for _ in ()).throw(
+        AssertionError("tournament branch must reuse its frozen seat")
+    )
+    layer.end2end_controller = None
+    layer.prospective_audit_logger = None
+    layer._trace_local = threading.local()
+    layer._last_agentic_pack = {}
+
+    text, refs = layer.retrieve_for_node(
+        stage="improve",
+        task_id="uci-one-hundred-leaves",
+        task_desc="leaf descriptor classification",
+        query_parts=["improve while preserving the branch intent"],
+        draft_role="memory_transfer_backbone_diversity_2",
+    )
+
+    assert text and refs
+    selected = layer.current_navigation_pack()
+    assert selected["memory_transfer"]["portfolio_seat"] == "backbone_diversity_2"
+    assert selected["memory_transfer"]["representation_contracts"][
+        "backbone_family"
+    ]["required_value"] == "family_alternative"

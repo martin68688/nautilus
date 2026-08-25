@@ -368,13 +368,14 @@ class AdoptionVerifierAgent:
         """
 
         ext_cfg = getattr(self.cfg, "external_skill_memory", None)
+        from engine.draft_roles import is_memory_transfer_draft_role
+
         enabled = bool(
             getattr(ext_cfg, "experiment_r_enabled", False)
             and getattr(
                 ext_cfg, "experiment_r_memory_transfer_static_gate", False
             )
-            and str(getattr(node, "draft_role", "") or "")
-            == "memory_transfer"
+            and is_memory_transfer_draft_role(getattr(node, "draft_role", None))
         )
         plan = dict(getattr(node, "adoption_verification_plan", None) or {})
         positive = [

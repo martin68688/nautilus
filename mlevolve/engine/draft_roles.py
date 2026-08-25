@@ -17,10 +17,38 @@ NOVEL_DRAFT_ROLES = frozenset(
 )
 
 
+TRANSFER_PORTFOLIO_DRAFT_ROLE_TO_SEAT = {
+    "memory_transfer_comprehensive_best": "comprehensive_best",
+    "memory_transfer_backbone_diversity_1": "backbone_diversity_1",
+    "memory_transfer_backbone_diversity_2": "backbone_diversity_2",
+    "memory_transfer_descriptor_fusion_diversity": (
+        "descriptor_fusion_diversity"
+    ),
+}
+
+TRANSFER_PORTFOLIO_DRAFT_ROLES = tuple(
+    TRANSFER_PORTFOLIO_DRAFT_ROLE_TO_SEAT
+)
+
+
 def is_novel_draft_role(role: object) -> bool:
     return str(role or "") in NOVEL_DRAFT_ROLES
 
 
 def canonical_draft_role(role: object) -> str:
     value = str(role or "")
+    if value in TRANSFER_PORTFOLIO_DRAFT_ROLE_TO_SEAT:
+        return "memory_transfer"
     return "novel_exploration" if value in NOVEL_DRAFT_ROLES else value
+
+
+def is_memory_transfer_draft_role(role: object) -> bool:
+    """Whether one scheduling identity has Memory Transfer behavior."""
+
+    return canonical_draft_role(role) == "memory_transfer"
+
+
+def transfer_portfolio_seat_for_role(role: object) -> str | None:
+    """Return the frozen portfolio seat bound to a tournament Draft role."""
+
+    return TRANSFER_PORTFOLIO_DRAFT_ROLE_TO_SEAT.get(str(role or ""))

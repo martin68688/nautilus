@@ -173,6 +173,14 @@ class DraftRolePolicyConfig:
     # synthesis. Later stagnant branches use their ordinary intra-branch
     # Evolution path instead of silently creating another Fusion.
     single_coverage_synthesis_only: bool = False
+    # Four-seat Transfer tournament. Each scheduling role is bound to one
+    # frozen portfolio seat; all seats must produce a valid baseline plus one
+    # valid successor before score-based Top-2 retention. The two finalists
+    # then receive one more valid successor each before champion continuation.
+    transfer_portfolio_tournament_enabled: bool = False
+    transfer_portfolio_round1_valid_successors_per_seat: int = 1
+    transfer_portfolio_survivor_count: int = 2
+    transfer_portfolio_finalist_valid_successors_per_seat: int = 2
 
 
 @dataclass

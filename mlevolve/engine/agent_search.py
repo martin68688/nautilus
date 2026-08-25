@@ -471,6 +471,8 @@ class AgentSearch:
         policy = getattr(self.acfg, "draft_role_policy", None)
         if policy is None or not bool(getattr(policy, "enabled", False)):
             return
+        from engine.draft_roles import TRANSFER_PORTFOLIO_DRAFT_ROLES
+
         allowed = {
             ("memory_reproduction", "novel_exploration"),
             ("memory_transfer", "novel_exploration"),
@@ -481,6 +483,7 @@ class AgentSearch:
                 "novel_exploration_a",
                 "novel_exploration_b",
             ),
+            TRANSFER_PORTFOLIO_DRAFT_ROLES,
         }
         roles = [str(role) for role in list(getattr(policy, "roles", []) or [])]
         if tuple(roles) not in allowed:
@@ -515,6 +518,44 @@ class AgentSearch:
                 "cross_role_synthesis_after_balance=true"
             )
         ext_cfg = getattr(getattr(self, "cfg", None), "external_skill_memory", None)
+        tournament_enabled = bool(
+            getattr(policy, "transfer_portfolio_tournament_enabled", False)
+        )
+        if tournament_enabled:
+            if tuple(roles) != TRANSFER_PORTFOLIO_DRAFT_ROLES:
+                raise ValueError(
+                    "Transfer portfolio tournament requires the exact four frozen "
+                    f"seat roles; got {roles}"
+                )
+            if not bool(getattr(policy, "ensure_valid_candidate_per_role", False)):
+                raise ValueError(
+                    "Transfer portfolio tournament requires startup validity fairness"
+                )
+            if int(getattr(policy, "role_balance_min_valid_candidates", 1) or 1) != 1:
+                raise ValueError(
+                    "Transfer portfolio tournament requires one valid baseline per seat"
+                )
+            if int(getattr(policy, "transfer_portfolio_survivor_count", 2) or 2) != 2:
+                raise ValueError(
+                    "The v1 Transfer portfolio tournament requires exactly two finalists"
+                )
+            if int(getattr(self.acfg, "max_fusion_drafts", 0) or 0) != 0:
+                raise ValueError(
+                    "Transfer portfolio tournament forbids cross-seat Fusion drafts"
+                )
+            if not bool(
+                getattr(ext_cfg, "cross_task_transfer_portfolio_enabled", False)
+            ):
+                raise ValueError(
+                    "Transfer portfolio tournament requires a frozen Transfer portfolio"
+                )
+            if not str(
+                getattr(ext_cfg, "cross_task_transfer_portfolio_manifest_path", "")
+                or ""
+            ):
+                raise ValueError(
+                    "Transfer portfolio tournament requires an immutable manifest path"
+                )
         if (
             str(getattr(ext_cfg, "retrieval_control", "")) == "layered_strategy"
             and not getattr(self, "use_stepwise_generation", True)
@@ -555,6 +596,18 @@ class AgentSearch:
         from engine.role_balance import build_role_balance_status
 
         return build_role_balance_status(self)
+
+    def transfer_tournament_status(self) -> dict:
+        """Return and persist the Host-owned four-seat tournament state."""
+
+        from engine.transfer_tournament import (
+            build_transfer_tournament_status,
+            persist_transfer_tournament_status,
+        )
+
+        status = build_transfer_tournament_status(self)
+        persist_transfer_tournament_status(self, status)
+        return status
 
     def branch_fairness_status(self) -> dict:
         """Return Host-owned post-coverage branch allocation state."""
@@ -1545,10 +1598,14 @@ class AgentSearch:
                         queue_host_plan_execution_repair(result_node)
                         memory_transfer_adoption_blocked = True
 
+                    from engine.draft_roles import is_memory_transfer_draft_role
+
                     if (
                         not result_node.representation_adoption_contracts
                         and getattr(parent_node, "representation_adoption_contracts", None)
-                        and getattr(result_node, "draft_role", None) == "memory_transfer"
+                        and is_memory_transfer_draft_role(
+                            getattr(result_node, "draft_role", None)
+                        )
                     ):
                         result_node.representation_adoption_contracts = copy.deepcopy(
                             parent_node.representation_adoption_contracts
@@ -1556,8 +1613,9 @@ class AgentSearch:
                     ext_cfg = getattr(self.cfg, "external_skill_memory", None)
                     if (
                         ext_cfg is not None
-                        and getattr(result_node, "draft_role", None)
-                        == "memory_transfer"
+                        and is_memory_transfer_draft_role(
+                            getattr(result_node, "draft_role", None)
+                        )
                     ):
                         (
                             result_node.representation_adoption_contracts,
@@ -1779,7 +1837,18 @@ class AgentSearch:
         claimed_repair_parent = None
         duplicate_repair_request = False
         claimed_replay_research: tuple[SearchNode, str] | None = None
-        role_balance = {"active": False, "next_role": None}
+        role_balance = self.role_balance_status()
+        transfer_tournament = self.transfer_tournament_status()
+        tournament_target_branch_id = (
+            transfer_tournament.get("target_branch_id")
+            if transfer_tournament.get("active")
+            and not role_balance.get("active")
+            else None
+        )
+        tournament_allowed_branch_ids = {
+            int(value)
+            for value in transfer_tournament.get("allowed_branch_ids", [])
+        }
         branch_fairness = self.branch_fairness_status()
         fair_branch_id = (
             branch_fairness.get("next_branch_id")
@@ -1790,6 +1859,21 @@ class AgentSearch:
         # Phase 1 must still create the three declared draft roles in order.
         # Mandatory repairs take priority only once normal execution/search begins.
         preserve_explicit_runtime_debug = self._is_explicit_runtime_debug_parent(node)
+        if (
+            preserve_explicit_runtime_debug
+            and transfer_tournament.get("active")
+            and tournament_allowed_branch_ids
+            and int(getattr(node, "branch_id", -1) or -1)
+            not in tournament_allowed_branch_ids
+        ):
+            logger.info(
+                "[transfer-tournament] suppressing eliminated branch debug "
+                "branch=%s phase=%s",
+                getattr(node, "branch_id", None),
+                transfer_tournament.get("phase"),
+            )
+            preserve_explicit_runtime_debug = False
+            node = None
         if (
             execute_immediately
             and draft_role is None
@@ -1805,7 +1889,11 @@ class AgentSearch:
                     required_branch_id=(
                         int(required_branch_id)
                         if required_branch_id is not None
-                        else fair_branch_id
+                        else (
+                            int(tournament_target_branch_id)
+                            if tournament_target_branch_id is not None
+                            else fair_branch_id
+                        )
                     ),
                 )
             )
@@ -1832,7 +1920,6 @@ class AgentSearch:
             and required_branch_id is None
             and not coverage_fusion_only
         ):
-            role_balance = self.role_balance_status()
             balance_role = role_balance.get("next_role")
             if role_balance.get("active") and balance_role:
                 # A Replay Research execution is allowed only when the Host
@@ -1868,6 +1955,46 @@ class AgentSearch:
             claimed_repair_parent is None
             and not duplicate_repair_request
             and not role_balance.get("active")
+            and transfer_tournament.get("active")
+            and tournament_target_branch_id is not None
+            and execute_immediately
+            and draft_role is None
+            and init_solution_path is None
+            and not preserve_explicit_runtime_debug
+            and required_branch_id is None
+            and not coverage_fusion_only
+        ):
+            current_branch_id = (
+                int(getattr(node, "branch_id", -1) or -1)
+                if node is not None and node.stage != "root"
+                else None
+            )
+            if current_branch_id != int(tournament_target_branch_id):
+                node = node_selection.select_from_branch_id(
+                    self,
+                    int(tournament_target_branch_id),
+                )
+                if node is None:
+                    logger.info(
+                        "[transfer-tournament] waiting phase=%s target_role=%s "
+                        "target_branch=%s",
+                        transfer_tournament.get("phase"),
+                        transfer_tournament.get("target_role"),
+                        tournament_target_branch_id,
+                    )
+                    return None
+            logger.info(
+                "[transfer-tournament] allocated phase=%s role=%s branch=%s",
+                transfer_tournament.get("phase"),
+                transfer_tournament.get("target_role"),
+                tournament_target_branch_id,
+            )
+
+        if (
+            claimed_repair_parent is None
+            and not duplicate_repair_request
+            and not role_balance.get("active")
+            and not transfer_tournament.get("active")
             and execute_immediately
             and draft_role is None
             and init_solution_path is None

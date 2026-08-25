@@ -6,7 +6,11 @@ from pathlib import Path
 from typing import Any, Optional
 
 from llm import compile_prompt_to_md
-from engine.draft_roles import canonical_draft_role, is_novel_draft_role
+from engine.draft_roles import (
+    canonical_draft_role,
+    is_memory_transfer_draft_role,
+    is_novel_draft_role,
+)
 from engine.search_node import SearchNode
 from agents.coder import plan_and_code_query, stepwise_plan_and_code_query
 from agents.triggers import register_node
@@ -232,7 +236,7 @@ def run(
             "primary_model": getattr(agent, "coldstart_primary_model_name", ""),
         }
         prompt["Instructions"]["Draft role contract (MANDATORY)"] = [role_contract["requirement"]]
-    elif draft_role == "memory_transfer":
+    elif is_memory_transfer_draft_role(draft_role):
         external_memory_cfg = getattr(
             agent.cfg, "external_skill_memory", None
         )
@@ -511,7 +515,7 @@ def run(
         l2_tactic_refs=l2_ref_ids,
         strategy_alignment=strategy_alignment,
     )
-    if draft_role == "memory_transfer":
+    if is_memory_transfer_draft_role(draft_role):
         memory_layer = getattr(agent, "external_skill_memory", None)
         latest_pack = dict(
             getattr(memory_layer, "_last_agentic_pack", None) or {}

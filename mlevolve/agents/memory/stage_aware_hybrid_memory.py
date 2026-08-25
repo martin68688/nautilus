@@ -6797,7 +6797,12 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             target_task_id=task_id,
         )
         if transfer_decision.active:
-            if draft_role == "memory_transfer":
+            from engine.draft_roles import (
+                is_memory_transfer_draft_role,
+                transfer_portfolio_seat_for_role,
+            )
+
+            if is_memory_transfer_draft_role(draft_role):
                 query_text = "\n".join([task_desc or "", *(query_parts or [])])
                 transfer_stage = CROSS_TASK_TRANSFER_STAGE_ALIASES.get(
                     canonical_stage,
@@ -6823,7 +6828,11 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                         or ""
                     )
                     if (
-                        transfer_stage == "draft"
+                        (
+                            transfer_stage == "draft"
+                            or transfer_portfolio_seat_for_role(draft_role)
+                            is not None
+                        )
                         and getattr(
                             self,
                             "cross_task_transfer_portfolio_enabled",
@@ -6843,7 +6852,8 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
                             )
                         pack = materialize_transfer_portfolio_candidate(
                             frozen_pack,
-                            self.cross_task_transfer_portfolio_candidate,
+                            transfer_portfolio_seat_for_role(draft_role)
+                            or self.cross_task_transfer_portfolio_candidate,
                         )
                     else:
                         pack = build_dynamic_transfer_pack(
@@ -6949,7 +6959,9 @@ class StageAwareHybridMemoryLayer(RunForestMemoryLayer):
             )
             return "", []
         if self.retrieval_control == "layered_strategy" and stage == "draft":
-            if draft_role == "memory_transfer":
+            from engine.draft_roles import is_memory_transfer_draft_role
+
+            if is_memory_transfer_draft_role(draft_role):
                 pack = self._hybrid_pack(
                     stage=stage,
                     task_id=task_id,

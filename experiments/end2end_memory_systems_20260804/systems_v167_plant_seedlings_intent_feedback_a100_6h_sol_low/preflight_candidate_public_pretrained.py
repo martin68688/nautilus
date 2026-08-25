@@ -16,6 +16,10 @@ MODEL_REPOSITORY = "timm/efficientnet_b3.ra2_in1k"
 MODEL_NAME = "efficientnet_b3"
 EXPECTED_DEFAULT_PARAMETERS = 12_233_232
 EXPECTED_FEATURE_PARAMETERS = 10_696_232
+EXPECTED_TORCHVISION_PARAMETERS = {
+    "efficientnet_b0": 5_288_548,
+    "efficientnet_b3": 12_233_232,
+}
 
 
 def sha256_file(path: Path) -> str:
@@ -55,6 +59,12 @@ import json
 import os
 import timm
 from huggingface_hub import constants
+from torchvision.models import (
+    EfficientNet_B0_Weights,
+    EfficientNet_B3_Weights,
+    efficientnet_b0,
+    efficientnet_b3,
+)
 
 default_model = timm.create_model("efficientnet_b3", pretrained=True)
 default_parameters = sum(p.numel() for p in default_model.parameters())
@@ -66,12 +76,22 @@ feature_model = timm.create_model(
     global_pool="avg",
 )
 feature_parameters = sum(p.numel() for p in feature_model.parameters())
+torchvision_models = {
+    "efficientnet_b0": efficientnet_b0(weights=EfficientNet_B0_Weights.DEFAULT),
+    "efficientnet_b3": efficientnet_b3(weights=EfficientNet_B3_Weights.DEFAULT),
+}
+torchvision_parameters = {
+    name: sum(p.numel() for p in model.parameters())
+    for name, model in torchvision_models.items()
+}
 print(json.dumps({
     "timm_version": timm.__version__,
     "default_parameters": default_parameters,
     "feature_parameters": feature_parameters,
     "hf_hub_cache": constants.HF_HUB_CACHE,
     "hf_hub_offline": os.environ.get("HF_HUB_OFFLINE"),
+    "torch_home": os.environ.get("TORCH_HOME"),
+    "torchvision_parameters": torchvision_parameters,
 }, sort_keys=True))
 '''
     isolation = {}
@@ -107,6 +127,11 @@ print(json.dumps({
             "unexpected feature EfficientNet-B3 parameter count: "
             f"{result['feature_parameters']}"
         )
+    if result["torchvision_parameters"] != EXPECTED_TORCHVISION_PARAMETERS:
+        raise RuntimeError(
+            "unexpected torchvision EfficientNet parameter counts: "
+            f"{result['torchvision_parameters']}"
+        )
 
     destination_hub = Path(env["HF_HUB_CACHE"])
     repository_dir = destination_hub / (
@@ -117,6 +142,11 @@ print(json.dumps({
     seed_receipt = json.loads(
         (
             args.runtime_cache_root / "host_hf_cache_seed_receipt.json"
+        ).read_text()
+    )
+    torch_seed_receipt = json.loads(
+        (
+            args.runtime_cache_root / "host_torch_hub_cache_seed_receipt.json"
         ).read_text()
     )
     receipt = {
@@ -136,6 +166,7 @@ print(json.dumps({
         "timm_version": result["timm_version"],
         "default_parameter_count": result["default_parameters"],
         "feature_parameter_count": result["feature_parameters"],
+        "torchvision_parameter_counts": result["torchvision_parameters"],
         "runtime_cache_root": str(args.runtime_cache_root.resolve()),
         "hf_hub_cache": result["hf_hub_cache"],
         "weight": {
@@ -144,6 +175,8 @@ print(json.dumps({
             "bytes": weight_path.stat().st_size,
         },
         "host_seed_receipt": seed_receipt,
+        "torch_hub_cache": result["torch_home"],
+        "torch_hub_checkpoints": torch_seed_receipt["checkpoints"],
     }
     args.receipt.parent.mkdir(parents=True, exist_ok=True)
     args.receipt.write_text(
