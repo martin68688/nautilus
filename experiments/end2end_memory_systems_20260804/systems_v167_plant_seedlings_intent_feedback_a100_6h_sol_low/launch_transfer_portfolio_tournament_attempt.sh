@@ -128,6 +128,12 @@ assert cfg.external_skill_memory.memory_strategy_host_required_pretrained_loader
 print(f"four-seat tournament config preflight passed: roles={roles}")
 PY
 
+CPU_NUMBER="${MLEVOLVE_CPU_NUMBER:-16}"
+if [[ ! "$CPU_NUMBER" =~ ^[1-9][0-9]*$ ]]; then
+  echo "invalid MLEVOLVE_CPU_NUMBER=$CPU_NUMBER; expected a positive integer" >&2
+  exit 2
+fi
+
 RUN_ARGS=(
   run.py
   exp_id=plant-seedlings-classification
@@ -142,7 +148,7 @@ RUN_ARGS=(
   exec.timeout=21600
   agent.search.num_gpus=1
   agent.search.parallel_search_num=1
-  cpu_number=16
+  "cpu_number=$CPU_NUMBER"
   "external_skill_memory.cross_task_transfer_portfolio_manifest_path=$PORTFOLIO_MANIFEST_PATH"
   "external_skill_memory.cross_task_transfer_portfolio_manifest_sha256=$PORTFOLIO_MANIFEST_SHA256"
 )
