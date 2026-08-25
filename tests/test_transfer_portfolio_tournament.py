@@ -9,6 +9,7 @@ from engine.draft_roles import (
 )
 from engine.search_node import SearchNode
 from engine.transfer_tournament import build_transfer_tournament_status
+from engine import node_selection
 from utils.metric import MetricValue
 
 
@@ -163,6 +164,61 @@ def test_debug_failures_do_not_consume_baseline_or_improve_entitlement(tmp_path)
     assert row["baseline_node_id"] is not None
     assert row["valid_candidate_count"] == 1
     assert row["post_baseline_valid_count"] == 0
+
+
+def test_unavailable_baseline_rolls_resource_to_next_queued_round1_branch(tmp_path):
+    agent = _agent(tmp_path)
+    missing_role = TRANSFER_PORTFOLIO_DRAFT_ROLES[2]
+    for role in TRANSFER_PORTFOLIO_DRAFT_ROLES:
+        if role == missing_role:
+            continue
+        root = next(
+            node for node in agent.virtual_root.children if node.draft_role == role
+        )
+        root.is_buggy = False
+        root.is_valid = True
+        root.metric = MetricValue(0.80, maximize=True)
+
+    status = build_transfer_tournament_status(agent)
+
+    assert status["phase"] == "baseline_qualification"
+    assert status["target_branch_id"] == 3
+    assert status["allowed_branch_ids"] == [3]
+    assert status["rollover_branch_ids"] == [1, 2, 4]
+    assert status["allocation_branch_ids"] == [3, 1, 2, 4]
+    assert [row["allocation_kind"] for row in status["allocation_queue"]] == [
+        "phase_debt",
+        "early_round1_rollover",
+        "early_round1_rollover",
+        "early_round1_rollover",
+    ]
+
+    _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[0], 0.81)
+    status = build_transfer_tournament_status(agent)
+    assert status["allocation_branch_ids"] == [3, 2, 4]
+
+
+def test_branch_queue_skips_unexpandable_primary_and_selects_next(
+    monkeypatch,
+    tmp_path,
+):
+    calls = []
+    agent = _agent(tmp_path)
+
+    def select_branch(_agent, _root, branch_id):
+        calls.append(branch_id)
+        return None if branch_id == 3 else f"node-{branch_id}"
+
+    monkeypatch.setattr(node_selection, "_select_within_branch", select_branch)
+
+    selected, branch_id = node_selection.select_from_branch_ids(
+        agent,
+        [3, 1, 2, 4],
+    )
+
+    assert selected == "node-1"
+    assert branch_id == 1
+    assert calls == [3, 1]
 
 
 def test_tournament_keeps_top2_then_continues_only_champion(tmp_path):

@@ -218,18 +218,52 @@ def build_transfer_tournament_status(agent: Any) -> dict[str, Any]:
                 )
                 allowed_rows = reranked_finalists[:1]
 
-    if allowed_rows:
-        target_row = min(
-            allowed_rows,
-            key=lambda row: (
-                int(row["post_baseline_valid_count"]),
-                int(row["attempted_count"]),
-                int(row["seat_order"]),
-            ),
+    def allocation_key(row: dict[str, Any]) -> tuple[int, int, int]:
+        return (
+            int(row["post_baseline_valid_count"]),
+            int(row["attempted_count"]),
+            int(row["seat_order"]),
         )
+
+    ordered_allowed_rows = sorted(allowed_rows, key=allocation_key)
+    if ordered_allowed_rows:
+        target_row = ordered_allowed_rows[0]
+
+    # Keep the tournament work-conserving without silently advancing its
+    # qualification phase.  A missing baseline remains the primary debt, but
+    # if every node in that branch is temporarily or permanently unavailable,
+    # a worker may spend an already-declared round-1 entitlement from another
+    # baseline-qualified seat.  Once that one valid successor exists, the seat
+    # disappears from this fallback queue.  Later rounds are deliberately not
+    # borrowed before all baselines exist because their Top-2 membership is not
+    # yet knowable.
+    rollover_rows: list[dict[str, Any]] = []
+    if phase == "baseline_qualification":
+        allowed_roles = {str(row["draft_role"]) for row in ordered_allowed_rows}
+        rollover_rows = sorted(
+            [
+                row
+                for row in seat_rows
+                if str(row["draft_role"]) not in allowed_roles
+                and row["valid_candidate_count"] >= 1
+                and row["post_baseline_valid_count"] < round1_required
+            ],
+            key=allocation_key,
+        )
+    allocation_rows = ordered_allowed_rows + rollover_rows
     allowed_branch_ids = [
         int(row["branch_id"])
-        for row in allowed_rows
+        for row in ordered_allowed_rows
+        if row.get("branch_id") is not None
+    ]
+    rollover_branch_ids = [
+        int(row["branch_id"])
+        for row in rollover_rows
+        if row.get("branch_id") is not None
+    ]
+    allocation_branch_ids = [
+        int(row["branch_id"])
+        for row in allocation_rows
         if row.get("branch_id") is not None
     ]
     champion_role = (
@@ -252,6 +286,22 @@ def build_transfer_tournament_status(agent: Any) -> dict[str, Any]:
         "finalist_roles": finalists if rankings else [],
         "champion_role": champion_role,
         "allowed_branch_ids": allowed_branch_ids,
+        "rollover_branch_ids": rollover_branch_ids,
+        "allocation_branch_ids": allocation_branch_ids,
+        "allocation_queue": [
+            {
+                "branch_id": int(row["branch_id"]),
+                "draft_role": str(row["draft_role"]),
+                "seat": str(row["seat"]),
+                "allocation_kind": (
+                    "phase_debt"
+                    if row in ordered_allowed_rows
+                    else "early_round1_rollover"
+                ),
+            }
+            for row in allocation_rows
+            if row.get("branch_id") is not None
+        ],
         "target_branch_id": (
             int(target_row["branch_id"])
             if target_row is not None and target_row.get("branch_id") is not None

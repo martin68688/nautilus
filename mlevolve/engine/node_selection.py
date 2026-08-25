@@ -484,6 +484,58 @@ def select_from_branch_id(agent, branch_id: int) -> Optional[SearchNode]:
                 root.lock = True
 
 
+def select_from_branch_ids(
+    agent,
+    branch_ids: List[int],
+) -> tuple[Optional[SearchNode], Optional[int]]:
+    """Select from the first currently expandable branch in Host order.
+
+    The ordering is supplied by a score-independent Host scheduler.  A branch
+    that has debt keeps its position in the persisted tournament state, but it
+    cannot strand a worker when a later, already-entitled branch has work.
+    """
+
+    seen: set[int] = set()
+    ordered = []
+    for value in branch_ids:
+        branch_id = int(value)
+        if branch_id in seen:
+            continue
+        seen.add(branch_id)
+        ordered.append(branch_id)
+    for index, branch_id in enumerate(ordered):
+        roots = [
+            node
+            for node in getattr(agent.virtual_root, "children", set())
+            if int(getattr(node, "branch_id", -1) or -1) == branch_id
+        ]
+        selected = (
+            _select_within_branch(agent, roots[0], branch_id)
+            if len(roots) == 1
+            else None
+        )
+        if selected is None:
+            logger.info(
+                "[transfer-tournament] unavailable branch=%s roots=%s; "
+                "trying next queued branch",
+                branch_id,
+                len(roots),
+            )
+            continue
+        logger.info(
+            "[transfer-tournament] selected branch=%s queue_index=%s rolled_over=%s",
+            branch_id,
+            index,
+            index > 0,
+        )
+        return selected, branch_id
+    logger.info(
+        "[transfer-tournament] no queued branch is currently selectable queue=%s",
+        ordered,
+    )
+    return None, None
+
+
 def select_branch_fair(agent, fairness: dict | None = None) -> Optional[SearchNode]:
     """Choose the least-used protected branch, then select only within it."""
 

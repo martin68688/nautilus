@@ -1839,15 +1839,21 @@ class AgentSearch:
         claimed_replay_research: tuple[SearchNode, str] | None = None
         role_balance = self.role_balance_status()
         transfer_tournament = self.transfer_tournament_status()
+        tournament_allocation_branch_ids = [
+            int(value)
+            for value in transfer_tournament.get(
+                "allocation_branch_ids",
+                transfer_tournament.get("allowed_branch_ids", []),
+            )
+        ]
         tournament_target_branch_id = (
             transfer_tournament.get("target_branch_id")
             if transfer_tournament.get("active")
-            and not role_balance.get("active")
             else None
         )
         tournament_allowed_branch_ids = {
             int(value)
-            for value in transfer_tournament.get("allowed_branch_ids", [])
+            for value in tournament_allocation_branch_ids
         }
         branch_fairness = self.branch_fairness_status()
         fair_branch_id = (
@@ -1900,10 +1906,20 @@ class AgentSearch:
             if claimed_repair_parent is not None:
                 node = claimed_repair_parent
             elif duplicate_repair_request:
-                logger.info(
-                    "[step] Mandatory repair parent is already in flight; worker will wait"
-                )
-                return None
+                if (
+                    transfer_tournament.get("active")
+                    and len(tournament_allocation_branch_ids) > 1
+                ):
+                    logger.info(
+                        "[transfer-tournament] primary repair already in flight; "
+                        "trying next queued branch"
+                    )
+                    duplicate_repair_request = False
+                else:
+                    logger.info(
+                        "[step] Mandatory repair parent is already in flight; worker will wait"
+                    )
+                    return None
         elif preserve_explicit_runtime_debug:
             logger.info(
                 "[step] Preserving explicit runtime-debug node %s; mandatory repairs remain queued",
@@ -1919,6 +1935,7 @@ class AgentSearch:
             and not preserve_explicit_runtime_debug
             and required_branch_id is None
             and not coverage_fusion_only
+            and not transfer_tournament.get("active")
         ):
             balance_role = role_balance.get("next_role")
             if role_balance.get("active") and balance_role:
@@ -1954,7 +1971,6 @@ class AgentSearch:
         if (
             claimed_repair_parent is None
             and not duplicate_repair_request
-            and not role_balance.get("active")
             and transfer_tournament.get("active")
             and tournament_target_branch_id is not None
             and execute_immediately
@@ -1964,30 +1980,33 @@ class AgentSearch:
             and required_branch_id is None
             and not coverage_fusion_only
         ):
-            current_branch_id = (
-                int(getattr(node, "branch_id", -1) or -1)
-                if node is not None and node.stage != "root"
-                else None
+            node, allocated_branch_id = node_selection.select_from_branch_ids(
+                self,
+                tournament_allocation_branch_ids,
             )
-            if current_branch_id != int(tournament_target_branch_id):
-                node = node_selection.select_from_branch_id(
-                    self,
-                    int(tournament_target_branch_id),
+            if node is None or allocated_branch_id is None:
+                logger.info(
+                    "[transfer-tournament] waiting phase=%s target_role=%s "
+                    "target_branch=%s allocation_queue=%s",
+                    transfer_tournament.get("phase"),
+                    transfer_tournament.get("target_role"),
+                    tournament_target_branch_id,
+                    tournament_allocation_branch_ids,
                 )
-                if node is None:
-                    logger.info(
-                        "[transfer-tournament] waiting phase=%s target_role=%s "
-                        "target_branch=%s",
-                        transfer_tournament.get("phase"),
-                        transfer_tournament.get("target_role"),
-                        tournament_target_branch_id,
-                    )
-                    return None
+                return None
+            role_by_branch = {
+                int(row["branch_id"]): str(row["draft_role"])
+                for row in transfer_tournament.get("seats", [])
+                if row.get("branch_id") is not None
+            }
             logger.info(
-                "[transfer-tournament] allocated phase=%s role=%s branch=%s",
+                "[transfer-tournament] allocated phase=%s role=%s branch=%s "
+                "primary_branch=%s rolled_over=%s",
                 transfer_tournament.get("phase"),
-                transfer_tournament.get("target_role"),
+                role_by_branch.get(allocated_branch_id),
+                allocated_branch_id,
                 tournament_target_branch_id,
+                int(allocated_branch_id) != int(tournament_target_branch_id),
             )
 
         if (
