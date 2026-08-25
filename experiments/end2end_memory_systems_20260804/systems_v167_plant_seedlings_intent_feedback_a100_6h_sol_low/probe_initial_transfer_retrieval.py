@@ -145,9 +145,11 @@ def main() -> None:
     if layer is None:
         raise RuntimeError("formal config did not initialize external memory")
     pack = layer.current_navigation_pack()
-    if pack.get("stage_route", {}).get("route") != (
-        "projected_multiround_search_direct_judge"
-    ):
+    route = str(pack.get("stage_route", {}).get("route") or "")
+    if route not in {
+        "projected_multiround_search_direct_judge",
+        "projected_multiround_search_judge_four_candidate_portfolio",
+    }:
         raise RuntimeError(
             f"unexpected retrieval route: {pack.get('stage_route')}"
         )
@@ -158,6 +160,7 @@ def main() -> None:
     judge = (pack.get("dynamic_retrieval") or {}).get("judge") or {}
     selected_ids = list(pack.get("final_prompt_candidate_ids") or [])
     selected_id_set = set(selected_ids)
+    portfolio = dict(pack.get("transfer_portfolio") or {})
     summary = {
         "schema": "mlevolve_initial_transfer_retrieval_probe_v1",
         "status": "passed",
@@ -216,6 +219,29 @@ def main() -> None:
                 judge.get("representation_contracts") or {}
             ),
             "assessments": list(judge.get("assessments") or []),
+        },
+        "transfer_portfolio": {
+            "status": str(portfolio.get("status") or ""),
+            "requested_size": int(portfolio.get("requested_size") or 0),
+            "actual_size": int(portfolio.get("actual_size") or 0),
+            "selection_mode": str(portfolio.get("selection_mode") or ""),
+            "seat_policy": list(portfolio.get("seat_policy") or []),
+            "receipt_sha256": str(portfolio.get("receipt_sha256") or ""),
+            "candidates": [
+                {
+                    "seat": str(row.get("seat") or ""),
+                    "candidate_id": str(row.get("candidate_id") or ""),
+                    "selection_reason": str(row.get("selection_reason") or ""),
+                    "selected_ids": list(row.get("selected_ids") or []),
+                    "representation_contracts": dict(
+                        row.get("representation_contracts") or {}
+                    ),
+                    "fingerprint": dict(row.get("fingerprint") or {}),
+                    "quality_score": float(row.get("quality_score") or 0.0),
+                    "receipt_sha256": str(row.get("receipt_sha256") or ""),
+                }
+                for row in portfolio.get("candidates") or []
+            ],
         },
         "prompt_ref_ids": list(ref_ids),
         "prompt_text_sha256": hashlib.sha256(
