@@ -1,0 +1,20 @@
+{
+  "schema_version": "v1",
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r20",
+  "base_runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r19",
+  "overlay_commit": "03a604cb",
+  "immutable": true,
+  "purpose": "Permit an explicitly coupled lower CPU allocation without changing the default tournament runtime, so a full six-hour work-conserving tournament can schedule on occupied GPU nodes.",
+  "files": {
+    "experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low/launch_transfer_portfolio_tournament_attempt.sh": "f8ec9608ea5e3bd9e3adfa5d534ef12993f2aa49fd48a7ce7fc156e7cc482627",
+    "mlevolve/engine/transfer_tournament.py": "11e3e27d0a1828ac532227c9cfd3361efb3a0eae523fc894c049594d1af2ad18",
+    "mlevolve/engine/agent_search.py": "655b0fabacdd573c7dc9f9445028d357ff68e27afd11f044727c063e38a433cb",
+    "mlevolve/engine/node_selection.py": "ab4e3d87148a187a1aecd07be786246c19efbbfe49c33aa2f9f3f414d5db88cb",
+    "frozen_transfer_portfolio/initial_transfer_codegen_pack.json": "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b"
+  },
+  "verification": {
+    "bash_syntax": "passed",
+    "pod_authoritative_tests": "84 passed, 3 warnings",
+    "candidate_offline_preflight": "inherited unchanged from r19; B0 and B3 passed as uid 65534 with network disabled"
+  }
+}

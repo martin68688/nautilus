@@ -5,8 +5,8 @@ metadata:
   namespace: ecepxie
   annotations:
     mlevolve.ai/purpose: full-six-hour-work-conserving-four-seat-transfer-tournament
-    mlevolve.ai/source-commit: 1dc7a92c
-    mlevolve.ai/runtime: nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r19
+    mlevolve.ai/source-commit: 03a604cb
+    mlevolve.ai/runtime: nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r20
     mlevolve.ai/llm-endpoint: private-cluster-local-cliproxyapi
     mlevolve.ai/preserves: all-v167-training-pods-attempts-and-runtimes
   labels:
@@ -68,7 +68,7 @@ spec:
               test "${OPENAI_BASE_URL:-}" = "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
               test "${OPENAI_MODEL:-}" = "gpt-5.6-sol"
               test -z "${RUNFOREST_DEV_EXECUTION_ROLE:-}"
-              RUNTIME=/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r19
+              RUNTIME=/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-rollover-sol-low-r20
               SYSTEM_DIR="$RUNTIME/experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low"
               MANIFEST="$RUNTIME/frozen_transfer_portfolio/initial_transfer_codegen_pack.json"
               test -d "$RUNTIME"
@@ -93,14 +93,16 @@ spec:
               value: "1"
             - name: PYTHONDONTWRITEBYTECODE
               value: "1"
+            - name: MLEVOLVE_CPU_NUMBER
+              value: "8"
           resources:
             requests:
-              cpu: "16"
+              cpu: "8"
               memory: 32Gi
               ephemeral-storage: 64Gi
               nvidia.com/gpu: "1"
             limits:
-              cpu: "16"
+              cpu: "8"
               memory: 32Gi
               ephemeral-storage: 64Gi
               nvidia.com/gpu: "1"
