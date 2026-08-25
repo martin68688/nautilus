@@ -834,7 +834,7 @@ def test_multi_backbone_card_cannot_silently_bind_singular_backbone_slot():
         )
 
 
-def test_judge_cannot_null_explicit_backbone_and_pretraining_candidates():
+def test_judge_may_leave_explicit_backbone_and_pretraining_candidates_unbound():
     from agents.memory.cross_task_dynamic_retrieval import _validate_judge
 
     cards = [
@@ -872,7 +872,7 @@ def test_judge_cannot_null_explicit_backbone_and_pretraining_candidates():
     action = {
         "decision": "select",
         "selected_refs": ["C01"],
-        "reason": "unsafe vague-family shortcut",
+        "reason": "target evidence favors a broad family hypothesis",
         "representation_components": {
             "backbone_family": None,
             "initialization_source": None,
@@ -894,17 +894,68 @@ def test_judge_cannot_null_explicit_backbone_and_pretraining_candidates():
         ],
     }
 
-    with pytest.raises(
-        ValueError,
-        match="may not null a machine-checkable representation slot: backbone_family",
-    ):
-        _validate_judge(
-            action,
-            candidates=cards,
-            max_selected=7,
-            abstention_allowed=False,
-            blueprint_slot_caps={"representation_blueprint": 5},
-        )
+    result = _validate_judge(
+        action,
+        candidates=cards,
+        max_selected=7,
+        abstention_allowed=False,
+        blueprint_slot_caps={"representation_blueprint": 5},
+    )
+
+    assert result["selected_ids"] == ["representation::generic"]
+    assert result["representation_contracts"] == {}
+
+
+def test_judge_prompt_is_architecture_and_initialization_neutral():
+    from agents.memory.cross_task_dynamic_retrieval import _call_judge
+
+    captured = {}
+
+    def fake_query(**kwargs):
+        captured.update(kwargs)
+        return {}
+
+    layer = SimpleNamespace(
+        _experiment_r_agentic_query_fn=fake_query,
+        cross_task_dynamic_context_chars=2000,
+        cross_task_dynamic_allow_abstention=False,
+        cross_task_dynamic_max_selected_architectures=5,
+        cross_task_dynamic_judge_max_tokens=2000,
+        cross_task_dynamic_blueprint_slot_caps={},
+        cfg=None,
+    )
+    candidate = {
+        "id": "representation::generic",
+        "granularity": "representation_blueprint",
+        "fields": {"title": "generic visual representation"},
+        "relations": {},
+        "candidate": {
+            "id": "representation::generic",
+            "portable_text": {"title": "generic visual representation"},
+        },
+    }
+
+    _call_judge(
+        layer,
+        stage="draft",
+        task_id="target",
+        task_desc="image classification",
+        context="",
+        candidates=[candidate],
+        max_selected=4,
+        retry_feedback="",
+    )
+
+    prompt = captured["system_message"]
+    contract = json.loads(prompt["selection_contract"])
+    utility = contract["performance_utility"]
+    assert utility["ranking_order"][0] == "target_task_evidence"
+    assert "architecture_sample_efficiency_prior" not in json.dumps(prompt)
+    assert "small_natural_image_prior" not in utility
+    assert "vague_family_card_penalty" not in utility
+    policy = "\n".join(prompt["policy"])
+    assert "must not be null" not in policy
+    assert "architecture- and initialization-neutral" in policy
 
 
 def test_representation_adoption_gate_rejects_backbone_substitution_and_weights_none():

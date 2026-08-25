@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mlevolve-plant-v167-neutral-judge-cpu-r1-dev
+  namespace: ecepxie
+  labels:
+    ecepxie.nrp/owner: haoming
+    app.kubernetes.io/managed-by: codex-nrp-training
+    experiment: plant-v167-neutral-judge-cpu-r1
+    purpose: transfer-selection-probe
+spec:
+  activeDeadlineSeconds: 21600
+  restartPolicy: Always
+  containers:
+    - name: dev
+      image: haomingwang22/mlevolve:v1
+      imagePullPolicy: IfNotPresent
+      command:
+        - /bin/bash
+        - -lc
+      args:
+        - |
+          set -euo pipefail
+          test -n "${OPENAI_API_KEY:-}"
+          test "${OPENAI_BASE_URL:-}" = "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
+          test "${OPENAI_MODEL:-}" = "gpt-5.6-sol"
+          test -z "${RUNFOREST_DEV_EXECUTION_ROLE:-}"
+          exec sleep infinity
+      envFrom:
+        - secretRef:
+            name: cliproxyapi-haoming-client
+      env:
+        - name: OPENAI_MODEL
+          value: gpt-5.6-sol
+      resources:
+        requests:
+          cpu: "8"
+          memory: 16Gi
+        limits:
+          cpu: "8"
+          memory: 16Gi
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+  volumes:
+    - name: workspace
+      persistentVolumeClaim:
+        claimName: haoming-storage
