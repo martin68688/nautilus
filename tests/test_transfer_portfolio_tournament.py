@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from engine.draft_roles import (
     TRANSFER_PORTFOLIO_DRAFT_ROLES,
     canonical_draft_role,
+    memory_retrieval_draft_role,
     transfer_portfolio_seat_for_role,
 )
 from engine.search_node import SearchNode
@@ -97,6 +98,21 @@ def test_portfolio_roles_keep_independent_seats_with_transfer_behavior():
         "backbone_diversity_2",
         "descriptor_fusion_diversity",
     ]
+
+
+def test_portfolio_roles_keep_unique_identity_for_memory_retrieval():
+    assert [
+        memory_retrieval_draft_role(role)
+        for role in TRANSFER_PORTFOLIO_DRAFT_ROLES
+    ] == list(TRANSFER_PORTFOLIO_DRAFT_ROLES)
+    assert memory_retrieval_draft_role("memory_transfer") == "memory_transfer"
+    assert memory_retrieval_draft_role("novel_exploration_a") == "novel_exploration"
+
+
+def test_draft_agent_uses_slot_preserving_role_for_memory_retrieval():
+    source = Path("mlevolve/agents/draft_agent.py").read_text(encoding="utf-8")
+    assert "memory_draft_role = memory_retrieval_draft_role(draft_role)" in source
+    assert "memory_draft_role = canonical_draft_role(draft_role)" not in source
 
 
 def test_tournament_requires_baseline_and_one_successor_for_every_seat(tmp_path):

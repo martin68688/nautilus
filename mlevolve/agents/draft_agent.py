@@ -10,6 +10,7 @@ from engine.draft_roles import (
     canonical_draft_role,
     is_memory_transfer_draft_role,
     is_novel_draft_role,
+    memory_retrieval_draft_role,
 )
 from engine.search_node import SearchNode
 from agents.coder import plan_and_code_query, stepwise_plan_and_code_query
@@ -387,7 +388,9 @@ def run(
         )
         external_skill_text, external_skill_ref_ids, external_skill_source = "", [], "run_forest_agentic_memory"
     else:
-        memory_draft_role = canonical_draft_role(draft_role)
+        # Behavioral roles may be canonicalized, but a Transfer tournament
+        # slot is also the immutable key selecting its frozen portfolio seat.
+        memory_draft_role = memory_retrieval_draft_role(draft_role)
         external_skill_text, external_skill_ref_ids, external_skill_source = fetch_external_skill_memory(
             agent,
             "draft",

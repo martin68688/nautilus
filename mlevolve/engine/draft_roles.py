@@ -52,3 +52,18 @@ def transfer_portfolio_seat_for_role(role: object) -> str | None:
     """Return the frozen portfolio seat bound to a tournament Draft role."""
 
     return TRANSFER_PORTFOLIO_DRAFT_ROLE_TO_SEAT.get(str(role or ""))
+
+
+def memory_retrieval_draft_role(role: object) -> str:
+    """Keep a tournament slot distinct while canonicalizing legacy roles.
+
+    Behavioral prompt checks intentionally collapse all Transfer portfolio
+    slots to ``memory_transfer``.  Memory retrieval cannot do that because the
+    stage-aware layer uses the scheduling identity to bind the corresponding
+    frozen portfolio seat.
+    """
+
+    value = str(role or "")
+    if value in TRANSFER_PORTFOLIO_DRAFT_ROLE_TO_SEAT:
+        return value
+    return canonical_draft_role(value)
