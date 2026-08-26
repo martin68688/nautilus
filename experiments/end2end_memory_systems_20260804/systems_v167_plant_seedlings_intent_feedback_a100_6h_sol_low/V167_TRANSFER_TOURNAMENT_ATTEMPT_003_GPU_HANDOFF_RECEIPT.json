@@ -1,0 +1,58 @@
+{
+  "schema_version": "v1",
+  "recorded_at": "2026-08-26T03:02:59Z",
+  "attempt": "attempt-003",
+  "reason": "Replace admission-limited standalone Pods with Job-owned Pods so queue time and preflight do not consume the full 21600-second search budget, then retire the deadlocked attempt-002 workload by ordinary deletion.",
+  "source_manifest": "nrp_devpods_gpu_tournament_deadlockfix_attempt_003.yaml",
+  "job_projection": {
+    "method": "Deterministic server-validated projection of each source Pod into a batch/v1 Job; Pod activeDeadlineSeconds removed and Job activeDeadlineSeconds set to 86400.",
+    "server_dry_run": "passed",
+    "backoff_limit": 0,
+    "ttl_seconds_after_finished": 86400,
+    "child_pod_active_deadline_seconds": null,
+    "jobs": [
+      "mlevolve-plant-v167-deadlockfix-a100-r1",
+      "mlevolve-plant-v167-deadlockfix-a40-r1",
+      "mlevolve-plant-v167-deadlockfix-a6000-r1"
+    ]
+  },
+  "retired_deadlocked_workload": {
+    "job": "mlevolve-plant-v167-fullbudget-a6000-r1",
+    "pod": "mlevolve-plant-v167-fullbudget-a6000-r1-m4bbz",
+    "deletion": "ordinary kubectl delete job",
+    "deletion_requested_at": "2026-08-26T03:01:02Z",
+    "force": false,
+    "grace_period_zero": false,
+    "finalizer_modified": false,
+    "job_absent_after_delete": true,
+    "pod_absent_after_delete": true,
+    "pvc_attempt_artifacts_preserved": true
+  },
+  "winner": {
+    "job": "mlevolve-plant-v167-deadlockfix-a6000-r1",
+    "pod": "mlevolve-plant-v167-deadlockfix-a6000-r1-qznn9",
+    "node": "gpu00.nrp.hpc.udel.edu",
+    "queue": "rtxa6000",
+    "gpu": "NVIDIA RTX A6000",
+    "gpu_memory_mib": 49140,
+    "cpu_affinity": 8,
+    "memory_request": "32Gi",
+    "ephemeral_storage_request": "64Gi",
+    "pvc": "haoming-storage",
+    "restart_count": 0,
+    "endpoint": "gpt-5.6-sol HTTP 200",
+    "claim_time": "2026-08-26T02:56:21Z",
+    "run_identity_persisted_at": "2026-08-26T02:59:31.811Z",
+    "search_budget_seconds": 21600,
+    "expected_search_deadline": "2026-08-26T08:59:32Z",
+    "run_directory": "/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1/runs/attempt-003/20260826_025926_e2e-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1-attempt-003"
+  },
+  "handoff_interpretation": "The winner claimed a second compatible RTX A6000 before the old Job was deleted. The ordinary deletion nevertheless returned the old workload's identical RTX A6000 request to the cluster pool; it did not interrupt or mutate the winner.",
+  "queued_losers": [
+    "mlevolve-plant-v167-deadlockfix-a100-r1-gjndp",
+    "mlevolve-plant-v167-deadlockfix-a40-r1-9dsqc"
+  ],
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-deadlockfix-sol-low-r22",
+  "source_commit": "06235a4de21bd9059fb9243b7873bf9d7a19b32c",
+  "operations_commit_parent": "d8b23d10"
+}
