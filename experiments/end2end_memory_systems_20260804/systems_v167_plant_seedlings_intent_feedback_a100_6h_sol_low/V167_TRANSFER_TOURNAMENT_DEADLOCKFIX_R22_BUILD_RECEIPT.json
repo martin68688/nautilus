@@ -1,0 +1,39 @@
+{
+  "schema_version": "v1",
+  "created_at": "2026-08-26T02:18:07Z",
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-deadlockfix-sol-low-r22",
+  "base_runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-fullbudget-sol-low-r21",
+  "source_commit": "06235a4de21bd9059fb9243b7873bf9d7a19b32c",
+  "immutable": true,
+  "build_method": "copy-on-write hard-link clone of immutable r21; changed files were unlinked before copying and have private inodes",
+  "purpose": "Prevent tournament allocation from discarding entitled continuations and recover single-worker fallback frontiers after consecutive primary failures without weakening multi-worker root ownership.",
+  "files": {
+    "mlevolve/run.py": "5f8796c77e3416a50b1bfca4b2b8a2610b836a70ffc9cdc99adbd55534e97d3a",
+    "mlevolve/engine/node_selection.py": "4370a3f8d9cfff8401b43746c192bae178cddc3dceeaad0c8ce503b2d92f8fe2",
+    "mlevolve/engine/agent_search.py": "8c8c755e92ee9535df95dca5b55ce49da94180b724c4778dacd3a2c5d75d4c5b",
+    "mlevolve/engine/transfer_tournament.py": "11e3e27d0a1828ac532227c9cfd3361efb3a0eae523fc894c049594d1af2ad18",
+    "tests/test_transfer_portfolio_tournament.py": "d6124a16bbf60242fa5be75c16d8553e338c942c807bb41b86a6eb9a39e71a70",
+    "experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low/launch_transfer_portfolio_tournament_attempt.sh": "83bb78f7d629adc55987517ce04656129b7fd94c8f062f5ac9d92902a8098c0e",
+    "frozen_transfer_portfolio/initial_transfer_codegen_pack.json": "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b"
+  },
+  "verification": {
+    "cpu_pod": "mlevolve-plant-v167-deadlock-stage-cpu-r2-dev",
+    "endpoint": "gpt-5.6-sol HTTP 200",
+    "pod_authoritative_tests": "79 passed, 3 warnings",
+    "test_files": [
+      "tests/test_run_finalize_reserve.py",
+      "tests/test_transfer_portfolio_tournament.py",
+      "tests/test_cross_task_dynamic_retrieval_v149.py",
+      "tests/test_strategy_plan_alignment_feedback.py",
+      "tests/test_dedicated_branch_gpu_lanes_v161.py",
+      "tests/test_role_resource_balance_v138.py",
+      "tests/test_search_resume.py"
+    ],
+    "continuous_primary_failure_simulation": true,
+    "single_worker_orphan_lock_recovery": true,
+    "multi_worker_lock_bypass_disabled": true,
+    "r21_hashes_preserved": true,
+    "changed_files_have_private_inodes": true,
+    "frozen_portfolio_inherited_unchanged": true
+  }
+}

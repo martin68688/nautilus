@@ -1,0 +1,74 @@
+{
+  "schema_version": "v1",
+  "observed_at": "2026-08-26T01:47:31Z",
+  "attempt": "attempt-002",
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-fullbudget-sol-low-r21",
+  "job": "mlevolve-plant-v167-fullbudget-a6000-r1",
+  "pod": "mlevolve-plant-v167-fullbudget-a6000-r1-m4bbz",
+  "pod_phase": "Running",
+  "restart_count": 0,
+  "run_started_at": "2026-08-25T22:18:02Z",
+  "first_repeated_unselectable_at": "2026-08-26T00:14:00Z",
+  "last_confirmed_unselectable_at": "2026-08-26T01:47:31Z",
+  "progress_nodes": 9,
+  "phase": "baseline_qualification",
+  "allocation_branch_ids": [1, 2, 3, 4],
+  "target_branch_id": 1,
+  "seats": [
+    {
+      "branch_id": 1,
+      "seat": "comprehensive_best",
+      "attempted_count": 3,
+      "valid_candidate_count": 0,
+      "best_metric": null,
+      "root_lock": false
+    },
+    {
+      "branch_id": 2,
+      "seat": "backbone_diversity_1",
+      "attempted_count": 2,
+      "valid_candidate_count": 1,
+      "best_metric": 0.9471370779860652,
+      "root_lock": true
+    },
+    {
+      "branch_id": 3,
+      "seat": "backbone_diversity_2",
+      "attempted_count": 2,
+      "valid_candidate_count": 1,
+      "best_metric": 0.965450503947681,
+      "root_lock": true
+    },
+    {
+      "branch_id": 4,
+      "seat": "descriptor_fusion_diversity",
+      "attempted_count": 2,
+      "valid_candidate_count": 1,
+      "best_metric": 0.8434638509925191,
+      "root_lock": true
+    }
+  ],
+  "mechanism": {
+    "symptom": "Every worker repeatedly tried branches 1, 2, 3, and 4, then logged no queued branch is currently selectable without creating another node.",
+    "primary_cause": "AgentSearch rerouted an entitled non-root tournament continuation through the allocation queue before executing the caller-owned node. The branch root ownership lock therefore outlived the discarded continuation.",
+    "secondary_cause": "The ordered queue selector treated every locked fallback root as unavailable and had no bounded single-worker orphan-lock recovery path.",
+    "not_hardware": true,
+    "not_endpoint": true,
+    "not_pvc_write_stall": true
+  },
+  "repair": {
+    "commit": "06235a4de21bd9059fb9243b7873bf9d7a19b32c",
+    "prevention": "Preserve an entitled caller-owned non-root continuation instead of rerouting it through the queue.",
+    "recovery": "After the normal ordered pass, a single-worker tournament may temporarily release and restore an orphaned root lock to select an entitled fallback frontier.",
+    "multi_worker_safety": "Orphan-lock bypass is disabled when parallel_search_num is greater than one."
+  },
+  "verification": {
+    "local_tests": "76 passed",
+    "cpu_pod": "mlevolve-plant-v167-deadlock-stage-cpu-r2-dev",
+    "cpu_pod_tests": "79 passed, 3 warnings",
+    "continuous_primary_failure_simulation": "passed",
+    "locked_rollover_recovery": "passed",
+    "multi_worker_lock_strictness": "passed",
+    "entitled_continuation_preservation": "passed"
+  }
+}
