@@ -38,6 +38,7 @@ def classify_run_outcome(
     search_exhausted: bool,
     has_certified_solution: bool,
     focused_scope_complete: bool = False,
+    time_budget_reached: bool = False,
     termination_reason: str = "",
     active_candidate_ids: list[str] | None = None,
     journal_checkpoint_ref: str = "",
@@ -47,6 +48,12 @@ def classify_run_outcome(
     if termination_reason:
         status = "partial"
         reason = str(termination_reason)
+    elif time_budget_reached and has_certified_solution:
+        status = "complete"
+        reason = "time_budget_reached"
+    elif time_budget_reached:
+        status = "failed"
+        reason = "time_budget_reached_without_certified_solution"
     elif focused_scope_complete:
         status = "complete"
         reason = "focused_scope_completed"
@@ -69,8 +76,14 @@ def classify_run_outcome(
         "completed_steps": completed_steps,
         "total_steps": total_steps,
         "completion_ratio": (
-            1.0 if total_steps == 0 else min(1.0, completed_steps / total_steps)
+            1.0
+            if status == "complete" and time_budget_reached
+            else (1.0 if total_steps == 0 else min(1.0, completed_steps / total_steps))
         ),
+        "completion_basis": (
+            "time_budget" if time_budget_reached else "step_target"
+        ),
+        "time_budget_reached": bool(time_budget_reached),
         "search_exhausted": bool(search_exhausted),
         "certified_solution_available": bool(has_certified_solution),
         "kubernetes_success_eligible": status == "complete",

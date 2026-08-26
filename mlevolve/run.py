@@ -1031,17 +1031,34 @@ def _run_impl():
         protocol_focus_status(),
         require_protocol_repair=focused_protocol_repair_expected,
     )
+    if deadline_reached:
+        from engine.transfer_tournament import (
+            build_terminal_transfer_tournament_status,
+            persist_transfer_tournament_status,
+        )
+
+        terminal_tournament = build_terminal_transfer_tournament_status(
+            agent,
+            cutoff_reason="time_budget_reached",
+        )
+        persist_transfer_tournament_status(agent, terminal_tournament)
+        if terminal_tournament.get("enabled"):
+            logger.info(
+                "Terminal tournament standings frozen: phase_at_cutoff=%s "
+                "finalists=%s champion=%s unsettled_target=%s",
+                terminal_tournament.get("search_phase_at_cutoff"),
+                terminal_tournament.get("finalist_roles"),
+                terminal_tournament.get("champion_role"),
+                terminal_tournament.get("unsettled_target_branch_id"),
+            )
     run_outcome = classify_run_outcome(
         completed_steps=completed,
         total_steps=total_steps,
         search_exhausted=search_exhausted,
         has_certified_solution=agent.best_node is not None,
         focused_scope_complete=focused_scope_complete,
-        termination_reason=(
-            "finalization_reserve_reached"
-            if deadline_reached
-            else focused_termination_reason
-        ),
+        time_budget_reached=deadline_reached,
+        termination_reason=("" if deadline_reached else focused_termination_reason),
         active_candidate_ids=interpreter.active_candidate_ids(),
         journal_checkpoint_ref=str((cfg.log_dir / "journal.json").resolve()),
     )

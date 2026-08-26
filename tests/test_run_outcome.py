@@ -42,6 +42,34 @@ def test_exhausted_run_without_best_node_is_failed() -> None:
     assert outcome["kubernetes_success_eligible"] is False
 
 
+def test_time_budget_with_certified_solution_is_complete() -> None:
+    outcome = classify_run_outcome(
+        completed_steps=19,
+        total_steps=2_147_483_647,
+        search_exhausted=False,
+        has_certified_solution=True,
+        time_budget_reached=True,
+    )
+    assert outcome["status"] == "complete"
+    assert outcome["reason"] == "time_budget_reached"
+    assert outcome["completion_basis"] == "time_budget"
+    assert outcome["completion_ratio"] == 1.0
+    assert outcome["interrupted"] is False
+    assert outcome["kubernetes_success_eligible"] is True
+
+
+def test_time_budget_without_certified_solution_is_failed() -> None:
+    outcome = classify_run_outcome(
+        completed_steps=0,
+        total_steps=2_147_483_647,
+        search_exhausted=False,
+        has_certified_solution=False,
+        time_budget_reached=True,
+    )
+    assert outcome["status"] == "failed"
+    assert outcome["reason"] == "time_budget_reached_without_certified_solution"
+
+
 def test_run_outcome_is_immutable(tmp_path: Path) -> None:
     outcome = classify_run_outcome(
         completed_steps=16,

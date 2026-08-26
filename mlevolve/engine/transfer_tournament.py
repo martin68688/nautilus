@@ -360,6 +360,75 @@ def build_transfer_tournament_status(agent: Any) -> dict[str, Any]:
     }
 
 
+def build_terminal_transfer_tournament_status(
+    agent: Any,
+    *,
+    cutoff_reason: str,
+) -> dict[str, Any]:
+    """Freeze score-transparent standings without pretending debts were paid.
+
+    A wall-clock tournament can legitimately end while an unavailable seat
+    still owns a phase entitlement.  Terminalization ranks only valid observed
+    candidates, preserves that unsettled entitlement as evidence, and closes
+    the scheduling queues so the receipt cannot be mistaken for a live phase.
+    """
+
+    status = build_transfer_tournament_status(agent)
+    if not status.get("enabled"):
+        return status
+
+    rankings = list(status.get("rankings", []) or [])
+    survivor_count = max(1, int(status.get("survivor_count", 2) or 2))
+    finalists = rankings[:survivor_count]
+    champion = rankings[0] if rankings else None
+    unsettled_queue = list(status.get("allocation_queue", []) or [])
+    unsettled_donor_queue = list(
+        status.get("work_conserving_donor_queue", []) or []
+    )
+    status.update(
+        {
+            "terminal": True,
+            "scheduling_closed": True,
+            "terminal_cutoff_reason": str(cutoff_reason),
+            "search_phase_at_cutoff": str(status.get("phase", "")),
+            "phase": "terminal_budget_cutoff",
+            "active": False,
+            "finalist_roles": [str(row["draft_role"]) for row in finalists],
+            "champion_role": (
+                str(champion["draft_role"]) if champion is not None else None
+            ),
+            "champion_branch_id": (
+                int(champion["branch_id"])
+                if champion is not None and champion.get("branch_id") is not None
+                else None
+            ),
+            "champion_node_id": (
+                str(champion["best_node_id"])
+                if champion is not None and champion.get("best_node_id") is not None
+                else None
+            ),
+            "champion_metric": (
+                float(champion["best_metric"])
+                if champion is not None and champion.get("best_metric") is not None
+                else None
+            ),
+            "unsettled_target_branch_id": status.get("target_branch_id"),
+            "unsettled_target_role": status.get("target_role"),
+            "unsettled_allocation_queue": unsettled_queue,
+            "unsettled_work_conserving_donor_queue": unsettled_donor_queue,
+            "allowed_branch_ids": [],
+            "rollover_branch_ids": [],
+            "allocation_branch_ids": [],
+            "work_conserving_donor_branch_ids": [],
+            "allocation_queue": [],
+            "work_conserving_donor_queue": [],
+            "target_branch_id": None,
+            "target_role": None,
+        }
+    )
+    return status
+
+
 def persist_transfer_tournament_status(agent: Any, status: dict[str, Any]) -> None:
     """Atomically persist a compact machine-auditable tournament receipt."""
 

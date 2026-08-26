@@ -8,7 +8,10 @@ from engine.draft_roles import (
     transfer_portfolio_seat_for_role,
 )
 from engine.search_node import SearchNode
-from engine.transfer_tournament import build_transfer_tournament_status
+from engine.transfer_tournament import (
+    build_terminal_transfer_tournament_status,
+    build_transfer_tournament_status,
+)
 from engine import node_selection
 from utils.metric import MetricValue
 
@@ -488,6 +491,44 @@ def test_tournament_keeps_top2_then_continues_only_champion(tmp_path):
     assert status["champion_role"] == TRANSFER_PORTFOLIO_DRAFT_ROLES[0]
     assert status["allowed_branch_ids"] == [1]
     assert status["target_branch_id"] == 1
+
+
+def test_budget_cutoff_freezes_rankings_and_preserves_unsettled_debt(tmp_path):
+    agent = _agent(tmp_path)
+    baselines = [0.90, 0.973, 0.80, 0.87]
+    for role, metric in zip(TRANSFER_PORTFOLIO_DRAFT_ROLES, baselines):
+        root = next(
+            node for node in agent.virtual_root.children if node.draft_role == role
+        )
+        root.is_buggy = False
+        root.is_valid = True
+        root.metric = MetricValue(metric, maximize=True)
+
+    _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[0], 0.91)
+    _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[3], 0.88)
+    live = build_transfer_tournament_status(agent)
+    assert live["phase"] == "round1_equal_improve"
+    assert live["target_branch_id"] == 2
+
+    terminal = build_terminal_transfer_tournament_status(
+        agent,
+        cutoff_reason="time_budget_reached",
+    )
+    assert terminal["terminal"] is True
+    assert terminal["phase"] == "terminal_budget_cutoff"
+    assert terminal["search_phase_at_cutoff"] == "round1_equal_improve"
+    assert terminal["champion_role"] == TRANSFER_PORTFOLIO_DRAFT_ROLES[1]
+    assert terminal["champion_metric"] == 0.973
+    assert terminal["finalist_roles"] == [
+        TRANSFER_PORTFOLIO_DRAFT_ROLES[1],
+        TRANSFER_PORTFOLIO_DRAFT_ROLES[0],
+    ]
+    assert terminal["unsettled_target_branch_id"] == 2
+    assert [
+        row["branch_id"] for row in terminal["unsettled_allocation_queue"]
+    ] == [2, 3]
+    assert terminal["allocation_queue"] == []
+    assert terminal["work_conserving_donor_queue"] == []
 
 
 def test_tournament_config_declares_four_real_draft_slots():
