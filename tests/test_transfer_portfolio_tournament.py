@@ -28,6 +28,7 @@ def _agent(tmp_path: Path):
         virtual_root=virtual_root,
         branch_all_nodes={},
         metric_maximize=True,
+        scfg=SimpleNamespace(parallel_search_num=1),
     )
     for branch_id, role in enumerate(TRANSFER_PORTFOLIO_DRAFT_ROLES, start=1):
         root = SearchNode(
@@ -219,6 +220,115 @@ def test_branch_queue_skips_unexpandable_primary_and_selects_next(
     assert selected == "node-1"
     assert branch_id == 1
     assert calls == [3, 1]
+
+
+def test_continuous_primary_failures_recover_locked_rollover_frontier(
+    monkeypatch,
+    tmp_path,
+):
+    agent = _agent(tmp_path)
+    primary_role = TRANSFER_PORTFOLIO_DRAFT_ROLES[0]
+    for _ in range(3):
+        _failure(agent, primary_role)
+
+    for role in TRANSFER_PORTFOLIO_DRAFT_ROLES[1:]:
+        root = next(
+            node for node in agent.virtual_root.children if node.draft_role == role
+        )
+        root.is_buggy = False
+        root.is_valid = True
+        root.metric = MetricValue(0.80, maximize=True)
+        root.lock = True
+
+    status = build_transfer_tournament_status(agent)
+    assert status["phase"] == "baseline_qualification"
+    assert status["allocation_branch_ids"] == [1, 2, 3, 4]
+
+    calls = []
+
+    def select_branch(_agent, root, branch_id):
+        calls.append((branch_id, bool(root.lock)))
+        if branch_id == 1 or root.lock:
+            return None
+        return f"node-{branch_id}"
+
+    monkeypatch.setattr(node_selection, "_select_within_branch", select_branch)
+
+    selected, branch_id = node_selection.select_from_branch_ids(
+        agent,
+        status["allocation_branch_ids"],
+    )
+
+    assert selected == "node-2"
+    assert branch_id == 2
+    assert calls == [
+        (1, False),
+        (2, True),
+        (3, True),
+        (4, True),
+        (2, False),
+    ]
+    branch2_root = next(
+        node for node in agent.virtual_root.children if node.branch_id == 2
+    )
+    assert branch2_root.lock is True
+
+
+def test_locked_rollover_recovery_stays_disabled_with_multiple_workers(
+    monkeypatch,
+    tmp_path,
+):
+    agent = _agent(tmp_path)
+    agent.scfg.parallel_search_num = 2
+    for root in agent.virtual_root.children:
+        root.lock = True
+
+    observed_lock_states = []
+
+    def select_branch(_agent, root, branch_id):
+        observed_lock_states.append((branch_id, bool(root.lock)))
+        return None
+
+    monkeypatch.setattr(node_selection, "_select_within_branch", select_branch)
+
+    selected, branch_id = node_selection.select_from_branch_ids(
+        agent,
+        [1, 2, 3, 4],
+    )
+
+    assert selected is None
+    assert branch_id is None
+    assert observed_lock_states == [
+        (1, True),
+        (2, True),
+        (3, True),
+        (4, True),
+    ]
+
+
+def test_entitled_tournament_continuation_is_not_rerouted(tmp_path):
+    agent = _agent(tmp_path)
+    continuation = _success(
+        agent,
+        TRANSFER_PORTFOLIO_DRAFT_ROLES[1],
+        0.90,
+        stage="debug",
+    )
+
+    assert node_selection.tournament_continuation_branch_id(
+        continuation,
+        [1, 2, 3, 4],
+    ) == 2
+    assert node_selection.tournament_continuation_branch_id(
+        continuation,
+        [1, 3, 4],
+    ) is None
+
+    continuation.is_terminal = True
+    assert node_selection.tournament_continuation_branch_id(
+        continuation,
+        [1, 2, 3, 4],
+    ) is None
 
 
 def test_tournament_keeps_top2_then_continues_only_champion(tmp_path):

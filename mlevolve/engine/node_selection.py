@@ -447,6 +447,52 @@ def _select_within_branch(
     return selected
 
 
+def _select_with_root_lock_recovery(
+    agent,
+    branch_root: SearchNode,
+    branch_id: int,
+) -> Optional[SearchNode]:
+    """Resume one caller-owned branch without orphaning its root lock.
+
+    Draft-root locks are ownership guards, not terminal-state markers. A
+    branch continuation normally carries that ownership in the node returned
+    to ``run.py``. If the caller has returned to the virtual root (for example
+    after an exhausted primary repair), a single-worker Host may need to
+    recover the already-entitled fallback frontier behind the still-locked
+    root. Temporarily clearing the lock mirrors the dedicated-lane behavior;
+    the prior ownership state is retained after the bounded selection.
+    """
+
+    was_locked = bool(branch_root.lock)
+    if was_locked:
+        branch_root.lock = False
+    try:
+        return _select_within_branch(agent, branch_root, int(branch_id))
+    finally:
+        if was_locked and branch_root.stage in {"draft", "fusion_draft"}:
+            # ``select`` restores the lock when it chooses the branch root.
+            # Selecting a descendant must also retain branch ownership, while
+            # a failed recovery must leave the previous guard intact.
+            if not branch_root.lock:
+                branch_root.lock = True
+
+
+def tournament_continuation_branch_id(
+    node: SearchNode | None,
+    branch_ids: List[int],
+) -> int | None:
+    """Return an entitled caller-owned continuation that must not be rerouted."""
+
+    if node is None or node.stage == "root" or node.is_terminal:
+        return None
+    branch_id = int(getattr(node, "branch_id", -1) or -1)
+    if branch_id not in {int(value) for value in branch_ids}:
+        return None
+    if not _uct_selectable(node):
+        return None
+    return branch_id
+
+
 def select_from_branch_id(agent, branch_id: int) -> Optional[SearchNode]:
     """Select work only from one caller-owned branch.
 
@@ -467,21 +513,11 @@ def select_from_branch_id(agent, branch_id: int) -> Optional[SearchNode]:
             len(roots),
         )
         return None
-    root = roots[0]
-    # A root lock normally prevents two generic workers entering one branch.
-    # A dedicated lane is the sole owner of its branch, so a stale root lock
-    # must not strand it after an explicit continuation returns to root.
-    was_locked = bool(root.lock)
-    if was_locked:
-        root.lock = False
-    try:
-        return _select_within_branch(agent, root, int(branch_id))
-    finally:
-        if was_locked and root.stage in {"draft", "fusion_draft"}:
-            # ``select`` restores the lock when it chooses the branch root.
-            # If no node was selected, preserve the prior lock state.
-            if not root.lock:
-                root.lock = True
+    return _select_with_root_lock_recovery(
+        agent,
+        roots[0],
+        int(branch_id),
+    )
 
 
 def select_from_branch_ids(
@@ -503,12 +539,15 @@ def select_from_branch_ids(
             continue
         seen.add(branch_id)
         ordered.append(branch_id)
-    for index, branch_id in enumerate(ordered):
-        roots = [
+    roots_by_branch = {}
+    for branch_id in ordered:
+        roots_by_branch[branch_id] = [
             node
             for node in getattr(agent.virtual_root, "children", set())
             if int(getattr(node, "branch_id", -1) or -1) == branch_id
         ]
+    for index, branch_id in enumerate(ordered):
+        roots = roots_by_branch[branch_id]
         selected = (
             _select_within_branch(agent, roots[0], branch_id)
             if len(roots) == 1
@@ -529,6 +568,40 @@ def select_from_branch_ids(
             index > 0,
         )
         return selected, branch_id
+
+    # With one search worker there cannot be a concurrent branch owner while
+    # this selector is running. Recover a locked fallback frontier left by a
+    # completed continuation instead of spinning until wall-clock expiry.
+    # Multi-worker searches keep the lock strict because a locked root may
+    # still belong to another live worker.
+    parallel_search_num = int(
+        getattr(getattr(agent, "scfg", None), "parallel_search_num", 1) or 1
+    )
+    if parallel_search_num == 1:
+        for index, branch_id in enumerate(ordered):
+            roots = roots_by_branch[branch_id]
+            if len(roots) != 1 or not roots[0].lock:
+                continue
+            selected = _select_with_root_lock_recovery(
+                agent,
+                roots[0],
+                branch_id,
+            )
+            if selected is None:
+                logger.info(
+                    "[transfer-tournament] locked branch recovery unavailable "
+                    "branch=%s; trying next queued branch",
+                    branch_id,
+                )
+                continue
+            logger.warning(
+                "[transfer-tournament] recovered orphaned root lock branch=%s "
+                "queue_index=%s rolled_over=%s",
+                branch_id,
+                index,
+                index > 0,
+            )
+            return selected, branch_id
     logger.info(
         "[transfer-tournament] no queued branch is currently selectable queue=%s",
         ordered,

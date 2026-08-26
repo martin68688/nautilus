@@ -1968,6 +1968,14 @@ class AgentSearch:
                         )
                         return None
 
+        tournament_continuation_branch_id = (
+            node_selection.tournament_continuation_branch_id(
+                node,
+                tournament_allocation_branch_ids,
+            )
+            if transfer_tournament.get("active")
+            else None
+        )
         if (
             claimed_repair_parent is None
             and not duplicate_repair_request
@@ -1979,6 +1987,7 @@ class AgentSearch:
             and not preserve_explicit_runtime_debug
             and required_branch_id is None
             and not coverage_fusion_only
+            and tournament_continuation_branch_id is None
         ):
             node, allocated_branch_id = node_selection.select_from_branch_ids(
                 self,
@@ -2007,6 +2016,27 @@ class AgentSearch:
                 allocated_branch_id,
                 tournament_target_branch_id,
                 int(allocated_branch_id) != int(tournament_target_branch_id),
+            )
+        elif (
+            claimed_repair_parent is None
+            and not duplicate_repair_request
+            and transfer_tournament.get("active")
+            and tournament_continuation_branch_id is not None
+            and execute_immediately
+            and draft_role is None
+            and init_solution_path is None
+            and not preserve_explicit_runtime_debug
+            and required_branch_id is None
+            and not coverage_fusion_only
+        ):
+            logger.info(
+                "[transfer-tournament] preserving caller-owned continuation "
+                "branch=%s node=%s primary_branch=%s rolled_over=%s",
+                tournament_continuation_branch_id,
+                node.id,
+                tournament_target_branch_id,
+                int(tournament_continuation_branch_id)
+                != int(tournament_target_branch_id or -1),
             )
 
         if (
