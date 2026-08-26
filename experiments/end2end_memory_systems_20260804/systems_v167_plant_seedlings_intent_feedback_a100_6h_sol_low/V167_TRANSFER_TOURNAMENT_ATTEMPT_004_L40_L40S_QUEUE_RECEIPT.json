@@ -1,0 +1,80 @@
+{
+  "recorded_at": "2026-08-26T07:38:24Z",
+  "namespace": "ecepxie",
+  "attempt": "attempt-004",
+  "race_label": "mlevolve.ai/gpu-race-id=plant-v167-donorqueue-attempt-004",
+  "claim_directory": "/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1/.attempt-004-launch-claim",
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-donorqueue-sol-low-r23",
+  "runtime_identity": {
+    "source_commit": "7a3118d4ad57e56d8bd29ade151a4e07e77cae8d",
+    "run_py_sha256": "5f8796c77e3416a50b1bfca4b2b8a2610b836a70ffc9cdc99adbd55534e97d3a",
+    "node_selection_sha256": "29210a98c83058d5d76bd1d35271dbdde0aca3488a159cf6462a321e7c4ea5d8",
+    "agent_search_sha256": "2e7edff2b874af1ea2c0495c384dfbb02b03f69d246a625615f5ec7978cdee54",
+    "transfer_tournament_sha256": "3b73302dbb72b0f5a0c04e37f59d6e78839891eb3be2f063e2d8cd61e3b2ed7d",
+    "launcher_sha256": "83bb78f7d629adc55987517ce04656129b7fd94c8f062f5ac9d92902a8098c0e",
+    "portfolio_sha256": "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b"
+  },
+  "common_job_contract": {
+    "active_deadline_seconds": 86400,
+    "child_pod_active_deadline_seconds": null,
+    "backoff_limit": 0,
+    "restart_policy": "Never",
+    "cpu": 8,
+    "memory": "32Gi",
+    "ephemeral_storage": "64Gi",
+    "pvc": "haoming-storage",
+    "openai_model": "gpt-5.6-sol",
+    "owner": "haoming",
+    "managed_by": "codex-nrp-training"
+  },
+  "added_candidates": [
+    {
+      "queue": "l40",
+      "job": "mlevolve-plant-v167-donorqueue-l40-r1",
+      "job_uid": "0aa8407f-85ad-46d7-9b1e-d9d56d131d8a",
+      "job_created_at": "2026-08-26T07:23:08Z",
+      "pod": "mlevolve-plant-v167-donorqueue-l40-r1-fzbmb",
+      "pod_uid": "11f679e3-9fa1-4c54-8c29-0245fa5d7d41",
+      "resource": "nvidia.com/gpu",
+      "count": 1,
+      "product_affinity": "NVIDIA-L40",
+      "initial_phase": "Pending",
+      "initial_scheduling_reason": "Unschedulable"
+    },
+    {
+      "queue": "l40s",
+      "job": "mlevolve-plant-v167-donorqueue-l40s-r1",
+      "job_uid": "9da6fb66-396d-49f7-ad6e-69a882b83f20",
+      "job_created_at": "2026-08-26T07:23:08Z",
+      "pod": "mlevolve-plant-v167-donorqueue-l40s-r1-tqvxt",
+      "pod_uid": "c2c1d485-eb43-41b7-9a31-bca996f55bef",
+      "resource": "nvidia.com/gpu",
+      "count": 1,
+      "product_affinity": "NVIDIA-L40S",
+      "initial_phase": "Pending",
+      "initial_scheduling_reason": "Unschedulable"
+    }
+  ],
+  "validation": {
+    "endpoint_prelaunch": "passed",
+    "server_side_dry_run": "passed",
+    "scoped_preflight_l40": "passed; 0 resources removed",
+    "scoped_preflight_l40s": "passed; 0 resources removed",
+    "five_candidate_owner_reference_dry_run": "passed",
+    "all_five_initially_pending_without_node": true
+  },
+  "reusable_skill": {
+    "path": "/Users/haoming/.codex/skills/nrp-gpu-race",
+    "validator": "quick_validate.py",
+    "validation_result": "Skill is valid!",
+    "helper": "scripts/reconcile_race.py",
+    "helper_live_read_only_result": "five Jobs and five Pods matched exact owner, managed-by, race label, and ownerReference UID"
+  },
+  "deletion_policy": {
+    "authorized_scope": "after full winner verification, delete only still-Pending loser Jobs in this exact race",
+    "delete_controller_job_not_child_pod": true,
+    "force": false,
+    "zero_grace": false,
+    "finalizer_changes": false
+  }
+}

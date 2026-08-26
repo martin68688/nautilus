@@ -1,0 +1,258 @@
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: mlevolve-plant-v167-donorqueue-l40-r1
+      namespace: ecepxie
+      annotations: &workload-annotations
+        mlevolve.ai/purpose: full-six-hour-donor-queue-fixed-four-seat-transfer-tournament
+        mlevolve.ai/source-commit: 7a3118d4
+        mlevolve.ai/runtime: nautilus-exp-end2end-agent-v167-transfer-tournament-donorqueue-sol-low-r23
+        mlevolve.ai/llm-endpoint: private-cluster-local-cliproxyapi
+        mlevolve.ai/preserves: all-v167-pods-jobs-attempts-and-runtimes
+      labels: &labels-l40
+        app: mlevolve-end2end-job
+        app.kubernetes.io/managed-by: codex-nrp-training
+        ecepxie.nrp/owner: haoming
+        experiment: plant-v167-transfer-tournament-donorqueue-l40-r1
+        mlevolve.ai/gpu-race-id: plant-v167-donorqueue-attempt-004
+        mlevolve.ai/release-mode: standalone-six-hour-transfer
+        mlevolve.ai/system: four-seat-transfer-tournament-donorqueue
+    spec:
+      activeDeadlineSeconds: 86400
+      backoffLimit: 0
+      template:
+        metadata:
+          annotations: *workload-annotations
+          labels: *labels-l40
+        spec:
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 300
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: nvidia.com/gpu.product
+                        operator: In
+                        values:
+                          - NVIDIA-L40
+          tolerations:
+            - key: nvidia.com/gpu
+              operator: Exists
+            - key: nvidia.com/gpu
+              operator: Exists
+              effect: PreferNoSchedule
+          containers:
+            - name: mlevolve
+              image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+              imagePullPolicy: IfNotPresent
+              command: [/bin/bash, -lc]
+              args:
+                - &launch-command |
+                  set -euo pipefail
+                  test -n "${OPENAI_API_KEY:-}"
+                  test "${OPENAI_BASE_URL:-}" = "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
+                  test "${OPENAI_MODEL:-}" = "gpt-5.6-sol"
+                  test -z "${RUNFOREST_DEV_EXECUTION_ROLE:-}"
+                  test -d /workspace
+                  CPU_COUNT="$(python -c 'import os; print(len(os.sched_getaffinity(0)))')"
+                  test "$CPU_COUNT" = "8"
+                  GPU_NAME="$(nvidia-smi --query-gpu=name --format=csv,noheader | head -1)"
+                  GPU_MEMORY_MIB="$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits | head -1 | tr -d ' ')"
+                  case "$GPU_QUEUE" in
+                    l40) [[ "$GPU_NAME" == *"L40"* && "$GPU_NAME" != *"L40S"* ]] ;;
+                    l40s) [[ "$GPU_NAME" == *"L40S"* ]] ;;
+                    *) echo "unsupported GPU_QUEUE=$GPU_QUEUE" >&2; exit 2 ;;
+                  esac
+                  python - <<'PY'
+                  import json
+                  import os
+                  import urllib.request
+
+                  request = urllib.request.Request(
+                      os.environ["OPENAI_BASE_URL"].rstrip("/") + "/models",
+                      headers={"Authorization": "Bearer " + os.environ["OPENAI_API_KEY"]},
+                  )
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      if response.status != 200:
+                          raise RuntimeError(f"endpoint returned HTTP {response.status}")
+                      payload = json.load(response)
+                  models = {str(row.get("id")) for row in payload.get("data", [])}
+                  if os.environ["OPENAI_MODEL"] not in models:
+                      raise RuntimeError("requested model is not advertised")
+                  print(f"endpoint post-launch passed: HTTP 200 model={os.environ['OPENAI_MODEL']}")
+                  PY
+                  RUNTIME=/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-donorqueue-sol-low-r23
+                  SYSTEM_DIR="$RUNTIME/experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low"
+                  MANIFEST="$RUNTIME/frozen_transfer_portfolio/initial_transfer_codegen_pack.json"
+                  test -d "$RUNTIME"
+                  test -x "$SYSTEM_DIR/launch_transfer_portfolio_tournament_attempt.sh"
+                  test -f "$MANIFEST"
+                  test "$(sha256sum "$RUNTIME/mlevolve/run.py" | awk '{print $1}')" = "5f8796c77e3416a50b1bfca4b2b8a2610b836a70ffc9cdc99adbd55534e97d3a"
+                  test "$(sha256sum "$RUNTIME/mlevolve/engine/node_selection.py" | awk '{print $1}')" = "29210a98c83058d5d76bd1d35271dbdde0aca3488a159cf6462a321e7c4ea5d8"
+                  test "$(sha256sum "$RUNTIME/mlevolve/engine/agent_search.py" | awk '{print $1}')" = "2e7edff2b874af1ea2c0495c384dfbb02b03f69d246a625615f5ec7978cdee54"
+                  test "$(sha256sum "$RUNTIME/mlevolve/engine/transfer_tournament.py" | awk '{print $1}')" = "3b73302dbb72b0f5a0c04e37f59d6e78839891eb3be2f063e2d8cd61e3b2ed7d"
+                  test "$(sha256sum "$SYSTEM_DIR/launch_transfer_portfolio_tournament_attempt.sh" | awk '{print $1}')" = "83bb78f7d629adc55987517ce04656129b7fd94c8f062f5ac9d92902a8098c0e"
+                  test "$(sha256sum "$MANIFEST" | awk '{print $1}')" = "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b"
+                  export MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_PATH="$MANIFEST"
+                  export MLEVOLVE_TRANSFER_PORTFOLIO_MANIFEST_SHA256=7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b
+                  export OUTPUT_ROOT=/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1
+                  CLAIM_DIR="$OUTPUT_ROOT/.attempt-004-launch-claim"
+                  QUEUE_EVIDENCE_DIR="$OUTPUT_ROOT/queue-evidence/attempt-004"
+                  mkdir -p "$OUTPUT_ROOT" "$QUEUE_EVIDENCE_DIR"
+                  if ! mkdir "$CLAIM_DIR" 2>/dev/null; then
+                    printf 'pod=%s\nqueue=%s\nnode=%s\ngpu=%s\nmemory_mib=%s\nstatus=lost_atomic_claim\n' \
+                      "$POD_NAME" "$GPU_QUEUE" "$NODE_NAME" "$GPU_NAME" "$GPU_MEMORY_MIB" \
+                      >"$QUEUE_EVIDENCE_DIR/$POD_NAME.txt"
+                    echo "another GPU Pod already owns $CLAIM_DIR; exiting without creating an attempt"
+                    exit 0
+                  fi
+                  printf '%s\n' "$POD_NAME" >"$CLAIM_DIR/pod_name"
+                  printf '%s\n' "$GPU_QUEUE" >"$CLAIM_DIR/gpu_queue"
+                  printf '%s\n' "$NODE_NAME" >"$CLAIM_DIR/node_name"
+                  printf '%s\n' "$GPU_NAME" >"$CLAIM_DIR/gpu_name"
+                  printf '%s\n' "$GPU_MEMORY_MIB" >"$CLAIM_DIR/gpu_memory_mib"
+                  printf '%s\n' "$CPU_COUNT" >"$CLAIM_DIR/cpu_count"
+                  printf '%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$CLAIM_DIR/claimed_at"
+                  printf '%s\n' 7a3118d4ad57e56d8bd29ade151a4e07e77cae8d >"$CLAIM_DIR/source_commit"
+                  printf '%s\n' 29210a98c83058d5d76bd1d35271dbdde0aca3488a159cf6462a321e7c4ea5d8 >"$CLAIM_DIR/node_selection_sha256"
+                  printf '%s\n' 2e7edff2b874af1ea2c0495c384dfbb02b03f69d246a625615f5ec7978cdee54 >"$CLAIM_DIR/agent_search_sha256"
+                  printf '%s\n' 3b73302dbb72b0f5a0c04e37f59d6e78839891eb3be2f063e2d8cd61e3b2ed7d >"$CLAIM_DIR/transfer_tournament_sha256"
+                  export MLEVOLVE_FOREGROUND=1
+                  cd "$SYSTEM_DIR"
+                  exec ./launch_transfer_portfolio_tournament_attempt.sh attempt-004
+              envFrom:
+                - secretRef:
+                    name: cliproxyapi-haoming-client
+              env:
+                - name: OPENAI_MODEL
+                  value: gpt-5.6-sol
+                - name: OPENAI_REASONING_EFFORT
+                  value: low
+                - name: PYTHONUNBUFFERED
+                  value: "1"
+                - name: PYTHONDONTWRITEBYTECODE
+                  value: "1"
+                - name: MLEVOLVE_CPU_NUMBER
+                  value: "8"
+                - name: GPU_QUEUE
+                  value: l40
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: NODE_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: spec.nodeName
+              resources:
+                requests:
+                  cpu: "8"
+                  memory: 32Gi
+                  ephemeral-storage: 64Gi
+                  nvidia.com/gpu: "1"
+                limits:
+                  cpu: "8"
+                  memory: 32Gi
+                  ephemeral-storage: 64Gi
+                  nvidia.com/gpu: "1"
+              volumeMounts: &runtime-mounts
+                - name: workspace
+                  mountPath: /workspace
+                - name: shm
+                  mountPath: /dev/shm
+          volumes: &runtime-volumes
+            - name: workspace
+              persistentVolumeClaim:
+                claimName: haoming-storage
+            - name: shm
+              emptyDir:
+                medium: Memory
+                sizeLimit: 32Gi
+
+  - apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: mlevolve-plant-v167-donorqueue-l40s-r1
+      namespace: ecepxie
+      annotations: *workload-annotations
+      labels: &labels-l40s
+        app: mlevolve-end2end-job
+        app.kubernetes.io/managed-by: codex-nrp-training
+        ecepxie.nrp/owner: haoming
+        experiment: plant-v167-transfer-tournament-donorqueue-l40s-r1
+        mlevolve.ai/gpu-race-id: plant-v167-donorqueue-attempt-004
+        mlevolve.ai/release-mode: standalone-six-hour-transfer
+        mlevolve.ai/system: four-seat-transfer-tournament-donorqueue
+    spec:
+      activeDeadlineSeconds: 86400
+      backoffLimit: 0
+      template:
+        metadata:
+          annotations: *workload-annotations
+          labels: *labels-l40s
+        spec:
+          restartPolicy: Never
+          terminationGracePeriodSeconds: 300
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                  - matchExpressions:
+                      - key: nvidia.com/gpu.product
+                        operator: In
+                        values:
+                          - NVIDIA-L40S
+          tolerations:
+            - key: nvidia.com/gpu
+              operator: Exists
+            - key: nvidia.com/gpu
+              operator: Exists
+              effect: PreferNoSchedule
+          containers:
+            - name: mlevolve
+              image: docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc
+              imagePullPolicy: IfNotPresent
+              command: [/bin/bash, -lc]
+              args:
+                - *launch-command
+              envFrom:
+                - secretRef:
+                    name: cliproxyapi-haoming-client
+              env:
+                - name: OPENAI_MODEL
+                  value: gpt-5.6-sol
+                - name: OPENAI_REASONING_EFFORT
+                  value: low
+                - name: PYTHONUNBUFFERED
+                  value: "1"
+                - name: PYTHONDONTWRITEBYTECODE
+                  value: "1"
+                - name: MLEVOLVE_CPU_NUMBER
+                  value: "8"
+                - name: GPU_QUEUE
+                  value: l40s
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: NODE_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: spec.nodeName
+              resources:
+                requests:
+                  cpu: "8"
+                  memory: 32Gi
+                  ephemeral-storage: 64Gi
+                  nvidia.com/gpu: "1"
+                limits:
+                  cpu: "8"
+                  memory: 32Gi
+                  ephemeral-storage: 64Gi
+                  nvidia.com/gpu: "1"
+              volumeMounts: *runtime-mounts
+          volumes: *runtime-volumes

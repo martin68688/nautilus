@@ -17,6 +17,7 @@ items:
         app.kubernetes.io/managed-by: codex-nrp-training
         ecepxie.nrp/owner: haoming
         experiment: plant-v167-transfer-tournament-donorqueue-a100-r1
+        mlevolve.ai/gpu-race-id: plant-v167-donorqueue-attempt-004
         mlevolve.ai/release-mode: standalone-six-hour-transfer
         mlevolve.ai/system: four-seat-transfer-tournament-donorqueue
     spec:
@@ -175,6 +176,7 @@ items:
         app.kubernetes.io/managed-by: codex-nrp-training
         ecepxie.nrp/owner: haoming
         experiment: plant-v167-transfer-tournament-donorqueue-a40-r1
+        mlevolve.ai/gpu-race-id: plant-v167-donorqueue-attempt-004
         mlevolve.ai/release-mode: standalone-six-hour-transfer
         mlevolve.ai/system: four-seat-transfer-tournament-donorqueue
     spec:
@@ -249,6 +251,7 @@ items:
         app.kubernetes.io/managed-by: codex-nrp-training
         ecepxie.nrp/owner: haoming
         experiment: plant-v167-transfer-tournament-donorqueue-a6000-r1
+        mlevolve.ai/gpu-race-id: plant-v167-donorqueue-attempt-004
         mlevolve.ai/release-mode: standalone-six-hour-transfer
         mlevolve.ai/system: four-seat-transfer-tournament-donorqueue
     spec:
