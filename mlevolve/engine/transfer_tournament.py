@@ -251,6 +251,38 @@ def build_transfer_tournament_status(agent: Any) -> dict[str, Any]:
             key=allocation_key,
         )
     allocation_rows = ordered_allowed_rows + rollover_rows
+    allocation_roles = {str(row["draft_role"]) for row in allocation_rows}
+
+    # ``allocation_rows`` is the rights/debt queue.  Do not add seats that
+    # already paid the current phase debt to that queue: doing so would make a
+    # donor execution look like it discharged somebody else's entitlement.
+    # Instead expose a separate, deterministic single-worker donor queue.  It
+    # is consulted only after every rights-bearing branch is unselectable.
+    #
+    # During baseline and round 1 every baseline-qualified seat is still an
+    # active tournament hypothesis.  During Top-2 only finalists may donate;
+    # eliminated seats must stay eliminated.  Champion continuation already
+    # has an indefinitely entitled branch and therefore needs no donor.
+    donor_pool: list[dict[str, Any]] = []
+    if phase in {"baseline_qualification", "round1_equal_improve"}:
+        donor_pool = [
+            row for row in seat_rows if row["valid_candidate_count"] >= 1
+        ]
+    elif phase == "top2_equal_improve":
+        finalist_role_set = set(finalists)
+        donor_pool = [
+            row
+            for row in seat_rows
+            if str(row["draft_role"]) in finalist_role_set
+        ]
+    donor_rows = sorted(
+        [
+            row
+            for row in donor_pool
+            if str(row["draft_role"]) not in allocation_roles
+        ],
+        key=allocation_key,
+    )
     allowed_branch_ids = [
         int(row["branch_id"])
         for row in ordered_allowed_rows
@@ -264,6 +296,11 @@ def build_transfer_tournament_status(agent: Any) -> dict[str, Any]:
     allocation_branch_ids = [
         int(row["branch_id"])
         for row in allocation_rows
+        if row.get("branch_id") is not None
+    ]
+    donor_branch_ids = [
+        int(row["branch_id"])
+        for row in donor_rows
         if row.get("branch_id") is not None
     ]
     champion_role = (
@@ -288,6 +325,7 @@ def build_transfer_tournament_status(agent: Any) -> dict[str, Any]:
         "allowed_branch_ids": allowed_branch_ids,
         "rollover_branch_ids": rollover_branch_ids,
         "allocation_branch_ids": allocation_branch_ids,
+        "work_conserving_donor_branch_ids": donor_branch_ids,
         "allocation_queue": [
             {
                 "branch_id": int(row["branch_id"]),
@@ -300,6 +338,16 @@ def build_transfer_tournament_status(agent: Any) -> dict[str, Any]:
                 ),
             }
             for row in allocation_rows
+            if row.get("branch_id") is not None
+        ],
+        "work_conserving_donor_queue": [
+            {
+                "branch_id": int(row["branch_id"]),
+                "draft_role": str(row["draft_role"]),
+                "seat": str(row["seat"]),
+                "allocation_kind": "idle_capacity_donor",
+            }
+            for row in donor_rows
             if row.get("branch_id") is not None
         ],
         "target_branch_id": (

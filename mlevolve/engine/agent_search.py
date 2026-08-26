@@ -1846,14 +1846,23 @@ class AgentSearch:
                 transfer_tournament.get("allowed_branch_ids", []),
             )
         ]
+        tournament_donor_branch_ids = [
+            int(value)
+            for value in transfer_tournament.get(
+                "work_conserving_donor_branch_ids",
+                [],
+            )
+        ]
         tournament_target_branch_id = (
             transfer_tournament.get("target_branch_id")
             if transfer_tournament.get("active")
             else None
         )
-        tournament_allowed_branch_ids = {
+        tournament_selectable_branch_ids = {
             int(value)
-            for value in tournament_allocation_branch_ids
+            for value in (
+                tournament_allocation_branch_ids + tournament_donor_branch_ids
+            )
         }
         branch_fairness = self.branch_fairness_status()
         fair_branch_id = (
@@ -1868,9 +1877,9 @@ class AgentSearch:
         if (
             preserve_explicit_runtime_debug
             and transfer_tournament.get("active")
-            and tournament_allowed_branch_ids
+            and tournament_selectable_branch_ids
             and int(getattr(node, "branch_id", -1) or -1)
-            not in tournament_allowed_branch_ids
+            not in tournament_selectable_branch_ids
         ):
             logger.info(
                 "[transfer-tournament] suppressing eliminated branch debug "
@@ -1971,7 +1980,7 @@ class AgentSearch:
         tournament_continuation_branch_id = (
             node_selection.tournament_continuation_branch_id(
                 node,
-                tournament_allocation_branch_ids,
+                tournament_allocation_branch_ids + tournament_donor_branch_ids,
             )
             if transfer_tournament.get("active")
             else None
@@ -1992,15 +2001,17 @@ class AgentSearch:
             node, allocated_branch_id = node_selection.select_from_branch_ids(
                 self,
                 tournament_allocation_branch_ids,
+                tournament_donor_branch_ids,
             )
             if node is None or allocated_branch_id is None:
                 logger.info(
                     "[transfer-tournament] waiting phase=%s target_role=%s "
-                    "target_branch=%s allocation_queue=%s",
+                    "target_branch=%s allocation_queue=%s donor_queue=%s",
                     transfer_tournament.get("phase"),
                     transfer_tournament.get("target_role"),
                     tournament_target_branch_id,
                     tournament_allocation_branch_ids,
+                    tournament_donor_branch_ids,
                 )
                 return None
             role_by_branch = {

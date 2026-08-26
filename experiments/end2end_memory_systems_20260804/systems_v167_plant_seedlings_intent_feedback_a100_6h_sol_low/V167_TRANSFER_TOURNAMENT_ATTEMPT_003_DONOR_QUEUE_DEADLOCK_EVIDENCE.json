@@ -1,0 +1,67 @@
+{
+  "schema_version": "v1",
+  "observed_at": "2026-08-26T06:33:22Z",
+  "attempt": "attempt-003",
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-deadlockfix-sol-low-r22",
+  "job": "mlevolve-plant-v167-deadlockfix-a6000-r1",
+  "pod": "mlevolve-plant-v167-deadlockfix-a6000-r1-qznn9",
+  "pod_phase": "Running",
+  "restart_count": 0,
+  "run_started_at": "2026-08-26T02:59:31.811Z",
+  "phase": "round1_equal_improve",
+  "allocation_branch_ids": [2, 3],
+  "target_branch_id": 2,
+  "last_successful_rollover": {
+    "node_id": "0d4630f3cea648f5b4feecf1d9e8108f",
+    "primary_branch_id": 2,
+    "actual_branch_id": 1,
+    "rolled_over": true,
+    "valid": true,
+    "macro_f1": 0.9738638102863885,
+    "primary_entitlement_preserved": true
+  },
+  "seats": [
+    {
+      "branch_id": 1,
+      "seat": "comprehensive_best",
+      "post_baseline_valid_count": 1,
+      "best_metric": 0.9756602714988861,
+      "phase_debt": false
+    },
+    {
+      "branch_id": 2,
+      "seat": "backbone_diversity_1",
+      "post_baseline_valid_count": 0,
+      "best_metric": 0.9390407239975,
+      "phase_debt": true
+    },
+    {
+      "branch_id": 3,
+      "seat": "backbone_diversity_2",
+      "post_baseline_valid_count": 0,
+      "best_metric": 0.9682173931718362,
+      "phase_debt": true
+    },
+    {
+      "branch_id": 4,
+      "seat": "descriptor_fusion_diversity",
+      "post_baseline_valid_count": 1,
+      "best_metric": 0.9595997393947747,
+      "phase_debt": false
+    }
+  ],
+  "mechanism": {
+    "symptom": "After branch 1 completed its round-1 entitlement, the persisted debt queue became [2, 3]. Both debt branches were unselectable, so the single worker repeatedly logged no queued branch is currently selectable while branch 1 and branch 4 still represented active tournament hypotheses.",
+    "primary_cause": "r22 limited both ordinary selection and orphan-root-lock recovery to allocation_branch_ids. A seat was removed from that list immediately after paying its phase debt, so an otherwise expandable completed seat could not donate idle capacity when every debt-bearing branch was blocked.",
+    "why_r22_was_insufficient": "r22 recovered orphan locks only inside the rights queue. It did not separate phase entitlement from work-conserving donor eligibility.",
+    "not_hardware": true,
+    "not_endpoint": true,
+    "not_pvc_write_stall": true
+  },
+  "required_repair": {
+    "rights_queue": "Keep allocation_branch_ids authoritative and unchanged until each owed branch produces its own valid successor.",
+    "donor_queue": "After all rights-bearing branches fail normal and single-worker lock-recovery selection, try a deterministic donor queue of still-active tournament branches that already paid the current phase debt.",
+    "accounting": "A donor execution must set rolled_over=true while preserving the original target branch and must not discharge its entitlement.",
+    "multi_worker_safety": "Locked donor recovery remains disabled when parallel_search_num is greater than one."
+  }
+}

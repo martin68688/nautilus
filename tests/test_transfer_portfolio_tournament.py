@@ -197,6 +197,31 @@ def test_unavailable_baseline_rolls_resource_to_next_queued_round1_branch(tmp_pa
     _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[0], 0.81)
     status = build_transfer_tournament_status(agent)
     assert status["allocation_branch_ids"] == [3, 2, 4]
+    assert status["work_conserving_donor_branch_ids"] == [1]
+
+
+def test_completed_round1_seats_form_separate_donor_queue(tmp_path):
+    agent = _agent(tmp_path)
+    for role in TRANSFER_PORTFOLIO_DRAFT_ROLES:
+        root = next(
+            node for node in agent.virtual_root.children if node.draft_role == role
+        )
+        root.is_buggy = False
+        root.is_valid = True
+        root.metric = MetricValue(0.80, maximize=True)
+
+    _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[0], 0.90)
+    _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[3], 0.88)
+    status = build_transfer_tournament_status(agent)
+
+    assert status["phase"] == "round1_equal_improve"
+    assert status["allocation_branch_ids"] == [2, 3]
+    assert status["work_conserving_donor_branch_ids"] == [1, 4]
+    assert status["target_branch_id"] == 2
+    assert [row["allocation_kind"] for row in status["allocation_queue"]] == [
+        "phase_debt",
+        "phase_debt",
+    ]
 
 
 def test_branch_queue_skips_unexpandable_primary_and_selects_next(
@@ -306,6 +331,110 @@ def test_locked_rollover_recovery_stays_disabled_with_multiple_workers(
     ]
 
 
+def test_exhausted_debt_queue_uses_donor_without_discharge(
+    monkeypatch,
+    tmp_path,
+):
+    agent = _agent(tmp_path)
+    for role in TRANSFER_PORTFOLIO_DRAFT_ROLES:
+        root = next(
+            node for node in agent.virtual_root.children if node.draft_role == role
+        )
+        root.is_buggy = False
+        root.is_valid = True
+        root.metric = MetricValue(0.80, maximize=True)
+    _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[0], 0.90)
+    _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[3], 0.88)
+    status_before = build_transfer_tournament_status(agent)
+
+    calls = []
+
+    def select_branch(_agent, root, branch_id):
+        calls.append((branch_id, bool(root.lock)))
+        return "node-1" if branch_id == 1 and not root.lock else None
+
+    monkeypatch.setattr(node_selection, "_select_within_branch", select_branch)
+    selected, branch_id = node_selection.select_from_branch_ids(
+        agent,
+        status_before["allocation_branch_ids"],
+        status_before["work_conserving_donor_branch_ids"],
+    )
+
+    assert selected == "node-1"
+    assert branch_id == 1
+    assert calls == [(2, False), (3, False), (1, False)]
+    status_after = build_transfer_tournament_status(agent)
+    assert status_after["allocation_branch_ids"] == [2, 3]
+    assert status_after["target_branch_id"] == 2
+
+
+def test_continuous_failures_roll_over_across_donor_queue(monkeypatch, tmp_path):
+    agent = _agent(tmp_path)
+    for role in TRANSFER_PORTFOLIO_DRAFT_ROLES:
+        root = next(
+            node for node in agent.virtual_root.children if node.draft_role == role
+        )
+        root.is_buggy = False
+        root.is_valid = True
+        root.metric = MetricValue(0.80, maximize=True)
+    _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[0], 0.90)
+    _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[3], 0.88)
+    status = build_transfer_tournament_status(agent)
+
+    attempts = []
+
+    def select_branch(_agent, _root, branch_id):
+        attempts.append(branch_id)
+        return "node-4" if branch_id == 4 else None
+
+    monkeypatch.setattr(node_selection, "_select_within_branch", select_branch)
+    selected, branch_id = node_selection.select_from_branch_ids(
+        agent,
+        status["allocation_branch_ids"],
+        status["work_conserving_donor_branch_ids"],
+    )
+
+    assert selected == "node-4"
+    assert branch_id == 4
+    assert attempts == [2, 3, 1, 4]
+    still_owed = build_transfer_tournament_status(agent)
+    assert still_owed["allocation_branch_ids"] == [2, 3]
+    assert still_owed["target_branch_id"] == 2
+
+
+def test_locked_donor_recovery_stays_single_worker_only(monkeypatch, tmp_path):
+    agent = _agent(tmp_path)
+    roots = {root.branch_id: root for root in agent.virtual_root.children}
+    roots[1].lock = True
+
+    observed = []
+
+    def select_branch(_agent, root, branch_id):
+        observed.append((branch_id, bool(root.lock)))
+        return "node-1" if branch_id == 1 and not root.lock else None
+
+    monkeypatch.setattr(node_selection, "_select_within_branch", select_branch)
+    selected, branch_id = node_selection.select_from_branch_ids(
+        agent,
+        [2, 3],
+        [1, 4],
+    )
+    assert selected == "node-1"
+    assert branch_id == 1
+    assert roots[1].lock is True
+
+    agent.scfg.parallel_search_num = 2
+    observed.clear()
+    selected, branch_id = node_selection.select_from_branch_ids(
+        agent,
+        [2, 3],
+        [1],
+    )
+    assert selected is None
+    assert branch_id is None
+    assert observed == [(2, False), (3, False), (1, True)]
+
+
 def test_entitled_tournament_continuation_is_not_rerouted(tmp_path):
     agent = _agent(tmp_path)
     continuation = _success(
@@ -341,7 +470,17 @@ def test_tournament_keeps_top2_then_continues_only_champion(tmp_path):
         root.metric = MetricValue(metric - 0.01, maximize=True)
         _success(agent, role, metric)
 
+    status = build_transfer_tournament_status(agent)
+    assert status["phase"] == "top2_equal_improve"
+    assert status["allocation_branch_ids"] == [1, 4]
+    assert status["work_conserving_donor_branch_ids"] == []
+
     _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[0], 0.93)
+    status = build_transfer_tournament_status(agent)
+    assert status["phase"] == "top2_equal_improve"
+    assert status["allocation_branch_ids"] == [4]
+    assert status["work_conserving_donor_branch_ids"] == [1]
+
     _success(agent, TRANSFER_PORTFOLIO_DRAFT_ROLES[3], 0.90)
     status = build_transfer_tournament_status(agent)
 

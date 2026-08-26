@@ -523,6 +523,7 @@ def select_from_branch_id(agent, branch_id: int) -> Optional[SearchNode]:
 def select_from_branch_ids(
     agent,
     branch_ids: List[int],
+    fallback_branch_ids: Optional[List[int]] = None,
 ) -> tuple[Optional[SearchNode], Optional[int]]:
     """Select from the first currently expandable branch in Host order.
 
@@ -531,42 +532,68 @@ def select_from_branch_ids(
     cannot strand a worker when a later, already-entitled branch has work.
     """
 
-    seen: set[int] = set()
-    ordered = []
-    for value in branch_ids:
-        branch_id = int(value)
-        if branch_id in seen:
-            continue
-        seen.add(branch_id)
-        ordered.append(branch_id)
+    def ordered_unique(values: List[int]) -> List[int]:
+        seen: set[int] = set()
+        result: List[int] = []
+        for value in values:
+            branch_id = int(value)
+            if branch_id in seen:
+                continue
+            seen.add(branch_id)
+            result.append(branch_id)
+        return result
+
+    ordered = ordered_unique(branch_ids)
+    donor_ordered = [
+        branch_id
+        for branch_id in ordered_unique(list(fallback_branch_ids or []))
+        if branch_id not in set(ordered)
+    ]
+    all_ordered = ordered + donor_ordered
     roots_by_branch = {}
-    for branch_id in ordered:
+    for branch_id in all_ordered:
         roots_by_branch[branch_id] = [
             node
             for node in getattr(agent.virtual_root, "children", set())
             if int(getattr(node, "branch_id", -1) or -1) == branch_id
         ]
-    for index, branch_id in enumerate(ordered):
-        roots = roots_by_branch[branch_id]
-        selected = (
-            _select_within_branch(agent, roots[0], branch_id)
-            if len(roots) == 1
-            else None
-        )
-        if selected is None:
-            logger.info(
-                "[transfer-tournament] unavailable branch=%s roots=%s; "
-                "trying next queued branch",
-                branch_id,
-                len(roots),
+
+    def select_unlocked(
+        candidate_ids: List[int],
+        *,
+        donor: bool,
+    ) -> tuple[Optional[SearchNode], Optional[int]]:
+        for index, branch_id in enumerate(candidate_ids):
+            roots = roots_by_branch[branch_id]
+            selected = (
+                _select_within_branch(agent, roots[0], branch_id)
+                if len(roots) == 1
+                else None
             )
-            continue
-        logger.info(
-            "[transfer-tournament] selected branch=%s queue_index=%s rolled_over=%s",
-            branch_id,
-            index,
-            index > 0,
-        )
+            if selected is None:
+                logger.info(
+                    "[transfer-tournament] unavailable %sbranch=%s roots=%s; "
+                    "trying next %sbranch",
+                    "donor " if donor else "",
+                    branch_id,
+                    len(roots),
+                    "donor " if donor else "queued ",
+                )
+                continue
+            logger.log(
+                logging.WARNING if donor else logging.INFO,
+                "[transfer-tournament] selected %sbranch=%s queue_index=%s "
+                "rolled_over=%s",
+                "work-conserving donor " if donor else "",
+                branch_id,
+                index,
+                donor or index > 0,
+            )
+            return selected, branch_id
+        return None, None
+
+    selected, branch_id = select_unlocked(ordered, donor=False)
+    if selected is not None:
         return selected, branch_id
 
     # With one search worker there cannot be a concurrent branch owner while
@@ -577,8 +604,15 @@ def select_from_branch_ids(
     parallel_search_num = int(
         getattr(getattr(agent, "scfg", None), "parallel_search_num", 1) or 1
     )
-    if parallel_search_num == 1:
-        for index, branch_id in enumerate(ordered):
+
+    def recover_locked(
+        candidate_ids: List[int],
+        *,
+        donor: bool,
+    ) -> tuple[Optional[SearchNode], Optional[int]]:
+        if parallel_search_num != 1:
+            return None, None
+        for index, branch_id in enumerate(candidate_ids):
             roots = roots_by_branch[branch_id]
             if len(roots) != 1 or not roots[0].lock:
                 continue
@@ -589,22 +623,43 @@ def select_from_branch_ids(
             )
             if selected is None:
                 logger.info(
-                    "[transfer-tournament] locked branch recovery unavailable "
-                    "branch=%s; trying next queued branch",
+                    "[transfer-tournament] locked %sbranch recovery unavailable "
+                    "branch=%s; trying next %sbranch",
+                    "donor " if donor else "",
                     branch_id,
+                    "donor " if donor else "queued ",
                 )
                 continue
             logger.warning(
-                "[transfer-tournament] recovered orphaned root lock branch=%s "
+                "[transfer-tournament] recovered orphaned %sroot lock branch=%s "
                 "queue_index=%s rolled_over=%s",
+                "donor " if donor else "",
                 branch_id,
                 index,
-                index > 0,
+                donor or index > 0,
             )
             return selected, branch_id
+        return None, None
+
+    selected, branch_id = recover_locked(ordered, donor=False)
+    if selected is not None:
+        return selected, branch_id
+
+    # The rights queue stays authoritative.  A donor is only allowed after all
+    # entitled branches fail both ordinary and single-worker lock-recovery
+    # selection.  Donor work never mutates or discharges the persisted debt.
+    selected, branch_id = select_unlocked(donor_ordered, donor=True)
+    if selected is not None:
+        return selected, branch_id
+    selected, branch_id = recover_locked(donor_ordered, donor=True)
+    if selected is not None:
+        return selected, branch_id
+
     logger.info(
-        "[transfer-tournament] no queued branch is currently selectable queue=%s",
+        "[transfer-tournament] no queued or donor branch is currently "
+        "selectable queue=%s donors=%s",
         ordered,
+        donor_ordered,
     )
     return None, None
 
