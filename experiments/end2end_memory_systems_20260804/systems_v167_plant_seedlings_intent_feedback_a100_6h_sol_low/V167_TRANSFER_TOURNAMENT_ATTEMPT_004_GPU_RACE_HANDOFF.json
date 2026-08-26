@@ -1,0 +1,249 @@
+{
+  "applied": true,
+  "winner_contract": {
+    "attempt": "attempt-004",
+    "atomic_claim": {
+      "claimed_at": "2026-08-26T08:44:17Z",
+      "gpu_memory_mib": 40960,
+      "gpu_name": "NVIDIA A100-PCIE-40GB",
+      "gpu_queue": "a100",
+      "node_name": "emporia.gp-argo.greatplains.net",
+      "pod_name": "mlevolve-plant-v167-donorqueue-a100-r1-z7jpm",
+      "source_commit": "7a3118d4ad57e56d8bd29ade151a4e07e77cae8d"
+    },
+    "container_started_at": "2026-08-26T08:44:09Z",
+    "cpu_affinity": 8,
+    "endpoint": {
+      "advertised_model": "gpt-5.6-sol",
+      "authenticated_http_status": 200,
+      "base_url": "http://cliproxyapi-haoming.ecepxie.svc.cluster.local:8317/v1"
+    },
+    "gpu": {
+      "memory_mib": 40960,
+      "name": "NVIDIA A100-PCIE-40GB",
+      "resource_key": "nvidia.com/a100"
+    },
+    "hashes": {
+      "agent_search.py": "2e7edff2b874af1ea2c0495c384dfbb02b03f69d246a625615f5ec7978cdee54",
+      "launch_transfer_portfolio_tournament_attempt.sh": "83bb78f7d629adc55987517ce04656129b7fd94c8f062f5ac9d92902a8098c0e",
+      "node_selection.py": "29210a98c83058d5d76bd1d35271dbdde0aca3488a159cf6462a321e7c4ea5d8",
+      "portfolio_manifest": "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b",
+      "run.py": "5f8796c77e3416a50b1bfca4b2b8a2610b836a70ffc9cdc99adbd55534e97d3a",
+      "transfer_tournament.py": "3b73302dbb72b0f5a0c04e37f59d6e78839891eb3be2f063e2d8cd61e3b2ed7d"
+    },
+    "job_uid": "f00debc0-b977-49d9-a7ca-677b8c74b582",
+    "labels_and_owner_reference_verified": true,
+    "pid1": "python run.py",
+    "pod_started_at": "2026-08-26T08:43:59Z",
+    "pod_uid": "1957d9e0-9fad-4d89-9a87-3fd1944e2771",
+    "pvc": "haoming-storage",
+    "restart_count": 0,
+    "run": {
+      "expected_full_budget_deadline": "2026-08-26T14:46:04.645Z",
+      "finalize_reserve_seconds": 0,
+      "identity_persisted": true,
+      "run_dir": "/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1/runs/attempt-004/20260826_084601_e2e-plant-seedlings-v167-transfer-tournament-6h-sol-low-r1-attempt-004",
+      "search_budget_seconds": 21600,
+      "started_at": "2026-08-26T08:46:04.645Z",
+      "tournament_phase_at_handoff": "waiting_for_roots"
+    },
+    "runforest_dev_execution_role_empty": true
+  },
+  "candidates_before_delete": [
+    {
+      "job": {
+        "active": 1,
+        "failed": 0,
+        "labels": {
+          "app": "mlevolve-end2end-job",
+          "app.kubernetes.io/managed-by": "codex-nrp-training",
+          "ecepxie.nrp/owner": "haoming",
+          "experiment": "plant-v167-transfer-tournament-donorqueue-a100-r1",
+          "mlevolve.ai/gpu-race-id": "plant-v167-donorqueue-attempt-004",
+          "mlevolve.ai/release-mode": "standalone-six-hour-transfer",
+          "mlevolve.ai/system": "four-seat-transfer-tournament-donorqueue"
+        },
+        "name": "mlevolve-plant-v167-donorqueue-a100-r1",
+        "succeeded": 0,
+        "uid": "f00debc0-b977-49d9-a7ca-677b8c74b582"
+      },
+      "pods": [
+        {
+          "name": "mlevolve-plant-v167-donorqueue-a100-r1-z7jpm",
+          "node": "emporia.gp-argo.greatplains.net",
+          "owner_reference": {
+            "apiVersion": "batch/v1",
+            "blockOwnerDeletion": true,
+            "controller": true,
+            "kind": "Job",
+            "name": "mlevolve-plant-v167-donorqueue-a100-r1",
+            "uid": "f00debc0-b977-49d9-a7ca-677b8c74b582"
+          },
+          "phase": "Running",
+          "restarts": 0,
+          "start_time": "2026-08-26T08:43:59Z",
+          "uid": "1957d9e0-9fad-4d89-9a87-3fd1944e2771"
+        }
+      ]
+    },
+    {
+      "job": {
+        "active": 1,
+        "failed": 0,
+        "labels": {
+          "app": "mlevolve-end2end-job",
+          "app.kubernetes.io/managed-by": "codex-nrp-training",
+          "ecepxie.nrp/owner": "haoming",
+          "experiment": "plant-v167-transfer-tournament-donorqueue-a40-r1",
+          "mlevolve.ai/gpu-race-id": "plant-v167-donorqueue-attempt-004",
+          "mlevolve.ai/release-mode": "standalone-six-hour-transfer",
+          "mlevolve.ai/system": "four-seat-transfer-tournament-donorqueue"
+        },
+        "name": "mlevolve-plant-v167-donorqueue-a40-r1",
+        "succeeded": 0,
+        "uid": "b8b59a02-8620-43e6-a4bf-f3b42e2be5e7"
+      },
+      "pods": [
+        {
+          "name": "mlevolve-plant-v167-donorqueue-a40-r1-97spq",
+          "node": null,
+          "owner_reference": {
+            "apiVersion": "batch/v1",
+            "blockOwnerDeletion": true,
+            "controller": true,
+            "kind": "Job",
+            "name": "mlevolve-plant-v167-donorqueue-a40-r1",
+            "uid": "b8b59a02-8620-43e6-a4bf-f3b42e2be5e7"
+          },
+          "phase": "Pending",
+          "restarts": 0,
+          "start_time": null,
+          "uid": "99c42b06-904d-4127-b065-70cb992ad2b6"
+        }
+      ]
+    },
+    {
+      "job": {
+        "active": 1,
+        "failed": 0,
+        "labels": {
+          "app": "mlevolve-end2end-job",
+          "app.kubernetes.io/managed-by": "codex-nrp-training",
+          "ecepxie.nrp/owner": "haoming",
+          "experiment": "plant-v167-transfer-tournament-donorqueue-a6000-r1",
+          "mlevolve.ai/gpu-race-id": "plant-v167-donorqueue-attempt-004",
+          "mlevolve.ai/release-mode": "standalone-six-hour-transfer",
+          "mlevolve.ai/system": "four-seat-transfer-tournament-donorqueue"
+        },
+        "name": "mlevolve-plant-v167-donorqueue-a6000-r1",
+        "succeeded": 0,
+        "uid": "b0712911-2f68-4b9a-8d7b-2f0b70d93e91"
+      },
+      "pods": [
+        {
+          "name": "mlevolve-plant-v167-donorqueue-a6000-r1-v2gds",
+          "node": null,
+          "owner_reference": {
+            "apiVersion": "batch/v1",
+            "blockOwnerDeletion": true,
+            "controller": true,
+            "kind": "Job",
+            "name": "mlevolve-plant-v167-donorqueue-a6000-r1",
+            "uid": "b0712911-2f68-4b9a-8d7b-2f0b70d93e91"
+          },
+          "phase": "Pending",
+          "restarts": 0,
+          "start_time": null,
+          "uid": "0f3430aa-da63-424d-be7d-b9367df0f05f"
+        }
+      ]
+    },
+    {
+      "job": {
+        "active": 1,
+        "failed": 0,
+        "labels": {
+          "app": "mlevolve-end2end-job",
+          "app.kubernetes.io/managed-by": "codex-nrp-training",
+          "ecepxie.nrp/owner": "haoming",
+          "experiment": "plant-v167-transfer-tournament-donorqueue-l40-r1",
+          "mlevolve.ai/gpu-race-id": "plant-v167-donorqueue-attempt-004",
+          "mlevolve.ai/release-mode": "standalone-six-hour-transfer",
+          "mlevolve.ai/system": "four-seat-transfer-tournament-donorqueue"
+        },
+        "name": "mlevolve-plant-v167-donorqueue-l40-r1",
+        "succeeded": 0,
+        "uid": "0aa8407f-85ad-46d7-9b1e-d9d56d131d8a"
+      },
+      "pods": [
+        {
+          "name": "mlevolve-plant-v167-donorqueue-l40-r1-fzbmb",
+          "node": null,
+          "owner_reference": {
+            "apiVersion": "batch/v1",
+            "blockOwnerDeletion": true,
+            "controller": true,
+            "kind": "Job",
+            "name": "mlevolve-plant-v167-donorqueue-l40-r1",
+            "uid": "0aa8407f-85ad-46d7-9b1e-d9d56d131d8a"
+          },
+          "phase": "Pending",
+          "restarts": 0,
+          "start_time": null,
+          "uid": "11f679e3-9fa1-4c54-8c29-0245fa5d7d41"
+        }
+      ]
+    },
+    {
+      "job": {
+        "active": 1,
+        "failed": 0,
+        "labels": {
+          "app": "mlevolve-end2end-job",
+          "app.kubernetes.io/managed-by": "codex-nrp-training",
+          "ecepxie.nrp/owner": "haoming",
+          "experiment": "plant-v167-transfer-tournament-donorqueue-l40s-r1",
+          "mlevolve.ai/gpu-race-id": "plant-v167-donorqueue-attempt-004",
+          "mlevolve.ai/release-mode": "standalone-six-hour-transfer",
+          "mlevolve.ai/system": "four-seat-transfer-tournament-donorqueue"
+        },
+        "name": "mlevolve-plant-v167-donorqueue-l40s-r1",
+        "succeeded": 0,
+        "uid": "9da6fb66-396d-49f7-ad6e-69a882b83f20"
+      },
+      "pods": [
+        {
+          "name": "mlevolve-plant-v167-donorqueue-l40s-r1-tqvxt",
+          "node": null,
+          "owner_reference": {
+            "apiVersion": "batch/v1",
+            "blockOwnerDeletion": true,
+            "controller": true,
+            "kind": "Job",
+            "name": "mlevolve-plant-v167-donorqueue-l40s-r1",
+            "uid": "9da6fb66-396d-49f7-ad6e-69a882b83f20"
+          },
+          "phase": "Pending",
+          "restarts": 0,
+          "start_time": null,
+          "uid": "c2c1d485-eb43-41b7-9a31-bca996f55bef"
+        }
+      ]
+    }
+  ],
+  "claim_dir": "/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1/.attempt-004-launch-claim",
+  "namespace": "ecepxie",
+  "pending_loser_jobs": [
+    "mlevolve-plant-v167-donorqueue-a40-r1",
+    "mlevolve-plant-v167-donorqueue-a6000-r1",
+    "mlevolve-plant-v167-donorqueue-l40-r1",
+    "mlevolve-plant-v167-donorqueue-l40s-r1"
+  ],
+  "protected_loser_jobs": {},
+  "race_label": "mlevolve.ai/gpu-race-id=plant-v167-donorqueue-attempt-004",
+  "recorded_after_delete_at": "2026-08-26T08:50:21.828668+00:00",
+  "recorded_at": "2026-08-26T08:50:08.599174+00:00",
+  "verified_after_delete": true,
+  "winner_job": "mlevolve-plant-v167-donorqueue-a100-r1",
+  "winner_pod": "mlevolve-plant-v167-donorqueue-a100-r1-z7jpm"
+}
