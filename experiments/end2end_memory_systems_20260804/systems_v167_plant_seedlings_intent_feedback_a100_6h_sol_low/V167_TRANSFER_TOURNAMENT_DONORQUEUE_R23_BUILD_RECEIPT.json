@@ -1,0 +1,45 @@
+{
+  "schema_version": "v1",
+  "created_at": "2026-08-26T06:55:44Z",
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-donorqueue-sol-low-r23",
+  "base_runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-deadlockfix-sol-low-r22",
+  "source_commit": "7a3118d4ad57e56d8bd29ade151a4e07e77cae8d",
+  "immutable": true,
+  "build_method": "copy-on-write hard-link clone of immutable r22; changed files were unlinked before copying and have private inodes; staging was atomically renamed only after authoritative tests passed",
+  "purpose": "Separate phase entitlement from work-conserving donor eligibility so a single worker can keep searching an active donor branch after every debt-bearing branch becomes unselectable without discharging the original debt.",
+  "files": {
+    "mlevolve/run.py": "5f8796c77e3416a50b1bfca4b2b8a2610b836a70ffc9cdc99adbd55534e97d3a",
+    "mlevolve/engine/node_selection.py": "29210a98c83058d5d76bd1d35271dbdde0aca3488a159cf6462a321e7c4ea5d8",
+    "mlevolve/engine/agent_search.py": "2e7edff2b874af1ea2c0495c384dfbb02b03f69d246a625615f5ec7978cdee54",
+    "mlevolve/engine/transfer_tournament.py": "3b73302dbb72b0f5a0c04e37f59d6e78839891eb3be2f063e2d8cd61e3b2ed7d",
+    "tests/test_transfer_portfolio_tournament.py": "b8277c658fc7f0be92ef0f8f2a5ead615ee2c8a3c20e0d860f52f0eaaa5c4f9b",
+    "experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low/launch_transfer_portfolio_tournament_attempt.sh": "83bb78f7d629adc55987517ce04656129b7fd94c8f062f5ac9d92902a8098c0e",
+    "frozen_transfer_portfolio/initial_transfer_codegen_pack.json": "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b"
+  },
+  "verification": {
+    "cpu_pod": "mlevolve-plant-v167-deadlock-stage-cpu-r2-dev",
+    "endpoint": "gpt-5.6-sol HTTP 200",
+    "cpu_affinity": 8,
+    "runforest_dev_execution_role_empty": true,
+    "pod_authoritative_tests": "83 passed, 3 warnings",
+    "test_files": [
+      "tests/test_run_finalize_reserve.py",
+      "tests/test_transfer_portfolio_tournament.py",
+      "tests/test_cross_task_dynamic_retrieval_v149.py",
+      "tests/test_strategy_plan_alignment_feedback.py",
+      "tests/test_dedicated_branch_gpu_lanes_v161.py",
+      "tests/test_role_resource_balance_v138.py",
+      "tests/test_search_resume.py"
+    ],
+    "continuous_debt_failure_simulation": true,
+    "donor_queue_rollover_across_multiple_failures": true,
+    "primary_entitlement_preserved": true,
+    "donor_continuation_preserved": true,
+    "single_worker_orphan_lock_recovery": true,
+    "multi_worker_lock_bypass_disabled": true,
+    "top2_eliminated_branches_excluded_from_donors": true,
+    "r22_hashes_preserved": true,
+    "changed_files_have_private_inodes": true,
+    "frozen_portfolio_inherited_unchanged": true
+  }
+}
