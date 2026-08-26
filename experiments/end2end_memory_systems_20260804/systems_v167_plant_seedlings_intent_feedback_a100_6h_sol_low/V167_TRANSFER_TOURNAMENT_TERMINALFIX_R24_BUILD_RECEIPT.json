@@ -1,0 +1,47 @@
+{
+  "schema_version": "v1",
+  "created_at": "2026-08-26T15:15:03Z",
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-terminalfix-sol-low-r24",
+  "base_runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-donorqueue-sol-low-r23",
+  "source_commit": "44d63dc45c45aeca6912a69011cced015b693531",
+  "immutable": true,
+  "build_method": "copy-on-write hard-link clone of immutable r23; every changed file was unlinked before exact committed content was overlaid; staging was atomically renamed only after authoritative CPU-pod tests passed",
+  "purpose": "Treat a fully consumed wall-clock search budget with a certified solution as successful completion, freeze terminal Top-2/champion standings at cutoff, and preserve any unsettled phase entitlement without presenting it as paid.",
+  "files": {
+    "mlevolve/run.py": "1e0c569d7b2a57db0a24100b4c76bc276ea54c66a4382ddcd29b361f97845efa",
+    "mlevolve/engine/run_outcome.py": "92e7e769d7260f76c402c0c9a3113a0658d322d1b09f48c18c868e879d643225",
+    "mlevolve/engine/node_selection.py": "29210a98c83058d5d76bd1d35271dbdde0aca3488a159cf6462a321e7c4ea5d8",
+    "mlevolve/engine/agent_search.py": "2e7edff2b874af1ea2c0495c384dfbb02b03f69d246a625615f5ec7978cdee54",
+    "mlevolve/engine/transfer_tournament.py": "3307ec73ea049e3b11a31d31bcba02fd14637ea98f1525a31f559195d636a9b5",
+    "tests/test_run_outcome.py": "246afd77768269d4bf884cae9540b116d973acd1106d8b7db71a06c8bb207136",
+    "tests/test_transfer_portfolio_tournament.py": "67161a0abdeb6fd803e0c5daeeb5169969359ae98bcc4f9c1e6751a800754ca9",
+    "experiments/end2end_memory_systems_20260804/systems_v167_plant_seedlings_intent_feedback_a100_6h_sol_low/launch_transfer_portfolio_tournament_attempt.sh": "83bb78f7d629adc55987517ce04656129b7fd94c8f062f5ac9d92902a8098c0e",
+    "frozen_transfer_portfolio/initial_transfer_codegen_pack.json": "7ae852a9934964ea5e6e653fff0d919f36306545cd0aba130458d069b5e7ac9b"
+  },
+  "verification": {
+    "cpu_pod": "mlevolve-plant-v167-terminalfix-stage-cpu-r1-dev",
+    "endpoint": "gpt-5.6-sol HTTP 200",
+    "cpu_affinity": 8,
+    "runforest_dev_execution_role_empty": true,
+    "pvc_writable": true,
+    "pod_authoritative_tests": "90 passed, 3 warnings",
+    "test_files": [
+      "tests/test_run_finalize_reserve.py",
+      "tests/test_run_outcome.py",
+      "tests/test_transfer_portfolio_tournament.py",
+      "tests/test_cross_task_dynamic_retrieval_v149.py",
+      "tests/test_strategy_plan_alignment_feedback.py",
+      "tests/test_dedicated_branch_gpu_lanes_v161.py",
+      "tests/test_role_resource_balance_v138.py",
+      "tests/test_search_resume.py"
+    ],
+    "time_budget_with_certified_solution_is_complete": true,
+    "time_budget_without_certified_solution_is_failed": true,
+    "terminal_top2_and_champion_are_frozen": true,
+    "unsettled_phase_debt_is_preserved": true,
+    "terminal_scheduling_queues_are_closed": true,
+    "r23_hashes_preserved": true,
+    "changed_files_have_private_inodes": true,
+    "frozen_portfolio_inherited_unchanged": true
+  }
+}

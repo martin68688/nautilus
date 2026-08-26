@@ -1,0 +1,65 @@
+{
+  "schema_version": "v1",
+  "created_at": "2026-08-26T15:15:03Z",
+  "attempt": "attempt-004",
+  "runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-donorqueue-sol-low-r23",
+  "source_commit": "7a3118d4ad57e56d8bd29ade151a4e07e77cae8d",
+  "job": {
+    "name": "mlevolve-plant-v167-donorqueue-a100-r1",
+    "uid": "f00debc0-b977-49d9-a7ca-677b8c74b582",
+    "condition": "Failed",
+    "reason": "BackoffLimitExceeded",
+    "last_transition_time": "2026-08-26T14:51:32Z"
+  },
+  "pod": {
+    "name": "mlevolve-plant-v167-donorqueue-a100-r1-z7jpm",
+    "uid": "1957d9e0-9fad-4d89-9a87-3fd1944e2771",
+    "phase": "Failed",
+    "node": "emporia.gp-argo.greatplains.net",
+    "started_at": "2026-08-26T08:44:09Z",
+    "finished_at": "2026-08-26T14:51:28Z",
+    "exit_code": 1,
+    "termination_reason": "Error",
+    "restarts": 0
+  },
+  "search": {
+    "run_directory": "/workspace/experiment-end2end-plant-seedlings-v167-transfer-tournament-rollover-6h-sol-low-r1/runs/attempt-004/20260826_084601_e2e-plant-seedlings-v167-transfer-tournament-6h-sol-low-r1-attempt-004",
+    "run_started_at": "2026-08-26T08:46:01Z",
+    "full_budget_seconds": 21600,
+    "budget_cutoff_at": "2026-08-26T14:46:01Z",
+    "completed_steps": 19,
+    "declared_step_sentinel": 2147483647,
+    "run_outcome_status": "partial",
+    "run_outcome_reason": "finalization_reserve_reached",
+    "exception": "engine.run_outcome.PartialRunError: Run ended partial at 19/2147483647: finalization_reserve_reached",
+    "tournament_phase_at_cutoff": "round1_equal_improve",
+    "top2": null,
+    "champion": null,
+    "best_valid_macro_f1": 0.9733513413207042,
+    "best_valid_branch_id": 2
+  },
+  "mechanism_evidence": {
+    "real_work_conserving_donor_rollover_observed": true,
+    "actual_donor_branches_observed": [
+      3,
+      4
+    ],
+    "rolled_over_true_observed": true,
+    "target_entitlement_preserved": true,
+    "donor_queue_advanced_after_failure": true,
+    "no_queued_or_donor_deadlock_recurred": true
+  },
+  "root_cause": "The wall-clock search correctly consumed its full 21600-second budget, but run_outcome classified deadline_reached as an interruption. Because agent.steps is an intentionally unreachable sentinel, the completed-step comparison could never declare success; terminal tournament rankings and evaluation handoff were consequently skipped.",
+  "preservation": {
+    "job_and_failed_pod_retained": true,
+    "runtime_r23_retained_immutable": true,
+    "pvc_run_artifacts_retained": true,
+    "prior_attempts_and_deadlock_evidence_retained": true,
+    "cpu_staging_and_reader_pods_retained": true
+  },
+  "repair": {
+    "commit": "44d63dc45c45aeca6912a69011cced015b693531",
+    "new_runtime": "/workspace/nautilus-exp-end2end-agent-v167-transfer-tournament-terminalfix-sol-low-r24",
+    "new_attempt": "attempt-005"
+  }
+}
