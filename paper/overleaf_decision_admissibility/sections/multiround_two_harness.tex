@@ -37,61 +37,58 @@ adaptively across candidates within a run.
   \label{tab:multiround-summary}
   \small
   \setlength{\tabcolsep}{4pt}
-  \resizebox{\textwidth}{!}{%
-  \begin{tabular}{@{}llllll@{}}
+  \begin{tabular}{@{}lllll@{}}
     \toprule
-    Harness & Task (metric) & Round & Memory read & Model & Best score \\
+    Harness & Task (metric) & Round & Memory read & Best score \\
     \midrule
     \multirow{5}{*}{MLE} & \multirow{5}{*}{Leaf (Host search log-loss $\downarrow$)}
-      & R1 & none & Luna & 0.443894 \\
-    & & R2 & R1 & Luna & 0.442665 \\
-    & & R3 & R1+R2 & Luna & 0.066774 \\
-    & & R5 & R1--R4 (91 cards) & Luna$\to$Terra$^\dagger$ & 0.042636 \\
-    & & R6 & same pack as R5 (repeat) & Luna$\to$Terra$^\dagger$ & 0.035167 \\
+      & R1 & none & 0.443894 \\
+    & & R2 & R1 & 0.442665 \\
+    & & R3 & R1+R2 & 0.066774 \\
+    & & R5$^\dagger$ & R1--R4 (91 cards) & 0.042636 \\
+    & & R6$^\dagger$ & R5 pack (repeat) & 0.035167 \\
     \midrule
     \multirow{4}{*}{MLE} & \multirow{4}{*}{Spooky (Host search log-loss $\downarrow$)}
-      & A & none & Luna$^\dagger$ & 0.35620 \\
-    & & C & A & Terra & 0.31031 \\
-    & & D & A+B+C & Terra & 0.27670 \\
-    & & E & A+B+C+D & Terra & 0.25928 \\
+      & A$^\dagger$ & none & 0.35620 \\
+    & & C & A & 0.31031 \\
+    & & D & A+B+C & 0.27670 \\
+    & & E & A+B+C+D & 0.25928 \\
     \midrule
     \multirow{4}{*}{MLE} & \multirow{4}{*}{iMet 2020 (Host micro-F1 $\uparrow$)}
-      & R1 & none & Luna & 0.42416 \\
-    & & R2 & R1 & Terra & 0.50491 \\
-    & & R3 & R1+R2 & Terra & 0.51130 \\
-    & & R4 & R1+R2+R3 & Terra & 0.58865 \\
+      & R1 & none & 0.42416 \\
+    & & R2 & R1 & 0.50491 \\
+    & & R3 & R1+R2 & 0.51130 \\
+    & & R4 & R1+R2+R3 & 0.58865 \\
     \midrule
     \multirow{4}{*}{MLE} & \multirow{4}{*}{Plant Pathology 2021 (Host micro-F1 $\uparrow$)}
-      & R1 & none & Terra & 0.83857 \\
-    & & R2 & R1 & Terra & 0.85573 \\
-    & & R3 & R1+R2 & Terra & 0.86316 \\
-    & & R4 (repeat) & R1+R2+R3 & Terra & 0.86077 \\
+      & R1 & none & 0.83857 \\
+    & & R2 & R1 & 0.85573 \\
+    & & R3 & R1+R2 & 0.86316 \\
+    & & R4 (repeat) & R1+R2+R3 & 0.86077 \\
     \midrule
     \multirow{3}{*}{AR} & \multirow{3}{*}{iMet 2020 (tune micro-F1 $\uparrow$)}
-      & R1 & none & Terra & 0.38823 \\
-    & & R2 & R1 & Terra & 0.43860 \\
-    & & R3 & R1+R2 & Terra & 0.45849 \\
+      & R1 & none & 0.38823 \\
+    & & R2 & R1 & 0.43860 \\
+    & & R3 & R1+R2 & 0.45849 \\
     \midrule
     \multirow{4}{*}{AR$^\ddagger$} & \multirow{4}{*}{Spooky (Host search log-loss $\downarrow$)}
-      & R1 (MLE) & none & Terra & 0.35028 \\
-    & & R2 & R1 & Terra & 0.35111 \\
-    & & R3 & R1+R2 & Terra & 0.34911 \\
-    & & R2 rerun & new AR R1 & Terra & 0.35625 \\
+      & R1 (MLE) & none & 0.35028 \\
+    & & R2 & R1 & 0.35111 \\
+    & & R3 & R1+R2 & 0.34911 \\
+    & & R2 rerun & new AR R1 & 0.35625 \\
     \midrule
     \multirow{3}{*}{AR$^\ddagger$} & \multirow{3}{*}{Leaf (Host search log-loss $\downarrow$)}
-      & R1 (MLE) & none & Luna & 0.44389 \\
-    & & R2 & R1 & Terra & 0.06357 \\
-    & & R3 (MLE) & R1 + original MLE R2 & Luna & 0.06677 \\
+      & R1 (MLE) & none & 0.44389 \\
+    & & R2 & R1 & 0.06357 \\
+    & & R3 (MLE) & R1 + orig.\ MLE R2 & 0.06677 \\
     \bottomrule
-  \end{tabular}}
+  \end{tabular}
 
   \vspace{2pt}
   {\footnotesize $^\dagger$Part of the budget was resumed after a provider
   outage with a different model, provider, or GPU host.
   $^\ddagger$Mixed series: only the rounds without the ``(MLE)'' tag ran on
-  autoresearch; the MLE rounds are the memory sources or reference points.
-  Luna/Terra denote \texttt{gpt-5.6-luna}/\texttt{gpt-5.6-terra}, both at low
-  reasoning effort.}
+  autoresearch; the MLE rounds are the memory sources or reference points.}
 \end{table*}
 
 \paragraph{MLEvolve: memory rounds reach better scores on all four tasks.}
