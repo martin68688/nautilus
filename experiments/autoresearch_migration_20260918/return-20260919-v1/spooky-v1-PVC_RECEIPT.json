@@ -1,0 +1,33 @@
+{
+  "status": "PVC_VERIFIED",
+  "archive_sha256": "6ece08d06b384d9967f4d6929f5e2020508a4d60a5590ef30f3b2d476081daaa",
+  "destination": "/workspace/backups/aws/autoresearch-20260918/spooky-v1",
+  "manifests": [
+    {
+      "root": "/workspace/backups/aws/autoresearch-20260918/spooky-v1/restored/bundle",
+      "manifest": "/workspace/backups/aws/autoresearch-20260918/spooky-v1/manifest-00.json",
+      "manifest_sha256": "aa8c456fe6106283f427277433bbc688093299e7c0bde12882776bba3e928088",
+      "verification": {
+        "actual": {
+          "bytes": 693594419,
+          "directories": 237,
+          "entries": 1765,
+          "files": 1528,
+          "symlinks": 0
+        },
+        "error_count_shown": 0,
+        "errors": [],
+        "expected": {
+          "bytes": 693594419,
+          "directories": 237,
+          "entries": 1765,
+          "files": 1528,
+          "symlinks": 0
+        },
+        "root": "/workspace/backups/aws/autoresearch-20260918/spooky-v1/restored/bundle",
+        "status": "verified"
+      }
+    }
+  ],
+  "verified_unix": 1789792005.1968603
+}

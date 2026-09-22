@@ -1,0 +1,140 @@
+{
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+        "annotations": {
+            "nrp.ai/username": "http://cilogon.org/serverE/users/526418"
+        },
+        "creationTimestamp": "2026-09-18T21:59:16Z",
+        "generation": 1,
+        "labels": {
+            "app.kubernetes.io/managed-by": "codex-nrp-training",
+            "ecepxie.nrp/owner": "haoming",
+            "experiment": "autoresearch-spooky-a10-20260918"
+        },
+        "name": "autoresearch-spooky-a10-20260918",
+        "namespace": "ecepxie",
+        "resourceVersion": "14853109033",
+        "uid": "31834a70-b9f6-4b23-9385-e9dc001efc08"
+    },
+    "spec": {
+        "activeDeadlineSeconds": 21600,
+        "affinity": {
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "nvidia.com/gpu.product",
+                                    "operator": "In",
+                                    "values": [
+                                        "NVIDIA-A10"
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+        "automountServiceAccountToken": false,
+        "containers": [
+            {
+                "command": [
+                    "python",
+                    "-c",
+                    "import time; time.sleep(25000)"
+                ],
+                "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "worker",
+                "resources": {
+                    "limits": {
+                        "cpu": "8",
+                        "ephemeral-storage": "24Gi",
+                        "memory": "32Gi",
+                        "nvidia.com/gpu": "1"
+                    },
+                    "requests": {
+                        "cpu": "8",
+                        "ephemeral-storage": "24Gi",
+                        "memory": "32Gi",
+                        "nvidia.com/gpu": "1"
+                    }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                    {
+                        "mountPath": "/data",
+                        "name": "data",
+                        "readOnly": true,
+                        "subPath": "experiments/spooky-free-linear-terra-r1-fixed-20260910/public"
+                    },
+                    {
+                        "mountPath": "/scratch",
+                        "name": "scratch"
+                    }
+                ]
+            }
+        ],
+        "dnsPolicy": "ClusterFirst",
+        "enableServiceLinks": true,
+        "preemptionPolicy": "PreemptLowerPriority",
+        "priority": 0,
+        "restartPolicy": "Never",
+        "schedulerName": "default-scheduler",
+        "securityContext": {},
+        "serviceAccount": "default",
+        "serviceAccountName": "default",
+        "terminationGracePeriodSeconds": 30,
+        "tolerations": [
+            {
+                "effect": "NoExecute",
+                "key": "node.kubernetes.io/not-ready",
+                "operator": "Exists",
+                "tolerationSeconds": 300
+            },
+            {
+                "effect": "NoExecute",
+                "key": "node.kubernetes.io/unreachable",
+                "operator": "Exists",
+                "tolerationSeconds": 300
+            },
+            {
+                "effect": "PreferNoSchedule",
+                "key": "nvidia.com/gpu",
+                "operator": "Exists"
+            }
+        ],
+        "volumes": [
+            {
+                "name": "data",
+                "persistentVolumeClaim": {
+                    "claimName": "haoming-storage"
+                }
+            },
+            {
+                "emptyDir": {
+                    "sizeLimit": "24Gi"
+                },
+                "name": "scratch"
+            }
+        ]
+    },
+    "status": {
+        "conditions": [
+            {
+                "lastProbeTime": null,
+                "lastTransitionTime": "2026-09-18T21:59:16Z",
+                "message": "0/532 nodes are available: 1 Insufficient memory, 1 node(s) had untolerated taint {nautilus.io/issue: 1574}, 1 node(s) had untolerated taint {nautilus.io/issue: 1593-1685}, 1 node(s) had untolerated taint {nautilus.io/issue: 1641}, 1 node(s) had untolerated taint {nautilus.io/issue: 1716}, 1 node(s) had untolerated taint {nautilus.io/issue: 1726}, 1 node(s) had untolerated taint {nautilus.io/issue: slow-network}, 1 node(s) had untolerated taint {nautilus.io/issue: testing}, 1 node(s) had untolerated taint {nautilus.io/reservation: csun-ehuang}, 1 node(s) had untolerated taint {nautilus.io/reservation: internet2}, 1 node(s) had untolerated taint {nautilus.io/reservation: nrp-llm-test}, 1 node(s) had untolerated taint {nautilus.io/reservation: sage}, 1 node(s) had untolerated taint {nautilus.io/reservation: sdccd}, 1 node(s) had untolerated taint {nautilus.io/reservation: suncave}, 1 node(s) had untolerated taint {nautilus.io/reservation: unl-coe-ai-makerspace}, 1 node(s) had untolerated taint {nautilus.io/reservation: wifire-pyregence}, 1 node(s) had untolerated taint {nautilus.io/reservation: wifire}, 1 node(s) had untolerated taint {nautilus.io/system: gateway}, 1 node(s) had untolerated taint {nautilus.io/system: gitlab}, 1 node(s) had untolerated taint {nautilus.io/upgrading: true}, 1 node(s) had untolerated taint {virtual-node.interlink/workload: swan}, 13 Insufficient nvidia.com/gpu, 15 node(s) had untolerated taint {nautilus.io/reservation: csu-tide}, 2 Insufficient cpu, 2 node(s) had untolerated taint {nautilus.io/hardware: arm64}, 2 node(s) had untolerated taint {nautilus.io/issue: 1708}, 2 node(s) had untolerated taint {nautilus.io/issue: 1722}, 2 node(s) had untolerated taint {nautilus.io/reservation: mizzou}, 2 node(s) had untolerated taint {nautilus.io/reservation: nrp-llm}, 2 node(s) had untolerated taint {virtual-kubelet.io/provider: admiralty}, 271 node(s) didn't match Pod's node affinity/selector, 28 node(s) had untolerated taint {nautilus.io/reservation: osdf}, 3 node(s) had untolerated taint {nautilus.io/reservation: csusb}, 3 node(s) had untolerated taint {nautilus.io/reservation: erl-ucsd}, 3 node(s) had untolerated taint {nautilus.io/reservation: fresno}, 3 node(s) had untolerated taint {nautilus.io/storage-no-run: true}, 3 node(s) had untolerated taint {node-role.kubernetes.io/control-plane: }, 5 node(s) had untolerated taint {nautilus.io/hardware: large-gpu}, 5 node(s) had untolerated taint {nautilus.io/reservation: csuf}, 5 node(s) had untolerated taint {nautilus.io/system: perfsonar}, 54 node(s) had untolerated taint {nautilus.io/system: storage}, 56 node(s) were unschedulable, 6 node(s) had untolerated taint {nautilus.io/reservation: bluefield2}, 6 node(s) had untolerated taint {nautilus.io/reservation: sdsuinstruction}, 7 node(s) had untolerated taint {nautilus.io/reservation: cogrob}, 7 node(s) had untolerated taint {nautilus.io/reservation: sense}, 7 node(s) had untolerated taint {nautilus.io/testing: true}. preemption: 0/532 nodes are available: 13 No preemption victims found for incoming pod, 519 Preemption is not helpful for scheduling.",
+                "reason": "Unschedulable",
+                "status": "False",
+                "type": "PodScheduled"
+            }
+        ],
+        "phase": "Pending",
+        "qosClass": "Guaranteed"
+    }
+}

@@ -1,0 +1,56 @@
+{
+  "figure": "iMet three rounds: Host micro-F1 + internal tune trajectories",
+  "task_id": "imet-2020-fgvc7",
+  "metric": "host micro-F1 over 3474 multilabel attributes (higher is better)",
+  "internal_tune_nodes_total": 50,
+  "epoch_time_is_interpolated": true,
+  "r1_epoch_key_differs": {
+    "r1_key": "val_micro_f1_at_0.15",
+    "r2_r3_key": "tune_micro_f1",
+    "note": "R1 per-epoch values are a fixed-threshold (0.15) training monitor, not the calibrated tune metric; not comparable on the same axis."
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "label": "R1（无记忆）",
+      "elapsed_minutes": 119.50612707136703,
+      "registered": 3,
+      "certified": 1,
+      "epoch_nodes": 12,
+      "epoch_value_key": [
+        "val_micro_f1_at_0.15"
+      ],
+      "best_host_micro_f1": 0.3891708697355064,
+      "best_tune_micro_f1": 0.3882310785523749,
+      "best_host_at_minutes": 98.59919037159997
+    },
+    {
+      "round": 2,
+      "label": "R2（仅 R1 记忆）",
+      "elapsed_minutes": 119.89502741025014,
+      "registered": 3,
+      "certified": 2,
+      "epoch_nodes": 18,
+      "epoch_value_key": [
+        "tune_micro_f1"
+      ],
+      "best_host_micro_f1": 0.44095033341835804,
+      "best_tune_micro_f1": 0.43860364610280916,
+      "best_host_at_minutes": 85.05917529791671
+    },
+    {
+      "round": 3,
+      "label": "R3（累计记忆）",
+      "elapsed_minutes": 119.5063103973332,
+      "registered": 2,
+      "certified": 1,
+      "epoch_nodes": 20,
+      "epoch_value_key": [
+        "tune_micro_f1"
+      ],
+      "best_host_micro_f1": 0.4585922833606213,
+      "best_tune_micro_f1": 0.45849145500492566,
+      "best_host_at_minutes": 70.47219765433353
+    }
+  ]
+}

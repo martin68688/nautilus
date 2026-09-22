@@ -1,0 +1,18 @@
+{
+  "execution_core_identical": {
+    "harness.py": true,
+    "aws_backend.py": true,
+    "baseline.py": true,
+    "invoke.py": true,
+    "memory_bridge.py": true
+  },
+  "new_entrypoints": [
+    "run_pair.py",
+    "launch_host.py"
+  ],
+  "actual_gpu_preflight_passed": true,
+  "mac_host_recomputation_passed": true,
+  "transformer_execution_tested": false,
+  "aws_endpoint_tested": false,
+  "formal_started": false
+}

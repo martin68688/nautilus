@@ -1,0 +1,184 @@
+condition,run_id,display_label,coverage,step,raw_auc,running_best,is_candidate,thread_id,source_record
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),4,0.950214574565,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),5,0.899406949549,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),6,0.940568883277,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),8,0.910357500835,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),9,0.944830246914,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),11,0.908803875710,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),12,0.946934624018,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),13,0.906436781609,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),15,0.945303731762,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),16,0.904080459770,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),19,0.885180623974,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),22,0.938415435140,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),24,0.940332140853,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),26,0.868063107596,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),28,0.911843964639,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),31,0.907998948372,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),32,0.896169055858,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),33,0.929674881793,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),34,0.901549508692,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),35,0.896169055858,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),37,0.904416839199,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),38,0.897083539298,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),39,0.948914747875,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),42,0.948914747875,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),44,0.909401102573,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),45,0.945559957085,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),47,0.920948880722,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),50,0.946788339459,0.950214574565,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),51,0.953391928695,0.953391928695,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),52,0.941971494480,0.953391928695,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),53,0.940761777481,0.953391928695,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),54,0.956218535941,0.956218535941,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),55,0.883333333333,0.956218535941,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),57,0.956342328959,0.956342328959,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),58,0.880252100840,0.956342328959,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),59,0.953867357167,0.956342328959,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),60,0.957126351407,0.957126351407,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),62,0.954957400601,0.957126351407,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),63,0.957142857143,0.957142857143,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),64,0.955797639680,0.957142857143,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),66,0.957142857143,0.957142857143,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),68,0.952372699513,0.957142857143,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),70,0.944210613188,0.957142857143,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),71,0.918021216171,0.957142857143,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_a40,Run 1,complete journal (partial run),73,,0.957142857143,0,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel original attempt-004 journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),1,0.881382753660,0.881382753660,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),3,0.875006982850,0.881382753660,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),5,0.931822973400,0.931822973400,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),6,0.882791863184,0.931822973400,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),7,0.889625116358,0.931822973400,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),8,0.929134895815,0.931822973400,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),9,0.899742233076,0.931822973400,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),10,0.909080138783,0.931822973400,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),12,0.905583885976,0.931822973400,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),13,0.904518913430,0.931822973400,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),14,0.933685301662,0.933685301662,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),15,0.905583885976,0.933685301662,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),16,0.907370737074,0.933685301662,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),17,0.936347025546,0.936347025546,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),20,0.933878562142,0.936347025546,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),21,0.934640522876,0.936347025546,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),26,0.938885765487,0.938885765487,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),29,0.938850627218,0.938885765487,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),31,0.879469475882,0.938885765487,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),33,0.941743078998,0.941743078998,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_rerun2,Run 2,complete journal (partial run),35,0.938982395727,0.941743078998,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun2 attempt-001 archived journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),1,0.930090311987,0.930090311987,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),2,0.845232932854,0.930090311987,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),4,0.935603448276,0.935603448276,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),6,0.888006709988,0.935603448276,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),8,0.902958106948,0.935603448276,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),13,0.940706075534,0.940706075534,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),14,0.913373976481,0.940706075534,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),15,0.888389439911,0.940706075534,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),16,0.943017241379,0.943017241379,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),18,0.888185860165,0.943017241379,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),19,0.921342364532,0.943017241379,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),20,0.909751804709,0.943017241379,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),21,0.894032670478,0.943017241379,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),22,0.952738095238,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),24,0.902029282911,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),26,0.903595813246,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),27,0.895506587841,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),40,0.903167444094,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),41,0.849414986308,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),42,0.940599784030,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),43,0.918953217177,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),44,0.862783171521,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),45,0.939936569480,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),46,0.908029222116,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),48,0.942359853413,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),49,0.921354095212,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),50,0.897639200066,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),51,0.942929537705,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),52,0.923283372205,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),53,0.905269272260,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),55,0.913748456578,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),57,0.940829358297,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),58,0.913748456578,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),60,0.941998486510,0.952738095238,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),62,0.952824302135,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),65,0.950114942529,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),66,0.930504926108,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),67,0.926687474276,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),68,0.934588339328,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),69,0.928234811166,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),70,0.933066950199,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),71,0.937751362566,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),72,0.933189655172,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),74,0.938610140380,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),75,0.921122581973,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),78,0.921204040335,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_nrp_a100,Run 3,complete journal (terminal run),80,0.950000000000,0.952824302135,1,01a04416-2ee2-7e83-b460-f523a45f7b4f,Novel rerun3 attempt-000 journal
+Novel,novel_aws_r5,Run 4,complete journal (partial run),10,0.625531164595,0.625531164595,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,Novel AWS r5 archived journal
+Novel,novel_aws_r5,Run 4,complete journal (partial run),30,0.884912297845,0.884912297845,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,Novel AWS r5 archived journal
+Novel,novel_aws_r5,Run 4,complete journal (partial run),44,,0.884912297845,0,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,Novel AWS r5 archived journal
+Novel,novel_aws_r6,Run 5,complete journal (terminal run),48,0.889986244417,0.889986244417,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,Novel AWS r6 complete journal
+Novel,novel_aws_r6,Run 5,complete journal (terminal run),72,0.825075948549,0.889986244417,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,Novel AWS r6 complete journal
+Novel,novel_aws_r6,Run 5,complete journal (terminal run),93,0.853584745763,0.889986244417,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,Novel AWS r6 complete journal
+Novel,novel_aws_r6,Run 5,complete journal (terminal run),100,0.885166381824,0.889986244417,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,Novel AWS r6 complete journal
+Novel,novel_aws_r6,Run 5,complete journal (terminal run),108,0.884466504339,0.889986244417,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,Novel AWS r6 complete journal
+Novel,novel_aws_r6,Run 5,complete journal (terminal run),109,0.893968639884,0.893968639884,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,Novel AWS r6 complete journal
+Novel,novel_aws_r6,Run 5,complete journal (terminal run),110,0.826492246383,0.893968639884,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,Novel AWS r6 complete journal
+Novel,novel_aws_r6,Run 5,complete journal (terminal run),137,,0.893968639884,0,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,Novel AWS r6 complete journal
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,1,0.943604269294,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,2,0.927889983580,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,4,0.924835796388,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,5,0.931428571429,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,7,0.924835796388,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,8,0.928029556650,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,9,0.928604269294,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,11,0.924614121511,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,13,0.923070607553,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,15,0.908932676519,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,18,0.895369458128,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,19,0.929802955665,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,20,0.927816091954,0.943604269294,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,22,0.943834154351,0.943834154351,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,23,0.912183908046,0.943834154351,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,25,0.943834154351,0.943834154351,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,26,0.943834154351,0.943834154351,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,27,0.943834154351,0.943834154351,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,29,0.895369458128,0.943834154351,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r6_a2,Run 2,complete journal,32,0.895369458128,0.943834154351,1,01a03d0f-16bc-7cf2-94f2-de08ac4f5fba,transfer_v174_attempt002_journal.json
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,2,0.928760262726,0.928760262726,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,3,0.949343185550,0.949343185550,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,9,0.937775041051,0.949343185550,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,11,0.892816091954,0.949343185550,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,12,0.931806239737,0.949343185550,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,13,0.892816091954,0.949343185550,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,14,0.928965517241,0.949343185550,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,16,0.892816091954,0.949343185550,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,20,0.926288998358,0.949343185550,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,21,0.913809523810,0.949343185550,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,22,0.945623973727,0.949343185550,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,23,0.951740558292,0.951740558292,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,24,0.912799671593,0.951740558292,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,25,0.954679802956,0.954679802956,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_aws_r5_a1_audit,Run 1*,archived/audited record,27,0.892816091954,0.954679802956,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived journal dump in task audit
+Transfer,transfer_nrp_v172_a3_audit,Run 3*,archived/audited record,1,0.930514202945,0.930514202945,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_v172_a3_audit,Run 3*,archived/audited record,2,0.930514202945,0.930514202945,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_v172_a3_audit,Run 3*,archived/audited record,3,0.930514202945,0.930514202945,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_v172_a3_audit,Run 3*,archived/audited record,4,0.930514202945,0.930514202945,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_sol_a1_audit,Run 4*,archived/audited record,3,0.953293144679,0.953293144679,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived complete-run audit
+Transfer,transfer_nrp_sol_a1_audit,Run 4*,archived/audited record,4,0.908717846061,0.953293144679,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived complete-run audit
+Transfer,transfer_nrp_sol_a1_audit,Run 4*,archived/audited record,9,0.952678690049,0.953293144679,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived complete-run audit
+Transfer,transfer_nrp_sol_a1_audit,Run 4*,archived/audited record,11,0.949980071742,0.953293144679,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived complete-run audit
+Transfer,transfer_nrp_sol_a1_audit,Run 4*,archived/audited record,13,0.896356450113,0.953293144679,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived complete-run audit
+Transfer,transfer_nrp_sol_a1_audit,Run 4*,archived/audited record,15,0.952861365750,0.953293144679,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived complete-run audit
+Transfer,transfer_nrp_sol_a1_audit,Run 4*,archived/audited record,17,0.950154444002,0.953293144679,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived complete-run audit
+Transfer,transfer_nrp_sol_a1_audit,Run 4*,archived/audited record,18,0.908717846061,0.953293144679,1,01a03f41-2f2c-7900-850c-8b21f87dc576,archived complete-run audit
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,3,0.949474548440,0.949474548440,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,4,0.946765188834,0.949474548440,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,9,0.948649425287,0.949474548440,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,10,0.948013136289,0.949474548440,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,11,0.949404761905,0.949474548440,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,14,0.946338259442,0.949474548440,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,15,0.952820197044,0.952820197044,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,16,0.952742200328,0.952820197044,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,17,0.952196223317,0.952820197044,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,18,0.953423645320,0.953423645320,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,19,0.952889983580,0.953423645320,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots
+Transfer,transfer_nrp_luna_a4_audit,Run 5*,archived/audited record,28,0.954318555008,0.954318555008,1,01a03f41-2f2c-7900-850c-8b21f87dc576,timestamped task audit snapshots

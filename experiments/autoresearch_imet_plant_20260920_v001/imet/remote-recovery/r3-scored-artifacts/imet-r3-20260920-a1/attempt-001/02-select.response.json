@@ -1,0 +1,29 @@
+{
+  "id": "resp_095b0da8a8e298b2016ab0f0228c7887d0959d59ef2514acf0",
+  "object": "chat.completion",
+  "created": 1789980751,
+  "model": "gpt-5.6-terra",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"read_ids\":[\"search:architecture_node-005\",\"search:tuning_node-005\",\"search:architecture_node-002\",\"search:tuning_node-002\",\"search:tuning_node-004\",\"search:debug_node-006\"]}",
+        "reasoning_content": "**Selecting exact JSON keys**"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 10617,
+    "completion_tokens": 110,
+    "total_tokens": 10727,
+    "prompt_tokens_details": {
+      "cached_tokens": 9984
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 54
+    }
+  },
+  "service_tier": "default"
+}

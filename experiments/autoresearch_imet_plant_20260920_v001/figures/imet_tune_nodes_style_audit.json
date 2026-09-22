@@ -1,0 +1,11 @@
+{
+  "figure_claim": "All persisted internal tune or validation trajectory nodes for iMet R1/R2",
+  "r1_epoch_nodes": 12,
+  "r2_epoch_nodes": 18,
+  "r3_tune_trajectory": "not returned locally",
+  "host_scores_separate": {
+    "r1": 0.3891708697355064,
+    "r2": 0.44095033341835804,
+    "r3": 0.4585922833606213
+  }
+}

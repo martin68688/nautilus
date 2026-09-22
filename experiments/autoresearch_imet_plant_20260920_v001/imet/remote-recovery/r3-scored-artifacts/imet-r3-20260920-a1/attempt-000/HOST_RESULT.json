@@ -1,0 +1,11 @@
+{
+  "status": "valid",
+  "tune_score": 0.45849145500492566,
+  "search_score": 0.4585922833606213,
+  "test_score": null,
+  "seconds": 3984.352688579005,
+  "source_sha256": "756ed4434bfdff1f982c3361d692112d145703a030d7b434caf4df5127467961",
+  "predictions_sha256": "f8b28fdd031c9ab4890c4a2be447ae5283e7232431fc2a856023d23cb1a430f7",
+  "host_recomputed": true,
+  "reload_verified": true
+}

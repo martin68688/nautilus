@@ -1,0 +1,93 @@
+{
+  "rounds": [
+    {
+      "round": 1,
+      "nodes": 14,
+      "certified": 2,
+      "inner_trials": 11,
+      "final_search": 0.44389385340454646,
+      "final_tune": 0.4019428569302063,
+      "elapsed_minutes": 93.73871477766662,
+      "slots": 23,
+      "categories": [
+        1,
+        6,
+        4
+      ]
+    },
+    {
+      "round": 2,
+      "nodes": 2,
+      "certified": 2,
+      "inner_trials": 3,
+      "final_search": 0.4225249059889315,
+      "final_tune": 0.35518281388720324,
+      "elapsed_minutes": 107.67611382896624,
+      "slots": 3,
+      "categories": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "round": 3,
+      "nodes": 11,
+      "certified": 10,
+      "inner_trials": 41,
+      "final_search": 0.06677362127695761,
+      "final_tune": 0.0009344379861389044,
+      "elapsed_minutes": 114.20583967671652,
+      "slots": 42,
+      "categories": [
+        1,
+        22,
+        18
+      ]
+    },
+    {
+      "round": 4,
+      "nodes": 1,
+      "certified": 1,
+      "inner_trials": 4,
+      "final_search": 0.042717752524956625,
+      "final_tune": 0.019554332726714842,
+      "elapsed_minutes": 13.307679284767557,
+      "slots": 4,
+      "categories": [
+        1,
+        1,
+        2
+      ],
+      "run_id": "20260913_070145_leaf-round4-memory-luna-low-2h-seed0",
+      "stop_reason": "model_service_unavailable"
+    },
+    {
+      "round": 5,
+      "nodes": 7,
+      "certified": 3,
+      "inner_trials": 11,
+      "final_search": 0.0426361616275364,
+      "final_tune": 0.018212824147950467,
+      "elapsed_minutes": 68.00605328854483,
+      "slots": 15,
+      "categories": [
+        1,
+        7,
+        3
+      ],
+      "run_id": "20260914_060444_leaf-fresh-cpa-luna-low-2h-seed0",
+      "stop_reason": "model_service_unavailable"
+    }
+  ],
+  "source_sha256": {
+    "outputs/leaf_three_rounds_inner/outer_search.csv": "97bbc3a04f1b5870fe8905befa3f4ab04e5864e6c5f65aa9cd7a09ccebf8d236",
+    "outputs/leaf_three_rounds_inner/inner_tune.csv": "b1c7e92b4803bdf3d552cbb76ddacbb25b9c7a4cfca79738678dccd23040e1d9",
+    "outputs/leaf_three_rounds_inner/node_segments.csv": "c8cb312e91b822fa2c2420a632a59c69b6720143ad8ed04ec6ab39ce1fb2a656",
+    "outputs/leaf_three_rounds_inner/summary.json": "36e775849f7d3b6f5ab6e7e77d99191a95e51f8fc762a2ff657b432922acb24e",
+    "experiments/leaf_round4_memory_luna_2h_20260913/evidence/TERMINAL_DIAGNOSIS.json": "3feafe483d92d827df32a1406b877c01ab106547ad6b4701f7cf9a601e66ac0b",
+    "experiments/leaf_round4_memory_luna_2h_20260913/all_memory_luna_2h_20260914_0458/SOURCE_EVIDENCE.json": "7021db19f5fdc5481af7ea39cbfed2c590c94a0f6990fa2365de5aae4d34c551",
+    "experiments/leaf_round4_memory_luna_2h_20260913/all_memory_luna_2h_20260914_0458/TERMINAL.json": "a256d93e856a9d98a2970aedb93c6b53fb5803df518d1dcd4fade2c58325c6f4",
+    "experiments/leaf_r6_nomemory_luna_3h_20260911/LAUNCH_2H.json": "d0d9ddc714c98678ae8e904f608e456bc5e13340cc54a76003d5eb0a7accb9f7"
+  }
+}

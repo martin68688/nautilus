@@ -1,0 +1,13 @@
+{
+  "run_id": "plant-r1-20260920-a2",
+  "task_id": "autoresearch-plant",
+  "round": 1,
+  "started_unix": 1789952140.4025648,
+  "budget_seconds": 7200,
+  "model": "gpt-5.6-terra",
+  "effort": "low",
+  "memory": false,
+  "data_manifest_sha256": "c7168683964b925c7f494bddbdd6de82d505fe546f941f33ebab106e6e612348",
+  "runtime_manifest_sha256": "66809ad804138b0aed09fc2cce188f1c3b6c768630f24e662497b03fa1d67b90",
+  "metric": "host_macro_f1"
+}

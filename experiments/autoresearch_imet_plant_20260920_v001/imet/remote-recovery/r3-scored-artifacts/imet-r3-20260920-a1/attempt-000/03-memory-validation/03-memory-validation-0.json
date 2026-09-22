@@ -1,0 +1,156 @@
+{
+  "attempt": 0,
+  "candidate_sha256": "756ed4434bfdff1f982c3361d692112d145703a030d7b434caf4df5127467961",
+  "raw_decisions": [
+    {
+      "key": "search:architecture_node-005",
+      "decision": "adopt",
+      "code_evidence": "The candidate performs tune-only global threshold calibration, evaluates tune micro-F1 after each epoch, checkpoints the best target-aligned epoch, and records the threshold and validation trajectory in meta.json."
+    },
+    {
+      "key": "search:tuning_node-005",
+      "decision": "adopt",
+      "code_evidence": "Training selection is based on tune micro-F1 after threshold search rather than BCE or unweighted validation loss; the selected epoch and optimizer settings are persisted."
+    },
+    {
+      "key": "search:architecture_node-004",
+      "decision": "adopt",
+      "code_evidence": "The implementation uses a self-contained residual image model with lazy PIL decoding, no pretrained assets, dense two-dimensional labels, and deterministic saved state plus preprocessing metadata."
+    },
+    {
+      "key": "search:tuning_node-004",
+      "decision": "adopt",
+      "code_evidence": "The model uses tune-only threshold calibration over 0.02 through 0.50, argmax fallback for empty rows, and saves exact reload metadata."
+    },
+    {
+      "key": "search:architecture_node-002",
+      "decision": "adapt",
+      "code_evidence": "The compact CNN contract is retained as a stronger SmallResNet variant with BCEWithLogitsLoss, lazy decoding, deterministic reload, global threshold calibration, and argmax fallback."
+    },
+    {
+      "key": "search:tuning_node-002",
+      "decision": "adopt",
+      "code_evidence": "The candidate trains with BCEWithLogitsLoss, evaluates convergence on the labeled tune split, calibrates one global threshold, and never uses hidden or unlabeled data for fitting."
+    }
+  ],
+  "normalized_decisions": [
+    {
+      "key": "search:architecture_node-005",
+      "decision": "adopt",
+      "code_evidence": "The candidate performs tune-only global threshold calibration, evaluates tune micro-F1 after each epoch, checkpoints the best target-aligned epoch, and records the threshold and validation trajectory in meta.json."
+    },
+    {
+      "key": "search:tuning_node-005",
+      "decision": "adopt",
+      "code_evidence": "Training selection is based on tune micro-F1 after threshold search rather than BCE or unweighted validation loss; the selected epoch and optimizer settings are persisted."
+    },
+    {
+      "key": "search:architecture_node-004",
+      "decision": "adopt",
+      "code_evidence": "The implementation uses a self-contained residual image model with lazy PIL decoding, no pretrained assets, dense two-dimensional labels, and deterministic saved state plus preprocessing metadata."
+    },
+    {
+      "key": "search:tuning_node-004",
+      "decision": "adopt",
+      "code_evidence": "The model uses tune-only threshold calibration over 0.02 through 0.50, argmax fallback for empty rows, and saves exact reload metadata."
+    },
+    {
+      "key": "search:architecture_node-002",
+      "decision": "adapt",
+      "code_evidence": "The compact CNN contract is retained as a stronger SmallResNet variant with BCEWithLogitsLoss, lazy decoding, deterministic reload, global threshold calibration, and argmax fallback."
+    },
+    {
+      "key": "search:tuning_node-002",
+      "decision": "adopt",
+      "code_evidence": "The candidate trains with BCEWithLogitsLoss, evaluates convergence on the labeled tune split, calibrates one global threshold, and never uses hidden or unlabeled data for fitting."
+    }
+  ],
+  "id_mapping": [
+    {
+      "index": 0,
+      "raw_key": "search:architecture_node-005",
+      "normalized_key": "search:architecture_node-005",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 1,
+      "raw_key": "search:tuning_node-005",
+      "normalized_key": "search:tuning_node-005",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 2,
+      "raw_key": "search:architecture_node-004",
+      "normalized_key": "search:architecture_node-004",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 3,
+      "raw_key": "search:tuning_node-004",
+      "normalized_key": "search:tuning_node-004",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 4,
+      "raw_key": "search:architecture_node-002",
+      "normalized_key": "search:architecture_node-002",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 5,
+      "raw_key": "search:tuning_node-002",
+      "normalized_key": "search:tuning_node-002",
+      "method": "exact_selected_key"
+    }
+  ],
+  "errors": [
+    {
+      "key": "search:architecture_node-005",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:architecture_node-005",
+      "error": "nonempty reason required"
+    },
+    {
+      "key": "search:tuning_node-005",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:tuning_node-005",
+      "error": "nonempty reason required"
+    },
+    {
+      "key": "search:architecture_node-004",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:architecture_node-004",
+      "error": "nonempty reason required"
+    },
+    {
+      "key": "search:tuning_node-004",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:tuning_node-004",
+      "error": "nonempty reason required"
+    },
+    {
+      "key": "search:architecture_node-002",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:architecture_node-002",
+      "error": "nonempty reason required"
+    },
+    {
+      "key": "search:tuning_node-002",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:tuning_node-002",
+      "error": "nonempty reason required"
+    }
+  ]
+}

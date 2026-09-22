@@ -1,0 +1,7 @@
+{
+  "queries": [
+    "Exact internal trial outcome",
+    "host_scored_candidate",
+    "failed_candidate"
+  ]
+}

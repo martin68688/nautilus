@@ -1,0 +1,13 @@
+{
+  "run_id": "plant-r1-20260920-repair-b1",
+  "data_manifest_sha256": "a2209c362fae1f7ea84ecda99d977ba377984fa84d263e1e82b125cd6a5055ca",
+  "expected_current_manifest_sha256": "a2209c362fae1f7ea84ecda99d977ba377984fa84d263e1e82b125cd6a5055ca",
+  "manifest_matches": true,
+  "metric": "host_macro_f1",
+  "budget_seconds": 7200,
+  "best_search_macro_f1": 0.9576681990693282,
+  "best_attempt": "plant-r1-20260920-repair-b1-005",
+  "attempt_count": 8,
+  "valid_host_recomputed_count": 7,
+  "failed_count": 1
+}\n

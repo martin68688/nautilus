@@ -1,0 +1,73 @@
+{
+  "1": {
+    "round": 1,
+    "nodes": 14,
+    "certified": 2,
+    "inner_trials": 11,
+    "final_search": 0.44389385340454646,
+    "final_tune": 0.4019428569302063,
+    "elapsed_minutes": 93.73871477766662,
+    "slots": 23,
+    "categories": [
+      1,
+      6,
+      4
+    ]
+  },
+  "2": {
+    "round": 2,
+    "nodes": 2,
+    "certified": 2,
+    "inner_trials": 3,
+    "final_search": 0.4225249059889315,
+    "final_tune": 0.35518281388720324,
+    "elapsed_minutes": 107.67611382896624,
+    "slots": 3,
+    "categories": [
+      1,
+      1,
+      1
+    ]
+  },
+  "3": {
+    "round": 3,
+    "nodes": 11,
+    "certified": 10,
+    "inner_trials": 41,
+    "final_search": 0.06677362127695761,
+    "final_tune": 0.0009344379861389044,
+    "elapsed_minutes": 114.20583967671652,
+    "slots": 42,
+    "categories": [
+      1,
+      22,
+      18
+    ]
+  },
+  "5": {
+    "round": 5,
+    "nodes": 7,
+    "certified": 3,
+    "inner_trials": 11,
+    "final_search": 0.0426361616275364,
+    "final_tune": 0.018212824147950467,
+    "elapsed_minutes": 119.84119182602817,
+    "slots": 15,
+    "categories": [
+      1,
+      7,
+      3
+    ],
+    "run_id": "20260914_060444_leaf-fresh-cpa-luna-low-2h-seed0",
+    "stop_reason": "model_service_unavailable"
+  },
+  "6": {
+    "round": 6,
+    "nodes": 7,
+    "certified": 5,
+    "final_search": 0.035167256372196344,
+    "elapsed_minutes": 118.03540331419015,
+    "run_id": "20260914_190748_leaf-fresh-cpa-luna-low-2h-seed0",
+    "stop_reason": "model_service_unavailable"
+  }
+}

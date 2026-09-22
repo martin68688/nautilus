@@ -1,0 +1,28 @@
+{
+  "provider_generated": true,
+  "sandbox_negative_tests": true,
+  "checkpoint_fresh_reload": true,
+  "host_recomputed": true,
+  "gpu_identity_verified": true,
+  "memory_source_audit": true,
+  "timeout_and_resume": true,
+  "same_dependencies": true,
+  "input_manifest_verified": true,
+  "contract_sha256": "9e9ea8354460133a39c9822cc4a7ababa7d1241377bbf14110da5ccd02d08140",
+  "runtime_sha256": "8f0609fa94b8aaa827b2fa6ad41b3aea0fc5ad69e8ef107a904badf4ee51e762",
+  "memory_specs_sha256": "8a4c85507745fb8dc825e5cbe054876bb7a1a56986d54f1a689fa464d432e5be",
+  "approved_round": 2,
+  "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+  "engineering_scores_excluded_from_memory": true,
+  "artifacts": {
+    "/workspace/autoresearch-leaf-20260918/terra-r1memory-amendment-probe-001/AGENT_PROBE.json": "c3f695c60443871c8012dd0ac9911fc1d7cbdf634d294feb94b5a2e89c1fa3d8",
+    "/workspace/autoresearch-leaf-20260918/terra-r1memory-amendment-probe-001/HOST.json": "72a5e3eef13fcab5bed52ef099b53caf7e7ecc75e67493cc73ace81b57f4ce9b",
+    "/workspace/autoresearch-leaf-20260918/terra-r1memory-amendment-probe-001/MEMORY_DECISIONS.json": "041f7805229eb1fd4feaccbbb5939f8c569933f608d1718aa9c7e01ae7c6c09b",
+    "/workspace/autoresearch-leaf-20260918/engineering-smoke-001/HOST.json": "c15e7ef27c40ff9a79509f07011b35d54852163adba3fb33ed696cd9f67e30d1",
+    "/workspace/autoresearch-leaf-20260918/live-operations-001/OPERATIONS.json": "9c0350f2b41fd06fdd0ef5dd031b3cc1a44f0d2a0fd2df6d7b720c6fd525c8d1",
+    "/workspace/autoresearch-leaf-20260918/r1-audit-v001/r1-distillation-v001/AUDIT.json": "8d5e19dedb897af84effa8faeda18481740535e1074b576ac1be53cd06501067",
+    "/workspace/autoresearch-leaf-20260918/r1-audit-v001/r1-distillation-v001/memory/BINDING.json": "5546c1933da170742ea6fcfc2eeee6d96c30f4493bbb0617de86e3e5eb57177a",
+    "/workspace/autoresearch-leaf-20260918/AMENDMENT_V007_TESTS.json": "3fbb51192f3374d9ab6173819c789771ec872ccafd68bd888a7de2277be5b44a"
+  },
+  "limitation": "This gate proves execution and evidence transport, not causal memory benefit or arbitrary-model scientific correctness."
+}

@@ -1,0 +1,7 @@
+{
+  "apiVersion":"v1","kind":"Pod",
+  "metadata":{"name":"leaf-r1-cutoff-export-20260918","namespace":"ecepxie","labels":{"ecepxie.nrp/owner":"haoming","app.kubernetes.io/managed-by":"codex-nrp-training","transfer-id":"leaf-r1-cutoff-export-20260918"}},
+  "spec":{"restartPolicy":"Never","automountServiceAccountToken":false,"activeDeadlineSeconds":3600,
+    "containers":[{"name":"export","image":"python:3.11-slim","command":["python","-c","import time; time.sleep(3500)"],"resources":{"requests":{"cpu":"1","memory":"1Gi"},"limits":{"cpu":"1","memory":"1Gi"}},"volumeMounts":[{"name":"workspace","mountPath":"/export","readOnly":true,"subPath":"experiments/leaf-r6-nomemory-luna-3h-20260911"}]}],
+    "volumes":[{"name":"workspace","persistentVolumeClaim":{"claimName":"haoming-storage"}}]}
+}

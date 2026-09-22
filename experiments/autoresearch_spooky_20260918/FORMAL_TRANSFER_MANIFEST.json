@@ -1,0 +1,230 @@
+{
+  "created_at": "2026-09-18T22:29:28.682413+00:00",
+  "entries": [
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512174267305,
+      "path": "FREEZE.json",
+      "sha256": "f5422c0a9f82e0daba9bae3b12c36437cedcd921b7ee806748ee70a61067a514",
+      "size": 2147,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512165276901,
+      "path": "PLAN.json",
+      "sha256": "3fef2cb0f14a317cfe677945680493ad364f80cefb98258c38c97694be9626e9",
+      "size": 901,
+      "type": "file"
+    },
+    {
+      "mode": 493,
+      "mtime_ns": 1789770568636514355,
+      "path": "code",
+      "type": "directory"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512148555673,
+      "path": "code/MEMORY_SPECS.json",
+      "sha256": "a42135447b22782f1173ea1ca1e762a8376ad5dff362463ff484bbe42a385e40",
+      "size": 976,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512147984424,
+      "path": "code/README.md",
+      "sha256": "ed2a5e5626a6e54d8a524a225fcd2783f8073824b65afa8469ebfbfb974383d1",
+      "size": 3881,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512148968423,
+      "path": "code/UPSTREAM.json",
+      "sha256": "110d1f694625286ce496dc2bd84cde9d90c08359f486f1dd560fdae9fcaa3564",
+      "size": 278,
+      "type": "file"
+    },
+    {
+      "mode": 493,
+      "mtime_ns": 1789770512164899026,
+      "path": "code/aws-preflight-v1",
+      "type": "directory"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512165006859,
+      "path": "code/aws-preflight-v1/PREFLIGHT.json",
+      "sha256": "0a003dc9456fba31c07167e7d54ab79b27ff8677a4a5173075473f57ff40437b",
+      "size": 1424,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512145605135,
+      "path": "code/aws_backend.py",
+      "sha256": "1d8b01c5c79a4f5127094ec4e6efc231e2d61f27259b4a1361cbdbfdd6e0bbbf",
+      "size": 5204,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512146104176,
+      "path": "code/baseline.py",
+      "sha256": "31fac5abd052719e351d617cb5425e4ad714617d3b2ccba0d83bafd2f439712c",
+      "size": 1030,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512144924720,
+      "path": "code/harness.py",
+      "sha256": "6c7bf671d19e10d3cc5b9bca992ec0d3a9a51c6da5dc4b197d3cb31743d6e5c7",
+      "size": 15608,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512146540843,
+      "path": "code/invoke.py",
+      "sha256": "87b5e5f102641e8add9bd5c4aadbe8c1475ad41f361c24e1d14a790bb6471aa9",
+      "size": 969,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512147718716,
+      "path": "code/launch_host.py",
+      "sha256": "f338ea2f7f6b0d64825edb34e542b3c1663b20b95d4b278bead2b9429b5cc42c",
+      "size": 1225,
+      "type": "file"
+    },
+    {
+      "mode": 493,
+      "mtime_ns": 1789768754365289238,
+      "path": "code/memory",
+      "type": "directory"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789337101203463875,
+      "path": "code/memory/inner_memory.json",
+      "sha256": "7377370f216b14e0639c6fac4768fdb5c73851d8940364b0076c7b54a991a770",
+      "size": 911084,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789337101199152317,
+      "path": "code/memory/search_memory.json",
+      "sha256": "f21ad125d03264c2ff86ae9e0b810e025ee71da6385001f7442d727071e4ada4",
+      "size": 566196,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512147104259,
+      "path": "code/memory_bridge.py",
+      "sha256": "201e472838a4967d2bc4cd8f8b1016c88f7cb3929b44bc0b5f6b5dc65676e40c",
+      "size": 3809,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789770512147429341,
+      "path": "code/run_pair.py",
+      "sha256": "b44c931c02be99a3bd2ca64f8090898d68318b354d544b90fe650dd5eff556fd",
+      "size": 1605,
+      "type": "file"
+    },
+    {
+      "mode": 493,
+      "mtime_ns": 1789429291962225140,
+      "path": "data",
+      "type": "directory"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789429291754183687,
+      "path": "data/fit.csv",
+      "sha256": "0dcd68612834a86a0a68bc4cf0de0c6f3e8e553e7f3e83309da09bd3b1f908a6",
+      "size": 2301087,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789429286421918053,
+      "path": "data/manifest.json",
+      "sha256": "122a96c69a9204a538a5d449d8e60fb295451f2388d9f0a31a5e91b5b14c9255",
+      "size": 1337,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789429288869568474,
+      "path": "data/sample_submission.csv",
+      "sha256": "6a41a8de8fcebdb3b96e9f8b899dbf26d1d40181da4a3930a62cb4d2071d77a6",
+      "size": 127285,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789429290631623499,
+      "path": "data/search.csv",
+      "sha256": "04f7c4d77225ed6e908e90cd4faae9db9260d64524c5f333912055fe0f313a49",
+      "size": 283672,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789429291014774119,
+      "path": "data/test.csv",
+      "sha256": "3f68bfa593154a031ee549899f150ccdf2e7a5ed88083e4d9c3ea2fe2cd3dfd5",
+      "size": 318476,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789429291961788432,
+      "path": "data/train.csv",
+      "sha256": "0dcd68612834a86a0a68bc4cf0de0c6f3e8e553e7f3e83309da09bd3b1f908a6",
+      "size": 2301087,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789429290703695730,
+      "path": "data/tune.csv",
+      "sha256": "2524316d27df62367ad859fe28f27e904152480a566668c24a99913881d324d9",
+      "size": 290558,
+      "type": "file"
+    },
+    {
+      "mode": 493,
+      "mtime_ns": 1789769593686667592,
+      "path": "host-labels",
+      "type": "directory"
+    },
+    {
+      "mode": 384,
+      "mtime_ns": 1789769593688136799,
+      "path": "host-labels/search.csv",
+      "sha256": "3f7e6d00fbd1ce7964464960fb8214eb5702e562da1f7faf562721597396e1d6",
+      "size": 290731,
+      "type": "file"
+    }
+  ],
+  "excludes": [],
+  "hash_algorithm": "sha256",
+  "root_name": "formal-input-v1",
+  "schema": "aws_nrp_transfer_manifest_v1",
+  "totals": {
+    "bytes": 7430570,
+    "directories": 5,
+    "entries": 28,
+    "files": 23,
+    "symlinks": 0
+  }
+}

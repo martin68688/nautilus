@@ -1,0 +1,26 @@
+{
+  "spooky_search": {
+    "path": "/Users/haoming/Downloads/nautilus-exp-end2end/experiments/spooky_round5_cpa_terra_2h_retry2_20260914/memory/search_memory.json",
+    "sha256": "f21ad125d03264c2ff86ae9e0b810e025ee71da6385001f7442d727071e4ada4",
+    "cards": 55,
+    "schema": "mlevolve_search_experience_v1",
+    "data_manifest_sha256": "122a96c69a9204a538a5d449d8e60fb295451f2388d9f0a31a5e91b5b14c9255",
+    "granularities": [
+      "architecture",
+      "debug",
+      "tuning"
+    ]
+  },
+  "spooky_inner": {
+    "path": "/Users/haoming/Downloads/nautilus-exp-end2end/experiments/spooky_round5_cpa_terra_2h_retry2_20260914/memory/inner_memory.json",
+    "sha256": "7377370f216b14e0639c6fac4768fdb5c73851d8940364b0076c7b54a991a770",
+    "cards": 170,
+    "schema": "inner_tuning_memory_v1",
+    "data_manifest_sha256": "122a96c69a9204a538a5d449d8e60fb295451f2388d9f0a31a5e91b5b14c9255",
+    "granularities": [
+      "architecture",
+      "debug",
+      "tuning"
+    ]
+  }
+}

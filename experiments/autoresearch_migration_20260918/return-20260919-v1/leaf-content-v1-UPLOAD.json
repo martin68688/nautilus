@@ -1,0 +1,9 @@
+{
+  "status": "archive_verified",
+  "path": "/workspace/.transfer-staging/autoresearch-return-20260919-v1/leaf-content-v1/archive",
+  "sha256": "f1435498884f0a8c413bd61cee447acef5a35d6e7e0180b2030021cc23b1783d",
+  "bytes": 661544412,
+  "local_path": "/Users/haoming/Downloads/nautilus-exp-end2end/experiments/autoresearch_leaf_20260918/lifecycle-return-v001/transport/leaf-complete-except-r2.tar.gz",
+  "pod_uid": "d8f88660-c30b-4dc4-ba74-7378a46423e0",
+  "created_unix": 1789792317.814701
+}

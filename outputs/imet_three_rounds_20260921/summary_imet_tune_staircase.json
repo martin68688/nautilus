@@ -1,0 +1,43 @@
+{
+  "figure": "iMet three rounds, staircase over internal tune nodes",
+  "task_id": "imet-2020-fgvc7",
+  "metric": "internal tune micro-F1 (higher is better); NOT Host-recomputed",
+  "total_tune_nodes": 52,
+  "epoch_time_is_interpolated": true,
+  "r1_monitor_key_note": "R1 per-epoch values use val_micro_f1_at_0.15 (fixed threshold 0.15); its calibration nodes carry the comparable score.",
+  "rounds": [
+    {
+      "round": 1,
+      "label": "R1（无记忆）",
+      "elapsed_minutes": 119.50612707136703,
+      "tune_nodes": 14,
+      "epoch_nodes": 12,
+      "calibration_nodes": 2,
+      "failed_candidates": 1,
+      "best_tune_micro_f1": 0.3882310785523749,
+      "best_at_minutes": 89.25024447694983
+    },
+    {
+      "round": 2,
+      "label": "R2（仅 R1 记忆）",
+      "elapsed_minutes": 119.89502741025014,
+      "tune_nodes": 18,
+      "epoch_nodes": 18,
+      "calibration_nodes": 0,
+      "failed_candidates": 1,
+      "best_tune_micro_f1": 0.43860364610280916,
+      "best_at_minutes": 79.5547038163335
+    },
+    {
+      "round": 3,
+      "label": "R3（累计记忆）",
+      "elapsed_minutes": 119.5063103973332,
+      "tune_nodes": 20,
+      "epoch_nodes": 20,
+      "calibration_nodes": 0,
+      "failed_candidates": 0,
+      "best_tune_micro_f1": 0.45849145500492566,
+      "best_at_minutes": 65.27304995428374
+    }
+  ]
+}

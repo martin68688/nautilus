@@ -1,0 +1,2677 @@
+[
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-002",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-002/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 0,
+        "seed": 0
+      },
+      "fit_fold_holdout_logloss": 0.40855846246589256,
+      "elapsed_seconds": 15.399341821670532
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-002",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-002/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 1,
+        "seed": 100
+      },
+      "fit_fold_holdout_logloss": 0.38269320577999116,
+      "elapsed_seconds": 31.153030157089233
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-002",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-002/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 2,
+        "seed": 200
+      },
+      "fit_fold_holdout_logloss": 0.42334184446092693,
+      "elapsed_seconds": 47.04235649108887
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-004/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 0,
+        "seed": 0,
+        "members": 4
+      },
+      "elapsed_seconds": 20.03980851173401
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-004/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 1,
+        "seed": 100,
+        "members": 4
+      },
+      "elapsed_seconds": 40.27774786949158
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-004/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 2,
+        "seed": 200,
+        "members": 4
+      },
+      "elapsed_seconds": 60.57373857498169
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-005/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 0,
+        "seed": 0,
+        "members": 5
+      },
+      "elapsed_seconds": 22.5353741645813
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-005/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 1,
+        "seed": 100,
+        "members": 5
+      },
+      "elapsed_seconds": 45.566317081451416
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-005/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 2,
+        "seed": 200,
+        "members": 5
+      },
+      "elapsed_seconds": 68.83890724182129
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-006/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 0,
+        "seed": 0,
+        "members": 5
+      },
+      "elapsed_seconds": 22.63234519958496
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-006/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 1,
+        "seed": 100,
+        "members": 5
+      },
+      "elapsed_seconds": 45.52042484283447
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-006/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 2,
+        "seed": 200,
+        "members": 5
+      },
+      "elapsed_seconds": 68.97149705886841
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-007",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-007/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 0,
+        "seed": 0,
+        "members": 5
+      },
+      "elapsed_seconds": 22.67267084121704
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-007",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-007/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 1,
+        "seed": 100,
+        "members": 5
+      },
+      "elapsed_seconds": 45.398507833480835
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-007",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-007/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 2,
+        "seed": 200,
+        "members": 5
+      },
+      "elapsed_seconds": 68.55302858352661
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-008",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-008/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 0,
+        "seed": 0,
+        "members": 5
+      },
+      "elapsed_seconds": 23.704915523529053
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-008",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-008/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 1,
+        "seed": 100,
+        "members": 5
+      },
+      "elapsed_seconds": 47.633090019226074
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-008",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-008/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 2,
+        "seed": 200,
+        "members": 5
+      },
+      "elapsed_seconds": 71.63414454460144
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-009",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-009/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 0,
+        "seed": 0,
+        "members": 6
+      },
+      "elapsed_seconds": 23.794931888580322
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-009",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-009/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 1,
+        "seed": 100,
+        "members": 6
+      },
+      "elapsed_seconds": 47.76389265060425
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-009",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-009/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 2,
+        "seed": 200,
+        "members": 6
+      },
+      "elapsed_seconds": 71.73707270622253
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-010",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-010/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 0,
+        "seed": 0,
+        "members": 7
+      },
+      "elapsed_seconds": 36.03730487823486
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-010",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-010/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 1,
+        "seed": 100,
+        "members": 7
+      },
+      "elapsed_seconds": 72.36812114715576
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-010",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-010/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 2,
+        "seed": 200,
+        "members": 7
+      },
+      "elapsed_seconds": 108.28604578971863
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-012",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-012/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 0,
+        "seed": 0,
+        "members": 6
+      },
+      "elapsed_seconds": 23.595860719680786
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-012",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-012/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 1,
+        "seed": 100,
+        "members": 6
+      },
+      "elapsed_seconds": 47.678563356399536
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-012",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-012/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 2,
+        "seed": 200,
+        "members": 6
+      },
+      "elapsed_seconds": 71.43030738830566
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-013",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-013/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 0,
+        "seed": 0,
+        "members": 6,
+        "folds": 5
+      },
+      "elapsed_seconds": 25.954745292663574
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-013",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-013/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 1,
+        "seed": 100,
+        "members": 6,
+        "folds": 5
+      },
+      "elapsed_seconds": 51.880966901779175
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-013",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-013/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 2,
+        "seed": 200,
+        "members": 6,
+        "folds": 5
+      },
+      "elapsed_seconds": 77.66121578216553
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-013",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-013/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 3,
+        "seed": 300,
+        "members": 6,
+        "folds": 5
+      },
+      "elapsed_seconds": 103.83837461471558
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-013",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-013/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "fold_oof_base",
+        "fold": 4,
+        "seed": 400,
+        "members": 6,
+        "folds": 5
+      },
+      "elapsed_seconds": 129.51186656951904
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-014",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-014/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "oof",
+        "fold": 0,
+        "members": 6
+      },
+      "elapsed_seconds": 23.657325267791748,
+      "fold_seconds": 23.609156370162964
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-014",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-014/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "oof",
+        "fold": 1,
+        "members": 6
+      },
+      "elapsed_seconds": 47.59071373939514,
+      "fold_seconds": 23.933178901672363
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R2",
+    "attempt": "attempt-014",
+    "source": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-014/actual_parameters.json",
+    "event": {
+      "setting": {
+        "stage": "oof",
+        "fold": 2,
+        "members": 6
+      },
+      "elapsed_seconds": 71.46690607070923,
+      "fold_seconds": 23.87597370147705
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 0,
+      "rows": 4699,
+      "elapsed_seconds": 18.39029049873352
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 1,
+      "rows": 4699,
+      "elapsed_seconds": 36.86374807357788
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 2,
+      "rows": 4698,
+      "elapsed_seconds": 55.04301619529724
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 0.25,
+      "temperature": 0.9,
+      "logloss": 0.43199429989658905,
+      "elapsed_seconds": 56.274566650390625
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 0.25,
+      "temperature": 0.95,
+      "logloss": 0.43027964784400263,
+      "elapsed_seconds": 56.32465481758118
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 0.25,
+      "temperature": 1.0,
+      "logloss": 0.42978755861465373,
+      "elapsed_seconds": 56.3475284576416
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 0.25,
+      "temperature": 1.05,
+      "logloss": 0.43032320340578334,
+      "elapsed_seconds": 56.37000346183777
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 0.5,
+      "temperature": 0.9,
+      "logloss": 0.4320459497540481,
+      "elapsed_seconds": 56.802191495895386
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 0.5,
+      "temperature": 0.95,
+      "logloss": 0.43030143251620884,
+      "elapsed_seconds": 56.828479528427124
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 0.5,
+      "temperature": 1.0,
+      "logloss": 0.429781425767781,
+      "elapsed_seconds": 56.85519766807556
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 0.5,
+      "temperature": 1.05,
+      "logloss": 0.43029091520282287,
+      "elapsed_seconds": 56.87826681137085
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 1.0,
+      "temperature": 0.9,
+      "logloss": 0.43206138443459063,
+      "elapsed_seconds": 57.26144981384277
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 1.0,
+      "temperature": 0.95,
+      "logloss": 0.4303079811088957,
+      "elapsed_seconds": 57.29739570617676
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 1.0,
+      "temperature": 1.0,
+      "logloss": 0.42977967886005775,
+      "elapsed_seconds": 57.32343578338623
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 1.0,
+      "temperature": 1.05,
+      "logloss": 0.43028140786531915,
+      "elapsed_seconds": 57.34865713119507
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 2.0,
+      "temperature": 0.9,
+      "logloss": 0.4320810904926436,
+      "elapsed_seconds": 57.6544144153595
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 2.0,
+      "temperature": 0.95,
+      "logloss": 0.4303173775523464,
+      "elapsed_seconds": 57.69027781486511
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 2.0,
+      "temperature": 1.0,
+      "logloss": 0.42977942709642414,
+      "elapsed_seconds": 57.71730971336365
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 2.0,
+      "temperature": 1.05,
+      "logloss": 0.4302721083208729,
+      "elapsed_seconds": 57.740193367004395
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 4.0,
+      "temperature": 0.9,
+      "logloss": 0.4320941215318179,
+      "elapsed_seconds": 58.12439036369324
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 4.0,
+      "temperature": 0.95,
+      "logloss": 0.43032323069917455,
+      "elapsed_seconds": 58.15128445625305
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 4.0,
+      "temperature": 1.0,
+      "logloss": 0.4297785969349783,
+      "elapsed_seconds": 58.18974733352661
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 4.0,
+      "temperature": 1.05,
+      "logloss": 0.4302650395668964,
+      "elapsed_seconds": 58.21218991279602
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 8.0,
+      "temperature": 0.9,
+      "logloss": 0.43210380116705616,
+      "elapsed_seconds": 58.61215567588806
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 8.0,
+      "temperature": 0.95,
+      "logloss": 0.43032779128281134,
+      "elapsed_seconds": 58.637306928634644
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 8.0,
+      "temperature": 1.0,
+      "logloss": 0.42977837973244215,
+      "elapsed_seconds": 58.66424632072449
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-004",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 8.0,
+      "temperature": 1.05,
+      "logloss": 0.4302603519741203,
+      "elapsed_seconds": 58.69763708114624
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 0,
+      "rows": 4699,
+      "elapsed_seconds": 31.629379272460938
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 1,
+      "rows": 4699,
+      "elapsed_seconds": 65.74778962135315
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 2,
+      "rows": 4698,
+      "elapsed_seconds": 93.67351865768433
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 0.5,
+      "temperature": 0.9,
+      "logloss": 0.43166105694344037,
+      "elapsed_seconds": 94.18744349479675
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 0.5,
+      "temperature": 0.95,
+      "logloss": 0.4299280262365674,
+      "elapsed_seconds": 94.21934175491333
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 0.5,
+      "temperature": 1.0,
+      "logloss": 0.4294181402020196,
+      "elapsed_seconds": 94.24007081985474
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 0.5,
+      "temperature": 1.05,
+      "logloss": 0.42993659849160193,
+      "elapsed_seconds": 94.25943779945374
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 0.5,
+      "temperature": 1.1,
+      "logloss": 0.43132261089999596,
+      "elapsed_seconds": 94.27488446235657
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 1.0,
+      "temperature": 0.9,
+      "logloss": 0.4316805164753949,
+      "elapsed_seconds": 94.72261476516724
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 1.0,
+      "temperature": 0.95,
+      "logloss": 0.42992959948844783,
+      "elapsed_seconds": 94.74321722984314
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 1.0,
+      "temperature": 1.0,
+      "logloss": 0.4294030234645078,
+      "elapsed_seconds": 94.76390719413757
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 1.0,
+      "temperature": 1.05,
+      "logloss": 0.42990587289022103,
+      "elapsed_seconds": 94.78385019302368
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 1.0,
+      "temperature": 1.1,
+      "logloss": 0.4312772627662957,
+      "elapsed_seconds": 94.79936289787292
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 2.0,
+      "temperature": 0.9,
+      "logloss": 0.4316909409280653,
+      "elapsed_seconds": 95.2572431564331
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 2.0,
+      "temperature": 0.95,
+      "logloss": 0.42993259666274397,
+      "elapsed_seconds": 95.27791833877563
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 2.0,
+      "temperature": 1.0,
+      "logloss": 0.42939904375536014,
+      "elapsed_seconds": 95.2985200881958
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 2.0,
+      "temperature": 1.05,
+      "logloss": 0.4298953234174351,
+      "elapsed_seconds": 95.33202648162842
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 2.0,
+      "temperature": 1.1,
+      "logloss": 0.4312605153514062,
+      "elapsed_seconds": 95.34654641151428
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 4.0,
+      "temperature": 0.9,
+      "logloss": 0.4317060088360269,
+      "elapsed_seconds": 95.83942031860352
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 4.0,
+      "temperature": 0.95,
+      "logloss": 0.4299384261629315,
+      "elapsed_seconds": 95.86007022857666
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 4.0,
+      "temperature": 1.0,
+      "logloss": 0.42939646796905706,
+      "elapsed_seconds": 95.88067364692688
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 4.0,
+      "temperature": 1.05,
+      "logloss": 0.42988507636415935,
+      "elapsed_seconds": 95.90044665336609
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 4.0,
+      "temperature": 1.1,
+      "logloss": 0.43124324840008316,
+      "elapsed_seconds": 95.92301821708679
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 8.0,
+      "temperature": 0.9,
+      "logloss": 0.43172313790878775,
+      "elapsed_seconds": 96.35616207122803
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 8.0,
+      "temperature": 0.95,
+      "logloss": 0.42994707208496025,
+      "elapsed_seconds": 96.37672686576843
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 8.0,
+      "temperature": 1.0,
+      "logloss": 0.42939704846314203,
+      "elapsed_seconds": 96.397296667099
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 8.0,
+      "temperature": 1.05,
+      "logloss": 0.42987798278162276,
+      "elapsed_seconds": 96.42755079269409
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-005",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta_temperature",
+      "meta_C": 8.0,
+      "temperature": 1.1,
+      "logloss": 0.4312288514592264,
+      "elapsed_seconds": 96.4420096874237
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 0,
+      "elapsed_seconds": 26.150496006011963
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 1,
+      "elapsed_seconds": 52.169190406799316
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 2,
+      "elapsed_seconds": 78.0309841632843
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 2.0,
+      "temperature": 0.95,
+      "logloss": 0.40156163946948054,
+      "elapsed_seconds": 78.59104061126709
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 2.0,
+      "temperature": 1.0,
+      "logloss": 0.40106398927411757,
+      "elapsed_seconds": 78.616690158844
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 2.0,
+      "temperature": 1.05,
+      "logloss": 0.4015344101816611,
+      "elapsed_seconds": 78.64166522026062
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 4.0,
+      "temperature": 0.95,
+      "logloss": 0.40156808274139244,
+      "elapsed_seconds": 79.59571552276611
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 4.0,
+      "temperature": 1.0,
+      "logloss": 0.40106643306252787,
+      "elapsed_seconds": 79.63165664672852
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 4.0,
+      "temperature": 1.05,
+      "logloss": 0.4015334763170604,
+      "elapsed_seconds": 79.66504955291748
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 8.0,
+      "temperature": 0.95,
+      "logloss": 0.401566152808851,
+      "elapsed_seconds": 80.91105222702026
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 8.0,
+      "temperature": 1.0,
+      "logloss": 0.4010658382008708,
+      "elapsed_seconds": 80.96224665641785
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-006",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/actual_parameters.json",
+    "event": {
+      "stage": "oof_meta",
+      "C": 8.0,
+      "temperature": 1.05,
+      "logloss": 0.40153394722546865,
+      "elapsed_seconds": 80.98330068588257
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-010",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-010/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 0,
+      "elapsed_seconds": 26.44170618057251
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-010",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-010/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 1,
+      "elapsed_seconds": 53.03289484977722
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-010",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-010/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 2,
+      "elapsed_seconds": 78.96074414253235
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-012",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-012/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 0,
+      "elapsed_seconds": 25.98494791984558
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-012",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-012/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 1,
+      "elapsed_seconds": 52.026145219802856
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-012",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-012/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 2,
+      "elapsed_seconds": 77.86373829841614
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-013",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-013/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 0,
+      "elapsed_seconds": 36.162928104400635
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-013",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-013/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 1,
+      "elapsed_seconds": 73.55999636650085
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-013",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-013/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 2,
+      "elapsed_seconds": 110.60179018974304
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-019",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-019/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 0,
+      "elapsed_seconds": 26.092008352279663
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-019",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-019/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 1,
+      "elapsed_seconds": 52.071422815322876
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-019",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-019/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 2,
+      "elapsed_seconds": 77.46798849105835
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-020",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-020/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 0,
+      "folds": 4,
+      "elapsed_seconds": 26.528082370758057
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-020",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-020/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 1,
+      "folds": 4,
+      "elapsed_seconds": 54.1826229095459
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-020",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-020/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 2,
+      "folds": 4,
+      "elapsed_seconds": 80.65496969223022
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-020",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-020/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 3,
+      "folds": 4,
+      "elapsed_seconds": 107.45512533187866
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-021",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-021/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 0,
+      "folds": 4,
+      "elapsed_seconds": 47.161113262176514
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-021",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-021/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 1,
+      "folds": 4,
+      "elapsed_seconds": 97.6070830821991
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-021",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-021/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 2,
+      "folds": 4,
+      "elapsed_seconds": 147.15472745895386
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Spooky",
+    "round": "R3",
+    "attempt": "attempt-021",
+    "source": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-021/actual_parameters.json",
+    "event": {
+      "stage": "oof_fold",
+      "fold": 3,
+      "folds": 4,
+      "elapsed_seconds": 196.13954663276672
+    },
+    "reason": "not explicit tune: fold/training score or unscored event"
+  },
+  {
+    "task": "Leaf",
+    "round": "R2",
+    "attempt": "attempt-00004",
+    "event": {
+      "elapsed_seconds": 83.24235789600016,
+      "actual_parameters": {
+        "C": 3.0,
+        "kernel": "rbf",
+        "gamma": "scale",
+        "probability": true,
+        "random_state": 0,
+        "cache_size": 1200,
+        "n_support": 682,
+        "n_fit": 693,
+        "n_features": 192
+      },
+      "observations": {
+        "tune_logloss": 2.4766537512865194
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R2",
+    "attempt": "attempt-00005",
+    "event": {
+      "elapsed_seconds": 78.237236209,
+      "actual_parameters": {
+        "estimator": "sklearn.svm.SVC",
+        "ensemble_C": [
+          1.0,
+          3.0,
+          10.0
+        ],
+        "kernel": "rbf",
+        "gamma": "scale",
+        "probability": true,
+        "random_state": 0,
+        "cache_size": 900,
+        "n_models": 3,
+        "n_fit": 693,
+        "n_features": 192,
+        "support_vectors_total": 2050
+      },
+      "observations": {
+        "tune_logloss": 2.4767887536729294
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R2",
+    "attempt": "attempt-00006",
+    "event": {
+      "elapsed_seconds": 89.69084135699995,
+      "actual_parameters": {
+        "estimator": "sklearn.svm.SVC",
+        "fitted_estimator_params": [
+          {
+            "C": 1.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": "scale",
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 3.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": "scale",
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 10.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": "scale",
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          }
+        ],
+        "ensemble_C": [
+          1.0,
+          3.0,
+          10.0
+        ],
+        "n_models": 3,
+        "n_fit": 693,
+        "n_features": 192,
+        "support_vectors_total": 2050,
+        "temperature_grid": [
+          0.5,
+          0.67,
+          0.8,
+          1.0,
+          1.25,
+          1.5,
+          2.0
+        ],
+        "selected_temperature": 0.5
+      },
+      "observations": {
+        "tune_logloss": 0.9845842417629275
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R2",
+    "attempt": "attempt-00007",
+    "event": {
+      "elapsed_seconds": 141.256438377,
+      "actual_parameters": {
+        "estimator": "sklearn.svm.SVC",
+        "fitted_estimator_params": [
+          {
+            "C": 1.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": "scale",
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 3.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": "scale",
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 10.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": "scale",
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 30.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": "scale",
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          }
+        ],
+        "ensemble_C": [
+          1.0,
+          3.0,
+          10.0,
+          30.0
+        ],
+        "n_models": 4,
+        "n_fit": 693,
+        "n_features": 192,
+        "support_vectors_total": 2732,
+        "temperature_grid": [
+          0.5,
+          0.6,
+          0.67,
+          0.75,
+          0.85,
+          1.0,
+          1.15,
+          1.25,
+          1.5,
+          1.75,
+          2.0
+        ],
+        "selected_temperature": 0.5
+      },
+      "observations": {
+        "tune_logloss": 0.9845335021550922
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R2",
+    "attempt": "attempt-00008",
+    "event": {
+      "elapsed_seconds": 98.15837865899994,
+      "actual_parameters": {
+        "estimator": "sklearn.svm.SVC",
+        "fitted_estimator_params": [
+          {
+            "C": 3.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": 0.0026041666666666665,
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 3.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": 0.005208333333333333,
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 3.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": 0.010416666666666666,
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 10.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": 0.0026041666666666665,
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 10.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": 0.005208333333333333,
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 10.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": 0.010416666666666666,
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 30.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": 0.0026041666666666665,
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 30.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": 0.005208333333333333,
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          },
+          {
+            "C": 30.0,
+            "break_ties": false,
+            "cache_size": 900,
+            "class_weight": null,
+            "coef0": 0.0,
+            "decision_function_shape": "ovr",
+            "degree": 3,
+            "gamma": 0.010416666666666666,
+            "kernel": "rbf",
+            "max_iter": -1,
+            "probability": true,
+            "random_state": 0,
+            "shrinking": true,
+            "tol": 0.001,
+            "verbose": false
+          }
+        ],
+        "model_configs": [
+          {
+            "C": 3.0,
+            "gamma": 0.0026041666666666665,
+            "gamma_multiplier": 0.5
+          },
+          {
+            "C": 3.0,
+            "gamma": 0.005208333333333333,
+            "gamma_multiplier": 1.0
+          },
+          {
+            "C": 3.0,
+            "gamma": 0.010416666666666666,
+            "gamma_multiplier": 2.0
+          },
+          {
+            "C": 10.0,
+            "gamma": 0.0026041666666666665,
+            "gamma_multiplier": 0.5
+          },
+          {
+            "C": 10.0,
+            "gamma": 0.005208333333333333,
+            "gamma_multiplier": 1.0
+          },
+          {
+            "C": 10.0,
+            "gamma": 0.010416666666666666,
+            "gamma_multiplier": 2.0
+          },
+          {
+            "C": 30.0,
+            "gamma": 0.0026041666666666665,
+            "gamma_multiplier": 0.5
+          },
+          {
+            "C": 30.0,
+            "gamma": 0.005208333333333333,
+            "gamma_multiplier": 1.0
+          },
+          {
+            "C": 30.0,
+            "gamma": 0.010416666666666666,
+            "gamma_multiplier": 2.0
+          }
+        ],
+        "n_models": 9,
+        "n_fit": 693,
+        "n_features": 192,
+        "support_vectors_total": 6148,
+        "temperature_grid": [
+          0.5,
+          0.6,
+          0.67,
+          0.75,
+          0.85,
+          1.0,
+          1.15,
+          1.25,
+          1.5,
+          1.75,
+          2.0
+        ],
+        "selected_temperature": 0.5
+      },
+      "observations": {
+        "tune_logloss": 0.9662138731897706
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R2",
+    "attempt": "attempt-00010",
+    "event": {
+      "elapsed_seconds": 769.2880783489995,
+      "actual_parameters": {
+        "estimator": "catboost.CatBoostClassifier",
+        "fitted_estimator_params": {
+          "iterations": 2400,
+          "learning_rate": 0.035,
+          "depth": 6,
+          "l2_leaf_reg": 8.0,
+          "loss_function": "MultiClass",
+          "border_count": 128,
+          "thread_count": 4,
+          "random_seed": 0,
+          "verbose": false,
+          "random_strength": 0.7,
+          "bagging_temperature": 0.5,
+          "allow_writing_files": false,
+          "bootstrap_type": "Bayesian"
+        },
+        "tree_count": 2400,
+        "n_fit": 693,
+        "n_features": 192,
+        "thread_count": 4,
+        "temperature_grid": [
+          0.5,
+          0.6,
+          0.67,
+          0.75,
+          0.85,
+          0.95,
+          1.0,
+          1.1,
+          1.25,
+          1.5,
+          1.75,
+          2.0
+        ],
+        "selected_temperature": 0.5,
+        "executed_stages": 1
+      },
+      "observations": {
+        "tune_logloss": 0.04377202170422144
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R2",
+    "attempt": "attempt-00017",
+    "event": {
+      "elapsed_seconds": 2119.515672552,
+      "actual_parameters": {
+        "estimator": "three_seed_catboost_probability_ensemble",
+        "fitted_estimator_params": [
+          {
+            "iterations": 2400,
+            "learning_rate": 0.035,
+            "depth": 6,
+            "l2_leaf_reg": 8.0,
+            "loss_function": "MultiClass",
+            "border_count": 128,
+            "thread_count": 4,
+            "random_seed": 0,
+            "verbose": false,
+            "random_strength": 0.7,
+            "bagging_temperature": 0.5,
+            "allow_writing_files": false,
+            "bootstrap_type": "Bayesian"
+          },
+          {
+            "iterations": 2400,
+            "learning_rate": 0.035,
+            "depth": 6,
+            "l2_leaf_reg": 8.0,
+            "loss_function": "MultiClass",
+            "border_count": 128,
+            "thread_count": 4,
+            "random_seed": 17,
+            "verbose": false,
+            "random_strength": 0.7,
+            "bagging_temperature": 0.5,
+            "allow_writing_files": false,
+            "bootstrap_type": "Bayesian"
+          },
+          {
+            "iterations": 2400,
+            "learning_rate": 0.035,
+            "depth": 6,
+            "l2_leaf_reg": 8.0,
+            "loss_function": "MultiClass",
+            "border_count": 128,
+            "thread_count": 4,
+            "random_seed": 42,
+            "verbose": false,
+            "random_strength": 0.7,
+            "bagging_temperature": 0.5,
+            "allow_writing_files": false,
+            "bootstrap_type": "Bayesian"
+          }
+        ],
+        "tree_counts": [
+          2400,
+          2400,
+          2400
+        ],
+        "model_seeds": [
+          0,
+          17,
+          42
+        ],
+        "ensemble_weighting": "uniform_probability_mean",
+        "n_fit": 693,
+        "n_features": 192,
+        "thread_count_per_model": 4,
+        "temperature_grid": [
+          0.5,
+          0.6,
+          0.67,
+          0.75,
+          0.85,
+          0.95,
+          1.0,
+          1.1,
+          1.25,
+          1.5,
+          1.75,
+          2.0
+        ],
+        "selected_temperature": 0.5,
+        "executed_stages": 3
+      },
+      "observations": {
+        "tune_logloss": 0.04300037985428039
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R2",
+    "attempt": "attempt-00020",
+    "event": {
+      "elapsed_seconds": 1293.0428693250005,
+      "actual_parameters": {
+        "estimator": "three_seed_catboost_depth5_ensemble",
+        "fitted_estimator_params": [
+          {
+            "iterations": 2800,
+            "learning_rate": 0.03,
+            "depth": 5,
+            "l2_leaf_reg": 8.0,
+            "loss_function": "MultiClass",
+            "border_count": 128,
+            "thread_count": 4,
+            "random_seed": 0,
+            "verbose": false,
+            "random_strength": 0.7,
+            "bagging_temperature": 0.5,
+            "allow_writing_files": false,
+            "bootstrap_type": "Bayesian"
+          },
+          {
+            "iterations": 2800,
+            "learning_rate": 0.03,
+            "depth": 5,
+            "l2_leaf_reg": 8.0,
+            "loss_function": "MultiClass",
+            "border_count": 128,
+            "thread_count": 4,
+            "random_seed": 17,
+            "verbose": false,
+            "random_strength": 0.7,
+            "bagging_temperature": 0.5,
+            "allow_writing_files": false,
+            "bootstrap_type": "Bayesian"
+          },
+          {
+            "iterations": 2800,
+            "learning_rate": 0.03,
+            "depth": 5,
+            "l2_leaf_reg": 8.0,
+            "loss_function": "MultiClass",
+            "border_count": 128,
+            "thread_count": 4,
+            "random_seed": 42,
+            "verbose": false,
+            "random_strength": 0.7,
+            "bagging_temperature": 0.5,
+            "allow_writing_files": false,
+            "bootstrap_type": "Bayesian"
+          }
+        ],
+        "tree_counts": [
+          2800,
+          2800,
+          2800
+        ],
+        "model_seeds": [
+          0,
+          17,
+          42
+        ],
+        "n_fit": 693,
+        "n_features": 192,
+        "selected_temperature": 0.5,
+        "executed_stages": 3
+      },
+      "observations": {
+        "tune_logloss": 0.04596766170469033
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R3",
+    "attempt": "attempt-00001",
+    "event": {
+      "elapsed_seconds": 760.6391517619995,
+      "step": "fit_seed_0",
+      "actual_parameters": {
+        "iterations": 2400,
+        "learning_rate": 0.035,
+        "depth": 6,
+        "l2_leaf_reg": 8.0,
+        "loss_function": "MultiClass",
+        "border_count": 128,
+        "thread_count": 4,
+        "random_seed": 0,
+        "verbose": false,
+        "random_strength": 0.7,
+        "bagging_temperature": 0.5,
+        "allow_writing_files": false,
+        "bootstrap_type": "Bayesian"
+      },
+      "observations": {
+        "seed": 0,
+        "n_fit": 693
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R3",
+    "attempt": "attempt-00001",
+    "event": {
+      "elapsed_seconds": 1432.2446351199997,
+      "step": "fit_seed_17",
+      "actual_parameters": {
+        "iterations": 2400,
+        "learning_rate": 0.035,
+        "depth": 6,
+        "l2_leaf_reg": 8.0,
+        "loss_function": "MultiClass",
+        "border_count": 128,
+        "thread_count": 4,
+        "random_seed": 17,
+        "verbose": false,
+        "random_strength": 0.7,
+        "bagging_temperature": 0.5,
+        "allow_writing_files": false,
+        "bootstrap_type": "Bayesian"
+      },
+      "observations": {
+        "seed": 17,
+        "n_fit": 693
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R3",
+    "attempt": "attempt-00001",
+    "event": {
+      "elapsed_seconds": 2103.8058318519998,
+      "step": "fit_seed_42",
+      "actual_parameters": {
+        "iterations": 2400,
+        "learning_rate": 0.035,
+        "depth": 6,
+        "l2_leaf_reg": 8.0,
+        "loss_function": "MultiClass",
+        "border_count": 128,
+        "thread_count": 4,
+        "random_seed": 42,
+        "verbose": false,
+        "random_strength": 0.7,
+        "bagging_temperature": 0.5,
+        "allow_writing_files": false,
+        "bootstrap_type": "Bayesian"
+      },
+      "observations": {
+        "seed": 42,
+        "n_fit": 693
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R3",
+    "attempt": "attempt-00002",
+    "event": {
+      "elapsed_seconds": 597.5897745059992,
+      "step": "fit",
+      "actual_parameters": {
+        "iterations": 1200,
+        "learning_rate": 0.035,
+        "depth": 6,
+        "l2_leaf_reg": 8.0,
+        "loss_function": "MultiClass",
+        "border_count": 128,
+        "thread_count": 4,
+        "random_seed": 0,
+        "verbose": false,
+        "random_strength": 0.7,
+        "bagging_temperature": 0.5,
+        "allow_writing_files": false
+      },
+      "observations": {
+        "n_fit": 693,
+        "n_features": 192
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R3",
+    "attempt": "attempt-00003",
+    "event": {
+      "elapsed_seconds": 806.2809764829999,
+      "step": "fit",
+      "actual_parameters": {
+        "iterations": 2400,
+        "learning_rate": 0.035,
+        "depth": 6,
+        "l2_leaf_reg": 8.0,
+        "loss_function": "MultiClass",
+        "border_count": 128,
+        "thread_count": 4,
+        "random_seed": 0,
+        "verbose": false,
+        "random_strength": 0.7,
+        "bagging_temperature": 0.5,
+        "allow_writing_files": false
+      },
+      "observations": {
+        "n_fit": 693,
+        "n_features": 192,
+        "tree_count": 2400,
+        "elapsed_seconds": 669.4219779968262
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R3",
+    "attempt": "attempt-00004",
+    "event": {
+      "elapsed_seconds": 517.9210810229997,
+      "step": "fit",
+      "actual_parameters": {
+        "iterations": 3000,
+        "learning_rate": 0.035,
+        "depth": 5,
+        "l2_leaf_reg": 8.0,
+        "loss_function": "MultiClass",
+        "border_count": 128,
+        "thread_count": 4,
+        "random_seed": 0,
+        "verbose": false,
+        "random_strength": 0.15,
+        "bagging_temperature": 0.5,
+        "allow_writing_files": false
+      },
+      "observations": {
+        "n_fit": 693,
+        "n_features": 192,
+        "tree_count": 3000,
+        "elapsed_seconds": 417.78117537498474
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R3",
+    "attempt": "attempt-00005",
+    "event": {
+      "elapsed_seconds": 748.6089456250011,
+      "step": "fit",
+      "actual_parameters": {
+        "iterations": 2400,
+        "learning_rate": 0.035,
+        "depth": 6,
+        "l2_leaf_reg": 8.0,
+        "loss_function": "MultiClass",
+        "border_count": 128,
+        "thread_count": 4,
+        "random_seed": 0,
+        "verbose": false,
+        "random_strength": 0.15,
+        "bagging_temperature": 0.5,
+        "allow_writing_files": false
+      },
+      "observations": {
+        "n_fit": 693,
+        "n_features": 192,
+        "tree_count": 2400,
+        "elapsed_seconds": 668.0873250961304
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  },
+  {
+    "task": "Leaf",
+    "round": "R3",
+    "attempt": "attempt-00006",
+    "event": {
+      "elapsed_seconds": 605.8363078829989,
+      "step": "fit",
+      "actual_parameters": {
+        "iterations": 3000,
+        "learning_rate": 0.035,
+        "depth": 5,
+        "l2_leaf_reg": 8.0,
+        "loss_function": "MultiClass",
+        "border_count": 128,
+        "thread_count": 4,
+        "random_seed": 0,
+        "verbose": false,
+        "random_strength": 0.15,
+        "bagging_temperature": 0.5,
+        "allow_writing_files": false
+      },
+      "observations": {
+        "n_fit": 693,
+        "n_features": 192,
+        "tree_count": 3000,
+        "elapsed_seconds": 417.4675889015198
+      }
+    },
+    "reason": "unscored training or duplicate observations payload"
+  }
+]

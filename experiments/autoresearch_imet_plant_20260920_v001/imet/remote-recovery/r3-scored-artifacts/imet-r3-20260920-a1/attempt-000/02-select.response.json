@@ -1,0 +1,25 @@
+{
+  "id": "resp_0d7f6c7cb5d849ea016ab0df8ec3c487d0bf3ffdcce4fa4849",
+  "object": "chat.completion",
+  "created": 1789976467,
+  "model": "gpt-5.6-terra",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"read_ids\":[\"search:architecture_node-005\",\"search:tuning_node-005\",\"search:architecture_node-004\",\"search:tuning_node-004\",\"search:architecture_node-002\",\"search:tuning_node-002\"]}"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 8640,
+    "completion_tokens": 54,
+    "total_tokens": 8694,
+    "prompt_tokens_details": {
+      "cached_tokens": 3840
+    }
+  },
+  "service_tier": "default"
+}

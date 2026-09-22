@@ -1,0 +1,6 @@
+{
+  "reason": "user moved infrastructure to coordinator-provisioned AWS",
+  "uid": "31834a70-b9f6-4b23-9385-e9dc001efc08",
+  "phase_at_cancel": "Running",
+  "formal_runs_launched": false
+}

@@ -1,0 +1,43 @@
+{
+  "source_round": 1,
+  "source_run": "plant-r1-20260920-original-c1",
+  "source_run_id": "plant-r1-20260920-original-c1",
+  "source_rounds": [
+    "plant-r1-20260920-original-c1"
+  ],
+  "data_manifest_sha256": "a2209c362fae1f7ea84ecda99d977ba377984fa84d263e1e82b125cd6a5055ca",
+  "source_runtime_sha256": "66809ad804138b0aed09fc2cce188f1c3b6c768630f24e662497b03fa1d67b90",
+  "distillation": "conditional-trajectory-skill-v1",
+  "contains_source_code": false,
+  "contains_source_weights": false,
+  "sha256": {
+    "search": "8680f1cf6b544f90549e76976c2b0ff1fa8e21fb60a50f66bf5680949baced09",
+    "inner": "efefd4ee568628767d9b817c1fecd10a7175c66f075fae6164f2d5da7986c779"
+  },
+  "input_evidence_hashes": {
+    "control/LAUNCH.json": "2ca777cbddb479299d1f1c73ae81b5a0cc882147fec1c077ac12f58549ff5c9f",
+    "runs/plant-r1-20260920-original-c1/logs/journal.json": "8e30bce4f9987f83b6540b8dc7562112489880a1365b4e21b8e37b1eadce7226",
+    "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-001/inner_tuning/SESSION.json": "8c86485c5e97a400c86180ee43902efef7a361fec57ebad50c746a0dc4dd9119",
+    "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json": "67b1f6783355a680dd65628f84d97f70fe15adfcb029725b093ec0d5a007a8b8",
+    "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-001/VERIFIED_RESULT.json": "b96451472d0b4fe9b62bc2cebf8c13d542126d5c007a6aebee9bb6430c60e7ef",
+    "runs/plant-r1-20260920-original-c1/logs/candidate_checkpoints/node-001.py": "712e7956d4794fb1ebd72f3fbdfb66bd22f05c98bc9496ab33a8c70468c0609b",
+    "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-002/inner_tuning/SESSION.json": "a5fc781ea6cefeed29f515e9cc0bcf8cb0f9de9678444454640eb8220629baf8",
+    "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json": "b38f4e6d0d9771269ab1e8cd27cc6684ff7af57bafdfb491e5ff16904894000e",
+    "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-002/VERIFIED_RESULT.json": "32a848cd8895ee54ed80c182f4916a568eca12cff4a1eaebae1bd316624e650f",
+    "runs/plant-r1-20260920-original-c1/logs/candidate_checkpoints/node-002.py": "082823eaaffbb0278a335d11a72f06ae870c17f05e65409baf7879274f5b6e82",
+    "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-003/inner_tuning/SESSION.json": "3b937f7989224e7abb8d1b0a80831d39be70fe6ba43965b236be701e60f351e9",
+    "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json": "e96b179035779adac0e5fd7150f9e7c6cc11c0c4cb723413d64d54cbd42e54ff",
+    "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-003/VERIFIED_RESULT.json": "eedf0839e97f810210b324ba448f19640d295a8273f90d3037368bb6126d87a3",
+    "runs/plant-r1-20260920-original-c1/logs/candidate_checkpoints/node-003.py": "23b59d12b0f3d0b41e220bb780958f08393d5ee10b1b7cdead37eb2e611c7322",
+    "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-004/inner_tuning/SESSION.json": "3fbe288762d2fca466fd7ed39546ccba1f7ed6d81921a29a5f1986e73d34dd14",
+    "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json": "d5971b7fa9d27c9d08b83503c3e35b59d0333e839f479d45f1b9ba4b8cc785f1",
+    "runs/plant-r1-20260920-original-c1/logs/candidate_checkpoints/node-004.py": "f4be5d8e9238eb3ecb7ddc9b0db0653aa3dc0b0a840d183422c39549ead8661a",
+    "exported_memory/inner_memory.json": "f09ffb0d1eecec4c80bc8a40b0be1ce6b80e8b480529c178d2a243ff6d916f36"
+  },
+  "search_cards": 8,
+  "inner_cards": 12,
+  "contains_trained_weights": false,
+  "skill_script_sha256": "d810f17c0ad76ba7aac367fddd571535096aaf62d8e866cb70c5ea697dfa5be4",
+  "synthesis_sha256": "af931e38a9a5674360b1435e70d081fb9a48ec86a2c3dab283d185565d9bebba",
+  "extraction_sha256": "62d9b03aaf4cb406595be1385c360cb40a3e5abb871d52da8ff6ea3b285c235b"
+}

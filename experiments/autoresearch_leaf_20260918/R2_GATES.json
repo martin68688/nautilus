@@ -1,0 +1,27 @@
+{
+  "provider_generated": true,
+  "sandbox_negative_tests": true,
+  "checkpoint_fresh_reload": true,
+  "host_recomputed": true,
+  "gpu_identity_verified": true,
+  "memory_source_audit": true,
+  "timeout_and_resume": true,
+  "same_dependencies": true,
+  "input_manifest_verified": true,
+  "contract_sha256": "07830e210957a949ba6703e76f816c1bfeb98aa0944de35306c5e523c20ccb27",
+  "runtime_sha256": "a647a9ce95f1f6f6256185cf0de62707673dc77c5751e8004dbf0c876d63314a",
+  "memory_specs_sha256": "8a4c85507745fb8dc825e5cbe054876bb7a1a56986d54f1a689fa464d432e5be",
+  "approved_round": 2,
+  "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+  "engineering_scores_excluded_from_memory": true,
+  "artifacts": {
+    "/workspace/autoresearch-leaf-20260918/terra-r1memory-agent-probe-002/AGENT_PROBE.json": "a32cea3da0799b8fe75cc64097b9df6b09076f1079dbc0f7507eacd80d3cf474",
+    "/workspace/autoresearch-leaf-20260918/terra-r1memory-agent-probe-002/HOST.json": "f5a55b9fe61f940334c77e7ab7fc62f2da9e97f34e8c7ca2cdf55faea40b4e00",
+    "/workspace/autoresearch-leaf-20260918/terra-r1memory-agent-probe-002/MEMORY_DECISIONS.json": "a422d98782ce9ca8925827b1f756308870a23a41ead9245150f7b8a80703b21d",
+    "/workspace/autoresearch-leaf-20260918/engineering-smoke-001/HOST.json": "c15e7ef27c40ff9a79509f07011b35d54852163adba3fb33ed696cd9f67e30d1",
+    "/workspace/autoresearch-leaf-20260918/live-operations-001/OPERATIONS.json": "9c0350f2b41fd06fdd0ef5dd031b3cc1a44f0d2a0fd2df6d7b720c6fd525c8d1",
+    "/workspace/autoresearch-leaf-20260918/r1-audit-v001/r1-distillation-v001/AUDIT.json": "8d5e19dedb897af84effa8faeda18481740535e1074b576ac1be53cd06501067",
+    "/workspace/autoresearch-leaf-20260918/r1-audit-v001/r1-distillation-v001/memory/BINDING.json": "5546c1933da170742ea6fcfc2eeee6d96c30f4493bbb0617de86e3e5eb57177a"
+  },
+  "limitation": "This gate proves execution and evidence transport, not causal memory benefit or arbitrary-model scientific correctness."
+}

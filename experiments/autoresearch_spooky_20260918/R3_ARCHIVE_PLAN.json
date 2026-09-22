@@ -1,0 +1,32 @@
+{
+  "status": "PLANNED_NOT_FINAL_FROZEN",
+  "freeze_gate": "Original R3 deadline passed or coordinator closes run; all experiment/probe/container writers absent; then create manifests. Do not treat current provider block as complete2h.",
+  "r3_original_deadline_unix": 1789788962.7635508,
+  "ebs_includes": [
+    "/workspace/spooky-autoresearch-chain-r3-v1",
+    "/workspace/spooky-autoresearch-r3-launch-overlay-002",
+    "/workspace/spooky-autoresearch-r3-launch-overlay-003",
+    "/workspace/spooky-autoresearch-r3-recovery-gateway-v1",
+    "/workspace/spooky-r3-provider-health-0248",
+    "/workspace/spooky-r3-selection-audit-v1",
+    "/workspace/spooky-r2-terminal-archive-v1",
+    "/workspace/spooky-autoresearch-r2-recovery-v1",
+    "/workspace/spooky-autoresearch-r2-recovery-v2"
+  ],
+  "retain": [
+    "full candidate and model artifacts",
+    "all failures/probes and pre-recovery snapshots",
+    "original launch plus recovery amendments",
+    "public-only caches if present",
+    "memory/distillation code hashes and evidence",
+    "systemd journal/service and deadline guard receipts",
+    "final Host predictions and independent recomputation"
+  ],
+  "exclude": [
+    "/etc/autoresearch credentials",
+    "proxy OAuth/config",
+    "other tasks/Leaf outputs unless coordinator separately includes"
+  ],
+  "return_owner": "coordinator01a0b67d-5a9d-7a50-99d7-5b739733d68e",
+  "destination_rule": "New versioned PVC backup only, via Mac, EBS/Mac/PVC manifests must match; no overwrite of source; no fourth round"
+}

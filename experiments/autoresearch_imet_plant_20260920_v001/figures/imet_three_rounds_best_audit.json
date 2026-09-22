@@ -1,0 +1,15 @@
+{
+  "figure_claim": "The best Host-verified iMet micro-F1 increased in each cumulative-memory round.",
+  "archetype": "single-panel quantitative trend",
+  "metric": "Host micro-F1",
+  "round_scores": {
+    "R1": 0.3891708697355064,
+    "R2": 0.44095033341835804,
+    "R3": 0.4585922833606213
+  },
+  "r1_source": "imet-r1-20260920-a1/RUN_OUTCOME.json",
+  "r2_source": "imet-r2-20260920-b1/RUN_OUTCOME.json",
+  "r3_source": "orchestrator.log terminal receipt at 2026-09-21T09:39:57Z",
+  "scope": "One best terminal score per round; this is not a within-round attempt trajectory.",
+  "excluded": "No preflight, failed-probe, or Plant records were included."
+}

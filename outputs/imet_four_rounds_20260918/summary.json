@@ -1,0 +1,67 @@
+[
+  {
+    "id": "A01",
+    "label": "R1 无记忆",
+    "condition": "Luna-low · 原 v7",
+    "main": true,
+    "duration_min": 117.19467309618679,
+    "model": "gpt-5.6-luna",
+    "effort": "low",
+    "started_unix": 1789553791.3875208,
+    "runtime_sha256": "b706abe7ab70458430add8baf76c0d902ebf0ae09a021c29b55ec17317534ba5",
+    "memory_hashes": {},
+    "source_archive": "experiments/imet_v7_a10_two_rounds_20260916/cache_restart/FINAL_CORE_LOGS.tgz",
+    "archive_sha256": "0b5578dc97bd4d43ee5c0849479c5ba59e2892c2c6c16ca0906378bdcb5b1bbc",
+    "search_n": 2,
+    "search_best": 0.42415947510291074,
+    "tune_n": 3,
+    "tune_best": 0.42548141979806386
+  },
+  {
+    "id": "A06",
+    "label": "R2 / R1 记忆",
+    "condition": "CPA Terra-low · 原 v7",
+    "main": true,
+    "duration_min": 117.60415303904253,
+    "model": "gpt-5.6-terra",
+    "effort": "low",
+    "started_unix": 1789609739.7805421,
+    "runtime_sha256": "81cfaa5e6190f06197d3ca4b3ff76180123c4d2f9ad154fd51adc846e3bc0cc0",
+    "memory_hashes": {
+      "search": "70619554eb724c2ab2cc7f4935496fc416504941b25dadc3fbc545d4e9381032",
+      "inner": "f32d8575a5bfa7e31d7a7df4b31a0ee5d7e0649b27a67282db1cf468a182b8b0"
+    },
+    "source_archive": "experiments/imet_terra_low_cpa_20260916/CORE_LOGS.tgz",
+    "archive_sha256": "fa9a87dc386fd0a0311bb8f6f34bd859bd992971f3f4e84a2a8a46672b3b26a5",
+    "search_n": 3,
+    "search_best": 0.5049136139864853,
+    "tune_n": 3,
+    "tune_best": 0.5087603028068439
+  },
+  {
+    "id": "A12",
+    "label": "本轮 / 配方传递修复",
+    "condition": "CPA Terra-low · recipe-contract-v1",
+    "main": true,
+    "duration_min": 114.77203905608039,
+    "model": "gpt-5.6-terra",
+    "effort": "low",
+    "started_unix": 1789671201.211906,
+    "runtime_sha256": "85ca501f7e90c12bdd1928695d26288cf295dc52e3c81d81ccbea0cccf852e5f",
+    "memory_hashes": {
+      "search": "64e172ab71294dbbcdf50bdcbfe70c2a1f6dbf6b7ea94c52c7707bc7408e02d8",
+      "inner": "05ecb5b40cc2f66cba325c241e503c0bd9448383c7511577d3b748b25ea264b5"
+    },
+    "source_archive": "experiments/imet_recipe_contract_cpa_20260917/CORE_LOGS.tgz",
+    "archive_sha256": "39da7c490aa6e9676f2460e22584deb49bff41322e4b60c447839f4abb4b93b1",
+    "search_n": 4,
+    "search_best": 0.5112968586928928,
+    "tune_n": 4,
+    "tune_best": 0.5157686576256573
+  },
+  {
+    "id": "AWS",
+    "duration_min": 119.82872817586667,
+    "search_best": 0.5886485290864852
+  }
+]

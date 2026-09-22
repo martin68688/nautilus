@@ -1,0 +1,442 @@
+{
+  "R2": {
+    "valid": [
+      {
+        "attempt": "attempt-000",
+        "host": 0.5499888687915256,
+        "architecture": "word_unigram_tfidf_logistic",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-000/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-001",
+        "host": 0.41571049424002426,
+        "architecture": "separate_word_char_tfidf_multinomial_logistic_log_pool",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-001/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-002",
+        "host": 0.3600778941249049,
+        "architecture": "fit_only_3fold_oof_word_char_nbsvm_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-002/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-004",
+        "host": 0.3572349600427165,
+        "architecture": "fit_only_3fold_oof_word_char_charwb_nbsvm_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-004/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-005",
+        "host": 0.3552507681592499,
+        "architecture": "fit_only_3fold_oof_word_char_charwb_nbsvm_stylometry_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-005/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-006",
+        "host": 0.35563375616947585,
+        "architecture": "fit_only_3fold_oof_word_char_charwb_nbsvm_stylometry_log_stack_with_class_bias_calibration",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-006/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-007",
+        "host": 0.35620638363989765,
+        "architecture": "fit_only_3fold_oof_word_char_charwb_nbsvm_stylometry_log_probability_stacker_with_tune_class_bias",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-007/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-008",
+        "host": 0.35563738052544286,
+        "architecture": "fit_only_3fold_oof_word_1_3_char_charwb_nbsvm_stylometry_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-008/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-009",
+        "host": 0.35112271143100476,
+        "architecture": "fit_only_3fold_oof_word_caseword_char_charwb_nbsvm_stylometry_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-009/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-010",
+        "host": 0.35260899190601863,
+        "architecture": "fit_only_3fold_oof_word_caseword_char_charshort_charwb_nbsvm_stylometry_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-010/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-012",
+        "host": 0.35110797027040064,
+        "architecture": "fit_only_3fold_oof_six_view_sparse_log_probability_stacker_tune_selected_meta_regularization",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-012/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-013",
+        "host": 0.3518754324269134,
+        "architecture": "fit_only_5fold_oof_six_view_sparse_log_probability_stacker_tune_selected_meta_regularization",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-013/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-014",
+        "host": 0.3511051102229948,
+        "architecture": "three_fold_fit_only_oof_six_view_sparse_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-014/HOST_RESULT.json"
+      }
+    ],
+    "public_models": [],
+    "contextual_memory_decisions": [
+      {
+        "attempt": "attempt-002",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "The contextual route was materially slower and below the source sparse-stack incumbent, whereas the sparse OOF stack is directly evidenced and can complete with artifact reload reserve in this experiment.",
+        "code_evidence": "",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-002/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-003",
+        "key": "cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "A pretrained transformer remains an informative future route, but this experiment targets a reliable sparse improvement with bounded memory and predictable completion. No public model is required for this candidate.",
+        "code_evidence": "\"architecture\": \"fit_only_3fold_oof_case_sensitive_word_trigram_char_nbsvm_stacker\"",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-003/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-003",
+        "key": "debug_e31c12744d0146d2a93ff6bd356df409",
+        "action": "adopt",
+        "reason": "The implementation fits and saves the complete full-data artifact after all OOF work, and the host can reload it for prediction. The sparse pipeline uses bounded matrix operations and does not create an unbounded transformer batch.",
+        "code_evidence": "joblib.dump(artifact, artifact_path / \"model.joblib\", compress=3)",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-003/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-004",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "adapt",
+        "reason": "The verified sparse stack is retained, while this bounded sparse fourth view is tested instead of an expensive contextual route. The additional branch is compatible with the incumbent and leaves substantial runtime margin for two reload verifications.",
+        "code_evidence": "def _make_char_wb_tfidf():",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-004/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-005",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "The contextual-model route is unresolved, but this experiment isolates a low-risk complementary sparse feature family before spending the remaining search budget on a substantially different pretrained architecture.",
+        "code_evidence": "\"architecture\": \"fit_only_3fold_oof_word_char_charwb_nbsvm_stylometry_log_probability_stacker\"",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-005/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-006",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "adapt",
+        "reason": "The contextual route was unscored because of unbatched inference and is not needed for this experiment; retain the verified sparse stack and spend the bounded budget on calibration.",
+        "code_evidence": "'architecture':'fit_only_3fold_oof_word_char_charwb_nbsvm_stylometry_log_stack_with_class_bias_calibration'",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-006/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-006",
+        "key": "inner:cutoff_budget_and_unseen_routes",
+        "action": "adapt",
+        "reason": "Use the card's bounded-execution lesson by keeping all sparse operations batch-safe and avoiding an unbounded transformer forward pass.",
+        "code_evidence": "for fold, (tr, va) in enumerate(skf.split(ft, y)):",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-006/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-007",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "A transformer route is not tested here because the strongest verified sparse model is fast and reliable, while prior contextual attempts had batching and quality risks. The experiment targets a focused sparse improvement within the remaining budget.",
+        "code_evidence": "'architecture':'fit_only_3fold_oof_word_char_charwb_nbsvm_stylometry_log_probability_stacker_with_tune_class_bias'",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-007/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-008",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "The historical contextual route was materially worse when completed and has no certified benefit over the current sparse incumbent. This experiment isolates a cheaper sparse lexical extension before allocating a multi-thousand-second transformer run.",
+        "code_evidence": "analyzer='word', ngram_range=(1, 3), min_df=1, max_df=0.995,",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-008/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-009",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "adapt",
+        "reason": "The contextual-model route is unmeasured and prior evidence identifies the sparse OOF stack as the strongest verified architecture. This experiment preserves that stack while testing a distinct case-sensitive lexical view within the available budget.",
+        "code_evidence": "'case_word': TfidfVectorizer(analyzer='word', ngram_range=(1,2), min_df=1, max_df=.995, max_features=140000, sublinear_tf=True, strip_accents=None, lowercase=False, dtype=np.float32)",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-009/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-010",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "The contextual route remains unmeasured but requires a substantially different GPU training and inference implementation. This experiment instead makes one bounded compatible sparse change with substantially lower execution risk.",
+        "code_evidence": "def _vectorizer(kind):",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-010/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-012",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "A correctly batched pretrained contextual model is a viable independent route, but prior contextual evidence was materially weaker and this experiment is a low-risk diagnostic of the current incumbent. No public model is downloaded.",
+        "code_evidence": "public_models = []",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-012/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-013",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "The recorded contextual route was materially weaker than the sparse incumbent and adds download/training risk. Five-fold OOF is an isolated, lower-variance test of the established architecture.",
+        "code_evidence": "public_models = []",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-013/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-013",
+        "key": "inner:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "No contextual pretrained model is introduced in this bounded experiment; the available budget is allocated to a more reliable fit-only sparse-stack comparison.",
+        "code_evidence": "public_models = []",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-013/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-014",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "A pretrained contextual model remains an informative independent route, but the previous contextual attempts had batching and runtime risks. The available experiment is better spent on a bounded, verified sparse change.",
+        "code_evidence": "public_models=[]",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-014/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-015",
+        "key": "search:debug_9bf23f419f8a4c1f99f3f26012b2f024",
+        "action": "reject",
+        "reason": "No transformer is needed for this experiment, so the documented unbatched transformer memory risk is avoided entirely.",
+        "code_evidence": "public_models=[]",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-015/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-015",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "A contextual pretrained model is not tested in this run because the sparse incumbent is strong and the experiment isolates calibration behavior within the available budget.",
+        "code_evidence": "'base_solver':'saga','meta_solver':'lbfgs'",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-015/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-016",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "adapt",
+        "reason": "The card identifies contextual modeling as unresolved but the current sparse stack is strong and reliable. This experiment stays within the proven sparse architecture while testing a genuinely different discriminative optimization branch.",
+        "code_evidence": "svc = LinearSVC(C=1.0, class_weight=None, random_state=seed + 20, max_iter=3000, tol=1e-4)",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-016/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-016",
+        "key": "search:debug_9bf23f419f8a4c1f99f3f26012b2f024",
+        "action": "reject",
+        "reason": "A transformer route is unnecessary for this experiment and would introduce public-weight download, GPU placement, batching, and reload risks. The proposed SVC branch is bounded-memory and uses no external model.",
+        "code_evidence": "public_models=[]",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-016/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-017",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "reject",
+        "reason": "Do not spend this experiment on a transformer route; prior attempts were slower or below the incumbent and one failed due to unbatched memory use.",
+        "code_evidence": "public_models=[]",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-017/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-017",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "A correctly batched pretrained contextual model remains informative but is too risky for this single sparse-stack experiment and budget.",
+        "code_evidence": "'budget_seconds_requested':budget_seconds",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-017/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-018",
+        "key": "cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "A contextual pretrained model is not tested in this experiment because the current sparse stack is substantially stronger in verified runs and transformer attempts had bounded-memory and quality issues.",
+        "code_evidence": "",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-018/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-019",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "adapt",
+        "reason": "Retain the verified sparse stack and defer transformer exploration because bounded sparse training is substantially more reliable within the available budget.",
+        "code_evidence": "'architecture':'three_fold_fit_only_oof_word_caseword_charwb_nbsvm_meta_stack'",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-019/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-020",
+        "key": "search:debug_9bf23f419f8a4c1f99f3f26012b2f024",
+        "action": "defer",
+        "reason": "No transformer is used; the bounded-batch transformer repair is outside this time budget and would introduce unverified download and runtime risk.",
+        "code_evidence": "public_models=[]",
+        "evidence": "experiments/autoresearch_spooky_20260918/r2-final-audit/run/attempt-020/03-edit.parsed.json"
+      }
+    ]
+  },
+  "R3": {
+    "valid": [
+      {
+        "attempt": "attempt-000",
+        "host": 0.5499888687915256,
+        "architecture": "word_unigram_tfidf_logistic",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-000/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-001",
+        "host": 0.4678658957141819,
+        "architecture": "fit_only_word_1_2_plus_char_3_6_probability_ensemble",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-001/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-002",
+        "host": 0.49080190051508266,
+        "architecture": "fit_only_three_view_word_case_word_char_probability_ensemble",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-002/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-003",
+        "host": 0.47591121921481067,
+        "architecture": "fit_only_three_view_word_case_word_char_probability_ensemble",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-003/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-004",
+        "host": 0.3768756082705538,
+        "architecture": "three_fold_fit_only_oof_word_char_charwb_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-005",
+        "host": 0.3775759114365468,
+        "architecture": "three_fold_fit_only_oof_word_char_charwb_charshort_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-005/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-006",
+        "host": 0.3536842271975142,
+        "architecture": "three_fold_fit_only_oof_six_view_word_case_char_charwb_nbsvm_style_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-006/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-010",
+        "host": 0.3537210926497636,
+        "architecture": "three_fold_fit_only_oof_six_view_sparse_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-010/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-012",
+        "host": 0.353716711335785,
+        "architecture": "three_fold_fit_only_oof_six_view_sparse_log_probability_stacker_tune_selected_meta",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-012/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-013",
+        "host": 0.3513194961767323,
+        "architecture": "fit_only_3fold_oof_word_caseword_char_charwb_nbsvm_shortchar_stylometry_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-013/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-019",
+        "host": 0.3502281447429266,
+        "architecture": "fit_only_3fold_oof_six_view_sparse_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-019/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-020",
+        "host": 0.34978423419729177,
+        "architecture": "fit_only_4fold_oof_six_view_sparse_log_probability_stacker",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-020/HOST_RESULT.json"
+      },
+      {
+        "attempt": "attempt-021",
+        "host": 0.34911176412385214,
+        "architecture": "fit_only_4fold_oof_seven_view_sparse_log_probability_stacker_long_char",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-021/HOST_RESULT.json"
+      }
+    ],
+    "public_models": [],
+    "contextual_memory_decisions": [
+      {
+        "attempt": "attempt-004",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "A transformer route is informative but unverified and adds download and GPU-memory risk; the present experiment targets a stable sparse architecture within the remaining execution budget.",
+        "code_evidence": "\"public_models\": []",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-004/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-012",
+        "key": "search:r2_sparse_plateau",
+        "action": "defer",
+        "reason": "The sparse stacker is near a measured plateau; this experiment targets a correctness improvement before spending the remaining budget on an untested pretrained route.",
+        "code_evidence": "\"tune_role\":\"selection only\"",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-012/03-edit.parsed.json"
+      },
+      {
+        "attempt": "attempt-020",
+        "key": "search:cutoff_budget_and_unseen_routes",
+        "action": "defer",
+        "reason": "Do not introduce a generic pretrained transformer in this run: prior contextual attempts lacked a certified improvement and the current sparse model is fast, robust, and materially stronger. Reserve a separate adequately budgeted experiment for bounded batched transformer inference and fine-tuning.",
+        "code_evidence": "",
+        "evidence": "experiments/autoresearch_spooky_20260918/lifecycle-return-v1/bundle/spooky-autoresearch-chain-r3-v1/code/runs/spooky-ar-r3-v1/attempt-020/03-edit.parsed.json"
+      }
+    ]
+  },
+  "historical_terra": {
+    "1": {
+      "first2h": {
+        "round": "1",
+        "node": "10",
+        "node_id": "1dadba1ebb71477dba2d271b7d2e255c",
+        "stage": "improve",
+        "score": "0.35028213509959194",
+        "best": "0.35028213509959194",
+        "elapsed_h": "0.7084271153476503",
+        "outcome": "new_best",
+        "exception": "",
+        "structured_selection_fallback": "False"
+      },
+      "full": {
+        "round": "1",
+        "node": "23",
+        "node_id": "257ab4d45c8345a39d3d336ef034293e",
+        "stage": "improve",
+        "score": "0.30599148292620626",
+        "best": "0.30599148292620626",
+        "elapsed_h": "4.76092711534765",
+        "outcome": "new_best",
+        "exception": "",
+        "structured_selection_fallback": "False"
+      }
+    },
+    "2": {
+      "first2h": {
+        "round": "2",
+        "node": "19",
+        "node_id": "955a2db105c04e84b82ef4b4b51185a3",
+        "stage": "improve",
+        "score": "0.33690163768722187",
+        "best": "0.33690163768722187",
+        "elapsed_h": "1.5146146031883028",
+        "outcome": "new_best",
+        "exception": "",
+        "structured_selection_fallback": "False"
+      },
+      "full": {
+        "round": "2",
+        "node": "21",
+        "node_id": "dba456ba8ba34c4aa81be529701a421e",
+        "stage": "improve",
+        "score": "0.2581372708307726",
+        "best": "0.2581372708307726",
+        "elapsed_h": "2.5576701587438584",
+        "outcome": "new_best",
+        "exception": "",
+        "structured_selection_fallback": "False"
+      }
+    }
+  }
+}

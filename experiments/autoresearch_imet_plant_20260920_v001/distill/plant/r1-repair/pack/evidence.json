@@ -1,0 +1,1084 @@
+{
+  "version": "conditional-trajectory-skill-v1",
+  "task": "autoresearch-plant",
+  "launch": {
+    "run_id": "plant-r1-20260920-repair-b1",
+    "task_id": "autoresearch-plant",
+    "round": 1,
+    "started_unix": 1789960087.6178887,
+    "budget_seconds": 7200,
+    "model": "gpt-5.6-terra",
+    "effort": "low",
+    "memory": false,
+    "data_manifest_sha256": "a2209c362fae1f7ea84ecda99d977ba377984fa84d263e1e82b125cd6a5055ca",
+    "runtime_manifest_sha256": "66809ad804138b0aed09fc2cce188f1c3b6c768630f24e662497b03fa1d67b90",
+    "metric": "host_macro_f1"
+  },
+  "nodes": [
+    {
+      "node_id": "node-001",
+      "step": 1,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Implemented a self-contained plant seedling classifier using a torchvision ResNet-18 trained from scratch on fit.csv, with tune.csv used only for internal validation and model selection. The candidate discovers CSV columns robustly, loads images lazily from /data/<relative_path>, applies reproducible augmentation and normalization, saves model/preprocessing/class metadata under artifact_dir, and reloads identically for prediction. No external weights or network access are required.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-repair-b1-000",
+        "budget_seconds": 567.5387703879969,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.9389414430388178
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-001:trial",
+          "node_id": "node-001",
+          "code_sha256": "c3a760b41ebde49dec78d7b6a8db73385c0e204a3be93887a1ad2417b4caeb0a",
+          "action": "Implemented a self-contained plant seedling classifier using a torchvision ResNet-18 trained from scratch on fit.csv, with tune.csv used only for internal validation and model selection. The candidate discovers CSV columns robustly, loads images lazily from /data/<relative_path>, applies reproducible augmentation and normalization, saves model/preprocessing/class metadata under artifact_dir, and reloads identically for prediction. No external weights or network access are required.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-000",
+            "budget_seconds": 567.5387703879969,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9389414430388178
+          },
+          "status": "ok",
+          "tune_loss": -0.9389414430388178,
+          "incumbent_before": null,
+          "improved": true,
+          "elapsed_seconds": 567.5387703879969,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.9470805917315791,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json",
+          "source_artifact_sha256": "ae77760e39c51dd77a4503e479e9d10b80953f998b63b8560922cdf3f6c2d63c"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-001:trial",
+        "node_id": "node-001",
+        "code_sha256": "c3a760b41ebde49dec78d7b6a8db73385c0e204a3be93887a1ad2417b4caeb0a",
+        "action": "Implemented a self-contained plant seedling classifier using a torchvision ResNet-18 trained from scratch on fit.csv, with tune.csv used only for internal validation and model selection. The candidate discovers CSV columns robustly, loads images lazily from /data/<relative_path>, applies reproducible augmentation and normalization, saves model/preprocessing/class metadata under artifact_dir, and reloads identically for prediction. No external weights or network access are required.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-000",
+          "budget_seconds": 567.5387703879969,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9389414430388178
+        },
+        "status": "ok",
+        "tune_loss": -0.9389414430388178,
+        "incumbent_before": null,
+        "improved": true,
+        "elapsed_seconds": 567.5387703879969,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9470805917315791,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json",
+        "source_artifact_sha256": "ae77760e39c51dd77a4503e479e9d10b80953f998b63b8560922cdf3f6c2d63c"
+      },
+      "host_metric": -0.9470805917315791,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.9389414430388178,
+        "metadata": {
+          "inner_trial_id": "node-001:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-000",
+            "budget_seconds": 567.5387703879969,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9389414430388178
+          }
+        }
+      },
+      "classification": "baseline",
+      "incumbent_before": null,
+      "execution_seconds": 567.5387703879969,
+      "failure_type": null,
+      "analysis": "Implemented a self-contained plant seedling classifier using a torchvision ResNet-18 trained from scratch on fit.csv, with tune.csv used only for internal validation and model selection. The candidate discovers CSV columns robustly, loads images lazily from /data/<relative_path>, applies reproducible augmentation and normalization, saves model/preprocessing/class metadata under artifact_dir, and reloads identically for prediction. No external weights or network access are required.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/logs/candidate_checkpoints/node-001.py",
+        "source_artifact_sha256": "c3a760b41ebde49dec78d7b6a8db73385c0e204a3be93887a1ad2417b4caeb0a"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-001/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "1edc4381c83b0a1782b0f3ae2c2462fe8e66756b57ff6b5542195746bb2999b3"
+      }
+    },
+    {
+      "node_id": "node-002",
+      "step": 2,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Improved the baseline by selecting checkpoints using true tune macro-F1 instead of macro per-class accuracy, adding class-balanced cross-entropy, using horizontal-flip test-time augmentation, and retaining the best validation checkpoint. The model remains self-contained and randomly initialized, with no external weights or network access.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-repair-b1-001",
+        "budget_seconds": 616.8987501359952,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.9313206371105213
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-002:trial",
+          "node_id": "node-002",
+          "code_sha256": "353ed6b07acce3a0e11a7b112258c6127831f07964c2ccba3214dea3004d0a61",
+          "action": "Improved the baseline by selecting checkpoints using true tune macro-F1 instead of macro per-class accuracy, adding class-balanced cross-entropy, using horizontal-flip test-time augmentation, and retaining the best validation checkpoint. The model remains self-contained and randomly initialized, with no external weights or network access.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-001",
+            "budget_seconds": 616.8987501359952,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9313206371105213
+          },
+          "status": "ok",
+          "tune_loss": -0.9313206371105213,
+          "incumbent_before": -0.9470805917315791,
+          "improved": false,
+          "elapsed_seconds": 616.8987501359952,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.9420914061093658,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+          "source_artifact_sha256": "4b8393083f49ea8944d0065a2e7a96fce971a58a449ae5fe3d1af3c6b33c9f19"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-002:trial",
+        "node_id": "node-002",
+        "code_sha256": "353ed6b07acce3a0e11a7b112258c6127831f07964c2ccba3214dea3004d0a61",
+        "action": "Improved the baseline by selecting checkpoints using true tune macro-F1 instead of macro per-class accuracy, adding class-balanced cross-entropy, using horizontal-flip test-time augmentation, and retaining the best validation checkpoint. The model remains self-contained and randomly initialized, with no external weights or network access.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-001",
+          "budget_seconds": 616.8987501359952,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9313206371105213
+        },
+        "status": "ok",
+        "tune_loss": -0.9313206371105213,
+        "incumbent_before": -0.9470805917315791,
+        "improved": false,
+        "elapsed_seconds": 616.8987501359952,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9420914061093658,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+        "source_artifact_sha256": "4b8393083f49ea8944d0065a2e7a96fce971a58a449ae5fe3d1af3c6b33c9f19"
+      },
+      "host_metric": -0.9420914061093658,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.9313206371105213,
+        "metadata": {
+          "inner_trial_id": "node-002:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-001",
+            "budget_seconds": 616.8987501359952,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9313206371105213
+          }
+        }
+      },
+      "classification": "below_incumbent",
+      "incumbent_before": -0.9470805917315791,
+      "execution_seconds": 616.8987501359952,
+      "failure_type": null,
+      "analysis": "Improved the baseline by selecting checkpoints using true tune macro-F1 instead of macro per-class accuracy, adding class-balanced cross-entropy, using horizontal-flip test-time augmentation, and retaining the best validation checkpoint. The model remains self-contained and randomly initialized, with no external weights or network access.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/logs/candidate_checkpoints/node-002.py",
+        "source_artifact_sha256": "353ed6b07acce3a0e11a7b112258c6127831f07964c2ccba3214dea3004d0a61"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-002/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "ed3f5b5ecd27bb472233965898439cb6133cfad11ad5e86d55fdf15a2107a569"
+      }
+    },
+    {
+      "node_id": "node-003",
+      "step": 3,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "failed_candidate",
+        "architecture": "unscored candidate",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-repair-b1-002",
+        "budget_seconds": null,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": null
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-003:trial",
+          "node_id": "node-003",
+          "code_sha256": "76d0cffbbeee7ba4431eac5cc54a770c641346ee03c3a3b16cc3b08019fbd4bf",
+          "action": "candidate execution",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-002",
+            "budget_seconds": null,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": null
+          },
+          "status": "failed",
+          "tune_loss": null,
+          "incumbent_before": -0.9470805917315791,
+          "improved": false,
+          "elapsed_seconds": null,
+          "parent_trial_id": null,
+          "error_type": "ValueError: invalid public model dependency",
+          "error": "ValueError: invalid public model dependency",
+          "metadata": {
+            "host_search_score": null,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json",
+          "source_artifact_sha256": "c778011c34da757e9a668afa719161401fcf101ed8770652f6adba427e02155f"
+        }
+      ],
+      "selected": null,
+      "host_metric": null,
+      "host_micro_f1": null,
+      "host_receipt": {},
+      "classification": "unscored",
+      "incumbent_before": -0.9470805917315791,
+      "execution_seconds": null,
+      "failure_type": "ValueError: invalid public model dependency",
+      "analysis": "ValueError: invalid public model dependency",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/logs/candidate_checkpoints/node-003.py",
+        "source_artifact_sha256": "76d0cffbbeee7ba4431eac5cc54a770c641346ee03c3a3b16cc3b08019fbd4bf"
+      },
+      "verified_artifact": null
+    },
+    {
+      "node_id": "node-004",
+      "step": 4,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Retain the validated self-contained ResNet-18 approach, while correcting internal checkpoint selection to use true macro-F1, adding class-balanced loss, and using horizontal-flip test-time augmentation. The model remains randomly initialized and uses no external weights or network access.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-repair-b1-003",
+        "budget_seconds": 574.0108870659897,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.9283929941690684
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-004:trial",
+          "node_id": "node-004",
+          "code_sha256": "4c7d53a65b6da57b5b04bd9c45871d83aad7dfa8510718980b8fe59c7ee1d629",
+          "action": "Retain the validated self-contained ResNet-18 approach, while correcting internal checkpoint selection to use true macro-F1, adding class-balanced loss, and using horizontal-flip test-time augmentation. The model remains randomly initialized and uses no external weights or network access.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-003",
+            "budget_seconds": 574.0108870659897,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9283929941690684
+          },
+          "status": "ok",
+          "tune_loss": -0.9283929941690684,
+          "incumbent_before": -0.9470805917315791,
+          "improved": false,
+          "elapsed_seconds": 574.0108870659897,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.9396302677229179,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+          "source_artifact_sha256": "ac517ce6d7e674abb7538efcac8caeebbf413aa4c7e0014ae71c099d521dc0c7"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-004:trial",
+        "node_id": "node-004",
+        "code_sha256": "4c7d53a65b6da57b5b04bd9c45871d83aad7dfa8510718980b8fe59c7ee1d629",
+        "action": "Retain the validated self-contained ResNet-18 approach, while correcting internal checkpoint selection to use true macro-F1, adding class-balanced loss, and using horizontal-flip test-time augmentation. The model remains randomly initialized and uses no external weights or network access.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-003",
+          "budget_seconds": 574.0108870659897,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9283929941690684
+        },
+        "status": "ok",
+        "tune_loss": -0.9283929941690684,
+        "incumbent_before": -0.9470805917315791,
+        "improved": false,
+        "elapsed_seconds": 574.0108870659897,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9396302677229179,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+        "source_artifact_sha256": "ac517ce6d7e674abb7538efcac8caeebbf413aa4c7e0014ae71c099d521dc0c7"
+      },
+      "host_metric": -0.9396302677229179,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.9283929941690684,
+        "metadata": {
+          "inner_trial_id": "node-004:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-003",
+            "budget_seconds": 574.0108870659897,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9283929941690684
+          }
+        }
+      },
+      "classification": "below_incumbent",
+      "incumbent_before": -0.9470805917315791,
+      "execution_seconds": 574.0108870659897,
+      "failure_type": null,
+      "analysis": "Retain the validated self-contained ResNet-18 approach, while correcting internal checkpoint selection to use true macro-F1, adding class-balanced loss, and using horizontal-flip test-time augmentation. The model remains randomly initialized and uses no external weights or network access.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/logs/candidate_checkpoints/node-004.py",
+        "source_artifact_sha256": "4c7d53a65b6da57b5b04bd9c45871d83aad7dfa8510718980b8fe59c7ee1d629"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-004/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "c94af230ca7518678d8d6d14e0f86cd254571e01ede60a78cf6deb78916e9422"
+      }
+    },
+    {
+      "node_id": "node-005",
+      "step": 5,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Corrected validation checkpoint selection to use true macro-F1, added class-balanced loss, and added deterministic horizontal-flip test-time augmentation. The candidate remains self-contained, uses no external weights or network access, and reports the complete validation trajectory and selected parameters.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-repair-b1-004",
+        "budget_seconds": 669.6168338459975,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.955032944911815
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-005:trial",
+          "node_id": "node-005",
+          "code_sha256": "5003fef030ba59147526bc9990dd6a5776c6ab0fb5dc3b13d7dd41bb52ca0fbc",
+          "action": "Corrected validation checkpoint selection to use true macro-F1, added class-balanced loss, and added deterministic horizontal-flip test-time augmentation. The candidate remains self-contained, uses no external weights or network access, and reports the complete validation trajectory and selected parameters.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-004",
+            "budget_seconds": 669.6168338459975,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.955032944911815
+          },
+          "status": "ok",
+          "tune_loss": -0.955032944911815,
+          "incumbent_before": -0.9470805917315791,
+          "improved": true,
+          "elapsed_seconds": 669.6168338459975,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.9474171332283304,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-005/inner_tuning/trial-005-outcome.json",
+          "source_artifact_sha256": "6c9a4b4026a1370555840708866870ebd623c84eab60ca2cd558174ab9c9cdc5"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-005:trial",
+        "node_id": "node-005",
+        "code_sha256": "5003fef030ba59147526bc9990dd6a5776c6ab0fb5dc3b13d7dd41bb52ca0fbc",
+        "action": "Corrected validation checkpoint selection to use true macro-F1, added class-balanced loss, and added deterministic horizontal-flip test-time augmentation. The candidate remains self-contained, uses no external weights or network access, and reports the complete validation trajectory and selected parameters.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-004",
+          "budget_seconds": 669.6168338459975,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.955032944911815
+        },
+        "status": "ok",
+        "tune_loss": -0.955032944911815,
+        "incumbent_before": -0.9470805917315791,
+        "improved": true,
+        "elapsed_seconds": 669.6168338459975,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9474171332283304,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-005/inner_tuning/trial-005-outcome.json",
+        "source_artifact_sha256": "6c9a4b4026a1370555840708866870ebd623c84eab60ca2cd558174ab9c9cdc5"
+      },
+      "host_metric": -0.9474171332283304,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.955032944911815,
+        "metadata": {
+          "inner_trial_id": "node-005:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-004",
+            "budget_seconds": 669.6168338459975,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.955032944911815
+          }
+        }
+      },
+      "classification": "new_incumbent",
+      "incumbent_before": -0.9470805917315791,
+      "execution_seconds": 669.6168338459975,
+      "failure_type": null,
+      "analysis": "Corrected validation checkpoint selection to use true macro-F1, added class-balanced loss, and added deterministic horizontal-flip test-time augmentation. The candidate remains self-contained, uses no external weights or network access, and reports the complete validation trajectory and selected parameters.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/logs/candidate_checkpoints/node-005.py",
+        "source_artifact_sha256": "5003fef030ba59147526bc9990dd6a5776c6ab0fb5dc3b13d7dd41bb52ca0fbc"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-005/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "e5ede11215e3a93b3b89335b011f0381e25d30c2b654e6f8dbe1c2649180b6f1"
+      }
+    },
+    {
+      "node_id": "node-006",
+      "step": 6,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Extend the validated self-contained ResNet-18 approach with a longer cosine schedule and mild stochastic augmentation, while preserving true tune macro-F1 checkpoint selection, class-balanced loss, horizontal-flip TTA, lazy /data image loading, fresh-process reloadability, and no external model dependencies. The longer schedule is intended to reduce underfitting relative to the prior 35-epoch candidate within the larger remaining budget.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-repair-b1-005",
+        "budget_seconds": 1452.439436148008,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.9508406964245194
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-006:trial",
+          "node_id": "node-006",
+          "code_sha256": "f01480037e63b3c493b961d2b0eed98e6bd9640335aaaa3831ccf30cf2aaaf9e",
+          "action": "Extend the validated self-contained ResNet-18 approach with a longer cosine schedule and mild stochastic augmentation, while preserving true tune macro-F1 checkpoint selection, class-balanced loss, horizontal-flip TTA, lazy /data image loading, fresh-process reloadability, and no external model dependencies. The longer schedule is intended to reduce underfitting relative to the prior 35-epoch candidate within the larger remaining budget.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-005",
+            "budget_seconds": 1452.439436148008,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9508406964245194
+          },
+          "status": "ok",
+          "tune_loss": -0.9508406964245194,
+          "incumbent_before": -0.9474171332283304,
+          "improved": true,
+          "elapsed_seconds": 1452.439436148008,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.9576681990693282,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-006/inner_tuning/trial-006-outcome.json",
+          "source_artifact_sha256": "696382af2aca06186e19f3294d45f846db657979149a7c78c41e641e7df33af5"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-006:trial",
+        "node_id": "node-006",
+        "code_sha256": "f01480037e63b3c493b961d2b0eed98e6bd9640335aaaa3831ccf30cf2aaaf9e",
+        "action": "Extend the validated self-contained ResNet-18 approach with a longer cosine schedule and mild stochastic augmentation, while preserving true tune macro-F1 checkpoint selection, class-balanced loss, horizontal-flip TTA, lazy /data image loading, fresh-process reloadability, and no external model dependencies. The longer schedule is intended to reduce underfitting relative to the prior 35-epoch candidate within the larger remaining budget.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-005",
+          "budget_seconds": 1452.439436148008,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9508406964245194
+        },
+        "status": "ok",
+        "tune_loss": -0.9508406964245194,
+        "incumbent_before": -0.9474171332283304,
+        "improved": true,
+        "elapsed_seconds": 1452.439436148008,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9576681990693282,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-006/inner_tuning/trial-006-outcome.json",
+        "source_artifact_sha256": "696382af2aca06186e19f3294d45f846db657979149a7c78c41e641e7df33af5"
+      },
+      "host_metric": -0.9576681990693282,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.9508406964245194,
+        "metadata": {
+          "inner_trial_id": "node-006:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-005",
+            "budget_seconds": 1452.439436148008,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9508406964245194
+          }
+        }
+      },
+      "classification": "new_incumbent",
+      "incumbent_before": -0.9474171332283304,
+      "execution_seconds": 1452.439436148008,
+      "failure_type": null,
+      "analysis": "Extend the validated self-contained ResNet-18 approach with a longer cosine schedule and mild stochastic augmentation, while preserving true tune macro-F1 checkpoint selection, class-balanced loss, horizontal-flip TTA, lazy /data image loading, fresh-process reloadability, and no external model dependencies. The longer schedule is intended to reduce underfitting relative to the prior 35-epoch candidate within the larger remaining budget.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/logs/candidate_checkpoints/node-006.py",
+        "source_artifact_sha256": "f01480037e63b3c493b961d2b0eed98e6bd9640335aaaa3831ccf30cf2aaaf9e"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-006/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "5f0979ad0f4d9ab65e11d1665ac89757e4cf10835342859bd81008bb92bb61d5"
+      }
+    },
+    {
+      "node_id": "node-007",
+      "step": 7,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Retain the strongest validated self-contained ResNet-18 scratch-training approach. Use deterministic augmentation, square-root inverse-frequency class weighting, cosine learning-rate decay, true tune macro-F1 checkpoint selection, and horizontal-flip test-time augmentation. No external model dependencies are used.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-repair-b1-006",
+        "budget_seconds": 1452.748486647004,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.9508406964245194
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-007:trial",
+          "node_id": "node-007",
+          "code_sha256": "5d9f5f68251695cb4dfd032a7fc008cd635210999b8ee0c5264f75cb967ce9c1",
+          "action": "Retain the strongest validated self-contained ResNet-18 scratch-training approach. Use deterministic augmentation, square-root inverse-frequency class weighting, cosine learning-rate decay, true tune macro-F1 checkpoint selection, and horizontal-flip test-time augmentation. No external model dependencies are used.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-006",
+            "budget_seconds": 1452.748486647004,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9508406964245194
+          },
+          "status": "ok",
+          "tune_loss": -0.9508406964245194,
+          "incumbent_before": -0.9576681990693282,
+          "improved": false,
+          "elapsed_seconds": 1452.748486647004,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.9576681990693282,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-007/inner_tuning/trial-007-outcome.json",
+          "source_artifact_sha256": "12f0453b8246848e1b3a07a4ce4515198d8b6c240b09e753c317930f8a9a78fd"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-007:trial",
+        "node_id": "node-007",
+        "code_sha256": "5d9f5f68251695cb4dfd032a7fc008cd635210999b8ee0c5264f75cb967ce9c1",
+        "action": "Retain the strongest validated self-contained ResNet-18 scratch-training approach. Use deterministic augmentation, square-root inverse-frequency class weighting, cosine learning-rate decay, true tune macro-F1 checkpoint selection, and horizontal-flip test-time augmentation. No external model dependencies are used.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-006",
+          "budget_seconds": 1452.748486647004,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9508406964245194
+        },
+        "status": "ok",
+        "tune_loss": -0.9508406964245194,
+        "incumbent_before": -0.9576681990693282,
+        "improved": false,
+        "elapsed_seconds": 1452.748486647004,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9576681990693282,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-007/inner_tuning/trial-007-outcome.json",
+        "source_artifact_sha256": "12f0453b8246848e1b3a07a4ce4515198d8b6c240b09e753c317930f8a9a78fd"
+      },
+      "host_metric": -0.9576681990693282,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.9508406964245194,
+        "metadata": {
+          "inner_trial_id": "node-007:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-006",
+            "budget_seconds": 1452.748486647004,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9508406964245194
+          }
+        }
+      },
+      "classification": "below_incumbent",
+      "incumbent_before": -0.9576681990693282,
+      "execution_seconds": 1452.748486647004,
+      "failure_type": null,
+      "analysis": "Retain the strongest validated self-contained ResNet-18 scratch-training approach. Use deterministic augmentation, square-root inverse-frequency class weighting, cosine learning-rate decay, true tune macro-F1 checkpoint selection, and horizontal-flip test-time augmentation. No external model dependencies are used.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/logs/candidate_checkpoints/node-007.py",
+        "source_artifact_sha256": "5d9f5f68251695cb4dfd032a7fc008cd635210999b8ee0c5264f75cb967ce9c1"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-007/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "5a7a902f38f2dec1770cb89377ec132ee549dd69ca2d006e863b697597449b61"
+      }
+    },
+    {
+      "node_id": "node-008",
+      "step": 8,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Extend the best scratch ResNet-18 recipe within the remaining runtime: train up to 150 cosine-decay epochs with a strict time guard, retain sqrt inverse-frequency loss weighting and true tune macro-F1 checkpoint selection, and use a modest four-view deterministic inference ensemble (original, horizontal flip, and small left/right translations) to reduce crop-position variance. The candidate uses no external/public model weights and records its actual validation trajectory.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-repair-b1-007",
+        "budget_seconds": 886.6753023400088,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.9365843493808006
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-008:trial",
+          "node_id": "node-008",
+          "code_sha256": "91160199732606e8c7b63e83ef264ad6f363026b46c3be3b542cf26668fc70f0",
+          "action": "Extend the best scratch ResNet-18 recipe within the remaining runtime: train up to 150 cosine-decay epochs with a strict time guard, retain sqrt inverse-frequency loss weighting and true tune macro-F1 checkpoint selection, and use a modest four-view deterministic inference ensemble (original, horizontal flip, and small left/right translations) to reduce crop-position variance. The candidate uses no external/public model weights and records its actual validation trajectory.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-007",
+            "budget_seconds": 886.6753023400088,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9365843493808006
+          },
+          "status": "ok",
+          "tune_loss": -0.9365843493808006,
+          "incumbent_before": -0.9576681990693282,
+          "improved": false,
+          "elapsed_seconds": 886.6753023400088,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.9549733918422056,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-008/inner_tuning/trial-008-outcome.json",
+          "source_artifact_sha256": "5e9eb2126a0e869c61f8e5d220b9eb80a2a27e206c5dd19d377a704d0b988d45"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-008:trial",
+        "node_id": "node-008",
+        "code_sha256": "91160199732606e8c7b63e83ef264ad6f363026b46c3be3b542cf26668fc70f0",
+        "action": "Extend the best scratch ResNet-18 recipe within the remaining runtime: train up to 150 cosine-decay epochs with a strict time guard, retain sqrt inverse-frequency loss weighting and true tune macro-F1 checkpoint selection, and use a modest four-view deterministic inference ensemble (original, horizontal flip, and small left/right translations) to reduce crop-position variance. The candidate uses no external/public model weights and records its actual validation trajectory.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-007",
+          "budget_seconds": 886.6753023400088,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9365843493808006
+        },
+        "status": "ok",
+        "tune_loss": -0.9365843493808006,
+        "incumbent_before": -0.9576681990693282,
+        "improved": false,
+        "elapsed_seconds": 886.6753023400088,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9549733918422056,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-008/inner_tuning/trial-008-outcome.json",
+        "source_artifact_sha256": "5e9eb2126a0e869c61f8e5d220b9eb80a2a27e206c5dd19d377a704d0b988d45"
+      },
+      "host_metric": -0.9549733918422056,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.9365843493808006,
+        "metadata": {
+          "inner_trial_id": "node-008:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-repair-b1-007",
+            "budget_seconds": 886.6753023400088,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9365843493808006
+          }
+        }
+      },
+      "classification": "below_incumbent",
+      "incumbent_before": -0.9576681990693282,
+      "execution_seconds": 886.6753023400088,
+      "failure_type": null,
+      "analysis": "Extend the best scratch ResNet-18 recipe within the remaining runtime: train up to 150 cosine-decay epochs with a strict time guard, retain sqrt inverse-frequency loss weighting and true tune macro-F1 checkpoint selection, and use a modest four-view deterministic inference ensemble (original, horizontal flip, and small left/right translations) to reduce crop-position variance. The candidate uses no external/public model weights and records its actual validation trajectory.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/logs/candidate_checkpoints/node-008.py",
+        "source_artifact_sha256": "91160199732606e8c7b63e83ef264ad6f363026b46c3be3b542cf26668fc70f0"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-008/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "b39f9d6e55a4cb00cd33720b9d9d6d5b687e814e5631eafc82667e2adba44551"
+      }
+    }
+  ],
+  "raw_cards": [
+    {
+      "id": "trial_node-001_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-001:trial",
+        "node_id": "node-001",
+        "code_sha256": "c3a760b41ebde49dec78d7b6a8db73385c0e204a3be93887a1ad2417b4caeb0a",
+        "action": "Implemented a self-contained plant seedling classifier using a torchvision ResNet-18 trained from scratch on fit.csv, with tune.csv used only for internal validation and model selection. The candidate discovers CSV columns robustly, loads images lazily from /data/<relative_path>, applies reproducible augmentation and normalization, saves model/preprocessing/class metadata under artifact_dir, and reloads identically for prediction. No external weights or network access are required.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-000",
+          "budget_seconds": 567.5387703879969,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9389414430388178
+        },
+        "status": "ok",
+        "tune_loss": -0.9389414430388178,
+        "incumbent_before": null,
+        "improved": true,
+        "elapsed_seconds": 567.5387703879969,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9470805917315791,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json",
+        "source_artifact_sha256": "ae77760e39c51dd77a4503e479e9d10b80953f998b63b8560922cdf3f6c2d63c"
+      }
+    },
+    {
+      "id": "trial_node-002_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-002:trial",
+        "node_id": "node-002",
+        "code_sha256": "353ed6b07acce3a0e11a7b112258c6127831f07964c2ccba3214dea3004d0a61",
+        "action": "Improved the baseline by selecting checkpoints using true tune macro-F1 instead of macro per-class accuracy, adding class-balanced cross-entropy, using horizontal-flip test-time augmentation, and retaining the best validation checkpoint. The model remains self-contained and randomly initialized, with no external weights or network access.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-001",
+          "budget_seconds": 616.8987501359952,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9313206371105213
+        },
+        "status": "ok",
+        "tune_loss": -0.9313206371105213,
+        "incumbent_before": -0.9470805917315791,
+        "improved": false,
+        "elapsed_seconds": 616.8987501359952,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9420914061093658,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+        "source_artifact_sha256": "4b8393083f49ea8944d0065a2e7a96fce971a58a449ae5fe3d1af3c6b33c9f19"
+      }
+    },
+    {
+      "id": "trial_node-003_trial",
+      "granularity": "debug",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-003:trial",
+        "node_id": "node-003",
+        "code_sha256": "76d0cffbbeee7ba4431eac5cc54a770c641346ee03c3a3b16cc3b08019fbd4bf",
+        "action": "candidate execution",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-002",
+          "budget_seconds": null,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": null
+        },
+        "status": "failed",
+        "tune_loss": null,
+        "incumbent_before": -0.9470805917315791,
+        "improved": false,
+        "elapsed_seconds": null,
+        "parent_trial_id": null,
+        "error_type": "ValueError: invalid public model dependency",
+        "error": "ValueError: invalid public model dependency",
+        "metadata": {
+          "host_search_score": null,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json",
+        "source_artifact_sha256": "c778011c34da757e9a668afa719161401fcf101ed8770652f6adba427e02155f"
+      }
+    },
+    {
+      "id": "trial_node-004_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-004:trial",
+        "node_id": "node-004",
+        "code_sha256": "4c7d53a65b6da57b5b04bd9c45871d83aad7dfa8510718980b8fe59c7ee1d629",
+        "action": "Retain the validated self-contained ResNet-18 approach, while correcting internal checkpoint selection to use true macro-F1, adding class-balanced loss, and using horizontal-flip test-time augmentation. The model remains randomly initialized and uses no external weights or network access.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-003",
+          "budget_seconds": 574.0108870659897,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9283929941690684
+        },
+        "status": "ok",
+        "tune_loss": -0.9283929941690684,
+        "incumbent_before": -0.9470805917315791,
+        "improved": false,
+        "elapsed_seconds": 574.0108870659897,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9396302677229179,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+        "source_artifact_sha256": "ac517ce6d7e674abb7538efcac8caeebbf413aa4c7e0014ae71c099d521dc0c7"
+      }
+    },
+    {
+      "id": "trial_node-005_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-005:trial",
+        "node_id": "node-005",
+        "code_sha256": "5003fef030ba59147526bc9990dd6a5776c6ab0fb5dc3b13d7dd41bb52ca0fbc",
+        "action": "Corrected validation checkpoint selection to use true macro-F1, added class-balanced loss, and added deterministic horizontal-flip test-time augmentation. The candidate remains self-contained, uses no external weights or network access, and reports the complete validation trajectory and selected parameters.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-004",
+          "budget_seconds": 669.6168338459975,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.955032944911815
+        },
+        "status": "ok",
+        "tune_loss": -0.955032944911815,
+        "incumbent_before": -0.9470805917315791,
+        "improved": true,
+        "elapsed_seconds": 669.6168338459975,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9474171332283304,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-005/inner_tuning/trial-005-outcome.json",
+        "source_artifact_sha256": "6c9a4b4026a1370555840708866870ebd623c84eab60ca2cd558174ab9c9cdc5"
+      }
+    },
+    {
+      "id": "trial_node-006_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-006:trial",
+        "node_id": "node-006",
+        "code_sha256": "f01480037e63b3c493b961d2b0eed98e6bd9640335aaaa3831ccf30cf2aaaf9e",
+        "action": "Extend the validated self-contained ResNet-18 approach with a longer cosine schedule and mild stochastic augmentation, while preserving true tune macro-F1 checkpoint selection, class-balanced loss, horizontal-flip TTA, lazy /data image loading, fresh-process reloadability, and no external model dependencies. The longer schedule is intended to reduce underfitting relative to the prior 35-epoch candidate within the larger remaining budget.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-005",
+          "budget_seconds": 1452.439436148008,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9508406964245194
+        },
+        "status": "ok",
+        "tune_loss": -0.9508406964245194,
+        "incumbent_before": -0.9474171332283304,
+        "improved": true,
+        "elapsed_seconds": 1452.439436148008,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9576681990693282,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-006/inner_tuning/trial-006-outcome.json",
+        "source_artifact_sha256": "696382af2aca06186e19f3294d45f846db657979149a7c78c41e641e7df33af5"
+      }
+    },
+    {
+      "id": "trial_node-007_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-007:trial",
+        "node_id": "node-007",
+        "code_sha256": "5d9f5f68251695cb4dfd032a7fc008cd635210999b8ee0c5264f75cb967ce9c1",
+        "action": "Retain the strongest validated self-contained ResNet-18 scratch-training approach. Use deterministic augmentation, square-root inverse-frequency class weighting, cosine learning-rate decay, true tune macro-F1 checkpoint selection, and horizontal-flip test-time augmentation. No external model dependencies are used.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-006",
+          "budget_seconds": 1452.748486647004,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9508406964245194
+        },
+        "status": "ok",
+        "tune_loss": -0.9508406964245194,
+        "incumbent_before": -0.9576681990693282,
+        "improved": false,
+        "elapsed_seconds": 1452.748486647004,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9576681990693282,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-007/inner_tuning/trial-007-outcome.json",
+        "source_artifact_sha256": "12f0453b8246848e1b3a07a4ce4515198d8b6c240b09e753c317930f8a9a78fd"
+      }
+    },
+    {
+      "id": "trial_node-008_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-008:trial",
+        "node_id": "node-008",
+        "code_sha256": "91160199732606e8c7b63e83ef264ad6f363026b46c3be3b542cf26668fc70f0",
+        "action": "Extend the best scratch ResNet-18 recipe within the remaining runtime: train up to 150 cosine-decay epochs with a strict time guard, retain sqrt inverse-frequency loss weighting and true tune macro-F1 checkpoint selection, and use a modest four-view deterministic inference ensemble (original, horizontal flip, and small left/right translations) to reduce crop-position variance. The candidate uses no external/public model weights and records its actual validation trajectory.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-repair-b1-007",
+          "budget_seconds": 886.6753023400088,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9365843493808006
+        },
+        "status": "ok",
+        "tune_loss": -0.9365843493808006,
+        "incumbent_before": -0.9576681990693282,
+        "improved": false,
+        "elapsed_seconds": 886.6753023400088,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9549733918422056,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-repair-b1/workspace/working/budget_checkpoints/node-008/inner_tuning/trial-008-outcome.json",
+        "source_artifact_sha256": "5e9eb2126a0e869c61f8e5d220b9eb80a2a27e206c5dd19d377a704d0b988d45"
+      }
+    }
+  ],
+  "counts": {
+    "nodes": 8,
+    "trials": 8,
+    "host_scored": 7,
+    "raw_cards": 8
+  }
+}

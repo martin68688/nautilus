@@ -1,0 +1,140 @@
+{
+  "created_at": "2026-09-18T23:57:47.237849+00:00",
+  "entries": [
+    {
+      "mode": 420,
+      "mtime_ns": 1789775857681972528,
+      "path": "README.md",
+      "sha256": "b1fd78ba340e0d5c8ba4f4350944f3f11645816d4e8f0d42c2cb58fc33df0e32",
+      "size": 2056,
+      "type": "file"
+    },
+    {
+      "mode": 493,
+      "mtime_ns": 1789775836461568127,
+      "path": "__pycache__",
+      "type": "directory"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789775836436239779,
+      "path": "__pycache__/action_protocol.cpython-313.pyc",
+      "sha256": "312d946d2cf70eeed081564d93c596569fec1962bb3d5355cf5f2e86101ab4aa",
+      "size": 5429,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789775836460102251,
+      "path": "__pycache__/agent.cpython-313.pyc",
+      "sha256": "710ab1b52766acd91831e769908accf21e0e93fb4bc680f584a0d2dedcb132b0",
+      "size": 7287,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789775836461510418,
+      "path": "__pycache__/core.cpython-313.pyc",
+      "sha256": "6019deb06730d4cebacfb94af0783ed6440467aa2c88c8e590b84af53a8a72bb",
+      "size": 12895,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789775836436918696,
+      "path": "__pycache__/provider.cpython-313.pyc",
+      "sha256": "27c8515487547cbb71ef4bf1e432ef99e75fed3feeb3483509d708998b3529ba",
+      "size": 5221,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789775836359240734,
+      "path": "__pycache__/test_single_action.cpython-313.pyc",
+      "sha256": "4b121705d197271a946f3ebfa9a96be26e8c378b45cced3c23d267a81b5a11d1",
+      "size": 11070,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789775765078732806,
+      "path": "action_protocol.py",
+      "sha256": "fd4d0b8aacf7476e95d46e46e093c0f920b509b71c949487ebaa852b98677664",
+      "size": 2980,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789775785745706442,
+      "path": "agent.py",
+      "sha256": "ceb3e119cb32ad0e0c654d816756b4c8acbb990bf87d9a393eeb468e5dab979e",
+      "size": 6164,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789775715082820612,
+      "path": "core.py",
+      "sha256": "93b09cf37d2d0286995aea54d6526c745d663a34dca7b33c02e5f2bcec7e7749",
+      "size": 7419,
+      "type": "file"
+    },
+    {
+      "mode": 493,
+      "mtime_ns": 1789775764750785493,
+      "path": "fixtures",
+      "type": "directory"
+    },
+    {
+      "mode": 384,
+      "mtime_ns": 1789775764507436810,
+      "path": "fixtures/leaf-r3-fixture-a15-20260918.bin",
+      "sha256": "92e6fb8dc487f5c749eb2b1c05669d7a5be9229b539cfc04c1d5d01294871389",
+      "size": 8040,
+      "type": "file"
+    },
+    {
+      "mode": 384,
+      "mtime_ns": 1789775764915985087,
+      "path": "fixtures/leaf-r3-fixture-a16-20260918.bin",
+      "sha256": "9cd481bea9ec9d91b9dcb4e41b3ca8ac41c270ec7fb9fa051b6e45d3541fcd4e",
+      "size": 9340,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789775715083209404,
+      "path": "memory_compatibility_v2.json",
+      "sha256": "f643e5dea001fdbdcaad65be9b03d395476e074a5d55005226d2d94d6c7f05c9",
+      "size": 1185,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789775785745393692,
+      "path": "provider.py",
+      "sha256": "3bff1b9a95c267a8fcb35076df2662c672d74dc6c1c2c098e13eb08ecca31f73",
+      "size": 2870,
+      "type": "file"
+    },
+    {
+      "mode": 420,
+      "mtime_ns": 1789775836209162230,
+      "path": "test_single_action.py",
+      "sha256": "ab27503b5f4e02aa29e1a3209bac4cd5ee1e65bf2a6eae345d7c4f8003dead0c",
+      "size": 5130,
+      "type": "file"
+    }
+  ],
+  "excludes": [],
+  "hash_algorithm": "sha256",
+  "root_name": "r3-single-action-v001",
+  "schema": "aws_nrp_transfer_manifest_v1",
+  "totals": {
+    "bytes": 87086,
+    "directories": 2,
+    "entries": 16,
+    "files": 14,
+    "symlinks": 0
+  }
+}

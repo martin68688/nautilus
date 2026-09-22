@@ -1,0 +1,41 @@
+{
+  "version": "conditional-trajectory-skill-v1",
+  "method": "analyst_conditional_trajectory_synthesis",
+  "extra_teacher_call": false,
+  "source_counts": {
+    "nodes": 8,
+    "trials": 8,
+    "host_scored": 7,
+    "raw_cards": 8
+  },
+  "search_cards": 16,
+  "inner_cards": 24,
+  "summary_ids": [
+    "architecture_node-001",
+    "tuning_node-001",
+    "architecture_node-002",
+    "tuning_node-002",
+    "tuning_node-003",
+    "debug_node-003",
+    "architecture_node-004",
+    "tuning_node-004",
+    "architecture_node-005",
+    "tuning_node-005",
+    "architecture_node-006",
+    "tuning_node-006",
+    "architecture_node-007",
+    "tuning_node-007",
+    "architecture_node-008",
+    "tuning_node-008"
+  ],
+  "raw_ids": [
+    "raw_trial_node-001_trial",
+    "raw_trial_node-002_trial",
+    "raw_trial_node-003_trial",
+    "raw_trial_node-004_trial",
+    "raw_trial_node-005_trial",
+    "raw_trial_node-006_trial",
+    "raw_trial_node-007_trial",
+    "raw_trial_node-008_trial"
+  ]
+}

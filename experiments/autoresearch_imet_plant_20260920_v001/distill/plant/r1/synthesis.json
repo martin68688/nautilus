@@ -1,0 +1,113 @@
+{
+  "method": "analyst_conditional_trajectory_synthesis",
+  "nodes": {
+    "node-001": {
+      "architecture_lesson": "This node did not receive a Host score because execution failed before a valid prediction result. The recorded failure or proposal was: candidate_stage_failed. No architectural benefit or ban is inferred.",
+      "tuning_lesson": "There is no measured tuning result for this node because the candidate did not pass the Host prediction contract. Treat its parameters as untested and keep the failure separate from scored evidence.",
+      "debug_lesson": "The executable failure is preserved as a conditional debug observation: candidate_stage_failed. The next candidate must repair the observed contract or runtime issue and still pass fresh-process reload plus Host recomputation before any score is compared.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-002": {
+      "architecture_lesson": "This node did not receive a Host score because execution failed before a valid prediction result. The recorded failure or proposal was: candidate_stage_failed. No architectural benefit or ban is inferred.",
+      "tuning_lesson": "There is no measured tuning result for this node because the candidate did not pass the Host prediction contract. Treat its parameters as untested and keep the failure separate from scored evidence.",
+      "debug_lesson": "The executable failure is preserved as a conditional debug observation: candidate_stage_failed. The next candidate must repair the observed contract or runtime issue and still pass fresh-process reload plus Host recomputation before any score is compared.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-003": {
+      "architecture_lesson": "This node did not receive a Host score because execution failed before a valid prediction result. The recorded failure or proposal was: candidate_stage_failed. No architectural benefit or ban is inferred.",
+      "tuning_lesson": "There is no measured tuning result for this node because the candidate did not pass the Host prediction contract. Treat its parameters as untested and keep the failure separate from scored evidence.",
+      "debug_lesson": "The executable failure is preserved as a conditional debug observation: candidate_stage_failed. The next candidate must repair the observed contract or runtime issue and still pass fresh-process reload plus Host recomputation before any score is compared.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-004": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Implemented a robust CPU-oriented plant seedling classifier using lazy PIL loading, deterministic handcrafted multi-scale color/texture/shape features, class-balanced multinomial logistic regression, tune-set macro-F1 model selection, and portable artifact serialization. CSV columns are discovered flexibly, paths are resolved under /data for relative host paths, and prediction reloads the exact preprocessing and model in a fresh process. No external or pretrained models are used.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Implemented a robust CPU-oriented plant seedling classifier using lazy PIL loading, deterministic handcrafted multi-scale color/texture/shape features, class-balanced multinomial logistic regression, tune-set macro-F1 model selection, and portable artifact serialization. CSV columns are discovered flexibly, paths are resolved under /data for relative host paths, and prediction reloads the exact preprocessing and mode",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-005": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Improved the retained CPU-oriented candidate with deterministic handcrafted multi-scale visual features, balanced multinomial logistic regression, tune-set macro-F1 selection, robust CSV/path handling, and reloadable artifact serialization. The candidate uses only fit.csv for fitting and tune.csv for internal validation. No pretrained or external models are used.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Improved the retained CPU-oriented candidate with deterministic handcrafted multi-scale visual features, balanced multinomial logistic regression, tune-set macro-F1 selection, robust CSV/path handling, and reloadable artifact serialization. The candidate uses only fit.csv for fitting and tune.csv for internal validation. No pretrained or external models are used.",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-006": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It uses fit.csv for training, tune.csv for C selection, lazy loading from /data, portable pickle serialization, and fresh-process reload-compatible prediction. The implementation is unchanged from the validated candidate because the later duplicate produced identical predictions and was discarded.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It uses fit.csv for training, tune.csv for C selection, lazy loading from /data, portable pickle serialization, and fresh-process reload-compatible prediction. The implementation is unchanged from the validated candidate because the later duplicate produced identical predictions and was disc",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-007": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It performs tune-set macro-F1 selection, resolves relative paths under /data, and serializes a reloadable self-contained artifact. No external or pretrained models are used.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It performs tune-set macro-F1 selection, resolves relative paths under /data, and serializes a reloadable self-contained artifact. No external or pretrained models are used.",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-008": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Replace the retained high-dimensional logistic model with a compact, illumination-robust handcrafted feature extractor and RBF SVM. Features combine normalized RGB/HSV spatial color statistics, gradient orientation histograms, edge density, and multi-scale pooled moments. Tune C and gamma on tune.csv using macro-F1, then refit the selected model on all fit.csv data. The artifact contains the fitted scaler, SVM, label mapping, preprocessing metadata, seed, and observed validation trajectory; pred. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Replace the retained high-dimensional logistic model with a compact, illumination-robust handcrafted feature extractor and RBF SVM. Features combine normalized RGB/HSV spatial color statistics, gradient orientation histograms, edge density, and multi-scale pooled moments. Tune C and gamma on tune.csv using macro-F1, then refit the selected model on all fit.csv data. The artifact contains the fitted scaler, SVM, label",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-009": {
+      "architecture_lesson": "This node did not receive a Host score because execution failed before a valid prediction result. The recorded failure or proposal was: candidate_stage_failed. No architectural benefit or ban is inferred.",
+      "tuning_lesson": "There is no measured tuning result for this node because the candidate did not pass the Host prediction contract. Treat its parameters as untested and keep the failure separate from scored evidence.",
+      "debug_lesson": "The executable failure is preserved as a conditional debug observation: candidate_stage_failed. The next candidate must repair the observed contract or runtime issue and still pass fresh-process reload plus Host recomputation before any score is compared.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    }
+  }
+}

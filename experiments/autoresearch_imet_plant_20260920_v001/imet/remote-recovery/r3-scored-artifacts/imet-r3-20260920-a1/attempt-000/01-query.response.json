@@ -1,0 +1,29 @@
+{
+  "id": "resp_0cd84ae70e0acefc016ab0df88b19887d190a54129e429af51",
+  "object": "chat.completion",
+  "created": 1789976462,
+  "model": "gpt-5.6-terra",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"queries\":[\"Exact internal trial outcome\",\"host_scored_candidate\",\"failed_candidate\"]}",
+        "reasoning_content": "**Planning exact JSON querying**"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 12497,
+    "completion_tokens": 61,
+    "total_tokens": 12558,
+    "prompt_tokens_details": {
+      "cached_tokens": 3840
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 35
+    }
+  },
+  "service_tier": "default"
+}

@@ -1,0 +1,53 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "name": "autoresearch-return-20260919-v1",
+    "namespace": "ecepxie",
+    "labels": {
+      "ecepxie.nrp/owner": "haoming",
+      "app.kubernetes.io/managed-by": "codex-nrp-training",
+      "transfer-id": "autoresearch-return-20260919-v1"
+    }
+  },
+  "spec": {
+    "restartPolicy": "Never",
+    "automountServiceAccountToken": false,
+    "activeDeadlineSeconds": 21600,
+    "containers": [
+      {
+        "name": "transfer",
+        "image": "python:3.11-slim",
+        "command": [
+          "python",
+          "-c",
+          "import time; time.sleep(21000)"
+        ],
+        "resources": {
+          "requests": {
+            "cpu": "1",
+            "memory": "1Gi"
+          },
+          "limits": {
+            "cpu": "2",
+            "memory": "2Gi"
+          }
+        },
+        "volumeMounts": [
+          {
+            "name": "workspace",
+            "mountPath": "/workspace"
+          }
+        ]
+      }
+    ],
+    "volumes": [
+      {
+        "name": "workspace",
+        "persistentVolumeClaim": {
+          "claimName": "haoming-storage"
+        }
+      }
+    ]
+  }
+}

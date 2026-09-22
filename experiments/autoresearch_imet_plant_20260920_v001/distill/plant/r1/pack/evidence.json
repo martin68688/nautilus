@@ -1,0 +1,1104 @@
+{
+  "version": "conditional-trajectory-skill-v1",
+  "task": "autoresearch-plant",
+  "launch": {
+    "run_id": "plant-r1-20260920-a2",
+    "task_id": "autoresearch-plant",
+    "round": 1,
+    "started_unix": 1789952140.4025648,
+    "budget_seconds": 7200,
+    "model": "gpt-5.6-terra",
+    "effort": "low",
+    "memory": false,
+    "data_manifest_sha256": "c7168683964b925c7f494bddbdd6de82d505fe546f941f33ebab106e6e612348",
+    "runtime_manifest_sha256": "66809ad804138b0aed09fc2cce188f1c3b6c768630f24e662497b03fa1d67b90",
+    "metric": "host_macro_f1"
+  },
+  "nodes": [
+    {
+      "node_id": "node-001",
+      "step": 1,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "failed_candidate",
+        "architecture": "Implemented a self-contained scratch-trained convolutional candidate with lazy image loading, class-balanced sampling, deterministic seeding, tune-set macro-F1 model selection, artifact serialization, and fresh-process prediction. It uses only fit.csv for optimization and tune.csv for validation/model selection.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-a2-000",
+        "budget_seconds": 4.372738503996516,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": null
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-001:trial",
+          "node_id": "node-001",
+          "code_sha256": "768395e8a458830f8b5933ea3d3b15591a30b88d588f024e5fb31ee6c5d037fc",
+          "action": "Implemented a self-contained scratch-trained convolutional candidate with lazy image loading, class-balanced sampling, deterministic seeding, tune-set macro-F1 model selection, artifact serialization, and fresh-process prediction. It uses only fit.csv for optimization and tune.csv for validation/model selection.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-000",
+            "budget_seconds": 4.372738503996516,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": null
+          },
+          "status": "failed",
+          "tune_loss": null,
+          "incumbent_before": null,
+          "improved": false,
+          "elapsed_seconds": 4.372738503996516,
+          "parent_trial_id": null,
+          "error_type": "candidate_stage_failed",
+          "error": "candidate_stage_failed",
+          "metadata": {
+            "host_search_score": null,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json",
+          "source_artifact_sha256": "6fcdc8f2c7e9d3e6df71f6b84fcb1de0253d369642b8c51641d664999e89adb4"
+        }
+      ],
+      "selected": null,
+      "host_metric": null,
+      "host_micro_f1": null,
+      "host_receipt": {},
+      "classification": "unscored",
+      "incumbent_before": null,
+      "execution_seconds": 4.372738503996516,
+      "failure_type": "candidate_stage_failed",
+      "analysis": "candidate_stage_failed",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-a2/logs/candidate_checkpoints/node-001.py",
+        "source_artifact_sha256": "768395e8a458830f8b5933ea3d3b15591a30b88d588f024e5fb31ee6c5d037fc"
+      },
+      "verified_artifact": null
+    },
+    {
+      "node_id": "node-002",
+      "step": 2,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "failed_candidate",
+        "architecture": "Replaced the failed candidate with a deterministic scratch-trained CNN using robust CSV column discovery, lazy PIL loading, class-balanced loss, tune-set macro-F1 checkpoint selection, artifact serialization, and fresh-process inference from /data/<relative_path>. The candidate uses only fit.csv labels for optimization and tune.csv labels for internal validation/model selection. No pretrained or external models are used.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-a2-001",
+        "budget_seconds": 1097.5372847430117,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": null
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-002:trial",
+          "node_id": "node-002",
+          "code_sha256": "84cdc16e931cf62a6dc91cb7494cb957e87bd8bdf11e935180fa59a7e4057179",
+          "action": "Replaced the failed candidate with a deterministic scratch-trained CNN using robust CSV column discovery, lazy PIL loading, class-balanced loss, tune-set macro-F1 checkpoint selection, artifact serialization, and fresh-process inference from /data/<relative_path>. The candidate uses only fit.csv labels for optimization and tune.csv labels for internal validation/model selection. No pretrained or external models are used.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-001",
+            "budget_seconds": 1097.5372847430117,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": null
+          },
+          "status": "failed",
+          "tune_loss": null,
+          "incumbent_before": null,
+          "improved": false,
+          "elapsed_seconds": 1097.5372847430117,
+          "parent_trial_id": null,
+          "error_type": "candidate_stage_failed",
+          "error": "candidate_stage_failed",
+          "metadata": {
+            "host_search_score": null,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+          "source_artifact_sha256": "281fcc931cd4af0f14095fdc01a34430d56066379848a9b7f9e8cbd7fe65d83e"
+        }
+      ],
+      "selected": null,
+      "host_metric": null,
+      "host_micro_f1": null,
+      "host_receipt": {},
+      "classification": "unscored",
+      "incumbent_before": null,
+      "execution_seconds": 1097.5372847430117,
+      "failure_type": "candidate_stage_failed",
+      "analysis": "candidate_stage_failed",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-a2/logs/candidate_checkpoints/node-002.py",
+        "source_artifact_sha256": "84cdc16e931cf62a6dc91cb7494cb957e87bd8bdf11e935180fa59a7e4057179"
+      },
+      "verified_artifact": null
+    },
+    {
+      "node_id": "node-003",
+      "step": 3,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "failed_candidate",
+        "architecture": "Implemented a self-contained, CPU-friendly plant-seedling classifier using lazy PIL loading, deterministic stratified validation, handcrafted color/texture/shape features, multinomial logistic regression trained with scikit-learn, tune-set macro-F1 model selection, and artifact serialization. It uses only fit.csv labels for fitting and tune.csv labels for internal validation/model selection. Prediction reloads preprocessing and model in a fresh process and resolves host-relative paths under /data/.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-a2-002",
+        "budget_seconds": 235.9072782820149,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": null
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-003:trial",
+          "node_id": "node-003",
+          "code_sha256": "952dad9d7b5111c688a14f2560a12653adc9b3be162d17d4307ac81d5561b9f2",
+          "action": "Implemented a self-contained, CPU-friendly plant-seedling classifier using lazy PIL loading, deterministic stratified validation, handcrafted color/texture/shape features, multinomial logistic regression trained with scikit-learn, tune-set macro-F1 model selection, and artifact serialization. It uses only fit.csv labels for fitting and tune.csv labels for internal validation/model selection. Prediction reloads preprocessing and model in a fresh process and resolves host-relative paths under /data/.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-002",
+            "budget_seconds": 235.9072782820149,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": null
+          },
+          "status": "failed",
+          "tune_loss": null,
+          "incumbent_before": null,
+          "improved": false,
+          "elapsed_seconds": 235.9072782820149,
+          "parent_trial_id": null,
+          "error_type": "candidate_stage_failed",
+          "error": "candidate_stage_failed",
+          "metadata": {
+            "host_search_score": null,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json",
+          "source_artifact_sha256": "705112e1a1477d0068dbd1e9a22398849da65a18855aa509a05cfc3c26aa4eef"
+        }
+      ],
+      "selected": null,
+      "host_metric": null,
+      "host_micro_f1": null,
+      "host_receipt": {},
+      "classification": "unscored",
+      "incumbent_before": null,
+      "execution_seconds": 235.9072782820149,
+      "failure_type": "candidate_stage_failed",
+      "analysis": "candidate_stage_failed",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-a2/logs/candidate_checkpoints/node-003.py",
+        "source_artifact_sha256": "952dad9d7b5111c688a14f2560a12653adc9b3be162d17d4307ac81d5561b9f2"
+      },
+      "verified_artifact": null
+    },
+    {
+      "node_id": "node-004",
+      "step": 4,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Implemented a robust CPU-oriented plant seedling classifier using lazy PIL loading, deterministic handcrafted multi-scale color/texture/shape features, class-balanced multinomial logistic regression, tune-set macro-F1 model selection, and portable artifact serialization. CSV columns are discovered flexibly, paths are resolved under /data for relative host paths, and prediction reloads the exact preprocessing and model in a fresh process. No external or pretrained models are used.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-a2-003",
+        "budget_seconds": 492.6121128660161,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.49328984451517227
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-004:trial",
+          "node_id": "node-004",
+          "code_sha256": "4789a678ef5948701cceda6233b545af149bc4a51ec3d143f0b04222a246c7cd",
+          "action": "Implemented a robust CPU-oriented plant seedling classifier using lazy PIL loading, deterministic handcrafted multi-scale color/texture/shape features, class-balanced multinomial logistic regression, tune-set macro-F1 model selection, and portable artifact serialization. CSV columns are discovered flexibly, paths are resolved under /data for relative host paths, and prediction reloads the exact preprocessing and model in a fresh process. No external or pretrained models are used.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-003",
+            "budget_seconds": 492.6121128660161,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.49328984451517227
+          },
+          "status": "ok",
+          "tune_loss": -0.49328984451517227,
+          "incumbent_before": null,
+          "improved": true,
+          "elapsed_seconds": 492.6121128660161,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.47897322198253933,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+          "source_artifact_sha256": "e33bab6b201dfa91156e375a08e0e10ad80851c972a36d09a81a0fe167e1e246"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-004:trial",
+        "node_id": "node-004",
+        "code_sha256": "4789a678ef5948701cceda6233b545af149bc4a51ec3d143f0b04222a246c7cd",
+        "action": "Implemented a robust CPU-oriented plant seedling classifier using lazy PIL loading, deterministic handcrafted multi-scale color/texture/shape features, class-balanced multinomial logistic regression, tune-set macro-F1 model selection, and portable artifact serialization. CSV columns are discovered flexibly, paths are resolved under /data for relative host paths, and prediction reloads the exact preprocessing and model in a fresh process. No external or pretrained models are used.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-003",
+          "budget_seconds": 492.6121128660161,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.49328984451517227
+        },
+        "status": "ok",
+        "tune_loss": -0.49328984451517227,
+        "incumbent_before": null,
+        "improved": true,
+        "elapsed_seconds": 492.6121128660161,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.47897322198253933,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+        "source_artifact_sha256": "e33bab6b201dfa91156e375a08e0e10ad80851c972a36d09a81a0fe167e1e246"
+      },
+      "host_metric": -0.47897322198253933,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.49328984451517227,
+        "metadata": {
+          "inner_trial_id": "node-004:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-003",
+            "budget_seconds": 492.6121128660161,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.49328984451517227
+          }
+        }
+      },
+      "classification": "baseline",
+      "incumbent_before": null,
+      "execution_seconds": 492.6121128660161,
+      "failure_type": null,
+      "analysis": "Implemented a robust CPU-oriented plant seedling classifier using lazy PIL loading, deterministic handcrafted multi-scale color/texture/shape features, class-balanced multinomial logistic regression, tune-set macro-F1 model selection, and portable artifact serialization. CSV columns are discovered flexibly, paths are resolved under /data for relative host paths, and prediction reloads the exact preprocessing and model in a fresh process. No external or pretrained models are used.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-a2/logs/candidate_checkpoints/node-004.py",
+        "source_artifact_sha256": "4789a678ef5948701cceda6233b545af149bc4a51ec3d143f0b04222a246c7cd"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-004/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "af4968f6f7dc44f49acba7043727a049d0df8527109f913034f078aef546f797"
+      }
+    },
+    {
+      "node_id": "node-005",
+      "step": 5,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Improved the retained CPU-oriented candidate with deterministic handcrafted multi-scale visual features, balanced multinomial logistic regression, tune-set macro-F1 selection, robust CSV/path handling, and reloadable artifact serialization. The candidate uses only fit.csv for fitting and tune.csv for internal validation. No pretrained or external models are used.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-a2-004",
+        "budget_seconds": 488.01700642198557,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.49328984451517227
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-005:trial",
+          "node_id": "node-005",
+          "code_sha256": "74dac5e0e96c3b09f02bd7c66dfd04aefdd7f7808994df0a6395caa8090d2d76",
+          "action": "Improved the retained CPU-oriented candidate with deterministic handcrafted multi-scale visual features, balanced multinomial logistic regression, tune-set macro-F1 selection, robust CSV/path handling, and reloadable artifact serialization. The candidate uses only fit.csv for fitting and tune.csv for internal validation. No pretrained or external models are used.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-004",
+            "budget_seconds": 488.01700642198557,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.49328984451517227
+          },
+          "status": "ok",
+          "tune_loss": -0.49328984451517227,
+          "incumbent_before": -0.47897322198253933,
+          "improved": false,
+          "elapsed_seconds": 488.01700642198557,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.47897322198253933,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-005/inner_tuning/trial-005-outcome.json",
+          "source_artifact_sha256": "894d3c1588f1615eabf4834ff1c85f2dc7ac05e23bac6105710d8171cd9cd085"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-005:trial",
+        "node_id": "node-005",
+        "code_sha256": "74dac5e0e96c3b09f02bd7c66dfd04aefdd7f7808994df0a6395caa8090d2d76",
+        "action": "Improved the retained CPU-oriented candidate with deterministic handcrafted multi-scale visual features, balanced multinomial logistic regression, tune-set macro-F1 selection, robust CSV/path handling, and reloadable artifact serialization. The candidate uses only fit.csv for fitting and tune.csv for internal validation. No pretrained or external models are used.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-004",
+          "budget_seconds": 488.01700642198557,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.49328984451517227
+        },
+        "status": "ok",
+        "tune_loss": -0.49328984451517227,
+        "incumbent_before": -0.47897322198253933,
+        "improved": false,
+        "elapsed_seconds": 488.01700642198557,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.47897322198253933,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-005/inner_tuning/trial-005-outcome.json",
+        "source_artifact_sha256": "894d3c1588f1615eabf4834ff1c85f2dc7ac05e23bac6105710d8171cd9cd085"
+      },
+      "host_metric": -0.47897322198253933,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.49328984451517227,
+        "metadata": {
+          "inner_trial_id": "node-005:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-004",
+            "budget_seconds": 488.01700642198557,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.49328984451517227
+          }
+        }
+      },
+      "classification": "below_incumbent",
+      "incumbent_before": -0.47897322198253933,
+      "execution_seconds": 488.01700642198557,
+      "failure_type": null,
+      "analysis": "Improved the retained CPU-oriented candidate with deterministic handcrafted multi-scale visual features, balanced multinomial logistic regression, tune-set macro-F1 selection, robust CSV/path handling, and reloadable artifact serialization. The candidate uses only fit.csv for fitting and tune.csv for internal validation. No pretrained or external models are used.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-a2/logs/candidate_checkpoints/node-005.py",
+        "source_artifact_sha256": "74dac5e0e96c3b09f02bd7c66dfd04aefdd7f7808994df0a6395caa8090d2d76"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-005/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "0dbdadc44b4eff5dd06b3ed42905156a45b4e6a2ba99eadfa4da22d3e07311cd"
+      }
+    },
+    {
+      "node_id": "node-006",
+      "step": 6,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It uses fit.csv for training, tune.csv for C selection, lazy loading from /data, portable pickle serialization, and fresh-process reload-compatible prediction. The implementation is unchanged from the validated candidate because the later duplicate produced identical predictions and was discarded.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-a2-005",
+        "budget_seconds": 488.4466647999943,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.49328984451517227
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-006:trial",
+          "node_id": "node-006",
+          "code_sha256": "e6a7d2e282d6d6f08f246d90254010cb0c07e387e9d83f8031b6177114d56ad4",
+          "action": "Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It uses fit.csv for training, tune.csv for C selection, lazy loading from /data, portable pickle serialization, and fresh-process reload-compatible prediction. The implementation is unchanged from the validated candidate because the later duplicate produced identical predictions and was discarded.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-005",
+            "budget_seconds": 488.4466647999943,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.49328984451517227
+          },
+          "status": "ok",
+          "tune_loss": -0.49328984451517227,
+          "incumbent_before": -0.47897322198253933,
+          "improved": false,
+          "elapsed_seconds": 488.4466647999943,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.47897322198253933,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-006/inner_tuning/trial-006-outcome.json",
+          "source_artifact_sha256": "694d45f2bffe170a49f0bda9a6ce7f492c217ac1419c3e956620bc4491c64fa7"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-006:trial",
+        "node_id": "node-006",
+        "code_sha256": "e6a7d2e282d6d6f08f246d90254010cb0c07e387e9d83f8031b6177114d56ad4",
+        "action": "Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It uses fit.csv for training, tune.csv for C selection, lazy loading from /data, portable pickle serialization, and fresh-process reload-compatible prediction. The implementation is unchanged from the validated candidate because the later duplicate produced identical predictions and was discarded.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-005",
+          "budget_seconds": 488.4466647999943,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.49328984451517227
+        },
+        "status": "ok",
+        "tune_loss": -0.49328984451517227,
+        "incumbent_before": -0.47897322198253933,
+        "improved": false,
+        "elapsed_seconds": 488.4466647999943,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.47897322198253933,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-006/inner_tuning/trial-006-outcome.json",
+        "source_artifact_sha256": "694d45f2bffe170a49f0bda9a6ce7f492c217ac1419c3e956620bc4491c64fa7"
+      },
+      "host_metric": -0.47897322198253933,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.49328984451517227,
+        "metadata": {
+          "inner_trial_id": "node-006:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-005",
+            "budget_seconds": 488.4466647999943,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.49328984451517227
+          }
+        }
+      },
+      "classification": "below_incumbent",
+      "incumbent_before": -0.47897322198253933,
+      "execution_seconds": 488.4466647999943,
+      "failure_type": null,
+      "analysis": "Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It uses fit.csv for training, tune.csv for C selection, lazy loading from /data, portable pickle serialization, and fresh-process reload-compatible prediction. The implementation is unchanged from the validated candidate because the later duplicate produced identical predictions and was discarded.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-a2/logs/candidate_checkpoints/node-006.py",
+        "source_artifact_sha256": "e6a7d2e282d6d6f08f246d90254010cb0c07e387e9d83f8031b6177114d56ad4"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-006/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "690ec8801a843d271b96b98803812ab6b83b01a9fd78d6dfef87b1f413c1e5a4"
+      }
+    },
+    {
+      "node_id": "node-007",
+      "step": 7,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It performs tune-set macro-F1 selection, resolves relative paths under /data, and serializes a reloadable self-contained artifact. No external or pretrained models are used.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-a2-006",
+        "budget_seconds": 487.598568454996,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.49328984451517227
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-007:trial",
+          "node_id": "node-007",
+          "code_sha256": "6d82673dca383d6d9466a7fabe622b6e4bd8daacdaa2e9a5310801e708bf41f5",
+          "action": "Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It performs tune-set macro-F1 selection, resolves relative paths under /data, and serializes a reloadable self-contained artifact. No external or pretrained models are used.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-006",
+            "budget_seconds": 487.598568454996,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.49328984451517227
+          },
+          "status": "ok",
+          "tune_loss": -0.49328984451517227,
+          "incumbent_before": -0.47897322198253933,
+          "improved": false,
+          "elapsed_seconds": 487.598568454996,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.47897322198253933,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-007/inner_tuning/trial-007-outcome.json",
+          "source_artifact_sha256": "5d897139e9f0af0d4bebeadc9d71d1ff892332e8b735cf2094b9eb21a5be01f1"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-007:trial",
+        "node_id": "node-007",
+        "code_sha256": "6d82673dca383d6d9466a7fabe622b6e4bd8daacdaa2e9a5310801e708bf41f5",
+        "action": "Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It performs tune-set macro-F1 selection, resolves relative paths under /data, and serializes a reloadable self-contained artifact. No external or pretrained models are used.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-006",
+          "budget_seconds": 487.598568454996,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.49328984451517227
+        },
+        "status": "ok",
+        "tune_loss": -0.49328984451517227,
+        "incumbent_before": -0.47897322198253933,
+        "improved": false,
+        "elapsed_seconds": 487.598568454996,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.47897322198253933,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-007/inner_tuning/trial-007-outcome.json",
+        "source_artifact_sha256": "5d897139e9f0af0d4bebeadc9d71d1ff892332e8b735cf2094b9eb21a5be01f1"
+      },
+      "host_metric": -0.47897322198253933,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.49328984451517227,
+        "metadata": {
+          "inner_trial_id": "node-007:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-006",
+            "budget_seconds": 487.598568454996,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.49328984451517227
+          }
+        }
+      },
+      "classification": "below_incumbent",
+      "incumbent_before": -0.47897322198253933,
+      "execution_seconds": 487.598568454996,
+      "failure_type": null,
+      "analysis": "Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It performs tune-set macro-F1 selection, resolves relative paths under /data, and serializes a reloadable self-contained artifact. No external or pretrained models are used.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-a2/logs/candidate_checkpoints/node-007.py",
+        "source_artifact_sha256": "6d82673dca383d6d9466a7fabe622b6e4bd8daacdaa2e9a5310801e708bf41f5"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-007/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "1ec74ce6564a00fa71b43abd9909718d784dbb97be528174182fd9d3b8eb0e19"
+      }
+    },
+    {
+      "node_id": "node-008",
+      "step": 8,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Replace the retained high-dimensional logistic model with a compact, illumination-robust handcrafted feature extractor and RBF SVM. Features combine normalized RGB/HSV spatial color statistics, gradient orientation histograms, edge density, and multi-scale pooled moments. Tune C and gamma on tune.csv using macro-F1, then refit the selected model on all fit.csv data. The artifact contains the fitted scaler, SVM, label mapping, preprocessing metadata, seed, and observed validation trajectory; prediction reloads identically in a fresh process.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-a2-007",
+        "budget_seconds": 1855.704200801003,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.6744191428024684
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-008:trial",
+          "node_id": "node-008",
+          "code_sha256": "198ea4e00cc14553180a7d13d784f87afc7c9c9359fb20cfead1859d04631a39",
+          "action": "Replace the retained high-dimensional logistic model with a compact, illumination-robust handcrafted feature extractor and RBF SVM. Features combine normalized RGB/HSV spatial color statistics, gradient orientation histograms, edge density, and multi-scale pooled moments. Tune C and gamma on tune.csv using macro-F1, then refit the selected model on all fit.csv data. The artifact contains the fitted scaler, SVM, label mapping, preprocessing metadata, seed, and observed validation trajectory; prediction reloads identically in a fresh process.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-007",
+            "budget_seconds": 1855.704200801003,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.6744191428024684
+          },
+          "status": "ok",
+          "tune_loss": -0.6744191428024684,
+          "incumbent_before": -0.47897322198253933,
+          "improved": true,
+          "elapsed_seconds": 1855.704200801003,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.6993597399363676,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-008/inner_tuning/trial-008-outcome.json",
+          "source_artifact_sha256": "c4cbfb4cef6be4194e02aa49175abf25b34a69128bf9478274ea91ce7299370f"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-008:trial",
+        "node_id": "node-008",
+        "code_sha256": "198ea4e00cc14553180a7d13d784f87afc7c9c9359fb20cfead1859d04631a39",
+        "action": "Replace the retained high-dimensional logistic model with a compact, illumination-robust handcrafted feature extractor and RBF SVM. Features combine normalized RGB/HSV spatial color statistics, gradient orientation histograms, edge density, and multi-scale pooled moments. Tune C and gamma on tune.csv using macro-F1, then refit the selected model on all fit.csv data. The artifact contains the fitted scaler, SVM, label mapping, preprocessing metadata, seed, and observed validation trajectory; prediction reloads identically in a fresh process.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-007",
+          "budget_seconds": 1855.704200801003,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.6744191428024684
+        },
+        "status": "ok",
+        "tune_loss": -0.6744191428024684,
+        "incumbent_before": -0.47897322198253933,
+        "improved": true,
+        "elapsed_seconds": 1855.704200801003,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.6993597399363676,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-008/inner_tuning/trial-008-outcome.json",
+        "source_artifact_sha256": "c4cbfb4cef6be4194e02aa49175abf25b34a69128bf9478274ea91ce7299370f"
+      },
+      "host_metric": -0.6993597399363676,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.6744191428024684,
+        "metadata": {
+          "inner_trial_id": "node-008:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-007",
+            "budget_seconds": 1855.704200801003,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.6744191428024684
+          }
+        }
+      },
+      "classification": "new_incumbent",
+      "incumbent_before": -0.47897322198253933,
+      "execution_seconds": 1855.704200801003,
+      "failure_type": null,
+      "analysis": "Replace the retained high-dimensional logistic model with a compact, illumination-robust handcrafted feature extractor and RBF SVM. Features combine normalized RGB/HSV spatial color statistics, gradient orientation histograms, edge density, and multi-scale pooled moments. Tune C and gamma on tune.csv using macro-F1, then refit the selected model on all fit.csv data. The artifact contains the fitted scaler, SVM, label mapping, preprocessing metadata, seed, and observed validation trajectory; prediction reloads identically in a fresh process.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-a2/logs/candidate_checkpoints/node-008.py",
+        "source_artifact_sha256": "198ea4e00cc14553180a7d13d784f87afc7c9c9359fb20cfead1859d04631a39"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-008/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "625847aaa72403220b75a50c1cb2ea5f805d0bdd2992d40fbdf303d2580185e5"
+      }
+    },
+    {
+      "node_id": "node-009",
+      "step": 9,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "failed_candidate",
+        "architecture": "Adapt the retained RBF-SVM candidate by adding compact foreground-mask morphology descriptors (vegetation extent, projections, radial occupancy, and component-free shape statistics) to the validated multi-scale color/gradient representation. Selection remains strictly on tune.csv macro-F1, while the final selected estimator is refit only on fit.csv. The parameter grid is ordered to yield a strong valid model under limited budgets and records every completed validation result without claiming outcomes in advance.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-a2-008",
+        "budget_seconds": 1176.722842267016,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": null
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-009:trial",
+          "node_id": "node-009",
+          "code_sha256": "7229ca16a4d16278abe8a79c476d1f2f1a6d970a974353752c72fb28fcf87b14",
+          "action": "Adapt the retained RBF-SVM candidate by adding compact foreground-mask morphology descriptors (vegetation extent, projections, radial occupancy, and component-free shape statistics) to the validated multi-scale color/gradient representation. Selection remains strictly on tune.csv macro-F1, while the final selected estimator is refit only on fit.csv. The parameter grid is ordered to yield a strong valid model under limited budgets and records every completed validation result without claiming outcomes in advance.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-a2-008",
+            "budget_seconds": 1176.722842267016,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": null
+          },
+          "status": "failed",
+          "tune_loss": null,
+          "incumbent_before": -0.6993597399363676,
+          "improved": false,
+          "elapsed_seconds": 1176.722842267016,
+          "parent_trial_id": null,
+          "error_type": "candidate_stage_failed",
+          "error": "candidate_stage_failed",
+          "metadata": {
+            "host_search_score": null,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-009/inner_tuning/trial-009-outcome.json",
+          "source_artifact_sha256": "37dcda217b74196da00ec169bdad67ad734b30594559b3d6942b3d4401dfeaf8"
+        }
+      ],
+      "selected": null,
+      "host_metric": null,
+      "host_micro_f1": null,
+      "host_receipt": {},
+      "classification": "unscored",
+      "incumbent_before": -0.6993597399363676,
+      "execution_seconds": 1176.722842267016,
+      "failure_type": "candidate_stage_failed",
+      "analysis": "candidate_stage_failed",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-a2/logs/candidate_checkpoints/node-009.py",
+        "source_artifact_sha256": "7229ca16a4d16278abe8a79c476d1f2f1a6d970a974353752c72fb28fcf87b14"
+      },
+      "verified_artifact": null
+    }
+  ],
+  "raw_cards": [
+    {
+      "id": "trial_node-001_trial",
+      "granularity": "debug",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-001:trial",
+        "node_id": "node-001",
+        "code_sha256": "768395e8a458830f8b5933ea3d3b15591a30b88d588f024e5fb31ee6c5d037fc",
+        "action": "Implemented a self-contained scratch-trained convolutional candidate with lazy image loading, class-balanced sampling, deterministic seeding, tune-set macro-F1 model selection, artifact serialization, and fresh-process prediction. It uses only fit.csv for optimization and tune.csv for validation/model selection.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-000",
+          "budget_seconds": 4.372738503996516,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": null
+        },
+        "status": "failed",
+        "tune_loss": null,
+        "incumbent_before": null,
+        "improved": false,
+        "elapsed_seconds": 4.372738503996516,
+        "parent_trial_id": null,
+        "error_type": "candidate_stage_failed",
+        "error": "candidate_stage_failed",
+        "metadata": {
+          "host_search_score": null,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json",
+        "source_artifact_sha256": "6fcdc8f2c7e9d3e6df71f6b84fcb1de0253d369642b8c51641d664999e89adb4"
+      }
+    },
+    {
+      "id": "trial_node-002_trial",
+      "granularity": "debug",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-002:trial",
+        "node_id": "node-002",
+        "code_sha256": "84cdc16e931cf62a6dc91cb7494cb957e87bd8bdf11e935180fa59a7e4057179",
+        "action": "Replaced the failed candidate with a deterministic scratch-trained CNN using robust CSV column discovery, lazy PIL loading, class-balanced loss, tune-set macro-F1 checkpoint selection, artifact serialization, and fresh-process inference from /data/<relative_path>. The candidate uses only fit.csv labels for optimization and tune.csv labels for internal validation/model selection. No pretrained or external models are used.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-001",
+          "budget_seconds": 1097.5372847430117,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": null
+        },
+        "status": "failed",
+        "tune_loss": null,
+        "incumbent_before": null,
+        "improved": false,
+        "elapsed_seconds": 1097.5372847430117,
+        "parent_trial_id": null,
+        "error_type": "candidate_stage_failed",
+        "error": "candidate_stage_failed",
+        "metadata": {
+          "host_search_score": null,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+        "source_artifact_sha256": "281fcc931cd4af0f14095fdc01a34430d56066379848a9b7f9e8cbd7fe65d83e"
+      }
+    },
+    {
+      "id": "trial_node-003_trial",
+      "granularity": "debug",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-003:trial",
+        "node_id": "node-003",
+        "code_sha256": "952dad9d7b5111c688a14f2560a12653adc9b3be162d17d4307ac81d5561b9f2",
+        "action": "Implemented a self-contained, CPU-friendly plant-seedling classifier using lazy PIL loading, deterministic stratified validation, handcrafted color/texture/shape features, multinomial logistic regression trained with scikit-learn, tune-set macro-F1 model selection, and artifact serialization. It uses only fit.csv labels for fitting and tune.csv labels for internal validation/model selection. Prediction reloads preprocessing and model in a fresh process and resolves host-relative paths under /data/.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-002",
+          "budget_seconds": 235.9072782820149,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": null
+        },
+        "status": "failed",
+        "tune_loss": null,
+        "incumbent_before": null,
+        "improved": false,
+        "elapsed_seconds": 235.9072782820149,
+        "parent_trial_id": null,
+        "error_type": "candidate_stage_failed",
+        "error": "candidate_stage_failed",
+        "metadata": {
+          "host_search_score": null,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json",
+        "source_artifact_sha256": "705112e1a1477d0068dbd1e9a22398849da65a18855aa509a05cfc3c26aa4eef"
+      }
+    },
+    {
+      "id": "trial_node-004_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-004:trial",
+        "node_id": "node-004",
+        "code_sha256": "4789a678ef5948701cceda6233b545af149bc4a51ec3d143f0b04222a246c7cd",
+        "action": "Implemented a robust CPU-oriented plant seedling classifier using lazy PIL loading, deterministic handcrafted multi-scale color/texture/shape features, class-balanced multinomial logistic regression, tune-set macro-F1 model selection, and portable artifact serialization. CSV columns are discovered flexibly, paths are resolved under /data for relative host paths, and prediction reloads the exact preprocessing and model in a fresh process. No external or pretrained models are used.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-003",
+          "budget_seconds": 492.6121128660161,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.49328984451517227
+        },
+        "status": "ok",
+        "tune_loss": -0.49328984451517227,
+        "incumbent_before": null,
+        "improved": true,
+        "elapsed_seconds": 492.6121128660161,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.47897322198253933,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+        "source_artifact_sha256": "e33bab6b201dfa91156e375a08e0e10ad80851c972a36d09a81a0fe167e1e246"
+      }
+    },
+    {
+      "id": "trial_node-005_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-005:trial",
+        "node_id": "node-005",
+        "code_sha256": "74dac5e0e96c3b09f02bd7c66dfd04aefdd7f7808994df0a6395caa8090d2d76",
+        "action": "Improved the retained CPU-oriented candidate with deterministic handcrafted multi-scale visual features, balanced multinomial logistic regression, tune-set macro-F1 selection, robust CSV/path handling, and reloadable artifact serialization. The candidate uses only fit.csv for fitting and tune.csv for internal validation. No pretrained or external models are used.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-004",
+          "budget_seconds": 488.01700642198557,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.49328984451517227
+        },
+        "status": "ok",
+        "tune_loss": -0.49328984451517227,
+        "incumbent_before": -0.47897322198253933,
+        "improved": false,
+        "elapsed_seconds": 488.01700642198557,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.47897322198253933,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-005/inner_tuning/trial-005-outcome.json",
+        "source_artifact_sha256": "894d3c1588f1615eabf4834ff1c85f2dc7ac05e23bac6105710d8171cd9cd085"
+      }
+    },
+    {
+      "id": "trial_node-006_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-006:trial",
+        "node_id": "node-006",
+        "code_sha256": "e6a7d2e282d6d6f08f246d90254010cb0c07e387e9d83f8031b6177114d56ad4",
+        "action": "Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It uses fit.csv for training, tune.csv for C selection, lazy loading from /data, portable pickle serialization, and fresh-process reload-compatible prediction. The implementation is unchanged from the validated candidate because the later duplicate produced identical predictions and was discarded.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-005",
+          "budget_seconds": 488.4466647999943,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.49328984451517227
+        },
+        "status": "ok",
+        "tune_loss": -0.49328984451517227,
+        "incumbent_before": -0.47897322198253933,
+        "improved": false,
+        "elapsed_seconds": 488.4466647999943,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.47897322198253933,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-006/inner_tuning/trial-006-outcome.json",
+        "source_artifact_sha256": "694d45f2bffe170a49f0bda9a6ce7f492c217ac1419c3e956620bc4491c64fa7"
+      }
+    },
+    {
+      "id": "trial_node-007_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-007:trial",
+        "node_id": "node-007",
+        "code_sha256": "6d82673dca383d6d9466a7fabe622b6e4bd8daacdaa2e9a5310801e708bf41f5",
+        "action": "Retain the validated CPU-oriented handcrafted multiscale visual feature pipeline with balanced multinomial logistic regression. It performs tune-set macro-F1 selection, resolves relative paths under /data, and serializes a reloadable self-contained artifact. No external or pretrained models are used.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-006",
+          "budget_seconds": 487.598568454996,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.49328984451517227
+        },
+        "status": "ok",
+        "tune_loss": -0.49328984451517227,
+        "incumbent_before": -0.47897322198253933,
+        "improved": false,
+        "elapsed_seconds": 487.598568454996,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.47897322198253933,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-007/inner_tuning/trial-007-outcome.json",
+        "source_artifact_sha256": "5d897139e9f0af0d4bebeadc9d71d1ff892332e8b735cf2094b9eb21a5be01f1"
+      }
+    },
+    {
+      "id": "trial_node-008_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-008:trial",
+        "node_id": "node-008",
+        "code_sha256": "198ea4e00cc14553180a7d13d784f87afc7c9c9359fb20cfead1859d04631a39",
+        "action": "Replace the retained high-dimensional logistic model with a compact, illumination-robust handcrafted feature extractor and RBF SVM. Features combine normalized RGB/HSV spatial color statistics, gradient orientation histograms, edge density, and multi-scale pooled moments. Tune C and gamma on tune.csv using macro-F1, then refit the selected model on all fit.csv data. The artifact contains the fitted scaler, SVM, label mapping, preprocessing metadata, seed, and observed validation trajectory; prediction reloads identically in a fresh process.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-007",
+          "budget_seconds": 1855.704200801003,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.6744191428024684
+        },
+        "status": "ok",
+        "tune_loss": -0.6744191428024684,
+        "incumbent_before": -0.47897322198253933,
+        "improved": true,
+        "elapsed_seconds": 1855.704200801003,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.6993597399363676,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-008/inner_tuning/trial-008-outcome.json",
+        "source_artifact_sha256": "c4cbfb4cef6be4194e02aa49175abf25b34a69128bf9478274ea91ce7299370f"
+      }
+    },
+    {
+      "id": "trial_node-009_trial",
+      "granularity": "debug",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-009:trial",
+        "node_id": "node-009",
+        "code_sha256": "7229ca16a4d16278abe8a79c476d1f2f1a6d970a974353752c72fb28fcf87b14",
+        "action": "Adapt the retained RBF-SVM candidate by adding compact foreground-mask morphology descriptors (vegetation extent, projections, radial occupancy, and component-free shape statistics) to the validated multi-scale color/gradient representation. Selection remains strictly on tune.csv macro-F1, while the final selected estimator is refit only on fit.csv. The parameter grid is ordered to yield a strong valid model under limited budgets and records every completed validation result without claiming outcomes in advance.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-a2-008",
+          "budget_seconds": 1176.722842267016,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": null
+        },
+        "status": "failed",
+        "tune_loss": null,
+        "incumbent_before": -0.6993597399363676,
+        "improved": false,
+        "elapsed_seconds": 1176.722842267016,
+        "parent_trial_id": null,
+        "error_type": "candidate_stage_failed",
+        "error": "candidate_stage_failed",
+        "metadata": {
+          "host_search_score": null,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-a2/workspace/working/budget_checkpoints/node-009/inner_tuning/trial-009-outcome.json",
+        "source_artifact_sha256": "37dcda217b74196da00ec169bdad67ad734b30594559b3d6942b3d4401dfeaf8"
+      }
+    }
+  ],
+  "counts": {
+    "nodes": 9,
+    "trials": 9,
+    "host_scored": 5,
+    "raw_cards": 9
+  }
+}

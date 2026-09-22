@@ -1,0 +1,41 @@
+{
+  "candidate_sha256": "d26a09c843285381dd059652ee75ac7e70a0d313946d351a4840c735bdbf296c",
+  "memory_decisions": [
+    {
+      "key": "search:architecture_node-005",
+      "action": "adopt",
+      "reason": "The implementation selects checkpoints using tune micro-F1 after global tune-only threshold calibration and records the resulting trajectory.",
+      "code_evidence": "best_score = -1.0"
+    },
+    {
+      "key": "search:tuning_node-005",
+      "action": "adopt",
+      "reason": "The candidate records the selected epoch, threshold, seed, optimizer settings, preprocessing, and per-epoch validation trajectory in metadata.",
+      "code_evidence": "trajectory = []"
+    },
+    {
+      "key": "search:architecture_node-002",
+      "action": "adopt",
+      "reason": "The implementation uses lazy PIL decoding, a self-contained compact neural model, multilabel BCE training, tune-only threshold selection, and no external assets.",
+      "code_evidence": "def _image(path, train=False):"
+    },
+    {
+      "key": "search:tuning_node-002",
+      "action": "adopt",
+      "reason": "Labels are loaded and validated as a two-dimensional N x 3474 matrix, preserving the multilabel structure.",
+      "code_evidence": "if a.ndim != 2 or a.shape[1] != N_LABELS:"
+    },
+    {
+      "key": "search:tuning_node-004",
+      "action": "adapt",
+      "reason": "The residual architecture is implemented and the prevalence-aware output-bias initialization is a concrete modeling modification supported by the frozen candidate.",
+      "code_evidence": "prevalence = np.clip(y_fit.mean(axis=0), 1e-4, 1.0 - 1e-4)"
+    },
+    {
+      "key": "search:debug_node-006",
+      "action": "adopt",
+      "reason": "The candidate has bounded budget-aware training, a fallback checkpoint path, explicit metadata, and fresh-process model reconstruction in predict.",
+      "code_evidence": "if best_state is None:"
+    }
+  ]
+}

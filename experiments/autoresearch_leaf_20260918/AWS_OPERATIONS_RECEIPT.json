@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "timeout_and_resume": true,
+  "docker_timeout": {
+    "returncode": -9,
+    "timeout": true,
+    "elapsed": 8.00297347600008
+  },
+  "exact_run_containers_reaped": [
+    "324682d90f09"
+  ],
+  "deadline_reset_rejected": true,
+  "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+  "dependencies": {
+    "python": "3.11.15 (main, Apr 22 2026, 06:30:05) [GCC 14.2.0]",
+    "numpy": "1.26.4",
+    "pandas": "2.3.1",
+    "sklearn": "1.6.1",
+    "torch": "2.7.1+cu126",
+    "catboost": "1.2.8"
+  },
+  "gpu": "NVIDIA A10G, 23028 MiB, 595.71.05",
+  "engineering_only": true,
+  "script_sha256": "9d6a7315d9b61d63850a34d1087fb5ae4e7a0b852822e010c8c5e0eb94d15889"
+}

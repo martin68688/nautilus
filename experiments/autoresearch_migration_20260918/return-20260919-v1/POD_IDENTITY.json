@@ -1,0 +1,9 @@
+{
+  "name": "autoresearch-return-20260919-v1",
+  "uid": "d8f88660-c30b-4dc4-ba74-7378a46423e0",
+  "namespace": "ecepxie",
+  "pvc": "haoming-storage",
+  "transfer_id": "autoresearch-return-20260919-v1",
+  "staging_root": "/workspace/.transfer-staging/autoresearch-return-20260919-v1",
+  "backup_base": "/workspace/backups/aws/autoresearch-20260918"
+}

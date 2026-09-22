@@ -1,0 +1,42 @@
+{
+  "diagnostic_only": true,
+  "run": "/workspace/autoresearch-leaf-20260918/round3-terra-r1r2memory-001",
+  "candidate": "attempt-00001",
+  "code_sha256": "c8534d62ddeb49a4c97fb0244146794e55a9110150d389c6078472c00ae2d54e",
+  "root_cause": "Candidate encodes schema string species to integer target indices for fitting, then incorrectly searches integer model.classes_ for string schema species at train.py line83. The same mismatch appears in predict_checkpoint.",
+  "training_process_seconds": 2015.7439750000012,
+  "all_three_fit_completion_events": true,
+  "saved_model_exists": false,
+  "saved_artifacts": ["STARTED.json", "training_events.jsonl"],
+  "host_score": null,
+  "next_agent_history_byte_equivalent_result": true,
+  "next_agent_received_full_indexerror_tail": true,
+  "abi_assessment": "Contract explicitly specifies schema class names and N-by-99 prediction columns in schema order. Candidate introduced integer encoding then violated its own inverse mapping; no contradictory host ABI was found. A clarifying integer-vs-string mapping example would be engineering documentation, not a scientific recipe.",
+  "isolated_synthetic_check": {
+    "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+    "rows": 9,
+    "trees": 1,
+    "cpu": 1,
+    "network": false,
+    "gpu": false,
+    "classes_dtype": "int64",
+    "classes": [0, 1, 2],
+    "string_match_counts": [0, 0, 0],
+    "integer_mapping_shape": [2, 3],
+    "row_sums": [0.9999999999999999, 0.9999999999999999],
+    "formal_score": false,
+    "original_candidate_or_weights_reexecuted": false
+  },
+  "attempt2_at_1789782885": {
+    "stage": "training_started",
+    "generated": 1789782882.430374,
+    "code_sha256": "2674fc302e55b43c2b18f5bf72e274013cd9acfa1893cec88feb6de6b7988452",
+    "mapping": "Enumerate integer model.classes_, place raw probability column j at schema-index column c",
+    "model": "one fresh CatBoost,1200 trees,depth6,learning_rate0.035,seed0,CPU4; tune-only temperature calibration",
+    "scientific_success_not_yet_claimed": true
+  },
+  "mutations_to_formal_run": false,
+  "weights_copied": false,
+  "budget_changed": false,
+  "recommendation": "Allow native next-candidate repair. For a future explicitly versioned harness, a narrow static warning for int-fit versus string-lookup patterns and a tiny candidate-defined same-mapping schema/reload self-test can catch this cheaply; do not impose a universal AST ban or silently alter model parameters. Every such check uses the original budget and contributes no experimental score."
+}

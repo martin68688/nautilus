@@ -1,0 +1,79 @@
+{
+  "passed": true,
+  "rows": [
+    {
+      "node": "attempt-00004",
+      "losses": {
+        "search": 2.5159694068205294,
+        "tune": 2.4766537512865194
+      },
+      "host_sha256": "bfc1ca10de6c711a32230db6ab7ee65bb5518c02c08d559fb3a541e684ca0211",
+      "predictions_sha256": "d2b6684c232a8bce4930203b1e8c016ada2f5eab841c0bbd249a0bf8088d5007"
+    },
+    {
+      "node": "attempt-00005",
+      "losses": {
+        "search": 2.5158406042016983,
+        "tune": 2.4767887536729294
+      },
+      "host_sha256": "003d7d284d19312bfda4d54b8f74067b31ee6abe3ec37a2cc9e97c3f400285cc",
+      "predictions_sha256": "db86977ba9bf4f6efb38e2832526c1ad0d5f352ba739a41bd251f0f690d31ab7"
+    },
+    {
+      "node": "attempt-00006",
+      "losses": {
+        "search": 1.031246835545249,
+        "tune": 0.9845842417629274
+      },
+      "host_sha256": "532c8c7889c5caf3de6d502e771380682e0471ed95341a0a811742126a998eec",
+      "predictions_sha256": "ca3d688c98d763e20c6fdf0d260d2f47ff9d3151008127e2d863ebff2ee3d931"
+    },
+    {
+      "node": "attempt-00007",
+      "losses": {
+        "search": 1.03098344249027,
+        "tune": 0.9845335021550922
+      },
+      "host_sha256": "8e1e89529dd01fbd317a4d2a5b2151d2d7e23008e9e251f625c238df3af279ca",
+      "predictions_sha256": "97463020a37d9233a093a8c6b9e3576862e4fcaf6123917de0b4a568876c97e9"
+    },
+    {
+      "node": "attempt-00008",
+      "losses": {
+        "search": 1.0097454685061602,
+        "tune": 0.9662138731897707
+      },
+      "host_sha256": "6d52660c8b8b7a66fb455b374665d3f258428db65d8ffa863252172c3b64d41c",
+      "predictions_sha256": "6488dfc52f310cfc4e9fdef8e429e31b34fb2aa261438671316a16700989c5ec"
+    },
+    {
+      "node": "attempt-00010",
+      "losses": {
+        "search": 0.07024207102915818,
+        "tune": 0.043772021704221446
+      },
+      "host_sha256": "f95d11bab4b8a83e3681701137868490411306cddf55a0ad308d2d2c6f56b487",
+      "predictions_sha256": "2dfb80bc54e440241658dd012d340d47ed4991cedf5fe40e3c9f88339f7a7f1c"
+    },
+    {
+      "node": "attempt-00017",
+      "losses": {
+        "search": 0.06820685125413978,
+        "tune": 0.0430003798542804
+      },
+      "host_sha256": "62180fd3a24d8a35548091bd71ae85d5c6b05155a220f416e2780dd9e78e0344",
+      "predictions_sha256": "32670490d154b8f32709a573e8cb321245a2c0c9dd0991e3b67a23388c8d19eb"
+    },
+    {
+      "node": "attempt-00020",
+      "losses": {
+        "search": 0.07181629827343412,
+        "tune": 0.04596766170469033
+      },
+      "host_sha256": "e9f93e3f59837424efabc31877894c99eaf8c4735b277f5a6684873fe5d29b35",
+      "predictions_sha256": "c7f824d576a78b001e46c15d15e08657455cc177562ce943232540bf461764b2"
+    }
+  ],
+  "no_source_code_or_pickle_executed": true,
+  "new_experiment": false
+}

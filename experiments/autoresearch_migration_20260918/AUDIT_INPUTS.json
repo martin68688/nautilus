@@ -1,0 +1,51 @@
+{
+  "upstream_url": "https://github.com/ruz048/autoresearch",
+  "upstream_commit": "1e9849798006a069d17399f0d4ad0178200ee946",
+  "source_files": {
+    "program.md": "86cf987a5c381e46eefe0d0a82765223fd766d8d7acdc2afacfbbce15ecacece",
+    "uv.lock": "03174c5cce6387418c5b6cc9bbe8f71ad0ae1e1d6fedeaecae5cdcf7321da0a3",
+    "pyproject.toml": "675c150a9e0769f0e39a43eb7d836934266fa348d6e2403521f1ff99f9b9f1af",
+    "README.md": "a2803cf7ff700eb618bd168303b28fe94870077d9f814e967ebb60f13e7258b4",
+    "train.py": "2954175f4ac42ad65164aef40910ef953789abcd05a5cc886ac9ba5a00814414",
+    "main.py": "c3fade921af835b69acccb060b9834f136b336c71e8585e150bb566ec96d623f",
+    "prepare.py": "96c6fc3387db64dd172b132426d2afdf37ade26475b44dbd5f72ff25f0eba9eb"
+  },
+  "candidate_memory_packs": {
+    "spooky_search": {
+      "path": "/Users/haoming/Downloads/nautilus-exp-end2end/experiments/spooky_round5_cpa_terra_2h_retry2_20260914/memory/search_memory.json",
+      "sha256": "f21ad125d03264c2ff86ae9e0b810e025ee71da6385001f7442d727071e4ada4",
+      "cards": 55,
+      "schema": "mlevolve_search_experience_v1",
+      "data_manifest_sha256": "122a96c69a9204a538a5d449d8e60fb295451f2388d9f0a31a5e91b5b14c9255",
+      "granularities": [
+        "architecture",
+        "debug",
+        "tuning"
+      ]
+    },
+    "spooky_inner": {
+      "path": "/Users/haoming/Downloads/nautilus-exp-end2end/experiments/spooky_round5_cpa_terra_2h_retry2_20260914/memory/inner_memory.json",
+      "sha256": "7377370f216b14e0639c6fac4768fdb5c73851d8940364b0076c7b54a991a770",
+      "cards": 170,
+      "schema": "inner_tuning_memory_v1",
+      "data_manifest_sha256": "122a96c69a9204a538a5d449d8e60fb295451f2388d9f0a31a5e91b5b14c9255",
+      "granularities": [
+        "architecture",
+        "debug",
+        "tuning"
+      ]
+    },
+    "leaf_search": {
+      "path": "/Users/haoming/Downloads/nautilus-exp-end2end/experiments/leaf_round4_memory_luna_2h_20260913/all_memory_luna_2h_20260914_0458/memory/search_experience.json",
+      "sha256": "a7a2162307ae9ee02de195468dcdeb8efab4941432ce7a6eb07f8c03e494bc84",
+      "cards": 91,
+      "schema": "mlevolve_search_experience_v1",
+      "data_manifest_sha256": "7bd8ce4887d28eea1bbe26730227ac4e49160332bd087571d7331110b5580a7f",
+      "granularities": [
+        "architecture",
+        "debug",
+        "tuning"
+      ]
+    }
+  }
+}

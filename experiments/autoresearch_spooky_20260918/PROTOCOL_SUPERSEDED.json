@@ -1,0 +1,14 @@
+{
+  "old_pair_protocol": "SUPERSEDED_DO_NOT_LAUNCH",
+  "formal_pair_started": false,
+  "new_request": "Existing novel no-memory first 7200s as R1; R2 only R1; R3 R1+R2; apizh-ai Terra-low; 7200s each",
+  "source_task_mismatch_pending": true,
+  "reference_task_topics": [
+    "iMet",
+    "Plant Pathology 2021"
+  ],
+  "spooky_novel_source_found": false,
+  "packs_built_for_new_protocol": false,
+  "old_225_cards_allowed": false,
+  "old_frozen_root_retained": "/workspace/spooky-autoresearch-formal-v1"
+}

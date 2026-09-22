@@ -1,0 +1,26 @@
+{
+  "attempt": "imet-r3-20260920-a1-001",
+  "stages": [
+    {
+      "mode": "train",
+      "returncode": 0,
+      "timeout": false,
+      "elapsed_seconds": 2344.946500091988
+    },
+    {
+      "mode": "predict1",
+      "returncode": 0,
+      "timeout": false,
+      "elapsed_seconds": 164.77883165999083
+    },
+    {
+      "mode": "predict2",
+      "returncode": 137,
+      "timeout": false,
+      "elapsed_seconds": 114.84328217600705
+    }
+  ],
+  "source_sha256": "d26a09c843285381dd059652ee75ac7e70a0d313946d351a4840c735bdbf296c",
+  "success": false,
+  "elapsed_seconds": 2624.5694829950226
+}

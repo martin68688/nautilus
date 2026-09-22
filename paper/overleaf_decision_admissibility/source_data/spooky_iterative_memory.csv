@@ -1,0 +1,5 @@
+stage,condition,source_journals,internal_logloss,official_public_logloss,official_private_logloss,node_id,audit_basis,kaggle_ref
+Cold start,No memory,0,0.314654,0.34318,0.32388,78dc92019f5c4345bb1a734439945209,clean full-code reproduction,55731142
+Round 1,One-run memory,1,0.279634,0.31505,0.30095,c5f8bebcf8844f46bb07153614738afd,clean native synchronized inference,55730569
+Round 2,Two-run memory,2,0.2896655452,0.33494,0.30940,676a1b78371447eda376ca310da52e3c,clean exact replay,55746601
+All history,56-journal audited memory plus replay fix,56,0.2753572271,0.27986,0.25613,591e9b4b2e104b06b07d61bff2f4e252,passed isolation audit and official replay,55821727

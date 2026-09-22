@@ -1,0 +1,16 @@
+{
+  "attempt": "imet-r3-20260920-a1-000",
+  "started_elapsed": 0.001991786004509777,
+  "status": "valid",
+  "tune_score": 0.45849145500492566,
+  "search_score": 0.4585922833606213,
+  "test_score": null,
+  "seconds": 3984.352688579005,
+  "source_sha256": "756ed4434bfdff1f982c3361d692112d145703a030d7b434caf4df5127467961",
+  "predictions_sha256": "f8b28fdd031c9ab4890c4a2be447ae5283e7232431fc2a856023d23cb1a430f7",
+  "host_recomputed": true,
+  "reload_verified": true,
+  "change": "Use a self-contained SmallResNet with lazy PIL decoding, BCEWithLogitsLoss using bounded per-attribute positive weighting, tune-only target-aligned checkpoint selection, global threshold search over 0.02..0.50, deterministic artifact reload, and argmax fallback for empty predictions. No pretrained weights or external assets are used.",
+  "decision": "keep",
+  "elapsed_seconds": 4228.331859260012
+}

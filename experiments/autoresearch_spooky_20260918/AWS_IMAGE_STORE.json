@@ -1,0 +1,10 @@
+{
+  "mode": "fresh store, original and partial copy retained",
+  "originals": [
+    "/var/lib/docker",
+    "/var/lib/containerd"
+  ],
+  "new_docker": "/workspace/spooky-infra-v1/docker-active",
+  "new_containerd": "/workspace/spooky-infra-v1/containerd-active",
+  "credentials_moved": false
+}

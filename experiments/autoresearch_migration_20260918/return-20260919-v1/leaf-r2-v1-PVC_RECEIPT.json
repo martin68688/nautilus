@@ -1,0 +1,58 @@
+{
+  "status": "PVC_VERIFIED",
+  "archive_sha256": "cdaed2a360db97a6945f79210156aa39ba2228af52c38936cda2b49bf532fd31",
+  "destination": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1",
+  "manifests": [
+    {
+      "root": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/restored/round2-terra-r1memory-001",
+      "manifest": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/manifest-00.json",
+      "manifest_sha256": "b373e0aa452fea62ecfbdebba21ac240ef03b0abca569f5e9c5639be7eafd9cf",
+      "verification": {
+        "actual": {
+          "bytes": 321239309,
+          "directories": 56,
+          "entries": 279,
+          "files": 223,
+          "symlinks": 0
+        },
+        "error_count_shown": 0,
+        "errors": [],
+        "expected": {
+          "bytes": 321239309,
+          "directories": 56,
+          "entries": 279,
+          "files": 223,
+          "symlinks": 0
+        },
+        "root": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/restored/round2-terra-r1memory-001",
+        "status": "verified"
+      }
+    },
+    {
+      "root": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/restored/round2-terra-r1memory-amended-001",
+      "manifest": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/manifest-01.json",
+      "manifest_sha256": "f5b0ecc997c75d37ff58326f5b19312a7c358080e3c25066578176f75ac17fd6",
+      "verification": {
+        "actual": {
+          "bytes": 1496824936,
+          "directories": 121,
+          "entries": 633,
+          "files": 512,
+          "symlinks": 0
+        },
+        "error_count_shown": 0,
+        "errors": [],
+        "expected": {
+          "bytes": 1496824936,
+          "directories": 121,
+          "entries": 633,
+          "files": 512,
+          "symlinks": 0
+        },
+        "root": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/restored/round2-terra-r1memory-amended-001",
+        "status": "verified"
+      }
+    }
+  ],
+  "verified_unix": 1789790424.1979797
+}

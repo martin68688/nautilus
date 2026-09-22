@@ -1,0 +1,47 @@
+{
+  "figure": "Leaf three-round outer Host search loss",
+  "metric": "fixed search multiclass log-loss (lower is better)",
+  "rounds": [
+    {
+      "round": 1,
+      "label": "R1（无记忆）",
+      "elapsed_minutes": 93.73871477766662,
+      "registered": 14,
+      "certified": 2,
+      "best_search_loss": 0.44389385340454646
+    },
+    {
+      "round": 2,
+      "label": "R2（R1记忆，最新重跑）",
+      "elapsed_minutes": 119.25497931654996,
+      "registered": 11,
+      "certified": 6,
+      "best_search_loss": 0.06356954282842144
+    },
+    {
+      "round": 3,
+      "label": "R3（累计记忆）",
+      "elapsed_minutes": 114.20583967671652,
+      "registered": 11,
+      "certified": 10,
+      "best_search_loss": 0.06677362127695761
+    }
+  ],
+  "source_hashes": {
+    "old_source_data_csv_sha256": "9f3837d24b45dfe63694c278ba0724861a2670cf1d58bdf4f95ee9ca02c8bac2",
+    "old_summary_json_sha256": "21a1b526c3a497b287d79017859e18d92406749cdc4355b353b668f653966bcd",
+    "current_r2_remote_snapshot_sha256": "d407284b90a3cf091161abce7d82ee57e0a22519ad1cb9b347590df5f212328f",
+    "current_r2_preflight_sha256": "5032eff8cac01d4fd25cdea8f1ba2527eaa611f4fd1218d7ed0842987ac54b20",
+    "current_r2_data_manifest_sha256": "7bd8ce4887d28eea1bbe26730227ac4e49160332bd087571d7331110b5580a7f"
+  },
+  "r2_scope": {
+    "framework": "autoresearch-leaf-amendment-v007",
+    "memory_scope": "R1-only",
+    "memory_cards": {
+      "code/memory/search_experience.json": 18,
+      "code/memory/inner_memory.json": 29
+    },
+    "model": "gpt-5.6-terra",
+    "endpoint": "https://apizh-ai.com/v1"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "method": "autoresearch_compact_ledger_to_distillation_contract",
+  "source_run": [
+    "imet-r1-20260920-a1",
+    "imet-r2-20260920-b1"
+  ],
+  "attempts": 6,
+  "host_scored_attempts": 3,
+  "weights_copied": false,
+  "source_code_copied_for_hash_audit": true
+}

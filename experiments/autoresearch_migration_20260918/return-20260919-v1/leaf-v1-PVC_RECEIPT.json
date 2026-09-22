@@ -1,0 +1,119 @@
+{
+  "status": "PVC_VERIFIED",
+  "path": "/workspace/backups/aws/autoresearch-20260918/leaf-v1/transport",
+  "manifest_sha256": "38e177d8432dcf80c27b920620fa30bf53994b272be00a6ab46f2f7531ae1176",
+  "transport_verification": {
+    "actual": {
+      "bytes": 1453441561,
+      "directories": 0,
+      "entries": 9,
+      "files": 9,
+      "symlinks": 0
+    },
+    "error_count_shown": 0,
+    "errors": [],
+    "expected": {
+      "bytes": 1453441561,
+      "directories": 0,
+      "entries": 9,
+      "files": 9,
+      "symlinks": 0
+    },
+    "root": "/workspace/backups/aws/autoresearch-20260918/leaf-v1/transport",
+    "status": "verified"
+  },
+  "content_receipts": [
+    {
+      "status": "PVC_VERIFIED",
+      "archive_sha256": "cdaed2a360db97a6945f79210156aa39ba2228af52c38936cda2b49bf532fd31",
+      "destination": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1",
+      "manifests": [
+        {
+          "root": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/restored/round2-terra-r1memory-001",
+          "manifest": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/manifest-00.json",
+          "manifest_sha256": "b373e0aa452fea62ecfbdebba21ac240ef03b0abca569f5e9c5639be7eafd9cf",
+          "verification": {
+            "actual": {
+              "bytes": 321239309,
+              "directories": 56,
+              "entries": 279,
+              "files": 223,
+              "symlinks": 0
+            },
+            "error_count_shown": 0,
+            "errors": [],
+            "expected": {
+              "bytes": 321239309,
+              "directories": 56,
+              "entries": 279,
+              "files": 223,
+              "symlinks": 0
+            },
+            "root": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/restored/round2-terra-r1memory-001",
+            "status": "verified"
+          }
+        },
+        {
+          "root": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/restored/round2-terra-r1memory-amended-001",
+          "manifest": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/manifest-01.json",
+          "manifest_sha256": "f5b0ecc997c75d37ff58326f5b19312a7c358080e3c25066578176f75ac17fd6",
+          "verification": {
+            "actual": {
+              "bytes": 1496824936,
+              "directories": 121,
+              "entries": 633,
+              "files": 512,
+              "symlinks": 0
+            },
+            "error_count_shown": 0,
+            "errors": [],
+            "expected": {
+              "bytes": 1496824936,
+              "directories": 121,
+              "entries": 633,
+              "files": 512,
+              "symlinks": 0
+            },
+            "root": "/workspace/backups/aws/autoresearch-20260918/leaf-r2-v1/restored/round2-terra-r1memory-amended-001",
+            "status": "verified"
+          }
+        }
+      ],
+      "verified_unix": 1789790424.1979797
+    },
+    {
+      "status": "PVC_VERIFIED",
+      "archive_sha256": "f1435498884f0a8c413bd61cee447acef5a35d6e7e0180b2030021cc23b1783d",
+      "destination": "/workspace/backups/aws/autoresearch-20260918/leaf-content-v1",
+      "manifests": [
+        {
+          "root": "/workspace/backups/aws/autoresearch-20260918/leaf-content-v1/restored/content",
+          "manifest": "/workspace/backups/aws/autoresearch-20260918/leaf-content-v1/manifest-00.json",
+          "manifest_sha256": "9959cd3836fbc64aa84e2742dca1282a503b18480c0872c038d7ed678ce20d58",
+          "verification": {
+            "actual": {
+              "bytes": 1900595186,
+              "directories": 5965,
+              "entries": 30837,
+              "files": 24864,
+              "symlinks": 8
+            },
+            "error_count_shown": 0,
+            "errors": [],
+            "expected": {
+              "bytes": 1900595186,
+              "directories": 5965,
+              "entries": 30837,
+              "files": 24864,
+              "symlinks": 8
+            },
+            "root": "/workspace/backups/aws/autoresearch-20260918/leaf-content-v1/restored/content",
+            "status": "verified"
+          }
+        }
+      ],
+      "verified_unix": 1789802543.7116938
+    }
+  ],
+  "verified_unix": 1789805276.5753386
+}

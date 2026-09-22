@@ -1,0 +1,30 @@
+[
+  {
+    "round": 1,
+    "minutes": 115.24216231173341,
+    "best": 0.8385674931129476,
+    "returncode": 0,
+    "run_id": "pp21-v7-terralow-a4-20260916-r1"
+  },
+  {
+    "round": 2,
+    "minutes": 113.07003783865075,
+    "best": 0.8557306147667594,
+    "returncode": 0,
+    "run_id": "pp21-v7-terralow-apizh-wait-a9-20260916-r2"
+  },
+  {
+    "round": 3,
+    "minutes": 119.07364790729964,
+    "best": 0.8631578947368421,
+    "returncode": 143,
+    "run_id": "pp21-continuous-terralow-retry1-20260917-r3"
+  },
+  {
+    "round": 4,
+    "minutes": 117.33681522216163,
+    "best": 0.860774818401937,
+    "returncode": 0,
+    "run_id": "pp21-continuous-terralow-repeat-a7-20260917-r4"
+  }
+]

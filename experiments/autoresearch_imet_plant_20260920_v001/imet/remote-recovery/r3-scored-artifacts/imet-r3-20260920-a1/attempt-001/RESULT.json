@@ -1,0 +1,11 @@
+{
+  "attempt": "imet-r3-20260920-a1-001",
+  "started_elapsed": 4228.332249076018,
+  "status": "failed",
+  "search_score": null,
+  "reason": "candidate_stage_failed",
+  "seconds": 2624.5694829950226,
+  "change": "Retain the validated self-contained residual CNN and target-aligned tune checkpointing, while adding prevalence-aware initialization of the 3474 output biases and enforcing two-dimensional label matrices without reshape-based flattening. The output bias is initialized to the smoothed per-attribute logit prevalence, improving early calibration for highly imbalanced attributes while preserving the bounded square-root positive weighting. The candidate remains image-only, lazily decodes images, performs tune-only global threshold selection, records the actual convergence trajectory, and supports deterministic fresh-process reload.",
+  "decision": "discard",
+  "elapsed_seconds": 7170.378233123018
+}

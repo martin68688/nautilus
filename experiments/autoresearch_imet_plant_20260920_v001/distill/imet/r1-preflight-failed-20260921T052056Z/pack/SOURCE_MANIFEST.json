@@ -1,0 +1,19 @@
+{
+  "source_root": "/Users/haoming/Downloads/nautilus-exp-end2end/experiments/autoresearch_imet_plant_20260920_v001/distill/imet/r1/source",
+  "source_run": "imet-r1-20260920-a1",
+  "files": {
+    "control/LAUNCH.json": "693d99aec4a420a1389d75568ef0ba11f132b9b48bac5681b271733e8fe1e081",
+    "runs/imet-r1-20260920-a1/logs/journal.json": "d8f88162de570b7b6aa50a223a48a1cf32dfd7a460e1dddbc8c8f8c1c10d42e8",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-001/inner_tuning/SESSION.json": "a17c85e3b7e2b7b5a82baf82dee2d765765190d7b43b5a586560910477641423",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json": "da6fc5dd02037e2035b98a22dbc8ad549509652286e94004ccbd4fe97a5c1c36",
+    "runs/imet-r1-20260920-a1/logs/candidate_checkpoints/node-001.py": "c0546f5815da8b6f65e451fa36b6ee2ee74f8a5a6376aa5707425b1f8dd89669",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-002/inner_tuning/SESSION.json": "955df87a395134cb8fee657d1ffff23e48d46d53b4112d7111782ecdc6fa9191",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json": "d3cbe64bb6bb0cbd4e8337f05917c8642ce11384a5945ff816952b25be9cad51",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-002/VERIFIED_RESULT.json": "a3243f89aba1e94a96368fd6e027a593894b2ce3d1894743caa89849b1b44e58",
+    "runs/imet-r1-20260920-a1/logs/candidate_checkpoints/node-002.py": "e62986a0c071c5ba90946fb67d7d7841759348e5668192d1ff62c792775ce6b3",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-003/inner_tuning/SESSION.json": "bd4d8f63313e0ce4933539b116f5a62d44797b5d6ab7a49576c54f2cd049e0a5",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json": "24679569a6ba15df0591affa46157fa57c830fc60fd84c18198c987a37d827b6",
+    "runs/imet-r1-20260920-a1/logs/candidate_checkpoints/node-003.py": "2cd8903b0b0cd6475abdfea793b7e7320adf9fcc9bf07764b267a5fa5d6dd1a9",
+    "exported_memory/inner_memory.json": "f09ffb0d1eecec4c80bc8a40b0be1ce6b80e8b480529c178d2a243ff6d916f36"
+  }
+}

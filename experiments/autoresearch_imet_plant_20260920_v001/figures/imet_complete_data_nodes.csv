@@ -1,0 +1,61 @@
+round,run,attempt,epoch,metric_name,metric,loss_name,loss,tune_micro_f1,host_search_score,status
+R1,imet-r1-20260920-a1,attempt-001,1,validation micro-F1@0.15,0.16341762281385763,train BCE,0.027019704265379203,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-001,2,validation micro-F1@0.15,0.18078313926078934,train BCE,0.022596797802608266,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-001,3,validation micro-F1@0.15,0.20055288005992042,train BCE,0.021077318141745318,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-001,4,validation micro-F1@0.15,0.20057041413230114,train BCE,0.02007616729999681,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-001,5,validation micro-F1@0.15,0.20060628807344746,train BCE,0.019351773199303625,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-001,6,validation micro-F1@0.15,0.20622340966182173,train BCE,0.01881900070895959,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-001,7,validation micro-F1@0.15,0.21125020370068592,train BCE,0.018388508011044226,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-001,8,validation micro-F1@0.15,0.21054672353625437,train BCE,0.01802361307393464,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-001,9,validation micro-F1@0.15,0.21255174678378347,train BCE,0.017679516298185656,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-001,10,validation micro-F1@0.15,0.2155555091807257,train BCE,0.017349463236231714,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-001,final,candidate final tune micro-F1,0.3882310785523749,,,0.3882310785523749,0.3891708697355064,candidate_final_tune
+R1,imet-r1-20260920-a1,attempt-001,Host,Host search micro-F1,0.3891708697355064,,,0.3882310785523749,0.3891708697355064,host_validated
+R1,imet-r1-20260920-a1,attempt-002,1,validation micro-F1@0.15,0.15695028381879958,train BCE,0.03032476101844265,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-002,2,validation micro-F1@0.15,0.1576381763624044,train BCE,0.02575833476426605,,,internal_epoch
+R1,imet-r1-20260920-a1,attempt-002,final,candidate final tune micro-F1,0.30211085994460185,,,0.30211085994460185,,candidate_final_tune
+R2,imet-r2-20260920-b1,attempt-000,1,tune micro-F1,0.30720474867009573,train loss,0.028796908672077896,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,2,tune micro-F1,0.3523180338604365,train loss,0.023177963413251457,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,3,tune micro-F1,0.3654500501823701,train loss,0.02123683625918854,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,4,tune micro-F1,0.38263671415382944,train loss,0.019946508582214712,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,5,tune micro-F1,0.3836272181603994,train loss,0.01900256420654933,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,6,tune micro-F1,0.4026471057247648,train loss,0.018284366552276277,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,7,tune micro-F1,0.4140428307557257,train loss,0.017672080303053297,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,8,tune micro-F1,0.4202200365715119,train loss,0.017146263017360393,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,9,tune micro-F1,0.4241571841676114,train loss,0.016712702973336838,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,10,tune micro-F1,0.4314276542521941,train loss,0.01633291155801873,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,11,tune micro-F1,0.42993070001600175,train loss,0.01600244775718468,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,12,tune micro-F1,0.43523422947875523,train loss,0.015758193007991503,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,13,tune micro-F1,0.43670763573018484,train loss,0.015577793894334727,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,14,tune micro-F1,0.43860364610280916,train loss,0.015505407029458126,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-000,final,candidate final tune micro-F1,0.43860364610280916,,,0.43860364610280916,0.44095033341835804,candidate_final_tune
+R2,imet-r2-20260920-b1,attempt-000,Host,Host search micro-F1,0.44095033341835804,,,0.43860364610280916,0.44095033341835804,host_validated
+R2,imet-r2-20260920-b1,attempt-001,1,tune micro-F1,0.30720474867009573,train loss,0.028796908672077896,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-001,2,tune micro-F1,0.35235267333209347,train loss,0.023096369607288073,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-001,3,tune micro-F1,0.37881642039338487,train loss,0.020899434163941265,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-001,4,tune micro-F1,0.394766932658622,train loss,0.01945150076638757,,,internal_epoch
+R2,imet-r2-20260920-b1,attempt-001,final,candidate final tune micro-F1,0.394766932658622,,,0.394766932658622,0.39591620421415563,candidate_final_tune
+R2,imet-r2-20260920-b1,attempt-001,Host,Host search micro-F1,0.39591620421415563,,,0.394766932658622,0.39591620421415563,host_validated
+R3,imet-r3-20260920-a1,attempt-000,1,tune micro-F1,0.2801806652309165,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,2,tune micro-F1,0.3297943402305716,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,3,tune micro-F1,0.3644745984387134,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,4,tune micro-F1,0.38415698152964806,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,5,tune micro-F1,0.39684515028392,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,6,tune micro-F1,0.40381160164271046,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,7,tune micro-F1,0.4264765953899379,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,8,tune micro-F1,0.43877456783282537,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,9,tune micro-F1,0.4466676154676891,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,10,tune micro-F1,0.4538535293967909,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,11,tune micro-F1,0.4565005632776832,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,12,tune micro-F1,0.45849145500492566,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-000,final,candidate final tune micro-F1,0.45849145500492566,,,0.45849145500492566,0.4585922833606213,candidate_final_tune
+R3,imet-r3-20260920-a1,attempt-000,Host,Host search micro-F1,0.4585922833606213,,,0.45849145500492566,0.4585922833606213,host_validated
+R3,imet-r3-20260920-a1,attempt-001,1,tune micro-F1,0.30919722727800797,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-001,2,tune micro-F1,0.35926603452545475,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-001,3,tune micro-F1,0.37695539834405106,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-001,4,tune micro-F1,0.3973484436335027,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-001,5,tune micro-F1,0.40673557627347656,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-001,6,tune micro-F1,0.4253465811822362,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-001,7,tune micro-F1,0.43649994968300293,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-001,8,tune micro-F1,0.4404002864059463,train loss,,,,internal_epoch
+R3,imet-r3-20260920-a1,attempt-001,final,candidate final tune micro-F1,0.4404002864059463,,,0.4404002864059463,,candidate_final_tune

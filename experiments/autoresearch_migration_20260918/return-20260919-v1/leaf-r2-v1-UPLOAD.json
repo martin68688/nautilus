@@ -1,0 +1,9 @@
+{
+  "status": "archive_verified",
+  "path": "/workspace/.transfer-staging/autoresearch-return-20260919-v1/leaf-r2-v1/archive",
+  "sha256": "cdaed2a360db97a6945f79210156aa39ba2228af52c38936cda2b49bf532fd31",
+  "bytes": 783253141,
+  "local_path": "/Users/haoming/Downloads/nautilus-exp-end2end/experiments/autoresearch_leaf_20260918/r2-terminal-archive-v001/r2-both-epochs.tar.gz",
+  "pod_uid": "d8f88660-c30b-4dc4-ba74-7378a46423e0",
+  "created_unix": 1789789737.019485
+}

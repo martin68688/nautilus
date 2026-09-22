@@ -1,0 +1,5 @@
+{
+  "commit": "1e9849798006a069d17399f0d4ad0178200ee946",
+  "main_py_sha256": "c3fade921af835b69acccb060b9834f136b336c71e8585e150bb566ec96d623f",
+  "approach": "Single Agent edits candidate Python, independent execution/host score and keep/discard; no MLEvolve search imports"
+}

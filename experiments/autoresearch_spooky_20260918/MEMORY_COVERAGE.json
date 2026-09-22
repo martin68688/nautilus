@@ -1,0 +1,32 @@
+{
+  "search_memory.json": {
+    "sha256": "f21ad125d03264c2ff86ae9e0b810e025ee71da6385001f7442d727071e4ada4",
+    "cards": 55,
+    "source_rounds": [
+      "spooky-new-inner-luna-2h-dev-20260912",
+      "spooky-v7-memory-luna-2h-r1-20260912",
+      "spooky-v7-terra-l40s-2h-r1-20260912",
+      "spooky-round4-cpa-terra-2h-20260913"
+    ],
+    "granularity": [
+      "architecture",
+      "debug",
+      "tuning"
+    ]
+  },
+  "inner_memory.json": {
+    "sha256": "7377370f216b14e0639c6fac4768fdb5c73851d8940364b0076c7b54a991a770",
+    "cards": 170,
+    "source_rounds": [
+      "spooky-new-inner-luna-2h-dev-20260912",
+      "spooky-v7-memory-luna-2h-r1-20260912",
+      "spooky-v7-terra-l40s-2h-r1-20260912",
+      "spooky-round4-cpa-terra-2h-20260913"
+    ],
+    "granularity": [
+      "architecture",
+      "debug",
+      "tuning"
+    ]
+  }
+}

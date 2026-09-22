@@ -1,0 +1,56 @@
+{
+  "figure": "iMet three-round outer Host micro-F1",
+  "task_id": "imet-2020-fgvc7",
+  "metric": "host micro-F1 over 3474 multilabel attributes (higher is better)",
+  "model": "gpt-5.6-terra",
+  "effort": "low",
+  "budget_seconds_per_round": 7200,
+  "data_manifest_sha256": "ecd6bcb1db4043f2ef4c225bcdb732ba1aca2bc61291e7274c5f94d00172d5ed",
+  "runtime_manifest_sha256": "60de8e9480c6dd3133248d46704532c8887a70507e9cf888388d068dbc2d7bbc",
+  "rounds": [
+    {
+      "round": 1,
+      "label": "R1（无记忆）",
+      "elapsed_minutes": 119.50612707136703,
+      "registered": 3,
+      "certified": 1,
+      "tune_nodes": 2,
+      "best_host_micro_f1": 0.3891708697355064,
+      "best_tune_micro_f1": 0.3882310785523749,
+      "best_host_at_minutes": 98.59919037159997
+    },
+    {
+      "round": 2,
+      "label": "R2（仅 R1 记忆）",
+      "elapsed_minutes": 119.89502741025014,
+      "registered": 3,
+      "certified": 2,
+      "tune_nodes": 2,
+      "best_host_micro_f1": 0.44095033341835804,
+      "best_tune_micro_f1": 0.43860364610280916,
+      "best_host_at_minutes": 85.05917529791671
+    },
+    {
+      "round": 3,
+      "label": "R3（累计记忆）",
+      "elapsed_minutes": 119.5063103973332,
+      "registered": 2,
+      "certified": 1,
+      "tune_nodes": 2,
+      "best_host_micro_f1": 0.4585922833606213,
+      "best_tune_micro_f1": 0.45849145500492566,
+      "best_host_at_minutes": 70.47219765433353
+    }
+  ],
+  "source_hashes": {
+    "R1/LAUNCH.json": "8c9d948d8f5bfc54f90a1f2675f3f446f072da12587784c9163740be1d356319",
+    "R1/RUN_OUTCOME.json": "9e9349c797406ccb2c7cff4124defd352393f7f30a7fcc4d6f26fb7c8fb22b63",
+    "R1/STATE.json": "190cf09722438af2897dbad2ed6127d7923bca011d2be6dfde08538f43aa0955",
+    "R2/LAUNCH.json": "92c1510aeadbb59963693371af1192a65e8cd22f0b7b23c44f2e4936a6691ba6",
+    "R2/RUN_OUTCOME.json": "5d0f9035a948b47a67b63383b08c08a096382ddf0cf7f93c0057a2c458247c25",
+    "R2/STATE.json": "98e8b0e32578e371d7724fcb8df2fa0505ccfa5c905a2659873dcca6c5e0dc1a",
+    "R3/LAUNCH.json": "e6acbec37609e3f1936828513e11de3d2efcceab9f197d3f4972ae834dbea129",
+    "R3/RUN_OUTCOME.json": "2cd3e953607a86599f54dbfd2c817b498db81cda0f47c6aa9ebcf9090560f086",
+    "R3/STATE.json": "b7d5ad69ff49033a41c554a8873db56e660b6c60b07df230af93f13589fefd10"
+  }
+}

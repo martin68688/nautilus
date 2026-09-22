@@ -1,0 +1,22 @@
+{
+  "task": "autoresearch-imet",
+  "dataset": "imet-2020-fgvc7",
+  "attributes": 3474,
+  "archive_sha256": "5fee56edc3b5df65cce566203a67921e5cbdeeb46baee47990ddc7e51baac07e",
+  "counts": {
+    "fit": 113817,
+    "tune": 14145,
+    "search": 14157
+  },
+  "test_count": 25958,
+  "files": {
+    "fit.csv": "8830ffbbdc790dcf970707ddfa537187b1e5cd0357cefd671078a4eb8d903aa2",
+    "fit_labels.npz": "237e02acba663e439418562362bd3f6d229de4c6cad663549ef9507d3a43a509",
+    "imet.flag": "5f24306cb76208d074d0a65d0c11eb9071da6a415da0b3ee0e2b0e966cfeede2",
+    "search.csv": "efc57fe4139a21a77cad92d5f5252bd3f559be5c9f7162541a0008a2809caa72",
+    "search_labels.npz": "e2d3a47fcaa8a5c6f669ddf3e9d23ec5d9310caaa67528af103f4284f3e7c460",
+    "test.csv": "40d0324c91b35bf87378dacaf2fb1a4faaf592ff6205c093e15b521d9314dd2a",
+    "tune.csv": "9f39e215366cf3ddbe9ec0827a07452aefb0adf6c4dd0a7dc4aca3ebdaaf8caa",
+    "tune_labels.npz": "d3e1cf31ac32f9a0f63428638fcc37a8235b08d79689bb771e7b28f14be95b92"
+  }
+}

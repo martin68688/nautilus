@@ -1,0 +1,205 @@
+[
+  {
+    "segment": "round2",
+    "launch": {
+      "run_id": "imet-three-source-apizh-aws-a10g-20260917-next",
+      "task_id": "imet-2020-fgvc7",
+      "provider_base_url": "https://apizh-ai.com/v1",
+      "source_runtime_sha256s": {
+        "imet-v7-a10-cache-20260916-r1": "b706abe7ab70458430add8baf76c0d902ebf0ae09a021c29b55ec17317534ba5",
+        "imet-r2-original-v7-a10-20260916-terra-r2": "81cfaa5e6190f06197d3ca4b3ff76180123c4d2f9ad154fd51adc846e3bc0cc0",
+        "imet-recipe-contract-cpa-20260917-sol-r2": "85ca501f7e90c12bdd1928695d26288cf295dc52e3c81d81ccbea0cccf852e5f"
+      },
+      "original_v7_with_model_provider_memory_bindings": false,
+      "framework_patch": "imet-recipe-contract-v1",
+      "round": 2,
+      "started_unix": 1789702747.70979,
+      "started_monotonic": 16748.926470692,
+      "model": "gpt-5.6-terra",
+      "effort": "low",
+      "gpu": "NVIDIA A10G, 23028 MiB",
+      "memory_enabled": true,
+      "search_memory_mode": "on",
+      "inner_memory_read": true,
+      "online_memory_read": true,
+      "memory_sources": [
+        "imet-v7-a10-cache-20260916-r1",
+        "imet-r2-original-v7-a10-20260916-terra-r2",
+        "imet-recipe-contract-cpa-20260917-sol-r2"
+      ],
+      "source_rounds": [
+        "imet-v7-a10-cache-20260916-r1",
+        "imet-r2-original-v7-a10-20260916-terra-r2",
+        "imet-recipe-contract-cpa-20260917-sol-r2"
+      ],
+      "memory_pack_hashes": {
+        "search": "31e96b5c8a78b362dd32b1c63ab0a7179fad004282c33cb7dc95700414be77d6",
+        "inner": "5badc627246f2998936a265f429eb57df7f18ff48d6926ccfc7d97ce16cfcd60"
+      },
+      "runtime_manifest_sha256": "f1e0bf0efe4ba11bac08af259d5a1b718425881e0762e3a8d6e6930fe3bd6b21",
+      "data_manifest_sha256": "9ae1ced8c4cec79376d7a2e5048159f4bad35d36ebbbd64163a7ba9e1846d979",
+      "run_hard_seconds": 7200,
+      "node_hard_seconds": 3600,
+      "metric": "one_minus_micro_f1",
+      "display_metric": "micro_f1",
+      "amp_required": true,
+      "official_submission": false,
+      "original_v7_manifest_sha256": "bc97238516fdc168f89ddf76072f4890891ee87222bf5203b595de755c8cb71f",
+      "contract_sha256": "d8f61d97acc67460010ceabf3fe7bcb49d876f9b465f1d1a54ee60273f21bb3a",
+      "prior_weights_or_code_loaded": false
+    },
+    "outcome": {
+      "returncode": 1,
+      "watchdog_reason": null,
+      "elapsed_seconds": 3966.3924161469986,
+      "finished_unix": 1789706714.1022062
+    },
+    "points": [
+      {
+        "path": "/workspace/imet-three-source-a10g-20260917/experiment/cpa-terra-recipe-v1/round2/runs/20260918_033911_imet-three-source-terra-low-next/workspace/working/budget_checkpoints/6b920f400263423fb7956d8b9fc09978/VERIFIED_RESULT.json",
+        "mtime": 1789706603.254722,
+        "sha256": "aef7267ff243a766ab5c30ac3addff98b17c36a225ad2e2423f1bd9727294d61",
+        "keys": [
+          "metric",
+          "metric_name",
+          "micro_f1",
+          "threshold",
+          "maximize",
+          "bundle",
+          "submission",
+          "receipt",
+          "checkpoint_validated",
+          "host_recomputed",
+          "returncode",
+          "rescued",
+          "inner_search",
+          "experiment_intent",
+          "intent_coverage",
+          "first_result_seconds"
+        ],
+        "score": 0.572208339979088,
+        "metric": 0.42779166002091196,
+        "host_recomputed": true,
+        "checkpoint_validated": true,
+        "node_id": "6b920f400263423fb7956d8b9fc09978"
+      },
+      {
+        "path": "/workspace/imet-three-source-a10g-20260917/experiment/cpa-terra-recipe-v1/round2/runs/20260918_033911_imet-three-source-terra-low-next/workspace/working/budget_checkpoints/ad4532746a6741efb55994dc060a3eaf/VERIFIED_RESULT.json",
+        "mtime": 1789704929.2906842,
+        "sha256": "7ffbb8d90be6b5e75779c51e0fbe8f3b6df7532f32719e41dba6369c5f973a5d",
+        "keys": [
+          "metric",
+          "metric_name",
+          "micro_f1",
+          "threshold",
+          "maximize",
+          "bundle",
+          "submission",
+          "receipt",
+          "checkpoint_validated",
+          "host_recomputed",
+          "returncode",
+          "rescued",
+          "inner_search",
+          "experiment_intent",
+          "intent_coverage",
+          "first_result_seconds"
+        ],
+        "score": 0.5488917620982637,
+        "metric": 0.45110823790173626,
+        "host_recomputed": true,
+        "checkpoint_validated": true,
+        "node_id": "ad4532746a6741efb55994dc060a3eaf"
+      }
+    ]
+  },
+  {
+    "segment": "resume-a2",
+    "launch": {
+      "run_id": "imet-three-source-apizh-aws-a10g-20260917-next-resume-a2",
+      "task_id": "imet-2020-fgvc7",
+      "provider_base_url": "https://apizh-ai.com/v1",
+      "source_runtime_sha256s": {
+        "imet-v7-a10-cache-20260916-r1": "b706abe7ab70458430add8baf76c0d902ebf0ae09a021c29b55ec17317534ba5",
+        "imet-r2-original-v7-a10-20260916-terra-r2": "81cfaa5e6190f06197d3ca4b3ff76180123c4d2f9ad154fd51adc846e3bc0cc0",
+        "imet-recipe-contract-cpa-20260917-sol-r2": "85ca501f7e90c12bdd1928695d26288cf295dc52e3c81d81ccbea0cccf852e5f"
+      },
+      "original_v7_with_model_provider_memory_bindings": false,
+      "framework_patch": "imet-recipe-contract-v1",
+      "round": 2,
+      "started_unix": 1789708515.275642,
+      "started_monotonic": 22516.492322772,
+      "model": "gpt-5.6-terra",
+      "effort": "low",
+      "gpu": "NVIDIA A10G, 23028 MiB",
+      "memory_enabled": true,
+      "search_memory_mode": "on",
+      "inner_memory_read": true,
+      "online_memory_read": true,
+      "memory_sources": [
+        "imet-v7-a10-cache-20260916-r1",
+        "imet-r2-original-v7-a10-20260916-terra-r2",
+        "imet-recipe-contract-cpa-20260917-sol-r2"
+      ],
+      "source_rounds": [
+        "imet-v7-a10-cache-20260916-r1",
+        "imet-r2-original-v7-a10-20260916-terra-r2",
+        "imet-recipe-contract-cpa-20260917-sol-r2"
+      ],
+      "memory_pack_hashes": {
+        "search": "31e96b5c8a78b362dd32b1c63ab0a7179fad004282c33cb7dc95700414be77d6",
+        "inner": "5badc627246f2998936a265f429eb57df7f18ff48d6926ccfc7d97ce16cfcd60"
+      },
+      "runtime_manifest_sha256": "f1e0bf0efe4ba11bac08af259d5a1b718425881e0762e3a8d6e6930fe3bd6b21",
+      "data_manifest_sha256": "9ae1ced8c4cec79376d7a2e5048159f4bad35d36ebbbd64163a7ba9e1846d979",
+      "run_hard_seconds": 3233,
+      "prior_elapsed_seconds": 3966.3924161469986,
+      "cumulative_budget_seconds": 7200,
+      "resumed_from": "round2",
+      "node_hard_seconds": 3600,
+      "metric": "one_minus_micro_f1",
+      "display_metric": "micro_f1",
+      "amp_required": true,
+      "official_submission": false,
+      "original_v7_manifest_sha256": "bc97238516fdc168f89ddf76072f4890891ee87222bf5203b595de755c8cb71f",
+      "contract_sha256": "d8f61d97acc67460010ceabf3fe7bcb49d876f9b465f1d1a54ee60273f21bb3a",
+      "prior_weights_or_code_loaded": false
+    },
+    "outcome": {
+      "returncode": -9,
+      "watchdog_reason": "run_finalization",
+      "elapsed_seconds": 3223.3312744050017,
+      "finished_unix": 1789711738.6069167
+    },
+    "points": [
+      {
+        "path": "/workspace/imet-three-source-a10g-20260917/experiment/cpa-terra-recipe-v1/resume-a2/runs/20260918_051520_imet-three-source-terra-low-next/workspace/working/budget_checkpoints/cc447752ca644143a337279dbb1e01fe/VERIFIED_RESULT.json",
+        "mtime": 1789710816.5259874,
+        "sha256": "c514bdb151b443e71bdefed4b50fce52b159f4f3caa164e0d0a0e69ecd587d79",
+        "keys": [
+          "metric",
+          "metric_name",
+          "micro_f1",
+          "threshold",
+          "maximize",
+          "bundle",
+          "submission",
+          "receipt",
+          "checkpoint_validated",
+          "host_recomputed",
+          "returncode",
+          "rescued",
+          "inner_search",
+          "experiment_intent",
+          "intent_coverage",
+          "first_result_seconds"
+        ],
+        "score": 0.5886485290864852,
+        "metric": 0.41135147091351476,
+        "host_recomputed": true,
+        "checkpoint_validated": true,
+        "node_id": "cc447752ca644143a337279dbb1e01fe"
+      }
+    ]
+  }
+]

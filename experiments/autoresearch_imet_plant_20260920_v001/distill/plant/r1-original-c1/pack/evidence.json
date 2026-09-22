@@ -1,0 +1,536 @@
+{
+  "version": "conditional-trajectory-skill-v1",
+  "task": "autoresearch-plant",
+  "launch": {
+    "run_id": "plant-r1-20260920-original-c1",
+    "task_id": "autoresearch-plant",
+    "round": 1,
+    "started_unix": 1789974529.2503722,
+    "budget_seconds": 7200,
+    "model": "gpt-5.6-terra",
+    "effort": "low",
+    "memory": false,
+    "data_manifest_sha256": "a2209c362fae1f7ea84ecda99d977ba377984fa84d263e1e82b125cd6a5055ca",
+    "runtime_manifest_sha256": "66809ad804138b0aed09fc2cce188f1c3b6c768630f24e662497b03fa1d67b90",
+    "metric": "host_macro_f1"
+  },
+  "nodes": [
+    {
+      "node_id": "node-001",
+      "step": 1,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Introduce a self-contained PyTorch image-classification candidate using a compact residual CNN, lazy PIL loading from /data-relative paths, train-only fitting on fit.csv, tune.csv macro-F1 checkpoint selection, and artifact-local checkpoint/metadata persistence. Validation metrics are computed and recorded at runtime rather than claimed in advance.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-original-c1-000",
+        "budget_seconds": 1871.575109241996,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.9467252927211315
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-001:trial",
+          "node_id": "node-001",
+          "code_sha256": "712e7956d4794fb1ebd72f3fbdfb66bd22f05c98bc9496ab33a8c70468c0609b",
+          "action": "Introduce a self-contained PyTorch image-classification candidate using a compact residual CNN, lazy PIL loading from /data-relative paths, train-only fitting on fit.csv, tune.csv macro-F1 checkpoint selection, and artifact-local checkpoint/metadata persistence. Validation metrics are computed and recorded at runtime rather than claimed in advance.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-original-c1-000",
+            "budget_seconds": 1871.575109241996,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9467252927211315
+          },
+          "status": "ok",
+          "tune_loss": -0.9467252927211315,
+          "incumbent_before": null,
+          "improved": true,
+          "elapsed_seconds": 1871.575109241996,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.958543675732415,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json",
+          "source_artifact_sha256": "67b1f6783355a680dd65628f84d97f70fe15adfcb029725b093ec0d5a007a8b8"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-001:trial",
+        "node_id": "node-001",
+        "code_sha256": "712e7956d4794fb1ebd72f3fbdfb66bd22f05c98bc9496ab33a8c70468c0609b",
+        "action": "Introduce a self-contained PyTorch image-classification candidate using a compact residual CNN, lazy PIL loading from /data-relative paths, train-only fitting on fit.csv, tune.csv macro-F1 checkpoint selection, and artifact-local checkpoint/metadata persistence. Validation metrics are computed and recorded at runtime rather than claimed in advance.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-original-c1-000",
+          "budget_seconds": 1871.575109241996,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9467252927211315
+        },
+        "status": "ok",
+        "tune_loss": -0.9467252927211315,
+        "incumbent_before": null,
+        "improved": true,
+        "elapsed_seconds": 1871.575109241996,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.958543675732415,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json",
+        "source_artifact_sha256": "67b1f6783355a680dd65628f84d97f70fe15adfcb029725b093ec0d5a007a8b8"
+      },
+      "host_metric": -0.958543675732415,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.9467252927211315,
+        "metadata": {
+          "inner_trial_id": "node-001:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-original-c1-000",
+            "budget_seconds": 1871.575109241996,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9467252927211315
+          }
+        }
+      },
+      "classification": "baseline",
+      "incumbent_before": null,
+      "execution_seconds": 1871.575109241996,
+      "failure_type": null,
+      "analysis": "Introduce a self-contained PyTorch image-classification candidate using a compact residual CNN, lazy PIL loading from /data-relative paths, train-only fitting on fit.csv, tune.csv macro-F1 checkpoint selection, and artifact-local checkpoint/metadata persistence. Validation metrics are computed and recorded at runtime rather than claimed in advance.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-original-c1/logs/candidate_checkpoints/node-001.py",
+        "source_artifact_sha256": "712e7956d4794fb1ebd72f3fbdfb66bd22f05c98bc9496ab33a8c70468c0609b"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-001/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "b96451472d0b4fe9b62bc2cebf8c13d542126d5c007a6aebee9bb6430c60e7ef"
+      }
+    },
+    {
+      "node_id": "node-002",
+      "step": 2,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Add deterministic horizontal-flip test-time augmentation (TTA) for tune checkpoint selection and fresh-process prediction, while retaining the proven compact residual CNN and lazy /data-relative PIL loading. TTA probabilities are averaged before argmax, validation trajectory is recorded at runtime, and no external/public pretrained models are used.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-original-c1-001",
+        "budget_seconds": 1891.4086828840082,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.9477040751244581
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-002:trial",
+          "node_id": "node-002",
+          "code_sha256": "082823eaaffbb0278a335d11a72f06ae870c17f05e65409baf7879274f5b6e82",
+          "action": "Add deterministic horizontal-flip test-time augmentation (TTA) for tune checkpoint selection and fresh-process prediction, while retaining the proven compact residual CNN and lazy /data-relative PIL loading. TTA probabilities are averaged before argmax, validation trajectory is recorded at runtime, and no external/public pretrained models are used.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-original-c1-001",
+            "budget_seconds": 1891.4086828840082,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9477040751244581
+          },
+          "status": "ok",
+          "tune_loss": -0.9477040751244581,
+          "incumbent_before": -0.958543675732415,
+          "improved": true,
+          "elapsed_seconds": 1891.4086828840082,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.9647965718296838,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+          "source_artifact_sha256": "b38f4e6d0d9771269ab1e8cd27cc6684ff7af57bafdfb491e5ff16904894000e"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-002:trial",
+        "node_id": "node-002",
+        "code_sha256": "082823eaaffbb0278a335d11a72f06ae870c17f05e65409baf7879274f5b6e82",
+        "action": "Add deterministic horizontal-flip test-time augmentation (TTA) for tune checkpoint selection and fresh-process prediction, while retaining the proven compact residual CNN and lazy /data-relative PIL loading. TTA probabilities are averaged before argmax, validation trajectory is recorded at runtime, and no external/public pretrained models are used.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-original-c1-001",
+          "budget_seconds": 1891.4086828840082,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9477040751244581
+        },
+        "status": "ok",
+        "tune_loss": -0.9477040751244581,
+        "incumbent_before": -0.958543675732415,
+        "improved": true,
+        "elapsed_seconds": 1891.4086828840082,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9647965718296838,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+        "source_artifact_sha256": "b38f4e6d0d9771269ab1e8cd27cc6684ff7af57bafdfb491e5ff16904894000e"
+      },
+      "host_metric": -0.9647965718296838,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.9477040751244581,
+        "metadata": {
+          "inner_trial_id": "node-002:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-original-c1-001",
+            "budget_seconds": 1891.4086828840082,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9477040751244581
+          }
+        }
+      },
+      "classification": "new_incumbent",
+      "incumbent_before": -0.958543675732415,
+      "execution_seconds": 1891.4086828840082,
+      "failure_type": null,
+      "analysis": "Add deterministic horizontal-flip test-time augmentation (TTA) for tune checkpoint selection and fresh-process prediction, while retaining the proven compact residual CNN and lazy /data-relative PIL loading. TTA probabilities are averaged before argmax, validation trajectory is recorded at runtime, and no external/public pretrained models are used.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-original-c1/logs/candidate_checkpoints/node-002.py",
+        "source_artifact_sha256": "082823eaaffbb0278a335d11a72f06ae870c17f05e65409baf7879274f5b6e82"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-002/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "32a848cd8895ee54ed80c182f4916a568eca12cff4a1eaebae1bd316624e650f"
+      }
+    },
+    {
+      "node_id": "node-003",
+      "step": 3,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "host_scored_candidate",
+        "architecture": "Increase the compact residual CNN's input resolution to 192 pixels and final feature width to 256 channels, retaining the previously validated fit-only training, tune macro-F1 checkpoint selection, and horizontal-flip TTA. This allocates more spatial/detail capacity to distinguish visually similar seedling species while preserving lazy loading and artifact-only reload behavior. Runtime validation metrics and trajectory are written only after actual training.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-original-c1-002",
+        "budget_seconds": 1994.3030100449978,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": 0.9642778130500291
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-003:trial",
+          "node_id": "node-003",
+          "code_sha256": "23b59d12b0f3d0b41e220bb780958f08393d5ee10b1b7cdead37eb2e611c7322",
+          "action": "Increase the compact residual CNN's input resolution to 192 pixels and final feature width to 256 channels, retaining the previously validated fit-only training, tune macro-F1 checkpoint selection, and horizontal-flip TTA. This allocates more spatial/detail capacity to distinguish visually similar seedling species while preserving lazy loading and artifact-only reload behavior. Runtime validation metrics and trajectory are written only after actual training.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-original-c1-002",
+            "budget_seconds": 1994.3030100449978,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9642778130500291
+          },
+          "status": "ok",
+          "tune_loss": -0.9642778130500291,
+          "incumbent_before": -0.9647965718296838,
+          "improved": false,
+          "elapsed_seconds": 1994.3030100449978,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.961384238838131,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json",
+          "source_artifact_sha256": "e96b179035779adac0e5fd7150f9e7c6cc11c0c4cb723413d64d54cbd42e54ff"
+        }
+      ],
+      "selected": {
+        "trial_id": "node-003:trial",
+        "node_id": "node-003",
+        "code_sha256": "23b59d12b0f3d0b41e220bb780958f08393d5ee10b1b7cdead37eb2e611c7322",
+        "action": "Increase the compact residual CNN's input resolution to 192 pixels and final feature width to 256 channels, retaining the previously validated fit-only training, tune macro-F1 checkpoint selection, and horizontal-flip TTA. This allocates more spatial/detail capacity to distinguish visually similar seedling species while preserving lazy loading and artifact-only reload behavior. Runtime validation metrics and trajectory are written only after actual training.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-original-c1-002",
+          "budget_seconds": 1994.3030100449978,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9642778130500291
+        },
+        "status": "ok",
+        "tune_loss": -0.9642778130500291,
+        "incumbent_before": -0.9647965718296838,
+        "improved": false,
+        "elapsed_seconds": 1994.3030100449978,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.961384238838131,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json",
+        "source_artifact_sha256": "e96b179035779adac0e5fd7150f9e7c6cc11c0c4cb723413d64d54cbd42e54ff"
+      },
+      "host_metric": -0.961384238838131,
+      "host_micro_f1": null,
+      "host_receipt": {
+        "tune_logloss": -0.9642778130500291,
+        "metadata": {
+          "inner_trial_id": "node-003:trial",
+          "parameters": {
+            "attempt": "plant-r1-20260920-original-c1-002",
+            "budget_seconds": 1994.3030100449978,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": 0.9642778130500291
+          }
+        }
+      },
+      "classification": "below_incumbent",
+      "incumbent_before": -0.9647965718296838,
+      "execution_seconds": 1994.3030100449978,
+      "failure_type": null,
+      "analysis": "Increase the compact residual CNN's input resolution to 192 pixels and final feature width to 256 channels, retaining the previously validated fit-only training, tune macro-F1 checkpoint selection, and horizontal-flip TTA. This allocates more spatial/detail capacity to distinguish visually similar seedling species while preserving lazy loading and artifact-only reload behavior. Runtime validation metrics and trajectory are written only after actual training.",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-original-c1/logs/candidate_checkpoints/node-003.py",
+        "source_artifact_sha256": "23b59d12b0f3d0b41e220bb780958f08393d5ee10b1b7cdead37eb2e611c7322"
+      },
+      "verified_artifact": {
+        "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-003/VERIFIED_RESULT.json",
+        "source_artifact_sha256": "eedf0839e97f810210b324ba448f19640d295a8273f90d3037368bb6126d87a3"
+      }
+    },
+    {
+      "node_id": "node-004",
+      "step": 4,
+      "context": {
+        "task": "autoresearch-plant",
+        "phase": "failed_candidate",
+        "architecture": "Retain the strongest validated 160-pixel residual CNN configuration and add class-balanced sampling based only on fit.csv labels. This reduces bias from unequal species frequencies while preserving the validated horizontal-flip TTA, lazy /data-relative loading, tune-only checkpoint selection, artifact-local persistence, and fresh-process reload behavior. Validation metrics and trajectory are recorded from actual runtime training.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "domain": {
+        "attempt": "plant-r1-20260920-original-c1-003",
+        "budget_seconds": 836.1545728640049,
+        "host_metric_role": "host_macro_f1",
+        "reported_tune_score": null
+      },
+      "initial": {
+        "task": "autoresearch-plant",
+        "round": 1
+      },
+      "mutable_on_resume": [
+        "candidate architecture",
+        "training schedule",
+        "preprocessing"
+      ],
+      "trials": [
+        {
+          "trial_id": "node-004:trial",
+          "node_id": "node-004",
+          "code_sha256": "f4be5d8e9238eb3ecb7ddc9b0db0653aa3dc0b0a840d183422c39549ead8661a",
+          "action": "Retain the strongest validated 160-pixel residual CNN configuration and add class-balanced sampling based only on fit.csv labels. This reduces bias from unequal species frequencies while preserving the validated horizontal-flip TTA, lazy /data-relative loading, tune-only checkpoint selection, artifact-local persistence, and fresh-process reload behavior. Validation metrics and trajectory are recorded from actual runtime training.",
+          "parameters": {
+            "attempt": "plant-r1-20260920-original-c1-003",
+            "budget_seconds": 836.1545728640049,
+            "host_metric_role": "host_macro_f1",
+            "reported_tune_score": null
+          },
+          "status": "failed",
+          "tune_loss": null,
+          "incumbent_before": -0.9647965718296838,
+          "improved": false,
+          "elapsed_seconds": 836.1545728640049,
+          "parent_trial_id": null,
+          "error_type": "candidate_stage_failed",
+          "error": "candidate_stage_failed",
+          "metadata": {
+            "host_search_score": null,
+            "task": "autoresearch-plant"
+          },
+          "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+          "source_artifact_sha256": "d5971b7fa9d27c9d08b83503c3e35b59d0333e839f479d45f1b9ba4b8cc785f1"
+        }
+      ],
+      "selected": null,
+      "host_metric": null,
+      "host_micro_f1": null,
+      "host_receipt": {},
+      "classification": "unscored",
+      "incumbent_before": -0.9647965718296838,
+      "execution_seconds": 836.1545728640049,
+      "failure_type": "candidate_stage_failed",
+      "analysis": "candidate_stage_failed",
+      "source_code": {
+        "source_artifact": "runs/plant-r1-20260920-original-c1/logs/candidate_checkpoints/node-004.py",
+        "source_artifact_sha256": "f4be5d8e9238eb3ecb7ddc9b0db0653aa3dc0b0a840d183422c39549ead8661a"
+      },
+      "verified_artifact": null
+    }
+  ],
+  "raw_cards": [
+    {
+      "id": "trial_node-001_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-001:trial",
+        "node_id": "node-001",
+        "code_sha256": "712e7956d4794fb1ebd72f3fbdfb66bd22f05c98bc9496ab33a8c70468c0609b",
+        "action": "Introduce a self-contained PyTorch image-classification candidate using a compact residual CNN, lazy PIL loading from /data-relative paths, train-only fitting on fit.csv, tune.csv macro-F1 checkpoint selection, and artifact-local checkpoint/metadata persistence. Validation metrics are computed and recorded at runtime rather than claimed in advance.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-original-c1-000",
+          "budget_seconds": 1871.575109241996,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9467252927211315
+        },
+        "status": "ok",
+        "tune_loss": -0.9467252927211315,
+        "incumbent_before": null,
+        "improved": true,
+        "elapsed_seconds": 1871.575109241996,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.958543675732415,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json",
+        "source_artifact_sha256": "67b1f6783355a680dd65628f84d97f70fe15adfcb029725b093ec0d5a007a8b8"
+      }
+    },
+    {
+      "id": "trial_node-002_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-002:trial",
+        "node_id": "node-002",
+        "code_sha256": "082823eaaffbb0278a335d11a72f06ae870c17f05e65409baf7879274f5b6e82",
+        "action": "Add deterministic horizontal-flip test-time augmentation (TTA) for tune checkpoint selection and fresh-process prediction, while retaining the proven compact residual CNN and lazy /data-relative PIL loading. TTA probabilities are averaged before argmax, validation trajectory is recorded at runtime, and no external/public pretrained models are used.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-original-c1-001",
+          "budget_seconds": 1891.4086828840082,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9477040751244581
+        },
+        "status": "ok",
+        "tune_loss": -0.9477040751244581,
+        "incumbent_before": -0.958543675732415,
+        "improved": true,
+        "elapsed_seconds": 1891.4086828840082,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.9647965718296838,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+        "source_artifact_sha256": "b38f4e6d0d9771269ab1e8cd27cc6684ff7af57bafdfb491e5ff16904894000e"
+      }
+    },
+    {
+      "id": "trial_node-003_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-003:trial",
+        "node_id": "node-003",
+        "code_sha256": "23b59d12b0f3d0b41e220bb780958f08393d5ee10b1b7cdead37eb2e611c7322",
+        "action": "Increase the compact residual CNN's input resolution to 192 pixels and final feature width to 256 channels, retaining the previously validated fit-only training, tune macro-F1 checkpoint selection, and horizontal-flip TTA. This allocates more spatial/detail capacity to distinguish visually similar seedling species while preserving lazy loading and artifact-only reload behavior. Runtime validation metrics and trajectory are written only after actual training.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-original-c1-002",
+          "budget_seconds": 1994.3030100449978,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": 0.9642778130500291
+        },
+        "status": "ok",
+        "tune_loss": -0.9642778130500291,
+        "incumbent_before": -0.9647965718296838,
+        "improved": false,
+        "elapsed_seconds": 1994.3030100449978,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.961384238838131,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json",
+        "source_artifact_sha256": "e96b179035779adac0e5fd7150f9e7c6cc11c0c4cb723413d64d54cbd42e54ff"
+      }
+    },
+    {
+      "id": "trial_node-004_trial",
+      "granularity": "debug",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-004:trial",
+        "node_id": "node-004",
+        "code_sha256": "f4be5d8e9238eb3ecb7ddc9b0db0653aa3dc0b0a840d183422c39549ead8661a",
+        "action": "Retain the strongest validated 160-pixel residual CNN configuration and add class-balanced sampling based only on fit.csv labels. This reduces bias from unequal species frequencies while preserving the validated horizontal-flip TTA, lazy /data-relative loading, tune-only checkpoint selection, artifact-local persistence, and fresh-process reload behavior. Validation metrics and trajectory are recorded from actual runtime training.",
+        "parameters": {
+          "attempt": "plant-r1-20260920-original-c1-003",
+          "budget_seconds": 836.1545728640049,
+          "host_metric_role": "host_macro_f1",
+          "reported_tune_score": null
+        },
+        "status": "failed",
+        "tune_loss": null,
+        "incumbent_before": -0.9647965718296838,
+        "improved": false,
+        "elapsed_seconds": 836.1545728640049,
+        "parent_trial_id": null,
+        "error_type": "candidate_stage_failed",
+        "error": "candidate_stage_failed",
+        "metadata": {
+          "host_search_score": null,
+          "task": "autoresearch-plant"
+        },
+        "source_artifact": "runs/plant-r1-20260920-original-c1/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+        "source_artifact_sha256": "d5971b7fa9d27c9d08b83503c3e35b59d0333e839f479d45f1b9ba4b8cc785f1"
+      }
+    }
+  ],
+  "counts": {
+    "nodes": 4,
+    "trials": 4,
+    "host_scored": 3,
+    "raw_cards": 4
+  }
+}

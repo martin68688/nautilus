@@ -1,0 +1,26 @@
+{
+  "created_at": "2026-09-21T07:09:31Z",
+  "request": "Ignore the current Plant record and rerun the original Plant task; leave iMet unchanged.",
+  "ignored_plant_runs": [
+    "plant-r1-20260920-repair-b1",
+    "plant-r2-20260920-b1"
+  ],
+  "stopped_plant_unit": "autoresearch-plant-r2-20260920-b1.service",
+  "new_plant_run": {
+    "run_id": "plant-r1-20260920-original-c1",
+    "round": 1,
+    "memory": false,
+    "budget_seconds": 7200,
+    "model": "gpt-5.6-terra",
+    "effort": "low",
+    "data_manifest_sha256": "a2209c362fae1f7ea84ecda99d977ba377984fa84d263e1e82b125cd6a5055ca",
+    "runtime_manifest_sha256": "66809ad804138b0aed09fc2cce188f1c3b6c768630f24e662497b03fa1d67b90"
+  },
+  "plant_continuation": {
+    "pid": 24938,
+    "script": "orchestrate_plant_rerun.py",
+    "log": "plant_rerun_orchestrator.log",
+    "scope": "Plant R1 to R3 only"
+  },
+  "imet_scope": "No iMet service, run, memory pack, volume, or result was changed."
+}

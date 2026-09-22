@@ -1,0 +1,24 @@
+{
+  "captured_utc": "2026-09-20 00:54 UTC（最终轮询）",
+  "current_r2_attempts_in_state": 15,
+  "current_r2_scored_candidates": 10,
+  "current_r2_tune_best": 0.33091781930004327,
+  "current_r2_host_best": 0.35624674087683567,
+  "current_r2_search_scores": [
+    0.5499888687915256,
+    0.35624674087683567,
+    0.3565887020557544,
+    0.35624674087683567,
+    0.40834679127860074,
+    0.35624674087683567,
+    0.35624674087683567,
+    0.42003487058930605,
+    0.35624674087683567,
+    0.3587874047097537
+  ],
+  "current_r2_best_attempt": "spooky-ar-r2-memory-r1-20260919-002",
+  "current_r2_run_best_search": 0.35624674087683567,
+  "current_r2_terminal": true,
+  "current_r2_stop_reason": "HTTP 403 Forbidden",
+  "source_snapshot": "current_r2_snapshot/STATE.json"
+}

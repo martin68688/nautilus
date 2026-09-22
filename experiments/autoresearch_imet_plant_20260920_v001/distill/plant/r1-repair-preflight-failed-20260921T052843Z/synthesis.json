@@ -1,0 +1,101 @@
+{
+  "method": "analyst_conditional_trajectory_synthesis",
+  "nodes": {
+    "node-001": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Implemented a self-contained plant seedling classifier using a torchvision ResNet-18 trained from scratch on fit.csv, with tune.csv used only for internal validation and model selection. The candidate discovers CSV columns robustly, loads images lazily from /data/<relative_path>, applies reproducible augmentation and normalization, saves model/preprocessing/class metadata under artifact_dir, and reloads identically for prediction. No external weights or network access are required.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Implemented a self-contained plant seedling classifier using a torchvision ResNet-18 trained from scratch on fit.csv, with tune.csv used only for internal validation and model selection. The candidate discovers CSV columns robustly, loads images lazily from /data/<relative_path>, applies reproducible augmentation and normalization, saves model/preprocessing/class metadata under artifact_dir, and reloads identically f",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-002": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Improved the baseline by selecting checkpoints using true tune macro-F1 instead of macro per-class accuracy, adding class-balanced cross-entropy, using horizontal-flip test-time augmentation, and retaining the best validation checkpoint. The model remains self-contained and randomly initialized, with no external weights or network access.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Improved the baseline by selecting checkpoints using true tune macro-F1 instead of macro per-class accuracy, adding class-balanced cross-entropy, using horizontal-flip test-time augmentation, and retaining the best validation checkpoint. The model remains self-contained and randomly initialized, with no external weights or network access.",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-003": {
+      "architecture_lesson": "This node did not receive a Host score because execution failed before a valid prediction result. The recorded failure or proposal was: ValueError: invalid public model dependency. No architectural benefit or ban is inferred.",
+      "tuning_lesson": "There is no measured tuning result for this node because the candidate did not pass the Host prediction contract. Treat its parameters as untested and keep the failure separate from scored evidence.",
+      "debug_lesson": "The executable failure is preserved as a conditional debug observation: ValueError: invalid public model dependency. The next candidate must repair the observed contract or runtime issue and still pass fresh-process reload plus Host recomputation before any score is compared.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-004": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Retain the validated self-contained ResNet-18 approach, while correcting internal checkpoint selection to use true macro-F1, adding class-balanced loss, and using horizontal-flip test-time augmentation. The model remains randomly initialized and uses no external weights or network access.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Retain the validated self-contained ResNet-18 approach, while correcting internal checkpoint selection to use true macro-F1, adding class-balanced loss, and using horizontal-flip test-time augmentation. The model remains randomly initialized and uses no external weights or network access.",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-005": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Corrected validation checkpoint selection to use true macro-F1, added class-balanced loss, and added deterministic horizontal-flip test-time augmentation. The candidate remains self-contained, uses no external weights or network access, and reports the complete validation trajectory and selected parameters.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Corrected validation checkpoint selection to use true macro-F1, added class-balanced loss, and added deterministic horizontal-flip test-time augmentation. The candidate remains self-contained, uses no external weights or network access, and reports the complete validation trajectory and selected parameters.",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-006": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Extend the validated self-contained ResNet-18 approach with a longer cosine schedule and mild stochastic augmentation, while preserving true tune macro-F1 checkpoint selection, class-balanced loss, horizontal-flip TTA, lazy /data image loading, fresh-process reloadability, and no external model dependencies. The longer schedule is intended to reduce underfitting relative to the prior 35-epoch candidate within the larger remaining budget.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Extend the validated self-contained ResNet-18 approach with a longer cosine schedule and mild stochastic augmentation, while preserving true tune macro-F1 checkpoint selection, class-balanced loss, horizontal-flip TTA, lazy /data image loading, fresh-process reloadability, and no external model dependencies. The longer schedule is intended to reduce underfitting relative to the prior 35-epoch candidate within the lar",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-007": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Retain the strongest validated self-contained ResNet-18 scratch-training approach. Use deterministic augmentation, square-root inverse-frequency class weighting, cosine learning-rate decay, true tune macro-F1 checkpoint selection, and horizontal-flip test-time augmentation. No external model dependencies are used.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Retain the strongest validated self-contained ResNet-18 scratch-training approach. Use deterministic augmentation, square-root inverse-frequency class weighting, cosine learning-rate decay, true tune macro-F1 checkpoint selection, and horizontal-flip test-time augmentation. No external model dependencies are used.",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-008": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Extend the best scratch ResNet-18 recipe within the remaining runtime: train up to 150 cosine-decay epochs with a strict time guard, retain sqrt inverse-frequency loss weighting and true tune macro-F1 checkpoint selection, and use a modest four-view deterministic inference ensemble (original, horizontal flip, and small left/right translations) to reduce crop-position variance. The candidate uses no external/public model weights and records its actual validation trajectory.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Extend the best scratch ResNet-18 recipe within the remaining runtime: train up to 150 cosine-decay epochs with a strict time guard, retain sqrt inverse-frequency loss weighting and true tune macro-F1 checkpoint selection, and use a modest four-view deterministic inference ensemble (original, horizontal flip, and small left/right translations) to reduce crop-position variance. The candidate uses no external/public mo",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    }
+  }
+}

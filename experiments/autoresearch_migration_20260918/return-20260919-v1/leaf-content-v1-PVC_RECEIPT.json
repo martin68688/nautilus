@@ -1,0 +1,34 @@
+{
+  "status": "PVC_VERIFIED",
+  "archive_sha256": "f1435498884f0a8c413bd61cee447acef5a35d6e7e0180b2030021cc23b1783d",
+  "destination": "/workspace/backups/aws/autoresearch-20260918/leaf-content-v1",
+  "manifests": [
+    {
+      "root": "/workspace/backups/aws/autoresearch-20260918/leaf-content-v1/restored/content",
+      "manifest": "/workspace/backups/aws/autoresearch-20260918/leaf-content-v1/manifest-00.json",
+      "manifest_sha256": "9959cd3836fbc64aa84e2742dca1282a503b18480c0872c038d7ed678ce20d58",
+      "verification": {
+        "actual": {
+          "bytes": 1900595186,
+          "directories": 5965,
+          "entries": 30837,
+          "files": 24864,
+          "symlinks": 8
+        },
+        "error_count_shown": 0,
+        "errors": [],
+        "expected": {
+          "bytes": 1900595186,
+          "directories": 5965,
+          "entries": 30837,
+          "files": 24864,
+          "symlinks": 8
+        },
+        "root": "/workspace/backups/aws/autoresearch-20260918/leaf-content-v1/restored/content",
+        "status": "verified"
+      }
+    }
+  ],
+  "verified_unix": 1789802543.7116938
+}
+

@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "source_files": 18,
+  "counts": {
+    "nodes": 4,
+    "trials": 4,
+    "host_scored": 3,
+    "raw_cards": 4
+  },
+  "search_cards": 8,
+  "inner_cards": 12,
+  "raw_cards": 4,
+  "limits": "Integrity, coverage and schema checked; scientific synthesis requires separate audit."
+}

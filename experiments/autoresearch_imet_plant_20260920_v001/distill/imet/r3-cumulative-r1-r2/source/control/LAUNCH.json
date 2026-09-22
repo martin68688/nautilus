@@ -1,0 +1,17 @@
+{
+  "run_id": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+  "task_id": "autoresearch-imet",
+  "round": 2,
+  "started_unix": 1789953836.5174983,
+  "budget_seconds": 7200,
+  "model": "gpt-5.6-terra",
+  "effort": "low",
+  "memory": false,
+  "data_manifest_sha256": "ecd6bcb1db4043f2ef4c225bcdb732ba1aca2bc61291e7274c5f94d00172d5ed",
+  "runtime_manifest_sha256": "60de8e9480c6dd3133248d46704532c8887a70507e9cf888388d068dbc2d7bbc",
+  "metric": "host_micro_f1",
+  "source_rounds": [
+    1,
+    2
+  ]
+}

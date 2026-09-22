@@ -1,0 +1,110 @@
+{
+  "schema": "leaf_r2_protocol_amendment_v1",
+  "authorized_by": "coordinator task 01a0b67d-5a9d-7a50-99d7-5b739733d68e explicit repair authorization",
+  "source_root": "/workspace/autoresearch-leaf-20260918/round2-terra-r1memory-001",
+  "continuation_root": "/workspace/autoresearch-leaf-20260918/round2-terra-r1memory-amended-001",
+  "source_launch_sha256": "6d50f2fc280838dc7ab5c07951a6e05ab9d878663c29bdcda24999b071ed1973",
+  "source_clock_sha256": "143be7190c0091469a337cc217229262480f80039807a85cc00614ea532deceb",
+  "source_state_sha256": "ae3a555a7ab11eb31b9a1803f4413348928d274b469726e359d110748c0f180c",
+  "source_manifest_sha256": "fb30ccecbfc8bf1bce6abab2e87de07744c30d9c157976d6a270f879266abd18",
+  "from_contract": {
+    "contract_sha256": "07830e210957a949ba6703e76f816c1bfeb98aa0944de35306c5e523c20ccb27",
+    "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+    "runtime_sha256": "a647a9ce95f1f6f6256185cf0de62707673dc77c5751e8004dbf0c876d63314a",
+    "memory_sha256": "8a4c85507745fb8dc825e5cbe054876bb7a1a56986d54f1a689fa464d432e5be"
+  },
+  "to_contract": {
+    "contract_sha256": "9e9ea8354460133a39c9822cc4a7ababa7d1241377bbf14110da5ccd02d08140",
+    "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+    "runtime_sha256": "8f0609fa94b8aaa827b2fa6ad41b3aea0fc5ad69e8ef107a904badf4ee51e762",
+    "memory_sha256": "8a4c85507745fb8dc825e5cbe054876bb7a1a56986d54f1a689fa464d432e5be"
+  },
+  "original_started": 1789772208.6579065,
+  "original_deadline": 1789779408.6579065,
+  "amended_unix": 1789773769.7490368,
+  "changes": [
+    "Each proposal query/read >=1 full relevant card; decisions may reject/defer; no architecture forced",
+    "Persist raw API response before any JSON parse; historical failed raw responses unrecoverable",
+    "Typed nonfinite parameter logging only; metrics/probability finite guards unchanged"
+  ],
+  "old_attempt_memory_consumption": {
+    "attempt-00001": {
+      "full_card_read_ids": [],
+      "memory_consumption": "catalogue_only_or_uncompleted_generation",
+      "decision_receipt_sha256": null,
+      "completed_result": true
+    },
+    "attempt-00002": {
+      "full_card_read_ids": [],
+      "memory_consumption": "catalogue_only_or_uncompleted_generation",
+      "decision_receipt_sha256": "9b5181ab1726f5d62df1f24f6dcc918e87e16eff4e1141eb8a60c084e313037e",
+      "completed_result": true
+    },
+    "attempt-00003": {
+      "full_card_read_ids": [],
+      "memory_consumption": "catalogue_only_or_uncompleted_generation",
+      "decision_receipt_sha256": null,
+      "completed_result": true
+    },
+    "attempt-00004": {
+      "full_card_read_ids": [],
+      "memory_consumption": "catalogue_only_or_uncompleted_generation",
+      "decision_receipt_sha256": "9b5181ab1726f5d62df1f24f6dcc918e87e16eff4e1141eb8a60c084e313037e",
+      "completed_result": true
+    },
+    "attempt-00005": {
+      "full_card_read_ids": [],
+      "memory_consumption": "catalogue_only_or_uncompleted_generation",
+      "decision_receipt_sha256": "9b5181ab1726f5d62df1f24f6dcc918e87e16eff4e1141eb8a60c084e313037e",
+      "completed_result": true
+    },
+    "attempt-00006": {
+      "full_card_read_ids": [],
+      "memory_consumption": "catalogue_only_or_uncompleted_generation",
+      "decision_receipt_sha256": "9b5181ab1726f5d62df1f24f6dcc918e87e16eff4e1141eb8a60c084e313037e",
+      "completed_result": true
+    },
+    "attempt-00007": {
+      "full_card_read_ids": [],
+      "memory_consumption": "catalogue_only_or_uncompleted_generation",
+      "decision_receipt_sha256": "9b5181ab1726f5d62df1f24f6dcc918e87e16eff4e1141eb8a60c084e313037e",
+      "completed_result": true
+    },
+    "attempt-00008": {
+      "full_card_read_ids": [],
+      "memory_consumption": "catalogue_only_or_uncompleted_generation",
+      "decision_receipt_sha256": "9b5181ab1726f5d62df1f24f6dcc918e87e16eff4e1141eb8a60c084e313037e",
+      "completed_result": true
+    },
+    "attempt-00009": {
+      "full_card_read_ids": [],
+      "memory_consumption": "catalogue_only_or_uncompleted_generation",
+      "decision_receipt_sha256": null,
+      "completed_result": true
+    },
+    "attempt-00010": {
+      "full_card_read_ids": [
+        "search:architecture_bd220d5ebc9c48d181959d760696e3dc",
+        "search:architecture_8fdc53c7587543208e03d164251d35f5"
+      ],
+      "memory_consumption": "full_card_read",
+      "decision_receipt_sha256": "a8c65dc6e396fdd7f0d258dbd03453ca87a2c291b20a449d2411818c4ca84e43",
+      "completed_result": true
+    },
+    "attempt-00011": {
+      "full_card_read_ids": [],
+      "memory_consumption": "catalogue_only_or_uncompleted_generation",
+      "decision_receipt_sha256": null,
+      "completed_result": false
+    }
+  },
+  "inherited_incumbent": {
+    "attempt": "attempt-00010",
+    "score": 0.07024207102915818,
+    "code_sha256": "569ac6607bf67946d4df714c50cd52782cf236324683606f0894b248335770db"
+  },
+  "budget_reset": false,
+  "old_results_invalidated": false,
+  "old_weights_used_to_seed_new_training": false,
+  "new_attempts_use_incumbent_code_only": true
+}

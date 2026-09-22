@@ -2,6 +2,20 @@
 
 Nautilus is an automated machine learning system that uses LLM agents to solve Kaggle-style ML competitions. It combines tree-search-based solution evolution with a structured knowledge base distilled from top-tier ML/AI conference papers, enabling the system to start with strong baselines and systematically improve through guided search.
 
+## Paper branch: multi-round memory results (2026-09-22)
+
+This branch (`paper/multiround-memory-20260922`) collects the current paper
+material for cross-round memory on two agent harnesses (MLEvolve and a
+single-agent autoresearch loop):
+
+- `results/multiround_20260922/README.md` — harness definitions, protocol,
+  per-round best scores, figure-to-source mapping, and known limitations.
+- `paper/overleaf_decision_admissibility/` — mirror of the Overleaf project
+  (ICLR 2025 style); new section in `sections/multiround_two_harness.tex`.
+- `experiments/autoresearch_*` — autoresearch harness code and per-round
+  protocol/receipt files (raw data, weights, logs and host-specific files
+  excluded).
+
 ## System Overview
 
 ```

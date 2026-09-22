@@ -1,0 +1,12 @@
+{
+  "figure_claim": "iMet best Host micro-F1 by cumulative-memory round",
+  "r1_best": 0.3891708697355064,
+  "r2_best": 0.44095033341835804,
+  "r3_best": 0.4585922833606213,
+  "r3_representation": "terminal receipt only; intermediate trajectory unavailable locally",
+  "sources": [
+    "imet/runs/imet-r1-20260920-a1/STATE.json",
+    "imet/runs/imet-r2-20260920-b1/STATE.json",
+    "orchestrator.log R3 terminal receipt"
+  ]
+}

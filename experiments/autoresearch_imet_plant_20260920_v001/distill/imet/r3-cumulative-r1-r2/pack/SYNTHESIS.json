@@ -1,0 +1,77 @@
+{
+  "method": "analyst_conditional_trajectory_synthesis",
+  "nodes": {
+    "node-001": {
+      "architecture_lesson": "This node did not receive a Host score because execution failed before a valid prediction result. The recorded failure or proposal was: candidate_stage_failed. No architectural benefit or ban is inferred.",
+      "tuning_lesson": "There is no measured tuning result for this node because the candidate did not pass the Host prediction contract. Treat its parameters as untested and keep the failure separate from scored evidence.",
+      "debug_lesson": "The executable failure is preserved as a conditional debug observation: candidate_stage_failed. The next candidate must repair the observed contract or runtime issue and still pass fresh-process reload plus Host recomputation before any score is compared.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-002": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-003": {
+      "architecture_lesson": "This node did not receive a Host score because execution failed before a valid prediction result. The recorded failure or proposal was: candidate_stage_failed. No architectural benefit or ban is inferred.",
+      "tuning_lesson": "There is no measured tuning result for this node because the candidate did not pass the Host prediction contract. Treat its parameters as untested and keep the failure separate from scored evidence.",
+      "debug_lesson": "The executable failure is preserved as a conditional debug observation: candidate_stage_failed. The next candidate must repair the observed contract or runtime issue and still pass fresh-process reload plus Host recomputation before any score is compared.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-004": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-005": {
+      "architecture_lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "tuning_lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and opt",
+      "debug_lesson": "The scored node passed the execution, reload and Host recomputation gates. Remaining risk is that the Agent's unmeasured choices and internal validation behavior were not isolated causally; a later run should preserve the contract while testing one change at a time.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    },
+    "node-006": {
+      "architecture_lesson": "This node did not receive a Host score because execution failed before a valid prediction result. The recorded failure or proposal was: candidate_stage_failed. No architectural benefit or ban is inferred.",
+      "tuning_lesson": "There is no measured tuning result for this node because the candidate did not pass the Host prediction contract. Treat its parameters as untested and keep the failure separate from scored evidence.",
+      "debug_lesson": "The executable failure is preserved as a conditional debug observation: candidate_stage_failed. The next candidate must repair the observed contract or runtime issue and still pass fresh-process reload plus Host recomputation before any score is compared.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "match_terms": [
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ]
+    }
+  }
+}

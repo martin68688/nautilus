@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "root": "/workspace/autoresearch-leaf-20260918/round2-terra-r1memory-amended-001",
+  "amendment_sha256": "b8f005925852cf23b3dc8096372c8e9406fe25da76b5455e68447c1f718df340",
+  "history_count": 11,
+  "incumbent": {
+    "attempt": "attempt-00010",
+    "score": 0.07024207102915818,
+    "code_sha256": "569ac6607bf67946d4df714c50cd52782cf236324683606f0894b248335770db"
+  },
+  "clock": {
+    "started": 1789772208.6579065,
+    "deadline": 1789779408.6579065,
+    "run_label": "843d4d43cd2485bc46dff8f5"
+  },
+  "remaining_seconds": 5638.900821208954
+}

@@ -1,0 +1,119 @@
+{
+  "attempt": 1,
+  "candidate_sha256": "756ed4434bfdff1f982c3361d692112d145703a030d7b434caf4df5127467961",
+  "raw_decisions": [
+    {
+      "key": "search:architecture_node-005",
+      "action": "adopt",
+      "reason": "The implementation selects and checkpoints the epoch by tune micro-F1 after global threshold calibration.",
+      "code_evidence": "if local_best>best:"
+    },
+    {
+      "key": "search:tuning_node-005",
+      "action": "adopt",
+      "reason": "Threshold calibration and model selection use only the labeled tune split.",
+      "code_evidence": "for t in np.arange(0.02,0.501,0.01):"
+    },
+    {
+      "key": "search:architecture_node-004",
+      "action": "adopt",
+      "reason": "The frozen candidate implements a self-contained residual image model without external pretrained assets.",
+      "code_evidence": "class SmallResNet(nn.Module):"
+    },
+    {
+      "key": "search:tuning_node-004",
+      "action": "adopt",
+      "reason": "The candidate records the selected threshold and convergence trajectory in its artifact metadata.",
+      "code_evidence": "trajectory.append({'epoch':ep+1,'loss':total/max(1,nb),'tune_micro_f1':local_best,'threshold':local_t})"
+    },
+    {
+      "key": "search:architecture_node-002",
+      "action": "adapt",
+      "reason": "The candidate retains the lazy-decoding multilabel BCE pipeline while using the stronger residual architecture.",
+      "code_evidence": "lossfn=nn.BCEWithLogitsLoss(pos_weight=torch.from_numpy(pw).to(device))"
+    },
+    {
+      "key": "search:tuning_node-002",
+      "action": "adopt",
+      "reason": "The implementation uses a single tune-selected global threshold and argmax fallback for empty prediction rows.",
+      "code_evidence": "q=pr>=float(meta['threshold']); empty=~q.any(1)"
+    }
+  ],
+  "normalized_decisions": [
+    {
+      "key": "search:architecture_node-005",
+      "action": "adopt",
+      "reason": "The implementation selects and checkpoints the epoch by tune micro-F1 after global threshold calibration.",
+      "code_evidence": "if local_best>best:"
+    },
+    {
+      "key": "search:tuning_node-005",
+      "action": "adopt",
+      "reason": "Threshold calibration and model selection use only the labeled tune split.",
+      "code_evidence": "for t in np.arange(0.02,0.501,0.01):"
+    },
+    {
+      "key": "search:architecture_node-004",
+      "action": "adopt",
+      "reason": "The frozen candidate implements a self-contained residual image model without external pretrained assets.",
+      "code_evidence": "class SmallResNet(nn.Module):"
+    },
+    {
+      "key": "search:tuning_node-004",
+      "action": "adopt",
+      "reason": "The candidate records the selected threshold and convergence trajectory in its artifact metadata.",
+      "code_evidence": "trajectory.append({'epoch':ep+1,'loss':total/max(1,nb),'tune_micro_f1':local_best,'threshold':local_t})"
+    },
+    {
+      "key": "search:architecture_node-002",
+      "action": "adapt",
+      "reason": "The candidate retains the lazy-decoding multilabel BCE pipeline while using the stronger residual architecture.",
+      "code_evidence": "lossfn=nn.BCEWithLogitsLoss(pos_weight=torch.from_numpy(pw).to(device))"
+    },
+    {
+      "key": "search:tuning_node-002",
+      "action": "adopt",
+      "reason": "The implementation uses a single tune-selected global threshold and argmax fallback for empty prediction rows.",
+      "code_evidence": "q=pr>=float(meta['threshold']); empty=~q.any(1)"
+    }
+  ],
+  "id_mapping": [
+    {
+      "index": 0,
+      "raw_key": "search:architecture_node-005",
+      "normalized_key": "search:architecture_node-005",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 1,
+      "raw_key": "search:tuning_node-005",
+      "normalized_key": "search:tuning_node-005",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 2,
+      "raw_key": "search:architecture_node-004",
+      "normalized_key": "search:architecture_node-004",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 3,
+      "raw_key": "search:tuning_node-004",
+      "normalized_key": "search:tuning_node-004",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 4,
+      "raw_key": "search:architecture_node-002",
+      "normalized_key": "search:architecture_node-002",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 5,
+      "raw_key": "search:tuning_node-002",
+      "normalized_key": "search:tuning_node-002",
+      "method": "exact_selected_key"
+    }
+  ],
+  "errors": []
+}

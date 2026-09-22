@@ -1,0 +1,36 @@
+{
+  "figure_contract": {
+    "core_conclusion": "The main trajectories include only reload-verified Host-scored candidates; unscored or failed candidates stay in the independent candidate strip and source CSV.",
+    "archetype": "asymmetric mixed-modality quantitative composite",
+    "backend": "python/matplotlib",
+    "hero_evidence": "all returned internal epoch nodes",
+    "validation_evidence": "Host search scores and terminal R3 receipt",
+    "review_risk": "R3 scoring artifacts are recovered; large binary prediction/model caches remain on AWS and are not needed for this figure"
+  },
+  "node_count": 60,
+  "candidate_count": 8,
+  "main_panel_policy": "only candidates with host_search_score and host_recomputed and reload_verified",
+  "main_panel_candidates": [
+    "R1-001",
+    "R2-000",
+    "R2-001",
+    "R3-000"
+  ],
+  "independent_unscored_candidates": [
+    "R1-000",
+    "R1-002",
+    "R2-002",
+    "R3-001"
+  ],
+  "r1_internal_nodes": 12,
+  "r2_internal_nodes": 18,
+  "r3": {
+    "r3_elapsed_min": 119.50630388538363,
+    "r3_host_score": 0.4585922833606213,
+    "r3_detail_status": "candidate-level scored artifacts recovered from AWS EBS; large binary prediction/model caches remain on AWS"
+  },
+  "sources": [
+    "R1/R2 STATE.json, RESULT.json and worker/artifacts/metadata.json",
+    "AWS-recovered R3 STATE.json, RESULT.json, HOST_RESULT.json and worker/artifacts/meta.json"
+  ]
+}

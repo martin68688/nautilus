@@ -1,0 +1,10 @@
+{
+  "passed": false,
+  "error_type": "HTTPError",
+  "error": "HTTP Error 503: Service Unavailable",
+  "started": 1789786515.4118,
+  "finished": 1789786515.4898667,
+  "raw_response_sha256": "431c90b418e751fbeba9f41c2f9246ca70fbb194510618789ff1e161e3a17c3a",
+  "next_check_not_before": 1789787415.4899173,
+  "formal_score": false
+}

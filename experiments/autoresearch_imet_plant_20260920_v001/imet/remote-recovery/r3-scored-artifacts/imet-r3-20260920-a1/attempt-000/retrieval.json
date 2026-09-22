@@ -1,0 +1,39 @@
+{
+  "queries": [
+    "Exact internal trial outcome",
+    "host_scored_candidate",
+    "failed_candidate"
+  ],
+  "matching_keys": [
+    "search:tuning_node-001",
+    "search:debug_node-001",
+    "search:architecture_node-002",
+    "search:tuning_node-002",
+    "search:tuning_node-003",
+    "search:debug_node-003",
+    "search:architecture_node-004",
+    "search:tuning_node-004",
+    "search:architecture_node-005",
+    "search:tuning_node-005",
+    "search:tuning_node-006",
+    "search:debug_node-006",
+    "inner:tuning_node-001",
+    "inner:tuning_node-002",
+    "inner:tuning_node-003",
+    "inner:tuning_node-004",
+    "inner:tuning_node-005",
+    "inner:tuning_node-006",
+    "inner:debug_node-001",
+    "inner:architecture_node-002",
+    "inner:debug_node-003",
+    "inner:architecture_node-004",
+    "inner:architecture_node-005",
+    "inner:debug_node-006",
+    "inner:raw_trial_node-001_trial",
+    "inner:raw_trial_node-002_trial",
+    "inner:raw_trial_node-003_trial",
+    "inner:raw_trial_node-004_trial",
+    "inner:raw_trial_node-005_trial",
+    "inner:raw_trial_node-006_trial"
+  ]
+}

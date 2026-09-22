@@ -1,0 +1,10 @@
+{
+  "contract": {
+    "contract_sha256": "07830e210957a949ba6703e76f816c1bfeb98aa0944de35306c5e523c20ccb27",
+    "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+    "runtime_sha256": "a647a9ce95f1f6f6256185cf0de62707673dc77c5751e8004dbf0c876d63314a",
+    "memory_sha256": "8a4c85507745fb8dc825e5cbe054876bb7a1a56986d54f1a689fa464d432e5be"
+  },
+  "started": 1789772208.6579065,
+  "deadline": 1789779408.6579065
+}

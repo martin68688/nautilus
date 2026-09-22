@@ -1,0 +1,217 @@
+{
+  "method": "analyst_conditional_trajectory_synthesis",
+  "nodes": {
+    "node-000": {
+      "architecture_lesson": "Under the frozen Spooky R1 no-memory split, node node-000 completed Host recomputation with search log-loss 0.549989. The candidate used word_unigram_tfidf_logistic; its train and reload path is a conditional observation, not a universal ranking of this architecture.",
+      "tuning_lesson": "Node node-000 recorded 1 inner evaluations on tune.csv, with 1 numeric tune scores. These observations are priors for R2 only: refit preprocessing and weights in the new run, and do not copy historical fitted artifacts.",
+      "debug_lesson": "The node's debug status is no separate runtime failure. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "word"
+      ]
+    },
+    "node-001": {
+      "architecture_lesson": "Node node-001 did not produce a Host score, so no architecture claim is supported. The recorded candidate context was unknown candidate architecture, and the failure evidence must be kept separate from scored model behavior.",
+      "tuning_lesson": "Node node-001 has no recorded inner tuning trajectory. Treat its parameter selection as unknown and do not infer a tuning recipe from the missing record.",
+      "debug_lesson": "The node's debug status is AssertionError: . Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "unknown candidate architecture"
+      ]
+    },
+    "node-002": {
+      "architecture_lesson": "Under the frozen Spooky R1 no-memory split, node node-002 completed Host recomputation with search log-loss 0.534004. The candidate used word_bigram_plus_char_3to5gram_tfidf_logistic_ensemble; its train and reload path is a conditional observation, not a universal ranking of this architecture.",
+      "tuning_lesson": "Node node-002 recorded 10 inner evaluations on tune.csv, with 10 numeric tune scores. These observations are priors for R2 only: refit preprocessing and weights in the new run, and do not copy historical fitted artifacts.",
+      "debug_lesson": "The node's debug status is no separate runtime failure. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "word"
+      ]
+    },
+    "node-004": {
+      "architecture_lesson": "Under the frozen Spooky R1 no-memory split, node node-004 completed Host recomputation with search log-loss 0.525282. The candidate used word_bigram_plus_char_2to6_plus_charwb_3to6_tfidf_logistic_ensemble; its train and reload path is a conditional observation, not a universal ranking of this architecture.",
+      "tuning_lesson": "Node node-004 recorded 19 inner evaluations on tune.csv, with 19 numeric tune scores. These observations are priors for R2 only: refit preprocessing and weights in the new run, and do not copy historical fitted artifacts.",
+      "debug_lesson": "The node's debug status is no separate runtime failure. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "word"
+      ]
+    },
+    "node-005": {
+      "architecture_lesson": "Under the frozen Spooky R1 no-memory split, node node-005 completed Host recomputation with search log-loss 0.520367. The candidate used word_1to2_plus_char_2to7_plus_charwb_3to7_tfidf_logistic_independent_C; its train and reload path is a conditional observation, not a universal ranking of this architecture.",
+      "tuning_lesson": "Node node-005 recorded 21 inner evaluations on tune.csv, with 21 numeric tune scores. These observations are priors for R2 only: refit preprocessing and weights in the new run, and do not copy historical fitted artifacts.",
+      "debug_lesson": "The node's debug status is no separate runtime failure. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "word"
+      ]
+    },
+    "node-006": {
+      "architecture_lesson": "Under the frozen Spooky R1 no-memory split, node node-006 completed Host recomputation with search log-loss 0.472244. The candidate used word_1to2_plus_char_2to7_plus_charwb_3to7_tfidf_logistic_with_probability_calibration; its train and reload path is a conditional observation, not a universal ranking of this architecture.",
+      "tuning_lesson": "Node node-006 recorded 46 inner evaluations on tune.csv, with 46 numeric tune scores. These observations are priors for R2 only: refit preprocessing and weights in the new run, and do not copy historical fitted artifacts.",
+      "debug_lesson": "The node's debug status is no separate runtime failure. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "word"
+      ]
+    },
+    "node-007": {
+      "architecture_lesson": "Under the frozen Spooky R1 no-memory split, node node-007 completed Host recomputation with search log-loss 0.431058. The candidate used word_1to2_plus_char_2to8_plus_charwb_2to8_tfidf_logistic_with_probability_calibration; its train and reload path is a conditional observation, not a universal ranking of this architecture.",
+      "tuning_lesson": "Node node-007 recorded 78 inner evaluations on tune.csv, with 78 numeric tune scores. These observations are priors for R2 only: refit preprocessing and weights in the new run, and do not copy historical fitted artifacts.",
+      "debug_lesson": "The node's debug status is no separate runtime failure. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "word"
+      ]
+    },
+    "node-008": {
+      "architecture_lesson": "Under the frozen Spooky R1 no-memory split, node node-008 completed Host recomputation with search log-loss 0.424465. The candidate used word_1to3_plus_char_2to6_plus_charwb_3to7_tfidf_logistic_with_probability_calibration; its train and reload path is a conditional observation, not a universal ranking of this architecture.",
+      "tuning_lesson": "Node node-008 recorded 87 inner evaluations on tune.csv, with 87 numeric tune scores. These observations are priors for R2 only: refit preprocessing and weights in the new run, and do not copy historical fitted artifacts.",
+      "debug_lesson": "The node's debug status is no separate runtime failure. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "word"
+      ]
+    },
+    "node-009": {
+      "architecture_lesson": "Under the frozen Spooky R1 no-memory split, node node-009 completed Host recomputation with search log-loss 0.431016. The candidate used word_1to3_plus_char_2to6_plus_charwb_3to7_plus_charwb_2to8_tfidf_logistic; its train and reload path is a conditional observation, not a universal ranking of this architecture.",
+      "tuning_lesson": "Node node-009 recorded 80 inner evaluations on tune.csv, with 80 numeric tune scores. These observations are priors for R2 only: refit preprocessing and weights in the new run, and do not copy historical fitted artifacts.",
+      "debug_lesson": "The node's debug status is no separate runtime failure. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "word"
+      ]
+    },
+    "node-010": {
+      "architecture_lesson": "Under the frozen Spooky R1 no-memory split, node node-010 completed Host recomputation with search log-loss 0.424337. The candidate used three-channel TFIDF logistic ensemble plus word-TFIDF MultinomialNB; its train and reload path is a conditional observation, not a universal ranking of this architecture.",
+      "tuning_lesson": "Node node-010 recorded 87 inner evaluations on tune.csv, with 87 numeric tune scores. These observations are priors for R2 only: refit preprocessing and weights in the new run, and do not copy historical fitted artifacts.",
+      "debug_lesson": "The node's debug status is no separate runtime failure. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "three-channel TFIDF logistic ensemble plus word-TFIDF MultinomialNB"
+      ]
+    },
+    "node-011": {
+      "architecture_lesson": "Under the frozen Spooky R1 no-memory split, node node-011 completed Host recomputation with search log-loss 0.364870. The candidate used three-channel TF-IDF logistic ensemble plus word and raw-character MultinomialNB channels; its train and reload path is a conditional observation, not a universal ranking of this architecture.",
+      "tuning_lesson": "Node node-011 recorded 93 inner evaluations on tune.csv, with 93 numeric tune scores. These observations are priors for R2 only: refit preprocessing and weights in the new run, and do not copy historical fitted artifacts.",
+      "debug_lesson": "The node's debug status is no separate runtime failure. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "three-channel TF-IDF logistic ensemble plus word and raw-character MultinomialNB channels"
+      ]
+    },
+    "node-012": {
+      "architecture_lesson": "Node node-012 did not produce a Host score, so no architecture claim is supported. The recorded candidate context was unknown candidate architecture, and the failure evidence must be kept separate from scored model behavior.",
+      "tuning_lesson": "Node node-012 has no recorded inner tuning trajectory. Treat its parameter selection as unknown and do not infer a tuning recipe from the missing record.",
+      "debug_lesson": "The node's debug status is nonzero_or_timeout. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "unknown candidate architecture"
+      ]
+    },
+    "node-013": {
+      "architecture_lesson": "Node node-013 did not produce a Host score, so no architecture claim is supported. The recorded candidate context was unknown candidate architecture, and the failure evidence must be kept separate from scored model behavior.",
+      "tuning_lesson": "Node node-013 has no recorded inner tuning trajectory. Treat its parameter selection as unknown and do not infer a tuning recipe from the missing record.",
+      "debug_lesson": "The node's debug status is nonzero_or_timeout. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "unknown candidate architecture"
+      ]
+    },
+    "node-014": {
+      "architecture_lesson": "Node node-014 did not produce a Host score, so no architecture claim is supported. The recorded candidate context was unknown candidate architecture, and the failure evidence must be kept separate from scored model behavior.",
+      "tuning_lesson": "Node node-014 has no recorded inner tuning trajectory. Treat its parameter selection as unknown and do not infer a tuning recipe from the missing record.",
+      "debug_lesson": "The node's debug status is nonzero_or_timeout. Preserve the exact execution evidence and separate candidate-code failures from model-quality conclusions; a later retry must use a self-consistent train/predict artifact contract.",
+      "alternative": "For R2, ask the Agent to retrieve this evidence conditionally, then make one minimal, self-contained change whose serialized models, vectorizers and predict path have matching cardinality before Host evaluation.",
+      "match_terms": [
+        "Spooky",
+        "R1",
+        "no memory",
+        "unknown candidate architecture"
+      ]
+    }
+  },
+  "themes": [
+    {
+      "id": "r1_feature_trajectory",
+      "granularity": "tuning",
+      "node_ids": [
+        "node-002",
+        "node-004",
+        "node-005",
+        "node-006",
+        "node-007",
+        "node-008",
+        "node-009",
+        "node-010",
+        "node-011"
+      ],
+      "title": "R1 scored trajectory is conditional evidence for complementary text features",
+      "lesson": "Across the scored R1 nodes, word and character TF-IDF variants followed by calibrated probability ensembles produced conditional improvements on this fixed split. R2 should retrieve the trajectory as a search prior while refitting every vectorizer and model from its own fit data.",
+      "alternative": "Prefer a small self-contained change and verify train, reload and Host scoring before keeping it.",
+      "match_terms": [
+        "TF-IDF",
+        "character",
+        "calibration",
+        "ensemble"
+      ]
+    },
+    {
+      "id": "r1_prediction_contract_failures",
+      "granularity": "debug",
+      "node_ids": [
+        "node-012",
+        "node-013",
+        "node-014"
+      ],
+      "title": "R1 stopped after repeated train/predict serialization failures",
+      "lesson": "The final three R1 candidates trained but failed in predict1 because their model list exceeded the serialized vectorizer list. The frozen harness stopped after three consecutive non-transient failures; R2 should treat this as an engineering guardrail and explicitly check model/vectorizer cardinality.",
+      "alternative": "Keep the original incumbent, require a reload smoke test inside the candidate, and avoid adding channels without adding matching preprocessing objects.",
+      "match_terms": [
+        "IndexError",
+        "predict1",
+        "vectorizer",
+        "serialization"
+      ]
+    }
+  ]
+}

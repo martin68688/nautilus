@@ -1,0 +1,48 @@
+{
+  "unit": "leaf-autoresearch-r2-terra-amended-20260918.service",
+  "resumed_unix": 1789774249.9561472,
+  "original_clock": {
+    "started": 1789772208.6579065,
+    "deadline": 1789779408.6579065,
+    "run_label": "843d4d43cd2485bc46dff8f5"
+  },
+  "remaining_at_dispatch": 5158.717725276947,
+  "budget_reset": false,
+  "amendment_sha256": "b8f005925852cf23b3dc8096372c8e9406fe25da76b5455e68447c1f718df340",
+  "gates_sha256": "fffb9ebfc1063b9aaa67991a3d1c2ec7a7d42a1c3404fa1c10f1820d3daa4cdf",
+  "runtime_manifest_sha256": "8f0609fa94b8aaa827b2fa6ad41b3aea0fc5ad69e8ef107a904badf4ee51e762",
+  "inherited_incumbent": {
+    "attempt": "attempt-00010",
+    "score": 0.07024207102915818,
+    "code_sha256": "569ac6607bf67946d4df714c50cd52782cf236324683606f0894b248335770db"
+  },
+  "command": [
+    "systemd-run",
+    "--unit=leaf-autoresearch-r2-terra-amended-20260918.service",
+    "--property=Type=exec",
+    "--property=KillMode=control-group",
+    "--property=TimeoutStopSec=30",
+    "--property=RuntimeMaxSec=5219",
+    "--property=Restart=no",
+    "/workspace/autoresearch-leaf-20260918/controller-venv-v2/bin/python",
+    "/workspace/autoresearch-leaf-20260918/amendment-v007/code/supervise.py",
+    "--public",
+    "/workspace/autoresearch-leaf-20260918/inputs-v001/public",
+    "--hidden",
+    "/workspace/autoresearch-leaf-20260918/inputs-v001/host-labels",
+    "--output",
+    "/workspace/autoresearch-leaf-20260918/round2-terra-r1memory-amended-001",
+    "--gates",
+    "/workspace/autoresearch-leaf-20260918/R2_AMENDMENT_GATES.json",
+    "--memory-specs",
+    "/workspace/autoresearch-leaf-20260918/amendment-v007/code/memory_specs.json",
+    "--image",
+    "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+    "--endpoint-url",
+    "https://apizh-ai.com/v1",
+    "--endpoint-env",
+    "/etc/autoresearch/apizh-terra-low.env",
+    "--network",
+    "none"
+  ]
+}

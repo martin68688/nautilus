@@ -1,0 +1,16 @@
+from pathlib import Path
+import json,hashlib,shutil,subprocess,os
+R=Path(__file__).resolve().parent;root=R.parents[1];audit=root/'experiments/autoresearch_migration_20260918';d=json.loads((audit/'AUDIT_INPUTS.json').read_text())
+(R/'memory').mkdir(exist_ok=True)
+for name in ['spooky_search','spooky_inner']:
+ s=d['candidate_memory_packs'][name];p=Path(s['path']);assert hashlib.sha256(p.read_bytes()).hexdigest()==s['sha256'];shutil.copy2(p,R/'memory'/p.name)
+shutil.copy2(audit/'memory_bridge.py',R/'memory_bridge.py')
+(R/'UPSTREAM.json').write_text(json.dumps({'commit':d['upstream_commit'],'main_py_sha256':d['source_files']['main.py'],'approach':'Single Agent edits candidate Python, independent execution/host score and keep/discard; no MLEvolve search imports'},indent=2))
+name='autoresearch-spooky-a10-20260918';p={'apiVersion':'v1','kind':'Pod','metadata':{'name':name,'namespace':'ecepxie','labels':{'ecepxie.nrp/owner':'haoming','app.kubernetes.io/managed-by':'codex-nrp-training','experiment':name}},'spec':{'restartPolicy':'Never','activeDeadlineSeconds':25200,'automountServiceAccountToken':False,'affinity':{'nodeAffinity':{'requiredDuringSchedulingIgnoredDuringExecution':{'nodeSelectorTerms':[{'matchExpressions':[{'key':'nvidia.com/gpu.product','operator':'In','values':['NVIDIA-A10']}]}]}}},'containers':[{'name':'worker','image':'docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc','command':['python','-c','import time; time.sleep(25000)'],'resources':{'requests':{'cpu':'8','memory':'32Gi','nvidia.com/gpu':'1','ephemeral-storage':'24Gi'},'limits':{'cpu':'8','memory':'32Gi','nvidia.com/gpu':'1','ephemeral-storage':'24Gi'}},'volumeMounts':[{'name':'data','mountPath':'/data','subPath':'experiments/spooky-free-linear-terra-r1-fixed-20260910/public','readOnly':True},{'name':'scratch','mountPath':'/scratch'}]}],'volumes':[{'name':'data','persistentVolumeClaim':{'claimName':'haoming-storage'}},{'name':'scratch','emptyDir':{'sizeLimit':'24Gi'}}]}}
+(R/'worker-pod.json').write_text(json.dumps(p,indent=2))
+policy={'apiVersion':'networking.k8s.io/v1','kind':'NetworkPolicy','metadata':{'name':name,'namespace':'ecepxie','labels':p['metadata']['labels']},'spec':{'podSelector':{'matchLabels':{'experiment':name}},'policyTypes':['Ingress','Egress'],'ingress':[],'egress':[{'to':[{'namespaceSelector':{'matchLabels':{'kubernetes.io/metadata.name':'kube-system'}}}],'ports':[{'protocol':'UDP','port':53},{'protocol':'TCP','port':53}]},{'to':[{'ipBlock':{'cidr':'0.0.0.0/0','except':['10.0.0.0/8','172.16.0.0/12','192.168.0.0/16','169.254.0.0/16','127.0.0.0/8']}}],'ports':[{'protocol':'TCP','port':443}]}]}}
+(R/'worker-networkpolicy.json').write_text(json.dumps(policy,indent=2))
+e={k:v for k,v in os.environ.items() if k.lower() not in ['http_proxy','https_proxy','all_proxy','no_proxy']}
+subprocess.run(['python3','/Users/haoming/.codex/skills/nrp-training/scripts/preflight_cleanup.py','--only-label','experiment='+name,'--apply'],check=True,env=e,stdout=(R/'preflight.log').open('w'))
+for f in ['worker-networkpolicy.json','worker-pod.json']:subprocess.run(['kubectl','-n','ecepxie','create','-f',str(R/f)],env=e,check=True)
+z=subprocess.check_output(['kubectl','-n','ecepxie','get','pod',name,'-o','json'],env=e);(R/'worker-created.json').write_bytes(z)

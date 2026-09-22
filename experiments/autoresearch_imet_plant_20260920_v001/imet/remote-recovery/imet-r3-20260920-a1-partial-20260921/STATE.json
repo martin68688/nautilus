@@ -1,0 +1,34 @@
+{
+  "best": 0.4585922833606213,
+  "best_attempt": "imet-r3-20260920-a1-000",
+  "history": [
+    {
+      "attempt": "imet-r3-20260920-a1-000",
+      "started_elapsed": 0.001991786004509777,
+      "status": "valid",
+      "tune_score": 0.45849145500492566,
+      "search_score": 0.4585922833606213,
+      "test_score": null,
+      "seconds": 3984.352688579005,
+      "source_sha256": "756ed4434bfdff1f982c3361d692112d145703a030d7b434caf4df5127467961",
+      "predictions_sha256": "f8b28fdd031c9ab4890c4a2be447ae5283e7232431fc2a856023d23cb1a430f7",
+      "host_recomputed": true,
+      "reload_verified": true,
+      "change": "Use a self-contained SmallResNet with lazy PIL decoding, BCEWithLogitsLoss using bounded per-attribute positive weighting, tune-only target-aligned checkpoint selection, global threshold search over 0.02..0.50, deterministic artifact reload, and argmax fallback for empty predictions. No pretrained weights or external assets are used.",
+      "decision": "keep",
+      "elapsed_seconds": 4228.331859260012
+    },
+    {
+      "attempt": "imet-r3-20260920-a1-001",
+      "started_elapsed": 4228.332249076018,
+      "status": "failed",
+      "search_score": null,
+      "reason": "candidate_stage_failed",
+      "seconds": 2624.5694829950226,
+      "change": "Retain the validated self-contained residual CNN and target-aligned tune checkpointing, while adding prevalence-aware initialization of the 3474 output biases and enforcing two-dimensional label matrices without reshape-based flattening. The output bias is initialized to the smoothed per-attribute logit prevalence, improving early calibration for highly imbalanced attributes while preserving the bounded square-root positive weighting. The candidate remains image-only, lazily decodes images, performs tune-only global threshold selection, records the actual convergence trajectory, and supports deterministic fresh-process reload.",
+      "decision": "discard",
+      "elapsed_seconds": 7170.378233123018
+    }
+  ],
+  "incumbent_sha256": "756ed4434bfdff1f982c3361d692112d145703a030d7b434caf4df5127467961"
+}

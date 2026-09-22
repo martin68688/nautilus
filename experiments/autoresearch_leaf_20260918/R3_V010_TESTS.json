@@ -1,0 +1,8 @@
+{
+  "passed": true,
+  "returncode": 0,
+  "stdout": "",
+  "stderr": "........................\n----------------------------------------------------------------------\nRan 24 tests in 2.220s\n\nOK\n",
+  "image": "docker.io/haomingwang22/mlevolve@sha256:fe0b9c383391d3e62e9f321943b4fdedaa4df54ad7f45b0395c8647a195c20cc",
+  "runtime_manifest_sha256": "fd12d7d784d3ce526e7f68af8bf834e8a3db01958b12b9b62a4060a8c726a768"
+}

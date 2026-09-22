@@ -1,0 +1,38 @@
+{
+  "source_round": 1,
+  "source_run": "imet-r1-20260920-a1",
+  "source_run_id": "imet-r1-20260920-a1",
+  "source_rounds": [
+    "imet-r1-20260920-a1"
+  ],
+  "data_manifest_sha256": "ecd6bcb1db4043f2ef4c225bcdb732ba1aca2bc61291e7274c5f94d00172d5ed",
+  "source_runtime_sha256": "60de8e9480c6dd3133248d46704532c8887a70507e9cf888388d068dbc2d7bbc",
+  "distillation": "conditional-trajectory-skill-v1",
+  "contains_source_code": false,
+  "contains_source_weights": false,
+  "sha256": {
+    "search": "640b58cf47089a47860941aa5b1ec14664fae9ff5f9b4617a6d9e34867ea8475",
+    "inner": "2d2857423456905cc392a845c9443ced080d892a2a4f9de99fb620a5db195694"
+  },
+  "input_evidence_hashes": {
+    "control/LAUNCH.json": "693d99aec4a420a1389d75568ef0ba11f132b9b48bac5681b271733e8fe1e081",
+    "runs/imet-r1-20260920-a1/logs/journal.json": "d8f88162de570b7b6aa50a223a48a1cf32dfd7a460e1dddbc8c8f8c1c10d42e8",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-001/inner_tuning/SESSION.json": "a17c85e3b7e2b7b5a82baf82dee2d765765190d7b43b5a586560910477641423",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json": "da6fc5dd02037e2035b98a22dbc8ad549509652286e94004ccbd4fe97a5c1c36",
+    "runs/imet-r1-20260920-a1/logs/candidate_checkpoints/node-001.py": "c0546f5815da8b6f65e451fa36b6ee2ee74f8a5a6376aa5707425b1f8dd89669",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-002/inner_tuning/SESSION.json": "955df87a395134cb8fee657d1ffff23e48d46d53b4112d7111782ecdc6fa9191",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json": "d3cbe64bb6bb0cbd4e8337f05917c8642ce11384a5945ff816952b25be9cad51",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-002/VERIFIED_RESULT.json": "a3243f89aba1e94a96368fd6e027a593894b2ce3d1894743caa89849b1b44e58",
+    "runs/imet-r1-20260920-a1/logs/candidate_checkpoints/node-002.py": "e62986a0c071c5ba90946fb67d7d7841759348e5668192d1ff62c792775ce6b3",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-003/inner_tuning/SESSION.json": "bd4d8f63313e0ce4933539b116f5a62d44797b5d6ab7a49576c54f2cd049e0a5",
+    "runs/imet-r1-20260920-a1/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json": "24679569a6ba15df0591affa46157fa57c830fc60fd84c18198c987a37d827b6",
+    "runs/imet-r1-20260920-a1/logs/candidate_checkpoints/node-003.py": "2cd8903b0b0cd6475abdfea793b7e7320adf9fcc9bf07764b267a5fa5d6dd1a9",
+    "exported_memory/inner_memory.json": "f09ffb0d1eecec4c80bc8a40b0be1ce6b80e8b480529c178d2a243ff6d916f36"
+  },
+  "search_cards": 6,
+  "inner_cards": 9,
+  "contains_trained_weights": false,
+  "skill_script_sha256": "d810f17c0ad76ba7aac367fddd571535096aaf62d8e866cb70c5ea697dfa5be4",
+  "synthesis_sha256": "dc871b4ba9b0d5cc330f268ecf7dd39e870f52c98ce67230729a8e0bcc1f1741",
+  "extraction_sha256": "2e4ada520d9157ed1538fc02401061b405cb213ca9ecbaba67792bb970ccc427"
+}

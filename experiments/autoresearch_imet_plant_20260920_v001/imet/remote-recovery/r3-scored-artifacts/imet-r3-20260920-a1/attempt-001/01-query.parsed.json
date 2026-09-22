@@ -1,0 +1,7 @@
+{
+  "queries": [
+    "tune-only global threshold calibration",
+    "tune micro-F1 checkpoint selection",
+    "fresh-process reload"
+  ]
+}

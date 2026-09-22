@@ -1,0 +1,156 @@
+{
+  "attempt": 0,
+  "candidate_sha256": "d26a09c843285381dd059652ee75ac7e70a0d313946d351a4840c735bdbf296c",
+  "raw_decisions": [
+    {
+      "key": "search:architecture_node-005",
+      "decision": "adopt",
+      "code_evidence": "The candidate preserves the self-contained SmallResNet and validates every epoch using tune micro-F1 with tune-only threshold calibration before selecting the saved checkpoint."
+    },
+    {
+      "key": "search:tuning_node-005",
+      "decision": "adopt",
+      "code_evidence": "The implementation records per-epoch loss, tune micro-F1, threshold, selected epoch, seed, optimizer, and preprocessing in meta.json."
+    },
+    {
+      "key": "search:architecture_node-002",
+      "decision": "adopt",
+      "code_evidence": "The candidate uses lazy PIL decoding, a compact CNN, BCEWithLogitsLoss, global tune threshold search, argmax fallback, and no external assets."
+    },
+    {
+      "key": "search:tuning_node-002",
+      "decision": "adopt",
+      "code_evidence": "The model is self-contained and uses dense two-dimensional N x 3474 labels without flattening the label matrix."
+    },
+    {
+      "key": "search:tuning_node-004",
+      "decision": "adapt",
+      "code_evidence": "The residual architecture and tune-aligned validation are retained, while prevalence-aware output-bias initialization is added as the single measurable modeling modification."
+    },
+    {
+      "key": "search:debug_node-006",
+      "decision": "adopt",
+      "code_evidence": "The candidate bounds epochs by budget, handles short runs with a fallback checkpoint, saves explicit preprocessing metadata, and reloads the exact architecture and state in predict."
+    }
+  ],
+  "normalized_decisions": [
+    {
+      "key": "search:architecture_node-005",
+      "decision": "adopt",
+      "code_evidence": "The candidate preserves the self-contained SmallResNet and validates every epoch using tune micro-F1 with tune-only threshold calibration before selecting the saved checkpoint."
+    },
+    {
+      "key": "search:tuning_node-005",
+      "decision": "adopt",
+      "code_evidence": "The implementation records per-epoch loss, tune micro-F1, threshold, selected epoch, seed, optimizer, and preprocessing in meta.json."
+    },
+    {
+      "key": "search:architecture_node-002",
+      "decision": "adopt",
+      "code_evidence": "The candidate uses lazy PIL decoding, a compact CNN, BCEWithLogitsLoss, global tune threshold search, argmax fallback, and no external assets."
+    },
+    {
+      "key": "search:tuning_node-002",
+      "decision": "adopt",
+      "code_evidence": "The model is self-contained and uses dense two-dimensional N x 3474 labels without flattening the label matrix."
+    },
+    {
+      "key": "search:tuning_node-004",
+      "decision": "adapt",
+      "code_evidence": "The residual architecture and tune-aligned validation are retained, while prevalence-aware output-bias initialization is added as the single measurable modeling modification."
+    },
+    {
+      "key": "search:debug_node-006",
+      "decision": "adopt",
+      "code_evidence": "The candidate bounds epochs by budget, handles short runs with a fallback checkpoint, saves explicit preprocessing metadata, and reloads the exact architecture and state in predict."
+    }
+  ],
+  "id_mapping": [
+    {
+      "index": 0,
+      "raw_key": "search:architecture_node-005",
+      "normalized_key": "search:architecture_node-005",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 1,
+      "raw_key": "search:tuning_node-005",
+      "normalized_key": "search:tuning_node-005",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 2,
+      "raw_key": "search:architecture_node-002",
+      "normalized_key": "search:architecture_node-002",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 3,
+      "raw_key": "search:tuning_node-002",
+      "normalized_key": "search:tuning_node-002",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 4,
+      "raw_key": "search:tuning_node-004",
+      "normalized_key": "search:tuning_node-004",
+      "method": "exact_selected_key"
+    },
+    {
+      "index": 5,
+      "raw_key": "search:debug_node-006",
+      "normalized_key": "search:debug_node-006",
+      "method": "exact_selected_key"
+    }
+  ],
+  "errors": [
+    {
+      "key": "search:architecture_node-005",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:architecture_node-005",
+      "error": "nonempty reason required"
+    },
+    {
+      "key": "search:tuning_node-005",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:tuning_node-005",
+      "error": "nonempty reason required"
+    },
+    {
+      "key": "search:architecture_node-002",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:architecture_node-002",
+      "error": "nonempty reason required"
+    },
+    {
+      "key": "search:tuning_node-002",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:tuning_node-002",
+      "error": "nonempty reason required"
+    },
+    {
+      "key": "search:tuning_node-004",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:tuning_node-004",
+      "error": "nonempty reason required"
+    },
+    {
+      "key": "search:debug_node-006",
+      "error": "invalid action"
+    },
+    {
+      "key": "search:debug_node-006",
+      "error": "nonempty reason required"
+    }
+  ]
+}

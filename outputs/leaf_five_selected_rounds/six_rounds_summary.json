@@ -1,0 +1,93 @@
+{
+  "rounds": [
+    {
+      "round": 1,
+      "nodes": 14,
+      "certified": 2,
+      "inner_trials": 11,
+      "final_search": 0.44389385340454646,
+      "final_tune": 0.4019428569302063,
+      "elapsed_minutes": 93.73871477766662,
+      "slots": 23,
+      "categories": [
+        1,
+        6,
+        4
+      ]
+    },
+    {
+      "round": 2,
+      "nodes": 2,
+      "certified": 2,
+      "inner_trials": 3,
+      "final_search": 0.4225249059889315,
+      "final_tune": 0.35518281388720324,
+      "elapsed_minutes": 107.67611382896624,
+      "slots": 3,
+      "categories": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "round": 3,
+      "nodes": 11,
+      "certified": 10,
+      "inner_trials": 41,
+      "final_search": 0.06677362127695761,
+      "final_tune": 0.0009344379861389044,
+      "elapsed_minutes": 114.20583967671652,
+      "slots": 42,
+      "categories": [
+        1,
+        22,
+        18
+      ]
+    },
+    {
+      "round": 4,
+      "nodes": 1,
+      "certified": 1,
+      "inner_trials": 4,
+      "final_search": 0.042717752524956625,
+      "final_tune": 0.019554332726714842,
+      "elapsed_minutes": 13.307679284767557,
+      "slots": 4,
+      "categories": [
+        1,
+        1,
+        2
+      ],
+      "run_id": "20260913_070145_leaf-round4-memory-luna-low-2h-seed0",
+      "stop_reason": "model_service_unavailable"
+    },
+    {
+      "round": 5,
+      "nodes": 7,
+      "certified": 3,
+      "inner_trials": 11,
+      "final_search": 0.0426361616275364,
+      "final_tune": 0.018212824147950467,
+      "elapsed_minutes": 68.00605328854483,
+      "slots": 15,
+      "categories": [
+        1,
+        7,
+        3
+      ],
+      "run_id": "20260914_060444_leaf-fresh-cpa-luna-low-2h-seed0",
+      "stop_reason": "model_service_unavailable"
+    },
+    {
+      "round": 6,
+      "nodes": 7,
+      "certified": 5,
+      "final_search": 0.035167256372196344,
+      "elapsed_minutes": 80.48308313414843,
+      "run_id": "20260914_190748_leaf-fresh-cpa-luna-low-2h-seed0",
+      "stop_reason": "model_service_unavailable"
+    }
+  ],
+  "terminal_sha256": "308af59715aa1fa71cd974f7c183fb8f66b8483d4a2af22a491f82f94054643c"
+}

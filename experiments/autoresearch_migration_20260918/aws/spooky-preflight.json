@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "checks": {
+    "baseline": {
+      "status": "valid",
+      "tune_loss": 0.5373219212960404,
+      "search_loss": 0.5499888687915256,
+      "seconds": 47.31262519000006,
+      "source_sha256": "31fac5abd052719e351d617cb5425e4ad714617d3b2ccba0d83bafd2f439712c",
+      "predictions_sha256": "a6845328717216fb63e52889f19fb0ddde01859efeaa1163ae1f1559bb94f509",
+      "data_manifest_sha256": "122a96c69a9204a538a5d449d8e60fb295451f2388d9f0a31a5e91b5b14c9255",
+      "host_recomputed": true,
+      "reload_verified": true
+    },
+    "gpu": {
+      "status": "valid",
+      "tune_loss": 1.0696461174106497,
+      "search_loss": 1.0709309832235199,
+      "seconds": 13.250229847000014,
+      "source_sha256": "796f2c8470b2e1ebe777d1c95ca869d1d68c189085799f08d38027ed7cae2a72",
+      "predictions_sha256": "778aad0bd21d14b7e831e115d41b1657f6442b9e440c54a90bf744f6b33717dc",
+      "data_manifest_sha256": "122a96c69a9204a538a5d449d8e60fb295451f2388d9f0a31a5e91b5b14c9255",
+      "host_recomputed": true,
+      "reload_verified": true
+    },
+    "nonzero": {
+      "status": "failed",
+      "search_loss": null,
+      "reason": "nonzero_or_timeout",
+      "seconds": 0.7824849859999858
+    },
+    "timeout": {
+      "status": "failed",
+      "search_loss": null,
+      "reason": "nonzero_or_timeout",
+      "seconds": 3.106107057000031
+    }
+  },
+  "formal_training_started": false,
+  "endpoint_checked": false
+}

@@ -1,0 +1,5 @@
+rank,branch_id,seat,short_label,attempted_count,valid_candidate_count,best_internal_macro_f1,best_node_id,terminal_top2,terminal_champion
+1,2,memory_transfer_backbone_diversity_1,Backbone 1,2,1,0.9745062625,d7d6f19306ee4e24a7d525806c4c6780,true,true
+2,4,memory_transfer_descriptor_fusion_diversity,Descriptor + fusion,4,1,0.9581276865,66b59178822f4517babbe02118b3f4d8,true,false
+3,1,memory_transfer_comprehensive_best,Comprehensive,9,5,0.9540841573,10cb7bc6765940e18efac8cb0fe715ba,false,false
+4,3,memory_transfer_backbone_diversity_2,Backbone 2,3,2,0.9486957907,4918fd38119647f48a4af0e6e4358b7b,false,false

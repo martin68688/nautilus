@@ -1,0 +1,44 @@
+{
+  "status": "OFFLINE_AUDIT_AND_TRANSPORT_ONLY",
+  "upstream_commit": "1e9849798006a069d17399f0d4ad0178200ee946",
+  "upstream_findings": {
+    "nonzero_exit_accepted": {
+      "reproduced": true,
+      "exit_code": 17,
+      "upstream_result": [
+        0.1,
+        0.0,
+        true
+      ]
+    },
+    "scientific_notation_misparsed": {
+      "reproduced": true,
+      "expected": 0.0012,
+      "actual": 1.2
+    },
+    "nonfinite_not_rejected": {
+      "reproduced": true
+    }
+  },
+  "transport_checks": {
+    "spooky-author-identification": {
+      "cards": 225,
+      "full_json_roundtrip": true,
+      "all_source_fields_preserved": true,
+      "bad_hash_rejected": true,
+      "wrong_data_manifest_rejected": true,
+      "literal_query_check": true
+    },
+    "leaf-classification": {
+      "cards": 91,
+      "full_json_roundtrip": true,
+      "all_source_fields_preserved": true,
+      "bad_hash_rejected": true,
+      "wrong_data_manifest_rejected": true,
+      "literal_query_check": true
+    }
+  },
+  "actual_agent_probe": false,
+  "training_launched": false,
+  "memory_benefit_measured": false
+}

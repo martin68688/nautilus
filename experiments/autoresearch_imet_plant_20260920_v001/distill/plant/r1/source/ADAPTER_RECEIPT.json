@@ -1,0 +1,10 @@
+{
+  "method": "autoresearch_compact_ledger_to_distillation_contract",
+  "source_run": [
+    "plant-r1-20260920-a2"
+  ],
+  "attempts": 9,
+  "host_scored_attempts": 5,
+  "weights_copied": false,
+  "source_code_copied_for_hash_audit": true
+}

@@ -1,0 +1,1737 @@
+{
+  "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+  "source_run_id": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+  "source_rounds": [
+    "imet-r1-20260920-a1+imet-r2-20260920-b1"
+  ],
+  "data_manifest_sha256": "ecd6bcb1db4043f2ef4c225bcdb732ba1aca2bc61291e7274c5f94d00172d5ed",
+  "source_runtime_sha256": "60de8e9480c6dd3133248d46704532c8887a70507e9cf888388d068dbc2d7bbc",
+  "distillation": "conditional-trajectory-skill-v1",
+  "contains_source_code": false,
+  "contains_source_weights": false,
+  "schema": "inner_tuning_memory_v1",
+  "cards": [
+    {
+      "id": "tuning_node-001",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "tuning",
+      "architecture": "Complete candidate: lazy image decoding with a compact torchvision ResNet18 backbone, multilabel BCE training, convergence-aware validation, tune-only global threshold selection over 0.02..0.50, argmax fallback, and self-contained artifact reload.",
+      "kind": "search_principle",
+      "title": "R2 N1: tuning / Complete candidate: lazy image decoding with a compact torchvision ResNet18 backbone, multilabel BCE training, convergence-aware validation, tune-only global threshold selection over 0.02..0.50, argmax fallback, and self-contained artifact reload.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "failed_candidate",
+        "architecture": "Complete candidate: lazy image decoding with a compact torchvision ResNet18 backbone, multilabel BCE training, convergence-aware validation, tune-only global threshold selection over 0.02..0.50, argmax fallback, and self-contained artifact reload.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "There is no measured tuning result for this node because the candidate did not pass the Host prediction contract. Treat its parameters as untested and keep the failure separate from scored evidence.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-001",
+          "score": null,
+          "classification": "unscored",
+          "incumbent_before": null,
+          "execution_seconds": 16.446167529007653,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "c0546f5815da8b6f65e451fa36b6ee2ee74f8a5a6376aa5707425b1f8dd89669"
+          },
+          "failure": {
+            "type": "candidate_stage_failed",
+            "analysis": "candidate_stage_failed"
+          },
+          "internal_tune_stages": [
+            {
+              "step": "node-001:trial",
+              "tune_logloss": null,
+              "status": "failed"
+            }
+          ],
+          "internal_stage_metadata": []
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r1-20260920-a1-000",
+          "budget_seconds": 16.446167529007653,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": null
+        },
+        "observed_selected": null,
+        "trial_trajectory": [
+          {
+            "trial_id": "node-001:trial",
+            "node_id": "node-001",
+            "code_sha256": "c0546f5815da8b6f65e451fa36b6ee2ee74f8a5a6376aa5707425b1f8dd89669",
+            "action": "Complete candidate: lazy image decoding with a compact torchvision ResNet18 backbone, multilabel BCE training, convergence-aware validation, tune-only global threshold selection over 0.02..0.50, argmax fallback, and self-contained artifact reload.",
+            "parameters": {
+              "attempt": "imet-r1-20260920-a1-000",
+              "budget_seconds": 16.446167529007653,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": null
+            },
+            "status": "failed",
+            "tune_loss": null,
+            "incumbent_before": null,
+            "improved": false,
+            "elapsed_seconds": 16.446167529007653,
+            "parent_trial_id": null,
+            "error_type": "candidate_stage_failed",
+            "error": "candidate_stage_failed",
+            "metadata": {
+              "host_search_score": null,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json",
+            "source_artifact_sha256": "da6fc5dd02037e2035b98a22dbc8ad549509652286e94004ccbd4fe97a5c1c36"
+          }
+        ],
+        "path_to_best_trial_ids": [],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "tuning",
+        "Complete candidate: lazy image decoding with a compact torchvision ResNet18 backbone, multilabel BCE training, convergence-aware validation, tune-only global threshold selection over 0.02..0.50, argmax fallback, and self-contained artifact reload.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-001"
+      ]
+    },
+    {
+      "id": "tuning_node-002",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "tuning",
+      "architecture": "Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+      "kind": "search_principle",
+      "title": "R2 N2: tuning / Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "host_scored_candidate",
+        "architecture": "Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-002",
+          "score": -0.3891708697355064,
+          "classification": "baseline",
+          "incumbent_before": null,
+          "execution_seconds": 5735.649947166006,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "e62986a0c071c5ba90946fb67d7d7841759348e5668192d1ff62c792775ce6b3"
+          },
+          "failure": null,
+          "internal_tune_stages": [
+            {
+              "step": "node-002:trial",
+              "tune_logloss": -0.3882310785523749,
+              "status": "ok"
+            }
+          ],
+          "internal_stage_metadata": [
+            {
+              "epoch": "node-002:trial",
+              "selected_parameters": {
+                "attempt": "imet-r1-20260920-a1-001",
+                "budget_seconds": 5735.649947166006,
+                "host_metric_role": "host_micro_f1",
+                "reported_tune_score": 0.3882310785523749
+              }
+            }
+          ]
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r1-20260920-a1-001",
+          "budget_seconds": 5735.649947166006,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": 0.3882310785523749
+        },
+        "observed_selected": {
+          "trial_id": "node-002:trial",
+          "node_id": "node-002",
+          "code_sha256": "e62986a0c071c5ba90946fb67d7d7841759348e5668192d1ff62c792775ce6b3",
+          "action": "Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+          "parameters": {
+            "attempt": "imet-r1-20260920-a1-001",
+            "budget_seconds": 5735.649947166006,
+            "host_metric_role": "host_micro_f1",
+            "reported_tune_score": 0.3882310785523749
+          },
+          "status": "ok",
+          "tune_loss": -0.3882310785523749,
+          "incumbent_before": null,
+          "improved": true,
+          "elapsed_seconds": 5735.649947166006,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.3891708697355064,
+            "task": "autoresearch-imet"
+          },
+          "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+          "source_artifact_sha256": "d3cbe64bb6bb0cbd4e8337f05917c8642ce11384a5945ff816952b25be9cad51"
+        },
+        "trial_trajectory": [
+          {
+            "trial_id": "node-002:trial",
+            "node_id": "node-002",
+            "code_sha256": "e62986a0c071c5ba90946fb67d7d7841759348e5668192d1ff62c792775ce6b3",
+            "action": "Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+            "parameters": {
+              "attempt": "imet-r1-20260920-a1-001",
+              "budget_seconds": 5735.649947166006,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": 0.3882310785523749
+            },
+            "status": "ok",
+            "tune_loss": -0.3882310785523749,
+            "incumbent_before": null,
+            "improved": true,
+            "elapsed_seconds": 5735.649947166006,
+            "parent_trial_id": null,
+            "error_type": null,
+            "error": null,
+            "metadata": {
+              "host_search_score": 0.3891708697355064,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+            "source_artifact_sha256": "d3cbe64bb6bb0cbd4e8337f05917c8642ce11384a5945ff816952b25be9cad51"
+          }
+        ],
+        "path_to_best_trial_ids": [
+          "node-002:trial"
+        ],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "tuning",
+        "Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-002"
+      ]
+    },
+    {
+      "id": "tuning_node-003",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "tuning",
+      "architecture": "Replace the compact plain CNN with a residual convolutional backbone using stronger spatial feature extraction, 160px inputs, cosine learning-rate decay, class-balanced BCE, deterministic validation trajectory, and the same tune-only global threshold calibration and argmax fallback. The candidate remains image-only, lazily decodes paths from /data, saves a self-contained state dict and metadata, and reloads identically.",
+      "kind": "search_principle",
+      "title": "R2 N3: tuning / Replace the compact plain CNN with a residual convolutional backbone using stronger spatial feature extraction, 160px inputs, cosine learning-rate decay, class-balanced BCE, deterministic validation trajectory, and the same tune-only global threshold calibration and argmax fallback. The candidate remains image-only, lazily decodes paths from /data, saves a self-contained state dict and metadata, and reloads identically.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "failed_candidate",
+        "architecture": "Replace the compact plain CNN with a residual convolutional backbone using stronger spatial feature extraction, 160px inputs, cosine learning-rate decay, class-balanced BCE, deterministic validation trajectory, and the same tune-only global threshold calibration and argmax fallback. The candidate remains image-only, lazily decodes paths from /data, saves a self-contained state dict and metadata, and reloads identically.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "There is no measured tuning result for this node because the candidate did not pass the Host prediction contract. Treat its parameters as untested and keep the failure separate from scored evidence.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-003",
+          "score": null,
+          "classification": "unscored",
+          "incumbent_before": -0.3891708697355064,
+          "execution_seconds": 1106.0358278139902,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "2cd8903b0b0cd6475abdfea793b7e7320adf9fcc9bf07764b267a5fa5d6dd1a9"
+          },
+          "failure": {
+            "type": "candidate_stage_failed",
+            "analysis": "candidate_stage_failed"
+          },
+          "internal_tune_stages": [
+            {
+              "step": "node-003:trial",
+              "tune_logloss": null,
+              "status": "failed"
+            }
+          ],
+          "internal_stage_metadata": []
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r1-20260920-a1-002",
+          "budget_seconds": 1106.0358278139902,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": null
+        },
+        "observed_selected": null,
+        "trial_trajectory": [
+          {
+            "trial_id": "node-003:trial",
+            "node_id": "node-003",
+            "code_sha256": "2cd8903b0b0cd6475abdfea793b7e7320adf9fcc9bf07764b267a5fa5d6dd1a9",
+            "action": "Replace the compact plain CNN with a residual convolutional backbone using stronger spatial feature extraction, 160px inputs, cosine learning-rate decay, class-balanced BCE, deterministic validation trajectory, and the same tune-only global threshold calibration and argmax fallback. The candidate remains image-only, lazily decodes paths from /data, saves a self-contained state dict and metadata, and reloads identically.",
+            "parameters": {
+              "attempt": "imet-r1-20260920-a1-002",
+              "budget_seconds": 1106.0358278139902,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": null
+            },
+            "status": "failed",
+            "tune_loss": null,
+            "incumbent_before": -0.3891708697355064,
+            "improved": false,
+            "elapsed_seconds": 1106.0358278139902,
+            "parent_trial_id": null,
+            "error_type": "candidate_stage_failed",
+            "error": "candidate_stage_failed",
+            "metadata": {
+              "host_search_score": null,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json",
+            "source_artifact_sha256": "24679569a6ba15df0591affa46157fa57c830fc60fd84c18198c987a37d827b6"
+          }
+        ],
+        "path_to_best_trial_ids": [],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "tuning",
+        "Replace the compact plain CNN with a residual convolutional backbone using stronger spatial feature extraction, 160px inputs, cosine learning-rate decay, class-balanced BCE, deterministic validation trajectory, and the same tune-only global threshold calibration and argmax fallback. The candidate remains image-only, lazily decodes paths from /data, saves a self-contained state dict and metadata, and reloads identically.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-003"
+      ]
+    },
+    {
+      "id": "tuning_node-004",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "tuning",
+      "architecture": "Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+      "kind": "search_principle",
+      "title": "R2 N4: tuning / Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "host_scored_candidate",
+        "architecture": "Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-004",
+          "score": -0.44095033341835804,
+          "classification": "new_incumbent",
+          "incumbent_before": -0.3891708697355064,
+          "execution_seconds": 4932.397914970003,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "0641dd515e9dce42e8f4e84fa2499015d9b4c7bf0a87a64cb2681f0ef17082f8"
+          },
+          "failure": null,
+          "internal_tune_stages": [
+            {
+              "step": "node-004:trial",
+              "tune_logloss": -0.43860364610280916,
+              "status": "ok"
+            }
+          ],
+          "internal_stage_metadata": [
+            {
+              "epoch": "node-004:trial",
+              "selected_parameters": {
+                "attempt": "imet-r2-20260920-b1-000",
+                "budget_seconds": 4932.397914970003,
+                "host_metric_role": "host_micro_f1",
+                "reported_tune_score": 0.43860364610280916
+              }
+            }
+          ]
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r2-20260920-b1-000",
+          "budget_seconds": 4932.397914970003,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": 0.43860364610280916
+        },
+        "observed_selected": {
+          "trial_id": "node-004:trial",
+          "node_id": "node-004",
+          "code_sha256": "0641dd515e9dce42e8f4e84fa2499015d9b4c7bf0a87a64cb2681f0ef17082f8",
+          "action": "Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+          "parameters": {
+            "attempt": "imet-r2-20260920-b1-000",
+            "budget_seconds": 4932.397914970003,
+            "host_metric_role": "host_micro_f1",
+            "reported_tune_score": 0.43860364610280916
+          },
+          "status": "ok",
+          "tune_loss": -0.43860364610280916,
+          "incumbent_before": -0.3891708697355064,
+          "improved": true,
+          "elapsed_seconds": 4932.397914970003,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.44095033341835804,
+            "task": "autoresearch-imet"
+          },
+          "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+          "source_artifact_sha256": "d3183dbf003b82b4a619df98ee318bd5c32b718254f4e9dbbd36c8bc44fa8021"
+        },
+        "trial_trajectory": [
+          {
+            "trial_id": "node-004:trial",
+            "node_id": "node-004",
+            "code_sha256": "0641dd515e9dce42e8f4e84fa2499015d9b4c7bf0a87a64cb2681f0ef17082f8",
+            "action": "Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+            "parameters": {
+              "attempt": "imet-r2-20260920-b1-000",
+              "budget_seconds": 4932.397914970003,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": 0.43860364610280916
+            },
+            "status": "ok",
+            "tune_loss": -0.43860364610280916,
+            "incumbent_before": -0.3891708697355064,
+            "improved": true,
+            "elapsed_seconds": 4932.397914970003,
+            "parent_trial_id": null,
+            "error_type": null,
+            "error": null,
+            "metadata": {
+              "host_search_score": 0.44095033341835804,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+            "source_artifact_sha256": "d3183dbf003b82b4a619df98ee318bd5c32b718254f4e9dbbd36c8bc44fa8021"
+          }
+        ],
+        "path_to_best_trial_ids": [
+          "node-004:trial"
+        ],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "tuning",
+        "Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-004"
+      ]
+    },
+    {
+      "id": "tuning_node-005",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "tuning",
+      "architecture": "Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+      "kind": "search_principle",
+      "title": "R2 N5: tuning / Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "host_scored_candidate",
+        "architecture": "Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "The candidate was accepted only after fresh-process reload and Host scoring. The measured path should be compared with later trials using the same data manifest and metric; its reported internal tuning values remain conditional. Observed description: Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and opt",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-005",
+          "score": -0.39591620421415563,
+          "classification": "below_incumbent",
+          "incumbent_before": -0.44095033341835804,
+          "execution_seconds": 1688.815074053011,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "0cc5c9a4adb5be6d416092f078b9ff6135fec4f2da929d9ca540d1af72422577"
+          },
+          "failure": null,
+          "internal_tune_stages": [
+            {
+              "step": "node-005:trial",
+              "tune_logloss": -0.394766932658622,
+              "status": "ok"
+            }
+          ],
+          "internal_stage_metadata": [
+            {
+              "epoch": "node-005:trial",
+              "selected_parameters": {
+                "attempt": "imet-r2-20260920-b1-001",
+                "budget_seconds": 1688.815074053011,
+                "host_metric_role": "host_micro_f1",
+                "reported_tune_score": 0.394766932658622
+              }
+            }
+          ]
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r2-20260920-b1-001",
+          "budget_seconds": 1688.815074053011,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": 0.394766932658622
+        },
+        "observed_selected": {
+          "trial_id": "node-005:trial",
+          "node_id": "node-005",
+          "code_sha256": "0cc5c9a4adb5be6d416092f078b9ff6135fec4f2da929d9ca540d1af72422577",
+          "action": "Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+          "parameters": {
+            "attempt": "imet-r2-20260920-b1-001",
+            "budget_seconds": 1688.815074053011,
+            "host_metric_role": "host_micro_f1",
+            "reported_tune_score": 0.394766932658622
+          },
+          "status": "ok",
+          "tune_loss": -0.394766932658622,
+          "incumbent_before": -0.44095033341835804,
+          "improved": false,
+          "elapsed_seconds": 1688.815074053011,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.39591620421415563,
+            "task": "autoresearch-imet"
+          },
+          "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-005/inner_tuning/trial-005-outcome.json",
+          "source_artifact_sha256": "64dde75262bb1bf869376f58295caa190adb2b4313aafcc30825407ff275f7e7"
+        },
+        "trial_trajectory": [
+          {
+            "trial_id": "node-005:trial",
+            "node_id": "node-005",
+            "code_sha256": "0cc5c9a4adb5be6d416092f078b9ff6135fec4f2da929d9ca540d1af72422577",
+            "action": "Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+            "parameters": {
+              "attempt": "imet-r2-20260920-b1-001",
+              "budget_seconds": 1688.815074053011,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": 0.394766932658622
+            },
+            "status": "ok",
+            "tune_loss": -0.394766932658622,
+            "incumbent_before": -0.44095033341835804,
+            "improved": false,
+            "elapsed_seconds": 1688.815074053011,
+            "parent_trial_id": null,
+            "error_type": null,
+            "error": null,
+            "metadata": {
+              "host_search_score": 0.39591620421415563,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-005/inner_tuning/trial-005-outcome.json",
+            "source_artifact_sha256": "64dde75262bb1bf869376f58295caa190adb2b4313aafcc30825407ff275f7e7"
+          }
+        ],
+        "path_to_best_trial_ids": [
+          "node-005:trial"
+        ],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "tuning",
+        "Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-005"
+      ]
+    },
+    {
+      "id": "tuning_node-006",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "tuning",
+      "architecture": "Retain the validated self-contained residual CNN, but make the candidate robust under short budgets and fresh-process reload: use a compact architecture with stable tensor shapes, lazy decoding, deterministic seed handling, tune-only threshold calibration, tune micro-F1 checkpoint selection, explicit preprocessing metadata, and bounded convergence-aware training. No pretrained or external weights are used.",
+      "kind": "search_principle",
+      "title": "R2 N6: tuning / Retain the validated self-contained residual CNN, but make the candidate robust under short budgets and fresh-process reload: use a compact architecture with stable tensor shapes, lazy decoding, deterministic seed handling, tune-only threshold calibration, tune micro-F1 checkpoint selection, explicit preprocessing metadata, and bounded convergence-aware training. No pretrained or external weights are used.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "failed_candidate",
+        "architecture": "Retain the validated self-contained residual CNN, but make the candidate robust under short budgets and fresh-process reload: use a compact architecture with stable tensor shapes, lazy decoding, deterministic seed handling, tune-only threshold calibration, tune micro-F1 checkpoint selection, explicit preprocessing metadata, and bounded convergence-aware training. No pretrained or external weights are used.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "There is no measured tuning result for this node because the candidate did not pass the Host prediction contract. Treat its parameters as untested and keep the failure separate from scored evidence.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-006",
+          "score": null,
+          "classification": "unscored",
+          "incumbent_before": -0.44095033341835804,
+          "execution_seconds": 0.0003503760090097785,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "1efdd4672573bf4afe6f87da004833a28e6562933d797a397b1473ea43074d74"
+          },
+          "failure": {
+            "type": "candidate_stage_failed",
+            "analysis": "candidate_stage_failed"
+          },
+          "internal_tune_stages": [
+            {
+              "step": "node-006:trial",
+              "tune_logloss": null,
+              "status": "failed"
+            }
+          ],
+          "internal_stage_metadata": []
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r2-20260920-b1-002",
+          "budget_seconds": 0.0003503760090097785,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": null
+        },
+        "observed_selected": null,
+        "trial_trajectory": [
+          {
+            "trial_id": "node-006:trial",
+            "node_id": "node-006",
+            "code_sha256": "1efdd4672573bf4afe6f87da004833a28e6562933d797a397b1473ea43074d74",
+            "action": "Retain the validated self-contained residual CNN, but make the candidate robust under short budgets and fresh-process reload: use a compact architecture with stable tensor shapes, lazy decoding, deterministic seed handling, tune-only threshold calibration, tune micro-F1 checkpoint selection, explicit preprocessing metadata, and bounded convergence-aware training. No pretrained or external weights are used.",
+            "parameters": {
+              "attempt": "imet-r2-20260920-b1-002",
+              "budget_seconds": 0.0003503760090097785,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": null
+            },
+            "status": "failed",
+            "tune_loss": null,
+            "incumbent_before": -0.44095033341835804,
+            "improved": false,
+            "elapsed_seconds": 0.0003503760090097785,
+            "parent_trial_id": null,
+            "error_type": "candidate_stage_failed",
+            "error": "candidate_stage_failed",
+            "metadata": {
+              "host_search_score": null,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-006/inner_tuning/trial-006-outcome.json",
+            "source_artifact_sha256": "e0ca121b69e87ee6f48c8d68756585ccfa437c3ac257407272e747b3988fb0da"
+          }
+        ],
+        "path_to_best_trial_ids": [],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "tuning",
+        "Retain the validated self-contained residual CNN, but make the candidate robust under short budgets and fresh-process reload: use a compact architecture with stable tensor shapes, lazy decoding, deterministic seed handling, tune-only threshold calibration, tune micro-F1 checkpoint selection, explicit preprocessing metadata, and bounded convergence-aware training. No pretrained or external weights are used.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-006"
+      ]
+    },
+    {
+      "id": "debug_node-001",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "debug",
+      "architecture": "Complete candidate: lazy image decoding with a compact torchvision ResNet18 backbone, multilabel BCE training, convergence-aware validation, tune-only global threshold selection over 0.02..0.50, argmax fallback, and self-contained artifact reload.",
+      "kind": "engineering_risk",
+      "title": "R2 N1: debug / Complete candidate: lazy image decoding with a compact torchvision ResNet18 backbone, multilabel BCE training, convergence-aware validation, tune-only global threshold selection over 0.02..0.50, argmax fallback, and self-contained artifact reload.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "failed_candidate",
+        "architecture": "Complete candidate: lazy image decoding with a compact torchvision ResNet18 backbone, multilabel BCE training, convergence-aware validation, tune-only global threshold selection over 0.02..0.50, argmax fallback, and self-contained artifact reload.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "The executable failure is preserved as a conditional debug observation: candidate_stage_failed. The next candidate must repair the observed contract or runtime issue and still pass fresh-process reload plus Host recomputation before any score is compared.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-001",
+          "score": null,
+          "classification": "unscored",
+          "incumbent_before": null,
+          "execution_seconds": 16.446167529007653,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "c0546f5815da8b6f65e451fa36b6ee2ee74f8a5a6376aa5707425b1f8dd89669"
+          },
+          "failure": {
+            "type": "candidate_stage_failed",
+            "analysis": "candidate_stage_failed"
+          },
+          "internal_tune_stages": [
+            {
+              "step": "node-001:trial",
+              "tune_logloss": null,
+              "status": "failed"
+            }
+          ],
+          "internal_stage_metadata": []
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r1-20260920-a1-000",
+          "budget_seconds": 16.446167529007653,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": null
+        },
+        "observed_selected": null,
+        "trial_trajectory": [
+          {
+            "trial_id": "node-001:trial",
+            "node_id": "node-001",
+            "code_sha256": "c0546f5815da8b6f65e451fa36b6ee2ee74f8a5a6376aa5707425b1f8dd89669",
+            "action": "Complete candidate: lazy image decoding with a compact torchvision ResNet18 backbone, multilabel BCE training, convergence-aware validation, tune-only global threshold selection over 0.02..0.50, argmax fallback, and self-contained artifact reload.",
+            "parameters": {
+              "attempt": "imet-r1-20260920-a1-000",
+              "budget_seconds": 16.446167529007653,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": null
+            },
+            "status": "failed",
+            "tune_loss": null,
+            "incumbent_before": null,
+            "improved": false,
+            "elapsed_seconds": 16.446167529007653,
+            "parent_trial_id": null,
+            "error_type": "candidate_stage_failed",
+            "error": "candidate_stage_failed",
+            "metadata": {
+              "host_search_score": null,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json",
+            "source_artifact_sha256": "da6fc5dd02037e2035b98a22dbc8ad549509652286e94004ccbd4fe97a5c1c36"
+          }
+        ],
+        "path_to_best_trial_ids": [],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "debug",
+        "Complete candidate: lazy image decoding with a compact torchvision ResNet18 backbone, multilabel BCE training, convergence-aware validation, tune-only global threshold selection over 0.02..0.50, argmax fallback, and self-contained artifact reload.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-001"
+      ],
+      "debug_fix": {
+        "observed_failure_type": "candidate_stage_failed",
+        "runtime_success_not_inferred": true
+      }
+    },
+    {
+      "id": "architecture_node-002",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "architecture",
+      "architecture": "Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+      "kind": "search_principle",
+      "title": "R2 N2: architecture / Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "host_scored_candidate",
+        "architecture": "Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-002",
+          "score": -0.3891708697355064,
+          "classification": "baseline",
+          "incumbent_before": null,
+          "execution_seconds": 5735.649947166006,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "e62986a0c071c5ba90946fb67d7d7841759348e5668192d1ff62c792775ce6b3"
+          },
+          "failure": null,
+          "internal_tune_stages": [
+            {
+              "step": "node-002:trial",
+              "tune_logloss": -0.3882310785523749,
+              "status": "ok"
+            }
+          ],
+          "internal_stage_metadata": [
+            {
+              "epoch": "node-002:trial",
+              "selected_parameters": {
+                "attempt": "imet-r1-20260920-a1-001",
+                "budget_seconds": 5735.649947166006,
+                "host_metric_role": "host_micro_f1",
+                "reported_tune_score": 0.3882310785523749
+              }
+            }
+          ]
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r1-20260920-a1-001",
+          "budget_seconds": 5735.649947166006,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": 0.3882310785523749
+        },
+        "observed_selected": {
+          "trial_id": "node-002:trial",
+          "node_id": "node-002",
+          "code_sha256": "e62986a0c071c5ba90946fb67d7d7841759348e5668192d1ff62c792775ce6b3",
+          "action": "Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+          "parameters": {
+            "attempt": "imet-r1-20260920-a1-001",
+            "budget_seconds": 5735.649947166006,
+            "host_metric_role": "host_micro_f1",
+            "reported_tune_score": 0.3882310785523749
+          },
+          "status": "ok",
+          "tune_loss": -0.3882310785523749,
+          "incumbent_before": null,
+          "improved": true,
+          "elapsed_seconds": 5735.649947166006,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.3891708697355064,
+            "task": "autoresearch-imet"
+          },
+          "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+          "source_artifact_sha256": "d3cbe64bb6bb0cbd4e8337f05917c8642ce11384a5945ff816952b25be9cad51"
+        },
+        "trial_trajectory": [
+          {
+            "trial_id": "node-002:trial",
+            "node_id": "node-002",
+            "code_sha256": "e62986a0c071c5ba90946fb67d7d7841759348e5668192d1ff62c792775ce6b3",
+            "action": "Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+            "parameters": {
+              "attempt": "imet-r1-20260920-a1-001",
+              "budget_seconds": 5735.649947166006,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": 0.3882310785523749
+            },
+            "status": "ok",
+            "tune_loss": -0.3882310785523749,
+            "incumbent_before": null,
+            "improved": true,
+            "elapsed_seconds": 5735.649947166006,
+            "parent_trial_id": null,
+            "error_type": null,
+            "error": null,
+            "metadata": {
+              "host_search_score": 0.3891708697355064,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+            "source_artifact_sha256": "d3cbe64bb6bb0cbd4e8337f05917c8642ce11384a5945ff816952b25be9cad51"
+          }
+        ],
+        "path_to_best_trial_ids": [
+          "node-002:trial"
+        ],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "architecture",
+        "Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-002"
+      ]
+    },
+    {
+      "id": "debug_node-003",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "debug",
+      "architecture": "Replace the compact plain CNN with a residual convolutional backbone using stronger spatial feature extraction, 160px inputs, cosine learning-rate decay, class-balanced BCE, deterministic validation trajectory, and the same tune-only global threshold calibration and argmax fallback. The candidate remains image-only, lazily decodes paths from /data, saves a self-contained state dict and metadata, and reloads identically.",
+      "kind": "engineering_risk",
+      "title": "R2 N3: debug / Replace the compact plain CNN with a residual convolutional backbone using stronger spatial feature extraction, 160px inputs, cosine learning-rate decay, class-balanced BCE, deterministic validation trajectory, and the same tune-only global threshold calibration and argmax fallback. The candidate remains image-only, lazily decodes paths from /data, saves a self-contained state dict and metadata, and reloads identically.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "failed_candidate",
+        "architecture": "Replace the compact plain CNN with a residual convolutional backbone using stronger spatial feature extraction, 160px inputs, cosine learning-rate decay, class-balanced BCE, deterministic validation trajectory, and the same tune-only global threshold calibration and argmax fallback. The candidate remains image-only, lazily decodes paths from /data, saves a self-contained state dict and metadata, and reloads identically.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "The executable failure is preserved as a conditional debug observation: candidate_stage_failed. The next candidate must repair the observed contract or runtime issue and still pass fresh-process reload plus Host recomputation before any score is compared.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-003",
+          "score": null,
+          "classification": "unscored",
+          "incumbent_before": -0.3891708697355064,
+          "execution_seconds": 1106.0358278139902,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "2cd8903b0b0cd6475abdfea793b7e7320adf9fcc9bf07764b267a5fa5d6dd1a9"
+          },
+          "failure": {
+            "type": "candidate_stage_failed",
+            "analysis": "candidate_stage_failed"
+          },
+          "internal_tune_stages": [
+            {
+              "step": "node-003:trial",
+              "tune_logloss": null,
+              "status": "failed"
+            }
+          ],
+          "internal_stage_metadata": []
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r1-20260920-a1-002",
+          "budget_seconds": 1106.0358278139902,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": null
+        },
+        "observed_selected": null,
+        "trial_trajectory": [
+          {
+            "trial_id": "node-003:trial",
+            "node_id": "node-003",
+            "code_sha256": "2cd8903b0b0cd6475abdfea793b7e7320adf9fcc9bf07764b267a5fa5d6dd1a9",
+            "action": "Replace the compact plain CNN with a residual convolutional backbone using stronger spatial feature extraction, 160px inputs, cosine learning-rate decay, class-balanced BCE, deterministic validation trajectory, and the same tune-only global threshold calibration and argmax fallback. The candidate remains image-only, lazily decodes paths from /data, saves a self-contained state dict and metadata, and reloads identically.",
+            "parameters": {
+              "attempt": "imet-r1-20260920-a1-002",
+              "budget_seconds": 1106.0358278139902,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": null
+            },
+            "status": "failed",
+            "tune_loss": null,
+            "incumbent_before": -0.3891708697355064,
+            "improved": false,
+            "elapsed_seconds": 1106.0358278139902,
+            "parent_trial_id": null,
+            "error_type": "candidate_stage_failed",
+            "error": "candidate_stage_failed",
+            "metadata": {
+              "host_search_score": null,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json",
+            "source_artifact_sha256": "24679569a6ba15df0591affa46157fa57c830fc60fd84c18198c987a37d827b6"
+          }
+        ],
+        "path_to_best_trial_ids": [],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "debug",
+        "Replace the compact plain CNN with a residual convolutional backbone using stronger spatial feature extraction, 160px inputs, cosine learning-rate decay, class-balanced BCE, deterministic validation trajectory, and the same tune-only global threshold calibration and argmax fallback. The candidate remains image-only, lazily decodes paths from /data, saves a self-contained state dict and metadata, and reloads identically.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-003"
+      ],
+      "debug_fix": {
+        "observed_failure_type": "candidate_stage_failed",
+        "runtime_success_not_inferred": true
+      }
+    },
+    {
+      "id": "architecture_node-004",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "architecture",
+      "architecture": "Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+      "kind": "search_principle",
+      "title": "R2 N4: architecture / Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "host_scored_candidate",
+        "architecture": "Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-004",
+          "score": -0.44095033341835804,
+          "classification": "new_incumbent",
+          "incumbent_before": -0.3891708697355064,
+          "execution_seconds": 4932.397914970003,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "0641dd515e9dce42e8f4e84fa2499015d9b4c7bf0a87a64cb2681f0ef17082f8"
+          },
+          "failure": null,
+          "internal_tune_stages": [
+            {
+              "step": "node-004:trial",
+              "tune_logloss": -0.43860364610280916,
+              "status": "ok"
+            }
+          ],
+          "internal_stage_metadata": [
+            {
+              "epoch": "node-004:trial",
+              "selected_parameters": {
+                "attempt": "imet-r2-20260920-b1-000",
+                "budget_seconds": 4932.397914970003,
+                "host_metric_role": "host_micro_f1",
+                "reported_tune_score": 0.43860364610280916
+              }
+            }
+          ]
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r2-20260920-b1-000",
+          "budget_seconds": 4932.397914970003,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": 0.43860364610280916
+        },
+        "observed_selected": {
+          "trial_id": "node-004:trial",
+          "node_id": "node-004",
+          "code_sha256": "0641dd515e9dce42e8f4e84fa2499015d9b4c7bf0a87a64cb2681f0ef17082f8",
+          "action": "Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+          "parameters": {
+            "attempt": "imet-r2-20260920-b1-000",
+            "budget_seconds": 4932.397914970003,
+            "host_metric_role": "host_micro_f1",
+            "reported_tune_score": 0.43860364610280916
+          },
+          "status": "ok",
+          "tune_loss": -0.43860364610280916,
+          "incumbent_before": -0.3891708697355064,
+          "improved": true,
+          "elapsed_seconds": 4932.397914970003,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.44095033341835804,
+            "task": "autoresearch-imet"
+          },
+          "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+          "source_artifact_sha256": "d3183dbf003b82b4a619df98ee318bd5c32b718254f4e9dbbd36c8bc44fa8021"
+        },
+        "trial_trajectory": [
+          {
+            "trial_id": "node-004:trial",
+            "node_id": "node-004",
+            "code_sha256": "0641dd515e9dce42e8f4e84fa2499015d9b4c7bf0a87a64cb2681f0ef17082f8",
+            "action": "Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+            "parameters": {
+              "attempt": "imet-r2-20260920-b1-000",
+              "budget_seconds": 4932.397914970003,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": 0.43860364610280916
+            },
+            "status": "ok",
+            "tune_loss": -0.43860364610280916,
+            "incumbent_before": -0.3891708697355064,
+            "improved": true,
+            "elapsed_seconds": 4932.397914970003,
+            "parent_trial_id": null,
+            "error_type": null,
+            "error": null,
+            "metadata": {
+              "host_search_score": 0.44095033341835804,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+            "source_artifact_sha256": "d3183dbf003b82b4a619df98ee318bd5c32b718254f4e9dbbd36c8bc44fa8021"
+          }
+        ],
+        "path_to_best_trial_ids": [
+          "node-004:trial"
+        ],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "architecture",
+        "Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-004"
+      ]
+    },
+    {
+      "id": "architecture_node-005",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "architecture",
+      "architecture": "Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+      "kind": "search_principle",
+      "title": "R2 N5: architecture / Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "host_scored_candidate",
+        "architecture": "Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "This node produced a Host-recomputed score after executing the declared candidate. The observed change was: Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.. The score is conditional on this split, budget, container image and fixed metric; it is evidence for a candidate, not a universal recipe.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-005",
+          "score": -0.39591620421415563,
+          "classification": "below_incumbent",
+          "incumbent_before": -0.44095033341835804,
+          "execution_seconds": 1688.815074053011,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "0cc5c9a4adb5be6d416092f078b9ff6135fec4f2da929d9ca540d1af72422577"
+          },
+          "failure": null,
+          "internal_tune_stages": [
+            {
+              "step": "node-005:trial",
+              "tune_logloss": -0.394766932658622,
+              "status": "ok"
+            }
+          ],
+          "internal_stage_metadata": [
+            {
+              "epoch": "node-005:trial",
+              "selected_parameters": {
+                "attempt": "imet-r2-20260920-b1-001",
+                "budget_seconds": 1688.815074053011,
+                "host_metric_role": "host_micro_f1",
+                "reported_tune_score": 0.394766932658622
+              }
+            }
+          ]
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r2-20260920-b1-001",
+          "budget_seconds": 1688.815074053011,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": 0.394766932658622
+        },
+        "observed_selected": {
+          "trial_id": "node-005:trial",
+          "node_id": "node-005",
+          "code_sha256": "0cc5c9a4adb5be6d416092f078b9ff6135fec4f2da929d9ca540d1af72422577",
+          "action": "Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+          "parameters": {
+            "attempt": "imet-r2-20260920-b1-001",
+            "budget_seconds": 1688.815074053011,
+            "host_metric_role": "host_micro_f1",
+            "reported_tune_score": 0.394766932658622
+          },
+          "status": "ok",
+          "tune_loss": -0.394766932658622,
+          "incumbent_before": -0.44095033341835804,
+          "improved": false,
+          "elapsed_seconds": 1688.815074053011,
+          "parent_trial_id": null,
+          "error_type": null,
+          "error": null,
+          "metadata": {
+            "host_search_score": 0.39591620421415563,
+            "task": "autoresearch-imet"
+          },
+          "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-005/inner_tuning/trial-005-outcome.json",
+          "source_artifact_sha256": "64dde75262bb1bf869376f58295caa190adb2b4313aafcc30825407ff275f7e7"
+        },
+        "trial_trajectory": [
+          {
+            "trial_id": "node-005:trial",
+            "node_id": "node-005",
+            "code_sha256": "0cc5c9a4adb5be6d416092f078b9ff6135fec4f2da929d9ca540d1af72422577",
+            "action": "Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+            "parameters": {
+              "attempt": "imet-r2-20260920-b1-001",
+              "budget_seconds": 1688.815074053011,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": 0.394766932658622
+            },
+            "status": "ok",
+            "tune_loss": -0.394766932658622,
+            "incumbent_before": -0.44095033341835804,
+            "improved": false,
+            "elapsed_seconds": 1688.815074053011,
+            "parent_trial_id": null,
+            "error_type": null,
+            "error": null,
+            "metadata": {
+              "host_search_score": 0.39591620421415563,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-005/inner_tuning/trial-005-outcome.json",
+            "source_artifact_sha256": "64dde75262bb1bf869376f58295caa190adb2b4313aafcc30825407ff275f7e7"
+          }
+        ],
+        "path_to_best_trial_ids": [
+          "node-005:trial"
+        ],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "architecture",
+        "Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-005"
+      ]
+    },
+    {
+      "id": "debug_node-006",
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "granularity": "debug",
+      "architecture": "Retain the validated self-contained residual CNN, but make the candidate robust under short budgets and fresh-process reload: use a compact architecture with stable tensor shapes, lazy decoding, deterministic seed handling, tune-only threshold calibration, tune micro-F1 checkpoint selection, explicit preprocessing metadata, and bounded convergence-aware training. No pretrained or external weights are used.",
+      "kind": "engineering_risk",
+      "title": "R2 N6: debug / Retain the validated self-contained residual CNN, but make the candidate robust under short budgets and fresh-process reload: use a compact architecture with stable tensor shapes, lazy decoding, deterministic seed handling, tune-only threshold calibration, tune micro-F1 checkpoint selection, explicit preprocessing metadata, and bounded convergence-aware training. No pretrained or external weights are used.",
+      "when": {
+        "task": "autoresearch-imet",
+        "phase": "failed_candidate",
+        "architecture": "Retain the validated self-contained residual CNN, but make the candidate robust under short budgets and fresh-process reload: use a compact architecture with stable tensor shapes, lazy decoding, deterministic seed handling, tune-only threshold calibration, tune micro-F1 checkpoint selection, explicit preprocessing metadata, and bounded convergence-aware training. No pretrained or external weights are used.",
+        "recipe": "same autoresearch single-agent image-search harness"
+      },
+      "lesson": "The executable failure is preserved as a conditional debug observation: candidate_stage_failed. The next candidate must repair the observed contract or runtime issue and still pass fresh-process reload plus Host recomputation before any score is compared.",
+      "alternative": "Retain the task contract and test a single measurable modification in the next candidate; use the same data and Host scorer so the conditional comparison remains interpretable.",
+      "limits": "Single-run conditional observations, not a universal optimum or model ban. Tune and host search have different roles. Review allegations are not runtime findings. Refit task weights in the new run; historical code, fitted weights and data rows are not supplied. No mandatory historical-best reproduction. Callback cost excludes some Agent/publication overhead.",
+      "confidence": "evidence_grounded_conditional_synthesis",
+      "evidence": [
+        {
+          "source_round": 2,
+          "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+          "node": "node-006",
+          "score": null,
+          "classification": "unscored",
+          "incumbent_before": -0.44095033341835804,
+          "execution_seconds": 0.0003503760090097785,
+          "declared_constants": {
+            "recipe": "same autoresearch single-agent image-search harness",
+            "source_code_sha256": "1efdd4672573bf4afe6f87da004833a28e6562933d797a397b1473ea43074d74"
+          },
+          "failure": {
+            "type": "candidate_stage_failed",
+            "analysis": "candidate_stage_failed"
+          },
+          "internal_tune_stages": [
+            {
+              "step": "node-006:trial",
+              "tune_logloss": null,
+              "status": "failed"
+            }
+          ],
+          "internal_stage_metadata": []
+        }
+      ],
+      "parameter_priors": {
+        "initial": {
+          "task": "autoresearch-imet",
+          "round": 2
+        },
+        "domain": {
+          "attempt": "imet-r2-20260920-b1-002",
+          "budget_seconds": 0.0003503760090097785,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": null
+        },
+        "observed_selected": null,
+        "trial_trajectory": [
+          {
+            "trial_id": "node-006:trial",
+            "node_id": "node-006",
+            "code_sha256": "1efdd4672573bf4afe6f87da004833a28e6562933d797a397b1473ea43074d74",
+            "action": "Retain the validated self-contained residual CNN, but make the candidate robust under short budgets and fresh-process reload: use a compact architecture with stable tensor shapes, lazy decoding, deterministic seed handling, tune-only threshold calibration, tune micro-F1 checkpoint selection, explicit preprocessing metadata, and bounded convergence-aware training. No pretrained or external weights are used.",
+            "parameters": {
+              "attempt": "imet-r2-20260920-b1-002",
+              "budget_seconds": 0.0003503760090097785,
+              "host_metric_role": "host_micro_f1",
+              "reported_tune_score": null
+            },
+            "status": "failed",
+            "tune_loss": null,
+            "incumbent_before": -0.44095033341835804,
+            "improved": false,
+            "elapsed_seconds": 0.0003503760090097785,
+            "parent_trial_id": null,
+            "error_type": "candidate_stage_failed",
+            "error": "candidate_stage_failed",
+            "metadata": {
+              "host_search_score": null,
+              "task": "autoresearch-imet"
+            },
+            "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-006/inner_tuning/trial-006-outcome.json",
+            "source_artifact_sha256": "e0ca121b69e87ee6f48c8d68756585ccfa437c3ac257407272e747b3988fb0da"
+          }
+        ],
+        "path_to_best_trial_ids": [],
+        "mutable_on_resume": [
+          "candidate architecture",
+          "training schedule",
+          "preprocessing"
+        ],
+        "continuation_semantics": "Continue requires its preceding within-node model, optimizer, scheduler, scaler and RNG state; a terminal LR is not a fresh-fit recipe.",
+        "unmeasured_parameters_are_unknown": true
+      },
+      "match_terms": [
+        "autoresearch-imet",
+        "debug",
+        "Retain the validated self-contained residual CNN, but make the candidate robust under short budgets and fresh-process reload: use a compact architecture with stable tensor shapes, lazy decoding, deterministic seed handling, tune-only threshold calibration, tune micro-F1 checkpoint selection, explicit preprocessing metadata, and bounded convergence-aware training. No pretrained or external weights are used.",
+        "autoresearch",
+        "host recomputation",
+        "fresh process",
+        "same data manifest"
+      ],
+      "source_node_refs": [
+        "node-006"
+      ],
+      "debug_fix": {
+        "observed_failure_type": "candidate_stage_failed",
+        "runtime_success_not_inferred": true
+      }
+    },
+    {
+      "id": "raw_trial_node-001_trial",
+      "granularity": "debug",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-001:trial",
+        "node_id": "node-001",
+        "code_sha256": "c0546f5815da8b6f65e451fa36b6ee2ee74f8a5a6376aa5707425b1f8dd89669",
+        "action": "Complete candidate: lazy image decoding with a compact torchvision ResNet18 backbone, multilabel BCE training, convergence-aware validation, tune-only global threshold selection over 0.02..0.50, argmax fallback, and self-contained artifact reload.",
+        "parameters": {
+          "attempt": "imet-r1-20260920-a1-000",
+          "budget_seconds": 16.446167529007653,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": null
+        },
+        "status": "failed",
+        "tune_loss": null,
+        "incumbent_before": null,
+        "improved": false,
+        "elapsed_seconds": 16.446167529007653,
+        "parent_trial_id": null,
+        "error_type": "candidate_stage_failed",
+        "error": "candidate_stage_failed",
+        "metadata": {
+          "host_search_score": null,
+          "task": "autoresearch-imet"
+        },
+        "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-001/inner_tuning/trial-001-outcome.json",
+        "source_artifact_sha256": "da6fc5dd02037e2035b98a22dbc8ad549509652286e94004ccbd4fe97a5c1c36"
+      },
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "source_runtime_sha256": "60de8e9480c6dd3133248d46704532c8887a70507e9cf888388d068dbc2d7bbc"
+    },
+    {
+      "id": "raw_trial_node-002_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-002:trial",
+        "node_id": "node-002",
+        "code_sha256": "e62986a0c071c5ba90946fb67d7d7841759348e5668192d1ff62c792775ce6b3",
+        "action": "Implemented a self-contained lazy-decoding multilabel image candidate using a compact CNN trained with BCEWithLogitsLoss, convergence-aware validation, tune-only global threshold calibration over 0.02..0.50, argmax fallback for empty rows, deterministic artifact reload, and no pretrained or external assets.",
+        "parameters": {
+          "attempt": "imet-r1-20260920-a1-001",
+          "budget_seconds": 5735.649947166006,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": 0.3882310785523749
+        },
+        "status": "ok",
+        "tune_loss": -0.3882310785523749,
+        "incumbent_before": null,
+        "improved": true,
+        "elapsed_seconds": 5735.649947166006,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.3891708697355064,
+          "task": "autoresearch-imet"
+        },
+        "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-002/inner_tuning/trial-002-outcome.json",
+        "source_artifact_sha256": "d3cbe64bb6bb0cbd4e8337f05917c8642ce11384a5945ff816952b25be9cad51"
+      },
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "source_runtime_sha256": "60de8e9480c6dd3133248d46704532c8887a70507e9cf888388d068dbc2d7bbc"
+    },
+    {
+      "id": "raw_trial_node-003_trial",
+      "granularity": "debug",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-003:trial",
+        "node_id": "node-003",
+        "code_sha256": "2cd8903b0b0cd6475abdfea793b7e7320adf9fcc9bf07764b267a5fa5d6dd1a9",
+        "action": "Replace the compact plain CNN with a residual convolutional backbone using stronger spatial feature extraction, 160px inputs, cosine learning-rate decay, class-balanced BCE, deterministic validation trajectory, and the same tune-only global threshold calibration and argmax fallback. The candidate remains image-only, lazily decodes paths from /data, saves a self-contained state dict and metadata, and reloads identically.",
+        "parameters": {
+          "attempt": "imet-r1-20260920-a1-002",
+          "budget_seconds": 1106.0358278139902,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": null
+        },
+        "status": "failed",
+        "tune_loss": null,
+        "incumbent_before": -0.3891708697355064,
+        "improved": false,
+        "elapsed_seconds": 1106.0358278139902,
+        "parent_trial_id": null,
+        "error_type": "candidate_stage_failed",
+        "error": "candidate_stage_failed",
+        "metadata": {
+          "host_search_score": null,
+          "task": "autoresearch-imet"
+        },
+        "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-003/inner_tuning/trial-003-outcome.json",
+        "source_artifact_sha256": "24679569a6ba15df0591affa46157fa57c830fc60fd84c18198c987a37d827b6"
+      },
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "source_runtime_sha256": "60de8e9480c6dd3133248d46704532c8887a70507e9cf888388d068dbc2d7bbc"
+    },
+    {
+      "id": "raw_trial_node-004_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-004:trial",
+        "node_id": "node-004",
+        "code_sha256": "0641dd515e9dce42e8f4e84fa2499015d9b4c7bf0a87a64cb2681f0ef17082f8",
+        "action": "Replace the prior compact-CNN baseline with a self-contained residual image model, retaining lazy image decoding, tune-only early stopping and global threshold calibration. The implementation avoids external/pretrained weights, handles dense or scipy-sparse NPZ labels without flattening, saves exact preprocessing/model metadata, and records the actual tune trajectory and selected threshold.",
+        "parameters": {
+          "attempt": "imet-r2-20260920-b1-000",
+          "budget_seconds": 4932.397914970003,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": 0.43860364610280916
+        },
+        "status": "ok",
+        "tune_loss": -0.43860364610280916,
+        "incumbent_before": -0.3891708697355064,
+        "improved": true,
+        "elapsed_seconds": 4932.397914970003,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.44095033341835804,
+          "task": "autoresearch-imet"
+        },
+        "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-004/inner_tuning/trial-004-outcome.json",
+        "source_artifact_sha256": "d3183dbf003b82b4a619df98ee318bd5c32b718254f4e9dbbd36c8bc44fa8021"
+      },
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "source_runtime_sha256": "60de8e9480c6dd3133248d46704532c8887a70507e9cf888388d068dbc2d7bbc"
+    },
+    {
+      "id": "raw_trial_node-005_trial",
+      "granularity": "tuning",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-005:trial",
+        "node_id": "node-005",
+        "code_sha256": "0cc5c9a4adb5be6d416092f078b9ff6135fec4f2da929d9ca540d1af72422577",
+        "action": "Keep the self-contained SmallResNet baseline and make model selection target-aligned: checkpoint and early-stop on tune micro-F1 after tune-only global threshold calibration, rather than on unweighted tune BCE. This preserves the image pipeline and training objective while selecting the trained epoch for the Host metric. The candidate records the actual convergence trajectory, selected epoch, threshold, seed, and optimizer settings in its artifact metadata.",
+        "parameters": {
+          "attempt": "imet-r2-20260920-b1-001",
+          "budget_seconds": 1688.815074053011,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": 0.394766932658622
+        },
+        "status": "ok",
+        "tune_loss": -0.394766932658622,
+        "incumbent_before": -0.44095033341835804,
+        "improved": false,
+        "elapsed_seconds": 1688.815074053011,
+        "parent_trial_id": null,
+        "error_type": null,
+        "error": null,
+        "metadata": {
+          "host_search_score": 0.39591620421415563,
+          "task": "autoresearch-imet"
+        },
+        "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-005/inner_tuning/trial-005-outcome.json",
+        "source_artifact_sha256": "64dde75262bb1bf869376f58295caa190adb2b4313aafcc30825407ff275f7e7"
+      },
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "source_runtime_sha256": "60de8e9480c6dd3133248d46704532c8887a70507e9cf888388d068dbc2d7bbc"
+    },
+    {
+      "id": "raw_trial_node-006_trial",
+      "granularity": "debug",
+      "title": "Exact internal trial outcome",
+      "evidence": {
+        "trial_id": "node-006:trial",
+        "node_id": "node-006",
+        "code_sha256": "1efdd4672573bf4afe6f87da004833a28e6562933d797a397b1473ea43074d74",
+        "action": "Retain the validated self-contained residual CNN, but make the candidate robust under short budgets and fresh-process reload: use a compact architecture with stable tensor shapes, lazy decoding, deterministic seed handling, tune-only threshold calibration, tune micro-F1 checkpoint selection, explicit preprocessing metadata, and bounded convergence-aware training. No pretrained or external weights are used.",
+        "parameters": {
+          "attempt": "imet-r2-20260920-b1-002",
+          "budget_seconds": 0.0003503760090097785,
+          "host_metric_role": "host_micro_f1",
+          "reported_tune_score": null
+        },
+        "status": "failed",
+        "tune_loss": null,
+        "incumbent_before": -0.44095033341835804,
+        "improved": false,
+        "elapsed_seconds": 0.0003503760090097785,
+        "parent_trial_id": null,
+        "error_type": "candidate_stage_failed",
+        "error": "candidate_stage_failed",
+        "metadata": {
+          "host_search_score": null,
+          "task": "autoresearch-imet"
+        },
+        "source_artifact": "runs/imet-r1-20260920-a1+imet-r2-20260920-b1/workspace/working/budget_checkpoints/node-006/inner_tuning/trial-006-outcome.json",
+        "source_artifact_sha256": "e0ca121b69e87ee6f48c8d68756585ccfa437c3ac257407272e747b3988fb0da"
+      },
+      "task": "autoresearch-imet",
+      "scope": "source_run",
+      "source_run": "imet-r1-20260920-a1+imet-r2-20260920-b1",
+      "source_runtime_sha256": "60de8e9480c6dd3133248d46704532c8887a70507e9cf888388d068dbc2d7bbc"
+    }
+  ]
+}
