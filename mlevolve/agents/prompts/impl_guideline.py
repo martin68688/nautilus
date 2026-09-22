@@ -225,7 +225,7 @@ def get_impl_guideline_from_agent(agent):
     """Build implementation guideline from agent config."""
     tot_time_remaining = agent.acfg.time_limit - (time.time() - agent.start_time)
     exec_timeout = int(min(agent.cfg.exec.timeout, tot_time_remaining))
-    return get_impl_guideline(
+    guideline = get_impl_guideline(
         tot_time_remaining=tot_time_remaining,
         steps_remaining=agent.acfg.steps - agent.current_step,
         exec_timeout=exec_timeout,
@@ -238,6 +238,25 @@ def get_impl_guideline_from_agent(agent):
         host_protocol_contract=get_host_protocol_contract_from_agent(agent),
         require_submission_aligned_metric=submission_aligned_metric_required(agent),
     )
+
+    if getattr(agent.cfg, "semantic_review_contract_path", ""):
+        from engine.experiment_review_contract import load_contract, compile_rules
+        contract = load_contract(agent)
+        guideline["Frozen experiment and executor contract"] = contract
+        guideline["Applicable review obligations"] = compile_rules(contract)
+        if contract["execution"]["interface"] == "budget_script_v1":
+            guideline["Implementation guideline"] = [
+                "Execute as python candidate.py: call your main or use module execution; no injected session exists.",
+                "The BudgetCheckpoint helper supplies saving, probability validation and submission output. Do not implement a second output path.",
+                "Use only declared data roles. Model, features, optimizer, calibration and training schedule are your choices within this contract.",
+                "Return concrete executable training code. Every usable fitted stage must be saved before spending more budget.",
+            ]
+    from engine import search_experience
+    if search_experience.enabled():
+        parent = getattr(agent, 'best_node', None)
+        guideline['Distilled source-run experience'] = search_experience.memory_block(
+            agent, str(getattr(parent, 'code', '')), 'improve' if parent else 'draft')
+    return guideline
 
 
 def _format_time(time_in_sec):

@@ -387,6 +387,10 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             logger.info(f"Using diff improve for node {parent_node.id}")
             plan, code = _diff_improve(agent, prompt, agent.data_preview, parent_node)
         except Exception as e:
+            from engine import search_experience
+            if search_experience.planning_enabled():
+                search_experience.record_planning_failure(agent, parent_node, e)
+                raise search_experience.MemoryDecisionError(f"Validated memory planning/code generation failed; full-rewrite bypass is disabled: {e}") from e
             logger.warning(f"Diff improve failed: {e}, falling back to full rewrite")
             plan, code = plan_and_code_query(agent, prompt_complete)
     else:
@@ -461,6 +465,13 @@ _IMPROVE_SUFFIX_EXTRA = (
 
 
 def _diff_improve(agent, prompt_base, data_preview, parent_node):
+    from engine import search_experience
+    if search_experience.planning_enabled():
+        prompt_base = copy.deepcopy(prompt_base)
+        prompt_base.get('Instructions', {}).pop('🔥 Improvement Strategy: Magnitude-Based Reasoning', None)
+        prompt_base['Instructions']['Evidence-based choice of change size'] = [
+            'A justified small parameter or efficiency change is valid. A plateau does not force a model redesign.'
+        ]
     context = {
         "stage": "improve",
         "memory": prompt_base["Memory"],

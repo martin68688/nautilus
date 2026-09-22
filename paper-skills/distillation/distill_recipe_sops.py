@@ -3,7 +3,8 @@
 
 L1/L2 admission starts from strict-clean successful RunNodes.  L3 admission is
 separate and starts from a complete, genuinely executed
-failure -> repair -> clean-success RunForest Transition.  A single clean repair
+failure -> repair -> clean-success RunForest Transition, or a source-bound
+pre-execution review revision chain followed by certified execution. A single clean repair
 is enough for full L3 admission; repeated success is retained only as audit
 metadata and a small ranking tie-break.  It never creates an evidence tier.
 Infrastructure incidents and one-off path/name/syntax
@@ -198,6 +199,7 @@ def repair_transition_eligibility(
     *,
     nodes_by_id: Mapping[str, Mapping[str, Any]],
     allowed_tasks: set[str],
+    host_verified_trial_node_ids: frozenset[str] = frozenset(),
 ) -> tuple[bool, str]:
     """Deterministic L3 admission; the teacher cannot override this gate."""
 
@@ -221,12 +223,12 @@ def repair_transition_eligibility(
         return False, "missing_parent_or_child"
     if parent.get("is_buggy") is not True:
         return False, "parent_not_observed_buggy"
-    if not strict_recipe_eligible(child):
+    if not strict_recipe_eligible(child) and child_id not in host_verified_trial_node_ids:
         return False, "child_not_strict_clean_success"
     if len(_node_code_sha256(parent)) != 64 or len(_node_code_sha256(child)) != 64:
         return False, "missing_before_or_after_code_hash"
     failure = _failure_text(parent)
-    if INFRASTRUCTURE_FAILURE.search(failure):
+    if INFRASTRUCTURE_FAILURE.search(failure) or re.search(r"RunDeadlineExceeded|NoSavedCheckpoint|budget.*exhaust", failure, re.I):
         return False, "infrastructure_failure"
     if ONE_OFF_CODE_FAILURE.search(failure):
         return False, "one_off_code_failure"
@@ -458,6 +460,95 @@ def load_incremental_evidence(path: Path | None) -> tuple[list[dict[str, Any]], 
     }
 
 
+def load_trial_evidence(paths):
+    """Read every trial; only host-verified scored trials enter positive evidence."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "trial_evidence_reader", Path(__file__).with_name("trial_memory_evidence.py")
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    observations, admitted, sources, repairs = [], [], [], []
+    seen = set()
+    for path in paths or []:
+        path = Path(path).resolve(strict=True)
+        package = json.loads(path.read_text())
+        records = module.validate_package(package)
+        source_hash = sha256_file(path)
+        sources.append({"path": str(path), "sha256": source_hash, "cohort": "fixed_trial_ledger", "trial_count": len(records)})
+        for record in records:
+            if record["trial_id"] in seen:
+                raise ValueError("Duplicate trial source; use one snapshot per run")
+            seen.add(record["trial_id"])
+            task = canonical_task(record["task_id"])
+            if task not in TASK_DIRECTIONS:
+                continue
+            observations.append(record)
+            audit = record.get("leakage_audit") or {}
+            if not (record.get("verified_score") is True
+                    and record.get("checkpoint_files_verified") is True
+                    and record.get("is_valid") is True and record.get("is_buggy") is False
+                    and _finite_number(record.get("metric_after"))
+                    and audit.get("schema") == "mlevolve_anytime_result_v2"
+                    and audit.get("status") == "clean" and audit.get("rank_eligible") is True
+                    and audit.get("metric_disposition") == "accept"
+                    and audit.get("code_sha256") == record.get("code_sha256")):
+                continue
+            node = {"id": record["node_id"], "task": task, "run_id": record["run_id"],
+                    "stage": record["stage"], "step": record["iteration"], "metric": record["metric_after"],
+                    "metric_improvement": -record["metric_delta"] if _finite_number(record.get("metric_delta")) else None,
+                    "plan": record["proposal_reason"], "code_summary": json.dumps(record["configuration_after"], ensure_ascii=False),
+                    "leakage_audit": audit}
+            admitted.append(_evidence_row(node, source_path=path, source_sha256=source_hash, cohort="fixed_trial_host_verified"))
+            # Inline review revisions are real repair events, not extra trained nodes.
+            history=record.get("review_repairs",[])
+            if history:
+                import difflib
+                if history[-1].get("after_source_sha256")!=record["code_sha256"]:
+                    raise ValueError("review repair chain does not end at certified source")
+                for index,repair in enumerate(history):
+                    before,after=repair["before_source"],repair["after_source"]
+                    if (hashlib.sha256(before.encode()).hexdigest()!=repair["before_source_sha256"]
+                        or hashlib.sha256(after.encode()).hexdigest()!=repair["after_source_sha256"]
+                        or index and history[index-1]["after_source_sha256"]!=repair["before_source_sha256"]):
+                        raise ValueError("invalid review repair source chain")
+                    if not (repair.get("approved") is True and repair.get("preserves_chosen_recipe") is True
+                            and repair.get("introduces_search") is False and repair.get("changes_numeric_behavior") is False
+                            and repair.get("kind") in ("metadata_correction","declaration_alignment","implementation_repair")):
+                        continue
+                    detail=repair.get("reason","")
+                    if INFRASTRUCTURE_FAILURE.search(detail) or ONE_OFF_CODE_FAILURE.search(detail):continue
+                    patch_text=''.join(difflib.unified_diff(before.splitlines(True),after.splitlines(True)))
+                    repairs.append({
+                        "transition_id":record["trial_id"]+"/review-repair/"+str(index+1),
+                        "task_id":task,"task_family":TASK_DOMAINS[task],"task_type":TASK_TYPES[task],
+                        "run_id":record["run_id"],"stage_pair":"pre_execution_review->certified_execution",
+                        "failure_node_id":record["node_id"],"failure_node_code_sha256":repair["before_source_sha256"],
+                        "failure_text":_trim(detail,3000),"successful_node_id":record["node_id"],
+                        "successful_node_code_sha256":record["code_sha256"],"successful_metric":record["metric_after"],
+                        "successful_metric_direction":TASK_DIRECTIONS[task],
+                        "successful_execution_summary":"The final candidate after this repair chain executed and received a host-verified score. Intermediate revisions were not trained or separately scored; this does not isolate a repair's metric effect.",
+                        "repair_action_text":_trim(detail+"\n"+patch_text,3200),
+                        "repair_kind":repair["kind"],"audit_status":"clean","memory_disposition":"positive_eligible",
+                        "paper_grade_eligible":False,"rank_eligible":True,"source_cohort":"inline_review_host_verified",
+                        "source_artifact":str(path),"source_artifact_sha256":source_hash,
+                        "evaluation_scope":"pre-execution revision chain followed by certified internal execution"})
+        verified_ids = frozenset(row["node_id"] for row in admitted if row["source_artifact"] == str(path))
+        graph_nodes = {n["id"]: n for n in package["graph"]["nodes"]}
+        for transition in graph_nodes.values():
+            eligible, _ = repair_transition_eligibility(
+                transition, nodes_by_id=graph_nodes, allowed_tasks=set(TASK_DIRECTIONS),
+                host_verified_trial_node_ids=verified_ids)
+            if eligible:
+                row = _repair_evidence_row(transition, nodes_by_id=graph_nodes, source_path=path,
+                                          source_sha256=source_hash, cohort="fixed_trial_host_verified")
+                # Internal fixed-holdout certification does not assert paper-grade evaluation.
+                row["paper_grade_eligible"] = False
+                row["evaluation_scope"] = "source-bound host-verified internal fixed holdout"
+                repairs.append(row)
+    return observations, admitted, sources, repairs
+
+
 def select_representative_evidence(
     rows: Iterable[Mapping[str, Any]], *, limit: int
 ) -> list[dict[str, Any]]:
@@ -528,8 +619,12 @@ different tasks.  Output one JSON object and no prose.
 
 L3_SYSTEM_PROMPT = """You are the L3 Repair Distillation Agent for an automated ML system.
 
-The caller has already admitted only real failure -> repair -> clean-success
-RunForest transitions.  You may summarize and consolidate supplied evidence, but
+The caller has admitted real failure -> repair -> clean-success RunForest transitions
+or source-bound pre-execution review revisions followed by certified execution.
+For the latter, failure and successful node IDs can be the SAME candidate with
+different source revisions; never invent an intermediate training run or a before
+repair score. The final score belongs to the complete candidate, not an isolated
+repair effect. You may summarize and consolidate supplied evidence, but
 you may not invent or change transition IDs, task identity, failed/successful node
 IDs, or execution outcomes.
 
@@ -546,7 +641,7 @@ Output one JSON object and no prose.
 """
 
 
-def build_user_prompt(task: str, evidence: list[dict[str, Any]]) -> str:
+def build_user_prompt(task: str, evidence: list[dict[str, Any]], trial_observations=None) -> str:
     compact = [
         {
             "node_id": row["node_id"],
@@ -596,6 +691,33 @@ def build_user_prompt(task: str, evidence: list[dict[str, Any]]) -> str:
             + json.dumps(post_freeze_ids, ensure_ascii=False)
             + "\n"
         )
+    trial_section = ""
+    if trial_observations:
+        keys = ("trial_id", "node_id", "kind", "source_parent_id", "previous_attempt_id",
+                "configuration_before", "configuration_after", "configuration_changes",
+                "metric_before", "metric_after", "metric_delta", "comparison", "decision", "verified_score",
+                "data_manifest_sha256", "contract_sha256", "node_wall_seconds", "proposal_reason",
+                "feedback", "exception_type", "attribution", "limitations", "intervention",
+                "operational_changes", "declaration_corrections", "execution_status")
+        compact_trials = [{key: row.get(key) for key in keys} for row in trial_observations if row["task_id"] == task]
+        for compact_trial,row in zip(compact_trials,[r for r in trial_observations if r["task_id"]==task]):
+            compact_trial["review_repairs"]=[{k:repair.get(k) for k in
+                ("kind","reason","before_source_sha256","after_source_sha256","configuration_changes")}
+                for repair in row.get("review_repairs",[])]
+        trial_section = (
+            "\nComplete per-trial observations (separate from positive recipe admission):\n"
+            "Preserve model family, exact parameter before/after values, measured score delta, split/budget "
+            "and decision when deriving L2 tuning tactics. Include observed regressions and boundaries. "
+            "A failed or unscored trial is diagnostic evidence only, never proof that its parameter is bad. "
+            "Compare against source_parent_id, not the chronological previous attempt. Architecture switches "
+            "and multi-field changes are joint observations, not isolated parameter effects. Declaration corrections "
+            "are neither HPO nor architecture switches. When implementation repairs accompany a knob change, "
+            "retain mixed attribution and the debug evidence; do not assign the entire improvement to the knob. One holdout "
+            "comparison does not establish a general causal rule. Do not turn all observations into positive "
+            "recommendations or invent additional families to cover them. Every observation remains in the "
+            "bundle even when no reusable tactic is justified. Cite only admitted node IDs in positive SOPs.\n"
+            + json.dumps(compact_trials, ensure_ascii=False, indent=2)
+        )
     return (
         f"Task: {task}\nDomain: {TASK_DOMAINS[task]}\nMetric direction: "
         f"{TASK_DIRECTIONS[task]}\n\nCreate 4-6 distinct complete L1 recipes and 3-6 "
@@ -603,7 +725,7 @@ def build_user_prompt(task: str, evidence: list[dict[str, Any]]) -> str:
         "Prefer robust OOF and final-refit designs only when the evidence supports them.\n"
         f"{incremental_requirement}\n"
         f"Required JSON shape:\n{json.dumps(schema, ensure_ascii=False, indent=2)}\n\n"
-        f"Admitted evidence:\n{json.dumps(compact, ensure_ascii=False, indent=2)}"
+        f"Admitted evidence:\n{json.dumps(compact, ensure_ascii=False, indent=2)}{trial_section}"
     )
 
 
@@ -738,14 +860,14 @@ def _call_teacher_json(
 
 
 def call_teacher(
-    *, base_url: str, api_key: str, model: str, task: str, evidence: list[dict[str, Any]]
+    *, base_url: str, api_key: str, model: str, task: str, evidence: list[dict[str, Any]], trial_observations=None
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     return _call_teacher_json(
         base_url=base_url,
         api_key=api_key,
         model=model,
         system_message=SYSTEM_PROMPT,
-        user_message=build_user_prompt(task, evidence),
+        user_message=build_user_prompt(task, evidence, trial_observations),
     )
 
 
@@ -1029,6 +1151,7 @@ def build_artifacts(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str,
         cohort="spooky_allowlisted_clean_graph",
     )
     incremental_rows, incremental_source = load_incremental_evidence(args.incremental_evidence)
+    trial_observations, trial_rows, trial_sources, trial_repairs = load_trial_evidence(getattr(args, "trial_evidence", None))
     four_repair_rows, four_repair_source = load_graph_repair_evidence(
         args.fourtask_graph,
         allowed_tasks=set(TASK_DIRECTIONS) - {"spooky-author-identification"},
@@ -1042,8 +1165,10 @@ def build_artifacts(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str,
     all_rows.extend(four_rows)
     all_rows.extend(spooky_rows)
     all_rows.extend(incremental_rows)
+    all_rows.extend(trial_rows)
     all_repair_rows.extend(four_repair_rows)
     all_repair_rows.extend(spooky_repair_rows)
+    all_repair_rows.extend(trial_repairs)
     four_source.update(
         {
             key: value
@@ -1063,6 +1188,7 @@ def build_artifacts(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str,
         }
     )
     sources.extend([four_source, spooky_source])
+    sources.extend(trial_sources)
     if incremental_source is not None:
         sources.append(incremental_source)
 
@@ -1118,6 +1244,11 @@ def build_artifacts(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str,
             task: len(rows) for task, rows in selected_repairs_by_task.items()
         },
         "selected_repair_evidence": selected_repairs_by_task,
+        **({"trial_observations": trial_observations,
+            "trial_observation_count": len(trial_observations),
+            "host_verified_trial_admitted_count": len(trial_rows),
+            "trial_admission_rule": "source/config/checkpoint hashes verified; is_valid; finite score; source-bound clean audit with rank_eligible and metric_disposition=accept; fixed internal holdout, not official or general causal evidence"}
+           if trial_sources else {}),
         "manifest_sha256": "",
     }
     evidence_manifest["manifest_sha256"] = payload_hash(evidence_manifest, "manifest_sha256")
@@ -1135,6 +1266,8 @@ def build_artifacts(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str,
     for task, evidence in selected_by_task.items():
         raw_path = raw_dir / f"{task}.json"
         if raw_path.exists() and task not in set(args.refresh_task):
+            if trial_observations:
+                raise ValueError("Trial evidence requires a fresh output directory or --refresh-task; old teacher responses did not consume these trials")
             print(f"[recipe-distill] reuse {task}: {raw_path}", flush=True)
             raw = json.loads(raw_path.read_text(encoding="utf-8"))
             call = {
@@ -1148,12 +1281,14 @@ def build_artifacts(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str,
                 f"[recipe-distill] call {task}: evidence={len(evidence)} model={args.model}",
                 flush=True,
             )
+            trial_kwargs = {"trial_observations": trial_observations} if trial_observations else {}
             raw, call = call_teacher(
                 base_url=args.base_url,
                 api_key=api_key,
                 model=args.model,
                 task=task,
                 evidence=evidence,
+                **trial_kwargs,
             )
             write_json(raw_path, raw)
         recipes, tactics, task_rejected = normalize_task_output(
@@ -1294,6 +1429,8 @@ def build_artifacts(args: argparse.Namespace) -> tuple[dict[str, Any], dict[str,
             ),
         },
         "nodes": output_nodes,
+        **({"trial_observations": trial_observations,
+            "trial_observation_count": len(trial_observations)} if trial_sources else {}),
         "bundle_sha256": "",
     }
     bundle["bundle_sha256"] = payload_hash(bundle, "bundle_sha256")
@@ -1371,6 +1508,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--fourtask-graph", type=Path, required=True)
     parser.add_argument("--spooky-graph", type=Path, required=True)
     parser.add_argument("--incremental-evidence", type=Path)
+    parser.add_argument("--trial-evidence", type=Path, action="append", default=[], help="Complete incumbent trial package; repeat for distinct runs")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--created-at", required=True)
     parser.add_argument("--bundle-version", default="recipe-sop-v1")

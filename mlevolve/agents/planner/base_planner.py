@@ -279,6 +279,10 @@ def run_planner(
     max_retries: int = 3,
     stage_name: str = "Planning",
 ) -> Dict[str, Any]:
+    from engine import search_experience
+    if search_experience.planning_enabled():
+        return search_experience.plan(agent_instance, prompt_base, context, PLANNING_ALLOWED_MODULES, generate, max_retries=max_retries)
+
     component_descriptions = get_component_descriptions()
     component_desc_parts = [f"- **{name}**: {desc}" for name, desc in component_descriptions.items()]
     component_desc_text = "\n".join(component_desc_parts)

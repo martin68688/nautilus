@@ -776,6 +776,8 @@ class Config(Hashable):
 
     coldstart: ColdstartConfig
 
+    semantic_review_contract_path: str = ""
+    semantic_review_contract_sha256: str = ""
     methodology_kb_path: str = ""
     methodology_dynamic: bool = False
     finalize_reserve_seconds: int = 900

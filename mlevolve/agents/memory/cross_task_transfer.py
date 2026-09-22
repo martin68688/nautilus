@@ -47,12 +47,24 @@ REPRESENTATION_ATTRIBUTE_SLOTS = (
     "fusion_operator",
     "input_resolution",
 )
+OPEN_REPRESENTATION_CONTRACT_SCHEMA = "mlevolve_open_representation_contract_v1"
+REPRESENTATION_ROLE_TO_SLOT = {
+    "backbone": "backbone_family",
+    "initialization": "initialization_source",
+    "feature_branch": "feature_branch",
+    "fusion_operator": "fusion_operator",
+    "input_resolution": "input_resolution",
+}
+VERIFICATION_MARKER_KINDS = frozenset(
+    {"callable", "identifier", "literal", "operation"}
+)
 TRANSITION_REASON_LEVEL = "transition_reason"
 MODULE_INTERFACE_LEVEL = "module_interface"
 _REPRESENTATION_SIGNAL_RE = re.compile(
     r"\b(?:"
     r"efficientnet|resnet|convnext|densenet|mobilenet|regnet|inception|"
     r"vision\s+transformer|transformer|vit|dino(?:v2)?|siglip(?:2)?|clip|"
+    r"deberta|modernbert|roberta|distilbert|bert|tf[- ]?idf|"
     r"cnn|mlp|svm|lightgbm|xgboost|catboost|random\s+forest|forest|tree|"
     r"encoders?|classifiers?|cross[- ]attention|attention|graph\s+neural|gnn|"
     r"descriptor[- ](?:fusion|stack|classifier|expert)|"
@@ -330,6 +342,10 @@ def _representation_attributes(components: Mapping[str, str]) -> dict[str, str]:
         (r"efficientnet[-_ ]?b([0-7])", lambda m: f"efficientnet_b{m.group(1)}"),
         (r"resnet[-_ ]?(18|34|50|101|152)", lambda m: f"resnet{m.group(1)}"),
         (r"convnext[-_ ]?(tiny|small|base|large)", lambda m: f"convnext_{m.group(1)}"),
+        (r"deberta[-_ ]?v3[-_ ]?(small|base|large)", lambda m: f"deberta-v3-{m.group(1)}"),
+        (r"modernbert[-_ ]?(base|large)", lambda m: f"modernbert-{m.group(1)}"),
+        (r"roberta[-_ ]?(base|large)", lambda m: f"roberta-{m.group(1)}"),
+        (r"distilbert[-_ ]?(base)", lambda m: f"distilbert-{m.group(1)}"),
     )
     backbone_families = {
         render(match)
@@ -349,9 +365,25 @@ def _representation_attributes(components: Mapping[str, str]) -> dict[str, str]:
         # Cross-task projection never authorizes a source-task checkpoint, so the
         # only portable interpretation is a public pretrained initialization.
         attributes["initialization_source"] = "public_pretrained"
-    if any(value in text for value in ("descriptor", "colour", "color", "texture", "shape")):
+    if "frozen" in text and any(
+        value in text for value in ("embedding", "representation", "hidden state")
+    ):
+        attributes["feature_branch"] = "frozen_transformer_embeddings"
+    elif "tf-idf" in text or "tfidf" in text:
+        attributes["feature_branch"] = "sparse_tfidf"
+    elif any(value in text for value in ("tokenized text", "raw token", "input_ids")):
+        attributes["feature_branch"] = "token_sequence"
+    elif any(value in text for value in ("descriptor", "colour", "color", "texture", "shape")):
         attributes["feature_branch"] = "target_derived_descriptors"
-    if "self-attention" in text or "self attention" in text:
+    if "attention pooling" in text or "attention-weighted pooling" in text:
+        attributes["fusion_operator"] = "attention_pooling"
+    elif any(value in text for value in ("probability blend", "blend weights", "average probabilities")):
+        attributes["fusion_operator"] = "probability_blend"
+    elif "mean-pool" in text or "mean pool" in text:
+        attributes["fusion_operator"] = "mean_pooling"
+    elif any(value in text for value in ("native sequence-classification head", "standard classification head")):
+        attributes["fusion_operator"] = "native_classifier"
+    elif "self-attention" in text or "self attention" in text:
         attributes["fusion_operator"] = "self_attention"
     elif "gated" in text or " gate" in text:
         attributes["fusion_operator"] = "gated_fusion"
@@ -367,6 +399,143 @@ def _representation_attributes(components: Mapping[str, str]) -> dict[str, str]:
         for slot in REPRESENTATION_ATTRIBUTE_SLOTS
         if slot in attributes
     }
+
+
+def _open_representation_contract(
+    value: object,
+    *,
+    evidence_text: str,
+    source_task_id: str,
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Validate an Agent-distilled, evidence-bound open representation contract.
+
+    Architecture names and operators are deliberately open vocabulary.  The
+    schema fixes only semantic roles and AST-verification marker kinds; it never
+    enumerates model families.  Every retained component must point back to an
+    exact, sanitized phrase in the Recipe so an Agent cannot invent a contract.
+    """
+
+    if not isinstance(value, Mapping):
+        return {}, {}
+    if value.get("schema") != OPEN_REPRESENTATION_CONTRACT_SCHEMA:
+        return {}, {}
+    modality = str(value.get("modality") or "").strip().lower()
+    if not re.fullmatch(r"[a-z][a-z0-9_.-]{0,63}", modality):
+        raise ValueError("Open representation contract has an invalid modality")
+    normalized_evidence = " ".join(str(evidence_text).lower().split())
+    components: list[dict[str, Any]] = []
+    seen_component_ids: set[str] = set()
+    for raw in list(value.get("components") or []):
+        if not isinstance(raw, Mapping):
+            raise ValueError("Open representation contract component is not an object")
+        role = str(raw.get("role") or "").strip().lower()
+        canonical_id = str(raw.get("canonical_id") or "").strip().lower()
+        if not re.fullmatch(r"[a-z][a-z0-9_.-]{0,63}", role):
+            raise ValueError("Open representation contract has an invalid role")
+        if not re.fullmatch(r"[a-z0-9][a-z0-9_.:/+-]{0,127}", canonical_id):
+            raise ValueError("Open representation contract has an invalid canonical_id")
+        component_key = f"{role}:{canonical_id}"
+        if component_key in seen_component_ids:
+            raise ValueError("Open representation contract contains a duplicate component")
+        seen_component_ids.add(component_key)
+
+        evidence_phrases: list[str] = []
+        for phrase in list(raw.get("evidence_phrases") or []):
+            safe_phrase = _sanitize_architecture_text(
+                phrase, source_task_id=source_task_id
+            )
+            normalized_phrase = " ".join(safe_phrase.lower().split())
+            if not normalized_phrase or normalized_phrase not in normalized_evidence:
+                raise ValueError(
+                    "Open representation contract phrase is not grounded in the Recipe"
+                )
+            if normalized_phrase not in evidence_phrases:
+                evidence_phrases.append(normalized_phrase)
+        if not evidence_phrases:
+            raise ValueError("Open representation contract component has no evidence phrase")
+
+        markers: list[dict[str, str]] = []
+        seen_markers: set[tuple[str, str]] = set()
+        for marker in list(raw.get("verification_markers") or []):
+            if not isinstance(marker, Mapping):
+                raise ValueError("Open representation verification marker is not an object")
+            kind = str(marker.get("kind") or "").strip().lower()
+            marker_value = str(marker.get("value") or "").strip()
+            if kind not in VERIFICATION_MARKER_KINDS:
+                raise ValueError("Open representation verification marker kind is invalid")
+            if not marker_value or len(marker_value) > 160 or "\n" in marker_value:
+                raise ValueError("Open representation verification marker value is invalid")
+            if not re.fullmatch(r"[A-Za-z0-9_.:/+() -]+", marker_value):
+                raise ValueError("Open representation verification marker is unsafe")
+            normalized_marker = " ".join(marker_value.lower().split())
+            if normalized_marker not in normalized_evidence:
+                raise ValueError(
+                    "Open representation verification marker is not grounded after "
+                    f"source-specific redaction: {kind}={marker_value}"
+                )
+            key = (kind, marker_value)
+            if key not in seen_markers:
+                markers.append({"kind": kind, "value": marker_value})
+                seen_markers.add(key)
+        if not markers:
+            raise ValueError("Open representation component has no verification marker")
+        minimum_matches = int(raw.get("minimum_marker_matches") or 1)
+        if minimum_matches < 1 or minimum_matches > len(markers):
+            raise ValueError("Open representation minimum_marker_matches is invalid")
+        components.append(
+            {
+                "role": role,
+                "canonical_id": canonical_id,
+                "primary": bool(raw.get("primary")),
+                "evidence_phrases": evidence_phrases,
+                "verification_markers": markers,
+                "minimum_marker_matches": minimum_matches,
+            }
+        )
+    if not components:
+        raise ValueError("Open representation contract has no components")
+
+    for role in {component["role"] for component in components}:
+        primary_count = sum(
+            component["role"] == role and component["primary"]
+            for component in components
+        )
+        if primary_count > 1:
+            raise ValueError(
+                f"Open representation contract has multiple primary values for role={role}"
+            )
+    permitted_initialization_policies = {
+        "public_pretrained",
+        "random_initialization",
+        "from_scratch",
+    }
+    for component in components:
+        if (
+            component["role"] == "initialization"
+            and component["canonical_id"] not in permitted_initialization_policies
+        ):
+            raise ValueError(
+                "Open representation initialization must describe weight origin, "
+                "not a training or freezing schedule"
+            )
+    attributes: dict[str, str] = {}
+    for role, slot in REPRESENTATION_ROLE_TO_SLOT.items():
+        primary = [
+            component["canonical_id"]
+            for component in components
+            if component["role"] == role and component["primary"]
+        ]
+        if len(primary) == 1:
+            attributes[slot] = primary[0]
+    return (
+        {
+            "schema": OPEN_REPRESENTATION_CONTRACT_SCHEMA,
+            "extractor": "semantic_agent",
+            "modality": modality,
+            "components": components,
+        },
+        attributes,
+    )
 
 
 def _blueprint_candidates(
@@ -420,7 +589,12 @@ def _blueprint_candidates(
             continue
         if slot == REPRESENTATION_BLUEPRINT:
             representation_text = " ".join([title, method_family, *components.values()])
-            if not _REPRESENTATION_SIGNAL_RE.search(representation_text):
+            open_contract, open_attributes = _open_representation_contract(
+                node.get("representation_contract"),
+                evidence_text=representation_text,
+                source_task_id=source_task_id,
+            )
+            if not open_contract and not _REPRESENTATION_SIGNAL_RE.search(representation_text):
                 # Generic neural/fold wording is not a concrete representation.
                 # It may still yield validation/calibration/inference cards below.
                 continue
@@ -433,9 +607,31 @@ def _blueprint_candidates(
             "target_adaptation_contract": contracts[slot],
         }
         if slot == REPRESENTATION_BLUEPRINT:
-            attributes = _representation_attributes(components)
+            # An evidence-bound Agent contract is authoritative.  Never mix it
+            # with the legacy regex parser: doing so would silently reintroduce
+            # the architecture allowlist and could create hybrid attributes the
+            # Agent never certified.  Regex extraction remains compatibility-only
+            # for older bundles that have no open contract.
+            attributes = (
+                dict(open_attributes)
+                if open_contract
+                else _representation_attributes(
+                    {"title": title, "method_family": method_family, **components}
+                )
+            )
+            explicit = node.get("representation_attributes") or {}
+            if isinstance(explicit, Mapping):
+                for attribute_slot in REPRESENTATION_ATTRIBUTE_SLOTS:
+                    value = _sanitize_architecture_text(
+                        explicit.get(attribute_slot),
+                        source_task_id=source_task_id,
+                    )
+                    if value and re.fullmatch(r"[a-z0-9_.-]+", value):
+                        attributes[attribute_slot] = value
             if attributes:
                 portable["representation_attributes"] = attributes
+            if open_contract:
+                portable["representation_contract"] = open_contract
         portable = {
             key: value for key, value in portable.items() if value not in ("", [], {})
         }

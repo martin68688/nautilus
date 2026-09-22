@@ -157,6 +157,24 @@ def test_builder_canonicalizes_full_orchestration_prefix_without_changing_run_id
     assert builder.canonical_task_id("full-full-aerial-cactus-identification") == "aerial-cactus-identification"
 
 
+def test_builder_uses_portable_replay_journal_paths_for_external_runs(tmp_path):
+    import sys
+
+    sys.path.insert(0, str(REPO / "paper-skills" / "hyper_memory"))
+    import build_run_forest_memory as builder
+
+    runs_dir = tmp_path / "frozen-runs"
+    journal = runs_dir / "20260101_000000_example" / "logs" / "journal.json"
+    journal.parent.mkdir(parents=True)
+    journal.write_text("{}", encoding="utf-8")
+
+    assert builder.replay_journal_reference(journal, runs_dir=runs_dir) == (
+        "mlevolve/runs/20260101_000000_example/logs/journal.json"
+    )
+    with pytest.raises(ValueError, match="outside runs root"):
+        builder.replay_journal_reference(tmp_path / "other.json", runs_dir=runs_dir)
+
+
 def test_load_journals_rejects_non_allowlisted_runs_before_reading(tmp_path, monkeypatch):
     import sys
 

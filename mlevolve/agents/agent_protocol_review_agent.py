@@ -266,6 +266,10 @@ def _prompt(agent: Any, source: str, repair_attempt: int) -> dict[str, Any]:
 def run(agent: Any, node: Any) -> tuple[str, dict[str, Any]]:
     """Return reviewed source and a durable non-blocking semantic trace."""
 
+    if getattr(agent.cfg, "semantic_review_contract_path", ""):
+        from agents.contract_review_agent import run as contract_run
+        return contract_run(agent, node)
+
     settings = getattr(getattr(agent, "acfg", None), "protocol_preflight", None)
     enabled = bool(
         settings is not None

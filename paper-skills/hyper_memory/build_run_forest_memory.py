@@ -114,6 +114,29 @@ def display_path(path: Path, *, base: Path = REPO) -> str:
         return str(path)
 
 
+def replay_journal_reference(path: Path, *, runs_dir: Path) -> str:
+    """Return the portable journal reference expected by exact replay.
+
+    ``replay_runs_root`` may point at a frozen artifact store outside this
+    checkout, so embedding that store's absolute build-time path in the graph
+    is both non-portable and rejected by the runtime safety gate.  Preserve
+    only the path below the supplied runs root and keep the historical
+    ``mlevolve/runs`` prefix understood by the replay loader.
+    """
+
+    absolute_path = path if path.is_absolute() else path.absolute()
+    absolute_runs_dir = runs_dir if runs_dir.is_absolute() else runs_dir.absolute()
+    try:
+        relative = absolute_path.relative_to(absolute_runs_dir)
+    except ValueError as exc:
+        raise ValueError(
+            f"Replay journal {absolute_path} is outside runs root {absolute_runs_dir}"
+        ) from exc
+    if not relative.parts or ".." in relative.parts:
+        raise ValueError(f"Replay journal has an unsafe relative path: {relative}")
+    return (Path("mlevolve") / "runs" / relative).as_posix()
+
+
 def run_id_matches_prefix(run_id: str, prefix: str) -> bool:
     return run_id == prefix or run_id.startswith(f"{prefix}_") or run_id.startswith(f"{prefix}-")
 
@@ -704,7 +727,7 @@ def build_artifact(
                 "run_id": run_id,
                 "run_short_id": run_short_id(run_id),
                 "task": task,
-                "journal_path": display_path(path),
+                "journal_path": replay_journal_reference(path, runs_dir=runs_dir),
                 "node_count": len(graph["nodes"]),
                 "edge_count": len(graph["parents"]),
                 "root_count": len(graph["roots"]),

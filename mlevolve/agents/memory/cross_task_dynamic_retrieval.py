@@ -26,7 +26,9 @@ from agents.memory.cross_task_transfer import (
     FORBIDDEN_FIELDS,
     INFERENCE_BLUEPRINT,
     MODULE_INTERFACE_LEVEL,
+    OPEN_REPRESENTATION_CONTRACT_SCHEMA,
     REPRESENTATION_BLUEPRINT,
+    REPRESENTATION_ROLE_TO_SLOT,
     TRANSITION_REASON_LEVEL,
     VALIDATION_BLUEPRINT,
     CrossTaskTransferPolicy,
@@ -409,11 +411,33 @@ def _judge_spec(*, candidate_refs: list[str], max_selected: int) -> Any:
 def _representation_requirement(slot: str, candidate: Mapping[str, Any]) -> str:
     """Extract a machine-checkable attribute from a safe representation card."""
 
-    explicit = (
-        (candidate.get("portable_text") or {}).get("representation_attributes")
-        if isinstance(candidate.get("portable_text"), Mapping)
-        else None
-    )
+    portable = candidate.get("portable_text") or {}
+    if not isinstance(portable, Mapping):
+        portable = {}
+    contract = portable.get("representation_contract") or {}
+    if (
+        isinstance(contract, Mapping)
+        and contract.get("schema") == OPEN_REPRESENTATION_CONTRACT_SCHEMA
+    ):
+        matching_roles = {
+            role
+            for role, mapped_slot in REPRESENTATION_ROLE_TO_SLOT.items()
+            if mapped_slot == slot
+        }
+        primary = [
+            str(component.get("canonical_id") or "")
+            for component in list(contract.get("components") or [])
+            if isinstance(component, Mapping)
+            and str(component.get("role") or "") in matching_roles
+            and bool(component.get("primary"))
+            and str(component.get("canonical_id") or "")
+        ]
+        # An open contract is authoritative even when a slot intentionally has
+        # no primary component.  Falling through to the legacy lexical parser
+        # would manufacture a requirement that the Agent never certified.
+        return primary[0] if len(primary) == 1 else ""
+
+    explicit = portable.get("representation_attributes")
     if isinstance(explicit, Mapping) and explicit.get(slot):
         return str(explicit[slot])
     text = _normalize(json.dumps(candidate.get("portable_text") or {}, ensure_ascii=False))
@@ -422,6 +446,10 @@ def _representation_requirement(slot: str, candidate: Mapping[str, Any]) -> str:
             (r"efficientnet[-_ ]?b([0-7])", lambda m: f"efficientnet_b{m.group(1)}"),
             (r"resnet[-_ ]?(18|34|50|101|152)", lambda m: f"resnet{m.group(1)}"),
             (r"convnext[-_ ]?(tiny|small|base|large)", lambda m: f"convnext_{m.group(1)}"),
+            (r"deberta[-_ ]?v3[-_ ]?(small|base|large)", lambda m: f"deberta-v3-{m.group(1)}"),
+            (r"modernbert[-_ ]?(base|large)", lambda m: f"modernbert-{m.group(1)}"),
+            (r"roberta[-_ ]?(base|large)", lambda m: f"roberta-{m.group(1)}"),
+            (r"distilbert[-_ ]?(base)", lambda m: f"distilbert-{m.group(1)}"),
         )
         families = {
             render(match)
@@ -439,10 +467,26 @@ def _representation_requirement(slot: str, candidate: Mapping[str, Any]) -> str:
             return "public_pretrained"
         return ""
     if slot == "feature_branch":
+        if "frozen" in text and any(
+            value in text for value in ("embedding", "representation", "hidden state")
+        ):
+            return "frozen_transformer_embeddings"
+        if "tf-idf" in text or "tfidf" in text:
+            return "sparse_tfidf"
+        if any(value in text for value in ("tokenized text", "raw token", "input_ids")):
+            return "token_sequence"
         if any(value in text for value in ("descriptor", "colour", "color", "texture", "shape")):
             return "target_derived_descriptors"
         return ""
     if slot == "fusion_operator":
+        if "attention pooling" in text or "attention-weighted pooling" in text:
+            return "attention_pooling"
+        if any(value in text for value in ("probability blend", "blend weights", "average probabilities")):
+            return "probability_blend"
+        if "mean-pool" in text or "mean pool" in text:
+            return "mean_pooling"
+        if any(value in text for value in ("native sequence-classification head", "standard classification head")):
+            return "native_classifier"
         if "self-attention" in text or "self attention" in text:
             return "self_attention"
         if "gated" in text or " gate" in text:
@@ -454,6 +498,79 @@ def _representation_requirement(slot: str, candidate: Mapping[str, Any]) -> str:
         match = re.search(r"\b(\d{2,4})\s*[x×]\s*(\d{2,4})\b", text)
         return f"{match.group(1)}x{match.group(2)}" if match else ""
     raise ValueError(f"Unknown representation component slot: {slot}")
+
+
+def _representation_verification(
+    slot: str,
+    candidate: Mapping[str, Any],
+    required_value: str,
+) -> dict[str, Any] | None:
+    """Return evidence-bound open-vocabulary adoption markers for one slot."""
+
+    # Weight-origin policies use the Host's loader-aware AST verifier below.
+    # They are not architecture names and must not be "proved" by a prose
+    # marker supplied by the semantic extractor.
+    if slot == "initialization_source":
+        return None
+
+    portable = candidate.get("portable_text") or {}
+    if not isinstance(portable, Mapping):
+        return None
+    contract = portable.get("representation_contract") or {}
+    if (
+        not isinstance(contract, Mapping)
+        or contract.get("schema") != OPEN_REPRESENTATION_CONTRACT_SCHEMA
+    ):
+        return None
+    matching_roles = {
+        role for role, mapped_slot in REPRESENTATION_ROLE_TO_SLOT.items()
+        if mapped_slot == slot
+    }
+    matches = [
+        component
+        for component in list(contract.get("components") or [])
+        if isinstance(component, Mapping)
+        and str(component.get("role") or "") in matching_roles
+        and bool(component.get("primary"))
+        and str(component.get("canonical_id") or "") == str(required_value)
+    ]
+    if len(matches) != 1:
+        return None
+    component = matches[0]
+    markers = [
+        {"kind": str(marker["kind"]), "value": str(marker["value"])}
+        for marker in list(component.get("verification_markers") or [])
+        if isinstance(marker, Mapping) and marker.get("kind") and marker.get("value")
+    ]
+    minimum_matches = int(component.get("minimum_marker_matches") or 1)
+    if not markers or minimum_matches < 1 or minimum_matches > len(markers):
+        return None
+    return {
+        "schema": "mlevolve_open_representation_verification_v1",
+        "markers": markers,
+        "minimum_marker_matches": minimum_matches,
+    }
+
+
+def _representation_contract_entry(
+    *,
+    ref: str,
+    candidate_id: str,
+    slot: str,
+    candidate: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    requirement = _representation_requirement(slot, candidate)
+    if not requirement:
+        return None
+    row: dict[str, Any] = {
+        "ref": str(ref),
+        "candidate_id": str(candidate_id),
+        "required_value": requirement,
+    }
+    verification = _representation_verification(slot, candidate, requirement)
+    if verification:
+        row["verification"] = verification
+    return row
 
 
 def verify_representation_adoption(
@@ -556,6 +673,106 @@ def verify_representation_adoption(
                 calls.append(candidate)
         return calls
 
+    def dotted_name(node: ast.AST) -> str:
+        if isinstance(node, ast.Name):
+            return node.id
+        if isinstance(node, ast.Attribute):
+            parent = dotted_name(node.value)
+            return f"{parent}.{node.attr}" if parent else node.attr
+        return ""
+
+    called_names = {
+        dotted_name(node.func).lower()
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call) and dotted_name(node.func)
+    }
+    identifiers = {
+        value.lower()
+        for node in ast.walk(tree)
+        for value in (
+            [node.id] if isinstance(node, ast.Name)
+            else [node.attr] if isinstance(node, ast.Attribute)
+            else [node.name, node.asname or ""] if isinstance(node, ast.alias)
+            else []
+        )
+        if value
+    }
+    string_literals = {
+        " ".join(str(node.value).lower().split())
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Constant) and isinstance(node.value, str)
+    }
+    generic_verified_slots: set[str] = set()
+    compact_calls = {
+        re.sub(r"[^a-z0-9]+", "", item) for item in called_names
+    }
+    compact_identifiers = {
+        re.sub(r"[^a-z0-9]+", "", item) for item in identifiers
+    }
+    for slot, row in dict(contracts or {}).items():
+        if not isinstance(row, Mapping):
+            continue
+        verification = row.get("verification") or {}
+        if (
+            not isinstance(verification, Mapping)
+            or verification.get("schema")
+            != "mlevolve_open_representation_verification_v1"
+        ):
+            continue
+        markers = list(verification.get("markers") or [])
+        minimum_matches = int(verification.get("minimum_marker_matches") or 1)
+        matched: list[dict[str, str]] = []
+        for marker in markers:
+            if not isinstance(marker, Mapping):
+                continue
+            kind = str(marker.get("kind") or "").lower()
+            value = str(marker.get("value") or "").strip().lower()
+            terminal = value.rsplit(".", 1)[-1]
+            compact_value = re.sub(r"[^a-z0-9]+", "", value)
+            compact_terminal = re.sub(r"[^a-z0-9]+", "", terminal)
+            present = False
+            if kind == "callable":
+                present = (
+                    value in called_names
+                    or terminal in {
+                        item.rsplit(".", 1)[-1] for item in called_names
+                    }
+                    or compact_value in compact_calls
+                    or any(
+                        compact_value and compact_value in called
+                        for called in compact_calls
+                    )
+                )
+            elif kind == "identifier":
+                present = (
+                    value in identifiers
+                    or terminal in identifiers
+                    or compact_value in compact_identifiers
+                    or compact_terminal in compact_identifiers
+                )
+            elif kind == "literal":
+                present = any(value in literal for literal in string_literals)
+            elif kind == "operation":
+                present = (
+                    value in called_names
+                    or terminal in {item.rsplit(".", 1)[-1] for item in called_names}
+                    or value in identifiers
+                    or terminal in identifiers
+                    or compact_value in compact_calls
+                    or compact_terminal in compact_calls
+                    or compact_value in compact_identifiers
+                    or compact_terminal in compact_identifiers
+                )
+            if present:
+                matched.append({"kind": kind, "value": str(marker.get("value"))})
+        if len(matched) < minimum_matches:
+            violations.append(
+                f"open representation contract markers are absent for {slot}: "
+                f"matched {len(matched)}/{minimum_matches}"
+            )
+        else:
+            generic_verified_slots.add(str(slot))
+
     def resolve_parameter_default(
         node: ast.AST,
         parameter: str,
@@ -620,10 +837,18 @@ def verify_representation_adoption(
                     timm_create_model_aliases.add(alias.asname or alias.name)
 
     backbone = required.get("backbone_family", "")
-    if backbone and not re.search(rf"\b{re.escape(backbone)}\b", source, re.I):
+    normalized_backbone = re.sub(r"[-_ ]+", "[-_ /]", backbone)
+    if (
+        backbone
+        and "backbone_family" not in generic_verified_slots
+        and not re.search(rf"\b{normalized_backbone}\b", source, re.I)
+    ):
         violations.append(f"selected backbone is absent: {backbone}")
 
-    if required.get("initialization_source") == "public_pretrained":
+    if (
+        required.get("initialization_source") == "public_pretrained"
+        and "initialization_source" not in generic_verified_slots
+    ):
         pretrained = False
         verified_pretrained_loader = False
         required_loader = required.get("pretrained_loader", "").lower()
@@ -646,6 +871,23 @@ def verify_representation_adoption(
                         keyword.value, ast.Constant
                     ) and keyword.value.value is True:
                         pretrained = True
+            if func_name == "from_pretrained" and node.args:
+                checkpoint_name = resolve_static(node.args[0], at=node)
+                names_backbone = (
+                    isinstance(checkpoint_name, str)
+                    and re.search(
+                        rf"\b{normalized_backbone}\b",
+                        checkpoint_name,
+                        re.I,
+                    )
+                )
+                if names_backbone:
+                    pretrained = True
+                    verified_pretrained_loader = (
+                        verified_pretrained_loader
+                        or not required_loader
+                        or required_loader in {"huggingface", "transformers"}
+                    )
             if (
                 func_name == "create_model"
                 or func_name in timm_create_model_aliases
@@ -687,13 +929,30 @@ def verify_representation_adoption(
             )
 
     normalized_source = _normalize(source)
-    if required.get("feature_branch") == "target_derived_descriptors" and not any(
+    if "feature_branch" not in generic_verified_slots and required.get("feature_branch") == "token_sequence" and not any(
+        token in normalized_source
+        for token in ("autotokenizer", "input_ids", "attention_mask", "tokenizer")
+    ):
+        violations.append("selected token-sequence feature branch is absent")
+    if "feature_branch" not in generic_verified_slots and required.get("feature_branch") == "sparse_tfidf" and not any(
+        token in normalized_source for token in ("tfidfvectorizer", "tf-idf", "tfidf")
+    ):
+        violations.append("selected sparse TF-IDF feature branch is absent")
+    if "feature_branch" not in generic_verified_slots and required.get("feature_branch") == "frozen_transformer_embeddings" and not (
+        "from_pretrained" in normalized_source
+        and any(
+            token in normalized_source
+            for token in ("requires_grad_(false)", "requires_grad = false", "torch.no_grad", ".eval()")
+        )
+    ):
+        violations.append("selected frozen-transformer embedding branch is absent")
+    if "feature_branch" not in generic_verified_slots and required.get("feature_branch") == "target_derived_descriptors" and not any(
         token in normalized_source
         for token in ("histogram", "texture", "descriptor", "image_features", "feature_branch")
     ):
         violations.append("selected target-derived descriptor branch is absent")
     fusion = required.get("fusion_operator")
-    if fusion == "self_attention" and not any(
+    if "fusion_operator" not in generic_verified_slots and fusion == "self_attention" and not any(
         token in normalized_source
         for token in (
             "multiheadattention",
@@ -704,16 +963,35 @@ def verify_representation_adoption(
         )
     ):
         violations.append("selected self-attention fusion is absent")
-    if fusion == "gated_fusion" and not any(
+    if "fusion_operator" not in generic_verified_slots and fusion == "gated_fusion" and not any(
         token in normalized_source for token in ("gatedfusion", "gated_fusion", "self.gate", "sigmoid")
     ):
         violations.append("selected gated fusion is absent")
-    if fusion == "concatenation" and not any(
+    if "fusion_operator" not in generic_verified_slots and fusion == "concatenation" and not any(
         token in normalized_source for token in ("torch.cat", "np.concatenate", "concatenate")
     ):
         violations.append("selected concatenation fusion is absent")
+    if "fusion_operator" not in generic_verified_slots and fusion == "attention_pooling" and not any(
+        token in normalized_source
+        for token in ("attention_pool", "attentionpool", "attention_weights", "softmax")
+    ):
+        violations.append("selected attention-pooling fusion is absent")
+    if "fusion_operator" not in generic_verified_slots and fusion == "probability_blend" and not (
+        any(token in normalized_source for token in ("blend", "ensemble", "weighted"))
+        and any(token in normalized_source for token in ("predict_proba", "softmax", "prob"))
+    ):
+        violations.append("selected probability-blend fusion is absent")
+    if "fusion_operator" not in generic_verified_slots and fusion == "mean_pooling" and not any(
+        token in normalized_source for token in ("mean_pool", ".mean(", "masked_mean")
+    ):
+        violations.append("selected mean-pooling fusion is absent")
+    if "fusion_operator" not in generic_verified_slots and fusion == "native_classifier" and not any(
+        token in normalized_source
+        for token in ("automodelforsequenceclassification", "sequenceclassification")
+    ):
+        violations.append("selected native sequence-classification head is absent")
     resolution = required.get("input_resolution", "")
-    if resolution:
+    if resolution and "input_resolution" not in generic_verified_slots:
         width, height = resolution.split("x", 1)
         if width not in source or height not in source:
             violations.append(f"selected input resolution is absent: {resolution}")
@@ -1411,11 +1689,12 @@ def _validate_judge(
             raise ValueError(
                 f"Representation component is not machine-checkable: {slot}={component_ref}"
             )
-        representation_contracts[slot] = {
-            "ref": component_ref,
-            "candidate_id": candidate_id,
-            "required_value": requirement,
-        }
+        representation_contracts[slot] = _representation_contract_entry(
+            ref=component_ref,
+            candidate_id=candidate_id,
+            slot=slot,
+            candidate=candidate_by_id[candidate_id]["candidate"],
+        )
     for slot, cap in blueprint_slot_caps.items():
         selected_in_slot = sum(
             candidate_by_id[value]["granularity"] == slot for value in selected_ids
@@ -1528,11 +1807,12 @@ def _host_judge_fallback(
             if requirement:
                 ref = id_to_ref[row["id"]]
                 representation_components[slot] = ref
-                representation_contracts[slot] = {
-                    "ref": ref,
-                    "candidate_id": row["id"],
-                    "required_value": requirement,
-                }
+                representation_contracts[slot] = _representation_contract_entry(
+                    ref=ref,
+                    candidate_id=str(row["id"]),
+                    slot=slot,
+                    candidate=row["candidate"],
+                )
                 break
     return {
         "decision": "select",
@@ -1910,11 +2190,12 @@ def _aggregate_transfer_judge_ballots(
         if not requirement:
             continue
         representation_components[slot] = champion_ref
-        representation_contracts[slot] = {
-            "ref": champion_ref,
-            "candidate_id": champion_id,
-            "required_value": requirement,
-        }
+        representation_contracts[slot] = _representation_contract_entry(
+            ref=champion_ref,
+            candidate_id=champion_id,
+            slot=slot,
+            candidate=champion_candidate,
+        )
 
     ranking_receipt = [
         {
@@ -2242,11 +2523,12 @@ def build_transfer_candidate_portfolio(
         if not requirement:
             return None
         candidate_id = str(row["id"])
-        return {
-            "ref": ref_by_id.get(candidate_id, ""),
-            "candidate_id": candidate_id,
-            "required_value": requirement,
-        }
+        return _representation_contract_entry(
+            ref=ref_by_id.get(candidate_id, ""),
+            candidate_id=candidate_id,
+            slot=slot,
+            candidate=row["candidate"],
+        )
 
     def candidate_entry(
         *,

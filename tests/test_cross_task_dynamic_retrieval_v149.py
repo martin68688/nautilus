@@ -1257,6 +1257,292 @@ def _portfolio_candidate_row(candidate_id, attributes, *, relevance):
     }
 
 
+def test_nlp_recipe_projection_emits_machine_checkable_backbone_and_fusion():
+    from agents.memory.cross_task_transfer import (
+        CrossTaskTransferPolicy,
+        REPRESENTATION_BLUEPRINT,
+        project_transfer_candidates,
+    )
+
+    nodes = {
+        "recipe::spooky::deberta": {
+            "id": "recipe::spooky::deberta",
+            "task_id": "spooky-author-identification",
+            "abstraction_level": "L1_recipe",
+            "title": "DeBERTa-v3-large attention pooling",
+            "method_family": "deberta_v3_large_attention",
+            "representation_attributes": {
+                "backbone_family": "deberta-v3-large",
+                "initialization_source": "public_pretrained",
+                "feature_branch": "token_sequence",
+                "fusion_operator": "attention_pooling",
+            },
+            "pipeline": {
+                "feature_representation": "Tokenize raw text and retain token states.",
+                "model_stack": "Load microsoft/deberta-v3-large and use attention pooling.",
+            },
+        },
+        "recipe::spooky::modernbert": {
+            "id": "recipe::spooky::modernbert",
+            "task_id": "spooky-author-identification",
+            "abstraction_level": "L1_recipe",
+            "title": "ModernBERT-large native classifier",
+            "method_family": "modernbert_large_classifier",
+            "representation_attributes": {
+                "backbone_family": "modernbert-large",
+                "initialization_source": "public_pretrained",
+                "feature_branch": "token_sequence",
+                "fusion_operator": "native_classifier",
+            },
+            "pipeline": {
+                "feature_representation": "Tokenize raw text.",
+                "model_stack": "Use answerdotai/ModernBERT-large with a standard classification head.",
+            },
+        },
+    }
+    policy = CrossTaskTransferPolicy(
+        enabled=True,
+        source_task_id="spooky-author-identification",
+        source_task_type="nlp",
+        target_task_type="nlp",
+        architecture_transfer_enabled=True,
+        architecture_max_items=3,
+    )
+    projection = project_transfer_candidates(
+        nodes,
+        policy,
+        target_task_id="detecting-insults-in-social-commentary",
+        stage="draft",
+        task_description="binary text classification",
+        query_text="transfer a text classifier",
+    )
+    cards = {
+        row["source_recipe_id"]: row
+        for row in projection["observed_candidates"]
+        if row.get("candidate_kind") == REPRESENTATION_BLUEPRINT
+    }
+    assert cards["recipe::spooky::deberta"]["portable_text"][
+        "representation_attributes"
+    ] == nodes["recipe::spooky::deberta"]["representation_attributes"]
+    assert cards["recipe::spooky::modernbert"]["portable_text"][
+        "representation_attributes"
+    ] == nodes["recipe::spooky::modernbert"]["representation_attributes"]
+
+
+def test_nlp_representation_adoption_accepts_huggingface_backbones():
+    from agents.memory.cross_task_dynamic_retrieval import (
+        verify_representation_adoption,
+    )
+
+    source = '''
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+MODEL_NAME = "answerdotai/ModernBERT-large"
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME)
+'''
+    contracts = {
+        "backbone_family": {"required_value": "modernbert-large"},
+        "initialization_source": {
+            "required_value": "public_pretrained",
+            "pretrained_loader": "huggingface",
+        },
+        "feature_branch": {"required_value": "token_sequence"},
+        "fusion_operator": {"required_value": "native_classifier"},
+    }
+    result = verify_representation_adoption(source, contracts)
+    assert result["valid"] is True
+    assert result["violations"] == []
+
+
+def test_agent_contract_projects_unknown_backbone_without_a_name_allowlist():
+    from agents.memory.cross_task_transfer import (
+        CrossTaskTransferPolicy,
+        OPEN_REPRESENTATION_CONTRACT_SCHEMA,
+        REPRESENTATION_BLUEPRINT,
+        project_transfer_candidates,
+    )
+
+    contract = {
+        "schema": OPEN_REPRESENTATION_CONTRACT_SCHEMA,
+        "modality": "language",
+        "components": [
+            {
+                "role": "backbone",
+                "canonical_id": "acme/novatext-xl",
+                "primary": True,
+                "evidence_phrases": ["Load acme/NovaText-XL"],
+                "verification_markers": [
+                    {"kind": "literal", "value": "acme/NovaText-XL"}
+                ],
+                "minimum_marker_matches": 1,
+            },
+            {
+                "role": "initialization",
+                "canonical_id": "public_pretrained",
+                "primary": True,
+                "evidence_phrases": ["NovaEncoder.from_pretrained"],
+                "verification_markers": [
+                    {"kind": "callable", "value": "from_pretrained"}
+                ],
+                "minimum_marker_matches": 1,
+            },
+            {
+                "role": "feature_branch",
+                "canonical_id": "contextual_token_lattice",
+                "primary": True,
+                "evidence_phrases": ["input_ids contextual token lattice"],
+                "verification_markers": [
+                    {"kind": "identifier", "value": "input_ids"}
+                ],
+                "minimum_marker_matches": 1,
+            },
+            {
+                "role": "fusion_operator",
+                "canonical_id": "spectral_router",
+                "primary": True,
+                "evidence_phrases": ["spectral_router fusion"],
+                "verification_markers": [
+                    {"kind": "callable", "value": "spectral_router"}
+                ],
+                "minimum_marker_matches": 1,
+            },
+        ],
+    }
+    nodes = {
+        "recipe::unknown": {
+            "id": "recipe::unknown",
+            "task_id": "source-language-task",
+            "abstraction_level": "L1_recipe",
+            "title": "Open-vocabulary semantic representation",
+            "method_family": "unregistered_architecture",
+            "representation_contract": contract,
+            "pipeline": {
+                "feature_representation": "Use an input_ids contextual token lattice.",
+                "model_stack": (
+                    "Load acme/NovaText-XL with NovaEncoder.from_pretrained and "
+                    "apply spectral_router fusion."
+                ),
+            },
+        }
+    }
+    policy = CrossTaskTransferPolicy(
+        enabled=True,
+        source_task_id="source-language-task",
+        source_task_type="nlp",
+        target_task_type="nlp",
+        architecture_transfer_enabled=True,
+        architecture_max_items=2,
+    )
+    projection = project_transfer_candidates(
+        nodes,
+        policy,
+        target_task_id="target-language-task",
+        stage="draft",
+        task_description="language classification",
+        query_text="transfer an unseen representation",
+    )
+    card = next(
+        row
+        for row in projection["observed_candidates"]
+        if row.get("candidate_kind") == REPRESENTATION_BLUEPRINT
+    )
+    attributes = card["portable_text"]["representation_attributes"]
+    assert attributes["backbone_family"] == "acme/novatext-xl"
+    assert attributes["feature_branch"] == "contextual_token_lattice"
+    assert attributes["fusion_operator"] == "spectral_router"
+    assert card["portable_text"]["representation_contract"]["extractor"] == (
+        "semantic_agent"
+    )
+
+
+def test_agent_contract_generic_ast_markers_verify_unknown_implementation():
+    from agents.memory.cross_task_dynamic_retrieval import (
+        _representation_contract_entry,
+        verify_representation_adoption,
+    )
+
+    candidate = {
+        "portable_text": {
+            "representation_attributes": {
+                "backbone_family": "acme/novatext-xl",
+                "initialization_source": "public_pretrained",
+                "feature_branch": "contextual_token_lattice",
+                "fusion_operator": "spectral_router",
+            },
+            "representation_contract": {
+                "schema": "mlevolve_open_representation_contract_v1",
+                "components": [
+                    {
+                        "role": "backbone",
+                        "canonical_id": "acme/novatext-xl",
+                        "primary": True,
+                        "verification_markers": [
+                            {"kind": "literal", "value": "acme/NovaText-XL"}
+                        ],
+                        "minimum_marker_matches": 1,
+                    },
+                    {
+                        "role": "initialization",
+                        "canonical_id": "public_pretrained",
+                        "primary": True,
+                        "verification_markers": [
+                            {"kind": "callable", "value": "from_pretrained"}
+                        ],
+                        "minimum_marker_matches": 1,
+                    },
+                    {
+                        "role": "feature_branch",
+                        "canonical_id": "contextual_token_lattice",
+                        "primary": True,
+                        "verification_markers": [
+                            {"kind": "identifier", "value": "input_ids"}
+                        ],
+                        "minimum_marker_matches": 1,
+                    },
+                    {
+                        "role": "fusion_operator",
+                        "canonical_id": "spectral_router",
+                        "primary": True,
+                        "verification_markers": [
+                            {"kind": "callable", "value": "spectral_router"}
+                        ],
+                        "minimum_marker_matches": 1,
+                    },
+                ],
+            },
+        }
+    }
+    contracts = {}
+    for slot in (
+        "backbone_family",
+        "initialization_source",
+        "feature_branch",
+        "fusion_operator",
+    ):
+        contracts[slot] = _representation_contract_entry(
+            ref="C01",
+            candidate_id="recipe::unknown::representation",
+            slot=slot,
+            candidate=candidate,
+        )
+    source = '''
+from acme import NovaEncoder, spectral_router
+MODEL_ID = "acme/NovaText-XL"
+model = NovaEncoder.from_pretrained(MODEL_ID)
+input_ids = batch["input_ids"]
+features = spectral_router(model(input_ids))
+'''
+    result = verify_representation_adoption(source, contracts)
+    assert result["valid"] is True
+    assert result["violations"] == []
+
+    missing = verify_representation_adoption(
+        'model_id = "acme/NovaText-XL"\n', contracts
+    )
+    assert missing["valid"] is False
+    assert any("markers are absent" in value for value in missing["violations"])
+
+
 def _portfolio_fixture():
     rows = [
         _portfolio_candidate_row(
@@ -1677,3 +1963,57 @@ def test_tournament_role_binds_its_frozen_seat_across_improve(tmp_path):
     assert selected["memory_transfer"]["representation_contracts"][
         "backbone_family"
     ]["required_value"] == "family_alternative"
+
+
+def test_open_contract_missing_primary_slot_never_uses_legacy_lexical_fallback():
+    from agents.memory.cross_task_dynamic_retrieval import (
+        _representation_requirement,
+    )
+    from agents.memory.cross_task_transfer import (
+        OPEN_REPRESENTATION_CONTRACT_SCHEMA,
+    )
+
+    candidate = {
+        "portable_text": {
+            "components": {
+                "feature_representation": (
+                    "frozen visual embeddings and target-derived descriptors"
+                )
+            },
+            "representation_contract": {
+                "schema": OPEN_REPRESENTATION_CONTRACT_SCHEMA,
+                "modality": "vision",
+                "components": [
+                    {
+                        "role": "backbone",
+                        "canonical_id": "efficientnet-b3",
+                        "primary": True,
+                        "evidence_phrases": ["EfficientNet-B3"],
+                        "verification_markers": [
+                            {"kind": "literal", "value": "EfficientNet-B3"}
+                        ],
+                        "minimum_marker_matches": 1,
+                    },
+                    {
+                        "role": "feature_branch",
+                        "canonical_id": "frozen-visual-embeddings",
+                        "primary": False,
+                        "evidence_phrases": ["frozen visual embeddings"],
+                        "verification_markers": [
+                            {
+                                "kind": "operation",
+                                "value": "visual embeddings",
+                            }
+                        ],
+                        "minimum_marker_matches": 1,
+                    },
+                ],
+            },
+        }
+    }
+
+    assert _representation_requirement("backbone_family", candidate) == (
+        "efficientnet-b3"
+    )
+    assert _representation_requirement("feature_branch", candidate) == ""
+    assert _representation_requirement("fusion_operator", candidate) == ""

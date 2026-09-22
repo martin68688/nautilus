@@ -1125,27 +1125,34 @@ def _run_impl():
         )
 
         official_request = None
-        if official_submission_enabled(cfg) and run_outcome["status"] in {
+        journal_path = cfg.log_dir / "journal.json"
+        has_certified_official_candidate = (
+            agent.best_node is not None and journal_path.is_file()
+        )
+        if (
+            official_submission_enabled(cfg)
+            and run_outcome["status"] in {"complete", "partial"}
+            and has_certified_official_candidate
+        ):
+            official_request = write_official_evaluation_request(
+                cfg,
+                journal_path,
+                selected_node_id=agent.best_node.id,
+                selection_basis={
+                    "type": "solver_internal_search_metric",
+                    "metric_value": agent.best_node.metric.value,
+                    "metric_maximize": agent.best_node.metric.maximize,
+                    "stage": agent.best_node.stage,
+                    "draft_role": agent.best_node.draft_role,
+                },
+            )
+        elif official_submission_enabled(cfg) and run_outcome["status"] in {
             "complete",
             "partial",
         }:
-            official_request = write_official_evaluation_request(
-                cfg,
-                cfg.log_dir / "journal.json",
-                selected_node_id=(
-                    agent.best_node.id if agent.best_node is not None else ""
-                ),
-                selection_basis=(
-                    {
-                        "type": "solver_internal_search_metric",
-                        "metric_value": agent.best_node.metric.value,
-                        "metric_maximize": agent.best_node.metric.maximize,
-                        "stage": agent.best_node.stage,
-                        "draft_role": agent.best_node.draft_role,
-                    }
-                    if agent.best_node is not None
-                    else {}
-                ),
+            logger.warning(
+                "Skipping native official-test handoff for terminal run without "
+                "a certified best node and journal checkpoint"
             )
         if official_request is not None:
             logger.info(

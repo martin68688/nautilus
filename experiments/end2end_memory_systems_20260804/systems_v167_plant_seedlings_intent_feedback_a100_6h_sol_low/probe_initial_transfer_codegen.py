@@ -178,9 +178,14 @@ def main() -> None:
     if memory_layer is None:
         raise RuntimeError("formal config did not initialize external memory")
     pack = memory_layer.current_navigation_pack()
-    if pack.get("stage_route", {}).get("route") != (
-        "projected_multiround_search_judge_four_candidate_portfolio"
-    ):
+    accepted_routes = {
+        "projected_multiround_search_judge_four_candidate_portfolio",
+        (
+            "projected_multiround_search_four_blind_judge_ballots_"
+            "four_candidate_portfolio"
+        ),
+    }
+    if pack.get("stage_route", {}).get("route") not in accepted_routes:
         raise RuntimeError(
             f"unexpected retrieval route: {pack.get('stage_route')}"
         )

@@ -2,15 +2,18 @@ import logging
 from . import gemini as _gemini
 from . import openai as _openai
 from . import anthropic as _anthropic
+from . import claude as _claude
 from .gemini import FunctionSpec, OutputType, PromptType, compile_prompt_to_md
 from config import Config
 logger = logging.getLogger("MLEvolve")
 
 
 def _provider(model: str) -> str:
-    """Route by model-name prefix: 'gemini' -> Gemini, 'glm' -> Anthropic (Messages API),
-    else OpenAI-compatible (e.g. Qwen, DeepSeek)."""
+    """Route Claude to its relay adapter, Gemini to Gemini, GLM to Messages,
+    and other models to the general OpenAI-compatible backend."""
     name = (model or "").lower()
+    if name.startswith("claude"):
+        return "claude"
     if name.startswith("gemini"):
         return "gemini"
     if name.startswith("glm"):
@@ -67,7 +70,11 @@ def query(
         logger.info(f"function spec: {func_spec.to_dict()}", extra={"verbose": True})
 
     provider = _provider(model)
-    if provider == "openai":
+    if provider == "claude":
+        output, req_time, in_tok_count, out_tok_count, info = _claude.query(
+            system_message=system_message, user_message=user_message,
+            func_spec=func_spec, cfg=cfg, **model_kwargs)
+    elif provider == "openai":
         output, req_time, in_tok_count, out_tok_count, info = _openai.query(
             system_message=system_message,
             user_message=user_message,
@@ -110,6 +117,10 @@ def generate(
     """Streaming text generation. Dispatches by cfg.agent.code.model: Gemini / Anthropic (glm) / OpenAI-compatible."""
     model = getattr(cfg.agent.code, "model", "") or ""
     provider = _provider(model)
+    if provider == "claude":
+        return _claude.generate(prompt=prompt, cfg=cfg, temperature=temperature,
+            max_tokens=max_tokens, stop_tokens=stop_tokens, json_schema=json_schema,
+            max_retries=max_retries, retry_delay=retry_delay, request_timeout=request_timeout)
     if provider == "openai":
         return _openai.generate(
             prompt=prompt,
