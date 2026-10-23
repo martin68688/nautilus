@@ -45,6 +45,20 @@ TASKS = {
         "private_labels": "prepared/private/test.csv",
         "sample_submission": "sample_submission.csv",
     },
+    # Built by `python -m fixed_holdout.numerai_source`.  The hidden labels
+    # keep the era column so the evaluator can score per-era correlation; the
+    # lockbox eras are separated from the public training eras by an embargo.
+    "numerai-v6": {
+        "metric": "numerai_era_corr",
+        "id_column": "id",
+        "prediction_columns": ["prediction"],
+        "label_columns": ["target"],
+        "group_column": "era",
+        "normalize_probabilities": False,
+        "public_subdir": "prepared/public",
+        "private_labels": "prepared/private/test.csv",
+        "sample_submission": "sample_submission.csv",
+    },
 }
 
 

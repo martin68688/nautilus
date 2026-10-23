@@ -103,7 +103,15 @@ def prepare_task(
     sample = pd.read_csv(sample_source)
     private = pd.read_csv(private_source)
     prediction_columns = _prediction_columns(spec, sample)
-    required_private_columns = [spec["id_column"], *prediction_columns]
+    # Most tasks name hidden labels after the prediction columns.  Grouped
+    # metrics (Numerai) keep differently named labels plus a group column.
+    label_columns = list(spec.get("label_columns") or prediction_columns)
+    group_column = spec.get("group_column")
+    required_private_columns = [
+        spec["id_column"],
+        *label_columns,
+        *([group_column] if group_column else []),
+    ]
     missing = [column for column in required_private_columns if column not in private.columns]
     if missing:
         raise ValueError(f"Private labels are missing columns: {missing}")
@@ -160,7 +168,8 @@ def prepare_task(
             "task_id": task_id,
             "split_id": split_id,
             "metric": spec["metric"],
-            "maximize": spec["metric"] in {"binary_roc_auc", "accuracy"},
+            "maximize": spec["metric"]
+            in {"binary_roc_auc", "accuracy", "numerai_era_corr"},
             "id_column": spec["id_column"],
             "prediction_columns": prediction_columns,
             "normalize_probabilities": bool(spec["normalize_probabilities"]),
@@ -169,6 +178,10 @@ def prepare_task(
             "public_tree_sha256": public_digest,
             "selection_policy": "terminal_only",
         }
+        if "label_columns" in spec:
+            common["label_columns"] = label_columns
+        if group_column:
+            common["group_column"] = group_column
         train_manifest = {
             **common,
             "role": "train_view",

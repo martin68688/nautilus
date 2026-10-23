@@ -1,0 +1,33 @@
+extends: config.yaml
+
+# Minimal Numerai v6 search behind a label-isolated era lockbox.
+# Build the split first (see fixed_holdout/numerai_source.py), then launch with
+#   exp_id=numerai-v6
+#   data_dir=<split>/train_view/input
+#   desc_file=<split>/train_view/input/description.md
+#   fixed_holdout.train_manifest_path=<split>/train_view/fixed_holdout_manifest.json
+# and score the frozen run afterwards with `python -m fixed_holdout.score_run`.
+exp_id: "numerai-v6"
+
+fixed_holdout:
+  enabled: True
+  evaluation_mode: terminal_only
+  train_manifest_path: ""
+  bypass_protocol_gates: True
+  internal_metric_disposition: search_only
+
+agent:
+  steps: 12
+  time_limit: 10800          # 3h
+  initial_drafts: 2
+  check_data_leakage: False
+  protocol_repair:
+    enabled: False
+  search:
+    parallel_search_num: 2
+    num_gpus: 1
+    num_drafts: 2
+    max_replacement_drafts: 1
+
+exec:
+  timeout: 3600

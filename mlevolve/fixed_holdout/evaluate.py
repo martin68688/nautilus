@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from scipy.stats import norm
 from sklearn.metrics import f1_score, roc_auc_score
 
 from fixed_holdout.common import read_manifest, sha256_file, sha256_lines
@@ -43,11 +44,63 @@ def _load_aligned_frames(manifest_path: Path, submission_path: Path):
         raise ValueError("Submission IDs or row order do not match the fixed holdout")
     if not prediction_ids.equals(labels[id_column].astype(str)):
         raise ValueError("Submission IDs do not align with hidden labels")
-    y_true = labels[prediction_columns].to_numpy(dtype=float)
+    label_columns = list(manifest.get("label_columns") or prediction_columns)
+    y_true = labels[label_columns].to_numpy(dtype=float)
     y_pred = predictions[prediction_columns].to_numpy(dtype=float)
     if not np.isfinite(y_pred).all():
         raise ValueError("Predictions contain NaN or infinite values")
-    return manifest, y_true, y_pred
+    group_column = manifest.get("group_column")
+    groups = labels[group_column].astype(str).to_numpy() if group_column else None
+    return manifest, y_true, y_pred, groups
+
+
+def _numerai_corr(predictions: np.ndarray, targets: np.ndarray) -> float:
+    """Numerai's per-era correlation (same transform as ``numerai_tools``).
+
+    Predictions are tie-broken ranked, gaussianized and raised to the 1.5
+    power; targets are centered and raised to the 1.5 power; the score is the
+    Pearson correlation of the two transformed vectors.
+    """
+    n = len(predictions)
+    order = np.argsort(predictions, kind="stable")
+    ranks = np.empty(n, dtype=float)
+    ranks[order] = np.arange(1, n + 1)
+    gaussian = norm.ppf((ranks - 0.5) / n)
+    pred_transformed = np.sign(gaussian) * np.abs(gaussian) ** 1.5
+    centered = targets - targets.mean()
+    target_transformed = np.sign(centered) * np.abs(centered) ** 1.5
+    if pred_transformed.std() == 0 or target_transformed.std() == 0:
+        return 0.0
+    return float(np.corrcoef(pred_transformed, target_transformed)[0, 1])
+
+
+def numerai_era_scores(
+    y_true: np.ndarray, y_pred: np.ndarray, groups: np.ndarray
+) -> dict:
+    """Score every era separately and summarize the per-era correlations."""
+    if groups is None:
+        raise ValueError("numerai_era_corr requires a group_column in the manifest")
+    targets = y_true.reshape(-1)
+    predictions = y_pred.reshape(-1)
+    if not np.isfinite(targets).all():
+        raise ValueError("Hidden Numerai targets contain NaN values")
+    frame = pd.DataFrame({"era": groups, "pred": predictions, "target": targets})
+    per_era = {
+        str(era): _numerai_corr(group["pred"].to_numpy(), group["target"].to_numpy())
+        for era, group in frame.groupby("era", sort=True)
+    }
+    values = np.array(list(per_era.values()), dtype=float)
+    std = float(values.std(ddof=1)) if len(values) > 1 else 0.0
+    cumulative = np.cumsum(values)
+    drawdown = float(np.max(np.maximum.accumulate(cumulative) - cumulative))
+    return {
+        "corr_mean": float(values.mean()),
+        "corr_std": std,
+        "corr_sharpe": float(values.mean() / std) if std > 0 else 0.0,
+        "max_drawdown": drawdown,
+        "n_eras": int(len(values)),
+        "per_era_corr": per_era,
+    }
 
 
 def _multiclass_log_loss(y_true: np.ndarray, y_pred: np.ndarray, normalize: bool) -> float:
@@ -104,9 +157,13 @@ def _macro_f1(
 
 
 def evaluate_submission(manifest_path: Path, submission_path: Path) -> dict:
-    manifest, y_true, y_pred = _load_aligned_frames(manifest_path, submission_path)
+    manifest, y_true, y_pred, groups = _load_aligned_frames(manifest_path, submission_path)
     metric = manifest["metric"]
-    if metric == "multiclass_log_loss":
+    details = None
+    if metric == "numerai_era_corr":
+        details = numerai_era_scores(y_true, y_pred, groups)
+        score = details["corr_mean"]
+    elif metric == "multiclass_log_loss":
         score = _multiclass_log_loss(
             y_true,
             y_pred,
@@ -136,7 +193,7 @@ def evaluate_submission(manifest_path: Path, submission_path: Path) -> dict:
         )
     else:
         raise ValueError(f"Unsupported fixed-holdout metric: {metric}")
-    return {
+    result = {
         "schema": manifest["schema"],
         "task_id": manifest["task_id"],
         "split_id": manifest["split_id"],
@@ -147,6 +204,9 @@ def evaluate_submission(manifest_path: Path, submission_path: Path) -> dict:
         "submission_sha256": sha256_file(Path(submission_path)),
         "selection_policy": "terminal_only",
     }
+    if details is not None:
+        result["metric_details"] = details
+    return result
 
 
 def main() -> None:

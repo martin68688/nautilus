@@ -192,6 +192,12 @@ def _score_run(
                 "score": score["score"],
                 "submission_sha256": score["submission_sha256"],
             }
+            details = score.get("metric_details")
+            if details:
+                # Keep the summary, not the per-era series, in the run report.
+                item["metric_details"] = {
+                    key: value for key, value in details.items() if key != "per_era_corr"
+                }
         except Exception as exc:
             item = {
                 "node_id": node_id,
