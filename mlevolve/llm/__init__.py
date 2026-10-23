@@ -1,4 +1,5 @@
 import logging
+import os
 from . import gemini as _gemini
 from . import openai as _openai
 from . import anthropic as _anthropic
@@ -10,6 +11,10 @@ logger = logging.getLogger("MLEvolve")
 def _provider(model: str) -> str:
     """Route by model-name prefix: 'gemini' -> Gemini, 'glm' -> Anthropic (Messages API),
     else OpenAI-compatible (e.g. Qwen, DeepSeek)."""
+    forced = os.environ.get("MLEVOLVE_LLM_PROVIDER", "").strip().lower()
+    if forced:
+        # Explicit override, e.g. glm-* served by an OpenAI-compatible vLLM endpoint.
+        return forced
     name = (model or "").lower()
     if name.startswith("gemini"):
         return "gemini"

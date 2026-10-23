@@ -97,7 +97,12 @@ class FunctionSpec(DataClassJsonMixin):
         here so callers cannot accidentally mix provider-specific wire shapes.
         """
 
-        if base_url and "cliproxyapi-haoming.ecepxie.svc.cluster.local" in base_url:
+        nested_hosts = (
+            "cliproxyapi-haoming.ecepxie.svc.cluster.local",
+            # NRP ellm (vLLM) uses the standard nested shape as well.
+            "ellm.nrp-nautilus.io",
+        )
+        if base_url and any(host in base_url for host in nested_hosts):
             return {
                 "type": "function",
                 "function": {"name": self.name},

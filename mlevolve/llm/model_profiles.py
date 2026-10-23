@@ -64,7 +64,9 @@ _PROFILES: dict[str, dict] = {
 }
 
 # Models that only support {"type": "json_object"}, not json_schema + strict.
-_NO_JSON_SCHEMA_PREFIXES = ("deepseek",)
+# glm-* on vLLM (NRP ellm) rejects some json_schema grammars; the Anthropic
+# backend never reads this list.
+_NO_JSON_SCHEMA_PREFIXES = ("deepseek", "glm")
 
 # Models where thinking mode and json_schema are mutually exclusive.
 # generate() will drop json_schema for these models to keep thinking enabled,
