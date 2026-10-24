@@ -123,6 +123,8 @@ class SearchReplacePatcher:
     )
 
     _FENCE_RE = re.compile(r"^[ \t]*```[\w+-]*[ \t]*$\n?", re.MULTILINE)
+    # Markdown commentary lines such as "***Next: ...***" (never valid Python).
+    _PROSE_RE = re.compile(r"^[ \t]*\*{2,}[^\n]*\*{2,}[ \t]*$\n?", re.MULTILINE)
 
     @classmethod
     def _strip_stray_fences(cls, text: str) -> str:
@@ -137,7 +139,12 @@ class SearchReplacePatcher:
         except SyntaxError:
             pass
         cleaned = cls._FENCE_RE.sub("", text)
-        return cleaned if cleaned != text else text
+        if cleaned != text:
+            try:
+                compile(cleaned, "<patched>", "exec")
+            except SyntaxError:
+                cleaned = cls._PROSE_RE.sub("", cleaned)
+        return cleaned
 
     @classmethod
     def _strip_residual_markers(cls, text: str) -> str:

@@ -363,6 +363,8 @@ def test_patcher_drops_stray_markdown_fences_only_when_they_break_the_program():
     fixed = SearchReplacePatcher._strip_stray_fences(broken)
     assert "```" not in fixed
     compile(fixed, "<t>", "exec")
+    with_prose = "x = 1\n```\n***Next: add a helper.***\ny = x + 1\n"
+    compile(SearchReplacePatcher._strip_stray_fences(with_prose), "<t>", "exec")
     valid = 'doc = """\n```\ncode\n```\n"""\n'
     assert SearchReplacePatcher._strip_stray_fences(valid) == valid
 
