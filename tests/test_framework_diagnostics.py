@@ -335,3 +335,22 @@ def test_lockbox_and_selection_report_bmc(tmp_path):
     assert by_corr["bmc_mean"] == pytest.approx(by_bmc["bmc_mean"])
     assert by_bmc["score"] == pytest.approx(np.mean(by_bmc["window_means"]))
     assert by_bmc["score"] != pytest.approx(by_corr["score"])
+
+
+def test_sigkill_is_reported_as_memory_error(tmp_path):
+    import signal
+    import subprocess
+
+    code = "import os, signal\nprint('training...')\nos.kill(os.getpid(), signal.SIGKILL)\n"
+    proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert proc.returncode == -signal.SIGKILL
+    source = (REPO / "mlevolve" / "engine" / "executor.py").read_text()
+    assert "proc.returncode == -signal.SIGKILL" in source and 'exc_type = "MemoryError"' in source
+
+
+def test_resources_line_appears_in_description(tmp_path):
+    train_path, validation_path, features_path = _write_raw_numerai(tmp_path, n_eras=48)
+    prepared = build_source(train_path, validation_path, features_path, tmp_path / "d",
+                            lockbox_eras=6, embargo_eras=2, resources="24 CPU threads, 38 GB RAM")
+    text = (prepared / "public" / "description.md").read_text()
+    assert "24 CPU threads, 38 GB RAM" in text and "killed by the system" in text

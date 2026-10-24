@@ -1459,6 +1459,15 @@ class Interpreter:
                                     if len(parts) == 2:
                                         exc_info["message"] = parts[1].strip()
                                     break
+                    if proc.returncode == -signal.SIGKILL:
+                        # Killed from outside (OOM killer or a cgroup memory cap):
+                        # no traceback exists, so say so explicitly.
+                        exc_type = "MemoryError"
+                        exc_info = {
+                            "message": "the process was killed by the system (SIGKILL), most "
+                            "likely because it exceeded the available memory"
+                        }
+                        stderr = (stderr or "") + f"\nMemoryError: {exc_info['message']}\n"
             except subprocess.TimeoutExpired:
                 logger.warning("Subprocess timeout, sending SIGINT...")
                 try:

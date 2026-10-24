@@ -96,6 +96,7 @@ def _description(
     embargo_eras: int,
     train_era_stride: int,
     selection: list[str] | None = None,
+    resources: str = "",
 ) -> str:
     gap_rows = -(-embargo_eras // max(1, train_era_stride))
     gap_text = (
@@ -121,6 +122,13 @@ write `./submission/selection_predictions.csv` with columns `id,prediction`.
 The Host scores these predictions with the metric above; that Host score, not
 the printed validation score, is what ranks solutions during the search."""
         if selection
+        else ""
+    )
+    resources_text = (
+        f"""
+- Compute available to your program: {resources}. A program that exceeds the
+  memory limit is killed by the system without a Python traceback."""
+        if resources
         else ""
     )
     return f"""# Numerai v6 stock-ranking task
@@ -180,7 +188,7 @@ Fit the final model, predict every row of `test.parquet`, and write
 `./submission/submission.csv` with columns `id,prediction`, rows in the order of
 `sample_submission.csv`, finite numeric predictions.{selection_output}
 
-## Practical notes
+## Practical notes{resources_text}
 - The data is large; read only the columns you need with
   `pd.read_parquet(path, columns=[...])` and keep integer features as int8.
 - Gradient-boosted trees (LightGBM) are a strong baseline. A reference
@@ -202,6 +210,7 @@ def build_source(
     extra_targets: tuple[str, ...] = ("target_jupiter_20",),
     selection_eras: int = 0,
     benchmarks_path: Path | None = None,
+    resources: str = "",
 ) -> Path:
     """Write the source layout and return `<dataset_root>/<task>/prepared`."""
     metadata = json.loads(Path(features_path).read_text(encoding="utf-8"))
@@ -281,6 +290,7 @@ def build_source(
             embargo_eras=embargo_eras,
             train_era_stride=train_era_stride,
             selection=selection or None,
+            resources=resources,
         ),
         encoding="utf-8",
     )
@@ -327,6 +337,8 @@ def main() -> None:
     parser.add_argument("--extra-target", action="append", default=None)
     parser.add_argument("--benchmarks", type=Path,
                         help="v6 validation_benchmark_models.parquet (Host-only BMC reference)")
+    parser.add_argument("--resources", default="",
+                        help='Compute budget stated in the task, e.g. "24 CPU threads, 1 GPU (24 GB), 38 GB RAM"')
     parser.add_argument("--selection-eras", type=int, default=0,
                         help="Host-held selection eras taken from the end of the public data")
     args = parser.parse_args()
@@ -349,6 +361,7 @@ def main() -> None:
         extra_targets=tuple(args.extra_target or ("target_jupiter_20",)),
         selection_eras=args.selection_eras,
         benchmarks_path=benchmarks_path,
+        resources=args.resources,
     )
     print(prepared)
 
