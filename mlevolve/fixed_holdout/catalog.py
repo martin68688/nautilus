@@ -57,7 +57,10 @@ TASKS = {
         # Optional Host-only benchmark predictions; enables BMC in the evaluator.
         "benchmark_column": "benchmark",
         # Optional: Host-held selection labels (see fixed_holdout.selection).
+        # Their rows sit in test.parquet before the lockbox rows, so one
+        # submission covers both and the Host splits it.
         "selection_labels": "prepared/private/selection.csv",
+        "selection_in_submission": True,
         # Optional: Host-only refit training data (see fixed_holdout.refit).
         "refit_train": "prepared/refit/train.parquet",
         "normalize_probabilities": False,

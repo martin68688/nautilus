@@ -67,21 +67,31 @@ def _prediction_columns(spec: dict, sample: pd.DataFrame) -> list[str]:
     return columns
 
 
-def _validate_ids(sample: pd.DataFrame, labels: pd.DataFrame, id_column: str) -> None:
-    for name, frame in (("sample submission", sample), ("private labels", labels)):
+def _validate_ids(
+    sample: pd.DataFrame, labels: pd.DataFrame, id_column: str, selection: pd.DataFrame | None = None
+) -> None:
+    """The sample lists the lockbox IDs, preceded by the selection IDs when given."""
+    frames = (("sample submission", sample), ("private labels", labels))
+    if selection is not None:
+        frames += (("selection labels", selection),)
+    for name, frame in frames:
         if id_column not in frame.columns:
             raise ValueError(f"{name} is missing ID column {id_column!r}")
         if frame[id_column].isna().any() or frame[id_column].duplicated().any():
             raise ValueError(f"{name} has missing or duplicate IDs")
     sample_ids = sample[id_column].astype(str).tolist()
     label_ids = labels[id_column].astype(str).tolist()
+    if selection is not None:
+        label_ids = selection[id_column].astype(str).tolist() + label_ids
     if sample_ids != label_ids:
         raise ValueError(
             "Sample submission and private labels must contain identical IDs in identical order"
         )
 
 
-def _write_selection_view(view: Path, source: Path, spec: dict, common: dict) -> None:
+def _write_selection_view(
+    view: Path, source: Path, spec: dict, common: dict, *, in_submission: bool = False
+) -> None:
     """Host-only labels for the search-time selection set (never in train_view)."""
     columns = [spec["id_column"], *spec["label_columns"], spec["group_column"]]
     labels = pd.read_csv(source)
@@ -115,6 +125,8 @@ def _write_selection_view(view: Path, source: Path, spec: dict, common: dict) ->
             "labels_file": "labels.csv",
             "labels_sha256": sha256_file(label_path),
             "selection_policy": "host_search_metric",
+            # Where candidates put these predictions (fixed_holdout.selection).
+            "predictions_source": "submission" if in_submission else "selection_predictions",
         },
     )
 
@@ -158,14 +170,29 @@ def prepare_task(
     missing = [column for column in required_private_columns if column not in private.columns]
     if missing:
         raise ValueError(f"Private labels are missing columns: {missing}")
-    _validate_ids(sample, private, spec["id_column"])
+    selection_source = (
+        task_root / spec["selection_labels"] if spec.get("selection_labels") else None
+    )
+    if selection_source is not None and not selection_source.exists():
+        selection_source = None
+    # Selection rows share test.parquet and the submission with the lockbox rows.
+    in_submission = bool(spec.get("selection_in_submission")) and selection_source is not None
+    selection_ids = pd.read_csv(selection_source, usecols=[spec["id_column"]]) if in_submission else None
+    _validate_ids(sample, private, spec["id_column"], selection_ids)
     label_frame = private[required_private_columns].copy()
     source_labels_sha256 = sha256_bytes(
         label_frame.to_csv(index=False).encode("utf-8")
     )
 
     public_digest = tree_sha256(public_source)
-    id_digest = sha256_lines(sample[spec["id_column"]].astype(str))
+    id_digest = sha256_lines(private[spec["id_column"]].astype(str))
+    # IDs and row count a candidate submission must have (lockbox, plus selection).
+    submission_digest = sha256_lines(sample[spec["id_column"]].astype(str))
+    submission_scope = (
+        {"submission_row_count": int(len(sample)), "submission_id_sha256": submission_digest}
+        if in_submission
+        else {}
+    )
     split_id = f"{task_id}-{public_digest[:12]}-{id_digest[:12]}"
     final_root = output_root / task_id / split_id
     if final_root.exists():
@@ -179,7 +206,7 @@ def prepare_task(
         )
         if (
             train_manifest.get("public_tree_sha256") != public_digest
-            or train_manifest.get("holdout_id_sha256") != id_digest
+            or train_manifest.get("holdout_id_sha256") != submission_digest
             or evaluator_manifest.get("split_id") != split_id
         ):
             raise ValueError(f"Existing split conflicts with current sources: {final_root}")
@@ -216,7 +243,7 @@ def prepare_task(
             "id_column": spec["id_column"],
             "prediction_columns": prediction_columns,
             "normalize_probabilities": bool(spec["normalize_probabilities"]),
-            "row_count": int(len(sample)),
+            "row_count": int(len(private)),
             "holdout_id_sha256": id_digest,
             "public_tree_sha256": public_digest,
             "selection_policy": "terminal_only",
@@ -229,6 +256,9 @@ def prepare_task(
             common["benchmark_column"] = benchmark_column
         train_manifest = {
             **common,
+            # Candidates validate their own submission against these.
+            "row_count": int(len(sample)),
+            "holdout_id_sha256": submission_digest,
             "role": "train_view",
             "input_subdir": "input",
             "copy_modes": sorted(copy_modes),
@@ -237,17 +267,18 @@ def prepare_task(
         }
         evaluator_manifest = {
             **common,
+            **submission_scope,
             "role": "evaluator_view",
             "labels_file": "labels.csv",
             "labels_sha256": sha256_file(label_path),
         }
         write_json(train_view / "fixed_holdout_manifest.json", train_manifest)
         write_json(evaluator_view / "fixed_holdout_manifest.json", evaluator_manifest)
-        selection_source = (
-            task_root / spec["selection_labels"] if spec.get("selection_labels") else None
-        )
-        if selection_source is not None and selection_source.exists():
-            _write_selection_view(staging_root / "selection_view", selection_source, spec, common)
+        if selection_source is not None:
+            _write_selection_view(
+                staging_root / "selection_view", selection_source, spec, common,
+                in_submission=in_submission,
+            )
         refit_source = task_root / spec["refit_train"] if spec.get("refit_train") else None
         if refit_source is not None and refit_source.exists():
             # Same public files, but train.parquet also holds the Host-labelled

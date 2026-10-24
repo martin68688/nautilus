@@ -155,29 +155,44 @@ def _selection_split(tmp_path):
     return prepared, split
 
 
+def _selection_and_lockbox(split):
+    test = pd.read_parquet(split / "train_view" / "input" / "test.parquet")
+    selection_eras = set(pd.read_csv(split / "selection_view" / "labels.csv")["era"].astype(str))
+    in_selection = test["era"].isin(selection_eras)
+    return test, test[in_selection], test[~in_selection]
+
+
 def test_selection_set_is_carved_out_with_embargo_and_hidden_labels(tmp_path):
     prepared, split = _selection_split(tmp_path)
     public = split / "train_view" / "input"
     train = pd.read_parquet(public / "train.parquet")
-    selection = pd.read_parquet(public / "selection.parquet")
-    test = pd.read_parquet(public / "test.parquet")
-    assert "target" not in selection.columns
-    assert train["era"].max() < selection["era"].min() < selection["era"].max() < test["era"].min()
-    assert selection["era"].nunique() == 8
+    test, selection, lockbox = _selection_and_lockbox(split)
+    assert not (public / "selection.parquet").exists()
+    assert "target" not in test.columns
+    assert train["era"].max() < selection["era"].min() < selection["era"].max() < lockbox["era"].min()
+    assert selection["era"].nunique() == 8 and lockbox["era"].nunique() == 6
+    assert list(test.index) == list(selection.index) + list(lockbox.index)  # selection rows first
     assert not list((split / "train_view").rglob("labels.csv"))
     view = split / "selection_view"
     manifest = json.loads((view / "fixed_holdout_manifest.json").read_text())
     assert manifest["role"] == "selection_view" and manifest["row_count"] == len(selection)
+    assert manifest["predictions_source"] == "submission"
+    train_manifest = json.loads((split / "train_view" / "fixed_holdout_manifest.json").read_text())
+    evaluator = json.loads((split / "evaluator_view" / "fixed_holdout_manifest.json").read_text())
+    assert train_manifest["row_count"] == evaluator["submission_row_count"] == len(test)
+    assert evaluator["row_count"] == len(lockbox)
+    assert split.name.endswith(evaluator["holdout_id_sha256"][:12])  # lockbox IDs name the split
     description = (public / "description.md").read_text()
-    assert "selection_predictions.csv" in description
+    assert "selection" not in description and "part of `test.parquet`" in description
+    assert "only features of that era and of earlier" in description
     assert "only every 2th weekly era is kept" in description
 
 
 def test_host_selection_score_replaces_self_reported_metric(tmp_path):
     _, split = _selection_split(tmp_path)
-    selection = pd.read_parquet(split / "train_view" / "input" / "selection.parquet")
+    test, _, _ = _selection_and_lockbox(split)
     manifest = split / "selection_view" / "fixed_holdout_manifest.json"
-    preds = selection[["id"]].assign(prediction=selection["feature_a"] + 1e-3 * np.arange(len(selection)))
+    preds = test[["id"]].assign(prediction=test["feature_a"] + 1e-3 * np.arange(len(test)))
 
     workspace = tmp_path / "ws"
     node = SimpleNamespace(id="abc", is_buggy=False, metric=MetricValue(0.9, maximize=True),
@@ -187,7 +202,8 @@ def test_host_selection_score_replaces_self_reported_metric(tmp_path):
         host_selection=SimpleNamespace(enabled=True, manifest_path=str(manifest), windows=4,
                                        objective="mean", std_penalty=0.5),
     ))
-    path = predictions_path(workspace, node.id)
+    path = predictions_path(workspace, node.id, manifest)
+    assert path.name == "submission_abc.csv"  # selection rows come from the node's submission
     path.parent.mkdir(parents=True)
     preds.to_csv(path, index=False)
     apply_to_node(agent, node, logging.getLogger("test"))
@@ -230,10 +246,9 @@ def test_refit_view_adds_labelled_selection_and_embargo_eras(tmp_path):
     refit_input = split / "refit_view" / "input"
     train = pd.read_parquet(public / "train.parquet")
     refit = pd.read_parquet(refit_input / "train.parquet")
-    selection = pd.read_parquet(public / "selection.parquet")
-    test = pd.read_parquet(public / "test.parquet")
+    _, selection, lockbox = _selection_and_lockbox(split)
     assert refit["era"].max() >= selection["era"].max()
-    assert refit["era"].max() < test["era"].min()
+    assert refit["era"].max() < lockbox["era"].min()
     assert set(train["era"]) < set(refit["era"])
     assert refit["target"].notna().all()
     assert (refit_input / "test.parquet").read_bytes() == (public / "test.parquet").read_bytes()
@@ -298,7 +313,7 @@ def _benchmark_split(tmp_path):
 def test_benchmark_stays_host_only_and_tickers_are_explained(tmp_path):
     split = _benchmark_split(tmp_path)
     public = split / "train_view" / "input"
-    for name in ("train.parquet", "test.parquet", "selection.parquet"):
+    for name in ("train.parquet", "test.parquet"):
         columns = pd.read_parquet(public / name).columns
         assert "benchmark" not in columns and "numerai_ticker" in columns
     assert "benchmark" not in pd.read_parquet(split / "refit_view" / "input" / "train.parquet").columns
@@ -313,22 +328,29 @@ def test_lockbox_and_selection_report_bmc(tmp_path):
     from fixed_holdout.evaluate import evaluate_submission
 
     split = _benchmark_split(tmp_path)
+    evaluator = split / "evaluator_view" / "fixed_holdout_manifest.json"
     labels = pd.read_csv(split / "evaluator_view" / "labels.csv")
     test = pd.read_parquet(split / "train_view" / "input" / "test.parquet")
 
+    # One submission covers selection + lockbox rows; the evaluator scores the lockbox rows.
     copy_of_benchmark = tmp_path / "bench_copy.csv"
-    labels[["id"]].assign(prediction=labels["benchmark"]).to_csv(copy_of_benchmark, index=False)
-    details = evaluate_submission(split / "evaluator_view" / "fixed_holdout_manifest.json", copy_of_benchmark)["metric_details"]
+    bench = test[["id"]].merge(labels[["id", "benchmark"]], on="id", how="left")
+    test[["id"]].assign(prediction=bench["benchmark"].fillna(0.5).to_numpy()).to_csv(copy_of_benchmark, index=False)
+    details = evaluate_submission(evaluator, copy_of_benchmark)["metric_details"]
     assert abs(details["bmc_mean"]) < 1e-9  # nothing beyond the benchmark itself
+    assert details["n_eras"] == labels["era"].nunique()
+
+    lockbox_only = tmp_path / "lockbox_only.csv"
+    labels[["id"]].assign(prediction=labels["benchmark"]).to_csv(lockbox_only, index=False)
+    with pytest.raises(ValueError, match="rows"):
+        evaluate_submission(evaluator, lockbox_only)
 
     informed = tmp_path / "informed.csv"
     test[["id"]].assign(prediction=test["feature_a"].to_numpy() + 1e-3 * np.arange(len(test))).to_csv(informed, index=False)
-    details = evaluate_submission(split / "evaluator_view" / "fixed_holdout_manifest.json", informed)["metric_details"]
+    details = evaluate_submission(evaluator, informed)["metric_details"]
     assert details["bmc_mean"] > 0.05 and "per_era_bmc" in details
 
-    selection = pd.read_parquet(split / "train_view" / "input" / "selection.parquet")
-    preds = tmp_path / "selection_predictions.csv"
-    selection[["id"]].assign(prediction=selection["feature_a"] + 1e-3 * np.arange(len(selection))).to_csv(preds, index=False)
+    preds = informed
     manifest = split / "selection_view" / "fixed_holdout_manifest.json"
     by_corr = score_selection(manifest, preds, windows=4)
     by_bmc = score_selection(manifest, preds, windows=4, score_metric="bmc")

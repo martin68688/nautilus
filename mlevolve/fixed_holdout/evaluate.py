@@ -35,6 +35,16 @@ def _load_aligned_frames(manifest_path: Path, submission_path: Path):
     for name, frame in (("labels", labels), ("submission", predictions)):
         if frame[id_column].isna().any() or frame[id_column].duplicated().any():
             raise ValueError(f"{name} contain missing or duplicate IDs")
+    if "submission_id_sha256" in manifest:
+        # The submission also covers the Host selection rows; keep the lockbox rows.
+        if len(predictions) != int(manifest["submission_row_count"]):
+            raise ValueError(
+                f"Submission has {len(predictions)} rows; expected {manifest['submission_row_count']}"
+            )
+        if sha256_lines(predictions[id_column].astype(str)) != manifest["submission_id_sha256"]:
+            raise ValueError("Submission IDs or row order do not match the fixed holdout")
+        lockbox = predictions[id_column].astype(str).isin(set(labels[id_column].astype(str)))
+        predictions = predictions[lockbox.to_numpy()].reset_index(drop=True)
     if len(predictions) != int(manifest["row_count"]):
         raise ValueError(
             f"Submission has {len(predictions)} rows; expected {manifest['row_count']}"

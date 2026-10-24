@@ -2,8 +2,11 @@
 
 Self-reported validation scores let a candidate tune and report on the same
 rows.  With a selection set, labelled public rows are moved out of the train
-view; candidates only see their features (``selection.parquet``) and must
-write ``./submission/selection_predictions.csv``.  The Host scores those
+view; candidates only see their features.  For Numerai they are rows of
+``test.parquet`` next to the lockbox rows (manifest ``predictions_source:
+submission``), so both get the same code path and the selection rows are read
+from the node's submission; older splits use ``selection.parquet`` and
+``./submission/selection_predictions.csv``.  The Host scores those
 predictions per group (era), splits the groups into contiguous time windows
 and uses the window summary as the node metric.  The fixed-holdout lockbox is
 untouched and is still scored only after the search.
@@ -19,10 +22,17 @@ import pandas as pd
 from fixed_holdout.common import read_manifest, sha256_file
 from fixed_holdout.evaluate import numerai_era_scores
 
-SELECTION_FILENAME = "selection_predictions.csv"
 
-
-def predictions_path(workspace_dir: Path, node_id: str) -> Path:
+def predictions_path(workspace_dir: Path, node_id: str, manifest_path: Path | None = None) -> Path:
+    """Where a node's selection predictions are: its own file, or its submission
+    when the selection rows are part of test.parquet (``predictions_source``)."""
+    source = "selection_predictions"
+    if manifest_path is not None:
+        source = read_manifest(Path(manifest_path), expected_role="selection_view").get(
+            "predictions_source", source
+        )
+    if source == "submission":
+        return Path(workspace_dir) / "submission" / f"submission_{node_id}.csv"
     return Path(workspace_dir) / "submission" / f"selection_predictions_{node_id}.csv"
 
 
@@ -115,13 +125,11 @@ def apply_to_node(agent, node, logger) -> None:
         return
     from utils.metric import MetricValue, WorstMetricValue
 
-    path = predictions_path(agent.cfg.workspace_dir, node.id)
     reported = node.metric.value if node.metric is not None else None
     try:
+        path = predictions_path(agent.cfg.workspace_dir, node.id, Path(cfg.manifest_path))
         if not path.exists():
-            raise ValueError(
-                f"missing ./submission/{SELECTION_FILENAME} (predictions for selection.parquet)"
-            )
+            raise ValueError(f"missing selection predictions ./submission/{path.name}")
         result = score_selection(
             Path(cfg.manifest_path),
             path,

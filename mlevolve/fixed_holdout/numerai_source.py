@@ -6,15 +6,17 @@ style layout that the fixed-holdout pipeline expects:
 
     <dataset_root>/numerai-v6/prepared/public/
         train.parquet          labelled public eras (features, era, targets)
-        test.parquet           lockbox eras, features only
-        sample_submission.csv  id,prediction in lockbox row order
+        test.parquet           rows to predict, features only
+        sample_submission.csv  id,prediction in test.parquet row order
         features.json          feature names actually included
         description.md         task statement shown to the agent
     <dataset_root>/numerai-v6/prepared/private/test.csv   id,target,era
 
 With ``selection_eras > 0`` the last public eras become a Host-held selection
-set: ``public/selection.parquet`` (features only) and
-``private/selection.csv`` (labels, see ``fixed_holdout.selection``).
+set (labels in ``private/selection.csv``, see ``fixed_holdout.selection``).
+Its rows are put into ``test.parquet`` together with the lockbox rows, so a
+candidate predicts both with one code path and writes one submission; the Host
+scores the selection rows during the search and the lockbox rows only after.
 
 The lockbox is the last `lockbox_eras` eras whose main target has matured.
 The `embargo_eras` eras just before it are dropped from the public data, so
@@ -107,20 +109,17 @@ def _description(
         else f"at least {embargo_eras} eras (weeks) between the last training era and the "
         "first validation era"
     )
-    selection_files = (
-        f"""
-- `selection.parquet`: unlabelled rows for eras {selection[0]} to {selection[-1]}
-  (every weekly era). Same columns as `test.parquet`. The Host keeps their
-  labels and uses them to rank your solution."""
+    test_eras = (
+        f"eras {selection[0]} to {selection[-1]} and {lockbox[0]} to {lockbox[-1]}\n"
+        f"  (every weekly era; the {embargo_eras} eras in between are not included)"
         if selection
-        else ""
+        else f"eras {lockbox[0]} to\n  {lockbox[-1]}"
     )
     selection_output = (
         """
-Also predict every row of `selection.parquet` with the same final model and
-write `./submission/selection_predictions.csv` with columns `id,prediction`.
-The Host scores these predictions with the metric above; that Host score, not
-the printed validation score, is what ranks solutions during the search."""
+The Host holds the labels of part of `test.parquet` and scores your submission
+on those rows with the metric above; that Host score, not the printed
+validation score, is what ranks solutions during the search."""
         if selection
         else ""
     )
@@ -144,9 +143,9 @@ the next 60 business days relative to the other stocks in the same era.
   {", ".join(f"`{t}`" for t in targets if t != MAIN_TARGET) or "(none)"}.
   Eras {public_eras[0]} to {public_eras[-1]}{
   f", every {train_era_stride}th era kept" if train_era_stride > 1 else ""}.
-- `test.parquet`: unlabelled rows to predict, eras {lockbox[0]} to
-  {lockbox[-1]}. Same columns as train minus every label.
-- `sample_submission.csv`: `id,prediction` in the exact required row order.{selection_files}
+- `test.parquet`: unlabelled rows to predict, {test_eras}. Same columns as
+  train minus every label.
+- `sample_submission.csv`: `id,prediction` in the exact required row order.
 
 Labels take values in {{0, 0.25, 0.5, 0.75, 1}}. Auxiliary labels may be NaN.
 
@@ -180,6 +179,9 @@ score 0.01-0.03; a score above 0.05 almost always means leakage.
 - Never split rows randomly. Hold out the **latest** eras of `train.parquet`
   as validation and leave a gap of {gap_text}, because each label looks
   60 business days ahead and neighbouring eras share future returns.
+- A prediction for an era may use only features of that era and of earlier
+  eras, in every file: live Numerai delivers one era's features per week, so
+  features of later eras are never available when an era is predicted.
 - Compute the validation score with the metric above and print exactly
   `Final Validation Score: <value>`.
 
@@ -256,6 +258,8 @@ def build_source(
     train = data[data["era"].isin(public_eras)].sort_values(["era", "id"])
     selection_rows = data[data["era"].isin(selection)].sort_values(["era", "id"])
     test = data[data["era"].isin(lockbox)].sort_values(["era", "id"])
+    # Rows the candidate predicts: selection eras (earlier) then lockbox eras.
+    predict = pd.concat([selection_rows, test], ignore_index=True)
 
     prepared = Path(dataset_root) / TASK_ID / "prepared"
     public = prepared / "public"
@@ -265,12 +269,11 @@ def build_source(
 
     host_only = [BENCHMARK_COLUMN] if BENCHMARK_COLUMN in data else []
     train.drop(columns=host_only).to_parquet(public / "train.parquet", index=False)
-    test.drop(columns=[*targets, *host_only]).to_parquet(public / "test.parquet", index=False)
-    pd.DataFrame({"id": test["id"], "prediction": 0.5}).to_csv(
+    predict.drop(columns=[*targets, *host_only]).to_parquet(public / "test.parquet", index=False)
+    pd.DataFrame({"id": predict["id"], "prediction": 0.5}).to_csv(
         public / "sample_submission.csv", index=False
     )
     if selection:
-        selection_rows.drop(columns=[*targets, *host_only]).to_parquet(public / "selection.parquet", index=False)
         selection_rows[_private_columns(selection_rows)].to_csv(private / "selection.csv", index=False)
         # Host-only refit training data: train + embargo + selection eras with labels,
         # used to retrain the selected program after the search (fixed_holdout.refit).
@@ -313,6 +316,7 @@ def build_source(
             "refit_era_range": [labelled_eras[0], labelled_eras[-1]] if selection else None,
             "train_rows": int(len(train)),
             "lockbox_rows": int(len(test)),
+            "prediction_rows": int(len(predict)),
             "source_sha256": {
                 "train.parquet": sha256_file(Path(train_path)),
                 "validation.parquet": sha256_file(Path(validation_path)),
