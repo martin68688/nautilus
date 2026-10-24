@@ -1295,8 +1295,19 @@ class Interpreter:
             try:
                 compile(candidate_code, str(runfile_path), "exec")
             except SyntaxError as error:
+                # Show the offending line: without it debug nodes cannot see
+                # what to fix (e.g. a stray markdown fence).
+                lines = candidate_code.splitlines()
+                lineno = error.lineno or 0
+                context = "".join(
+                    f"{'>>' if i == lineno else '  '} {i:5d} | {lines[i - 1]}\n"
+                    for i in range(max(1, lineno - 2), min(len(lines), lineno + 2) + 1)
+                )
                 return ExecutionResult(
-                    term_out=[f"Candidate source failed syntax validation: {error}\n"],
+                    term_out=[
+                        f"Candidate source failed syntax validation: {error}\n",
+                        *([context] if context else []),
+                    ],
                     exec_time=time.time() - start_time,
                     exc_type="CandidateSourceSyntaxError",
                     exc_info={

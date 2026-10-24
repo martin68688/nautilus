@@ -354,3 +354,19 @@ def test_resources_line_appears_in_description(tmp_path):
                             lockbox_eras=6, embargo_eras=2, resources="24 CPU threads, 38 GB RAM")
     text = (prepared / "public" / "description.md").read_text()
     assert "24 CPU threads, 38 GB RAM" in text and "killed by the system" in text
+
+
+def test_patcher_drops_stray_markdown_fences_only_when_they_break_the_program():
+    from agents.coder.diff_coder.patcher import SearchReplacePatcher
+
+    broken = "import os\nx = 1\n```\nprint(x)\n```python\n"
+    fixed = SearchReplacePatcher._strip_stray_fences(broken)
+    assert "```" not in fixed
+    compile(fixed, "<t>", "exec")
+    valid = 'doc = """\n```\ncode\n```\n"""\n'
+    assert SearchReplacePatcher._strip_stray_fences(valid) == valid
+
+
+def test_syntax_error_message_shows_the_offending_line():
+    source = (REPO / "mlevolve" / "engine" / "executor.py").read_text()
+    assert "Show the offending line" in source and "{lines[i - 1]}" in source

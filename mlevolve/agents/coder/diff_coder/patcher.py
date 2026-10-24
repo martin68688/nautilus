@@ -122,6 +122,23 @@ class SearchReplacePatcher:
         re.MULTILINE,
     )
 
+    _FENCE_RE = re.compile(r"^[ \t]*```[\w+-]*[ \t]*$\n?", re.MULTILINE)
+
+    @classmethod
+    def _strip_stray_fences(cls, text: str) -> str:
+        """Drop markdown fence lines copied into REPLACE blocks.
+
+        Only applied when the patched program does not compile: a bare fence
+        line is never valid Python outside a string literal.
+        """
+        try:
+            compile(text, "<patched>", "exec")
+            return text
+        except SyntaxError:
+            pass
+        cleaned = cls._FENCE_RE.sub("", text)
+        return cleaned if cleaned != text else text
+
     @classmethod
     def _strip_residual_markers(cls, text: str) -> str:
         """Remove any leftover SEARCH/REPLACE diff markers from code."""
@@ -175,5 +192,5 @@ class SearchReplacePatcher:
             new_text = new_text.replace(matched_search, replace, 1)
             num_applied += 1
 
-        new_text = self._strip_residual_markers(new_text)
+        new_text = self._strip_stray_fences(self._strip_residual_markers(new_text))
         return new_text, num_applied
