@@ -261,3 +261,77 @@ def test_refit_runner_retrains_selected_program_on_refit_view(tmp_path):
     refit_eras = pd.read_parquet(split / "refit_view" / "input" / "train.parquet")["era"].nunique()
     assert receipt["node_id"] == "abc123"
     assert out["prediction"].iloc[0] == refit_eras
+
+
+def test_bmc_matches_numerai_tools_correlation_contribution():
+    scoring = pytest.importorskip("numerai_tools.scoring")
+    from fixed_holdout.evaluate import _benchmark_contribution
+
+    rng = np.random.default_rng(3)
+    benchmark = rng.normal(size=400)
+    predictions = 0.6 * benchmark + rng.normal(size=400)
+    target = np.clip(np.round((0.3 * predictions + rng.normal(size=400)) * 2) / 4 + 0.5, 0, 1)
+    index = pd.RangeIndex(400)
+    expected = scoring.correlation_contribution(
+        pd.DataFrame({"p": predictions}, index=index), pd.Series(benchmark, index=index),
+        pd.Series(target, index=index),
+    )["p"]
+    assert _benchmark_contribution(predictions, benchmark, target) == pytest.approx(expected, abs=1e-12)
+
+
+def _benchmark_split(tmp_path):
+    train_path, validation_path, features_path = _write_raw_numerai(tmp_path, n_eras=48)
+    validation = pd.read_parquet(validation_path)
+    bench_path = tmp_path / "raw" / "validation_benchmark_models.parquet"
+    rng = np.random.default_rng(5)
+    validation[["numerai_ticker", "date"]].assign(
+        lgbm_jupiter_60=rng.uniform(size=len(validation))
+    ).to_parquet(bench_path, index=False)
+    build_source(
+        train_path, validation_path, features_path, tmp_path / "datasets",
+        lockbox_eras=6, embargo_eras=2, selection_eras=8, train_era_stride=2,
+        benchmarks_path=bench_path,
+    )
+    return prepare_task(tmp_path / "datasets", "numerai-v6", tmp_path / "fixed", copy_mode="copy")
+
+
+def test_benchmark_stays_host_only_and_tickers_are_explained(tmp_path):
+    split = _benchmark_split(tmp_path)
+    public = split / "train_view" / "input"
+    for name in ("train.parquet", "test.parquet", "selection.parquet"):
+        columns = pd.read_parquet(public / name).columns
+        assert "benchmark" not in columns and "numerai_ticker" in columns
+    assert "benchmark" not in pd.read_parquet(split / "refit_view" / "input" / "train.parquet").columns
+    assert "real stock identifier" in (public / "description.md").read_text()
+    evaluator = json.loads((split / "evaluator_view" / "fixed_holdout_manifest.json").read_text())
+    selection = json.loads((split / "selection_view" / "fixed_holdout_manifest.json").read_text())
+    assert evaluator["benchmark_column"] == selection["benchmark_column"] == "benchmark"
+    assert "benchmark_column" in json.loads((split / "train_view" / "fixed_holdout_manifest.json").read_text())
+
+
+def test_lockbox_and_selection_report_bmc(tmp_path):
+    from fixed_holdout.evaluate import evaluate_submission
+
+    split = _benchmark_split(tmp_path)
+    labels = pd.read_csv(split / "evaluator_view" / "labels.csv")
+    test = pd.read_parquet(split / "train_view" / "input" / "test.parquet")
+
+    copy_of_benchmark = tmp_path / "bench_copy.csv"
+    labels[["id"]].assign(prediction=labels["benchmark"]).to_csv(copy_of_benchmark, index=False)
+    details = evaluate_submission(split / "evaluator_view" / "fixed_holdout_manifest.json", copy_of_benchmark)["metric_details"]
+    assert abs(details["bmc_mean"]) < 1e-9  # nothing beyond the benchmark itself
+
+    informed = tmp_path / "informed.csv"
+    test[["id"]].assign(prediction=test["feature_a"].to_numpy() + 1e-3 * np.arange(len(test))).to_csv(informed, index=False)
+    details = evaluate_submission(split / "evaluator_view" / "fixed_holdout_manifest.json", informed)["metric_details"]
+    assert details["bmc_mean"] > 0.05 and "per_era_bmc" in details
+
+    selection = pd.read_parquet(split / "train_view" / "input" / "selection.parquet")
+    preds = tmp_path / "selection_predictions.csv"
+    selection[["id"]].assign(prediction=selection["feature_a"] + 1e-3 * np.arange(len(selection))).to_csv(preds, index=False)
+    manifest = split / "selection_view" / "fixed_holdout_manifest.json"
+    by_corr = score_selection(manifest, preds, windows=4)
+    by_bmc = score_selection(manifest, preds, windows=4, score_metric="bmc")
+    assert by_corr["bmc_mean"] == pytest.approx(by_bmc["bmc_mean"])
+    assert by_bmc["score"] == pytest.approx(np.mean(by_bmc["window_means"]))
+    assert by_bmc["score"] != pytest.approx(by_corr["score"])

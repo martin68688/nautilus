@@ -51,7 +51,9 @@ def _load_aligned_frames(manifest_path: Path, submission_path: Path):
         raise ValueError("Predictions contain NaN or infinite values")
     group_column = manifest.get("group_column")
     groups = labels[group_column].astype(str).to_numpy() if group_column else None
-    return manifest, y_true, y_pred, groups
+    benchmark_column = manifest.get("benchmark_column")
+    benchmark = labels[benchmark_column].to_numpy(dtype=float) if benchmark_column else None
+    return manifest, y_true, y_pred, groups, benchmark
 
 
 def _numerai_corr(predictions: np.ndarray, targets: np.ndarray) -> float:
@@ -74,10 +76,45 @@ def _numerai_corr(predictions: np.ndarray, targets: np.ndarray) -> float:
     return float(np.corrcoef(pred_transformed, target_transformed)[0, 1])
 
 
+def _gaussian_rank(values: np.ndarray) -> np.ndarray:
+    ranks = pd.Series(values).rank(method="average").to_numpy()
+    return norm.ppf((ranks - 0.5) / len(values))
+
+
+def _benchmark_contribution(predictions: np.ndarray, benchmark: np.ndarray, targets: np.ndarray) -> float:
+    """BMC for one era, as ``numerai_tools.scoring.correlation_contribution``.
+
+    Gaussianized predictions are orthogonalized against the gaussianized
+    benchmark predictions; the contribution is their covariance with the
+    centered target, with [0, 1] targets first scaled to buckets [-2, 2].
+    """
+    p = _gaussian_rank(predictions)
+    m = _gaussian_rank(benchmark)
+    neutral = p - m * (p @ m) / (m @ m)
+    if targets.min() >= 0 and targets.max() <= 1:
+        targets = targets * 4
+    centered = targets - targets.mean()
+    return float(centered @ neutral / len(targets))
+
+
+def _summary(values: np.ndarray, prefix: str) -> dict:
+    std = float(values.std(ddof=1)) if len(values) > 1 else 0.0
+    return {
+        f"{prefix}_mean": float(values.mean()),
+        f"{prefix}_std": std,
+        f"{prefix}_sharpe": float(values.mean() / std) if std > 0 else 0.0,
+    }
+
+
 def numerai_era_scores(
-    y_true: np.ndarray, y_pred: np.ndarray, groups: np.ndarray
+    y_true: np.ndarray, y_pred: np.ndarray, groups: np.ndarray, benchmark: np.ndarray | None = None
 ) -> dict:
-    """Score every era separately and summarize the per-era correlations."""
+    """Score every era separately and summarize the per-era correlations.
+
+    With Host-only ``benchmark`` predictions, also report BMC (benchmark model
+    contribution): how much of the prediction's signal is not already in the
+    benchmark model.
+    """
     if groups is None:
         raise ValueError("numerai_era_corr requires a group_column in the manifest")
     targets = y_true.reshape(-1)
@@ -93,7 +130,7 @@ def numerai_era_scores(
     std = float(values.std(ddof=1)) if len(values) > 1 else 0.0
     cumulative = np.cumsum(values)
     drawdown = float(np.max(np.maximum.accumulate(cumulative) - cumulative))
-    return {
+    result = {
         "corr_mean": float(values.mean()),
         "corr_std": std,
         "corr_sharpe": float(values.mean() / std) if std > 0 else 0.0,
@@ -101,6 +138,20 @@ def numerai_era_scores(
         "n_eras": int(len(values)),
         "per_era_corr": per_era,
     }
+    if benchmark is not None:
+        reference = np.asarray(benchmark, dtype=float).reshape(-1)
+        if not np.isfinite(reference).all():
+            raise ValueError("Host benchmark predictions contain NaN values")
+        frame["benchmark"] = reference
+        per_era_bmc = {
+            str(era): _benchmark_contribution(
+                group["pred"].to_numpy(), group["benchmark"].to_numpy(), group["target"].to_numpy()
+            )
+            for era, group in frame.groupby("era", sort=True)
+        }
+        result |= _summary(np.array(list(per_era_bmc.values()), dtype=float), "bmc")
+        result["per_era_bmc"] = per_era_bmc
+    return result
 
 
 def _multiclass_log_loss(y_true: np.ndarray, y_pred: np.ndarray, normalize: bool) -> float:
@@ -157,11 +208,11 @@ def _macro_f1(
 
 
 def evaluate_submission(manifest_path: Path, submission_path: Path) -> dict:
-    manifest, y_true, y_pred, groups = _load_aligned_frames(manifest_path, submission_path)
+    manifest, y_true, y_pred, groups, benchmark = _load_aligned_frames(manifest_path, submission_path)
     metric = manifest["metric"]
     details = None
     if metric == "numerai_era_corr":
-        details = numerai_era_scores(y_true, y_pred, groups)
+        details = numerai_era_scores(y_true, y_pred, groups, benchmark)
         score = details["corr_mean"]
     elif metric == "multiclass_log_loss":
         score = _multiclass_log_loss(

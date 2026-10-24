@@ -54,6 +54,8 @@ TASKS = {
         "prediction_columns": ["prediction"],
         "label_columns": ["target"],
         "group_column": "era",
+        # Optional Host-only benchmark predictions; enables BMC in the evaluator.
+        "benchmark_column": "benchmark",
         # Optional: Host-held selection labels (see fixed_holdout.selection).
         "selection_labels": "prepared/private/selection.csv",
         # Optional: Host-only refit training data (see fixed_holdout.refit).

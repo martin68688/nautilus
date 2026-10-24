@@ -85,6 +85,9 @@ def _write_selection_view(view: Path, source: Path, spec: dict, common: dict) ->
     """Host-only labels for the search-time selection set (never in train_view)."""
     columns = [spec["id_column"], *spec["label_columns"], spec["group_column"]]
     labels = pd.read_csv(source)
+    benchmark_column = common.get("benchmark_column")
+    if benchmark_column and benchmark_column in labels.columns:
+        columns.append(benchmark_column)
     missing = [column for column in columns if column not in labels.columns]
     if missing:
         raise ValueError(f"Selection labels are missing columns: {missing}")
@@ -106,6 +109,7 @@ def _write_selection_view(view: Path, source: Path, spec: dict, common: dict) ->
             "prediction_columns": common["prediction_columns"],
             "label_columns": list(spec["label_columns"]),
             "group_column": spec["group_column"],
+            **({"benchmark_column": benchmark_column} if benchmark_column in columns else {}),
             "row_count": int(len(labels)),
             "selection_id_sha256": sha256_lines(labels[spec["id_column"]].astype(str)),
             "labels_file": "labels.csv",
@@ -141,10 +145,15 @@ def prepare_task(
     # metrics (Numerai) keep differently named labels plus a group column.
     label_columns = list(spec.get("label_columns") or prediction_columns)
     group_column = spec.get("group_column")
+    # Optional Host-only reference predictions (e.g. Numerai benchmark for BMC).
+    benchmark_column = spec.get("benchmark_column")
+    if benchmark_column not in private.columns:
+        benchmark_column = None
     required_private_columns = [
         spec["id_column"],
         *label_columns,
         *([group_column] if group_column else []),
+        *([benchmark_column] if benchmark_column else []),
     ]
     missing = [column for column in required_private_columns if column not in private.columns]
     if missing:
@@ -216,6 +225,8 @@ def prepare_task(
             common["label_columns"] = label_columns
         if group_column:
             common["group_column"] = group_column
+        if benchmark_column:
+            common["benchmark_column"] = benchmark_column
         train_manifest = {
             **common,
             "role": "train_view",

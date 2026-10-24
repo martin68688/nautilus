@@ -39,8 +39,14 @@ def score_selection(
     windows: int = 4,
     objective: str = "mean",
     std_penalty: float = 0.5,
+    score_metric: str = "corr",
 ) -> dict:
-    """Score selection predictions against Host-held labels."""
+    """Score selection predictions against Host-held labels.
+
+    ``score_metric`` picks the per-era series that ranks candidates: ``corr``
+    (Numerai CORR) or ``bmc`` (contribution beyond the benchmark model, which
+    needs Host-only benchmark predictions in the selection view).
+    """
     manifest_path = Path(manifest_path).resolve()
     manifest = read_manifest(manifest_path, expected_role="selection_view")
     if manifest["metric"] != "numerai_era_corr":
@@ -69,12 +75,17 @@ def score_selection(
         raise ValueError("Selection predictions contain NaN or infinite values")
 
     label_column = manifest["label_columns"][0]
+    benchmark_column = manifest.get("benchmark_column")
     details = numerai_era_scores(
         merged[[label_column]].to_numpy(dtype=float),
         values.reshape(-1, 1),
         merged[manifest["group_column"]].astype(str).to_numpy(),
+        merged[benchmark_column].to_numpy(dtype=float) if benchmark_column else None,
     )
-    window_means = _window_summary(details["per_era_corr"], windows)
+    series = {"corr": "per_era_corr", "bmc": "per_era_bmc"}.get(score_metric)
+    if series is None or series not in details:
+        raise ValueError(f"Selection score_metric {score_metric!r} is unavailable for this split")
+    window_means = _window_summary(details[series], windows)
     mean = float(np.mean(window_means))
     spread = float(np.std(window_means, ddof=1)) if len(window_means) > 1 else 0.0
     if objective == "mean":
@@ -85,11 +96,13 @@ def score_selection(
         raise ValueError(f"Unsupported selection objective: {objective}")
     return {
         "score": score,
+        "score_metric": score_metric,
         "objective": objective,
         "window_means": window_means,
         "window_std": spread,
         "corr_mean": details["corr_mean"],
         "corr_sharpe": details["corr_sharpe"],
+        **{key: details[key] for key in ("bmc_mean", "bmc_sharpe") if key in details},
         "n_groups": details["n_eras"],
         "split_id": manifest["split_id"],
     }
@@ -115,6 +128,7 @@ def apply_to_node(agent, node, logger) -> None:
             windows=int(cfg.windows),
             objective=str(cfg.objective),
             std_penalty=float(cfg.std_penalty),
+            score_metric=str(getattr(cfg, "score_metric", "corr")),
         )
     except Exception as error:
         node.is_buggy = True
@@ -127,6 +141,8 @@ def apply_to_node(agent, node, logger) -> None:
     node.host_selection = result
     node.metric = MetricValue(result["score"], maximize=True)
     logger.info(
-        "Node %s Host selection score=%.5f (agent reported %s; windows=%s)",
-        node.id, result["score"], reported, [round(v, 4) for v in result["window_means"]],
+        "Node %s Host selection score=%.5f (%s; agent reported %s; windows=%s; corr=%.5f bmc=%s)",
+        node.id, result["score"], result["score_metric"], reported,
+        [round(v, 4) for v in result["window_means"]], result["corr_mean"],
+        f"{result['bmc_mean']:.5f}" if "bmc_mean" in result else "n/a",
     )

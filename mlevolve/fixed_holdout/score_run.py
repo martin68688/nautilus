@@ -196,7 +196,7 @@ def _score_run(
             if details:
                 # Keep the summary, not the per-era series, in the run report.
                 item["metric_details"] = {
-                    key: value for key, value in details.items() if key != "per_era_corr"
+                    key: value for key, value in details.items() if not key.startswith("per_era")
                 }
         except Exception as exc:
             item = {
