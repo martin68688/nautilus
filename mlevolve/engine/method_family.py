@@ -16,8 +16,9 @@ from typing import Any
 logger = logging.getLogger("MLEvolve")
 
 _FAMILY_PATTERNS = {
-    "neural_net": [r"\bnn\.Module\b", r"\btorch\.nn\b", r"\bimport torch\b", r"\btensorflow\b",
-                   r"\bkeras\b", r"\bjax\b", r"\bflax\b", r"\bMLP(?:Regressor|Classifier)\b"],
+    # A network must be defined or instantiated; an unused ``import torch`` is not enough.
+    "neural_net": [r"\(\s*(?:torch\.)?nn\.Module\s*\)", r"\bnn\.Sequential\(", r"\bkeras\.(?:Sequential|Model)\(",
+                   r"\btf\.keras\.(?:Sequential|Model)\(", r"\bflax\.linen\b", r"\bMLP(?:Regressor|Classifier)\("],
     "gbdt": [r"\blightgbm\b", r"\bxgboost\b", r"\bcatboost\b", r"\bHistGradientBoosting\w*\b",
              r"\bGradientBoosting(?:Regressor|Classifier)\b"],
     "random_forest": [r"\bRandomForest(?:Regressor|Classifier)\b", r"\bExtraTrees(?:Regressor|Classifier)\b"],
