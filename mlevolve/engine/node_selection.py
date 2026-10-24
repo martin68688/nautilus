@@ -282,6 +282,28 @@ def select_with_soft_switch(agent) -> Optional[SearchNode]:
         logger.info("📊 Search not started yet, using standard UCT")
         return select(agent, agent.virtual_root)
 
+    if getattr(getattr(getattr(agent, "cfg", None), "family_quota", None), "enabled", False):
+        from engine.method_family import pick_underrepresented
+
+        quota_top = get_top_k_nodes_global(
+            agent,
+            k=agent.scfg.topk_early_k,
+            max_from_same_branch=agent.scfg.topk_early_max_per_branch,
+        )
+        quota_node = pick_underrepresented(agent, [item["node"] for item in quota_top])
+        if quota_node is not None:
+            from agents.leakage_audit import legacy_rank_eligible
+            from authority.adapters.mlevolve.ranking_gate import authorize_selection
+
+            if authorize_selection(
+                agent,
+                quota_node,
+                legacy_allowed=legacy_rank_eligible(agent, quota_node),
+                component="engine.node_selection.family_quota",
+            ):
+                quota_node._topk_triggered = False
+                return quota_node
+
     time_elapsed = time.time() - agent.search_start_time
     total_time = agent.acfg.time_limit
     time_progress = time_elapsed / total_time

@@ -12,6 +12,10 @@ style layout that the fixed-holdout pipeline expects:
         description.md         task statement shown to the agent
     <dataset_root>/numerai-v6/prepared/private/test.csv   id,target,era
 
+With ``selection_eras > 0`` the last public eras become a Host-held selection
+set: ``public/selection.parquet`` (features only) and
+``private/selection.csv`` (labels, see ``fixed_holdout.selection``).
+
 The lockbox is the last `lockbox_eras` eras whose main target has matured.
 The `embargo_eras` eras just before it are dropped from the public data, so
 no public 60-day target overlaps the lockbox return window.
@@ -82,7 +86,34 @@ def _description(
     lockbox: list[str],
     embargo_eras: int,
     train_era_stride: int,
+    selection: list[str] | None = None,
 ) -> str:
+    gap_rows = -(-embargo_eras // max(1, train_era_stride))
+    gap_text = (
+        f"at least {embargo_eras} weeks between the last training era and the first "
+        f"validation era (= {gap_rows} consecutive eras of this file, because only every "
+        f"{train_era_stride}th weekly era is kept)"
+        if train_era_stride > 1
+        else f"at least {embargo_eras} eras (weeks) between the last training era and the "
+        "first validation era"
+    )
+    selection_files = (
+        f"""
+- `selection.parquet`: unlabelled rows for eras {selection[0]} to {selection[-1]}
+  (every weekly era). Same columns as `test.parquet`. The Host keeps their
+  labels and uses them to rank your solution."""
+        if selection
+        else ""
+    )
+    selection_output = (
+        """
+Also predict every row of `selection.parquet` with the same final model and
+write `./submission/selection_predictions.csv` with columns `id,prediction`.
+The Host scores these predictions with the metric above; that Host score, not
+the printed validation score, is what ranks solutions during the search."""
+        if selection
+        else ""
+    )
     return f"""# Numerai v6 stock-ranking task
 
 Predict, for every stock in every week ("era"), how well it will perform over
@@ -98,7 +129,7 @@ the next 60 business days relative to the other stocks in the same era.
   f", every {train_era_stride}th era kept" if train_era_stride > 1 else ""}.
 - `test.parquet`: unlabelled rows to predict, eras {lockbox[0]} to
   {lockbox[-1]}. Same columns as train minus every label.
-- `sample_submission.csv`: `id,prediction` in the exact required row order.
+- `sample_submission.csv`: `id,prediction` in the exact required row order.{selection_files}
 
 Labels take values in {{0, 0.25, 0.5, 0.75, 1}}. Auxiliary labels may be NaN.
 
@@ -125,8 +156,7 @@ score 0.01-0.03; a score above 0.05 almost always means leakage.
 
 ## Validation rules
 - Never split rows randomly. Hold out the **latest** eras of `train.parquet`
-  as validation and leave a gap of at least {embargo_eras} eras between the
-  last training era and the first validation era, because each label looks
+  as validation and leave a gap of {gap_text}, because each label looks
   60 business days ahead and neighbouring eras share future returns.
 - Compute the validation score with the metric above and print exactly
   `Final Validation Score: <value>`.
@@ -134,7 +164,7 @@ score 0.01-0.03; a score above 0.05 almost always means leakage.
 ## Required output
 Fit the final model, predict every row of `test.parquet`, and write
 `./submission/submission.csv` with columns `id,prediction`, rows in the order of
-`sample_submission.csv`, finite numeric predictions.
+`sample_submission.csv`, finite numeric predictions.{selection_output}
 
 ## Practical notes
 - The data is large; read only the columns you need with
@@ -156,6 +186,7 @@ def build_source(
     embargo_eras: int = 13,
     train_era_stride: int = 1,
     extra_targets: tuple[str, ...] = ("target_jupiter_20",),
+    selection_eras: int = 0,
 ) -> Path:
     """Write the source layout and return `<dataset_root>/<task>/prepared`."""
     metadata = json.loads(Path(features_path).read_text(encoding="utf-8"))
@@ -179,11 +210,19 @@ def build_source(
     public_eras, lockbox = split_lockbox(
         data["era"].tolist(), lockbox_eras=lockbox_eras, embargo_eras=embargo_eras
     )
+    selection: list[str] = []
+    if selection_eras > 0:
+        # [train][embargo][selection][embargo][lockbox]: the selection eras keep
+        # every week; their labels stay with the Host.
+        public_eras, selection = split_lockbox(
+            public_eras, lockbox_eras=selection_eras, embargo_eras=embargo_eras
+        )
     if train_era_stride > 1:
         # Keep the most recent public era so the embargo gap stays as configured.
         public_eras = public_eras[::-1][::train_era_stride][::-1]
 
     train = data[data["era"].isin(public_eras)].sort_values(["era", "id"])
+    selection_rows = data[data["era"].isin(selection)].sort_values(["era", "id"])
     test = data[data["era"].isin(lockbox)].sort_values(["era", "id"])
 
     prepared = Path(dataset_root) / TASK_ID / "prepared"
@@ -197,6 +236,9 @@ def build_source(
     pd.DataFrame({"id": test["id"], "prediction": 0.5}).to_csv(
         public / "sample_submission.csv", index=False
     )
+    if selection:
+        selection_rows.drop(columns=targets).to_parquet(public / "selection.parquet", index=False)
+        selection_rows[["id", MAIN_TARGET, "era"]].to_csv(private / "selection.csv", index=False)
     write_json(public / "features.json", {"feature_set": feature_set, "features": features})
     (public / "description.md").write_text(
         _description(
@@ -207,6 +249,7 @@ def build_source(
             lockbox=lockbox,
             embargo_eras=embargo_eras,
             train_era_stride=train_era_stride,
+            selection=selection or None,
         ),
         encoding="utf-8",
     )
@@ -224,6 +267,8 @@ def build_source(
             "public_era_range": [public_eras[0], public_eras[-1]],
             "public_era_count": len(public_eras),
             "lockbox_era_range": [lockbox[0], lockbox[-1]],
+            "selection_era_range": [selection[0], selection[-1]] if selection else None,
+            "selection_rows": int(len(selection_rows)),
             "train_rows": int(len(train)),
             "lockbox_rows": int(len(test)),
             "source_sha256": {
@@ -248,6 +293,8 @@ def main() -> None:
     parser.add_argument("--embargo-eras", type=int, default=13)
     parser.add_argument("--train-era-stride", type=int, default=1)
     parser.add_argument("--extra-target", action="append", default=None)
+    parser.add_argument("--selection-eras", type=int, default=0,
+                        help="Host-held selection eras taken from the end of the public data")
     args = parser.parse_args()
     if args.train and args.validation and args.features:
         features_path, train_path, validation_path = args.features, args.train, args.validation
@@ -265,6 +312,7 @@ def main() -> None:
         embargo_eras=args.embargo_eras,
         train_era_stride=args.train_era_stride,
         extra_targets=tuple(args.extra_target or ("target_jupiter_20",)),
+        selection_eras=args.selection_eras,
     )
     print(prepared)
 

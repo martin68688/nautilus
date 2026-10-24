@@ -54,6 +54,8 @@ TASKS = {
         "prediction_columns": ["prediction"],
         "label_columns": ["target"],
         "group_column": "era",
+        # Optional: Host-held selection labels (see fixed_holdout.selection).
+        "selection_labels": "prepared/private/selection.csv",
         "normalize_probabilities": False,
         "public_subdir": "prepared/public",
         "private_labels": "prepared/private/test.csv",

@@ -1,0 +1,31 @@
+extends: config_numerai_fixed_holdout.yaml
+
+# Numerai v6 search with the framework-level fixes (no modelling hints):
+# - host_selection: a Host-held, label-hidden selection set ranks candidates
+#   (multi-window score) instead of the candidate's self-reported metric.
+# - component_health: component-level failures inside passing nodes are
+#   detected and get one targeted repair child, judged by component health.
+# - family_quota: method families missing from the top-k stay expandable.
+# - global memory: cross-branch memory, allowed because selection scores are
+#   Host-trusted and never touch the lockbox.
+# Launch additionally with:
+#   host_selection.manifest_path=<split>/selection_view/fixed_holdout_manifest.json
+host_selection:
+  enabled: True
+  manifest_path: ""
+  windows: 4
+  objective: mean
+
+component_health:
+  enabled: True
+  trivial_score: 0.0
+  max_repairs_per_run: 6
+  max_repairs_per_branch: 2
+
+family_quota:
+  enabled: True
+  families: [neural_net, gbdt]
+  probability: 0.3
+
+agent:
+  use_global_memory: True

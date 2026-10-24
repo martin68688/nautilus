@@ -81,6 +81,40 @@ def _validate_ids(sample: pd.DataFrame, labels: pd.DataFrame, id_column: str) ->
         )
 
 
+def _write_selection_view(view: Path, source: Path, spec: dict, common: dict) -> None:
+    """Host-only labels for the search-time selection set (never in train_view)."""
+    columns = [spec["id_column"], *spec["label_columns"], spec["group_column"]]
+    labels = pd.read_csv(source)
+    missing = [column for column in columns if column not in labels.columns]
+    if missing:
+        raise ValueError(f"Selection labels are missing columns: {missing}")
+    labels = labels[columns]
+    if labels[spec["id_column"]].isna().any() or labels[spec["id_column"]].duplicated().any():
+        raise ValueError("Selection labels have missing or duplicate IDs")
+    view.mkdir(parents=True, exist_ok=True)
+    label_path = view / "labels.csv"
+    labels.to_csv(label_path, index=False)
+    write_json(
+        view / "fixed_holdout_manifest.json",
+        {
+            "schema": SCHEMA,
+            "role": "selection_view",
+            "task_id": common["task_id"],
+            "split_id": common["split_id"],
+            "metric": common["metric"],
+            "id_column": spec["id_column"],
+            "prediction_columns": common["prediction_columns"],
+            "label_columns": list(spec["label_columns"]),
+            "group_column": spec["group_column"],
+            "row_count": int(len(labels)),
+            "selection_id_sha256": sha256_lines(labels[spec["id_column"]].astype(str)),
+            "labels_file": "labels.csv",
+            "labels_sha256": sha256_file(label_path),
+            "selection_policy": "host_search_metric",
+        },
+    )
+
+
 def prepare_task(
     dataset_root: Path,
     task_id: str,
@@ -198,6 +232,11 @@ def prepare_task(
         }
         write_json(train_view / "fixed_holdout_manifest.json", train_manifest)
         write_json(evaluator_view / "fixed_holdout_manifest.json", evaluator_manifest)
+        selection_source = (
+            task_root / spec["selection_labels"] if spec.get("selection_labels") else None
+        )
+        if selection_source is not None and selection_source.exists():
+            _write_selection_view(staging_root / "selection_view", selection_source, spec, common)
         write_json(
             staging_root / "split_manifest.json",
             {

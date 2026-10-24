@@ -5,7 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Any, Hashable, Mapping, cast
+from typing import Any, Hashable, Mapping, Optional, cast
 import datetime
 import coolname
 import rich
@@ -748,6 +748,42 @@ class RunIdentityConfig:
 
 
 @dataclass
+class HostSelectionConfig:
+    """Host-held, label-hidden selection set that replaces self-reported scores.
+
+    Candidates predict the selection rows; the Host scores them per group
+    (era) and uses the summarized score as the search metric.
+    """
+
+    enabled: bool = False
+    manifest_path: str = ""
+    windows: int = 4
+    objective: str = "mean"  # mean | mean_minus_std (over window means)
+    std_penalty: float = 0.5
+
+
+@dataclass
+class ComponentHealthConfig:
+    """Detect component-level failures inside otherwise successful nodes."""
+
+    enabled: bool = False
+    # Score at or below which a named component counts as no better than
+    # chance (e.g. 0.0 for correlation metrics); None disables the check.
+    trivial_score: Optional[float] = None
+    max_repairs_per_run: int = 6
+    max_repairs_per_branch: int = 2
+
+
+@dataclass
+class FamilyQuotaConfig:
+    """Keep under-represented method families selectable during search."""
+
+    enabled: bool = False
+    families: list[str] = field(default_factory=lambda: ["neural_net", "gbdt"])
+    probability: float = 0.3
+
+
+@dataclass
 class Config(Hashable):
     data_dir: Path
     dataset_dir: Path
@@ -782,6 +818,9 @@ class Config(Hashable):
     use_grading_server: bool = True
     init_solution: InitSolutionConfig = field(default_factory=InitSolutionConfig)
     fixed_holdout: FixedHoldoutConfig = field(default_factory=FixedHoldoutConfig)
+    host_selection: HostSelectionConfig = field(default_factory=HostSelectionConfig)
+    component_health: ComponentHealthConfig = field(default_factory=ComponentHealthConfig)
+    family_quota: FamilyQuotaConfig = field(default_factory=FamilyQuotaConfig)
     official_submission: OfficialSubmissionConfig = field(
         default_factory=OfficialSubmissionConfig
     )

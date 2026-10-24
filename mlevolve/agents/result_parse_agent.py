@@ -27,6 +27,8 @@ from agents.result_log_facts import (
 from agents.triggers import should_check_data_leakage
 from fixed_holdout.mode import bypass_protocol_gates, enabled, train_manifest_path
 from fixed_holdout.validation import validate_submission as validate_fixed_submission
+from fixed_holdout.selection import apply_to_node as apply_host_selection
+from engine import component_health, method_family
 from authority.adapters.mlevolve.receipt_bridge import trusted_runtime_metric
 
 logger = logging.getLogger("MLEvolve")
@@ -1012,7 +1014,10 @@ def _check_data_leakage(agent, node: SearchNode, response: dict):
 
 
 def _save_to_global_memory(agent, node: SearchNode):
-    if enabled(agent.cfg):
+    # A Host-scored selection metric is trusted search evidence that never
+    # touches the lockbox, so it may feed cross-branch memory.
+    host_selected = bool(getattr(getattr(agent.cfg, "host_selection", None), "enabled", False))
+    if enabled(agent.cfg) and not host_selected:
         logger.info(
             "Node %s is not written to positive memory before terminal fixed-holdout scoring",
             node.id,
@@ -1431,6 +1436,10 @@ def run(agent, node: SearchNode, exec_result: ExecutionResult) -> SearchNode:
             else:
                 _validate_metric_direction(agent, node, response)
                 _check_data_leakage(agent, node, response)
+                # Host-scored selection set replaces the self-reported metric.
+                apply_host_selection(agent, node, logger)
+            component_health.record(agent, node)
+            node.method_families = method_family.classify(node.code, node.term_out)
 
             status = "FAIL" if node.is_buggy else "PASS"
             metric_val = node.metric.value if node.metric else None

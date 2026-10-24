@@ -147,6 +147,14 @@ class SearchNode(DataClassJsonMixin):
     protocol_ref: str = field(default="", kw_only=True)
     method_fingerprint: str = field(default="", kw_only=True)
 
+    # ---- framework diagnostics: component health, Host selection, diversity ----
+    component_issues: list[dict] = field(default_factory=list, kw_only=True)
+    component_repair_target: dict = field(default_factory=dict, kw_only=True)
+    # "" | dispatched (parent) | resolved | unresolved | failed (repair child)
+    component_repair_status: str = field(default="", kw_only=True)
+    host_selection: dict = field(default_factory=dict, kw_only=True)
+    method_families: list[str] = field(default_factory=list, kw_only=True)
+
     def __post_init__(self) -> None:
         if self.parent is not None:
             self.parent.children.add(self)

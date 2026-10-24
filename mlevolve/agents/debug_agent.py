@@ -4,6 +4,7 @@ import logging
 from typing import Any, List, Tuple
 
 from llm import compile_prompt_to_md, generate
+from engine import component_health
 from engine.search_node import SearchNode
 from agents.coder import plan_and_code_query
 from utils.response import extract_plan_from_diff_response, wrap_code
@@ -340,6 +341,19 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     )
 
     introduction = introduction_base
+    component_repair = (
+        parent_node.is_buggy is False
+        and parent_node.component_repair_status == "dispatched"
+        and bool(parent_node.component_issues)
+    )
+    if component_repair:
+        introduction = (
+            debugging_standards
+            + "Your previous solution ran successfully, but the Host detected that a component "
+            "inside it failed (details below), so revise it in order to repair that component."
+            "\n\n"
+            "Remember: The code will be executed in a fresh Python environment. It must be 100% self-contained."
+        )
 
     prompt: Any = {
         "Introduction": introduction,
@@ -355,6 +369,13 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             "- Most libraries are stable and available. The bug is not caused by the library version mismatch. **Don't suggest to reinstall the core libraries.** (like pip install torch, pip upgrade transformers, !pip install tensorflow, subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'transformers', 'accelerate', 'pandas', 'torch', 'torchvision']))\n",
         ],
     }
+    if component_repair:
+        prompt["Instructions"] = {
+            "COMPONENT REPAIR - HIGHEST PRIORITY": component_health.repair_instructions(
+                parent_node.component_issues
+            ),
+            **prompt["Instructions"],
+        }
     if parent_node.draft_role:
         inherited = [
             f"This node originated from the `{parent_node.draft_role}` Draft branch.",
@@ -762,6 +783,11 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     new_node = SearchNode(plan=plan, code=code, parent=parent_node, stage="debug",
                         local_best_node=parent_node.local_best_node, from_topk=from_topk)
     new_node.memory_strategy_trace = memory_strategy_trace
+    if component_repair:
+        new_node.component_repair_target = {
+            "source_node_id": parent_node.id,
+            "issues": [dict(issue) for issue in parent_node.component_issues],
+        }
     if active_actuation_trace:
         new_node.atomic_actuation_trace = dict(
             active_actuation_trace.get("atomic") or {}

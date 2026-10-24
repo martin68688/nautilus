@@ -40,7 +40,7 @@ from protocol_runtime.preflight import (
     PreflightStatus,
     build_bounded_repair_receipt,
 )
-from engine import node_selection, evaluation, execution, solution_manager
+from engine import component_health, node_selection, evaluation, execution, solution_manager
 from engine.conditions import (
     coverage_synthesis_due,
     cross_role_synthesis_allowed,
@@ -1261,6 +1261,13 @@ class AgentSearch:
                     else:
                         result_node = improve_agent.run(self, parent_node)
                 elif parent_node.is_buggy or parent_node.is_valid is False:
+                    result_node = debug_agent.run(self, parent_node)
+
+                elif component_health.needs_repair(self, parent_node):
+                    # The program passed, but a component inside it failed; repair
+                    # that component once before ordinary improvement.
+                    parent_node.component_repair_status = "dispatched"
+                    logger.info(f"🩺 Component repair for node {parent_node.id}")
                     result_node = debug_agent.run(self, parent_node)
 
                 elif parent_node.is_buggy is False:

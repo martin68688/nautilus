@@ -698,6 +698,9 @@ class Interpreter:
         for quote in ("'", '"'):
             code = code.replace(f"{quote}submission.csv{quote}", f"{quote}{target}{quote}")
 
+        # Host selection-set predictions (fixed_holdout.selection) are per node too.
+        code = code.replace("selection_predictions.csv", f"selection_predictions_{_id}.csv")
+
         return code
     
     def isolate_model_path(self, code, _id):

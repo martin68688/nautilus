@@ -50,6 +50,10 @@ def get_node_reward(agent, node: SearchNode):
                 reward += 1.5
             else:
                 reward += 1
+        # A repaired component is credited like a successful debug, even when the
+        # overall metric has not moved yet.
+        if getattr(node, "component_repair_status", "") == "resolved":
+            reward += 0.5
     return reward
 
 
@@ -189,7 +193,13 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
 
         if new_metric is not None and local_best_metric is not None:
             improvement = new_metric - local_best_metric if agent.metric_maximize else local_best_metric - new_metric
-            if improvement < agent.scfg.metric_improvement_threshold and local_best_node.improve_failure_depth < agent.scfg.max_improve_failure:
+            repaired = getattr(cur_node, "component_repair_status", "") == "resolved"
+            if improvement < agent.scfg.metric_improvement_threshold and repaired:
+                # Judged by component health, not by an immediate metric gain.
+                action = "continue_after_component_repair"
+                cur_node.continue_improve = True
+                cur_node.is_terminal = False
+            elif improvement < agent.scfg.metric_improvement_threshold and local_best_node.improve_failure_depth < agent.scfg.max_improve_failure:
                 local_best_node.improve_failure_depth += 1
                 action = "continue"
                 cur_node.continue_improve = True

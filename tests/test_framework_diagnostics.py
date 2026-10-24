@@ -1,0 +1,224 @@
+"""Framework-level fixes: component health, method-family quota, Host selection."""
+
+import json
+import logging
+from pathlib import Path
+import sys
+from types import SimpleNamespace
+
+import numpy as np
+import pandas as pd
+import pytest
+
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "mlevolve"))
+sys.path.append(str(REPO / "tests"))
+
+from config import OmegaConf, _load_cfg, Config  # noqa: E402
+from engine import component_health, method_family  # noqa: E402
+from engine.executor import Interpreter  # noqa: E402
+from fixed_holdout.numerai_source import build_source  # noqa: E402
+from fixed_holdout.prepare import prepare_task  # noqa: E402
+from fixed_holdout.selection import apply_to_node, predictions_path, score_selection  # noqa: E402
+from utils.metric import MetricValue  # noqa: E402
+from test_fixed_holdout_numerai import _write_raw_numerai  # noqa: E402
+
+# Lines taken from the 2026-10-23 Numerai medium run (EraMLP was silently dropped).
+NAN_LOG = """Training EraMLP ...
+EraMLP epoch 1/8 loss=nan val_corr=-0.00693
+EraMLP epoch 2/8 loss=nan val_corr=-0.00693
+EraMLP val_corr=-0.00693
+LGBM seed=42 best_iter=1085 val_corr=0.02643
+ensemble w_lgbm=0.8 w_mlp=0.2 val_corr=0.02600
+Final Validation Score: 0.0264
+"""
+CONSTANT_LOG = "\n".join(
+    f"EraMLP epoch {i}/8 loss=0.0000 val_corr=-0.0038" for i in range(1, 6)
+) + "\nXGB seed=42 best_iter=1766 val_corr=0.02815\nneutralize mode=none k=0 val_corr=-0.001\n"
+FALLBACK_LOG = "EraMLP training failed (shape mismatch); falling back to LGBM only\nLGBM val_corr=0.026\n"
+HEALTHY_LOG = "\n".join(
+    f"EraMLP epoch {i}/4 loss={0.9 - 0.1 * i:.4f} val_corr={0.004 * i:.4f}" for i in range(1, 5)
+) + "\nLGBM val_corr=0.026\n"
+
+
+def _kinds(issues):
+    return {(issue["component"], issue["kind"]) for issue in issues}
+
+
+def test_detects_nan_loss_and_below_trivial_component_but_not_aggregates():
+    issues = component_health.detect_component_issues(NAN_LOG, trivial_score=0.0)
+    assert _kinds(issues) == {
+        ("EraMLP", "non_finite_loss"),
+        ("EraMLP", "below_trivial_score"),
+    }
+
+
+def test_detects_constant_loss_and_silent_fallback():
+    assert ("EraMLP", "constant_loss") in _kinds(
+        component_health.detect_component_issues(CONSTANT_LOG)
+    )
+    assert _kinds(component_health.detect_component_issues(FALLBACK_LOG)) == {
+        ("EraMLP", "silent_fallback")
+    }
+    assert component_health.detect_component_issues(HEALTHY_LOG, trivial_score=0.0) == []
+
+
+def _agent(**cfg):
+    defaults = dict(enabled=True, trivial_score=0.0, max_repairs_per_run=6, max_repairs_per_branch=2)
+    return SimpleNamespace(
+        cfg=SimpleNamespace(component_health=SimpleNamespace(**{**defaults, **cfg})),
+        journal=[],
+    )
+
+
+def _node(term_out, **kwargs):
+    fields = dict(
+        id="n1", is_buggy=False, component_issues=[], component_repair_target={},
+        component_repair_status="", branch_id=1, term_out=term_out,
+    )
+    fields.update(kwargs)
+    return SimpleNamespace(**fields)
+
+
+def test_repair_is_scheduled_once_and_judged_by_component_health():
+    agent = _agent()
+    parent = _node(NAN_LOG)
+    component_health.record(agent, parent)
+    assert component_health.needs_repair(agent, parent)
+    parent.component_repair_status = "dispatched"
+    assert not component_health.needs_repair(agent, parent)
+
+    target = {"issues": parent.component_issues}
+    fixed = _node(HEALTHY_LOG, id="n2", component_repair_target=target)
+    component_health.record(agent, fixed)
+    assert fixed.component_repair_status == "resolved"
+
+    still_broken = _node(CONSTANT_LOG + "EraMLP epoch 9/9 loss=nan\n", id="n3", component_repair_target=target)
+    component_health.record(agent, still_broken)
+    assert still_broken.component_repair_status == "unresolved"
+
+    crashed = _node("", id="n4", is_buggy=True, component_repair_target=target)
+    component_health.record(agent, crashed)
+    assert crashed.component_repair_status == "failed"
+
+    agent.journal = [SimpleNamespace(component_repair_target={"x": 1}, branch_id=1)] * 2
+    fresh = _node(NAN_LOG, id="n5")
+    component_health.record(agent, fresh)
+    assert not component_health.needs_repair(agent, fresh)  # branch budget used up
+
+
+def test_repair_brief_reports_observations_not_a_solution():
+    lines = component_health.repair_instructions(
+        component_health.detect_component_issues(NAN_LOG, trivial_score=0.0)
+    )
+    text = "\n".join(lines)
+    assert "EraMLP" in text and "loss=nan" in text
+    assert "instead of removing it" in text
+
+
+def test_method_family_tags_follow_code_and_runtime_removal():
+    code = "import lightgbm as lgb\nimport torch\nclass EraMLP(torch.nn.Module): pass\n"
+    assert method_family.classify(code) == ["neural_net", "gbdt"]
+    assert method_family.classify(code, "EraMLP removed (broken model)") == ["gbdt"]
+
+
+def _family_node(node_id, metric, families, branch=1):
+    return SimpleNamespace(
+        id=node_id, is_buggy=False, metric=MetricValue(metric, maximize=True),
+        method_families=families, is_terminal=False, branch_id=branch,
+        reached_child_limit=lambda scfg, for_topk=False: False,
+    )
+
+
+def test_family_quota_routes_to_best_node_of_missing_family(monkeypatch):
+    trees = [_family_node(f"t{i}", 0.03 + i * 0.001, ["gbdt"]) for i in range(3)]
+    nets = [_family_node("nn1", 0.012, ["neural_net", "gbdt"], 2), _family_node("nn2", 0.015, ["neural_net"], 2)]
+    agent = SimpleNamespace(
+        cfg=SimpleNamespace(family_quota=SimpleNamespace(enabled=True, families=["neural_net", "gbdt"], probability=1.0)),
+        metric_maximize=True,
+        branch_all_nodes={1: trees, 2: nets},
+        scfg=None,
+    )
+    assert method_family.pick_underrepresented(agent, trees).id == "nn2"
+    assert method_family.pick_underrepresented(agent, trees + [nets[1]]) is None
+    agent.cfg.family_quota.probability = 0.0
+    assert method_family.pick_underrepresented(agent, trees) is None
+
+
+def _selection_split(tmp_path):
+    train_path, validation_path, features_path = _write_raw_numerai(tmp_path, n_eras=48)
+    prepared = build_source(
+        train_path, validation_path, features_path, tmp_path / "datasets",
+        lockbox_eras=6, embargo_eras=2, selection_eras=8, train_era_stride=2,
+    )
+    split = prepare_task(tmp_path / "datasets", "numerai-v6", tmp_path / "fixed", copy_mode="copy")
+    return prepared, split
+
+
+def test_selection_set_is_carved_out_with_embargo_and_hidden_labels(tmp_path):
+    prepared, split = _selection_split(tmp_path)
+    public = split / "train_view" / "input"
+    train = pd.read_parquet(public / "train.parquet")
+    selection = pd.read_parquet(public / "selection.parquet")
+    test = pd.read_parquet(public / "test.parquet")
+    assert "target" not in selection.columns
+    assert train["era"].max() < selection["era"].min() < selection["era"].max() < test["era"].min()
+    assert selection["era"].nunique() == 8
+    assert not list((split / "train_view").rglob("labels.csv"))
+    view = split / "selection_view"
+    manifest = json.loads((view / "fixed_holdout_manifest.json").read_text())
+    assert manifest["role"] == "selection_view" and manifest["row_count"] == len(selection)
+    description = (public / "description.md").read_text()
+    assert "selection_predictions.csv" in description
+    assert "only every 2th weekly era is kept" in description
+
+
+def test_host_selection_score_replaces_self_reported_metric(tmp_path):
+    _, split = _selection_split(tmp_path)
+    selection = pd.read_parquet(split / "train_view" / "input" / "selection.parquet")
+    manifest = split / "selection_view" / "fixed_holdout_manifest.json"
+    preds = selection[["id"]].assign(prediction=selection["feature_a"] + 1e-3 * np.arange(len(selection)))
+
+    workspace = tmp_path / "ws"
+    node = SimpleNamespace(id="abc", is_buggy=False, metric=MetricValue(0.9, maximize=True),
+                           host_selection={}, _term_out=[], analysis="")
+    agent = SimpleNamespace(cfg=SimpleNamespace(
+        workspace_dir=workspace,
+        host_selection=SimpleNamespace(enabled=True, manifest_path=str(manifest), windows=4,
+                                       objective="mean", std_penalty=0.5),
+    ))
+    path = predictions_path(workspace, node.id)
+    path.parent.mkdir(parents=True)
+    preds.to_csv(path, index=False)
+    apply_to_node(agent, node, logging.getLogger("test"))
+    assert node.is_buggy is False
+    assert node.host_selection["agent_reported_metric"] == 0.9
+    assert len(node.host_selection["window_means"]) == 4
+    assert node.metric.value == pytest.approx(np.mean(node.host_selection["window_means"]))
+    assert node.metric.value > 0.1
+
+    strict = score_selection(manifest, path, windows=4, objective="mean_minus_std", std_penalty=1.0)
+    assert strict["score"] <= node.metric.value
+
+    path.unlink()
+    missing = SimpleNamespace(id="abc", is_buggy=False, metric=MetricValue(0.9, maximize=True),
+                              host_selection={}, _term_out=[], analysis="")
+    apply_to_node(agent, missing, logging.getLogger("test"))
+    assert missing.is_buggy is True and "HOST_SELECTION_ERROR" in missing.analysis
+
+
+def test_selection_predictions_are_isolated_per_node():
+    code = "pd.DataFrame(x).to_csv('./submission/selection_predictions.csv', index=False)"
+    isolated = Interpreter.isolate_submission_path(None, code, "node42")
+    assert "selection_predictions_node42.csv" in isolated
+
+
+def test_framework_config_resolves_and_validates_against_schema():
+    cfg = _load_cfg(REPO / "mlevolve" / "config" / "config_numerai_framework.yaml", use_cli_args=False)
+    cfg.exp_name = "numerai-v6-test"  # normally filled in by prep_cfg
+    merged = OmegaConf.merge(OmegaConf.structured(Config), cfg)
+    assert merged.host_selection.enabled is True
+    assert merged.component_health.trivial_score == 0.0
+    assert merged.family_quota.families == ["neural_net", "gbdt"]
+    assert merged.fixed_holdout.enabled is True
+    assert merged.agent.use_global_memory is True

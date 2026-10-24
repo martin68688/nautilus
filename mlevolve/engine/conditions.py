@@ -171,6 +171,9 @@ def is_branch_stagnant(agent, branch_id: int, threshold: int = 3) -> bool:
         successful_nodes) >= max_consecutive else successful_nodes
 
     for node in recent_nodes:
+        if getattr(node, "component_repair_status", "") == "resolved":
+            # A component repair is not an improvement attempt on the metric.
+            continue
         if node.metric and node.metric.value is not None:
             if maximize:
                 if node.metric.value >= branch_best_metric:
