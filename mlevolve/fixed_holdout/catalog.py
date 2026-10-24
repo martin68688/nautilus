@@ -56,6 +56,8 @@ TASKS = {
         "group_column": "era",
         # Optional: Host-held selection labels (see fixed_holdout.selection).
         "selection_labels": "prepared/private/selection.csv",
+        # Optional: Host-only refit training data (see fixed_holdout.refit).
+        "refit_train": "prepared/refit/train.parquet",
         "normalize_probabilities": False,
         "public_subdir": "prepared/public",
         "private_labels": "prepared/private/test.csv",

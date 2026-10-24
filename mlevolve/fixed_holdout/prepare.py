@@ -237,6 +237,26 @@ def prepare_task(
         )
         if selection_source is not None and selection_source.exists():
             _write_selection_view(staging_root / "selection_view", selection_source, spec, common)
+        refit_source = task_root / spec["refit_train"] if spec.get("refit_train") else None
+        if refit_source is not None and refit_source.exists():
+            # Same public files, but train.parquet also holds the Host-labelled
+            # embargo and selection eras; used only after the search.
+            refit_input = staging_root / "refit_view" / "input"
+            _copy_tree(public_source, refit_input, copy_mode)
+            (refit_input / "train.parquet").unlink()
+            shutil.copy2(refit_source, refit_input / "train.parquet")
+            write_json(
+                staging_root / "refit_view" / "fixed_holdout_manifest.json",
+                {
+                    "schema": SCHEMA,
+                    "role": "refit_view",
+                    "task_id": task_id,
+                    "split_id": split_id,
+                    "input_subdir": "input",
+                    "refit_tree_sha256": tree_sha256(refit_input),
+                    "selection_policy": "post_search_refit_only",
+                },
+            )
         write_json(
             staging_root / "split_manifest.json",
             {

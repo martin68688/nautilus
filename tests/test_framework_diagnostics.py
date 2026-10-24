@@ -222,3 +222,42 @@ def test_framework_config_resolves_and_validates_against_schema():
     assert merged.family_quota.families == ["neural_net", "gbdt"]
     assert merged.fixed_holdout.enabled is True
     assert merged.agent.use_global_memory is True
+
+
+def test_refit_view_adds_labelled_selection_and_embargo_eras(tmp_path):
+    _, split = _selection_split(tmp_path)
+    public = split / "train_view" / "input"
+    refit_input = split / "refit_view" / "input"
+    train = pd.read_parquet(public / "train.parquet")
+    refit = pd.read_parquet(refit_input / "train.parquet")
+    selection = pd.read_parquet(public / "selection.parquet")
+    test = pd.read_parquet(public / "test.parquet")
+    assert refit["era"].max() >= selection["era"].max()
+    assert refit["era"].max() < test["era"].min()
+    assert set(train["era"]) < set(refit["era"])
+    assert refit["target"].notna().all()
+    assert (refit_input / "test.parquet").read_bytes() == (public / "test.parquet").read_bytes()
+
+
+def test_refit_runner_retrains_selected_program_on_refit_view(tmp_path):
+    from fixed_holdout.refit import refit_node
+
+    _, split = _selection_split(tmp_path)
+    program = (
+        "import pandas as pd\n"
+        "train = pd.read_parquet('./input/train.parquet')\n"
+        "test = pd.read_parquet('./input/test.parquet')\n"
+        "print('latest training era', train['era'].max())\n"
+        "pd.DataFrame({'id': test['id'], 'prediction': float(train['era'].nunique())})"
+        ".to_csv('./submission/submission.csv', index=False)\n"
+    )
+    run = tmp_path / "run"
+    (run / "logs").mkdir(parents=True)
+    (run / "logs" / "journal.json").write_text(json.dumps({"nodes": [{"id": "abc123", "code": program}]}))
+    (run / "logs" / "fixed_holdout_evaluation_request.json").write_text(json.dumps({"selected_node_id": "abc123"}))
+
+    receipt = refit_node(split, run, run / "refit", python=sys.executable, timeout=120)
+    out = pd.read_csv(run / "refit" / receipt["submission"])
+    refit_eras = pd.read_parquet(split / "refit_view" / "input" / "train.parquet")["era"].nunique()
+    assert receipt["node_id"] == "abc123"
+    assert out["prediction"].iloc[0] == refit_eras

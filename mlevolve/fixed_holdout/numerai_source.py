@@ -210,6 +210,7 @@ def build_source(
     public_eras, lockbox = split_lockbox(
         data["era"].tolist(), lockbox_eras=lockbox_eras, embargo_eras=embargo_eras
     )
+    labelled_eras = list(public_eras)  # every labelled era before the lockbox embargo
     selection: list[str] = []
     if selection_eras > 0:
         # [train][embargo][selection][embargo][lockbox]: the selection eras keep
@@ -220,6 +221,7 @@ def build_source(
     if train_era_stride > 1:
         # Keep the most recent public era so the embargo gap stays as configured.
         public_eras = public_eras[::-1][::train_era_stride][::-1]
+        labelled_eras = labelled_eras[::-1][::train_era_stride][::-1]
 
     train = data[data["era"].isin(public_eras)].sort_values(["era", "id"])
     selection_rows = data[data["era"].isin(selection)].sort_values(["era", "id"])
@@ -239,6 +241,13 @@ def build_source(
     if selection:
         selection_rows.drop(columns=targets).to_parquet(public / "selection.parquet", index=False)
         selection_rows[["id", MAIN_TARGET, "era"]].to_csv(private / "selection.csv", index=False)
+        # Host-only refit training data: train + embargo + selection eras with labels,
+        # used to retrain the selected program after the search (fixed_holdout.refit).
+        refit = prepared / "refit"
+        refit.mkdir(parents=True, exist_ok=True)
+        data[data["era"].isin(labelled_eras)].sort_values(["era", "id"]).to_parquet(
+            refit / "train.parquet", index=False
+        )
     write_json(public / "features.json", {"feature_set": feature_set, "features": features})
     (public / "description.md").write_text(
         _description(
@@ -269,6 +278,7 @@ def build_source(
             "lockbox_era_range": [lockbox[0], lockbox[-1]],
             "selection_era_range": [selection[0], selection[-1]] if selection else None,
             "selection_rows": int(len(selection_rows)),
+            "refit_era_range": [labelled_eras[0], labelled_eras[-1]] if selection else None,
             "train_rows": int(len(train)),
             "lockbox_rows": int(len(test)),
             "source_sha256": {
