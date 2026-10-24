@@ -1578,7 +1578,7 @@ class Interpreter:
                 )
             else:
                 output.append(
-                    f"Execution time: {humanize.naturaldelta(exec_time)} seconds (time limit is {humanize.naturaldelta(effective_timeout)})."
+                    f"Execution time: {exec_time:.0f} seconds (time limit is {effective_timeout:.0f} seconds)."
                 )
 
             protocol_observation = None
@@ -1619,7 +1619,7 @@ class Interpreter:
                     )
                 else:
                     output.append(
-                        f"Execution time: {humanize.naturaldelta(exec_time)} seconds (time limit is {humanize.naturaldelta(effective_timeout)})."
+                        f"Execution time: {exec_time:.0f} seconds (time limit is {effective_timeout:.0f} seconds)."
                     )
 
             if preflight_report is not None:
