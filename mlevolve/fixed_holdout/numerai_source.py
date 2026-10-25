@@ -102,6 +102,7 @@ def _description(
     selection: list[str] | None = None,
     resources: str = "",
     reference_files: tuple[str, ...] = (),
+    selection_metric: str = "corr",
 ) -> str:
     gap_rows = -(-embargo_eras // max(1, train_era_stride))
     gap_text = (
@@ -123,6 +124,23 @@ def _description(
 The Host holds the labels of part of `test.parquet` and scores your submission
 on those rows with the metric above; that Host score, not the printed
 validation score, is what ranks solutions during the search."""
+        if selection and selection_metric == "corr"
+        else """
+The Host holds the labels of part of `test.parquet` and scores your submission
+on those rows; that Host score, not the printed validation score, is what ranks
+solutions during the search. The Host score is the mean over eras of
+`0.5 * CORR + 2 * BMC`, where CORR is the metric above and BMC (benchmark model
+contribution) is what your predictions add beyond Numerai's benchmark model
+`lgbm_jupiter_60` (the predictions in `benchmark/`):
+
+```python
+def bmc(pred, benchmark, target):  # one era
+    p = norm.ppf((pred.rank() - 0.5) / len(pred))
+    m = norm.ppf((benchmark.rank() - 0.5) / len(benchmark))
+    p_resid = p - m * (p @ m) / (m @ m)       # remove the benchmark direction
+    t = target.to_numpy() * 4                 # labels scaled to [0, 4]
+    return float((t - t.mean()) @ p_resid / len(t))
+```"""
         if selection
         else ""
     )
@@ -233,6 +251,7 @@ def build_source(
     benchmarks_path: Path | None = None,
     resources: str = "",
     reference_files: dict[str, Path] | None = None,
+    selection_metric: str = "corr",
 ) -> Path:
     """Write the source layout and return `<dataset_root>/<task>/prepared`.
 
@@ -329,6 +348,7 @@ def build_source(
             selection=selection or None,
             resources=resources,
             reference_files=tuple(reference_files),
+            selection_metric=selection_metric,
         ),
         encoding="utf-8",
     )
@@ -382,6 +402,8 @@ def main() -> None:
                         help='Compute budget stated in the task, e.g. "24 CPU threads, 1 GPU (24 GB), 38 GB RAM"')
     parser.add_argument("--selection-eras", type=int, default=0,
                         help="Host-held selection eras taken from the end of the public data")
+    parser.add_argument("--selection-metric", choices=["corr", "corr_bmc"], default="corr",
+                        help="How the Host ranks solutions; must match host_selection.score_metric")
     parser.add_argument("--reference", action="append", default=[], metavar="NAME=PATH",
                         help="Official label-free Numerai file to publish as NAME, e.g. "
                         "neutralizer/part_a.parquet=train_neutralizer.parquet (repeatable)")
@@ -406,6 +428,7 @@ def main() -> None:
         selection_eras=args.selection_eras,
         benchmarks_path=benchmarks_path,
         resources=args.resources,
+        selection_metric=args.selection_metric,
         reference_files=dict(
             (name, Path(path)) for name, path in (item.split("=", 1) for item in args.reference)
         ),

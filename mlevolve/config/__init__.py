@@ -760,7 +760,9 @@ class HostSelectionConfig:
     windows: int = 4
     objective: str = "mean"  # mean | mean_minus_std (over window means)
     std_penalty: float = 0.5
-    score_metric: str = "corr"  # corr | bmc (needs Host benchmark predictions)
+    score_metric: str = "corr"  # corr | bmc | corr_bmc (bmc needs Host benchmark predictions)
+    corr_weight: float = 0.5  # corr_bmc: corr_weight * CORR + bmc_weight * BMC per era
+    bmc_weight: float = 2.0
 
 
 @dataclass

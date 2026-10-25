@@ -50,12 +50,16 @@ def score_selection(
     objective: str = "mean",
     std_penalty: float = 0.5,
     score_metric: str = "corr",
+    corr_weight: float = 0.5,
+    bmc_weight: float = 2.0,
 ) -> dict:
     """Score selection predictions against Host-held labels.
 
     ``score_metric`` picks the per-era series that ranks candidates: ``corr``
-    (Numerai CORR) or ``bmc`` (contribution beyond the benchmark model, which
-    needs Host-only benchmark predictions in the selection view).
+    (Numerai CORR), ``bmc`` (contribution beyond the benchmark model, which
+    needs Host-only benchmark predictions in the selection view), or
+    ``corr_bmc``: ``corr_weight * CORR + bmc_weight * BMC`` per era (defaults
+    follow Numerai's 0.5 * CORR + 2 * MMC payout, with BMC in place of MMC).
     """
     manifest_path = Path(manifest_path).resolve()
     manifest = read_manifest(manifest_path, expected_role="selection_view")
@@ -92,10 +96,19 @@ def score_selection(
         merged[manifest["group_column"]].astype(str).to_numpy(),
         merged[benchmark_column].to_numpy(dtype=float) if benchmark_column else None,
     )
-    series = {"corr": "per_era_corr", "bmc": "per_era_bmc"}.get(score_metric)
-    if series is None or series not in details:
-        raise ValueError(f"Selection score_metric {score_metric!r} is unavailable for this split")
-    window_means = _window_summary(details[series], windows)
+    if score_metric == "corr_bmc":
+        if "per_era_bmc" not in details:
+            raise ValueError("Selection score_metric 'corr_bmc' needs Host benchmark predictions")
+        per_era = {
+            era: corr_weight * details["per_era_corr"][era] + bmc_weight * details["per_era_bmc"][era]
+            for era in details["per_era_corr"]
+        }
+    else:
+        series = {"corr": "per_era_corr", "bmc": "per_era_bmc"}.get(score_metric)
+        if series is None or series not in details:
+            raise ValueError(f"Selection score_metric {score_metric!r} is unavailable for this split")
+        per_era = details[series]
+    window_means = _window_summary(per_era, windows)
     mean = float(np.mean(window_means))
     spread = float(np.std(window_means, ddof=1)) if len(window_means) > 1 else 0.0
     if objective == "mean":
@@ -137,6 +150,8 @@ def apply_to_node(agent, node, logger) -> None:
             objective=str(cfg.objective),
             std_penalty=float(cfg.std_penalty),
             score_metric=str(getattr(cfg, "score_metric", "corr")),
+            corr_weight=float(getattr(cfg, "corr_weight", 0.5)),
+            bmc_weight=float(getattr(cfg, "bmc_weight", 2.0)),
         )
     except Exception as error:
         node.is_buggy = True

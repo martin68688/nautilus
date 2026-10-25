@@ -418,3 +418,28 @@ def test_reference_files_all_targets_and_no_model_recipe(tmp_path):
     split = prepare_task(tmp_path / "d", "numerai-v6", tmp_path / "fixed", copy_mode="copy")
     assert (split / "train_view" / "input" / "neutralizer" / "part_b.parquet").exists()
     assert (split / "refit_view" / "input" / "neutralizer" / "part_b.parquet").exists()
+
+
+def test_corr_bmc_selection_score_and_description(tmp_path):
+    train_path, validation_path, features_path = _write_raw_numerai(tmp_path, n_eras=48)
+    validation = pd.read_parquet(validation_path)
+    bench_path = tmp_path / "raw" / "validation_benchmark_models.parquet"
+    validation[["numerai_ticker", "date"]].assign(
+        lgbm_jupiter_60=np.random.default_rng(5).uniform(size=len(validation))
+    ).to_parquet(bench_path, index=False)
+    prepared = build_source(
+        train_path, validation_path, features_path, tmp_path / "d",
+        lockbox_eras=6, embargo_eras=2, selection_eras=8, benchmarks_path=bench_path,
+        selection_metric="corr_bmc",
+    )
+    text = (prepared / "public" / "description.md").read_text()
+    assert "0.5 * CORR + 2 * BMC" in text and "def bmc(" in text
+    split = prepare_task(tmp_path / "d", "numerai-v6", tmp_path / "fixed", copy_mode="copy")
+    test = pd.read_parquet(split / "train_view" / "input" / "test.parquet")
+    preds = tmp_path / "p.csv"
+    test[["id"]].assign(prediction=test["feature_a"] + 1e-3 * np.arange(len(test))).to_csv(preds, index=False)
+    manifest = split / "selection_view" / "fixed_holdout_manifest.json"
+    corr = score_selection(manifest, preds, windows=1)
+    bmc = score_selection(manifest, preds, windows=1, score_metric="bmc")
+    mix = score_selection(manifest, preds, windows=1, score_metric="corr_bmc")
+    assert mix["score"] == pytest.approx(0.5 * corr["score"] + 2 * bmc["score"])
