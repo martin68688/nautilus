@@ -394,3 +394,27 @@ def test_patcher_drops_stray_markdown_fences_only_when_they_break_the_program():
 def test_syntax_error_message_shows_the_offending_line():
     source = (REPO / "mlevolve" / "engine" / "executor.py").read_text()
     assert "Show the offending line" in source and "{lines[i - 1]}" in source
+
+
+def test_reference_files_all_targets_and_no_model_recipe(tmp_path):
+    train_path, validation_path, features_path = _write_raw_numerai(tmp_path, n_eras=48)
+    validation = pd.read_parquet(validation_path)
+    neutralizer = tmp_path / "raw" / "validation_neutralizer.parquet"
+    validation[["numerai_ticker", "date"]].assign(neutralizer_column_0=0.1).to_parquet(neutralizer, index=False)
+    prepared = build_source(
+        train_path, validation_path, features_path, tmp_path / "d",
+        lockbox_eras=6, embargo_eras=2, selection_eras=8, extra_targets=("all",),
+        reference_files={"neutralizer/part_b.parquet": neutralizer},
+    )
+    public = prepared / "public"
+    assert (public / "neutralizer" / "part_b.parquet").read_bytes() == neutralizer.read_bytes()
+    train = pd.read_parquet(public / "train.parquet")
+    # "all" keeps every listed target present in the data (the fake data lacks jupiter_60).
+    assert {"target", "target_jupiter_20"} <= set(train.columns) and "target_jupiter_60" not in train.columns
+    text = (public / "description.md").read_text()
+    assert "neutralizer/*.parquet" in text and "benchmark/*.parquet" not in text
+    assert "float features may be NaN" in text
+    assert "LightGBM" not in text and "n_estimators" not in text
+    split = prepare_task(tmp_path / "d", "numerai-v6", tmp_path / "fixed", copy_mode="copy")
+    assert (split / "train_view" / "input" / "neutralizer" / "part_b.parquet").exists()
+    assert (split / "refit_view" / "input" / "neutralizer" / "part_b.parquet").exists()

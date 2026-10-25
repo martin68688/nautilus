@@ -35,9 +35,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 from pathlib import Path
 
 import pandas as pd
+import pyarrow.parquet as pq
 
 from fixed_holdout.common import sha256_file, write_json
 
@@ -99,6 +101,7 @@ def _description(
     train_era_stride: int,
     selection: list[str] | None = None,
     resources: str = "",
+    reference_files: tuple[str, ...] = (),
 ) -> str:
     gap_rows = -(-embargo_eras // max(1, train_era_stride))
     gap_text = (
@@ -123,6 +126,24 @@ validation score, is what ranks solutions during the search."""
         if selection
         else ""
     )
+    references = []
+    if any(name.startswith("neutralizer/") for name in reference_files):
+        references.append(
+            """
+- `neutralizer/*.parquet`: Numerai's per-stock risk exposures, 300 float
+  columns `neutralizer_column_*`, keyed by `numerai_ticker` and `date` (the
+  same string as `era`). They cover every era of train and test, and more."""
+        )
+    if any(name.startswith("benchmark/") for name in reference_files):
+        references.append(
+            """
+- `benchmark/*.parquet`: predictions of Numerai's official benchmark model
+  `lgbm_jupiter_60`, keyed by `numerai_ticker` and `date`, also for the
+  unlabelled eras (as in the live tournament)."""
+        )
+    if references:
+        references.append("""
+  Neither folder contains labels; join them on `numerai_ticker` and `date == era`.""")
     resources_text = (
         f"""
 - Compute available to your program: {resources}. A program that exceeds the
@@ -145,9 +166,10 @@ the next 60 business days relative to the other stocks in the same era.
   f", every {train_era_stride}th era kept" if train_era_stride > 1 else ""}.
 - `test.parquet`: unlabelled rows to predict, {test_eras}. Same columns as
   train minus every label.
-- `sample_submission.csv`: `id,prediction` in the exact required row order.
+- `sample_submission.csv`: `id,prediction` in the exact required row order.{"".join(references)}
 
 Labels take values in {{0, 0.25, 0.5, 0.75, 1}}. Auxiliary labels may be NaN.
+The integer features have no missing values; the float features may be NaN.
 
 `numerai_ticker` is the real stock identifier (local ticker plus a country
 code, e.g. `000150 KR`) and stays the same across eras, so the rows of one
@@ -193,9 +215,6 @@ Fit the final model, predict every row of `test.parquet`, and write
 ## Practical notes{resources_text}
 - The data is large; read only the columns you need with
   `pd.read_parquet(path, columns=[...])` and keep integer features as int8.
-- Gradient-boosted trees (LightGBM) are a strong baseline. A reference
-  configuration is n_estimators=2000, learning_rate=0.01, max_depth=5,
-  num_leaves=31, colsample_bytree=0.1.
 """
 
 
@@ -213,10 +232,20 @@ def build_source(
     selection_eras: int = 0,
     benchmarks_path: Path | None = None,
     resources: str = "",
+    reference_files: dict[str, Path] | None = None,
 ) -> Path:
-    """Write the source layout and return `<dataset_root>/<task>/prepared`."""
+    """Write the source layout and return `<dataset_root>/<task>/prepared`.
+
+    ``extra_targets=("all",)`` keeps every Numerai target.  ``reference_files``
+    maps public paths (``neutralizer/...``, ``benchmark/...``) to official
+    Numerai files copied byte for byte (no labels), so remote hosts can fetch
+    the same files from Numerai and match the public tree hash.
+    """
     metadata = json.loads(Path(features_path).read_text(encoding="utf-8"))
     features = list(metadata["feature_sets"][feature_set])
+    if tuple(extra_targets) == ("all",):
+        present = set(pq.ParquetFile(train_path).schema_arrow.names)
+        extra_targets = tuple(t for t in metadata["targets"] if t in present)
     targets = [MAIN_TARGET, *[t for t in extra_targets if t != MAIN_TARGET]]
     unknown = sorted(set(targets) - set(metadata["targets"]))
     if unknown:
@@ -283,6 +312,11 @@ def build_source(
             columns=host_only
         ).to_parquet(refit / "train.parquet", index=False)
     write_json(public / "features.json", {"feature_set": feature_set, "features": features})
+    reference_files = dict(reference_files or {})
+    for name, source in sorted(reference_files.items()):
+        destination = public / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, destination)
     (public / "description.md").write_text(
         _description(
             feature_set=feature_set,
@@ -294,6 +328,7 @@ def build_source(
             train_era_stride=train_era_stride,
             selection=selection or None,
             resources=resources,
+            reference_files=tuple(reference_files),
         ),
         encoding="utf-8",
     )
@@ -321,6 +356,7 @@ def build_source(
                 "train.parquet": sha256_file(Path(train_path)),
                 "validation.parquet": sha256_file(Path(validation_path)),
                 "features.json": sha256_file(Path(features_path)),
+                **{name: sha256_file(Path(source)) for name, source in reference_files.items()},
             },
         },
     )
@@ -338,13 +374,17 @@ def main() -> None:
     parser.add_argument("--lockbox-eras", type=int, default=52)
     parser.add_argument("--embargo-eras", type=int, default=13)
     parser.add_argument("--train-era-stride", type=int, default=1)
-    parser.add_argument("--extra-target", action="append", default=None)
+    parser.add_argument("--extra-target", action="append", default=None,
+                        help='Auxiliary target to keep (repeatable); "all" keeps every target')
     parser.add_argument("--benchmarks", type=Path,
                         help="v6 validation_benchmark_models.parquet (Host-only BMC reference)")
     parser.add_argument("--resources", default="",
                         help='Compute budget stated in the task, e.g. "24 CPU threads, 1 GPU (24 GB), 38 GB RAM"')
     parser.add_argument("--selection-eras", type=int, default=0,
                         help="Host-held selection eras taken from the end of the public data")
+    parser.add_argument("--reference", action="append", default=[], metavar="NAME=PATH",
+                        help="Official label-free Numerai file to publish as NAME, e.g. "
+                        "neutralizer/part_a.parquet=train_neutralizer.parquet (repeatable)")
     args = parser.parse_args()
     if args.train and args.validation and args.features:
         features_path, train_path, validation_path = args.features, args.train, args.validation
@@ -366,6 +406,9 @@ def main() -> None:
         selection_eras=args.selection_eras,
         benchmarks_path=benchmarks_path,
         resources=args.resources,
+        reference_files=dict(
+            (name, Path(path)) for name, path in (item.split("=", 1) for item in args.reference)
+        ),
     )
     print(prepared)
 
