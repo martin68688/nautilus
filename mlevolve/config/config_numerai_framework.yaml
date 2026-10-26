@@ -31,3 +31,6 @@ family_quota:
 
 agent:
   use_global_memory: True
+  search:
+    # A failed improvement is not extended; the branch best is improved again.
+    retry_improve_from_local_best: True

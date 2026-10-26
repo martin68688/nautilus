@@ -288,6 +288,9 @@ class SearchConfig:
     fusion_max_time_hours: float
     fusion_min_successful_nodes: int
     fusion_min_branches: int
+    # After an improvement that scores below its branch's best node, improve
+    # the best node again instead of extending the worse child.
+    retry_improve_from_local_best: bool = False
 
 @dataclass
 class AgentConfig:

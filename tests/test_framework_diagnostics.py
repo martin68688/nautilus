@@ -443,3 +443,48 @@ def test_corr_bmc_selection_score_and_description(tmp_path):
     bmc = score_selection(manifest, preds, windows=1, score_metric="bmc")
     mix = score_selection(manifest, preds, windows=1, score_metric="corr_bmc")
     assert mix["score"] == pytest.approx(0.5 * corr["score"] + 2 * bmc["score"])
+
+
+def _improve_agent(retry):
+    scfg = SimpleNamespace(
+        metric_improvement_threshold=0.0001, max_improve_failure=3, num_improves=3,
+        retry_improve_from_local_best=retry, back_debug_depth=3, max_debug_depth=5,
+    )
+    return SimpleNamespace(
+        acfg=SimpleNamespace(check_data_leakage=False), scfg=scfg, metric_maximize=True,
+        search_start_time=None, current_node_list=[],
+    )
+
+
+def _improve_pair(child_metric):
+    from engine.search_node import SearchNode
+
+    best = SearchNode(code="best", plan="best", stage="improve", metric=MetricValue(0.04, maximize=True),
+                      is_buggy=False, is_valid=True)
+    best.local_best_node = best
+    best.continue_improve = True
+    child = SearchNode(code="child", plan="child", stage="improve", parent=best,
+                       metric=MetricValue(child_metric, maximize=True), is_buggy=False, is_valid=True)
+    best.expected_child_count = 1
+    child.local_best_node = best
+    return best, child
+
+
+def test_failed_improvement_retries_from_branch_best_only_when_enabled():
+    from engine.evaluation import check_improvement
+
+    best, worse = _improve_pair(0.03)
+    check_improvement(_improve_agent(retry=True), worse, best)
+    assert worse.is_terminal and not worse.continue_improve
+    assert best.continue_improve is False  # select() expands the branch best again
+
+    better = _improve_pair(0.05)[1]
+    better.parent = best
+    best.children.add(better) if isinstance(best.children, set) else best.children.append(better)
+    better.local_best_node = best
+    check_improvement(_improve_agent(retry=True), better, best)
+    assert better.local_best_node is better and best.continue_improve is True
+
+    best, worse = _improve_pair(0.03)
+    check_improvement(_improve_agent(retry=False), worse, best)
+    assert worse.continue_improve and not worse.is_terminal  # original behaviour: extend the child

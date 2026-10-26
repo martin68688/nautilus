@@ -199,6 +199,21 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
                 action = "continue_after_component_repair"
                 cur_node.continue_improve = True
                 cur_node.is_terminal = False
+            elif (
+                improvement < agent.scfg.metric_improvement_threshold
+                and local_best_node.improve_failure_depth < agent.scfg.max_improve_failure
+                and getattr(agent.scfg, "retry_improve_from_local_best", False)
+                and local_best_node is not cur_node
+                and cur_node.parent is local_best_node
+                and not local_best_node.reached_child_limit(scfg=agent.scfg)
+            ):
+                # Keep the worse attempt as a terminal record; select() expands
+                # the branch best again (continue_improve=False stops the walk there).
+                local_best_node.improve_failure_depth += 1
+                action = "retry_from_local_best"
+                cur_node.continue_improve = False
+                cur_node.is_terminal = True
+                local_best_node.continue_improve = False
             elif improvement < agent.scfg.metric_improvement_threshold and local_best_node.improve_failure_depth < agent.scfg.max_improve_failure:
                 local_best_node.improve_failure_depth += 1
                 action = "continue"
@@ -212,6 +227,9 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
                 action = "continue"
                 cur_node.local_best_node = cur_node
                 cur_node.continue_improve = True
+                if getattr(agent.scfg, "retry_improve_from_local_best", False) and cur_node.parent is not None:
+                    # The old best may have been held for a retry; let select() reach this child.
+                    cur_node.parent.continue_improve = True
             logger.info(f"[eval] node {cur_node.id}: improvement={improvement:.6f}, action={action}")
         elif new_metric is not None:
             cur_node.local_best_node = cur_node
