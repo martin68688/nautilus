@@ -57,10 +57,35 @@ def get_node_reward(agent, node: SearchNode):
     return reward
 
 
+def _consecutive_memory_errors(node: SearchNode) -> int:
+    """MemoryErrors along the debug chain ending at node (node first)."""
+    count = 0
+    while node is not None and node.is_buggy and node.exc_type == "MemoryError":
+        count += 1
+        node = node.parent
+    return count
+
+
 def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
 
     improvement = 0
     should_backpropagate = False
+
+    memory_limit = int(getattr(getattr(agent, "scfg", None), "max_consecutive_memory_errors", 0) or 0)
+    if cur_node.is_buggy and memory_limit and _consecutive_memory_errors(cur_node) >= memory_limit:
+        # Repairs keep hitting the memory cap and each costs a full run: close
+        # the whole MemoryError chain so select() does not debug any of it again.
+        logger.info(
+            f"[eval] node {cur_node.id}: {memory_limit} consecutive MemoryErrors, "
+            "debug chain closed"
+        )
+        node = cur_node
+        while node is not None and node.is_buggy and node.exc_type == "MemoryError":
+            node.is_terminal = True
+            node.continue_improve = False
+            node = node.parent
+        backpropagate(cur_node, get_node_reward(agent, cur_node))
+        return True
 
     if not rank_eligible(agent, cur_node):
         cur_node.continue_improve = True
@@ -246,6 +271,7 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
             should_backpropagate = True
             if cur_node.debug_depth >= agent.scfg.max_debug_depth:
                 cur_node.is_terminal = True
+
 
     if should_backpropagate:
         reward = get_node_reward(agent, cur_node)

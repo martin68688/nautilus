@@ -378,6 +378,80 @@ def _seed_candidate_torch_hub_cache(
     return receipt
 
 
+class _ResourceTrace:
+    """Sample memory and CPU time of a candidate's process tree (Linux /proc).
+
+    The trace is a Host observation attached to runs that are killed or time
+    out, so a repair sees when memory grew and how many cores were busy.
+    """
+
+    def __init__(self, pid: int, interval: float = 5.0):
+        self.pid = pid
+        self.interval = interval
+        self.samples: list[tuple[float, int, float]] = []  # (seconds, rss bytes, cpu seconds)
+        self._stop = threading.Event()
+        self._start = time.time()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        if os.path.isdir(f"/proc/{pid}"):
+            self._thread.start()
+
+    def _tree(self) -> list[int]:
+        children: dict[int, list[int]] = {}
+        for entry in os.listdir("/proc"):
+            if entry.isdigit():
+                try:
+                    with open(f"/proc/{entry}/stat") as handle:
+                        ppid = int(handle.read().rsplit(")", 1)[1].split()[1])
+                except (OSError, ValueError, IndexError):
+                    continue
+                children.setdefault(ppid, []).append(int(entry))
+        tree = [self.pid]
+        for pid in tree:
+            tree.extend(children.get(pid, []))
+        return tree
+
+    def _sample(self) -> tuple[int, float]:
+        rss, cpu = 0, 0.0
+        tick, page = os.sysconf("SC_CLK_TCK"), os.sysconf("SC_PAGE_SIZE")
+        for pid in self._tree():
+            try:
+                with open(f"/proc/{pid}/stat") as handle:
+                    fields = handle.read().rsplit(")", 1)[1].split()
+                cpu += (int(fields[11]) + int(fields[12])) / tick  # utime + stime
+                rss += int(fields[21]) * page
+            except (OSError, ValueError, IndexError):
+                continue
+        return rss, cpu
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            rss, cpu = self._sample()
+            if rss:
+                self.samples.append((time.time() - self._start, rss, cpu))
+            self._stop.wait(self.interval)
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def summary(self, points: int = 8) -> str:
+        """One line: peak memory and a short memory/cores timeline."""
+        if len(self.samples) < 2:
+            return ""
+        peak = max(self.samples, key=lambda sample: sample[1])
+        step = max(1, len(self.samples) // points)
+        chosen = self.samples[::step]
+        if chosen[-1] is not self.samples[-1]:
+            chosen.append(self.samples[-1])
+        parts = []
+        for before, after in zip(chosen, chosen[1:]):
+            cores = (after[2] - before[2]) / max(after[0] - before[0], 1e-9)
+            parts.append(f"min {after[0] / 60:.0f}: {after[1] / 1e9:.0f} GB, {cores:.1f} cores")
+        return (
+            f"Host resource trace: peak memory {peak[1] / 1e9:.0f} GB at min {peak[0] / 60:.0f}; "
+            + " | ".join(parts)
+        )
+
+
 def _execution_environment(runtime_cache_root: Path | None = None) -> dict[str, str]:
     """Expose runtime helpers and a writable cache home to isolated runfiles.
 
@@ -1392,6 +1466,7 @@ class Interpreter:
             )
             with self._procs_lock:
                 self._active_procs[process_id] = proc
+            resource_trace = _ResourceTrace(proc.pid)
 
             child_in_overtime = False
             exc_type = None
@@ -1400,6 +1475,7 @@ class Interpreter:
             
             try:
                 stdout, stderr = proc.communicate(timeout=effective_timeout)
+                resource_trace.stop()
                 exec_time = time.time() - start_time
                 
                 if proc.returncode != 0:
@@ -1479,6 +1555,9 @@ class Interpreter:
                             "likely because it exceeded the available memory"
                         }
                         stderr = (stderr or "") + f"\nMemoryError: {exc_info['message']}\n"
+                        trace = resource_trace.summary()
+                        if trace:
+                            stderr += trace + "\n"
             except subprocess.TimeoutExpired:
                 logger.warning("Subprocess timeout, sending SIGINT...")
                 try:
@@ -1488,6 +1567,10 @@ class Interpreter:
                     logger.warning("Subprocess failed to terminate after SIGINT, killing...")
                     proc.kill()
                     stdout, stderr = proc.communicate()
+                resource_trace.stop()
+                trace = resource_trace.summary()
+                if trace:
+                    stderr = (stderr or "") + "\n" + trace + "\n"
                 
                 exec_time = time.time() - start_time
                 exc_type = "TimeoutError"

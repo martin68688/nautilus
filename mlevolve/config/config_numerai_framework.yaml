@@ -34,3 +34,5 @@ agent:
   search:
     # A failed improvement is not extended; the branch best is improved again.
     retry_improve_from_local_best: True
+    # Two memory kills in a row end a debug chain (each kill costs a full run).
+    max_consecutive_memory_errors: 2

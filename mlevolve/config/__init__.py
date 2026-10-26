@@ -291,6 +291,8 @@ class SearchConfig:
     # After an improvement that scores below its branch's best node, improve
     # the best node again instead of extending the worse child.
     retry_improve_from_local_best: bool = False
+    # Stop debugging a chain after this many consecutive MemoryErrors (0 = off).
+    max_consecutive_memory_errors: int = 0
 
 @dataclass
 class AgentConfig:

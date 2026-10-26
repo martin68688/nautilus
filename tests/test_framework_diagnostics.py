@@ -488,3 +488,34 @@ def test_failed_improvement_retries_from_branch_best_only_when_enabled():
     best, worse = _improve_pair(0.03)
     check_improvement(_improve_agent(retry=False), worse, best)
     assert worse.continue_improve and not worse.is_terminal  # original behaviour: extend the child
+
+
+def test_resource_trace_summary_reports_peak_and_cores():
+    from engine.executor import _ResourceTrace
+
+    trace = _ResourceTrace(pid=-1)  # no /proc entry: sampler thread never starts
+    trace.samples = [(0, 6e9, 0.0), (600, 60e9, 600.0), (1200, 150e9, 1200.0), (1800, 197e9, 1800.0)]
+    text = trace.summary()
+    assert "peak memory 197 GB at min 30" in text and "1.0 cores" in text
+
+
+def test_debug_chain_stops_after_consecutive_memory_errors(monkeypatch):
+    from engine import evaluation
+    from engine.search_node import SearchNode
+
+    first = SearchNode(code="a", plan="a", stage="draft", is_buggy=True, exc_type="MemoryError")
+    second = SearchNode(code="b", plan="b", stage="debug", parent=first, is_buggy=True, exc_type="MemoryError")
+    other = SearchNode(code="c", plan="c", stage="debug", parent=first, is_buggy=True, exc_type="ValueError")
+    assert evaluation._consecutive_memory_errors(second) == 2
+    assert evaluation._consecutive_memory_errors(other) == 0
+
+    monkeypatch.setattr(evaluation, "backpropagate", lambda node, value, add_to_tree=True: None)
+    monkeypatch.setattr(evaluation, "get_node_reward", lambda agent, node: -1)
+    agent = _improve_agent(retry=True)
+    second.local_best_node = second
+    agent.scfg.max_consecutive_memory_errors = 0
+    evaluation.check_improvement(agent, second, first)
+    assert second.is_terminal is False  # off by default
+    agent.scfg.max_consecutive_memory_errors = 2
+    evaluation.check_improvement(agent, second, first)
+    assert second.is_terminal is True and first.is_terminal is True
