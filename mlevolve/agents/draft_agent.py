@@ -16,6 +16,7 @@ from engine.search_node import SearchNode
 from agents.coder import plan_and_code_query, stepwise_plan_and_code_query
 from agents.triggers import register_node
 from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
+from agents.knowledge_context import knowledge_prompt
 from agents.prompts import (
     ROBUSTNESS_GENERALIZATION_STRATEGY,
     MODEL_ARCHITECTURE_SAFETY,
@@ -440,6 +441,11 @@ def run(
             f"---\n## Run-Forest Runtime Draft Navigation\n"
             f"{existing_external.strip()}"
         ).strip() if existing_external.strip() else coldstart_external_text.strip()
+    knowledge_text, knowledge_ids = knowledge_prompt(agent, "draft", None)
+    if knowledge_text:
+        prompt["External Skill Memory"] = "\n\n".join(
+            [prompt.get("External Skill Memory", ""), knowledge_text]
+        ).strip()
 
     instructions = f"\n# Instructions\n\n"
     instructions += compile_prompt_to_md(prompt["Instructions"], 2)
@@ -588,6 +594,8 @@ def run(
         )
     else:
         log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "draft")
+    if knowledge_ids:
+        log_adoption(new_node, agent, "verified_knowledge", knowledge_ids, "draft")
 
     logger.info(f"[draft] → node {new_node.id} (branch={new_node.branch_id} role={draft_role})")
     return new_node

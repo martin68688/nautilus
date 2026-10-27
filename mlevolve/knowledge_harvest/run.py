@@ -64,7 +64,7 @@ def build_corpus(out: Path, cutoff: datetime, http: CachedHttp) -> tuple[list[di
             print(f"forum topics {n}/{len(topic_ids)}", flush=True)
     commits = {}
     for repo in REPOS:
-        commit, docs = repo_documents(http, repo, cutoff)
+        commit, docs = repo_documents(http, repo, cutoff, git_dir=out / "cache" / "git")
         commits[repo] = commit
         documents.extend(docs)
     _write_jsonl(out / "documents.jsonl", documents)

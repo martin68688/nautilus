@@ -94,6 +94,18 @@ def test_grade_rules():
     assert consolidate.grade([item("a", "in_sample", staff=True)])["grade"] == "C"
     assert consolidate.grade([item("a", "in_sample")])["grade"] == "D"
     assert consolidate.grade([item("a"), item("b", stance="caution")])["disputed"] is True
+    speculative = item("a", "validation") | {"certainty": "speculative"}
+    assert consolidate.grade([speculative])["grade"] == "D"
+    same_doc = [item("a", "validation"), item("b", "validation") | {"doc_id": "a"}]
+    assert consolidate.grade(same_doc)["grade"] == "B"  # two authors but one document
+
+
+def test_verify_item_attributes_evidence_to_the_quoting_post():
+    posts = [{"author": "helper", "created_at": "2023-01-01", "text": "fixed your code"},
+             {"author": "measurer", "created_at": "2023-01-02", "text": "my validation corr was 0.031"}]
+    item = {"evidence": [{"quote": "validation corr was 0.031", "value": "0.031", "setting": "validation"}]}
+    verified = extract.verify_item(item, "fixed your code my validation corr was 0.031", posts)
+    assert verified["evidence"][0]["author"] == "measurer" and verified["certainty"] == "experience"
 
 
 def test_render_splits_long_documents_into_chunks_with_header():

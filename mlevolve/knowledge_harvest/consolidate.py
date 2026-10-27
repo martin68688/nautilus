@@ -10,7 +10,7 @@ import json
 from collections import defaultdict
 from typing import Callable
 
-PROMPT_VERSION = "consolidate-v2"
+PROMPT_VERSION = "consolidate-v3"
 _BATCH = 70
 
 CLUSTER_SYSTEM = """You group extracted Numerai modelling items that describe the same method.
@@ -28,13 +28,15 @@ Input: a JSON list of {"key", "title", "principle"}. Label each key with one kin
 "modelling": how to build, train, combine or post-process models (data handling, targets, features, models, ensembles, neutralization);
 "evaluation": how to validate or measure a model offline (validation design, metrics a modeller computes);
 "mechanics": tournament payouts, staking, stake allocation, submissions, account or website matters, gaming the payout rules;
+"signals": about Numerai Signals (participants supply their own stock data), not the main tournament;
 "generic": advice too vague to act on (e.g. "avoid overfitting", "use cross-validation") without any Numerai-specific detail.
 Return a JSON object {"labels": [{"key": key, "kind": kind}]} covering every key."""
 
 DEDUP_SYSTEM = """You merge duplicate entries of a Numerai modelling knowledge base.
 Input: a JSON list of {"key", "title", "principle"}. Two entries are duplicates when they recommend the same
-underlying technique (e.g. several entries about neutralizing predictions to features are one technique, even
-with different proportions or feature subsets). Keep genuinely different techniques apart.
+underlying technique AND variant: merging them must not hide a choice a modeller would test as a separate
+experiment. E.g. "neutralize to all features" and "neutralize only to the riskiest features" stay apart, while two
+entries that both say "neutralize to all features with proportion 0.5" merge. Keep genuinely different techniques apart.
 Return a JSON object {"groups": [{"title": canonical title, "keys": [keys]}]} covering every key exactly once."""
 
 KEEP_KINDS = ("modelling", "evaluation")
@@ -128,24 +130,30 @@ def cluster_category(items: list[dict], llm: Callable[[str, str], dict]) -> list
 def grade(members: list[dict]) -> dict:
     """Evidence grade from verified evidence.
 
-    A: out-of-sample (live/validation/backtest) numbers from >= 2 independent authors
-    B: out-of-sample numbers from one author
-    C: no out-of-sample numbers, but stated by Numerai staff/official repos or >= 3 authors
-    D: everything else (single unmeasured opinion, in-sample numbers only)
+    A: out-of-sample (live/validation/backtest) numbers from >= 2 authors in >= 2 documents
+    B: out-of-sample numbers from one author or one document
+    C: no out-of-sample numbers, but stated by Numerai staff/official repos or in >= 3 documents
+    D: everything else (single unmeasured opinion, in-sample numbers only, or only speculation)
+    Evidence counts the author of the post that holds the quoted number.
     """
-    settings_by_author: dict[str, set[str]] = defaultdict(set)
+    oos = {"live", "validation", "backtest"}
+    oos_authors: set[str] = set()
+    oos_docs: set[str] = set()
     for it in members:
         for ev in it.get("evidence") or []:
-            for author in it.get("authors") or ["?"]:
-                settings_by_author[author].add(ev.get("setting", "unspecified"))
+            if ev.get("setting") in oos:
+                oos_authors.add(ev.get("author") or f"?{it['doc_id']}")
+                oos_docs.add(it["doc_id"])
     authors = {a for it in members for a in it.get("authors") or []}
-    oos_authors = {a for a, s in settings_by_author.items() if s & {"live", "validation", "backtest"}}
+    docs = {it["doc_id"] for it in members}
     staff = any(it.get("staff") for it in members)
-    if len(oos_authors) >= 2:
+    if all(it.get("certainty") == "speculative" for it in members):
+        level = "D"
+    elif len(oos_authors) >= 2 and len(oos_docs) >= 2:
         level = "A"
     elif oos_authors:
         level = "B"
-    elif staff or len(authors) >= 3:
+    elif staff or len(docs) >= 3:
         level = "C"
     else:
         level = "D"

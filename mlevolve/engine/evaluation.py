@@ -6,6 +6,7 @@ import random
 
 from agents.leakage_audit import rank_eligible
 from engine.search_node import SearchNode
+from engine.research_loop import ledger_for
 
 logger = logging.getLogger("MLEvolve")
 
@@ -82,6 +83,10 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
 
     improvement = 0
     should_backpropagate = False
+
+    ledger = ledger_for(agent)
+    if ledger is not None and cur_node.stage in ("improve", "debug"):
+        ledger.conclude(cur_node, agent.scfg.metric_improvement_threshold, agent.metric_maximize)
 
     memory_limit = int(getattr(getattr(agent, "scfg", None), "max_consecutive_memory_errors", 0) or 0)
     if cur_node.is_buggy and memory_limit and _consecutive_memory_errors(cur_node) >= memory_limit:

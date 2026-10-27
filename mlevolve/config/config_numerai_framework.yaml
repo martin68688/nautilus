@@ -40,3 +40,17 @@ agent:
     retry_improve_from_local_best: True
     # Two memory kills in a row end a debug chain (each kill costs a full run).
     max_consecutive_memory_errors: 2
+    # Each improvement tests one stated hypothesis in a direction scheduled by
+    # a UCB bandit over earlier outcomes; the ledger is shown to later attempts.
+    research_loop: True
+    research_ucb_c: 1.0
+    research_ledger_shown: 10
+
+# Public knowledge harvested before the split's last training era, each entry
+# with its training-period check. Off by default; enable with the set's path:
+#   knowledge.enabled=True knowledge.path=<dir>/knowledge_verified.json
+knowledge:
+  enabled: False
+  path: ""
+  stages: [draft, improve]
+  max_entries: 4

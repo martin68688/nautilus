@@ -293,6 +293,12 @@ class SearchConfig:
     retry_improve_from_local_best: bool = False
     # Stop debugging a chain after this many consecutive MemoryErrors (0 = off).
     max_consecutive_memory_errors: int = 0
+    # Hypothesis -> experiment -> conclusion loop: each improvement tests one
+    # hypothesis in a UCB-scheduled direction; outcomes are shown to later attempts.
+    research_loop: bool = False
+    research_directions: Optional[Any] = None  # mapping name -> description; None = built-in set
+    research_ucb_c: float = 1.0
+    research_ledger_shown: int = 10
 
 @dataclass
 class AgentConfig:
@@ -775,6 +781,16 @@ class HostSelectionConfig:
 
 
 @dataclass
+class KnowledgeConfig:
+    """Verified public knowledge (knowledge_harvest output) shown in prompts."""
+
+    enabled: bool = False
+    path: str = ""
+    stages: list[str] = field(default_factory=lambda: ["draft", "improve"])
+    max_entries: int = 4
+
+
+@dataclass
 class ComponentHealthConfig:
     """Detect component-level failures inside otherwise successful nodes."""
 
@@ -832,6 +848,7 @@ class Config(Hashable):
     fixed_holdout: FixedHoldoutConfig = field(default_factory=FixedHoldoutConfig)
     host_selection: HostSelectionConfig = field(default_factory=HostSelectionConfig)
     component_health: ComponentHealthConfig = field(default_factory=ComponentHealthConfig)
+    knowledge: KnowledgeConfig = field(default_factory=KnowledgeConfig)
     family_quota: FamilyQuotaConfig = field(default_factory=FamilyQuotaConfig)
     official_submission: OfficialSubmissionConfig = field(
         default_factory=OfficialSubmissionConfig

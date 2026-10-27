@@ -27,6 +27,8 @@ from agents.planner import run_planner, generate_initial_plan, refine_plan_to_js
 from agents.coder import plan_and_code_query
 from agents.coder.diff_coder import diff_generate_and_apply
 from agents.memory.external_skill_memory import fetch_external_skill_memory, external_memory_section_title, external_memory_section_intro
+from agents.knowledge_context import knowledge_prompt
+from engine.research_loop import ledger_for
 from agents.memory_strategy_agent import payload_sha256, run_memory_strategy_shadow
 from agents.strategy_actuation import (
     MemoryStrategyActuationRejected,
@@ -300,6 +302,22 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     if external_skill_text:
         prompt["External Skill Memory"] = external_skill_text
 
+    # Research loop and verified knowledge travel in the memory section, the
+    # one part both the full-rewrite and the diff planner read.
+    ledger = ledger_for(agent)
+    scheduled_direction = ledger.choose() if ledger is not None else None
+    knowledge_text, knowledge_ids = knowledge_prompt(agent, "improve", scheduled_direction)
+    extra_sections = [
+        text for text in (
+            ledger.prompt_text(scheduled_direction) if ledger is not None else "",
+            knowledge_text,
+        ) if text
+    ]
+    if extra_sections:
+        prompt["External Skill Memory"] = "\n\n".join(
+            [prompt.get("External Skill Memory", "")] + extra_sections
+        ).strip()
+
     # Strategy receives the wider Router pack. Shadow mode remains a strict
     # side channel; active mode actuates only through the separate bounded
     # Atomic Planner/Coder transaction.
@@ -405,9 +423,13 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
             active_actuation_trace.get("plan_diff_verdict") or {}
         )
     register_node(agent, new_node, prompt_complete, parent_node=parent_node)
+    if ledger is not None:
+        ledger.register(new_node, scheduled_direction)
 
     from agents.adoption import log_adoption
     log_adoption(new_node, agent, external_skill_source, external_skill_ref_ids, "improve")
+    if knowledge_ids:
+        log_adoption(new_node, agent, "verified_knowledge", knowledge_ids, "improve")
     if active_actuation_trace.get("status") == "accepted":
         log_adoption(
             new_node,

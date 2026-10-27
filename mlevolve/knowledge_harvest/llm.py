@@ -12,10 +12,19 @@ from typing import Any
 from openai import OpenAI
 
 
+def _no_thinking_body(base_url: str) -> dict[str, Any]:
+    """How to switch reasoning off: the official DeepSeek API takes ``thinking``;
+    vLLM gateways (e.g. NRP ellm) take it as a chat-template argument."""
+    if "api.deepseek.com" in (base_url or ""):
+        return {"thinking": {"type": "disabled"}}
+    return {"chat_template_kwargs": {"thinking": False, "enable_thinking": False}}
+
+
 class JsonLLM:
-    def __init__(self, model: str, cache_dir: Path, max_tokens: int = 8192):
+    def __init__(self, model: str, cache_dir: Path, max_tokens: int = 16384):
         self.model = model
         self.max_tokens = max_tokens
+        self.extra_body = _no_thinking_body(os.environ.get("OPENAI_BASE_URL", ""))
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.client = OpenAI(
@@ -40,8 +49,8 @@ class JsonLLM:
                     temperature=0.0,
                     max_tokens=self.max_tokens,
                     response_format={"type": "json_object"},
-                    # DeepSeek V4: plain JSON extraction, no reasoning pass.
-                    extra_body={"thinking": {"type": "disabled"}},
+                    # Plain JSON extraction, no reasoning pass.
+                    extra_body=self.extra_body,
                 )
                 result = json.loads(completion.choices[0].message.content or "")
                 break

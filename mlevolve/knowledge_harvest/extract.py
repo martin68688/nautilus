@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from typing import Any, Callable
 
-PROMPT_VERSION = "extract-v1"
+PROMPT_VERSION = "extract-v2"
 MAX_CHUNK_CHARS = 30_000
 
 CATEGORIES = (
@@ -34,6 +34,8 @@ Each item is one concrete modelling method, practice or warning stated in the do
   "principle": 1-3 sentences: what to do and how, with the concrete parameters the document gives,
   "condition": when it applies (data version, target, compute limits) as stated; "" if not stated,
   "stance": "recommend" | "caution" (the document warns against it or reports it failing) | "neutral",
+  "certainty": "measured" (the author reports their own experiment with numbers) | "experience" (the author reports
+               their practice or observation without numbers) | "speculative" (the author guesses, asks, or hedges),
   "evidence": [{{"claim": what was measured, "metric": e.g. "mean corr", "value": number as written, "baseline_value": number or "",
                 "setting": one of {list(SETTINGS)}, "data_version": as stated or "",
                 "quote": verbatim excerpt (<= 300 chars) from the document that contains the number}}],
@@ -42,6 +44,10 @@ Each item is one concrete modelling method, practice or warning stated in the do
   "authors": [usernames]
 }}
 Rules: quotes must be copied exactly from the document text. Report numbers only when the document gives them.
+Keep the author's own qualifiers ("not enough time to conclude", "just a guess", "AFAIK") in the principle; never turn a
+hedge into a rule. "setting" is "live" only for tournament live results, "validation" only for a held-out period the
+document names as validation; a random row split, an in-sample fit or a count of anything is not validation.
+If a later post in this document revises or contradicts an item, put that post under counter_evidence.
 Skip trivial items (installing packages, file paths). Merge repeated statements of the same method within this document.
 """
 
@@ -74,9 +80,14 @@ def _numbers(text: str) -> set[str]:
     return {m.lstrip("0") or "0" for m in re.findall(r"\d+(?:\.\d+)?", text or "")}
 
 
-def verify_item(item: dict, source_text: str) -> dict:
-    """Keep only evidence whose quote is in the source and contains its value."""
+def verify_item(item: dict, source_text: str, posts: list[dict] | None = None) -> dict:
+    """Keep only evidence whose quote is in the source and contains its value.
+
+    Each kept quote is attributed to the post that contains it, so evidence
+    counts its actual author, not everyone who took part in the thread.
+    """
     source = _norm(source_text)
+    normed_posts = [(_norm(p["text"]), p) for p in posts or []]
     kept, dropped = [], 0
     for ev in item.get("evidence") or []:
         quote = _norm(str(ev.get("quote", "")))
@@ -84,6 +95,10 @@ def verify_item(item: dict, source_text: str) -> dict:
         if quote and quote in source and (_numbers(value) & _numbers(quote) or not _numbers(value)):
             if ev.get("setting") not in SETTINGS:
                 ev["setting"] = "unspecified"
+            post = next((p for text, p in normed_posts if quote in text), None)
+            if post is not None:
+                ev["author"] = post["author"]
+                ev["post_date"] = post["created_at"][:10]
             kept.append(ev)
         else:
             dropped += 1
@@ -94,6 +109,8 @@ def verify_item(item: dict, source_text: str) -> dict:
     item["evidence_dropped_unverified"] = dropped
     if item.get("category") not in CATEGORIES:
         item["category"] = "other"
+    if item.get("certainty") not in ("measured", "experience", "speculative"):
+        item["certainty"] = "experience"
     return item
 
 
@@ -107,7 +124,7 @@ def extract_document(document: dict, llm: Callable[[str, str], dict]) -> list[di
         for item in result.get("items") or []:
             if not isinstance(item, dict) or not item.get("title") or not item.get("principle"):
                 continue
-            item = verify_item(item, chunk)
+            item = verify_item(item, chunk, document["posts"])
             numbers = [int(n) for n in item.get("post_numbers") or []
                        if str(n).isdigit() and int(n) in posts_by_number]
             item.update({
