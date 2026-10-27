@@ -768,6 +768,10 @@ class HostSelectionConfig:
     score_metric: str = "corr"  # corr | bmc | corr_bmc (bmc needs Host benchmark predictions)
     corr_weight: float = 0.5  # corr_bmc: corr_weight * CORR + bmc_weight * BMC per era
     bmc_weight: float = 2.0
+    # Penalize near-copies of the Host benchmark: score -= penalty * (similarity - threshold)
+    # when the mean per-era rank correlation with the benchmark exceeds threshold. None = off.
+    similarity_threshold: Optional[float] = None
+    similarity_penalty: float = 0.0
 
 
 @dataclass

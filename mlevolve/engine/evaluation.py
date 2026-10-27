@@ -66,6 +66,18 @@ def _consecutive_memory_errors(node: SearchNode) -> int:
     return count
 
 
+def _attempt_origin(node: SearchNode) -> SearchNode | None:
+    """The working node this attempt started from, skipping its failed ancestors.
+
+    A debug child of a failed improvement started from the node that the
+    failed improvement started from.
+    """
+    origin = node.parent
+    while origin is not None and origin.is_buggy:
+        origin = origin.parent
+    return origin
+
+
 def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
 
     improvement = 0
@@ -229,11 +241,13 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
                 and local_best_node.improve_failure_depth < agent.scfg.max_improve_failure
                 and getattr(agent.scfg, "retry_improve_from_local_best", False)
                 and local_best_node is not cur_node
-                and cur_node.parent is local_best_node
+                and _attempt_origin(cur_node) is local_best_node
                 and not local_best_node.reached_child_limit(scfg=agent.scfg)
             ):
                 # Keep the worse attempt as a terminal record; select() expands
                 # the branch best again (continue_improve=False stops the walk there).
+                # This also covers an attempt that failed first and was then
+                # repaired into a worse working node.
                 local_best_node.improve_failure_depth += 1
                 action = "retry_from_local_best"
                 cur_node.continue_improve = False

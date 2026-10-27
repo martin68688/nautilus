@@ -17,6 +17,10 @@ host_selection:
   objective: mean
   # Rank by CORR; BMC is reported for every node (switch to bmc to rank by it).
   score_metric: corr
+  # A near-copy of the benchmark loses 0.2 per unit of rank correlation with it
+  # above 0.9 (a pure copy: -0.02), so it cannot win on the benchmark's own CORR.
+  similarity_threshold: 0.9
+  similarity_penalty: 0.2
 
 component_health:
   enabled: True

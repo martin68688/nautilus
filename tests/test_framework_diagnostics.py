@@ -445,6 +445,32 @@ def test_corr_bmc_selection_score_and_description(tmp_path):
     assert mix["score"] == pytest.approx(0.5 * corr["score"] + 2 * bmc["score"])
 
 
+def test_selection_penalizes_copies_of_the_benchmark(tmp_path):
+    train_path, validation_path, features_path = _write_raw_numerai(tmp_path, n_eras=48)
+    validation = pd.read_parquet(validation_path)
+    bench_path = tmp_path / "raw" / "validation_benchmark_models.parquet"
+    validation[["numerai_ticker", "date"]].assign(
+        lgbm_jupiter_60=np.random.default_rng(5).uniform(size=len(validation))
+    ).to_parquet(bench_path, index=False)
+    build_source(
+        train_path, validation_path, features_path, tmp_path / "d",
+        lockbox_eras=6, embargo_eras=2, selection_eras=8, benchmarks_path=bench_path,
+    )
+    split = prepare_task(tmp_path / "d", "numerai-v6", tmp_path / "fixed", copy_mode="copy")
+    manifest = split / "selection_view" / "fixed_holdout_manifest.json"
+    labels = pd.read_csv(split / "selection_view" / "labels.csv")
+    copy = tmp_path / "copy.csv"
+    labels[["id"]].assign(prediction=labels["benchmark"]).to_csv(copy, index=False)
+
+    plain = score_selection(manifest, copy, windows=1)
+    penalized = score_selection(manifest, copy, windows=1, similarity_threshold=0.9, similarity_penalty=0.5)
+
+    assert plain["benchmark_similarity"] == pytest.approx(1.0)
+    assert plain["similarity_penalty"] == 0.0
+    assert penalized["similarity_penalty"] == pytest.approx(0.05)
+    assert penalized["score"] == pytest.approx(plain["score"] - 0.05)
+
+
 def _improve_agent(retry):
     scfg = SimpleNamespace(
         metric_improvement_threshold=0.0001, max_improve_failure=3, num_improves=3,
@@ -488,6 +514,23 @@ def test_failed_improvement_retries_from_branch_best_only_when_enabled():
     best, worse = _improve_pair(0.03)
     check_improvement(_improve_agent(retry=False), worse, best)
     assert worse.continue_improve and not worse.is_terminal  # original behaviour: extend the child
+
+
+def test_repaired_worse_attempt_also_retries_from_branch_best():
+    from engine.evaluation import check_improvement
+    from engine.search_node import SearchNode
+
+    best, _ = _improve_pair(0.03)
+    failed = SearchNode(code="failed", plan="failed", stage="improve", parent=best, is_buggy=True)
+    failed.local_best_node = best
+    repaired = SearchNode(code="fixed", plan="fixed", stage="debug", parent=failed,
+                          metric=MetricValue(0.005, maximize=True), is_buggy=False, is_valid=True)
+    repaired.local_best_node = best
+
+    check_improvement(_improve_agent(retry=True), repaired, failed)
+
+    assert repaired.is_terminal and not repaired.continue_improve
+    assert best.continue_improve is False  # select() expands the branch best again
 
 
 def test_resource_trace_summary_reports_peak_and_cores():

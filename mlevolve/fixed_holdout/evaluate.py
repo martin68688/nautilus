@@ -107,6 +107,15 @@ def _benchmark_contribution(predictions: np.ndarray, benchmark: np.ndarray, targ
     return float(centered @ neutral / len(targets))
 
 
+def _benchmark_similarity(predictions: np.ndarray, benchmark: np.ndarray) -> float:
+    """Rank correlation of one era's predictions with the benchmark predictions."""
+    p = _gaussian_rank(predictions)
+    m = _gaussian_rank(benchmark)
+    if p.std() == 0 or m.std() == 0:
+        return 0.0
+    return float(np.corrcoef(p, m)[0, 1])
+
+
 def _summary(values: np.ndarray, prefix: str) -> dict:
     std = float(values.std(ddof=1)) if len(values) > 1 else 0.0
     return {
@@ -161,6 +170,10 @@ def numerai_era_scores(
         }
         result |= _summary(np.array(list(per_era_bmc.values()), dtype=float), "bmc")
         result["per_era_bmc"] = per_era_bmc
+        result["benchmark_similarity"] = float(np.mean([
+            _benchmark_similarity(group["pred"].to_numpy(), group["benchmark"].to_numpy())
+            for _, group in frame.groupby("era", sort=True)
+        ]))
     return result
 
 
