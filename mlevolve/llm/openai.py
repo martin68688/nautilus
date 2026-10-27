@@ -21,6 +21,17 @@ _REASONING_EFFORTS = frozenset(
     {"none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"}
 )
 
+# DeepSeek V4 counts reasoning tokens against max_tokens; at effort "high" the
+# reasoning alone can exceed a 16k cap and leave the answer empty. Callers size
+# max_tokens for the answer, so thinking requests get this much on top.
+DEEPSEEK_THINKING_HEADROOM_TOKENS = 65536
+
+
+def _with_thinking_headroom(max_tokens: int, extra_body: dict) -> int:
+    if (extra_body.get("thinking") or {}).get("type") == "enabled":
+        return max_tokens + DEEPSEEK_THINKING_HEADROOM_TOKENS
+    return max_tokens
+
 
 def _reasoning_effort_extra_body() -> dict[str, str]:
     """Return an audited optional reasoning-effort request for CLIProxyAPI.
@@ -184,7 +195,9 @@ def query(
             if "temperature" in filtered
             else profile.get("temperature", 1.0)
         ),
-        "max_tokens": filtered.get("max_tokens", 16384),
+        "max_tokens": _with_thinking_headroom(
+            filtered.get("max_tokens", 16384), extra_body
+        ),
     }
     if "top_p" in profile:
         params["top_p"] = profile["top_p"]
@@ -331,7 +344,9 @@ def generate(
             if temperature is not None
             else profile.get("temperature", 1.0)
         ),
-        "max_tokens": max_tokens if max_tokens is not None else 16384,
+        "max_tokens": _with_thinking_headroom(
+            max_tokens if max_tokens is not None else 16384, extra_body
+        ),
         "stream": True,
     }
     if "top_p" in profile:
@@ -356,9 +371,18 @@ def generate(
         try:
             stream = client.chat.completions.create(**params)
             full_text = ""
+            finish_reason = None
             for chunk in stream:
                 if chunk.choices and chunk.choices[0].delta.content:
                     full_text += chunk.choices[0].delta.content
+                if chunk.choices and chunk.choices[0].finish_reason:
+                    finish_reason = chunk.choices[0].finish_reason
+            if finish_reason == "length":
+                logger.warning(
+                    "generate truncated by max_tokens (%s), answer has %d chars",
+                    params["max_tokens"],
+                    len(full_text),
+                )
             if "</think>" in full_text:
                 full_text = full_text[full_text.find("</think>") + 8:]
             logger.info(f"generate response: {full_text}", extra={"verbose": True})

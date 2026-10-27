@@ -13,8 +13,12 @@ import os
 os.environ['USE_TF'] = '0'
 os.environ['USE_TORCH'] = '1'
 
+import logging
+
 import numpy as np
 from typing import List, Literal, Optional
+
+logger = logging.getLogger("memory")
 
 
 class EmbeddingModel:
@@ -60,6 +64,12 @@ class EmbeddingModel:
         if model_type == "local":
             from sentence_transformers import SentenceTransformer
             self.model = SentenceTransformer(model_name)
+            if str(self.device).startswith("cuda"):
+                import torch
+                if not torch.cuda.is_available():
+                    # CPU-only hosts: a cuda default must not disable memory.
+                    logger.warning("CUDA unavailable; embedding model %s runs on CPU", model_name)
+                    self.device = "cpu"
             if hasattr(self.model, 'to'):
                 self.model = self.model.to(self.device)
             self.dimension = self.model.get_sentence_embedding_dimension()
