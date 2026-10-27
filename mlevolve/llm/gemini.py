@@ -101,6 +101,8 @@ class FunctionSpec(DataClassJsonMixin):
             "cliproxyapi-haoming.ecepxie.svc.cluster.local",
             # NRP ellm (vLLM) uses the standard nested shape as well.
             "ellm.nrp-nautilus.io",
+            # Official DeepSeek API rejects the flat shape ("field `function`: null").
+            "api.deepseek.com",
         )
         if base_url and any(host in base_url for host in nested_hosts):
             return {
