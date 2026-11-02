@@ -26,10 +26,21 @@ _REASONING_EFFORTS = frozenset(
 # max_tokens for the answer, so thinking requests get this much on top.
 DEEPSEEK_THINKING_HEADROOM_TOKENS = 65536
 
+# Reasoning can use up max_tokens and leave no answer, while the same prompt
+# answers on the next try, so generate() tries again this many times itself.
+EMPTY_ANSWER_RETRIES = 5
+
+
+def _thinking_headroom() -> int:
+    """Return the reasoning tokens, set per deployment by ``OPENAI_THINKING_HEADROOM_TOKENS``."""
+    return int(
+        os.environ.get("OPENAI_THINKING_HEADROOM_TOKENS") or DEEPSEEK_THINKING_HEADROOM_TOKENS
+    )
+
 
 def _with_thinking_headroom(max_tokens: int, extra_body: dict) -> int:
     if (extra_body.get("thinking") or {}).get("type") == "enabled":
-        return max_tokens + DEEPSEEK_THINKING_HEADROOM_TOKENS
+        return max_tokens + _thinking_headroom()
     return max_tokens
 
 
@@ -139,6 +150,10 @@ def _stage_config_for_model(cfg: Config, model: str):
 
 
 def _build_messages(system_message: str | None, user_message: str | None) -> list[dict[str, str]]:
+    # A prompt with no user turn goes out as the user turn: dedicated DeepSeek
+    # deployments answer a system-only request with empty content.
+    if system_message and not user_message:
+        return [{"role": "user", "content": system_message}]
     messages = []
     if system_message:
         messages.append({"role": "system", "content": system_message})
@@ -383,6 +398,8 @@ def generate(
                     params["max_tokens"],
                     len(full_text),
                 )
+                if not full_text.strip() and attempt < EMPTY_ANSWER_RETRIES:
+                    continue
             if "</think>" in full_text:
                 full_text = full_text[full_text.find("</think>") + 8:]
             logger.info(f"generate response: {full_text}", extra={"verbose": True})

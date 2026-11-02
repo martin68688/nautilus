@@ -332,6 +332,7 @@ class AgentConfig:
 class ExecConfig:
     timeout: int
     agent_file_name: str
+    nan_metric_stop_after: int = 0
 
 
 @dataclass
@@ -774,10 +775,16 @@ class HostSelectionConfig:
     score_metric: str = "corr"  # corr | bmc | corr_bmc (bmc needs Host benchmark predictions)
     corr_weight: float = 0.5  # corr_bmc: corr_weight * CORR + bmc_weight * BMC per era
     bmc_weight: float = 2.0
-    # Penalize near-copies of the Host benchmark: score -= penalty * (similarity - threshold)
-    # when the mean per-era rank correlation with the benchmark exceeds threshold. None = off.
-    similarity_threshold: Optional[float] = None
-    similarity_penalty: float = 0.0
+    # Paired noise band for "better than": z standard errors of the per-era
+    # difference, resampled in contiguous blocks. 0 = off (bare comparison).
+    noise_band_z: float = 0.0
+    noise_band_block: int = 13
+    noise_band_samples: int = 2000
+    # Close a node whose mean per-era rank correlation with the Host benchmark
+    # reaches this value. None = off.
+    copy_threshold: Optional[float] = None
+    # Close a node whose code matches an earlier node without running it.
+    block_duplicate_code: bool = False
 
 
 @dataclass

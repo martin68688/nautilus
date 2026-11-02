@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import math
 import re
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +50,17 @@ def _score(node: Any) -> float | None:
     return None if metric is None or metric.value is None else float(metric.value)
 
 
+def _host_summary(node: Any) -> str:
+    """The parts of the Host score, when the Host scored against the benchmark."""
+    host = getattr(node, "host_selection", None) or {}
+    if "bmc_mean" not in host:
+        return ""
+    return (
+        f"correlation {host['corr_mean']:.4f}, added beyond the benchmark {host['bmc_mean']:+.4f}, "
+        f"similarity to the benchmark {host['benchmark_similarity']:.2f}"
+    )
+
+
 class ResearchLedger:
     def __init__(self, directions: dict[str, str], ucb_c: float = 1.0, shown: int = 10,
                  path: Path | None = None):
@@ -57,6 +69,7 @@ class ResearchLedger:
         self.shown = shown
         self.path = path
         self.records: dict[str, dict] = {}
+        self._save_lock = threading.Lock()
 
     # ---- scheduling ------------------------------------------------------
     def choose(self) -> str:
@@ -75,7 +88,7 @@ class ResearchLedger:
                    + self.ucb_c * math.sqrt(math.log(total) / counts[d]))
 
     # ---- prompt ----------------------------------------------------------
-    def prompt_text(self, direction: str) -> str:
+    def prompt_text(self, direction: str, start: Any = None) -> str:
         names = ", ".join(self.directions)
         lines = [
             "## Research loop",
@@ -86,6 +99,9 @@ class ResearchLedger:
             "HYPOTHESIS: one falsifiable sentence: the single change you make and the Host score change you expect",
             "Change only what the hypothesis needs, so the Host score tells whether it holds.",
         ]
+        summary = _host_summary(start) if start is not None else ""
+        if summary:
+            lines.append(f"Current solution on the Host rows: Host score {_score(start):.4f}, {summary}.")
         done = [r for r in self.records.values() if r["verdict"] != "pending"]
         if done:
             lines.append("")
@@ -98,7 +114,8 @@ class ResearchLedger:
             lines.append("Latest conclusions:")
             for rec in done[-self.shown:]:
                 delta = "" if rec["delta"] is None else f" (Host score {rec['delta']:+.5f} vs its start)"
-                lines.append(f"- [{rec['verdict']}] {rec['direction']}: {rec['hypothesis']}{delta}")
+                host = f" [{rec['host']}]" if rec.get("host") else ""
+                lines.append(f"- [{rec['verdict']}] {rec['direction']}: {rec['hypothesis']}{delta}{host}")
         return "\n".join(lines)
 
     # ---- recording -------------------------------------------------------
@@ -116,8 +133,12 @@ class ResearchLedger:
         }
         self._save()
 
-    def conclude(self, node: Any, threshold: float, maximize: bool = True) -> None:
-        """Record the outcome of a scored attempt or of its repair."""
+    def conclude(self, node: Any, threshold: float, maximize: bool = True, verdict: Any = None) -> None:
+        """Record the outcome of a scored attempt or of its repair.
+
+        ``verdict(node, origin)`` may answer "better", "tied" or "worse"; when
+        it gives no answer the attempt is compared with ``threshold``.
+        """
         attempt = _attempt(node)
         rec = self.records.get(getattr(attempt, "id", None))
         if rec is None:
@@ -132,16 +153,21 @@ class ResearchLedger:
             if start is not None and end is not None:
                 delta = end - start if maximize else start - end
                 rec["delta"] = delta
-                rec["verdict"] = "confirmed" if delta > threshold else "refuted"
+                outcome = verdict(node, origin) if verdict is not None else None
+                confirmed = delta > threshold if outcome is None else outcome == "better"
+                rec["verdict"] = "confirmed" if confirmed else "refuted"
             rec["result_node_id"] = node.id
+            rec["host"] = _host_summary(node)
         self._save()
 
     def _save(self) -> None:
         if self.path is None:
             return
-        tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(list(self.records.values()), indent=1), encoding="utf-8")
-        tmp.replace(self.path)
+        # Search workers conclude attempts concurrently.
+        with self._save_lock:
+            tmp = self.path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(list(self.records.values()), indent=1), encoding="utf-8")
+            tmp.replace(self.path)
 
 
 def ledger_for(agent: Any) -> ResearchLedger | None:

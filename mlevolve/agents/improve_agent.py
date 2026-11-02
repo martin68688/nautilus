@@ -309,7 +309,7 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
     knowledge_text, knowledge_ids = knowledge_prompt(agent, "improve", scheduled_direction)
     extra_sections = [
         text for text in (
-            ledger.prompt_text(scheduled_direction) if ledger is not None else "",
+            ledger.prompt_text(scheduled_direction, parent_node) if ledger is not None else "",
             knowledge_text,
         ) if text
     ]

@@ -7,8 +7,14 @@ import random
 from agents.leakage_audit import rank_eligible
 from engine.search_node import SearchNode
 from engine.research_loop import ledger_for
+from fixed_holdout.selection import noise_verdict
 
 logger = logging.getLogger("MLEvolve")
+
+
+def _beats(agent, node: SearchNode, reference: SearchNode, improvement: float) -> bool:
+    verdict = noise_verdict(agent, node, reference)
+    return improvement > 0 if verdict is None else verdict == "better"
 
 
 def backpropagate(node: SearchNode, value: float, add_to_tree=True):
@@ -86,7 +92,12 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
 
     ledger = ledger_for(agent)
     if ledger is not None and cur_node.stage in ("improve", "debug"):
-        ledger.conclude(cur_node, agent.scfg.metric_improvement_threshold, agent.metric_maximize)
+        ledger.conclude(
+            cur_node,
+            agent.scfg.metric_improvement_threshold,
+            agent.metric_maximize,
+            verdict=lambda node, origin: noise_verdict(agent, node, origin),
+        )
 
     memory_limit = int(getattr(getattr(agent, "scfg", None), "max_consecutive_memory_errors", 0) or 0)
     if cur_node.is_buggy and memory_limit and _consecutive_memory_errors(cur_node) >= memory_limit:
@@ -101,6 +112,11 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
             node.is_terminal = True
             node.continue_improve = False
             node = node.parent
+        backpropagate(cur_node, get_node_reward(agent, cur_node))
+        return True
+
+    host_result = getattr(cur_node, "host_selection", None) or {}
+    if host_result.get("benchmark_copy") or host_result.get("duplicate_of"):
         backpropagate(cur_node, get_node_reward(agent, cur_node))
         return True
 
@@ -196,11 +212,11 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
                     local_best = cur_node.local_best_node
                     if local_best and local_best.metric and local_best.metric.value is not None:
                         if agent.metric_maximize:
-                            is_better = cur_node.metric.value > local_best.metric.value
+                            gain = cur_node.metric.value - local_best.metric.value
                         else:
-                            is_better = cur_node.metric.value < local_best.metric.value
+                            gain = local_best.metric.value - cur_node.metric.value
 
-                        if is_better:
+                        if _beats(agent, cur_node, local_best, gain):
                             cur_node.local_best_node = cur_node
                             logger.info(f"  └─ Updated local_best: {cur_node.metric.value:.4f} "
                                       f"(prev: {local_best.metric.value:.4f})")
@@ -222,7 +238,7 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
             if new_metric:
                 if local_best_metric:
                     debug_improvement = new_metric - local_best_metric if agent.metric_maximize else local_best_metric - new_metric
-                    if debug_improvement > 0:
+                    if _beats(agent, cur_node, local_best_node, debug_improvement):
                         cur_node.local_best_node = cur_node
                     cur_node.continue_improve = True
                     should_backpropagate = False
@@ -236,13 +252,17 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
         if new_metric is not None and local_best_metric is not None:
             improvement = new_metric - local_best_metric if agent.metric_maximize else local_best_metric - new_metric
             repaired = getattr(cur_node, "component_repair_status", "") == "resolved"
-            if improvement < agent.scfg.metric_improvement_threshold and repaired:
+            outcome = noise_verdict(agent, cur_node, local_best_node)
+            if outcome is None:
+                outcome = "worse" if improvement < agent.scfg.metric_improvement_threshold else "better"
+            no_gain = outcome != "better"
+            if no_gain and repaired:
                 # Judged by component health, not by an immediate metric gain.
                 action = "continue_after_component_repair"
                 cur_node.continue_improve = True
                 cur_node.is_terminal = False
             elif (
-                improvement < agent.scfg.metric_improvement_threshold
+                outcome == "worse"
                 and local_best_node.improve_failure_depth < agent.scfg.max_improve_failure
                 and getattr(agent.scfg, "retry_improve_from_local_best", False)
                 and local_best_node is not cur_node
@@ -258,11 +278,11 @@ def check_improvement(agent, cur_node: SearchNode, parent_node: SearchNode):
                 cur_node.continue_improve = False
                 cur_node.is_terminal = True
                 local_best_node.continue_improve = False
-            elif improvement < agent.scfg.metric_improvement_threshold and local_best_node.improve_failure_depth < agent.scfg.max_improve_failure:
+            elif no_gain and local_best_node.improve_failure_depth < agent.scfg.max_improve_failure:
                 local_best_node.improve_failure_depth += 1
                 action = "continue"
                 cur_node.continue_improve = True
-            elif improvement < agent.scfg.metric_improvement_threshold and local_best_node.improve_failure_depth >= agent.scfg.max_improve_failure:
+            elif no_gain and local_best_node.improve_failure_depth >= agent.scfg.max_improve_failure:
                 action = "terminal"
                 cur_node.continue_improve = False
                 should_backpropagate = True

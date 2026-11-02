@@ -13,6 +13,9 @@ from urllib.parse import urlparse
 
 DEEPSEEK_DEFAULT_MODEL = "deepseek-v4-flash"
 DEEPSEEK_CURRENT_MODELS = frozenset({"deepseek-v4-flash", "deepseek-v4-pro"})
+# Dedicated deployments of DeepSeek V4 are named after the account, not the
+# model, so the name alone would miss the thinking toggle and its token headroom.
+DEEPSEEK_V4_DEDICATED_PREFIXES = ("red-lobster-7636/",)
 
 # The legacy aliases selected both a model and a thinking mode. Preserve both
 # parts of that contract when translating them to the V4 API.
@@ -38,7 +41,9 @@ class ModelResolution:
 
     @property
     def is_deepseek_v4(self) -> bool:
-        return self.effective_name in DEEPSEEK_CURRENT_MODELS
+        return self.effective_name in DEEPSEEK_CURRENT_MODELS or (
+            self.effective_name.startswith(DEEPSEEK_V4_DEDICATED_PREFIXES)
+        )
 
 
 def is_official_deepseek_endpoint(base_url: str | None) -> bool:

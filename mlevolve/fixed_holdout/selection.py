@@ -14,6 +14,8 @@ untouched and is still scored only after the search.
 
 from __future__ import annotations
 
+import ast
+import hashlib
 from pathlib import Path
 
 import numpy as np
@@ -52,8 +54,6 @@ def score_selection(
     score_metric: str = "corr",
     corr_weight: float = 0.5,
     bmc_weight: float = 2.0,
-    similarity_threshold: float | None = None,
-    similarity_penalty: float = 0.0,
 ) -> dict:
     """Score selection predictions against Host-held labels.
 
@@ -62,11 +62,6 @@ def score_selection(
     needs Host-only benchmark predictions in the selection view), or
     ``corr_bmc``: ``corr_weight * CORR + bmc_weight * BMC`` per era (defaults
     follow Numerai's 0.5 * CORR + 2 * MMC payout, with BMC in place of MMC).
-
-    With ``similarity_threshold`` set, a candidate whose mean per-era rank
-    correlation with the Host benchmark exceeds it loses
-    ``similarity_penalty * (similarity - threshold)`` from its score, so a
-    near-copy of the benchmark cannot win selection on the benchmark's CORR.
     """
     manifest_path = Path(manifest_path).resolve()
     manifest = read_manifest(manifest_path, expected_role="selection_view")
@@ -124,27 +119,101 @@ def score_selection(
         score = mean - std_penalty * spread
     else:
         raise ValueError(f"Unsupported selection objective: {objective}")
-    similarity = details.get("benchmark_similarity")
-    penalty = 0.0
-    if similarity_threshold is not None:
-        if similarity is None:
-            raise ValueError("Selection similarity penalty needs Host benchmark predictions")
-        penalty = similarity_penalty * max(0.0, similarity - similarity_threshold)
-        score -= penalty
     return {
         "score": score,
-        "benchmark_similarity": similarity,
-        "similarity_penalty": penalty,
+        "benchmark_similarity": details.get("benchmark_similarity"),
         "score_metric": score_metric,
         "objective": objective,
         "window_means": window_means,
         "window_std": spread,
+        "per_era_score": {era: float(value) for era, value in per_era.items()},
         "corr_mean": details["corr_mean"],
         "corr_sharpe": details["corr_sharpe"],
         **{key: details[key] for key in ("bmc_mean", "bmc_sharpe") if key in details},
         "n_groups": details["n_eras"],
         "split_id": manifest["split_id"],
     }
+
+
+def paired_noise_band(
+    challenger: dict[str, float],
+    reference: dict[str, float],
+    *,
+    z: float = 2.0,
+    block: int = 13,
+    samples: int = 2000,
+) -> tuple[float, float]:
+    """Return (mean per-era difference, half-width of its noise band).
+
+    Eras overlap in their 60-day labels, so the difference is resampled in
+    contiguous blocks; the fixed seed gives every comparison the same answer.
+    """
+    eras = sorted(set(challenger) & set(reference))
+    if not eras:
+        raise ValueError("Noise band needs per-era scores on common eras")
+    diff = np.array([challenger[era] - reference[era] for era in eras], dtype=float)
+    block = max(1, min(block, len(diff)))
+    block_means = np.convolve(diff, np.ones(block) / block, mode="valid")
+    count = int(np.ceil(len(diff) / block))
+    picks = np.random.default_rng(0).integers(0, len(block_means), size=(samples, count))
+    return float(diff.mean()), float(z * block_means[picks].mean(axis=1).std(ddof=1))
+
+
+def noise_verdict(agent, node, reference) -> str | None:
+    """``better``, ``tied`` or ``worse`` than ``reference`` on the Host's series.
+
+    None when either node has no Host series, so the caller keeps its own test.
+    """
+    cfg = getattr(getattr(agent, "cfg", None), "host_selection", None)
+    z = float(getattr(cfg, "noise_band_z", 0.0) or 0.0)
+    if not getattr(cfg, "enabled", False) or z <= 0:
+        return None
+    series = [(getattr(n, "host_selection", None) or {}).get("per_era_score") for n in (node, reference)]
+    if not all(series):
+        return None
+    difference, band = paired_noise_band(
+        series[0], series[1], z=z, block=int(cfg.noise_band_block), samples=int(cfg.noise_band_samples)
+    )
+    if difference > band:
+        return "better"
+    return "worse" if difference < -band else "tied"
+
+
+def code_fingerprint(code: str) -> str:
+    """Digest of the program itself: comments and layout do not change it."""
+    try:
+        text = ast.dump(ast.parse(code))
+    except SyntaxError:
+        text = code
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def close_duplicate_code(agent, node, logger) -> bool:
+    """Close a node that repeats an earlier program; return True to skip its run."""
+    cfg = getattr(agent.cfg, "host_selection", None)
+    if not getattr(cfg, "enabled", False) or not getattr(cfg, "block_duplicate_code", False):
+        return False
+    if not (node.code or "").strip():
+        return False
+    fingerprint = code_fingerprint(node.code)
+    with agent.journal_lock:
+        earlier = [other for other in agent.journal.nodes if other is not node and (other.code or "").strip()]
+    match = next((other for other in earlier if code_fingerprint(other.code) == fingerprint), None)
+    if match is None:
+        return False
+    from utils.metric import WorstMetricValue
+
+    node.is_buggy = True
+    node.is_valid = False
+    node.metric = WorstMetricValue()
+    node.is_terminal = True
+    node.continue_improve = False
+    node.host_selection = {"duplicate_of": match.id}
+    node.analysis = f"HOST_DUPLICATE_CODE: same program as node {match.id}; it was not run again"
+    node._term_out = [node.analysis]
+    node.exec_time = 0.0
+    logger.warning("Node %s closed before running: same code as node %s", node.id, match.id)
+    return True
 
 
 def apply_to_node(agent, node, logger) -> None:
@@ -168,8 +237,6 @@ def apply_to_node(agent, node, logger) -> None:
             score_metric=str(getattr(cfg, "score_metric", "corr")),
             corr_weight=float(getattr(cfg, "corr_weight", 0.5)),
             bmc_weight=float(getattr(cfg, "bmc_weight", 2.0)),
-            similarity_threshold=getattr(cfg, "similarity_threshold", None),
-            similarity_penalty=float(getattr(cfg, "similarity_penalty", 0.0) or 0.0),
         )
     except Exception as error:
         node.is_buggy = True
@@ -181,20 +248,23 @@ def apply_to_node(agent, node, logger) -> None:
     result["agent_reported_metric"] = reported
     node.host_selection = result
     node.metric = MetricValue(result["score"], maximize=True)
-    if result["similarity_penalty"] > 0:
-        # The agent sees the Host verdict in the execution output it reads next.
-        node._term_out.append(
-            f"\nHost selection: score {result['score']:.5f} includes a penalty of "
-            f"{result['similarity_penalty']:.5f} because the predictions' mean per-era rank "
-            f"correlation with the benchmark predictions is {result['benchmark_similarity']:.3f} "
-            f"(above {cfg.similarity_threshold})."
-        )
     logger.info(
         "Node %s Host selection score=%.5f (%s; agent reported %s; windows=%s; corr=%.5f bmc=%s; "
-        "bench_sim=%s penalty=%.5f)",
+        "bench_sim=%s)",
         node.id, result["score"], result["score_metric"], reported,
         [round(v, 4) for v in result["window_means"]], result["corr_mean"],
         f"{result['bmc_mean']:.5f}" if "bmc_mean" in result else "n/a",
         f"{result['benchmark_similarity']:.3f}" if result["benchmark_similarity"] is not None else "n/a",
-        result["similarity_penalty"],
     )
+    copy_threshold = getattr(cfg, "copy_threshold", None)
+    similarity = result["benchmark_similarity"]
+    if copy_threshold is not None and similarity is not None and similarity >= copy_threshold:
+        # A copy earns nothing and ends its lineage: check_improvement closes it.
+        result["benchmark_copy"] = True
+        node.is_buggy = True
+        node.metric = WorstMetricValue()
+        node.is_terminal = True
+        node.continue_improve = False
+        node.analysis = "HOST_SELECTION_DUPLICATE: predictions duplicate a known reference"
+        node._term_out.append(f"\n{node.analysis}")
+        logger.warning("Node %s closed as a benchmark copy (similarity %.4f)", node.id, similarity)

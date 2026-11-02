@@ -3,6 +3,7 @@
 import json
 import logging
 from pathlib import Path
+import shutil
 import sys
 from types import SimpleNamespace
 
@@ -17,9 +18,17 @@ sys.path.append(str(REPO / "tests"))
 from config import OmegaConf, _load_cfg, Config  # noqa: E402
 from engine import component_health, method_family  # noqa: E402
 from engine.executor import Interpreter  # noqa: E402
-from fixed_holdout.numerai_source import build_source  # noqa: E402
+from fixed_holdout import portfolio  # noqa: E402
+from fixed_holdout.numerai_source import HOST_OBJECTIVE, MEMORY_NOTE, build_source  # noqa: E402
+from fixed_holdout.portfolio import choose_members  # noqa: E402
 from fixed_holdout.prepare import prepare_task  # noqa: E402
-from fixed_holdout.selection import apply_to_node, predictions_path, score_selection  # noqa: E402
+from fixed_holdout.selection import (  # noqa: E402
+    apply_to_node,
+    noise_verdict,
+    paired_noise_band,
+    predictions_path,
+    score_selection,
+)
 from utils.metric import MetricValue  # noqa: E402
 from test_fixed_holdout_numerai import _write_raw_numerai  # noqa: E402
 
@@ -430,10 +439,11 @@ def test_corr_bmc_selection_score_and_description(tmp_path):
     prepared = build_source(
         train_path, validation_path, features_path, tmp_path / "d",
         lockbox_eras=6, embargo_eras=2, selection_eras=8, benchmarks_path=bench_path,
-        selection_metric="corr_bmc",
     )
     text = (prepared / "public" / "description.md").read_text()
-    assert "0.5 * CORR + 2 * BMC" in text and "def bmc(" in text
+    assert "BMC" not in text and "lgbm" not in text and "benchmark/" not in text
+    assert "ranks\nsolutions during the search.\n" + HOST_OBJECTIVE in text
+    assert not (prepared / "public" / "benchmark").exists()
     split = prepare_task(tmp_path / "d", "numerai-v6", tmp_path / "fixed", copy_mode="copy")
     test = pd.read_parquet(split / "train_view" / "input" / "test.parquet")
     preds = tmp_path / "p.csv"
@@ -445,7 +455,17 @@ def test_corr_bmc_selection_score_and_description(tmp_path):
     assert mix["score"] == pytest.approx(0.5 * corr["score"] + 2 * bmc["score"])
 
 
-def test_selection_penalizes_copies_of_the_benchmark(tmp_path):
+def test_benchmark_files_are_refused_as_public_references(tmp_path):
+    train_path, validation_path, features_path = _write_raw_numerai(tmp_path, n_eras=48)
+    with pytest.raises(ValueError, match="Host-only"):
+        build_source(
+            train_path, validation_path, features_path, tmp_path / "d",
+            lockbox_eras=6, embargo_eras=2, selection_eras=8,
+            reference_files={"benchmark/part.parquet": features_path},
+        )
+
+
+def _split_with_benchmark(tmp_path):
     train_path, validation_path, features_path = _write_raw_numerai(tmp_path, n_eras=48)
     validation = pd.read_parquet(validation_path)
     bench_path = tmp_path / "raw" / "validation_benchmark_models.parquet"
@@ -456,19 +476,134 @@ def test_selection_penalizes_copies_of_the_benchmark(tmp_path):
         train_path, validation_path, features_path, tmp_path / "d",
         lockbox_eras=6, embargo_eras=2, selection_eras=8, benchmarks_path=bench_path,
     )
-    split = prepare_task(tmp_path / "d", "numerai-v6", tmp_path / "fixed", copy_mode="copy")
-    manifest = split / "selection_view" / "fixed_holdout_manifest.json"
+    return prepare_task(tmp_path / "d", "numerai-v6", tmp_path / "fixed", copy_mode="copy")
+
+
+def test_benchmark_copy_is_closed_and_earns_no_rank(tmp_path):
+    split = _split_with_benchmark(tmp_path)
     labels = pd.read_csv(split / "selection_view" / "labels.csv")
-    copy = tmp_path / "copy.csv"
-    labels[["id"]].assign(prediction=labels["benchmark"]).to_csv(copy, index=False)
+    workspace = tmp_path / "workspace"
+    (workspace / "submission").mkdir(parents=True)
+    manifest = split / "selection_view" / "fixed_holdout_manifest.json"
+    labels[["id"]].assign(prediction=labels["benchmark"]).to_csv(
+        predictions_path(workspace, "n1", manifest), index=False
+    )
+    cfg = SimpleNamespace(
+        enabled=True, manifest_path=str(manifest), windows=1, objective="mean", std_penalty=0.5,
+        score_metric="corr_bmc", copy_threshold=0.999,
+    )
+    agent = SimpleNamespace(cfg=SimpleNamespace(host_selection=cfg, workspace_dir=workspace))
+    node = SimpleNamespace(
+        id="n1", is_buggy=False, metric=SimpleNamespace(value=0.1), _term_out=[], analysis="",
+        is_terminal=False, continue_improve=True,
+    )
 
-    plain = score_selection(manifest, copy, windows=1)
-    penalized = score_selection(manifest, copy, windows=1, similarity_threshold=0.9, similarity_penalty=0.5)
+    apply_to_node(agent, node, logging.getLogger("test"))
 
-    assert plain["benchmark_similarity"] == pytest.approx(1.0)
-    assert plain["similarity_penalty"] == 0.0
-    assert penalized["similarity_penalty"] == pytest.approx(0.05)
-    assert penalized["score"] == pytest.approx(plain["score"] - 0.05)
+    assert node.is_buggy is True and node.is_terminal is True and node.continue_improve is False
+    assert node.host_selection["benchmark_copy"] is True
+    assert "0.999" not in node._term_out[-1] and "benchmark" not in node._term_out[-1]
+
+
+def test_paired_noise_band_keeps_the_champion_inside_the_noise():
+    rng = np.random.default_rng(1)
+    base = rng.normal(0.03, 0.04, 52)
+    eras = [f"e{i:02d}" for i in range(52)]
+    reference = dict(zip(eras, base))
+    noisy = dict(zip(eras, base + rng.normal(0.001, 0.02, 52)))
+    clear = dict(zip(eras, base + rng.normal(0.02, 0.005, 52)))
+
+    assert paired_noise_band(reference, reference) == (0.0, 0.0)
+    difference, band = paired_noise_band(noisy, reference)
+    assert abs(difference) < band
+    difference, band = paired_noise_band(clear, reference)
+    assert difference > band
+    assert paired_noise_band(noisy, reference) == paired_noise_band(noisy, reference)
+
+
+def _band_agent():
+    cfg = SimpleNamespace(enabled=True, noise_band_z=2.0, noise_band_block=13, noise_band_samples=500)
+    return SimpleNamespace(cfg=SimpleNamespace(host_selection=cfg))
+
+
+def test_noise_verdict_compares_host_series_and_defers_without_them():
+    eras = [f"e{i:02d}" for i in range(52)]
+    low = np.random.default_rng(2).normal(0.03, 0.04, 52)
+    node = lambda values: SimpleNamespace(host_selection={"per_era_score": dict(zip(eras, values))})
+    agent = _band_agent()
+
+    assert noise_verdict(agent, node(low + 0.02), node(low)) == "better"
+    assert noise_verdict(agent, node(low), node(low + 0.02)) == "worse"
+    assert noise_verdict(agent, node(low), node(low)) == "tied"
+    assert noise_verdict(agent, SimpleNamespace(host_selection={}), node(low)) is None
+    agent.cfg.host_selection.noise_band_z = 0.0
+    assert noise_verdict(agent, node(low + 0.02), node(low)) is None
+
+
+def test_portfolio_prefers_dissimilar_members_and_folds_copies():
+    similarity = np.array([
+        [1.00, 0.95, 0.30, 1.00],
+        [0.95, 1.00, 0.40, 0.95],
+        [0.30, 0.40, 1.00, 0.30],
+        [1.00, 0.95, 0.30, 1.00],
+    ])
+    assert choose_members([0.04, 0.03, 0.02, 0.05], similarity, 2, 0.999) == [2, 3]
+
+
+def test_portfolio_selects_refits_and_combines(tmp_path, monkeypatch):
+    split = _split_with_benchmark(tmp_path)
+    run = tmp_path / "run"
+    (run / "logs").mkdir(parents=True)
+    (run / "workspace" / "submission").mkdir(parents=True)
+    labels = pd.read_csv(split / "selection_view" / "labels.csv")
+    test = pd.read_parquet(split / "refit_view" / "input" / "test.parquet", columns=["id", "era"])
+    rng = np.random.default_rng(3)
+    nodes = []
+    for index in range(3):
+        node_id = f"node{index}"
+        test[["id"]].assign(prediction=rng.uniform(size=len(test))).to_csv(
+            run / "workspace" / "submission" / f"submission_{node_id}.csv", index=False
+        )
+        nodes.append({
+            "id": node_id, "is_buggy": False, "code": "pass",
+            "host_selection": {"score": 0.01 * index, "corr_mean": 1.0, "bmc_mean": 0.0},
+        })
+    nodes.append({"id": "broken", "is_buggy": True, "code": "", "host_selection": {}})
+    (run / "logs" / "journal.json").write_text(json.dumps({"nodes": nodes}))
+
+    def fake_refit(split_root, run_dir, output_dir, *, node_id, python, timeout):
+        if node_id == "node1":
+            raise RuntimeError("no memory")
+        shutil.copy(run / "workspace" / "submission" / f"submission_{node_id}.csv",
+                    output_dir / f"submission_{node_id}.csv")
+        (output_dir / f"refit_receipt_{node_id}.json").write_text("{}")
+
+    monkeypatch.setattr(portfolio, "refit_node", fake_refit)
+    receipt = portfolio.deliver(split, run, run / "refit", python="python", timeout=1, size=5)
+
+    assert sorted(m["node_id"] for m in receipt["members"]) == ["node0", "node1", "node2"]
+    assert sorted(receipt["delivered_nodes"]) == ["node0", "node2"]
+    assert "node1" in receipt["refit_failed"]
+    output = pd.read_csv(run / "refit" / "submission_portfolio.csv")
+    assert list(output["id"]) == list(test["id"])
+    assert labels["id"].isin(output["id"]).all() and output["prediction"].notna().all()
+    assert json.loads((run / "logs" / "portfolio.json").read_text())["fallback_single_node"] is False
+
+
+def test_portfolio_falls_back_to_best_single_node_below_the_floor(tmp_path):
+    split = _split_with_benchmark(tmp_path)
+    run = tmp_path / "run"
+    (run / "logs").mkdir(parents=True)
+    nodes = [
+        {"id": "a", "is_buggy": False, "host_selection": {"score": 0.01, "corr_mean": -9.0}},
+        {"id": "b", "is_buggy": False, "host_selection": {"score": 0.02, "corr_mean": -9.0}},
+    ]
+    (run / "logs" / "journal.json").write_text(json.dumps({"nodes": nodes}))
+
+    result = portfolio.select_portfolio(split, run)
+
+    assert result["fallback_single_node"] is True
+    assert [m["node_id"] for m in result["members"]] == ["b"]
 
 
 def _improve_agent(retry):
@@ -533,6 +668,134 @@ def test_repaired_worse_attempt_also_retries_from_branch_best():
     assert best.continue_improve is False  # select() expands the branch best again
 
 
+OLD_DESCRIPTION = """## Files
+- `neutralizer/*.parquet`: Numerai's per-stock risk exposures, keyed by date.
+- `benchmark/*.parquet`: predictions of Numerai's official benchmark model
+  `lgbm_jupiter_60`, keyed by `numerai_ticker` and `date`, also for the
+  unlabelled eras (as in the live tournament).
+  Neither folder contains labels; join them on `numerai_ticker` and `date == era`.
+
+## Required output
+finite numeric predictions.
+The Host holds labels of part of `test.parquet` and scores your submission
+on those rows with the metric above.
+"""
+
+
+def test_memory_note_states_what_pandas_does():
+    rows = np.zeros(4, dtype=np.float32)
+    frame = pd.DataFrame({"bin": np.zeros(4, np.int8), "rank": rows, "era": np.zeros(4, np.int16)})
+    assert frame.values.dtype == np.float32
+    frame["freq"] = np.zeros(4, np.int32)
+    assert frame.values.dtype == np.float64
+    assert frame.to_numpy(dtype=np.float32).dtype == np.float32
+
+
+def test_strip_benchmark_updates_views_and_keeps_host_labels(tmp_path):
+    from fixed_holdout.common import read_manifest, tree_sha256
+    from fixed_holdout.strip_benchmark import clean_description, strip_benchmark
+
+    text = clean_description(OLD_DESCRIPTION)
+    assert "benchmark" not in text.lower() and "lgbm" not in text
+    assert "They contain no labels; join them" in text and "`neutralizer/*.parquet`" in text
+    assert "on those rows.\n" in text and "metric above" not in text
+    ranked = "that Host score is what ranks\nsolutions during the search.\n"
+    stated = clean_description(OLD_DESCRIPTION + ranked)
+    assert stated.count(HOST_OBJECTIVE) == 1 and clean_description(stated) == stated
+    noted = clean_description(OLD_DESCRIPTION + "and keep integer features as int8.\n")
+    assert noted.count(MEMORY_NOTE) == 1 and clean_description(noted) == noted
+    budget ="- Compute available to your program: 32 CPU cores, no GPU, about 120 GB RAM. A program\n"
+    assert "24 threads. A program" in clean_description(OLD_DESCRIPTION + budget, "24 threads")
+    with pytest.raises(ValueError, match="no compute budget"):
+        clean_description(OLD_DESCRIPTION, "24 threads")
+
+    split = _split_with_benchmark(tmp_path)
+    for view in ("train_view", "refit_view"):
+        (split / view / "input" / "benchmark").mkdir()
+        (split / view / "input" / "benchmark" / "part.parquet").write_bytes(b"x")
+    labels = (split / "selection_view" / "labels.csv").read_bytes()
+
+    digest = strip_benchmark(split)
+
+    assert not (split / "train_view" / "input" / "benchmark").exists()
+    assert not (split / "refit_view" / "input" / "benchmark").exists()
+    assert tree_sha256(split / "train_view" / "input") == digest
+    train = read_manifest(split / "train_view" / "fixed_holdout_manifest.json", "train_view")
+    assert train["public_tree_sha256"] == digest
+    refit = read_manifest(split / "refit_view" / "fixed_holdout_manifest.json", "refit_view")
+    assert refit["refit_tree_sha256"] == tree_sha256(split / "refit_view" / "input")
+    evaluator = read_manifest(split / "evaluator_view" / "fixed_holdout_manifest.json", "evaluator_view")
+    assert evaluator["public_tree_sha256"] == digest
+    assert (split / "selection_view" / "labels.csv").read_bytes() == labels
+
+
+def _banded_pair(child_shift):
+    best, child = _improve_pair(0.04 + child_shift)
+    eras = [f"e{i:02d}" for i in range(52)]
+    base = np.random.default_rng(4).normal(0.04, 0.04, 52)
+    wiggle = np.random.default_rng(5).normal(0, 0.02, 52)
+    wiggle -= wiggle.mean()
+    best.host_selection = {"per_era_score": dict(zip(eras, base))}
+    child.host_selection = {"per_era_score": dict(zip(eras, base + child_shift + wiggle))}
+    agent = _improve_agent(retry=True)
+    agent.cfg = _band_agent().cfg
+    return agent, best, child
+
+
+def test_gain_inside_the_noise_band_keeps_the_branch_best_and_the_child():
+    from engine.evaluation import check_improvement
+
+    agent, best, tied = _banded_pair(0.0001)
+    check_improvement(agent, tied, best)
+    assert tied.local_best_node is best  # a nominal gain does not replace the branch best
+    assert tied.continue_improve and not tied.is_terminal  # no retry for a tie
+
+    agent, best, better = _banded_pair(0.02)
+    check_improvement(agent, better, best)
+    assert better.local_best_node is better
+
+    agent, best, worse = _banded_pair(-0.02)
+    check_improvement(agent, worse, best)
+    assert worse.is_terminal and best.continue_improve is False
+
+
+def test_benchmark_copy_closes_its_lineage():
+    from engine.evaluation import check_improvement
+
+    best, copy = _improve_pair(0.04)
+    copy.is_buggy = True
+    copy.is_terminal = True
+    copy.continue_improve = False
+    copy.host_selection = {"benchmark_copy": True}
+
+    assert check_improvement(_improve_agent(retry=True), copy, best) is True
+    assert copy.is_terminal and not copy.continue_improve
+
+
+def test_champion_is_not_replaced_inside_the_noise_band(monkeypatch):
+    from engine import solution_manager
+
+    agent = _band_agent()
+    eras = [f"e{i:02d}" for i in range(52)]
+    base = np.random.default_rng(6).normal(0.04, 0.04, 52)
+    wiggle = np.random.default_rng(7).normal(0.0005, 0.02, 52)
+    champion = SimpleNamespace(
+        metric=MetricValue(0.04, maximize=True),
+        host_selection={"per_era_score": dict(zip(eras, base))},
+    )
+    agent.best_node = champion
+    challenger = SimpleNamespace(
+        metric=MetricValue(0.0405, maximize=True),
+        host_selection={"per_era_score": dict(zip(eras, base + wiggle))},
+    )
+    assert solution_manager._beats_best(agent, challenger) is False
+    clear = SimpleNamespace(
+        metric=MetricValue(0.06, maximize=True),
+        host_selection={"per_era_score": dict(zip(eras, base + 0.02))},
+    )
+    assert solution_manager._beats_best(agent, clear) is True
+
+
 def test_resource_trace_summary_reports_peak_and_cores():
     from engine.executor import _ResourceTrace
 
@@ -562,3 +825,167 @@ def test_debug_chain_stops_after_consecutive_memory_errors(monkeypatch):
     agent.scfg.max_consecutive_memory_errors = 2
     evaluation.check_improvement(agent, second, first)
     assert second.is_terminal is True and first.is_terminal is True
+
+
+def test_ledger_shows_the_parts_of_the_host_score():
+    from engine.research_loop import ResearchLedger
+
+    host = {"corr_mean": 0.027, "bmc_mean": 0.0083, "benchmark_similarity": 0.451}
+    start = SimpleNamespace(
+        id="s", parent=None, is_buggy=False, stage="draft", plan="",
+        metric=SimpleNamespace(value=0.03), host_selection=host,
+    )
+    child = SimpleNamespace(
+        id="c", parent=start, is_buggy=False, stage="improve",
+        plan="DIRECTION: targets\nHYPOTHESIS: another label helps",
+        metric=SimpleNamespace(value=0.04), host_selection={**host, "bmc_mean": 0.012},
+    )
+    ledger = ResearchLedger({"targets": "labels"})
+    ledger.register(child, "targets")
+    ledger.conclude(child, 0.0)
+
+    text = ledger.prompt_text("targets", start)
+    assert "Current solution on the Host rows: Host score 0.0300, correlation 0.0270" in text
+    assert "added beyond the benchmark +0.0083" in text and "similarity to the benchmark 0.45" in text
+    assert "added beyond the benchmark +0.0120" in text
+    assert "Current solution" not in ledger.prompt_text("targets")
+
+
+def test_duplicate_code_is_closed_before_it_runs():
+    import threading
+
+    from fixed_holdout.selection import close_duplicate_code
+
+    earlier = SimpleNamespace(id="old", code="x = 1  # first\nprint(x)\n")
+    agent = SimpleNamespace(
+        cfg=SimpleNamespace(host_selection=SimpleNamespace(enabled=True, block_duplicate_code=True)),
+        journal=SimpleNamespace(nodes=[earlier]),
+        journal_lock=threading.Lock(),
+    )
+    same = SimpleNamespace(id="new", code="# reformatted\nx = 1\n\nprint(x)", metric=None, _term_out=None)
+    other = SimpleNamespace(id="other", code="x = 2\nprint(x)\n", metric=None, _term_out=None)
+    empty = SimpleNamespace(id="empty", code="", metric=None, _term_out=None)
+
+    assert close_duplicate_code(agent, other, logging.getLogger("test")) is False
+    assert close_duplicate_code(agent, empty, logging.getLogger("test")) is False
+    assert close_duplicate_code(agent, same, logging.getLogger("test")) is True
+    assert same.is_buggy is True and same.is_terminal is True and same.continue_improve is False
+    assert same.host_selection == {"duplicate_of": "old"}
+    assert same.metric.value is None and "old" in same._term_out[0]
+
+    agent.cfg.host_selection.block_duplicate_code = False
+    twin = SimpleNamespace(id="twin", code=earlier.code)
+    assert close_duplicate_code(agent, twin, logging.getLogger("test")) is False
+
+
+def _run_candidate(tmp_path, code, stop_after=3, timeout=20):
+    cfg = SimpleNamespace(
+        start_cpu_id=0,
+        cpu_number=1,
+        agent=SimpleNamespace(search=SimpleNamespace(parallel_search_num=1, num_gpus=0)),
+        evaluation_authority=SimpleNamespace(
+            mode="off", runtime_protocol_observer_enabled=False
+        ),
+    )
+    interpreter = Interpreter(
+        tmp_path, timeout=timeout, cfg=cfg, nan_metric_stop_after=stop_after
+    )
+    return interpreter.run(code, "node-nan")
+
+
+def test_run_reporting_nan_metrics_is_stopped_early(tmp_path):
+    code = (
+        "import time\n"
+        "for epoch in range(40):\n"
+        "    print(f'Epoch {epoch} - Loss: nan - Val Score: nan', flush=True)\n"
+        "    time.sleep(0.1)\n"
+        "time.sleep(60)\n"
+    )
+    result = _run_candidate(tmp_path, code)
+    assert result.exc_type == "NonFiniteMetricError"
+    assert result.exec_time < 15
+    assert "Val Score: nan" in "".join(result.term_out)
+    assert "NonFiniteMetricError: the Host stopped" in "".join(result.term_out)
+
+
+def test_finite_metric_resets_the_nan_streak(tmp_path):
+    code = (
+        "for epoch in range(12):\n"
+        "    print(f'Epoch {epoch} - Loss: nan - Val Score: 0.03', flush=True)\n"
+        "    print('train_loss=nan')\n"
+        "    print('train_loss=nan')\n"
+        "print('nan_count: 0, filled NaN values')\n"
+    )
+    result = _run_candidate(tmp_path, code)
+    assert result.exc_type is None
+
+
+def test_timeout_still_reported_when_watching_metrics(tmp_path):
+    code = "import time\nprint('working', flush=True)\ntime.sleep(60)\n"
+    result = _run_candidate(tmp_path, code, timeout=2)
+    assert result.exc_type == "TimeoutError"
+    assert "working" in "".join(result.term_out)
+
+
+def test_numerai_config_turns_the_nan_stop_on():
+    from config import _load_cfg
+
+    cfg = _load_cfg(
+        REPO / "mlevolve" / "config" / "config_numerai_framework.yaml",
+        use_cli_args=False,
+    )
+    assert cfg.exec.nan_metric_stop_after == 3
+
+
+def _neutralizer_split(root):
+    columns = {f"neutralizer_column_{i}": [0.1 * i + r / 10 for r in range(4)] for i in range(3)}
+    exposures = pd.DataFrame(
+        {
+            "numerai_ticker": ["A", "B", "A", "C"],
+            "date": ["e1", "e1", "e2", "e2"],
+            "data_type": "train",
+            **columns,
+        }
+    )
+    train = pd.DataFrame({"numerai_ticker": ["B", "A"], "era": ["e1", "e2"]})
+    test = pd.DataFrame({"numerai_ticker": ["C", "D"], "era": ["e2", "e2"]})
+    text = (
+        "Files\n- `neutralizer/*.parquet`: exposures. They contain no labels; "
+        "join them on `numerai_ticker` and `date == era`.\n\nThe Host ranks\n"
+        "solutions during the search.\n"
+    )
+    for view in ("train_view", "refit_view"):
+        input_dir = root / view / "input"
+        (input_dir / "neutralizer").mkdir(parents=True)
+        exposures.iloc[:2].to_parquet(input_dir / "neutralizer" / "part_a.parquet")
+        exposures.iloc[2:].to_parquet(input_dir / "neutralizer" / "part_b.parquet")
+        train.to_parquet(input_dir / "train.parquet")
+        test.to_parquet(input_dir / "test.parquet")
+        (input_dir / "description.md").write_text(text)
+    return exposures
+
+
+def test_neutralizer_arrays_follow_the_row_order_of_each_file(tmp_path):
+    from fixed_holdout.align_neutralizer import align_split
+
+    exposures = _neutralizer_split(tmp_path)
+    digest, coverage = align_split(tmp_path)
+    assert coverage["train_view"] == {"train": 1.0, "test": 0.5}
+
+    input_dir = tmp_path / "train_view" / "input"
+    names = json.loads((input_dir / "neutralizer_columns.json").read_text())
+    train = np.load(input_dir / "neutralizer_train.npy", mmap_mode="r")
+    test = np.load(input_dir / "neutralizer_test.npy", mmap_mode="r")
+    assert train.dtype == np.float16 and train.shape == (2, 3)
+    expected = exposures[names].to_numpy(dtype=np.float16)
+    assert np.array_equal(train[0], expected[1])
+    assert np.array_equal(train[1], expected[2])
+    assert np.array_equal(test[0], expected[3])
+    assert np.isnan(test[1]).all()
+
+    assert not (input_dir / "neutralizer").exists()
+    assert (tmp_path / "neutralizer_source" / "train_view" / "part_a.parquet").exists()
+    text = (input_dir / "description.md").read_text()
+    assert "neutralizer_train.npy" in text and "neutralizer/*.parquet" not in text
+    assert align_split(tmp_path)[0] == digest
+

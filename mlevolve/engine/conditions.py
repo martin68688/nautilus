@@ -5,6 +5,7 @@ import time
 from typing import Mapping
 
 from agents.leakage_audit import rank_eligible
+from fixed_holdout.selection import noise_verdict
 logger = logging.getLogger("MLEvolve")
 
 
@@ -212,7 +213,12 @@ def is_globally_stagnant(agent) -> bool:
             else:
                 improvement = current_best_metric.value - node.metric.value
 
-            if improvement > agent.scfg.metric_improvement_threshold:
+            verdict = noise_verdict(agent, node, agent.best_node)
+            if (
+                improvement > agent.scfg.metric_improvement_threshold
+                if verdict is None
+                else verdict == "better"
+            ):
                 return False
 
     logger.info(f"Global stagnation detected: no improvement beyond threshold in last {window_size} nodes")

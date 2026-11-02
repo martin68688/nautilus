@@ -43,6 +43,21 @@ import pyarrow.parquet as pq
 
 from fixed_holdout.common import sha256_file, write_json
 
+# Stated to the agent: what the Host rewards, never how to reach it.
+HOST_OBJECTIVE = (
+    "The Host score counts the correlation above and, with more weight, what your\n"
+    "predictions add beyond a strong public benchmark model whose predictions you\n"
+    "cannot see; matching what that model already captures earns little."
+)
+MEMORY_NOTE = (
+    "- 1,000 columns over 1 million rows take 1 GB as int8, 4 GB as float32 and 8 GB\n"
+    "  as float64. `df[cols].values` builds a new array of the widest type in `cols`,\n"
+    "  and one int32 or int64 column among float32 columns makes all of it float64;\n"
+    "  `df[cols].to_numpy(dtype=np.float32)` does not. `astype`, `.copy()` and\n"
+    "  `pd.concat` keep the old data until it is deleted, so delete what you no longer\n"
+    "  need. Keep the peak within the memory limit."
+)
+
 
 TASK_ID = "numerai-v6"
 DATA_VERSION = "v6.0"
@@ -102,7 +117,6 @@ def _description(
     selection: list[str] | None = None,
     resources: str = "",
     reference_files: tuple[str, ...] = (),
-    selection_metric: str = "corr",
 ) -> str:
     gap_rows = -(-embargo_eras // max(1, train_era_stride))
     gap_text = (
@@ -122,25 +136,9 @@ def _description(
     selection_output = (
         """
 The Host holds the labels of part of `test.parquet` and scores your submission
-on those rows with the metric above; that Host score, not the printed
-validation score, is what ranks solutions during the search."""
-        if selection and selection_metric == "corr"
-        else """
-The Host holds the labels of part of `test.parquet` and scores your submission
 on those rows; that Host score, not the printed validation score, is what ranks
-solutions during the search. The Host score is the mean over eras of
-`0.5 * CORR + 2 * BMC`, where CORR is the metric above and BMC (benchmark model
-contribution) is what your predictions add beyond Numerai's benchmark model
-`lgbm_jupiter_60` (the predictions in `benchmark/`):
-
-```python
-def bmc(pred, benchmark, target):  # one era
-    p = norm.ppf((pred.rank() - 0.5) / len(pred))
-    m = norm.ppf((benchmark.rank() - 0.5) / len(benchmark))
-    p_resid = p - m * (p @ m) / (m @ m)       # remove the benchmark direction
-    t = target.to_numpy() * 4                 # labels scaled to [0, 4]
-    return float((t - t.mean()) @ p_resid / len(t))
-```"""
+solutions during the search.
+""" + HOST_OBJECTIVE
         if selection
         else ""
     )
@@ -150,18 +148,9 @@ def bmc(pred, benchmark, target):  # one era
             """
 - `neutralizer/*.parquet`: Numerai's per-stock risk exposures, 300 float
   columns `neutralizer_column_*`, keyed by `numerai_ticker` and `date` (the
-  same string as `era`). They cover every era of train and test, and more."""
+  same string as `era`). They cover every era of train and test, and more.
+  They contain no labels; join them on `numerai_ticker` and `date == era`."""
         )
-    if any(name.startswith("benchmark/") for name in reference_files):
-        references.append(
-            """
-- `benchmark/*.parquet`: predictions of Numerai's official benchmark model
-  `lgbm_jupiter_60`, keyed by `numerai_ticker` and `date`, also for the
-  unlabelled eras (as in the live tournament)."""
-        )
-    if references:
-        references.append("""
-  Neither folder contains labels; join them on `numerai_ticker` and `date == era`.""")
     resources_text = (
         f"""
 - Compute available to your program: {resources}. A program that exceeds the
@@ -233,6 +222,7 @@ Fit the final model, predict every row of `test.parquet`, and write
 ## Practical notes{resources_text}
 - The data is large; read only the columns you need with
   `pd.read_parquet(path, columns=[...])` and keep integer features as int8.
+{MEMORY_NOTE}
 """
 
 
@@ -251,15 +241,17 @@ def build_source(
     benchmarks_path: Path | None = None,
     resources: str = "",
     reference_files: dict[str, Path] | None = None,
-    selection_metric: str = "corr",
 ) -> Path:
     """Write the source layout and return `<dataset_root>/<task>/prepared`.
 
     ``extra_targets=("all",)`` keeps every Numerai target.  ``reference_files``
-    maps public paths (``neutralizer/...``, ``benchmark/...``) to official
-    Numerai files copied byte for byte (no labels), so remote hosts can fetch
-    the same files from Numerai and match the public tree hash.
+    maps public paths (``neutralizer/...``) to official Numerai files copied
+    byte for byte (no labels), so remote hosts can fetch the same files from
+    Numerai and match the public tree hash.  Benchmark predictions are
+    Host-only (``benchmarks_path``) and are refused here.
     """
+    if any(name.startswith("benchmark/") for name in reference_files or {}):
+        raise ValueError("Benchmark predictions are Host-only; pass them as benchmarks_path")
     metadata = json.loads(Path(features_path).read_text(encoding="utf-8"))
     features = list(metadata["feature_sets"][feature_set])
     if tuple(extra_targets) == ("all",):
@@ -348,7 +340,6 @@ def build_source(
             selection=selection or None,
             resources=resources,
             reference_files=tuple(reference_files),
-            selection_metric=selection_metric,
         ),
         encoding="utf-8",
     )
@@ -402,8 +393,6 @@ def main() -> None:
                         help='Compute budget stated in the task, e.g. "24 CPU threads, 1 GPU (24 GB), 38 GB RAM"')
     parser.add_argument("--selection-eras", type=int, default=0,
                         help="Host-held selection eras taken from the end of the public data")
-    parser.add_argument("--selection-metric", choices=["corr", "corr_bmc"], default="corr",
-                        help="How the Host ranks solutions; must match host_selection.score_metric")
     parser.add_argument("--reference", action="append", default=[], metavar="NAME=PATH",
                         help="Official label-free Numerai file to publish as NAME, e.g. "
                         "neutralizer/part_a.parquet=train_neutralizer.parquet (repeatable)")
@@ -428,7 +417,6 @@ def main() -> None:
         selection_eras=args.selection_eras,
         benchmarks_path=benchmarks_path,
         resources=args.resources,
-        selection_metric=args.selection_metric,
         reference_files=dict(
             (name, Path(path)) for name, path in (item.split("=", 1) for item in args.reference)
         ),

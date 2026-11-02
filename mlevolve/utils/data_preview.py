@@ -264,6 +264,9 @@ def clean_task_desc(task_desc: str, cfg) -> str:
             )
             logger.info(f"Task description cleaned for code review")
             cleaned_desc = cleaned_desc.strip()
+            if not cleaned_desc:
+                logger.warning("LLM returned an empty task_desc. Using original.")
+                cleaned_desc = task_desc
         except Exception as e:
             logger.warning(f"Failed to clean task_desc with LLM: {e}. Using original.")
             cleaned_desc = task_desc

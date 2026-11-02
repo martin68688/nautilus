@@ -575,6 +575,67 @@ class ExecutionResult(DataClassJsonMixin):
 
 
 
+_METRIC_NAME = r"\w*(?:loss|score|metric|corr|auc|rmse|mae|acc)\w*\s*[:=]\s*"
+_METRIC_IS_NAN = re.compile(_METRIC_NAME + r"nan\b", re.IGNORECASE)
+_METRIC_IS_FINITE = re.compile(_METRIC_NAME + r"[-+]?\.?\d", re.IGNORECASE)
+
+
+class _NonFiniteMetricStop(subprocess.TimeoutExpired):
+    """The candidate kept reporting NaN metrics, so waiting longer cannot help."""
+
+
+class _MetricWatchedPipes:
+    """proc.communicate() that also stops a run stuck on NaN metrics in its stdout.
+
+    A line with any finite metric resets the streak: one bad batch can leave a
+    running loss at NaN while validation is still healthy.
+    """
+
+    def __init__(self, proc: subprocess.Popen, limit: int):
+        self.proc = proc
+        self.limit = limit
+        self.streak = 0
+        self.last_line = ""
+        self._stop_raised = False
+        self._stdout: list[str] = []
+        self._stderr: list[str] = []
+        self._threads = [
+            threading.Thread(
+                target=self._pump, args=(proc.stdout, self._stdout, True), daemon=True
+            ),
+            threading.Thread(
+                target=self._pump, args=(proc.stderr, self._stderr, False), daemon=True
+            ),
+        ]
+        for thread in self._threads:
+            thread.start()
+
+    def _pump(self, stream, sink: list[str], watch: bool) -> None:
+        for line in stream:
+            sink.append(line)
+            if not watch:
+                continue
+            if _METRIC_IS_FINITE.search(line):
+                self.streak = 0
+            elif _METRIC_IS_NAN.search(line):
+                self.streak += 1
+                self.last_line = line.strip()
+
+    def communicate(self, timeout: float | None = None) -> tuple[str, str]:
+        deadline = None if timeout is None else time.monotonic() + timeout
+        while self.proc.poll() is None:
+            if self.streak >= self.limit and not self._stop_raised:
+                self._stop_raised = True
+                raise _NonFiniteMetricStop(self.proc.args, timeout)
+            if deadline is not None and time.monotonic() >= deadline:
+                raise subprocess.TimeoutExpired(self.proc.args, timeout)
+            time.sleep(0.2)
+        # DataLoader workers can outlive the child and hold its pipes open.
+        for thread in self._threads:
+            thread.join(10)
+        return "".join(self._stdout), "".join(self._stderr)
+
+
 class Interpreter:
     def __init__(
         self,
@@ -583,6 +644,7 @@ class Interpreter:
         agent_file_name: str = "runfile.py",
         max_parallel_run: int = 3,
         cfg=None,
+        nan_metric_stop_after: int = 0,
         **kwargs,
     ):
         """
@@ -594,10 +656,12 @@ class Interpreter:
             agent_file_name: base name for runfile (actual names are runfile_0.py, ...)
             max_parallel_run: max concurrent execution slots
             cfg: config (start_cpu_id, cpu_number, agent.search.parallel_search_num)
+            nan_metric_stop_after: stop a run after this many NaN metric reports in a row (0 = off)
         """
         self.working_dir = Path(working_dir).resolve()
         assert self.working_dir.exists(), f"Working directory {self.working_dir} does not exist"
         self.timeout = timeout
+        self.nan_metric_stop_after = nan_metric_stop_after
         self.cfg = cfg
         self.candidate_execution_contract = (
             candidate_execution_contract_from_cfg(cfg) if cfg is not None else None
@@ -1473,8 +1537,13 @@ class Interpreter:
             exc_info = {}
             exc_stack = []
             
+            pipes = (
+                _MetricWatchedPipes(proc, self.nan_metric_stop_after)
+                if self.nan_metric_stop_after > 0
+                else proc
+            )
             try:
-                stdout, stderr = proc.communicate(timeout=effective_timeout)
+                stdout, stderr = pipes.communicate(timeout=effective_timeout)
                 resource_trace.stop()
                 exec_time = time.time() - start_time
                 
@@ -1558,15 +1627,15 @@ class Interpreter:
                         trace = resource_trace.summary()
                         if trace:
                             stderr += trace + "\n"
-            except subprocess.TimeoutExpired:
-                logger.warning("Subprocess timeout, sending SIGINT...")
+            except subprocess.TimeoutExpired as stop:
+                logger.warning(f"Subprocess stopped ({type(stop).__name__}), sending SIGINT...")
                 try:
                     proc.send_signal(signal.SIGINT)
-                    stdout, stderr = proc.communicate(timeout=2)
+                    stdout, stderr = pipes.communicate(timeout=2)
                 except subprocess.TimeoutExpired:
                     logger.warning("Subprocess failed to terminate after SIGINT, killing...")
                     proc.kill()
-                    stdout, stderr = proc.communicate()
+                    stdout, stderr = pipes.communicate()
                 resource_trace.stop()
                 trace = resource_trace.summary()
                 if trace:
@@ -1576,6 +1645,14 @@ class Interpreter:
                 exc_type = "TimeoutError"
                 exc_info = {}
                 exc_stack = []
+                if isinstance(stop, _NonFiniteMetricStop):
+                    message = (
+                        f"the Host stopped this run after {pipes.streak} metric reports "
+                        f"in a row were NaN; last report: {pipes.last_line}"
+                    )
+                    exc_type = "NonFiniteMetricError"
+                    exc_info = {"message": message}
+                    stderr = (stderr or "") + f"\nNonFiniteMetricError: {message}\n"
 
             if full_runtime_controller is not None:
                 try:

@@ -103,6 +103,8 @@ class FunctionSpec(DataClassJsonMixin):
             "ellm.nrp-nautilus.io",
             # Official DeepSeek API rejects the flat shape ("field `function`: null").
             "api.deepseek.com",
+            # Together rejects the flat shape ("untagged enum ToolChoice").
+            "api.together.ai",
         )
         if base_url and any(host in base_url for host in nested_hosts):
             return {

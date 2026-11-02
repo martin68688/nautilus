@@ -10,17 +10,24 @@ extends: config_numerai_fixed_holdout.yaml
 #   Host-trusted and never touch the lockbox.
 # Launch additionally with:
 #   host_selection.manifest_path=<split>/selection_view/fixed_holdout_manifest.json
+exec:
+  nan_metric_stop_after: 3
+
 host_selection:
   enabled: True
   manifest_path: ""
   windows: 4
   objective: mean
-  # Rank by CORR; BMC is reported for every node (switch to bmc to rank by it).
-  score_metric: corr
-  # A near-copy of the benchmark loses 0.2 per unit of rank correlation with it
-  # above 0.9 (a pure copy: -0.02), so it cannot win on the benchmark's own CORR.
-  similarity_threshold: 0.9
-  similarity_penalty: 0.2
+  # Rank by 0.5 * CORR + 2 * BMC per era; the agent is not told this.
+  score_metric: corr_bmc
+  # A node replaces another only if it beats it by more than this many standard
+  # errors of the paired per-era difference, resampled in 13-era blocks.
+  noise_band_z: 2.0
+  noise_band_block: 13
+  noise_band_samples: 2000
+  # Predictions this close to the benchmark's are closed as copies.
+  copy_threshold: 0.999
+  block_duplicate_code: true
 
 component_health:
   enabled: True
@@ -36,6 +43,7 @@ family_quota:
 agent:
   use_global_memory: True
   search:
+    parallel_search_num: 3
     # A failed improvement is not extended; the branch best is improved again.
     retry_improve_from_local_best: True
     # Two memory kills in a row end a debug chain (each kill costs a full run).

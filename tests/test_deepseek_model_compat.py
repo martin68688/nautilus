@@ -69,6 +69,22 @@ def test_custom_openai_compatible_endpoint_keeps_its_model_namespace():
     assert deepseek_thinking_extra_body(resolution, use_thinking=True) == {}
 
 
+def test_dedicated_deployment_keeps_its_name_and_follows_call_mode():
+    resolution = resolve_model_name(
+        "red-lobster-7636/ds-rl-test",
+        base_url="https://api.together.ai/v1",
+    )
+
+    assert resolution.effective_name == "red-lobster-7636/ds-rl-test"
+    assert resolution.migrated is False
+    assert deepseek_thinking_extra_body(resolution, use_thinking=True) == {
+        "thinking": {"type": "enabled"}
+    }
+    assert deepseek_thinking_extra_body(resolution, use_thinking=False) == {
+        "thinking": {"type": "disabled"}
+    }
+
+
 def test_generate_sends_effective_model_and_legacy_thinking_mode(monkeypatch):
     from llm import openai as backend
 
@@ -79,7 +95,11 @@ def test_generate_sends_effective_model_and_legacy_thinking_mode(monkeypatch):
             captured.update(params)
             return [
                 SimpleNamespace(
-                    choices=[SimpleNamespace(delta=SimpleNamespace(content="ok"))]
+                    choices=[
+                        SimpleNamespace(
+                            delta=SimpleNamespace(content="ok"), finish_reason="stop"
+                        )
+                    ]
                 )
             ]
 
@@ -112,3 +132,32 @@ def test_primary_config_defaults_to_gpt56sol_openai_compatible_endpoint():
     ) == 2
     assert text.count("${oc.env:OPENAI_API_KEY}") == 2
     assert "${oc.env:DEEPSEEK_MODEL" not in text
+
+
+def test_prompt_without_user_turn_is_sent_as_user():
+    from llm import openai as backend
+
+    assert backend._build_messages("do it", None) == [
+        {"role": "user", "content": "do it"}
+    ]
+    assert backend._build_messages("rules", "do it") == [
+        {"role": "system", "content": "rules"},
+        {"role": "user", "content": "do it"},
+    ]
+    assert backend._build_messages(None, "do it") == [
+        {"role": "user", "content": "do it"}
+    ]
+
+
+def test_empty_cleanup_answer_keeps_the_task_description(monkeypatch, tmp_path):
+    import llm
+    from utils.data_preview import clean_task_desc
+
+    monkeypatch.delenv("MLEVOLVE_SKIP_TASK_DESC_CLEAN", raising=False)
+    monkeypatch.setattr(llm, "query", lambda **_kwargs: "  ")
+    cfg = SimpleNamespace(
+        agent=SimpleNamespace(code=SimpleNamespace(model="m")),
+        workspace_dir=str(tmp_path),
+    )
+
+    assert clean_task_desc("predict the target", cfg) == "predict the target"

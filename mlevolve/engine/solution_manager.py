@@ -7,8 +7,14 @@ from typing import List
 
 from agents.leakage_audit import rank_eligible
 from engine.search_node import SearchNode
+from fixed_holdout.selection import noise_verdict
 
 logger = logging.getLogger("MLEvolve")
+
+
+def _beats_best(agent, node: SearchNode) -> bool:
+    verdict = noise_verdict(agent, node, agent.best_node)
+    return agent.best_node.metric < node.metric if verdict is None else verdict == "better"
 
 
 _STAGE_LABELS = {
@@ -265,7 +271,7 @@ def update_best_solution(agent, node):
     update_top_candidates(agent, node)
     save_top_candidates(agent)
 
-    if agent.best_node is None or agent.best_node.metric < node.metric:
+    if agent.best_node is None or _beats_best(agent, node):
         if agent.best_node is None or node.is_valid is True:
             agent.best_node = node
             save_best_solution(agent, node, submission_file_path)

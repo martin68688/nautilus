@@ -41,6 +41,7 @@ from protocol_runtime.preflight import (
     build_bounded_repair_receipt,
 )
 from engine import component_health, node_selection, evaluation, execution, solution_manager
+from fixed_holdout.selection import close_duplicate_code
 from engine.conditions import (
     coverage_synthesis_due,
     cross_role_synthesis_allowed,
@@ -1730,7 +1731,10 @@ class AgentSearch:
                         _root = self._finalize_preflight_block(
                             result_node, parent_node
                         )
-                    elif result_parse_agent.run_pre_execution_leakage_audit(self, result_node):
+                    elif (
+                        result_parse_agent.run_pre_execution_leakage_audit(self, result_node)
+                        or close_duplicate_code(self, result_node, logger)
+                    ):
                         _root = self._finalize_preflight_block(result_node, parent_node)
                     elif not execute_immediately:
                         logger.info(f"Node {result_node.id} code generated and reviewed, execution deferred")
@@ -2217,7 +2221,10 @@ class AgentSearch:
         parent_node = node.parent
 
         try:
-            if result_parse_agent.run_pre_execution_leakage_audit(self, node):
+            if (
+                result_parse_agent.run_pre_execution_leakage_audit(self, node)
+                or close_duplicate_code(self, node, logger)
+            ):
                 self._finalize_preflight_block(node, parent_node)
                 node.pending_execution = False
                 return node

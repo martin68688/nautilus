@@ -41,6 +41,13 @@ def test_deepseek_api_uses_standard_nested_named_tool_shape():
     }
 
 
+def test_together_api_uses_standard_nested_named_tool_shape():
+    assert _spec().openai_tool_choice_for_base_url("https://api.together.ai/v1") == {
+        "type": "function",
+        "function": {"name": "emit_direction"},
+    }
+
+
 def test_other_gateways_retain_historical_top_level_named_tool_shape():
     assert _spec().openai_tool_choice_for_base_url(
         "https://gateway.example.test/v1"
