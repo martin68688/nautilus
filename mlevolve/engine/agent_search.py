@@ -124,6 +124,9 @@ class AgentSearch:
         self.acfg = cfg.agent
         self.scfg = cfg.agent.search
         self.task_desc = clean_task_desc(task_desc, cfg)
+        if getattr(getattr(cfg, "oof", None), "enabled", False):
+            from fixed_holdout.oof import OOF_NOTE
+            self.task_desc += OOF_NOTE  # the Host re-runs each program on earlier periods
         self.journal = journal
         self.journal.audit_enforced = bool(self.acfg.check_data_leakage)
         self.data_preview: str | None = None

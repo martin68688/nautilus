@@ -33,6 +33,15 @@ host_selection:
   feedback: score
   block_duplicate_code: true
 
+# Host out-of-fold re-runs: each scored node is also run unchanged on walk-forward
+# folds of the train view (built by python -m fixed_holdout.oof); its score is the
+# mean over the folds and the selection set. Enable with
+#   oof.enabled=True oof.root=<split>/oof_view
+oof:
+  enabled: False
+  root: ""
+  timeout: 10800
+
 component_health:
   enabled: True
   trivial_score: 0.0

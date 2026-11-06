@@ -1111,3 +1111,111 @@ def test_portfolio_choice_is_recorded_and_validated(tmp_path):
     assert [m["node_id"] for m in result["members"]] == ["b"]  # fallback keeps the best worst window
     with pytest.raises(ValueError):
         portfolio.select_portfolio(split, run, choose="nope")
+
+
+# ---- Host out-of-fold re-runs -------------------------------------------------
+
+def test_oof_folds_walk_forward_with_an_embargo():
+    from fixed_holdout.oof import fold_eras
+
+    eras = [f"e{i:03d}" for i in range(30)]
+    plan = fold_eras(eras, folds=2, fold_eras=5, embargo_eras=2)
+    assert [p["test"] for p in plan] == [eras[25:30], eras[20:25]]
+    assert plan[0]["train"] == eras[:23] and plan[1]["train"] == eras[:18]
+    with pytest.raises(ValueError):
+        fold_eras(eras, folds=6, fold_eras=5, embargo_eras=2)
+
+
+def _oof_split(tmp_path):
+    from fixed_holdout.oof import build_folds
+
+    split = _split_with_benchmark(tmp_path)
+    train = pd.read_parquet(split / "train_view" / "input" / "train.parquet", columns=["numerai_ticker", "era"])
+    bench = train.rename(columns={"era": "date"}).assign(
+        lgbm_jupiter_60=np.random.default_rng(7).uniform(size=len(train)))
+    bench_path = tmp_path / "bench_all.parquet"
+    bench.to_parquet(bench_path, index=False)
+    return split, build_folds(split, bench_path, folds=2, fold_eras_count=4, embargo_eras=2)
+
+
+def test_oof_fold_views_hide_labels_and_keep_later_eras_out_of_training(tmp_path):
+    split, folds = _oof_split(tmp_path)
+    assert [f.name for f in folds] == ["fold1", "fold2"]
+    for fold in folds:
+        train = pd.read_parquet(fold / "input" / "train.parquet")
+        test = pd.read_parquet(fold / "input" / "test.parquet")
+        labels = pd.read_csv(fold / "labels.csv")
+        eras = sorted(train["era"].unique())
+        test_eras = sorted(test["era"].unique())
+        all_eras = sorted(pd.read_parquet(split / "train_view" / "input" / "train.parquet", columns=["era"])["era"].unique())
+        assert all_eras.index(test_eras[0]) - all_eras.index(eras[-1]) == 3  # two embargo eras in between
+        assert len(test_eras) == 4 and not any(c.startswith("target") for c in test.columns)
+        assert list(test.columns) == list(pd.read_parquet(split / "train_view" / "input" / "test.parquet").columns)
+        assert set(labels["id"]) == set(test["id"]) and labels["benchmark"].notna().all()
+        assert list(pd.read_csv(fold / "input" / "sample_submission.csv")["id"]) == list(test["id"])
+        assert not (fold / "input" / "labels.csv").exists()
+        score_selection(fold / "fixed_holdout_manifest.json", fold / "input" / "sample_submission.csv",
+                        windows=1, objective="mean", std_penalty=0.0, score_metric="corr_bmc")
+
+
+OOF_PROGRAM = """
+import pandas as pd
+test = pd.read_parquet("./input/test.parquet")
+test[["id"]].assign(prediction=test["feature_a"] + 1e-6 * test.index).to_csv("./submission/submission.csv", index=False)
+"""
+
+
+def _oof_agent(tmp_path, split, workspace):
+    manifest = split / "selection_view" / "fixed_holdout_manifest.json"
+    return SimpleNamespace(cfg=SimpleNamespace(
+        workspace_dir=workspace,
+        host_selection=SimpleNamespace(enabled=True, manifest_path=str(manifest), windows=2, objective="mean",
+                                       std_penalty=0.5, score_metric="corr_bmc", copy_threshold=0.999),
+        oof=SimpleNamespace(enabled=True, root=str(split / "oof_view"), timeout=120, python=sys.executable),
+    ))
+
+
+def _selection_submission(split, workspace, node_id):
+    manifest = split / "selection_view" / "fixed_holdout_manifest.json"
+    test = pd.read_parquet(split / "train_view" / "input" / "test.parquet")
+    path = predictions_path(workspace, node_id, manifest)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    test[["id"]].assign(prediction=test["feature_a"] + 1e-6 * np.arange(len(test))).to_csv(path, index=False)
+
+
+def test_oof_reruns_each_fold_and_scores_blocks(tmp_path):
+    split, _ = _oof_split(tmp_path)
+    workspace = tmp_path / "ws"
+    agent = _oof_agent(tmp_path, split, workspace)
+    _selection_submission(split, workspace, "n1")
+    node = SimpleNamespace(id="n1", is_buggy=False, metric=MetricValue(0.9, maximize=True), code=OOF_PROGRAM,
+                           host_selection={}, _term_out=[], analysis="", parent=None)
+    apply_to_node(agent, node, logging.getLogger("test"))
+    host = node.host_selection
+    assert node.is_buggy is False, node.analysis
+    assert len(host["window_means"]) == 3 and [f["fold"] for f in host["oof"]["folds"]] == ["fold1", "fold2"]
+    assert node.metric.value == pytest.approx(np.mean(host["window_means"]))
+    assert host["window_means"][-1] == pytest.approx(np.mean([
+        v for e, v in host["per_era_score"].items() if e in set(pd.read_csv(split / "selection_view" / "labels.csv")["era"])
+    ]))
+    assert len(host["per_era_score"]) == 8 + sum(f["n_eras"] for f in host["oof"]["folds"])
+    assert (workspace / "oof" / "n1" / "fold2" / "oof.log").exists()
+
+
+def test_oof_failure_closes_the_node_with_the_log_tail(tmp_path):
+    split, _ = _oof_split(tmp_path)
+    workspace = tmp_path / "ws"
+    agent = _oof_agent(tmp_path, split, workspace)
+    _selection_submission(split, workspace, "n2")
+    failing = "import pandas as pd\nraise SystemExit('expected 2024 eras only')\n"
+    node = SimpleNamespace(id="n2", is_buggy=False, metric=MetricValue(0.9, maximize=True), code=failing,
+                           host_selection={}, _term_out=[], analysis="", parent=None)
+    apply_to_node(agent, node, logging.getLogger("test"))
+    assert node.is_buggy is True and node.metric.value is None
+    assert node.analysis.startswith("HOST_OOF_ERROR") and "expected 2024 eras only" in node.analysis
+
+
+def test_oof_note_reaches_the_task_text_only_when_enabled():
+    from fixed_holdout.oof import OOF_NOTE
+
+    assert "earlier periods" in OOF_NOTE and "Do not assume particular eras" in OOF_NOTE

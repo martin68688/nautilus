@@ -791,6 +791,16 @@ class HostSelectionConfig:
 
 
 @dataclass
+class OofConfig:
+    """Host out-of-fold re-runs on earlier periods (fixed_holdout.oof)."""
+
+    enabled: bool = False
+    root: str = ""  # <split>/oof_view, built by python -m fixed_holdout.oof
+    timeout: int = 10800  # seconds per fold re-run
+    python: str = ""  # interpreter for the re-runs; empty = the search's own
+
+
+@dataclass
 class KnowledgeConfig:
     """Verified public knowledge (knowledge_harvest output) shown in prompts."""
 
@@ -859,6 +869,7 @@ class Config(Hashable):
     host_selection: HostSelectionConfig = field(default_factory=HostSelectionConfig)
     component_health: ComponentHealthConfig = field(default_factory=ComponentHealthConfig)
     knowledge: KnowledgeConfig = field(default_factory=KnowledgeConfig)
+    oof: OofConfig = field(default_factory=OofConfig)
     family_quota: FamilyQuotaConfig = field(default_factory=FamilyQuotaConfig)
     official_submission: OfficialSubmissionConfig = field(
         default_factory=OfficialSubmissionConfig

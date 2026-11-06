@@ -65,6 +65,9 @@ def verdict_feedback() -> bool:
 def hide_host_numbers(result: dict) -> None:
     """Record a Host result's numbers so prompts can be scrubbed of them."""
     values = [result.get(key) for key in _HOST_KEYS] + list(result.get("window_means") or [])
+    for fold in (result.get("oof") or {}).get("folds", []):
+        values += [fold.get(key) for key in ("score", "corr_mean", "bmc_mean", "benchmark_similarity")]
+    values.append((result.get("oof") or {}).get("selection_score"))
     with _HIDDEN_LOCK:
         _HIDDEN.update(float(v) for v in values if isinstance(v, (int, float)) and np.isfinite(v) and v != 0)
 
@@ -362,6 +365,32 @@ def apply_to_node(agent, node, logger) -> None:
         node._term_out.append(f"\n{node.analysis}")
         logger.warning("Node %s failed Host selection scoring: %s", node.id, error)
         return
+    copy_threshold = getattr(cfg, "copy_threshold", None)
+    similarity = result["benchmark_similarity"]
+    is_copy = copy_threshold is not None and similarity is not None and similarity >= copy_threshold
+    if getattr(getattr(agent.cfg, "oof", None), "enabled", False) and not is_copy:
+        from fixed_holdout.oof import add_folds
+
+        def score_fold(manifest, submission):
+            return score_selection(
+                manifest, submission, windows=1, objective="mean", std_penalty=0.0,
+                score_metric=str(getattr(cfg, "score_metric", "corr")),
+                corr_weight=float(getattr(cfg, "corr_weight", 0.5)),
+                bmc_weight=float(getattr(cfg, "bmc_weight", 2.0)),
+            )
+
+        try:
+            add_folds(agent, node, result, score_fold, logger)
+        except Exception as error:
+            node.is_buggy = True
+            node.metric = WorstMetricValue()
+            node.analysis = (
+                "HOST_OOF_ERROR: the Host re-ran this program unchanged on an earlier period "
+                f"and it failed: {error}"
+            )
+            node._term_out.append(f"\n{node.analysis}")
+            logger.warning("Node %s failed the Host OOF re-run: %s", node.id, str(error)[:300])
+            return
     result["agent_reported_metric"] = reported
     node.host_selection = result
     node.metric = MetricValue(result["score"], maximize=True)
@@ -377,9 +406,7 @@ def apply_to_node(agent, node, logger) -> None:
         f"{result['bmc_mean']:.5f}" if "bmc_mean" in result else "n/a",
         f"{result['benchmark_similarity']:.3f}" if result["benchmark_similarity"] is not None else "n/a",
     )
-    copy_threshold = getattr(cfg, "copy_threshold", None)
-    similarity = result["benchmark_similarity"]
-    if copy_threshold is not None and similarity is not None and similarity >= copy_threshold:
+    if is_copy:
         # A copy earns nothing and ends its lineage: check_improvement closes it.
         result["benchmark_copy"] = True
         node.is_buggy = True
