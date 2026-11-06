@@ -41,7 +41,7 @@ from protocol_runtime.preflight import (
     build_bounded_repair_receipt,
 )
 from engine import component_health, node_selection, evaluation, execution, solution_manager
-from fixed_holdout.selection import close_duplicate_code
+from fixed_holdout.selection import close_duplicate_code, configure_feedback
 from engine.conditions import (
     coverage_synthesis_due,
     cross_role_synthesis_allowed,
@@ -120,6 +120,7 @@ class AgentSearch:
             journal: Journal,
     ):
         self.cfg = cfg
+        configure_feedback(cfg)  # verdict-only Host feedback in prompts, if configured
         self.acfg = cfg.agent
         self.scfg = cfg.agent.search
         self.task_desc = clean_task_desc(task_desc, cfg)

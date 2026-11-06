@@ -16,6 +16,9 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import logging
+import re
+import threading
 from pathlib import Path
 
 import numpy as np
@@ -23,6 +26,120 @@ import pandas as pd
 
 from fixed_holdout.common import read_manifest, sha256_file
 from fixed_holdout.evaluate import numerai_era_scores
+
+_logger = logging.getLogger("MLEvolve")
+
+# ---- verdict-only feedback ---------------------------------------------------
+# With ``host_selection.feedback: verdict`` the agent never sees a Host number:
+# prompts say only whether a node is better, tied or worse than its parent
+# (paired noise band).  As a safety net every prompt is scanned for the Host
+# numbers recorded so far and they are replaced before the model sees them.
+_VERDICT = {"on": False}
+_HIDDEN: set[float] = set()
+_HIDDEN_LOCK = threading.Lock()
+_FLOAT_RE = re.compile(r"(?<![\w.])[-+]?\d+\.\d{4,}(?:[eE][-+]?\d+)?(?![\w.])")
+_HOST_KEYS = ("score", "corr_mean", "corr_sharpe", "bmc_mean", "bmc_sharpe", "benchmark_similarity", "window_std")
+VERDICT_TEXT = {
+    "better": "better than its parent (beyond the Host's noise band)",
+    "tied": "no clear difference from its parent (within the Host's noise band)",
+    "worse": "worse than its parent (beyond the Host's noise band)",
+    None: "scored by the Host; no scored parent to compare with",
+}
+HIDDEN_SCORE_NOTE = (
+    "not shown: the Host reports only whether a solution is better, tied or worse than its parent"
+)
+
+
+def configure_feedback(cfg) -> bool:
+    """Turn verdict-only feedback on when the config asks for it; returns the mode."""
+    host = getattr(cfg, "host_selection", None)
+    on = bool(getattr(host, "enabled", False)) and str(getattr(host, "feedback", "score") or "score") == "verdict"
+    _VERDICT["on"] = on
+    return on
+
+
+def verdict_feedback() -> bool:
+    return _VERDICT["on"]
+
+
+def hide_host_numbers(result: dict) -> None:
+    """Record a Host result's numbers so prompts can be scrubbed of them."""
+    values = [result.get(key) for key in _HOST_KEYS] + list(result.get("window_means") or [])
+    with _HIDDEN_LOCK:
+        _HIDDEN.update(float(v) for v in values if isinstance(v, (int, float)) and np.isfinite(v) and v != 0)
+
+
+def _matches_hidden(token: str) -> bool:
+    try:
+        value = float(token)
+    except ValueError:
+        return False
+    if "e" in token.lower():
+        tolerance = abs(value) * 1e-6 + 1e-15
+    else:
+        tolerance = 0.5 * 10 ** -len(token.split(".", 1)[1]) + 1e-15
+    with _HIDDEN_LOCK:
+        return any(abs(hidden - value) <= tolerance for hidden in _HIDDEN)
+
+
+def mask_host_numbers(text: str) -> tuple[str, int]:
+    """Replace Host numbers (4+ decimals) in ``text``; returns the text and the count."""
+    if not _VERDICT["on"] or not text or not _HIDDEN:
+        return text, 0
+    count = 0
+
+    def substitute(match: re.Match) -> str:
+        nonlocal count
+        if _matches_hidden(match.group(0)):
+            count += 1
+            return "[hidden]"
+        return match.group(0)
+
+    return _FLOAT_RE.sub(substitute, text), count
+
+
+def mask_prompt(prompt):
+    """Apply ``mask_host_numbers`` to every string of a prompt (str, dict or list)."""
+    if not _VERDICT["on"] or not _HIDDEN:
+        return prompt
+    total = 0
+
+    def walk(obj):
+        nonlocal total
+        if isinstance(obj, str):
+            text, count = mask_host_numbers(obj)
+            total += count
+            return text
+        if isinstance(obj, dict):
+            return {key: walk(value) for key, value in obj.items()}
+        if isinstance(obj, (list, tuple)):
+            return type(obj)(walk(value) for value in obj)
+        return obj
+
+    masked = walk(prompt)
+    if total:
+        _logger.warning("Verdict feedback: masked %d Host number(s) in a prompt", total)
+    return masked
+
+
+def feedback_text(node) -> str | None:
+    """Verdict-only description of a node's Host result; None when numbers may be shown."""
+    if not _VERDICT["on"]:
+        return None
+    host = getattr(node, "host_selection", None) or {}
+    if "score" not in host:
+        return "not scored by the Host"
+    return VERDICT_TEXT.get(host.get("verdict_vs_parent"), VERDICT_TEXT[None])
+
+
+def _scored_ancestor(node):
+    parent = getattr(node, "parent", None)
+    while parent is not None:
+        host = getattr(parent, "host_selection", None) or {}
+        if not getattr(parent, "is_buggy", False) and host.get("per_era_score"):
+            return parent
+        parent = getattr(parent, "parent", None)
+    return None
 
 
 def predictions_path(workspace_dir: Path, node_id: str, manifest_path: Path | None = None) -> Path:
@@ -248,6 +365,10 @@ def apply_to_node(agent, node, logger) -> None:
     result["agent_reported_metric"] = reported
     node.host_selection = result
     node.metric = MetricValue(result["score"], maximize=True)
+    if configure_feedback(agent.cfg):
+        hide_host_numbers(result)
+        reference = _scored_ancestor(node)
+        result["verdict_vs_parent"] = noise_verdict(agent, node, reference) if reference is not None else None
     logger.info(
         "Node %s Host selection score=%.5f (%s; agent reported %s; windows=%s; corr=%.5f bmc=%s; "
         "bench_sim=%s)",

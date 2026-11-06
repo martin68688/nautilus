@@ -990,3 +990,124 @@ def test_neutralizer_arrays_follow_the_row_order_of_each_file(tmp_path):
     assert "neutralizer_train.npy" in text and "neutralizer/*.parquet" not in text
     assert align_split(tmp_path)[0] == digest
 
+
+
+# ---- verdict-only Host feedback ------------------------------------------------
+
+@pytest.fixture
+def verdict_mode():
+    from fixed_holdout import selection
+
+    selection._VERDICT["on"] = True
+    selection._HIDDEN.clear()
+    yield selection
+    selection._VERDICT["on"] = False
+    selection._HIDDEN.clear()
+
+
+def test_verdict_mode_follows_the_config():
+    from fixed_holdout.selection import configure_feedback
+
+    on = SimpleNamespace(host_selection=SimpleNamespace(enabled=True, feedback="verdict"))
+    assert configure_feedback(on) is True
+    assert configure_feedback(SimpleNamespace(host_selection=SimpleNamespace(enabled=True))) is False
+    assert configure_feedback(SimpleNamespace(host_selection=SimpleNamespace(enabled=False, feedback="verdict"))) is False
+
+
+def test_host_numbers_are_masked_in_prompts_but_other_numbers_stay(verdict_mode):
+    verdict_mode.hide_host_numbers({"score": 0.046704, "corr_mean": 0.04665, "bmc_mean": 0.011691,
+                                    "benchmark_similarity": 0.7613, "window_means": [0.0576, 0.044]})
+    prompt = {
+        "Memory": "Validation Metric: 0.0467 then 0.046704 and 0.04665; best 0.0576",
+        "Parts": ["bmc 0.011691", "similarity 0.7613"],
+        "Own": "Final Validation Score: 0.03267 ; lr 0.0005 ; epochs 25 ; seed 0.5",
+    }
+    masked = verdict_mode.mask_prompt(prompt)
+    assert "0.0467" not in masked["Memory"] and "0.04665" not in masked["Memory"]
+    assert "0.0576" not in masked["Memory"]
+    assert masked["Parts"] == ["bmc [hidden]", "similarity [hidden]"]
+    assert masked["Own"] == prompt["Own"]  # the agent's own validation score is not a Host number
+
+
+def test_masking_is_off_without_verdict_mode():
+    from fixed_holdout import selection
+
+    selection._VERDICT["on"] = False
+    selection._HIDDEN.add(0.046704)
+    try:
+        assert selection.mask_prompt("score 0.0467") == "score 0.0467"
+    finally:
+        selection._HIDDEN.clear()
+
+
+def test_node_display_reports_only_the_verdict(verdict_mode):
+    from engine.search_node import SearchNode
+
+    parent = SearchNode(code="a", plan="a", stage="draft", metric=MetricValue(0.04, maximize=True),
+                        is_buggy=False, is_valid=True)
+    parent.host_selection = {"score": 0.04, "per_era_score": {"e1": 0.04}}
+    child = SearchNode(code="b", plan="b", stage="improve", parent=parent,
+                       metric=MetricValue(0.05, maximize=True), is_buggy=False, is_valid=True)
+    child.host_selection = {"score": 0.05, "verdict_vs_parent": "tied"}
+    text = parent._format_metric_change(child)
+    assert text == verdict_mode.VERDICT_TEXT["tied"]
+    assert "0.05" not in text and "0.04" not in text
+    assert "0.04" not in child.fetch_parent_memory()
+
+
+def test_apply_to_node_records_the_verdict_against_the_scored_parent(tmp_path, verdict_mode):
+    _, split = _selection_split(tmp_path)
+    test, _, _ = _selection_and_lockbox(split)
+    manifest = split / "selection_view" / "fixed_holdout_manifest.json"
+    workspace = tmp_path / "ws"
+    agent = SimpleNamespace(cfg=SimpleNamespace(
+        workspace_dir=workspace,
+        host_selection=SimpleNamespace(enabled=True, manifest_path=str(manifest), windows=4, objective="mean",
+                                       std_penalty=0.5, feedback="verdict", noise_band_z=2.0,
+                                       noise_band_block=2, noise_band_samples=200),
+    ))
+
+    def scored(node_id, values, parent=None):
+        node = SimpleNamespace(id=node_id, is_buggy=False, metric=MetricValue(0.9, maximize=True),
+                               host_selection={}, _term_out=[], analysis="", parent=parent)
+        path = predictions_path(workspace, node_id, manifest)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        test[["id"]].assign(prediction=values).to_csv(path, index=False)
+        apply_to_node(agent, node, logging.getLogger("test"))
+        return node
+
+    good = test["feature_a"].to_numpy() + 1e-3 * np.arange(len(test))
+    parent = scored("p", good)
+    assert parent.host_selection["verdict_vs_parent"] is None
+    same = scored("c", good, parent=SimpleNamespace(is_buggy=True, host_selection={}, parent=parent))
+    assert same.host_selection["verdict_vs_parent"] == "tied"  # the buggy step in between is skipped
+    masked = verdict_mode.mask_prompt(f"Best Score: {same.metric.value:.4f} ({same.metric.value})")
+    assert masked == "Best Score: [hidden] ([hidden])"
+
+
+def test_portfolio_top_worst_window_takes_the_most_robust_nodes():
+    similarity = np.eye(4)
+    similarity[0, 3] = similarity[3, 0] = 1.0  # node 3 copies node 0
+    nodes = [{"host_selection": {"score": s, "window_means": w}} for s, w in [
+        (0.050, [0.09, 0.01]), (0.040, [0.04, 0.04]), (0.030, [0.03, 0.03]), (0.050, [0.09, 0.01])]]
+    scores = [portfolio.worst_window(n) for n in nodes]
+    assert scores == [0.01, 0.04, 0.03, 0.01]
+    assert portfolio.top_members(scores, similarity, 2, 0.999) == [1, 2]
+    assert portfolio.top_members(scores, similarity, 5, 0.999) == [1, 2, 3]
+
+
+def test_portfolio_choice_is_recorded_and_validated(tmp_path):
+    split = _split_with_benchmark(tmp_path)
+    run = tmp_path / "run"
+    (run / "logs").mkdir(parents=True)
+    nodes = [
+        {"id": "a", "is_buggy": False, "host_selection": {"score": 0.03, "corr_mean": -9.0, "window_means": [0.06, 0.0]}},
+        {"id": "b", "is_buggy": False, "host_selection": {"score": 0.02, "corr_mean": -9.0, "window_means": [0.02, 0.02]}},
+    ]
+    (run / "logs" / "journal.json").write_text(json.dumps({"nodes": nodes}))
+
+    result = portfolio.select_portfolio(split, run, choose="top_worst_window")
+    assert result["choose"] == "top_worst_window"
+    assert [m["node_id"] for m in result["members"]] == ["b"]  # fallback keeps the best worst window
+    with pytest.raises(ValueError):
+        portfolio.select_portfolio(split, run, choose="nope")

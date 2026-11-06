@@ -80,7 +80,8 @@ def run(agent, parent_node: SearchNode) -> SearchNode:
         if branch_best_score is None:
             best_score_str = "N/A (no successful nodes yet)"
         else:
-            best_score_str = f"{branch_best_score:.4f}"
+            from fixed_holdout.selection import HIDDEN_SCORE_NOTE, verdict_feedback
+            best_score_str = HIDDEN_SCORE_NOTE if verdict_feedback() else f"{branch_best_score:.4f}"
 
         prompt["Instructions"] |= {
             "🔥 Evolution Strategy: Magnitude-Based Reasoning": [

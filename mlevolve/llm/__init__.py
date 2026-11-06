@@ -5,6 +5,7 @@ from . import openai as _openai
 from . import anthropic as _anthropic
 from .gemini import FunctionSpec, OutputType, PromptType, compile_prompt_to_md
 from config import Config
+from fixed_holdout.selection import mask_prompt
 logger = logging.getLogger("MLEvolve")
 
 
@@ -63,6 +64,9 @@ def query(
         else:
             logger.info(f"system: {system_message}", extra={"verbose": True})
     user_message = compile_prompt_to_md(user_message) if user_message else None
+    # Verdict-only Host feedback: no Host number reaches the model (no-op otherwise).
+    system_message = mask_prompt(system_message)
+    user_message = mask_prompt(user_message)
     if user_message:
         if len(user_message) > 1000:
             logger.info(f"user: {user_message[-1000:]}", extra={"verbose": True})
@@ -115,6 +119,7 @@ def generate(
     """Streaming text generation. Dispatches by cfg.agent.code.model: Gemini / Anthropic (glm) / OpenAI-compatible."""
     model = getattr(cfg.agent.code, "model", "") or ""
     provider = _provider(model)
+    prompt = mask_prompt(prompt)  # verdict-only Host feedback (no-op otherwise)
     if provider == "openai":
         return _openai.generate(
             prompt=prompt,

@@ -358,8 +358,12 @@ class SearchNode(DataClassJsonMixin):
             if executed:
                 stats_parts.append(f"{len(executed)} executed")
                 if successful:
-                    best_metric = max(n.metric.value for n in successful if n.metric and n.metric.value is not None)
-                    stats_parts.append(f"{len(successful)} successful (best: {best_metric:.4f})")
+                    from fixed_holdout.selection import verdict_feedback
+                    if verdict_feedback():
+                        stats_parts.append(f"{len(successful)} successful")
+                    else:
+                        best_metric = max(n.metric.value for n in successful if n.metric and n.metric.value is not None)
+                        stats_parts.append(f"{len(successful)} successful (best: {best_metric:.4f})")
                 else:
                     stats_parts.append(f"0 successful (all failed or buggy)")
 
@@ -372,6 +376,10 @@ class SearchNode(DataClassJsonMixin):
         """Format metric change for display (respects maximize/minimize)."""
         if not node.metric or node.metric.value is None:
             return "N/A"
+        from fixed_holdout.selection import feedback_text
+        verdict = feedback_text(node)
+        if verdict is not None:
+            return verdict
 
         current_val = node.metric.value
 
@@ -443,7 +451,9 @@ class SearchNode(DataClassJsonMixin):
             if include_code:
                 summary_part += f"Code: {self.parent.code}\n"
             summary_part += f"Results: {self.parent.analysis}\n"
-            summary_part += f"Validation Metric: {self.parent.metric.value}\n"
+            from fixed_holdout.selection import feedback_text
+            verdict = feedback_text(self.parent)
+            summary_part += f"Validation Metric: {self.parent.metric.value if verdict is None else verdict}\n"
             if hasattr(self.parent, 'exec_time') and self.parent.exec_time is not None:
                 summary_part += f"Execution Time: {self.parent.exec_time:.2f}s\n"
             summary.append(summary_part)

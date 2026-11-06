@@ -785,6 +785,9 @@ class HostSelectionConfig:
     copy_threshold: Optional[float] = None
     # Close a node whose code matches an earlier node without running it.
     block_duplicate_code: bool = False
+    # "score": prompts show Host numbers. "verdict": prompts say only better /
+    # tied / worse than the parent (noise band) and Host numbers are scrubbed.
+    feedback: str = "score"
 
 
 @dataclass

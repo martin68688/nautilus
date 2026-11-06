@@ -17,6 +17,8 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from fixed_holdout.selection import verdict_feedback
+
 DEFAULT_DIRECTIONS = {
     "targets": "which labels to train on and how to combine them",
     "features": "which inputs to use and how to transform or construct them",
@@ -53,7 +55,7 @@ def _score(node: Any) -> float | None:
 def _host_summary(node: Any) -> str:
     """The parts of the Host score, when the Host scored against the benchmark."""
     host = getattr(node, "host_selection", None) or {}
-    if "bmc_mean" not in host:
+    if "bmc_mean" not in host or verdict_feedback():
         return ""
     return (
         f"correlation {host['corr_mean']:.4f}, added beyond the benchmark {host['bmc_mean']:+.4f}, "
@@ -113,7 +115,7 @@ class ResearchLedger:
                     lines.append(f"- {name}: {len(tried)} / {ok}")
             lines.append("Latest conclusions:")
             for rec in done[-self.shown:]:
-                delta = "" if rec["delta"] is None else f" (Host score {rec['delta']:+.5f} vs its start)"
+                delta = "" if rec["delta"] is None or verdict_feedback() else f" (Host score {rec['delta']:+.5f} vs its start)"
                 host = f" [{rec['host']}]" if rec.get("host") else ""
                 lines.append(f"- [{rec['verdict']}] {rec['direction']}: {rec['hypothesis']}{delta}{host}")
         return "\n".join(lines)

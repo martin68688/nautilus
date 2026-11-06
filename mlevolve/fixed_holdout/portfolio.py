@@ -11,6 +11,10 @@ per-era Gaussian rank.  The result is a frozen submission like any other
 
     python -m fixed_holdout.portfolio --split <split_root> --run <run_dir> \\
         --output <run_dir>/refit
+
+``--choose top_worst_window`` instead keeps the ``size`` nodes past the floor
+whose worst selection window is highest (near-copies counted once), and falls
+back to the node with the highest worst window.
 """
 
 from __future__ import annotations
@@ -64,6 +68,27 @@ def choose_members(scores: list[float], similarity: np.ndarray, size: int, copy_
     )
 
 
+def worst_window(node: dict) -> float:
+    """The node's lowest selection-window score (its whole score if it has no windows)."""
+    host = node["host_selection"]
+    windows = host.get("window_means") or [host["score"]]
+    return float(min(windows))
+
+
+def top_members(scores: list[float], similarity: np.ndarray, size: int, copy_threshold: float) -> list[int]:
+    """Indices of the ``size`` highest scores, the best of each group of copies kept."""
+    kept: list[int] = []
+    for index in np.argsort(scores, kind="stable")[::-1]:
+        if all(similarity[index, other] < copy_threshold for other in kept):
+            kept.append(int(index))
+        if len(kept) == size:
+            break
+    return kept
+
+
+CHOICES = ("diverse", "top_worst_window")
+
+
 def select_portfolio(
     split_root: Path,
     run_dir: Path,
@@ -71,6 +96,7 @@ def select_portfolio(
     size: int = 5,
     floor_ratio: float = 0.75,
     copy_threshold: float = 0.999,
+    choose: str = "diverse",
 ) -> dict:
     """Choose the members from selection rows only and write ``logs/portfolio.json``."""
     split_root, run_dir = Path(split_root).resolve(), Path(run_dir).resolve()
@@ -86,13 +112,16 @@ def select_portfolio(
     benchmark_corr = numerai_era_scores(targets, benchmark, eras)["corr_mean"]
     floor = floor_ratio * benchmark_corr
 
+    if choose not in CHOICES:
+        raise ValueError(f"choose must be one of {CHOICES}, got {choose!r}")
+    rank = worst_window if choose == "top_worst_window" else (lambda n: n["host_selection"]["score"])
     nodes = _usable_nodes(run_dir)
     if not nodes:
         raise ValueError("No scored node to deliver")
     members = [n for n in nodes if n["host_selection"]["corr_mean"] >= floor]
     fallback = not members
     if fallback:
-        chosen = [max(nodes, key=lambda n: n["host_selection"]["score"])]
+        chosen = [max(nodes, key=rank)]
     else:
         id_column, prediction_column = manifest["id_column"], manifest["prediction_columns"][0]
         ranks = np.empty((len(labels), len(members)), dtype=np.float32)
@@ -104,11 +133,13 @@ def select_portfolio(
             for era in np.unique(eras):
                 ranks[eras == era, column] = _gaussian_rank(values[eras == era])
         similarity = _similarity_matrix(ranks, eras)
-        scores = [n["host_selection"]["score"] for n in members]
-        chosen = [members[i] for i in choose_members(scores, similarity, size, copy_threshold)]
+        scores = [rank(n) for n in members]
+        pick = top_members if choose == "top_worst_window" else choose_members
+        chosen = [members[i] for i in pick(scores, similarity, size, copy_threshold)]
     result = {
         "schema": "mlevolve_fixed_holdout_portfolio_v1",
         "split_id": manifest["split_id"],
+        "choose": choose,
         "benchmark_corr": benchmark_corr,
         "corr_floor": floor,
         "fallback_single_node": fallback,
@@ -119,6 +150,7 @@ def select_portfolio(
                 "corr_mean": n["host_selection"]["corr_mean"],
                 "bmc_mean": n["host_selection"].get("bmc_mean"),
                 "benchmark_similarity": n["host_selection"].get("benchmark_similarity"),
+                "worst_window": worst_window(n),
             }
             for n in chosen
         ],
@@ -190,12 +222,13 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--size", type=int, default=5)
     parser.add_argument("--floor-ratio", type=float, default=0.75)
+    parser.add_argument("--choose", choices=CHOICES, default="diverse")
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--timeout", type=int, default=7200)
     args = parser.parse_args()
     receipt = deliver(
         args.split, args.run, args.output, python=args.python, timeout=args.timeout,
-        size=args.size, floor_ratio=args.floor_ratio,
+        size=args.size, floor_ratio=args.floor_ratio, choose=args.choose,
     )
     print(json.dumps(receipt, indent=2))
 
