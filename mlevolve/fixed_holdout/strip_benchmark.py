@@ -21,7 +21,15 @@ import shutil
 from pathlib import Path
 
 from fixed_holdout.common import tree_sha256
-from fixed_holdout.numerai_source import HOST_OBJECTIVE, MEMORY_NOTE
+from fixed_holdout.numerai_source import MEMORY_NOTE, SPEED_RULE
+
+# Earlier descriptions carried this. Told the objective, the agent left gradient
+# boosting and lost correlation without gaining on the benchmark, so it goes.
+RETIRED_OBJECTIVE = (
+    "The Host score counts the correlation above and, with more weight, what your\n"
+    "predictions add beyond a strong public benchmark model whose predictions you\n"
+    "cannot see; matching what that model already captures earns little."
+)
 
 
 def _replace_text(path: Path, text: str) -> None:
@@ -31,12 +39,15 @@ def _replace_text(path: Path, text: str) -> None:
 
 
 def clean_description(text: str, resources: str | None = None) -> str:
-    """Drop the benchmark's files from the task text and state the Host's objective.
+    """Drop the benchmark from the task text and state the memory and speed rules.
 
     ``resources`` restates the compute budget for the machine that will run it.
     """
-    text = text.replace(f"\n{HOST_OBJECTIVE}", "").replace(f"\n{MEMORY_NOTE}", "")
-    text = text.replace("keep integer features as int8.", f"keep integer features as int8.\n{MEMORY_NOTE}")
+    for added in (RETIRED_OBJECTIVE, MEMORY_NOTE, SPEED_RULE):
+        text = text.replace(f"\n{added}", "")
+    text = text.replace(
+        "keep integer features as int8.", f"keep integer features as int8.\n{MEMORY_NOTE}\n{SPEED_RULE}"
+    )
     text = re.sub(r"- `benchmark/\*\.parquet`:.*?(?=\n  Neither folder)\n", "", text, flags=re.S)
     text = text.replace("  Neither folder contains labels; join them", "  They contain no labels; join them")
     text = re.sub(r"\son those rows with the metric above", "\non those rows", text)
@@ -52,9 +63,7 @@ def clean_description(text: str, resources: str | None = None) -> str:
             raise ValueError("Description states no compute budget")
     if "benchmark" in text.lower():
         raise ValueError("Description still mentions the benchmark")
-    return re.sub(
-        r"(ranks\s+solutions during the search\.)", lambda m: f"{m.group(1)}\n{HOST_OBJECTIVE}", text
-    )
+    return text
 
 
 def _update_manifest(path: Path, **fields: str) -> None:

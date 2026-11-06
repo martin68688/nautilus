@@ -44,11 +44,6 @@ import pyarrow.parquet as pq
 from fixed_holdout.common import sha256_file, write_json
 
 # Stated to the agent: what the Host rewards, never how to reach it.
-HOST_OBJECTIVE = (
-    "The Host score counts the correlation above and, with more weight, what your\n"
-    "predictions add beyond a strong public benchmark model whose predictions you\n"
-    "cannot see; matching what that model already captures earns little."
-)
 MEMORY_NOTE = (
     "- 1,000 columns over 1 million rows take 1 GB as int8, 4 GB as float32 and 8 GB\n"
     "  as float64. `df[cols].values` builds a new array of the widest type in `cols`,\n"
@@ -56,6 +51,15 @@ MEMORY_NOTE = (
     "  `df[cols].to_numpy(dtype=np.float32)` does not. `astype`, `.copy()` and\n"
     "  `pd.concat` keep the old data until it is deleted, so delete what you no longer\n"
     "  need. Keep the peak within the memory limit."
+)
+SPEED_RULE = (
+    "- Hard rule: never loop over eras inside a training batch. A `shuffle=True` batch of\n"
+    "  2,048 rows holds about 600 eras with 3 rows each, so a Python per-era loss takes\n"
+    "  about 500 ms a step instead of 2 ms, one epoch takes 25 minutes, and the program\n"
+    "  is killed at the time limit with no score. Compute the loss over the whole batch\n"
+    "  with tensor operations. For a per-era loss, make each batch a single era and\n"
+    "  shuffle the eras. Before training, time 20 steps, multiply out the whole run with\n"
+    "  prediction included, and change the code if it does not fit the time limit."
 )
 
 
@@ -138,7 +142,7 @@ def _description(
 The Host holds the labels of part of `test.parquet` and scores your submission
 on those rows; that Host score, not the printed validation score, is what ranks
 solutions during the search.
-""" + HOST_OBJECTIVE
+"""
         if selection
         else ""
     )
@@ -223,6 +227,7 @@ Fit the final model, predict every row of `test.parquet`, and write
 - The data is large; read only the columns you need with
   `pd.read_parquet(path, columns=[...])` and keep integer features as int8.
 {MEMORY_NOTE}
+{SPEED_RULE}
 """
 
 

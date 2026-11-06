@@ -19,7 +19,7 @@ from config import OmegaConf, _load_cfg, Config  # noqa: E402
 from engine import component_health, method_family  # noqa: E402
 from engine.executor import Interpreter  # noqa: E402
 from fixed_holdout import portfolio  # noqa: E402
-from fixed_holdout.numerai_source import HOST_OBJECTIVE, MEMORY_NOTE, build_source  # noqa: E402
+from fixed_holdout.numerai_source import MEMORY_NOTE, SPEED_RULE, build_source  # noqa: E402
 from fixed_holdout.portfolio import choose_members  # noqa: E402
 from fixed_holdout.prepare import prepare_task  # noqa: E402
 from fixed_holdout.selection import (  # noqa: E402
@@ -442,7 +442,7 @@ def test_corr_bmc_selection_score_and_description(tmp_path):
     )
     text = (prepared / "public" / "description.md").read_text()
     assert "BMC" not in text and "lgbm" not in text and "benchmark/" not in text
-    assert "ranks\nsolutions during the search.\n" + HOST_OBJECTIVE in text
+    assert "ranks\nsolutions during the search." in text and "beyond" not in text
     assert not (prepared / "public" / "benchmark").exists()
     split = prepare_task(tmp_path / "d", "numerai-v6", tmp_path / "fixed", copy_mode="copy")
     test = pd.read_parquet(split / "train_view" / "input" / "test.parquet")
@@ -693,17 +693,18 @@ def test_memory_note_states_what_pandas_does():
 
 def test_strip_benchmark_updates_views_and_keeps_host_labels(tmp_path):
     from fixed_holdout.common import read_manifest, tree_sha256
-    from fixed_holdout.strip_benchmark import clean_description, strip_benchmark
+    from fixed_holdout.strip_benchmark import RETIRED_OBJECTIVE, clean_description, strip_benchmark
 
     text = clean_description(OLD_DESCRIPTION)
     assert "benchmark" not in text.lower() and "lgbm" not in text
     assert "They contain no labels; join them" in text and "`neutralizer/*.parquet`" in text
     assert "on those rows.\n" in text and "metric above" not in text
     ranked = "that Host score is what ranks\nsolutions during the search.\n"
-    stated = clean_description(OLD_DESCRIPTION + ranked)
-    assert stated.count(HOST_OBJECTIVE) == 1 and clean_description(stated) == stated
+    stated = clean_description(OLD_DESCRIPTION + ranked + RETIRED_OBJECTIVE)
+    assert RETIRED_OBJECTIVE not in stated and clean_description(stated) == stated
     noted = clean_description(OLD_DESCRIPTION + "and keep integer features as int8.\n")
-    assert noted.count(MEMORY_NOTE) == 1 and clean_description(noted) == noted
+    assert noted.count(MEMORY_NOTE) == 1 and noted.count(SPEED_RULE) == 1
+    assert clean_description(noted) == noted
     budget ="- Compute available to your program: 32 CPU cores, no GPU, about 120 GB RAM. A program\n"
     assert "24 threads. A program" in clean_description(OLD_DESCRIPTION + budget, "24 threads")
     with pytest.raises(ValueError, match="no compute budget"):
